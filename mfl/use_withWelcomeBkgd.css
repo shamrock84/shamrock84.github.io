@@ -1,0 +1,62 @@
+.brandlogo {
+   display: none;
+}
+
+.pagetitle {
+   display:none;
+}
+
+.welcome {
+	background-image:url(page_body_bg.jpg);
+	background-position:top center;
+	background-repeat: repeat;
+}
+
+.pageheader {
+	 background:#ececec;
+	 background-image:url(body_bg.png);
+	 background-repeat: repeat;
+	 color:#000;
+}
+.hilitetablerow {
+   background-color: lightyellow;
+   cursor: crosshair;
+}
+
+.divisionwinner_table0-1 {
+   align: center;
+   margin-left: auto;
+   margin-right: auto;
+}
+
+.wildcardwinner_table0-1 {
+   align: center;
+   margin-left: auto;
+   margin-right: auto;
+}
+
+.nonplayoffteam_table0-1 {
+   align: center;
+   margin-left: auto;
+   margin-right: auto;
+}
+
+#top_performers caption {
+    display : none;
+}
+
+#top_fa caption {
+    display : none;
+}
+
+.franchiseicon {
+height: 100px;
+width: 100px;
+}
+
+/*
+input[name="demote0001"] {
+   display: none;
+   content: "Contact Commish.";
+}
+*/
