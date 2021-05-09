@@ -1,0 +1,244 @@
+<html>
+	<head>
+		<title>myFFL</title>
+		<META HTTP-EQUIV="CACHE-CONTROL" CONTENT="NO-CACHE">
+		<META HTTP-EQUIV="PRAGMA" CONTENT="NO-CACHE">
+		<link rel="SHORTCUT ICON" href="http://www.melbostad.net/ffl.ico">
+		<link rel="stylesheet" id="skin_stylesheet" href="http://www.myfantasyleague.com/skins/norseman/skin.css" type="text/css"  />
+		<script type="text/javascript">
+			function loadView()
+			{
+				//Hide all views
+				var views = document.getElementsByClassName("FFLdiv");
+				for (var i = 0; i < views .length; i++) { 
+					views[i].style.display = "none";
+				}
+
+				//Display selected view
+				var value;
+				for (var i=0; i<document.viewSelectForm.viewSelect.length; i++)
+				{
+					if (document.viewSelectForm.viewSelect[i].checked)
+					{
+						value = document.viewSelectForm.viewSelect[i].value;
+					}
+				}
+				document.getElementById(value+"View").style.display = "block";
+
+				//highlight team names if in scores or standings view
+				if (value == "scores" || value == "standings")
+				{
+					highlightTeams(value+"Form");
+				}
+				
+				//check for refresh every minute
+				//timeout = setTimeout("refreshView();",60000);
+			}
+			function refreshView(value)
+			{
+				//Auto refresh in scores view only
+				var value;
+				for (var i=0; i<document.viewSelectForm.viewSelect.length; i++)
+				{
+					if (document.viewSelectForm.viewSelect[i].checked)
+					{
+						value = document.viewSelectForm.viewSelect[i].value;
+					}
+				}
+				if (value == "scores")
+				{
+					window.location.reload();
+				}
+			}
+			function highlightTeams(formName)
+			{
+				var tableCells;
+				if (formName == "standingsForm")
+					tableCells = document.forms[formName].getElementsByClassName("fname");
+				else
+					tableCells = document.forms[formName].getElementsByTagName("td");
+
+				for (var i = 0; i < tableCells.length; i++) { 
+					var text = tableCells[i].innerHTML.substr(0,200).toUpperCase();
+					if (text.match("RUMBLE FISH") ||
+					    text.match("PC LOAD LETTER") ||
+					    text.match("THE MERGE") ||
+					    text.match("HODOR") ||
+					    text.match("BLUE STEEL") ||
+					    text.match("IONATH KRAKENS") ||
+					    text.match("CAPO DEI CAPI") ||
+					    text.match("A CASE OF CORONA") ||
+					    text.match("ANTHEM KNEELERS") ||
+					    text.match("CLASSIC T-800"))
+					{
+						tableCells[i].style.backgroundColor = "yellow";
+						tableCells[i].style.fontWeight = "bold";
+					}
+				}
+			}
+		</script>
+	</head>
+	<body onload="loadView();">
+		<form name="viewSelectForm">
+		<br/>
+		<table style="width:100%">
+		<caption>Select View:</caption>
+		<td><h2><input type="radio" name="viewSelect" value="scores" onClick="loadView();highlightTeams('scoresForm')">Scores</h2></td>
+		<td><h2><input type="radio" name="viewSelect" value="rosters" onClick="loadView()" checked>Rosters</h2></td>
+		<!--<td><h2><input type="radio" name="viewSelect" value="lineups" onClick="loadView()">Lineups</h2></td>-->
+		<td><h2><input type="radio" name="viewSelect" value="standings" onClick="loadView();highlightTeams('standingsForm')">Standings</h2></td>
+		<td><h2><input type="radio" name="viewSelect" value="bestball" onClick="loadView();highlightTeams('bestballForm')">BestBall</h2></td>
+		<td><h2><input type="radio" name="viewSelect" value="schedules" onClick="loadView()">Schedules</h2></td>
+		<td><h2><input type="radio" name="viewSelect" value="news" onClick="loadView()">News</h2></td>
+		</table>
+		</form>
+		<br/><br/>
+		<div id="scoresView" style="display:none;" class="FFLdiv">
+		<form name="scoresForm">
+		<table style="width:100%">
+		<caption>myFFL Scores</caption>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>MNMx Dynasty<b><br/><script type="text/javascript" src="http://www51.myfantasyleague.com/2021/embed?L=26696&MODULE=LIVESCORING_SUMMARY"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>Iron Bank<b><br/><script type="text/javascript" src="http://www66.myfantasyleague.com/2021/embed?L=35217&MODULE=LIVESCORING_SUMMARY"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>OSD<b><br/><script type="text/javascript" src="http://www59.myfantasyleague.com/2021/embed?L=25608&MODULE=LIVESCORING_SUMMARY"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>Wise Guys<b><br/><script type="text/javascript" src="http://www56.myfantasyleague.com/2021/embed?L=34850&MODULE=LIVESCORING_SUMMARY"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>Survivor<b><br/><script type="text/javascript" src="http://www55.myfantasyleague.com/2021/embed?L=23545&MODULE=LIVESCORING_SUMMARY"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"></td>
+			</tr>
+		</table>
+		</form>
+		</div>
+		<div id="bestballView" style="display:none;" class="FFLdiv">
+		<form name="bestballForm">
+		<table style="width:100%">
+		<caption>myFFL BestBall</caption>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>Rug's Playground<b><br/><script type="text/javascript" src="http://www51.myfantasyleague.com/2021/embed?L=34203&MODULE=BRIEF_STANDINGS"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>Worlds Collide<b><br/><script type="text/javascript" src="http://www71.myfantasyleague.com/2021/embed?L=56191&MODULE=BRIEF_STANDINGS"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>BB - May<b><br/><script type="text/javascript" src="http://www50.myfantasyleague.com/2021/embed?L=40116&MODULE=BRIEF_STANDINGS"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>BB - June<b><br/><script type="text/javascript" src="http://www77.myfantasyleague.com/2021/embed?L=62148&MODULE=BRIEF_STANDINGS"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>BB - Terminator<b><br/><script type="text/javascript" src="http://www66.myfantasyleague.com/2021/embed?L=29173&MODULE=BRIEF_STANDINGS"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"></td>
+			</tr>
+		</table>
+		</form>
+		</div>
+		<div id="rostersView" style="display:none;" class="FFLdiv">
+		<form name="rostersForm">
+		<table style="width:100%">
+		<caption>myFFL Rosters</caption>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>MNMx Dynasty<b><br/><script type="text/javascript" src="http://www51.myfantasyleague.com/2021/embed?L=26696&MODULE=ROSTER&FRANCHISE=0001"></script></td>
+			    <td style="text-align:center;vertical-align:top;width:50%;"><b>Iron Bank<b><br/><script type="text/javascript" src="http://www66.myfantasyleague.com/2021/embed?L=35217&MODULE=ROSTER&FRANCHISE=0004"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>OSD<b><br/><script type="text/javascript" src="http://www59.myfantasyleague.com/2021/embed?L=25608&MODULE=ROSTER&FRANCHISE=0001"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>Wise Guys<b><br/><script type="text/javascript" src="http://www56.myfantasyleague.com/2021/embed?L=34850&MODULE=ROSTER&FRANCHISE=0010"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>Survivor<b><br/><script type="text/javascript" src="http://www55.myfantasyleague.com/2021/embed?L=23545&MODULE=ROSTER&FRANCHISE=0008"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"></td>
+			</tr>
+		</table>
+		</form>
+		</div>
+		<div id="schedulesView" style="display:none;" class="FFLdiv">
+		<form name="schedulesForm">
+		<table style="width:100%">
+		<caption>myFFL Schedules</caption>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>MNMx Dynasty<b><br/><script type="text/javascript" src="http://www51.myfantasyleague.com/2021/embed?L=26696&MODULE=FRANCHISE_SCHEDULE&FRANCHISE=0001"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>Iron Bank<b><br/><script type="text/javascript" src="http://www66.myfantasyleague.com/2021/embed?L=35217&MODULE=FRANCHISE_SCHEDULE&FRANCHISE=0004"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>OSD<b><br/><script type="text/javascript" src="http://www59.myfantasyleague.com/2021/embed?L=25608&MODULE=FRANCHISE_SCHEDULE&FRANCHISE=0001"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>Wise Guys<b><br/><script type="text/javascript" src="http://www56.myfantasyleague.com/2021/embed?L=34850&MODULE=FRANCHISE_SCHEDULE&FRANCHISE=0010"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>Survivor<b><br/><script type="text/javascript" src="http://www55.myfantasyleague.com/2021/embed?L=23545&MODULE=FRANCHISE_SCHEDULE&FRANCHISE=0008"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"></td>
+			</tr>
+		</table>
+		</form>
+		</div>
+		<div id="standingsView" style="display:none;" class="FFLdiv">
+		<form name="standingsForm">
+		<table style="width:100%">
+		<caption>myFFL Standings</caption>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>MNMx Dynasty<b><br/><script type="text/javascript" src="http://www51.myfantasyleague.com/2021/embed?L=26696&MODULE=BRIEF_STANDINGS"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>Iron Bank<b><br/><script type="text/javascript" src="http://www66.myfantasyleague.com/2021/embed?L=35217&MODULE=BRIEF_STANDINGS"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>OSD<b><br/><script type="text/javascript" src="http://www59.myfantasyleague.com/2021/embed?L=25608&MODULE=BRIEF_STANDINGS"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>Wise Guys<b><br/><script type="text/javascript" src="http://www56.myfantasyleague.com/2021/embed?L=34850&MODULE=BRIEF_STANDINGS"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>Survivor<b><br/><script type="text/javascript" src="http://www55.myfantasyleague.com/2021/embed?L=23545&MODULE=BRIEF_STANDINGS"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"></td>
+			</tr>
+		</table>
+		</form>
+		</div>
+		<div id="newsView" style="display:none;" class="FFLdiv">
+		<form name="newsForm">
+		<table style="width:100%">
+		<caption>myFFL News</caption>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>MNMx Dynasty<b><br/><script type="text/javascript" src="http://www51.myfantasyleague.com/2021/embed?L=26696&MODULE=MY_NEWS&FRANCHISE=0001&COUNT=10"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>Iron Bank<b><br/><script type="text/javascript" src="http://www66.myfantasyleague.com/2021/embed?L=35217&MODULE=MY_NEWS&FRANCHISE=0004&COUNT=10"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>OSD<b><br/><script type="text/javascript" src="http://www59.myfantasyleague.com/2021/embed?L=25608&MODULE=MY_NEWS&FRANCHISE=0001&COUNT=10"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>Wise Guys<b><br/><script type="text/javascript" src="http://www56.myfantasyleague.com/2021/embed?L=34850&MODULE=MY_NEWS&FRANCHISE=0010&COUNT=10"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>Survivor<b><br/><script type="text/javascript" src="http://www55.myfantasyleague.com/2021/embed?L=23545&MODULE=MY_NEWS&FRANCHISE=0008&COUNT=10"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"></script></td>
+			</tr>
+		</table>
+		</form>
+		</div>
+		<div id="lineupsView" style="display:none;" class="FFLdiv">
+		<form name="lineupsForm">
+		<table style="width:100%">
+		<caption>myFFL Lineups</caption>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>MNMx Dynasty<b><br/><script type="text/javascript" src="http://www51.myfantasyleague.com/2021/embed?L=26696&MODULE=SUBMIT_LINEUP&FRANCHISE=0001"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>Iron Bank<b><br/><script type="text/javascript" src="http://www66.myfantasyleague.com/2021/embed?L=35217&MODULE=SUBMIT_LINEUP&FRANCHISE=0004"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>OSD<b><br/><script type="text/javascript" src="http://www59.myfantasyleague.com/2021/embed?L=25608&MODULE=SUBMIT_LINEUP&FRANCHISE=0001"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>Iron Bank<b><br/><script type="text/javascript" src="http://www56.myfantasyleague.com/2021/embed?L=34850&MODULE=SUBMIT_LINEUP&FRANCHISE=0010"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b>Survivor<b><br/><script type="text/javascript" src="http://www55.myfantasyleague.com/2021/embed?L=23545&MODULE=SUBMIT_LINEUP&FRANCHISE=0008"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"></td>
+			</tr>
+		</table>
+		</form>
+		</div>
+	</body>
+</html>
