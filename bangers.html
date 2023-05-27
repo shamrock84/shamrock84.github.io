@@ -3,9 +3,30 @@
   <head>
     <style>
       .award-plaque {
-        background-color: #f5f5f5;
+        background-color: #eee;
+        border: 2px solid #c0c0c0;
+        border-radius: 10px;
         padding: 20px;
-        border-radius: 5px;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      .award-plaque::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        border-top: 10px solid #c0c0c0;
+        border-left: 10px solid transparent;
+        border-right: 10px solid transparent;
+      }
+
+      h2 {
+        text-align: center;
+        color: #333;
+        font-size: 24px;
+        margin-bottom: 20px;
       }
 
       .award-list {
@@ -17,14 +38,15 @@
       .award-item {
         width: 45%;
         margin-bottom: 20px;
-      }
-
-      h2 {
-        text-align: center;
-        color: #333;
+        background-color: #fff;
+        padding: 10px;
+        border: 1px solid #c0c0c0;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       }
 
       h3 {
+        font-size: 18px;
         margin-bottom: 10px;
       }
 
