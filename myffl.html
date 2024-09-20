@@ -80,16 +80,16 @@
 		.cap_room_available_row th:nth-child(5) { display: none; }
 		</style>
 	</head>
-	<body onload="loadView(scores);">
+	<body onload="loadView("scores");">
 		<form name="viewSelectForm">
 		<br/>
 		<table style="width:100%;text-align:center;">
 		<caption>Select View:</caption>
-		<td><input type="button" name="viewSelect" value="scores" style="display:block;width:100%;" onClick="loadView(scores);highlightTeams('scoresForm')"></td>
-		<td><input type="button" name="viewSelect" value="rosters" style="display:block;width:100%;" onClick="loadView(rosters)"></td>
+		<td><input type="button" name="viewSelect" value="scores" style="display:block;width:100%;" onClick="loadView("scores");highlightTeams('scoresForm')"></td>
+		<td><input type="button" name="viewSelect" value="rosters" style="display:block;width:100%;" onClick="loadView("rosters")"></td>
 		<!--<td><input type="radio" name="viewSelect" value="lineups" onClick="loadView()"></td>-->
-		<td><input type="button" name="viewSelect" value="standings" style="display:block;width:100%;" onClick="loadView(standings);highlightTeams('standingsForm')"></td>
-		<td><input type="button" name="viewSelect" value="bestball" style="display:block;width:100%;" onClick="loadView(bestball);highlightTeams('bestballForm')"></td>
+		<td><input type="button" name="viewSelect" value="standings" style="display:block;width:100%;" onClick="loadView("standings");highlightTeams('standingsForm')"></td>
+		<td><input type="button" name="viewSelect" value="bestball" style="display:block;width:100%;" onClick="loadView("bestball");highlightTeams('bestballForm')"></td>
 		<!--<td><input type="radio" name="viewSelect" value="schedules" onClick="loadView()"></td>
 		<td><input type="radio" name="viewSelect" value="news" onClick="loadView()"></td>-->
 		</table>
