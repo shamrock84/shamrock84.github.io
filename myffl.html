@@ -11,7 +11,7 @@
 			<meta name="theme-color" content="#ffffff">
 		<link rel="stylesheet" id="skin_stylesheet" href="https://www.myfantasyleague.com/skins/norseman/skin.css" type="text/css"  />
 		<script type="text/javascript">
-			function loadView()
+			function loadView(value)
 			{
 				//Hide all views
 				var views = document.getElementsByClassName("FFLdiv");
@@ -20,14 +20,6 @@
 				}
 
 				//Display selected view
-				var value;
-				for (var i=0; i<document.viewSelectForm.viewSelect.length; i++)
-				{
-					if (document.viewSelectForm.viewSelect[i].checked)
-					{
-						value = document.viewSelectForm.viewSelect[i].value;
-					}
-				}
 				document.getElementById(value+"View").style.display = "block";
 
 				//highlight team names if in scores or standings view
@@ -37,19 +29,11 @@
 				}
 				
 				//check for refresh every minute
-				//timeout = setTimeout("refreshView();",60000);
+				//timeout = setTimeout("refreshView(value);",60000);
 			}
 			function refreshView(value)
 			{
 				//Auto refresh in scores view only
-				var value;
-				for (var i=0; i<document.viewSelectForm.viewSelect.length; i++)
-				{
-					if (document.viewSelectForm.viewSelect[i].checked)
-					{
-						value = document.viewSelectForm.viewSelect[i].value;
-					}
-				}
 				if (value == "scores")
 				{
 					window.location.reload();
@@ -101,11 +85,11 @@
 		<br/>
 		<table style="width:100%;text-align:center;">
 		<caption>Select View:</caption>
-		<td><h2><input type="radio" name="viewSelect" value="scores" style="display:block;width:100%;" onClick="loadView();highlightTeams('scoresForm')" checked>SCORES</h2></td>
-		<td><h2><input type="radio" name="viewSelect" value="rosters" style="display:block;width:100%;" onClick="loadView()">ROSTERS</h2></td>
+		<td><h2><input type="button" name="viewSelect" value="scores" style="display:block;width:100%;" onClick="loadView(scores);highlightTeams('scoresForm')">SCORES</h2></td>
+		<td><h2><input type="button" name="viewSelect" value="rosters" style="display:block;width:100%;" onClick="loadView(rosters)">ROSTERS</h2></td>
 		<!--<td><input type="radio" name="viewSelect" value="lineups" onClick="loadView()"></td>-->
-		<td><h2><input type="radio" name="viewSelect" value="standings" style="display:block;width:100%;" onClick="loadView();highlightTeams('standingsForm')">STANDINGS</h2></td>
-		<td><h2><input type="radio" name="viewSelect" value="bestball" style="display:block;width:100%;" onClick="loadView();highlightTeams('bestballForm')">BESTBALL</h2></td>
+		<td><h2><input type="button" name="viewSelect" value="standings" style="display:block;width:100%;" onClick="loadView(standings);highlightTeams('standingsForm')">STANDINGS</h2></td>
+		<td><h2><input type="button" name="viewSelect" value="bestball" style="display:block;width:100%;" onClick="loadView(bestball);highlightTeams('bestballForm')">BESTBALL</h2></td>
 		<!--<td><input type="radio" name="viewSelect" value="schedules" onClick="loadView()"></td>
 		<td><input type="radio" name="viewSelect" value="news" onClick="loadView()"></td>-->
 		</table>
