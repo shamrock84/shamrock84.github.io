@@ -15,7 +15,8 @@
 			{
 				//Hide all views
 				var views = document.getElementsByClassName("FFLdiv");
-				for (var i = 0; i < views .length; i++) { 
+				for (var i = 0; i < views .length; i++) 
+				{ 
 					views[i].style.display = "none";
 				}
 
@@ -47,7 +48,8 @@
 				else
 					tableCells = document.forms[formName].getElementsByTagName("td");
 
-				for (var i = 0; i < tableCells.length; i++) { 
+				for (var i = 0; i < tableCells.length; i++) 
+				{ 
 					var text = tableCells[i].innerHTML.substr(0,200).toUpperCase();
 					if (text.match("RUMBLE FISH") ||
 					    text.match("PC LOAD LETTER") ||
@@ -85,11 +87,11 @@
 		<br/>
 		<table style="width:100%;text-align:center;">
 		<caption>Select View:</caption>
-		<td><input type="button" name="viewSelect" value="scores" style="display:block;width:100%;" onClick="loadView("scores");highlightTeams('scoresForm')"></td>
-		<td><input type="button" name="viewSelect" value="rosters" style="display:block;width:100%;" onClick="loadView("rosters")"></td>
+		<td><input type="submit" name="viewSelect" value="scores" style="display:block;width:100%;" onClick="loadView("scores");highlightTeams('scoresForm')"></td>
+		<td><input type="submit" name="viewSelect" value="rosters" style="display:block;width:100%;" onClick="loadView("rosters")"></td>
 		<!--<td><input type="radio" name="viewSelect" value="lineups" onClick="loadView()"></td>-->
-		<td><input type="button" name="viewSelect" value="standings" style="display:block;width:100%;" onClick="loadView("standings");highlightTeams('standingsForm')"></td>
-		<td><input type="button" name="viewSelect" value="bestball" style="display:block;width:100%;" onClick="loadView("bestball");highlightTeams('bestballForm')"></td>
+		<td><input type="submit" name="viewSelect" value="standings" style="display:block;width:100%;" onClick="loadView("standings");highlightTeams('standingsForm')"></td>
+		<td><input type="submit" name="viewSelect" value="bestball" style="display:block;width:100%;" onClick="loadView("bestball");highlightTeams('bestballForm')"></td>
 		<!--<td><input type="radio" name="viewSelect" value="schedules" onClick="loadView()"></td>
 		<td><input type="radio" name="viewSelect" value="news" onClick="loadView()"></td>-->
 		</table>
