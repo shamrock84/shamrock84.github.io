@@ -15,7 +15,7 @@
 			{
 				//Hide all views
 				var views = document.getElementsByClassName("FFLdiv");
-				for (var i = 0; i < views .length; i++) 
+				for (var i = 0; i < views.length; i++) 
 				{ 
 					views[i].style.display = "none";
 				}
@@ -27,17 +27,6 @@
 				if (value == "scores" || value == "standings")
 				{
 					highlightTeams(value+"Form");
-				}
-				
-				//check for refresh every minute
-				//timeout = setTimeout("refreshView(value);",60000);
-			}
-			function refreshView(value)
-			{
-				//Auto refresh in scores view only
-				if (value == "scores")
-				{
-					window.location.reload();
 				}
 			}
 			function highlightTeams(formName)
