@@ -1,246 +1,274 @@
-<html>
-	<head>
-		<title>myFFL</title>
-		<META HTTP-EQUIV="CACHE-CONTROL" CONTENT="NO-CACHE">
-		<META HTTP-EQUIV="PRAGMA" CONTENT="NO-CACHE">
-		<!--	<link rel="apple-touch-icon" sizes="144x144" href="https://shamrock84.github.io/fflicons/apple-touch-icon.png">	-->
-				<link rel="icon" type="image/png" sizes="32x32" href="https://shamrock84.github.io/fflicons/favicon-32x32.png">
-				<link rel="icon" type="image/png" sizes="16x16" href="https://shamrock84.github.io/fflicons/favicon-16x16.png">
-				<link rel="manifest" href="https://shamrock84.github.io/fflicons/site.webmanifest">
-				<meta name="msapplication-TileColor" content="#da532c">
-				<meta name="theme-color" content="#ffffff">
-		<link rel="stylesheet" id="skin_stylesheet" href="https://www.myfantasyleague.com/skins/norseman/skin.css" type="text/css"  />
-		<script type="text/javascript">
-			function loadView(value)
-			{
-				//Hide all views
-				var views = document.getElementsByClassName("FFLdiv");
-				for (var i = 0; i < views.length; i++) 
-				{ 
-					views[i].style.display = "none";
-				}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>myFFL</title>
+  <meta http-equiv="cache-control" content="no-cache">
+  <meta http-equiv="pragma" content="no-cache">
+  <link rel="icon" type="image/png" sizes="32x32" href="https://shamrock84.github.io/fflicons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="https://shamrock84.github.io/fflicons/favicon-16x16.png">
+  <link rel="manifest" href="https://shamrock84.github.io/fflicons/site.webmanifest">
+  <meta name="msapplication-TileColor" content="#da532c">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="stylesheet" id="skin_stylesheet" href="https://www.myfantasyleague.com/skins/norseman/skin.css" type="text/css" />
 
-				//Display selected view
-				document.getElementById(value+"View").style.display = "block";
+  <style>
+    /* Small, modern layout replacing the old tables with a responsive grid */
+    :root{--gap:12px;--card-min:220px}
+    body{font-family: Arial, Helvetica, sans-serif;margin:1rem;background:#fff;color:#111}
+    header{display:flex;flex-wrap:wrap;align-items:center;gap:1rem;margin-bottom:1rem}
+    .view-buttons{display:flex;gap:.5rem;flex-wrap:wrap}
+    .view-buttons button{padding:.6rem 1rem;border:1px solid #ccc;background:#fafafa;border-radius:6px;cursor:pointer}
+    .view-buttons button[aria-pressed="true"]{background:#e7f3ff;border-color:#6aa8ff}
 
-				//highlight team names if in scores or standings view
-				if (value == "scores" || value == "standings")
-				{
-					highlightTeams(value+"Form");
-				}
-			}
-			function highlightTeams(formName)
-			{
-				var tableCells;
-				if (formName == "standingsForm")
-					tableCells = document.forms[formName].getElementsByClassName("fname");
-				else
-					tableCells = document.forms[formName].getElementsByTagName("td");
+    main{display:block}
+    .view{display:none}
+    .view[aria-hidden="false"]{display:block}
 
-				for (var i = 0; i < tableCells.length; i++) 
-				{ 
-					var text = tableCells[i].innerHTML.substr(0,200).toUpperCase();
-					if (text.match("RUMBLE FISH") ||
-					    text.match("PC LOAD LETTER") ||
-					    text.match("THE MERGE") ||
-					    text.match("HODOR") ||
-					    text.match("CAPO DEI CAPI") ||
-					    text.match("THORGASM") ||
-					    text.match("ALL YOUR BASE ARE BELONG TO US") ||
-					    text.match("BLUE STEEL") ||
-					    text.match("IONATH KRAKENS") ||
-					    text.match("JEFF'S POLISH MALE ORDER") ||
-					    text.match("JLCS BUTT PLUG") ||
-					    text.match("CAMEL TOE CAMO") ||
-					    text.match("ALEXANDER MATTISONS NECK"))
-					{
-						tableCells[i].style.backgroundColor = "yellow";
-						tableCells[i].style.fontWeight = "bold";
-					}
-				}
-			}
-		</script>
+    .leagues-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(var(--card-min),1fr));gap:var(--gap);align-items:start}
+    .league-card{padding:.75rem;border:1px solid #ddd;border-radius:6px;text-align:center;background:#fff}
+    .league-card a{font-weight:700;color:#0b63c6;text-decoration:none}
+    .league-card small{display:block;color:#666;margin-top:.4rem}
 
-		<style>
-		.contractstatus { display:none; }
-		.contractinfo { display:none; }
-		.total_salary_row th:nth-child(4) { display: none; }
-		.total_salary_row th:nth-child(5) { display: none; }
-		.salary_cap_row th:nth-child(4) { display: none; }
-		.salary_cap_row th:nth-child(5) { display: none; }
-		.cap_room_available_row th:nth-child(4) { display: none; }
-		.cap_room_available_row th:nth-child(5) { display: none; }
-		</style>
+    /* Utility spacing to mimic old visual separation between rows */
+    .view caption{font-weight:bold;margin-bottom:.5rem;display:block}
 
-		<!-- Renderer: master array + table builder -->
-		<script>
-		  // Central config: change here if year or path changes
-		  const FFL = {
-		    year: '2026',
-		    homePath: 'home',
-		    // Build the league home URL
-		    urlFor: (host, id) => `https://${host}.myfantasyleague.com/${FFL.year}/${FFL.homePath}/${id}`
-		  };
+    /* Accessibility helper for focus */
+    .view-buttons button:focus{outline:3px solid rgba(100,150,255,.25)}
 
-		  // Master list of leagues. Each entry indicates which views it should appear in.
-		  // Edit/add/remove leagues here and they will appear across all views automatically.
-		  const leagues = [
-		    // leagues used across the main views
-		    { host: 'www43', id: '26696', name: 'MNMx Dynasty', views: ['scores','rosters','schedules','standings','news','lineups'] },
-		    { host: 'www46', id: '35217', name: 'Iron Bank', views: ['scores','rosters','schedules','standings','news','lineups'] },
-		    { host: 'www49', id: '25608', name: 'OSD', views: ['scores','rosters','schedules','standings','news','lineups'] },
-		    { host: 'www46', id: '34850', name: 'Wise Guys', views: ['scores','rosters','schedules','standings','news','lineups'] },
-		    { host: 'www43', id: '23545', name: 'Survivor', views: ['scores','rosters','schedules','standings','news','lineups'] },
-		    { host: 'www47', id: '30641', name: 'Super Cap', views: ['scores','rosters','schedules','standings','news','lineups'] },
-		    { host: 'www43', id: '64470', name: 'Game On', views: ['scores','rosters','schedules','standings','news','lineups'] },
+    /* Hide old table-specific classes if present (preserve some original CSS intents) */
+    .contractstatus{display:none}.contractinfo{display:none}
+  </style>
 
-		    // bestball-only leagues
-		    { host: 'www42', id: '56191', name: 'Worlds Collide', views: ['bestball'] },
-		    { host: 'www43', id: '34203', name: "Rug's Playground", views: ['bestball'] }
-		  ];
+</head>
+<body>
+  <header>
+    <h1 style="margin:0;font-size:1.25rem">myFFL</h1>
+    <nav class="view-buttons" role="tablist" aria-label="Select view">
+      <button data-view="scores" type="button" role="tab">Scores</button>
+      <button data-view="rosters" type="button" role="tab">Rosters</button>
+      <button data-view="standings" type="button" role="tab">Standings</button>
+      <button data-view="bestball" type="button" role="tab">BestBall</button>
+      <button data-view="schedules" type="button" role="tab">Schedules</button>
+      <button data-view="news" type="button" role="tab">News</button>
+      <button data-view="lineups" type="button" role="tab">Lineups</button>
+    </nav>
+  </header>
 
-		  // Build a two-column table HTML from a list of league objects
-		  function buildTableHTML(list) {
-		    let html = '';
-		    for (let i = 0; i < list.length; i += 2) {
-		      const left = list[i];
-		      const right = list[i+1] || null;
+  <main>
+    <!-- Views are semantic sections. Each view contains a grid that will be populated from the centralized leagues array. -->
+    <section id="scoresView" class="view" aria-hidden="true">
+      <caption>myFFL Scores</caption>
+      <div class="leagues-grid" id="scoresGrid" aria-live="polite"></div>
+    </section>
 
-		      html += '<tr>';
-		      html += `<td style="text-align:center;vertical-align:top;width:50%;">${leagueCellHTML(left)}</td>`;
-		      if (right) {
-		        html += `<td style="text-align:center;vertical-align:top;width:50%;">${leagueCellHTML(right)}</td>`;
-		      } else {
-		        html += `<td style="text-align:center;vertical-align:top;width:50%;"></td>`;
-		      }
-		      html += '</tr><br/>';
-		    }
-		    return html;
-		  }
+    <section id="rostersView" class="view" aria-hidden="true">
+      <caption>myFFL Rosters</caption>
+      <div class="leagues-grid" id="rostersGrid" aria-live="polite"></div>
+    </section>
 
-		  // HTML for a single league cell (link + optional widget if provided in the object)
-		  function leagueCellHTML(league) {
-		    if (!league) return '';
-		    const url = FFL.urlFor(league.host, league.id);
-		    let html = `<b><a href="${url}">${escapeHtml(league.name)}</a></b>`;
-		    // Optional: if league.widget is present (a template), render the script tag
-		    if (league.widget) {
-		      // allows {host}, {id}, {year}
-		      const src = league.widget
-		        .replace(/\{host\}/g, league.host)
-		        .replace(/\{id\}/g, league.id)
-		        .replace(/\{year\}/g, FFL.year);
-		      html += `<br/><script type="text/javascript" src="${src}"></script>`;
-		    }
-		    return html;
-		  }
+    <section id="standingsView" class="view" aria-hidden="true">
+      <caption>myFFL Standings</caption>
+      <div class="leagues-grid" id="standingsGrid" aria-live="polite"></div>
+    </section>
 
-		  // Simple HTML escape for names
-		  function escapeHtml(text) {
-		    return String(text)
-		      .replace(/&/g, '&amp;')
-		      .replace(/</g, '&lt;')
-		      .replace(/>/g, '&gt;')
-		      .replace(/"/g, '&quot;')
-		      .replace(/'/g, '&#039;');
-		  }
+    <section id="bestballView" class="view" aria-hidden="true">
+      <caption>myFFL BestBall</caption>
+      <div class="leagues-grid" id="bestballGrid" aria-live="polite"></div>
+    </section>
 
-		  // Render each view's table by selecting leagues that include the view name
-		  function renderAllViews() {
-		    const viewNames = ['scores','bestball','rosters','schedules','standings','news','lineups'];
-		    viewNames.forEach(view => {
-		      const viewList = leagues.filter(l => (l.views || []).indexOf(view) !== -1);
-		      const tbody = document.getElementById(view + 'TableBody');
-		      if (tbody) {
-		        // replace table body innerHTML
-		        tbody.innerHTML = buildTableHTML(viewList);
-		      }
-		    });
-		  }
+    <section id="schedulesView" class="view" aria-hidden="true">
+      <caption>myFFL Schedules</caption>
+      <div class="leagues-grid" id="schedulesGrid" aria-live="polite"></div>
+    </section>
 
-		  // Run on DOM ready and then show the default view
-		  document.addEventListener('DOMContentLoaded', function() {
-		    renderAllViews();
-		    // default view (matches previous onload)
-		    loadView('rosters');
-		  });
-		</script>
-	</head>
-	<body><!-- renderer now runs on DOMContentLoaded -->
-		<form name="viewSelectForm">
-		<br/>
-		<table style="width:100%;text-align:center;">
-		<caption>Select View:</caption>
-		<td><h2><input type="button" name="viewSelect" value="scores" style="display:block;width:100%;" onClick="loadView('scores');highlightTeams('scoresForm')"></h2></td>
-		<td><h2><input type="button" name="viewSelect" value="rosters" style="display:block;width:100%;" onClick="loadView('rosters')"></h2></td>
-		<td><h2><input type="button" name="viewSelect" value="standings" style="display:block;width:100%;" onClick="loadView('standings');highlightTeams('standingsForm')"></h2></td>
-		<td><h2><input type="button" name="viewSelect" value="bestball" style="display:block;width:100%;" onClick="loadView('bestball');highlightTeams('bestballForm')"></h2></td>
-		</table>
-		</form>
-		<br/><br/>
+    <section id="newsView" class="view" aria-hidden="true">
+      <caption>myFFL News</caption>
+      <div class="leagues-grid" id="newsGrid" aria-live="polite"></div>
+    </section>
 
-		<!-- Each view's table includes an empty tbody with id="<view>TableBody" -->
-		<div id="scoresView" style="display:none;" class="FFLdiv">
-		<form name="scoresForm">
-		<table style="width:100%">
-		<caption>myFFL Scores</caption>
-			<tbody id="scoresTableBody"></tbody>
-		</table>
-		</form>
-		</div>
+    <section id="lineupsView" class="view" aria-hidden="true">
+      <caption>myFFL Lineups</caption>
+      <div class="leagues-grid" id="lineupsGrid" aria-live="polite"></div>
+    </section>
+  </main>
 
-		<div id="bestballView" style="display:none;" class="FFLdiv">
-		<form name="bestballForm">
-		<table style="width:100%">
-		<caption>myFFL BestBall</caption>
-			<tbody id="bestballTableBody"></tbody>
-		</table>
-		</form>
-		</div>
+  <script>
+  (function(){
+    'use strict';
 
-		<div id="rostersView" style="display:none;" class="FFLdiv">
-		<form name="rostersForm">
-		<table style="width:100%">
-		<caption>myFFL Rosters</caption>
-			<tbody id="rostersTableBody"></tbody>
-		</table>
-		</form>
-		</div>
+    // Central config: change here if year or path changes
+    const FFL = {
+      year: '2026',
+      homePath: 'home',
+      urlFor(host, id){ return `https://${host}.myfantasyleague.com/${this.year}/${this.homePath}/${id}` }
+    };
 
-		<div id="schedulesView" style="display:none;" class="FFLdiv">
-		<form name="schedulesForm">
-		<table style="width:100%">
-		<caption>myFFL Schedules</caption>
-			<tbody id="schedulesTableBody"></tbody>
-		</table>
-		</form>
-		</div>
+    // Master list of leagues. Edit here to change every view.
+    const leagues = [
+      { host: 'www43', id: '26696', name: 'MNMx Dynasty', views: ['scores','rosters','schedules','standings','news','lineups'] },
+      { host: 'www46', id: '35217', name: 'Iron Bank', views: ['scores','rosters','schedules','standings','news','lineups'] },
+      { host: 'www49', id: '25608', name: 'OSD', views: ['scores','rosters','schedules','standings','news','lineups'] },
+      { host: 'www46', id: '34850', name: 'Wise Guys', views: ['scores','rosters','schedules','standings','news','lineups'] },
+      { host: 'www43', id: '23545', name: 'Survivor', views: ['scores','rosters','schedules','standings','news','lineups'] },
+      { host: 'www47', id: '30641', name: 'Super Cap', views: ['scores','rosters','schedules','standings','news','lineups'] },
+      { host: 'www43', id: '64470', name: 'Game On', views: ['scores','rosters','schedules','standings','news','lineups'] },
+      { host: 'www42', id: '56191', name: 'Worlds Collide', views: ['bestball'] },
+      { host: 'www43', id: '34203', name: "Rug's Playground", views: ['bestball'] }
+    ];
 
-		<div id="standingsView" style="display:none;" class="FFLdiv">
-		<form name="standingsForm">
-		<table style="width:100%">
-		<caption>myFFL Standings</caption>
-			<tbody id="standingsTableBody"></tbody>
-		</table>
-		</form>
-		</div>
+    // If you want per-league widget scripts, add a widget template string to the league object, e.g.
+    // widget: 'https://{host}.myfantasyleague.com/{year}/widgets/small.js'
 
-		<div id="newsView" style="display:none;" class="FFLdiv">
-		<form name="newsForm">
-		<table style="width:100%">
-		<caption>myFFL News</caption>
-			<tbody id="newsTableBody"></tbody>
-		</table>
-		</form>
-		</div>
+    // Keep track of which views we've rendered and which widgets we've injected
+    const renderedViews = new Set();
+    const injectedWidgets = new Set();
 
-		<div id="lineupsView" style="display:none;" class="FFLdiv">
-		<form name="lineupsForm">
-		<table style="width:100%">
-		<caption>myFFL Lineups</caption>
-			<tbody id="lineupsTableBody"></tbody>
-		</table>
-		</form>
-		</div>
-	</body>
+    // Build DOM nodes safely (no innerHTML insertion of untrusted content)
+    function createLeagueCard(league){
+      const card = document.createElement('article');
+      card.className = 'league-card';
+
+      const link = document.createElement('a');
+      link.href = FFL.urlFor(league.host, league.id);
+      link.textContent = league.name;
+      link.rel = 'noopener noreferrer';
+      link.target = '_blank';
+      link.setAttribute('aria-label', `${league.name} (opens in new tab)`);
+
+      const meta = document.createElement('small');
+      meta.textContent = `${league.host}.myfantasyleague.com / ${league.id}`;
+
+      card.appendChild(link);
+      card.appendChild(meta);
+
+      // If a widget template exists, store it as data and inject when view is shown (lazy)
+      if (league.widget){
+        card.dataset.widget = league.widget;
+        card.dataset.widgetHost = league.host;
+        card.dataset.widgetId = league.id;
+      }
+
+      return card;
+    }
+
+    // Render a single view into its grid element. This is safe and idempotent: if already rendered, no-op.
+    function renderView(view){
+      if (renderedViews.has(view)) return;
+      const grid = document.getElementById(view + 'Grid');
+      if (!grid) return;
+
+      const list = leagues.filter(l => (l.views || []).indexOf(view) !== -1);
+      // Create cards and append
+      list.forEach(league => {
+        const card = createLeagueCard(league);
+        grid.appendChild(card);
+      });
+
+      renderedViews.add(view);
+    }
+
+    // Inject widget scripts lazily for a view (only once)
+    function injectWidgetsForView(view){
+      if (injectedWidgets.has(view)) return;
+      const grid = document.getElementById(view + 'Grid');
+      if (!grid) return;
+
+      // Find child cards that have widget data
+      grid.querySelectorAll('[data-widget]').forEach(card => {
+        const template = card.dataset.widget;
+        if (!template) return;
+        // Replace tokens with safe known values
+        const src = template.replace(/\{host\}/g, card.dataset.widgetHost)
+                            .replace(/\{id\}/g, card.dataset.widgetId)
+                            .replace(/\{year\}/g, FFL.year);
+        try{
+          const script = document.createElement('script');
+          script.type = 'text/javascript';
+          script.src = src;
+          script.async = true;
+          // Append script to the card so its scope is local to the view
+          card.appendChild(document.createElement('hr'));
+          card.appendChild(script);
+        }catch(e){
+          // If a widget fails to create, skip it
+          console.error('Widget injection failed for', src, e);
+        }
+      });
+
+      injectedWidgets.add(view);
+    }
+
+    // Highlight team names by searching visible league cards' text
+    function highlightTeamsInView(view){
+      const viewSection = document.getElementById(view + 'View');
+      if (!viewSection) return;
+      const teamNames = [
+        'RUMBLE FISH','PC LOAD LETTER','THE MERGE','HODOR','CAPO DEI CAPI','THORGASM',
+        'ALL YOUR BASE ARE BELONG TO US','BLUE STEEL','IONATH KRAKENS','JEFF\'S POLISH MALE ORDER',
+        'JLCS BUTT PLUG','CAMEL TOE CAMO','ALEXANDER MATTISONS NECK'
+      ];
+
+      // Find all links inside the view and check their textContent
+      viewSection.querySelectorAll('.league-card a').forEach(a => {
+        const text = (a.textContent || '').toUpperCase();
+        const match = teamNames.some(name => text.indexOf(name) !== -1);
+        if (match){
+          const card = a.closest('.league-card');
+          if (card){card.style.backgroundColor = 'yellow'; card.style.fontWeight = 'bold';}
+        }
+      });
+    }
+
+    // Show and hide views; attach ARIA states for accessibility
+    function showView(view){
+      // Render content for the view if needed
+      renderView(view);
+      // Inject widgets for this view lazily
+      injectWidgetsForView(view);
+
+      // Update visibility and ARIA
+      document.querySelectorAll('.view').forEach(sec => {
+        const hidden = sec.id !== view + 'View';
+        sec.setAttribute('aria-hidden', hidden ? 'true' : 'false');
+      });
+
+      // Update tab buttons pressed state
+      document.querySelectorAll('.view-buttons button').forEach(btn => {
+        const isPressed = btn.dataset.view === view;
+        btn.setAttribute('aria-pressed', isPressed ? 'true' : 'false');
+      });
+
+      // perform team highlighting for scores or standings
+      if (view === 'scores' || view === 'standings') highlightTeamsInView(view);
+    }
+
+    // Wire up view buttons (no inline handlers)
+    function wireViewButtons(){
+      document.querySelectorAll('.view-buttons button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const view = btn.dataset.view;
+          if (!view) return;
+          showView(view);
+        });
+      });
+    }
+
+    // Public init
+    document.addEventListener('DOMContentLoaded', () => {
+      wireViewButtons();
+      // Pre-render all views but keep them hidden to make first switch instantaneous.
+      // Alternatively, you could only render the default and render others on demand; we render on demand in renderView.
+
+      // Default view
+      showView('rosters');
+    });
+
+    // Expose some diagnostics to window for debugging (safe, non-critical)
+    window._myffl = { FFL, leagues, renderView };
+
+  })();
+  </script>
+</body>
 </html>
