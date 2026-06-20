@@ -30,6 +30,7 @@
     .league-card{padding:.75rem;border:1px solid #ddd;border-radius:6px;text-align:center;background:#fff}
     .league-card a{font-weight:700;color:#0b63c6;text-decoration:none}
     .league-card small{display:block;color:#666;margin-top:.4rem}
+    .league-card iframe{margin-top:.5rem;width:100%;border:none;border-radius:4px}
 
     /* Utility spacing to mimic old visual separation between rows */
     .view caption{font-weight:bold;margin-bottom:.5rem;display:block}
@@ -105,18 +106,28 @@
       urlFor(host, id){ return `https://${host}.myfantasyleague.com/${this.year}/${this.homePath}/${id}` }
     };
 
+    // View-specific widget embed URL templates
+    const widgetTemplates = {
+      scores: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=LIVESCORING_SUMMARY',
+      standings: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=STANDINGS',
+      rosters: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=ROSTER&FRANCHISE={franchise}',
+      schedules: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=FRANCHISE_SCHEDULE&FRANCHISE={franchise}',
+      news: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=MY_NEWS&FRANCHISE={franchise}&COUNT=10',
+      lineups: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=SUBMIT_LINEUP&FRANCHISE={franchise}',
+      bestball: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=BRIEF_STANDINGS'
+    };
+
     // Master list of leagues. Edit here to change every view.
-    // Widget templates: scores/standings use base URL, others include {franchise} parameter
     const leagues = [
-      { host: 'www43', id: '26696', name: 'MNMx Dynasty', franchise: '0001', views: ['scores','rosters','schedules','standings','news','lineups'], scoresStandingsWidget: 'https://{host}.myfantasyleague.com/{year}/widgets/small.js', otherWidget: 'https://{host}.myfantasyleague.com/{year}/widgets/small.js?franchise={franchise}' },
-      { host: 'www46', id: '35217', name: 'Iron Bank', franchise: '0004', views: ['scores','rosters','schedules','standings','news','lineups'], scoresStandingsWidget: 'https://{host}.myfantasyleague.com/{year}/widgets/small.js', otherWidget: 'https://{host}.myfantasyleague.com/{year}/widgets/small.js?franchise={franchise}' },
-      { host: 'www49', id: '25608', name: 'OSD', franchise: '0004', views: ['scores','rosters','schedules','standings','news','lineups'], scoresStandingsWidget: 'https://{host}.myfantasyleague.com/{year}/widgets/small.js', otherWidget: 'https://{host}.myfantasyleague.com/{year}/widgets/small.js?franchise={franchise}' },
-      { host: 'www46', id: '34850', name: 'Wise Guys', franchise: '0010', views: ['scores','rosters','schedules','standings','news','lineups'], scoresStandingsWidget: 'https://{host}.myfantasyleague.com/{year}/widgets/small.js', otherWidget: 'https://{host}.myfantasyleague.com/{year}/widgets/small.js?franchise={franchise}' },
-      { host: 'www43', id: '23545', name: 'Survivor', franchise: '0008', views: ['scores','rosters','schedules','standings','news','lineups'], scoresStandingsWidget: 'https://{host}.myfantasyleague.com/{year}/widgets/small.js', otherWidget: 'https://{host}.myfantasyleague.com/{year}/widgets/small.js?franchise={franchise}' },
-      { host: 'www47', id: '30641', name: 'Super Cap', franchise: '0003', views: ['scores','rosters','schedules','standings','news','lineups'], scoresStandingsWidget: 'https://{host}.myfantasyleague.com/{year}/widgets/small.js', otherWidget: 'https://{host}.myfantasyleague.com/{year}/widgets/small.js?franchise={franchise}' },
-      { host: 'www43', id: '64470', name: 'Game On', franchise: '0005', views: ['scores','rosters','schedules','standings','news','lineups'], scoresStandingsWidget: 'https://{host}.myfantasyleague.com/{year}/widgets/small.js', otherWidget: 'https://{host}.myfantasyleague.com/{year}/widgets/small.js?franchise={franchise}' },
-      { host: 'www42', id: '56191', name: 'Worlds Collide', franchise: '0008', views: ['bestball'], otherWidget: 'https://{host}.myfantasyleague.com/{year}/widgets/small.js?franchise={franchise}' },
-      { host: 'www43', id: '34203', name: "Rug's Playground", franchise: '0009', views: ['bestball'], otherWidget: 'https://{host}.myfantasyleague.com/{year}/widgets/small.js?franchise={franchise}' }
+      { host: 'www43', id: '26696', name: 'MNMx Dynasty', franchise: '0001', views: ['scores','rosters','schedules','standings','news','lineups'] },
+      { host: 'www46', id: '35217', name: 'Iron Bank', franchise: '0004', views: ['scores','rosters','schedules','standings','news','lineups'] },
+      { host: 'www49', id: '25608', name: 'OSD', franchise: '0004', views: ['scores','rosters','schedules','standings','news','lineups'] },
+      { host: 'www46', id: '34850', name: 'Wise Guys', franchise: '0010', views: ['scores','rosters','schedules','standings','news','lineups'] },
+      { host: 'www43', id: '23545', name: 'Survivor', franchise: '0008', views: ['scores','rosters','schedules','standings','news','lineups'] },
+      { host: 'www47', id: '30641', name: 'Super Cap', franchise: '0003', views: ['scores','rosters','schedules','standings','news','lineups'] },
+      { host: 'www43', id: '64470', name: 'Game On', franchise: '0005', views: ['scores','rosters','schedules','standings','news','lineups'] },
+      { host: 'www42', id: '56191', name: 'Worlds Collide', franchise: '0008', views: ['bestball'] },
+      { host: 'www43', id: '34203', name: "Rug's Playground", franchise: '0009', views: ['bestball'] }
     ];
 
     // Keep track of which views we've rendered and which widgets we've injected
@@ -124,7 +135,7 @@
     const injectedWidgets = new Set();
 
     // Build DOM nodes safely (no innerHTML insertion of untrusted content)
-    function createLeagueCard(league, view){
+    function createLeagueCard(league){
       const card = document.createElement('article');
       card.className = 'league-card';
 
@@ -141,21 +152,10 @@
       card.appendChild(link);
       card.appendChild(meta);
 
-      // Determine widget URL based on view type
-      let widgetTemplate = null;
-      if (view === 'scores' || view === 'standings') {
-        widgetTemplate = league.scoresStandingsWidget;
-      } else {
-        widgetTemplate = league.otherWidget;
-      }
-
-      // If a widget template exists, store it as data and inject when view is shown (lazy)
-      if (widgetTemplate){
-        card.dataset.widget = widgetTemplate;
-        card.dataset.widgetHost = league.host;
-        card.dataset.widgetId = league.id;
-        card.dataset.widgetFranchise = league.franchise || '';
-      }
+      // Store league data for widget injection
+      card.dataset.widgetHost = league.host;
+      card.dataset.widgetId = league.id;
+      card.dataset.widgetFranchise = league.franchise || '';
 
       return card;
     }
@@ -169,39 +169,39 @@
       const list = leagues.filter(l => (l.views || []).indexOf(view) !== -1);
       // Create cards and append
       list.forEach(league => {
-        const card = createLeagueCard(league, view);
+        const card = createLeagueCard(league);
         grid.appendChild(card);
       });
 
       renderedViews.add(view);
     }
 
-    // Inject widget scripts lazily for a view (only once)
+    // Inject widget iframes lazily for a view (only once)
     function injectWidgetsForView(view){
       if (injectedWidgets.has(view)) return;
       const grid = document.getElementById(view + 'Grid');
       if (!grid) return;
 
-      // Find child cards that have widget data
-      grid.querySelectorAll('[data-widget]').forEach(card => {
-        const template = card.dataset.widget;
-        if (!template) return;
+      const template = widgetTemplates[view];
+      if (!template) return;
+
+      // Find all cards in this view and inject iframes
+      grid.querySelectorAll('.league-card').forEach(card => {
         // Replace tokens with safe known values
         const src = template.replace(/\{host\}/g, card.dataset.widgetHost)
                             .replace(/\{id\}/g, card.dataset.widgetId)
                             .replace(/\{franchise\}/g, card.dataset.widgetFranchise)
                             .replace(/\{year\}/g, FFL.year);
         try{
-          const script = document.createElement('script');
-          script.type = 'text/javascript';
-          script.src = src;
-          script.async = true;
-          // Append script to the card so its scope is local to the view
-          card.appendChild(document.createElement('hr'));
-          card.appendChild(script);
+          const iframe = document.createElement('iframe');
+          iframe.src = src;
+          iframe.setAttribute('scrolling', 'no');
+          iframe.setAttribute('frameborder', '0');
+          iframe.setAttribute('style', 'height: 400px; width: 100%;');
+          card.appendChild(iframe);
         }catch(e){
-          // If a widget fails to create, skip it
-          console.error('Widget injection failed for', src, e);
+          // If an iframe fails to create, skip it
+          console.error('Widget iframe injection failed for', src, e);
         }
       });
 
