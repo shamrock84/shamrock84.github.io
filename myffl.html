@@ -105,15 +105,15 @@
       urlFor(host, id){ return `https://${host}.myfantasyleague.com/${this.year}/${this.homePath}/${id}` }
     };
 
-    // View-specific widget script URL templates
-    const widgetTemplates = {
-      scores: 'https://{host}.myfantasyleague.com/{year}/widgets/scoresummary?L={id}',
-      standings: 'https://{host}.myfantasyleague.com/{year}/widgets/standings?L={id}',
-      rosters: 'https://{host}.myfantasyleague.com/{year}/widgets/roster?L={id}&F={franchise}',
-      schedules: 'https://{host}.myfantasyleague.com/{year}/widgets/schedule?L={id}&F={franchise}',
-      news: 'https://{host}.myfantasyleague.com/{year}/widgets/news?L={id}&F={franchise}',
-      lineups: 'https://{host}.myfantasyleague.com/{year}/widgets/lineup?L={id}&F={franchise}',
-      bestball: 'https://{host}.myfantasyleague.com/{year}/widgets/standings?L={id}'
+    // View-specific embed URL templates
+    const embedTemplates = {
+      scores: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=LIVESCORING_SUMMARY',
+      standings: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=STANDINGS',
+      rosters: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=ROSTER&FRANCHISE={franchise}',
+      schedules: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=FRANCHISE_SCHEDULE&FRANCHISE={franchise}',
+      news: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=MY_NEWS&FRANCHISE={franchise}&COUNT=10',
+      lineups: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=SUBMIT_LINEUP&FRANCHISE={franchise}',
+      bestball: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=BRIEF_STANDINGS'
     };
 
     // Master list of leagues. Edit here to change every view.
@@ -175,33 +175,37 @@
       renderedViews.add(view);
     }
 
-    // Inject widget scripts lazily for a view (only once)
+    // Inject widget embeds lazily for a view (only once)
     function injectWidgetsForView(view){
       if (injectedWidgets.has(view)) return;
       const grid = document.getElementById(view + 'Grid');
       if (!grid) return;
 
-      const template = widgetTemplates[view];
+      const template = embedTemplates[view];
       if (!template) return;
 
-      // Find all cards in this view and inject scripts
+      // Find all cards in this view and inject embeds
       grid.querySelectorAll('.league-card').forEach(card => {
         // Replace tokens with safe known values
-        const src = template.replace(/\{host\}/g, card.dataset.widgetHost)
-                            .replace(/\{id\}/g, card.dataset.widgetId)
-                            .replace(/\{franchise\}/g, card.dataset.widgetFranchise)
-                            .replace(/\{year\}/g, FFL.year);
+        const embedUrl = template.replace(/\{host\}/g, card.dataset.widgetHost)
+                                 .replace(/\{id\}/g, card.dataset.widgetId)
+                                 .replace(/\{franchise\}/g, card.dataset.widgetFranchise)
+                                 .replace(/\{year\}/g, FFL.year);
         try{
-          const script = document.createElement('script');
-          script.type = 'text/javascript';
-          script.src = src;
-          script.async = true;
-          // Append script to the card so its scope is local to the view
+          // Create an iframe to load the embed URL
+          const iframe = document.createElement('iframe');
+          iframe.src = embedUrl;
+          iframe.setAttribute('scrolling', 'no');
+          iframe.setAttribute('frameborder', '0');
+          iframe.style.width = '100%';
+          iframe.style.height = '500px';
+          iframe.style.marginTop = '0.5rem';
+          
           card.appendChild(document.createElement('hr'));
-          card.appendChild(script);
+          card.appendChild(iframe);
         }catch(e){
-          // If a script fails to create, skip it
-          console.error('Widget script injection failed for', src, e);
+          // If an embed fails to create, skip it
+          console.error('Widget embed injection failed for', embedUrl, e);
         }
       });
 
