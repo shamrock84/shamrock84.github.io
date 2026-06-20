@@ -30,6 +30,8 @@
     .league-card{padding:.75rem;border:1px solid #ddd;border-radius:6px;text-align:center;background:#fff}
     .league-card a{font-weight:700;color:#0b63c6;text-decoration:none}
     .league-card small{display:block;color:#666;margin-top:.4rem}
+    .league-card .widget-container{margin-top:0.5rem;border-top:1px solid #ddd;padding-top:0.5rem}
+    .league-card .widget-container table{width:100%;font-size:0.85rem}
 
     /* Utility spacing to mimic old visual separation between rows */
     .view caption{font-weight:bold;margin-bottom:.5rem;display:block}
@@ -175,8 +177,19 @@
       renderedViews.add(view);
     }
 
+    // Extract HTML from document.write() calls
+    function extractHtmlFromDocumentWrite(scriptContent) {
+      // Match document.write('...') patterns and extract the HTML
+      const match = scriptContent.match(/document\.write\('([^']*)'\)/);
+      if (match && match[1]) {
+        // Unescape the escaped characters
+        return match[1].replace(/\\'/g, "'").replace(/\\/g, '');
+      }
+      return null;
+    }
+
     // Inject widget embeds lazily for a view (only once)
-    function injectWidgetsForView(view){
+    async function injectWidgetsForView(view){
       if (injectedWidgets.has(view)) return;
       const grid = document.getElementById(view + 'Grid');
       if (!grid) return;
@@ -184,29 +197,32 @@
       const template = embedTemplates[view];
       if (!template) return;
 
-      // Find all cards in this view and inject embeds
+      // Find all cards in this view and fetch/inject embeds
       grid.querySelectorAll('.league-card').forEach(card => {
         // Replace tokens with safe known values
         const embedUrl = template.replace(/\{host\}/g, card.dataset.widgetHost)
                                  .replace(/\{id\}/g, card.dataset.widgetId)
                                  .replace(/\{franchise\}/g, card.dataset.widgetFranchise)
                                  .replace(/\{year\}/g, FFL.year);
-        try{
-          // Create an iframe to load the embed URL
-          const iframe = document.createElement('iframe');
-          iframe.src = embedUrl;
-          iframe.setAttribute('scrolling', 'no');
-          iframe.setAttribute('frameborder', '0');
-          iframe.style.width = '100%';
-          iframe.style.height = '500px';
-          iframe.style.marginTop = '0.5rem';
-          
-          card.appendChild(document.createElement('hr'));
-          card.appendChild(iframe);
-        }catch(e){
-          // If an embed fails to create, skip it
-          console.error('Widget embed injection failed for', embedUrl, e);
-        }
+        
+        // Fetch the embed content
+        fetch(embedUrl)
+          .then(response => response.text())
+          .then(html => {
+            // Extract HTML from document.write() call
+            const extractedHtml = extractHtmlFromDocumentWrite(html);
+            if (extractedHtml) {
+              const container = document.createElement('div');
+              container.className = 'widget-container';
+              container.innerHTML = extractedHtml;
+              card.appendChild(container);
+            } else {
+              console.warn('Could not extract HTML from', embedUrl);
+            }
+          })
+          .catch(e => {
+            console.error('Widget embed fetch failed for', embedUrl, e);
+          });
       });
 
       injectedWidgets.add(view);
