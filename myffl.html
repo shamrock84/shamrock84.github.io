@@ -30,7 +30,6 @@
     .league-card{padding:.75rem;border:1px solid #ddd;border-radius:6px;text-align:center;background:#fff}
     .league-card a{font-weight:700;color:#0b63c6;text-decoration:none}
     .league-card small{display:block;color:#666;margin-top:.4rem}
-    .league-card iframe{margin-top:.5rem;width:100%;border:none;border-radius:4px}
 
     /* Utility spacing to mimic old visual separation between rows */
     .view caption{font-weight:bold;margin-bottom:.5rem;display:block}
@@ -106,15 +105,15 @@
       urlFor(host, id){ return `https://${host}.myfantasyleague.com/${this.year}/${this.homePath}/${id}` }
     };
 
-    // View-specific widget embed URL templates
+    // View-specific widget script URL templates
     const widgetTemplates = {
-      scores: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=LIVESCORING_SUMMARY',
-      standings: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=STANDINGS',
-      rosters: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=ROSTER&FRANCHISE={franchise}',
-      schedules: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=FRANCHISE_SCHEDULE&FRANCHISE={franchise}',
-      news: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=MY_NEWS&FRANCHISE={franchise}&COUNT=10',
-      lineups: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=SUBMIT_LINEUP&FRANCHISE={franchise}',
-      bestball: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=BRIEF_STANDINGS'
+      scores: 'https://{host}.myfantasyleague.com/{year}/widgets/scoresummary?L={id}',
+      standings: 'https://{host}.myfantasyleague.com/{year}/widgets/standings?L={id}',
+      rosters: 'https://{host}.myfantasyleague.com/{year}/widgets/roster?L={id}&F={franchise}',
+      schedules: 'https://{host}.myfantasyleague.com/{year}/widgets/schedule?L={id}&F={franchise}',
+      news: 'https://{host}.myfantasyleague.com/{year}/widgets/news?L={id}&F={franchise}',
+      lineups: 'https://{host}.myfantasyleague.com/{year}/widgets/lineup?L={id}&F={franchise}',
+      bestball: 'https://{host}.myfantasyleague.com/{year}/widgets/standings?L={id}'
     };
 
     // Master list of leagues. Edit here to change every view.
@@ -176,7 +175,7 @@
       renderedViews.add(view);
     }
 
-    // Inject widget iframes lazily for a view (only once)
+    // Inject widget scripts lazily for a view (only once)
     function injectWidgetsForView(view){
       if (injectedWidgets.has(view)) return;
       const grid = document.getElementById(view + 'Grid');
@@ -185,7 +184,7 @@
       const template = widgetTemplates[view];
       if (!template) return;
 
-      // Find all cards in this view and inject iframes
+      // Find all cards in this view and inject scripts
       grid.querySelectorAll('.league-card').forEach(card => {
         // Replace tokens with safe known values
         const src = template.replace(/\{host\}/g, card.dataset.widgetHost)
@@ -193,15 +192,16 @@
                             .replace(/\{franchise\}/g, card.dataset.widgetFranchise)
                             .replace(/\{year\}/g, FFL.year);
         try{
-          const iframe = document.createElement('iframe');
-          iframe.src = src;
-          iframe.setAttribute('scrolling', 'no');
-          iframe.setAttribute('frameborder', '0');
-          iframe.setAttribute('style', 'height: 400px; width: 100%;');
-          card.appendChild(iframe);
+          const script = document.createElement('script');
+          script.type = 'text/javascript';
+          script.src = src;
+          script.async = true;
+          // Append script to the card so its scope is local to the view
+          card.appendChild(document.createElement('hr'));
+          card.appendChild(script);
         }catch(e){
-          // If an iframe fails to create, skip it
-          console.error('Widget iframe injection failed for', src, e);
+          // If a script fails to create, skip it
+          console.error('Widget script injection failed for', src, e);
         }
       });
 
