@@ -177,25 +177,28 @@
       renderedViews.add(view);
     }
 
-    // Extract HTML from document.write() call - try multiple patterns
+    // Extract HTML from document.write() call - improved regex handling
     function extractHtmlFromDocumentWrite(scriptContent) {
       if (!scriptContent) return null;
       
-      // Try pattern 1: document.write('...');
-      let match = scriptContent.match(/document\.write\('(.+?)'\);?/s);
+      // The key fix: use greedy matching (.+?) to capture everything between quotes and );
+      // Pattern: document.write('...')  or document.write("...")
+      // The closing can be '); or just )
+      
+      // Try pattern 1: document.write('...'); with single quotes
+      let match = scriptContent.match(/document\.write\('([\s\S]*?)'\)\s*;?/);
       if (match && match[1]) {
         return unescapeHtml(match[1]);
       }
       
-      // Try pattern 2: document.write("...");
-      match = scriptContent.match(/document\.write\("(.+?)"\);?/s);
+      // Try pattern 2: document.write("..."); with double quotes
+      match = scriptContent.match(/document\.write\("([\s\S]*?)"\)\s*;?/);
       if (match && match[1]) {
         return unescapeHtml(match[1]);
       }
       
       // Try pattern 3: Look for raw HTML tables directly (sometimes returned without document.write)
       if (scriptContent.includes('<table')) {
-        // Extract from first <table to its closing </table>
         const tableStart = scriptContent.indexOf('<table');
         if (tableStart !== -1) {
           const tableEnd = scriptContent.indexOf('</table>', tableStart);
@@ -256,9 +259,6 @@
             // allorigins returns the content in the 'contents' field
             const scriptContent = data.contents;
             if (scriptContent) {
-              // LOG RAW RESPONSE for debugging
-              console.log(`[${view}] ${leagueName} - Raw response (first 500 chars):`, scriptContent.substring(0, 500));
-              
               // Extract HTML from document.write() call or raw HTML
               const html = extractHtmlFromDocumentWrite(scriptContent);
               if (html) {
@@ -269,14 +269,14 @@
                 card.appendChild(container);
                 console.log(`✓ Widget loaded for ${leagueName} view: ${view}`);
               } else {
-                console.warn(`✗ Could not extract HTML for [${view}] ${leagueName}. Response pattern unknown. First 300 chars: ${scriptContent.substring(0, 300)}`);
+                console.warn(`✗ Could not extract HTML for [${view}] ${leagueName}. Response pattern unknown.`);
               }
             } else {
               console.error(`✗ No contents in response for [${view}] ${leagueName}`);
             }
           })
           .catch(e => {
-            console.error(`✗ Widget embed fetch failed for [${view}] ${leagueName} at ${embedUrl}:`, e);
+            console.error(`✗ Widget embed fetch failed for [${view}] ${leagueName}:`, e);
           });
       });
 
