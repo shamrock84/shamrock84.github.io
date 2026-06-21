@@ -31,7 +31,7 @@
     .league-card a{font-weight:700;color:#0b63c6;text-decoration:none}
     .league-card small{display:block;color:#666;margin-top:.4rem}
     .league-card .widget-container{margin-top:0.5rem;border-top:1px solid #ddd;padding-top:0.5rem;overflow-x:auto}
-    .league-card .widget-container table{width:100%;font-size:0.85rem;border-collapse:collapse}
+    .league-card .widget-container iframe{width:100%;border:none;background:#fff}
 
     /* Utility spacing to mimic old visual separation between rows */
     .view caption{font-weight:bold;margin-bottom:.5rem;display:block}
@@ -177,61 +177,7 @@
       renderedViews.add(view);
     }
 
-    // Extract HTML from document.write() call - improved regex handling
-    function extractHtmlFromDocumentWrite(scriptContent) {
-      if (!scriptContent) return null;
-      
-      // The key fix: use greedy matching (.+?) to capture everything between quotes and );
-      // Pattern: document.write('...')  or document.write("...")
-      // The closing can be '); or just )
-      
-      // Try pattern 1: document.write('...'); with single quotes
-      let match = scriptContent.match(/document\.write\('([\s\S]*?)'\)\s*;?/);
-      if (match && match[1]) {
-        return unescapeHtml(match[1]);
-      }
-      
-      // Try pattern 2: document.write("..."); with double quotes
-      match = scriptContent.match(/document\.write\("([\s\S]*?)"\)\s*;?/);
-      if (match && match[1]) {
-        return unescapeHtml(match[1]);
-      }
-      
-      // Try pattern 3: Look for raw HTML tables directly (sometimes returned without document.write)
-      if (scriptContent.includes('<table')) {
-        const tableStart = scriptContent.indexOf('<table');
-        if (tableStart !== -1) {
-          const tableEnd = scriptContent.indexOf('</table>', tableStart);
-          if (tableEnd !== -1) {
-            return scriptContent.substring(tableStart, tableEnd + 8);
-          }
-        }
-      }
-      
-      return null;
-    }
-
-    // Unescape HTML entities and escape sequences
-    function unescapeHtml(html) {
-      if (!html) return '';
-      
-      // Remove newlines and extra whitespace
-      html = html.replace(/\\n/g, '');
-      
-      // Unescape quotes
-      html = html.replace(/\\'/g, "'");
-      html = html.replace(/\\"/g, '"');
-      
-      // Remove stray backslashes (but preserve intentional ones like \n that were already processed)
-      html = html.replace(/\\(?![nrt])/g, '');
-      
-      // Decode HTML entities
-      const textArea = document.createElement('textarea');
-      textArea.innerHTML = html;
-      return textArea.value;
-    }
-
-    // Inject widget embeds lazily for a view (only once)
+    // Inject widget embeds as iframes - no CORS issues with iframes!
     function injectWidgetsForView(view){
       if (injectedWidgets.has(view)) return;
       const grid = document.getElementById(view + 'Grid');
@@ -240,7 +186,7 @@
       const template = embedTemplates[view];
       if (!template) return;
 
-      // Find all cards in this view and fetch/inject embeds
+      // Find all cards in this view and inject iframes
       grid.querySelectorAll('.league-card').forEach(card => {
         // Replace tokens with safe known values
         const embedUrl = template.replace(/\{host\}/g, card.dataset.widgetHost)
@@ -250,34 +196,22 @@
         
         const leagueName = card.querySelector('a').textContent;
         
-        // Use allorigins CORS proxy which returns JSON with contents
-        const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(embedUrl);
+        // Create iframe to load the embed
+        const container = document.createElement('div');
+        container.className = 'widget-container';
         
-        fetch(proxyUrl)
-          .then(response => response.json())
-          .then(data => {
-            // allorigins returns the content in the 'contents' field
-            const scriptContent = data.contents;
-            if (scriptContent) {
-              // Extract HTML from document.write() call or raw HTML
-              const html = extractHtmlFromDocumentWrite(scriptContent);
-              if (html) {
-                const container = document.createElement('div');
-                container.className = 'widget-container';
-                container.innerHTML = html;
-                card.appendChild(document.createElement('hr'));
-                card.appendChild(container);
-                console.log(`✓ Widget loaded for ${leagueName} view: ${view}`);
-              } else {
-                console.warn(`✗ Could not extract HTML for [${view}] ${leagueName}. Response pattern unknown.`);
-              }
-            } else {
-              console.error(`✗ No contents in response for [${view}] ${leagueName}`);
-            }
-          })
-          .catch(e => {
-            console.error(`✗ Widget embed fetch failed for [${view}] ${leagueName}:`, e);
-          });
+        const iframe = document.createElement('iframe');
+        iframe.src = embedUrl;
+        iframe.setAttribute('title', `${leagueName} ${view} widget`);
+        iframe.setAttribute('loading', 'lazy');
+        iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts');
+        iframe.style.minHeight = '300px';
+        
+        container.appendChild(iframe);
+        card.appendChild(document.createElement('hr'));
+        card.appendChild(container);
+        
+        console.log(`✓ iframe injected for ${leagueName} view: ${view}`);
       });
 
       injectedWidgets.add(view);
