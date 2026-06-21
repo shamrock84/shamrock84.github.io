@@ -207,6 +207,7 @@
             if (!response.ok) throw new Error(`API request failed (${response.status})`);
             return response.json();
           }).catch(error => {
+            console.error(`API request failed for ${cacheKey}`, url, error);
             apiCache.delete(cacheKey);
             throw error;
           })
@@ -231,6 +232,7 @@
       return fetchCachedJson(`weeklyResults:${league.id}`, leagueApiUrl('weeklyResults', league.id));
     }
 
+    // Fetch only the requested players, dedupe/sort ids for stable caching, and return a Map keyed by player id.
     function getPlayersByIds(playerIds){
       const ids = Array.from(new Set(asArray(playerIds).filter(Boolean))).sort();
       if (!ids.length) return Promise.resolve(new Map());
@@ -389,7 +391,7 @@
     }
 
     function renderRosterCard(leagueInfo, rosterData, playerMap, franchiseId){
-      const franchises = getRostersFranchises(rosterData);
+      const franchises = getRosterFranchises(rosterData);
       const roster = franchises.find(item => item && item.id === franchiseId);
       const franchiseName = (getFranchiseMap(leagueInfo).get(franchiseId) || {}).name || `Franchise ${franchiseId}`;
       const container = createWidgetContainer(`${franchiseName} Roster`);
@@ -418,12 +420,18 @@
       return container;
     }
 
-    function getRostersFranchises(rosterData){
+    function getRosterFranchises(rosterData){
       return asArray(
         rosterData &&
         rosterData.rosters &&
         (rosterData.rosters.franchise || rosterData.rosters.franchises)
       );
+    }
+
+    function extractStarterIds(result){
+      return (result && result.franchise && result.franchise.starters ? result.franchise.starters : '')
+        .split(',')
+        .filter(Boolean);
     }
 
     function findFranchiseWeeklyResult(weeklyResults, franchiseId){
@@ -510,7 +518,7 @@
         if (player && player.id) playerStats.set(player.id, player);
       });
 
-      const starterIds = (result.franchise.starters || '').split(',').filter(Boolean);
+      const starterIds = extractStarterIds(result);
       if (!starterIds.length) {
         container.appendChild(createStatusMessage('No starters were returned for this franchise.', false));
         return container;
@@ -575,14 +583,11 @@
           ]);
           let playerMap = new Map();
           if (view === 'rosters') {
-            const roster = getRostersFranchises(rosterData).find(item => item && item.id === league.franchise);
+            const roster = getRosterFranchises(rosterData).find(item => item && item.id === league.franchise);
             playerMap = await getPlayersByIds(asArray(roster && roster.player).map(player => player && player.id));
           } else if (view === 'lineups') {
             const result = findFranchiseWeeklyResult(weeklyResults, league.franchise);
-            const starterIds = (result && result.franchise && result.franchise.starters ? result.franchise.starters : '')
-              .split(',')
-              .filter(Boolean);
-            playerMap = await getPlayersByIds(starterIds);
+            playerMap = await getPlayersByIds(extractStarterIds(result));
           }
 
           appendContent(card, renderCardContent(view, league, leagueInfo, standingsData, rosterData, weeklyResults, playerMap));
