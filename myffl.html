@@ -31,6 +31,7 @@
     .league-card a:hover{text-decoration:underline}
     .league-card small{display:block;color:#666;font-size:0.85rem;margin-bottom:0.5rem}
     .league-card .widget-container{margin-top:0.5rem;border-top:1px solid #ddd;padding-top:0.5rem;overflow-x:auto}
+    .league-card .widget-container table{width:100%;font-size:0.85rem;border-collapse:collapse}
 
     /* Utility spacing to mimic old visual separation between rows */
     .view caption{font-weight:bold;margin-bottom:.5rem;display:block}
@@ -127,11 +128,12 @@
       { host: 'www43', id: '34203', name: "Rug's Playground", franchise: '0009', views: ['bestball'] }
     ];
 
-    // Keep track of which views we've rendered
+    // Keep track of which views we've rendered and which widgets we've injected
     const renderedViews = new Set();
+    const injectedWidgets = new Set();
 
     // Build DOM nodes safely
-    function createLeagueCard(league, view){
+    function createLeagueCard(league){
       const card = document.createElement('article');
       card.className = 'league-card';
 
@@ -148,25 +150,10 @@
       card.appendChild(link);
       card.appendChild(meta);
 
-      // Add widget container and inject script (synchronously - no async/defer)
-      const template = embedTemplates[view];
-      if (template) {
-        const embedUrl = template.replace(/\{host\}/g, league.host)
-                                 .replace(/\{id\}/g, league.id)
-                                 .replace(/\{franchise\}/g, league.franchise || '')
-                                 .replace(/\{year\}/g, FFL.year);
-        
-        const container = document.createElement('div');
-        container.className = 'widget-container';
-        
-        const script = document.createElement('script');
-        script.type = 'text/javascript';
-        script.src = embedUrl;
-        // No async or defer - loads synchronously
-        container.appendChild(script);
-        
-        card.appendChild(container);
-      }
+      // Store league data for widget injection
+      card.dataset.widgetHost = league.host;
+      card.dataset.widgetId = league.id;
+      card.dataset.widgetFranchise = league.franchise || '';
 
       return card;
     }
@@ -180,11 +167,69 @@
       const list = leagues.filter(l => (l.views || []).indexOf(view) !== -1);
       // Create cards and append
       list.forEach(league => {
-        const card = createLeagueCard(league, view);
+        const card = createLeagueCard(league);
         grid.appendChild(card);
       });
 
       renderedViews.add(view);
+    }
+
+    // Extract HTML from document.write() call in the response text
+    function extractHtmlFromDocumentWrite(scriptContent) {
+      // Match document.write('...') - handle escaped quotes and newlines
+      const match = scriptContent.match(/document\.write\('(.+?)'\);/s);
+      if (match && match[1]) {
+        let html = match[1];
+        // Unescape common escape sequences
+        html = html.replace(/\\'/g, "'");
+        html = html.replace(/\\n/g, '');
+        html = html.replace(/\\/g, '');
+        return html;
+      }
+      return null;
+    }
+
+    // Inject widget embeds lazily for a view (only once)
+    function injectWidgetsForView(view){
+      if (injectedWidgets.has(view)) return;
+      const grid = document.getElementById(view + 'Grid');
+      if (!grid) return;
+
+      const template = embedTemplates[view];
+      if (!template) return;
+
+      // Find all cards in this view and fetch/inject embeds
+      grid.querySelectorAll('.league-card').forEach(card => {
+        // Replace tokens with safe known values
+        const embedUrl = template.replace(/\{host\}/g, card.dataset.widgetHost)
+                                 .replace(/\{id\}/g, card.dataset.widgetId)
+                                 .replace(/\{franchise\}/g, card.dataset.widgetFranchise)
+                                 .replace(/\{year\}/g, FFL.year);
+        
+        // Use corsproxy.io CORS proxy
+        const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(embedUrl);
+        
+        fetch(proxyUrl)
+          .then(response => response.text())
+          .then(scriptContent => {
+            // Extract HTML from document.write() call
+            const html = extractHtmlFromDocumentWrite(scriptContent);
+            if (html) {
+              const container = document.createElement('div');
+              container.className = 'widget-container';
+              container.innerHTML = html;
+              card.appendChild(document.createElement('hr'));
+              card.appendChild(container);
+            } else {
+              console.warn('Could not extract HTML from', embedUrl);
+            }
+          })
+          .catch(e => {
+            console.error('Widget embed fetch failed for', embedUrl, e);
+          });
+      });
+
+      injectedWidgets.add(view);
     }
 
     // Highlight team names by searching visible league cards' text
@@ -212,6 +257,8 @@
     function showView(view){
       // Render content for the view if needed
       renderView(view);
+      // Inject widgets for this view lazily
+      injectWidgetsForView(view);
 
       // Update visibility and ARIA
       document.querySelectorAll('.view').forEach(sec => {
