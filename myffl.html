@@ -38,6 +38,7 @@
     .league-card .widget-title{margin:.25rem 0 .5rem;font-size:.95rem}
     .league-card .status-message{margin-top:.5rem;padding:.75rem;border:1px solid #ddd;border-radius:6px;background:#fafafa;font-size:.9rem}
     .league-card .status-message.error{background:#fff4f4;border-color:#efc1c1;color:#8b1e1e}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 
     /* Utility spacing to mimic old visual separation between rows */
     .view caption{font-weight:bold;margin-bottom:.5rem;display:block}
@@ -128,7 +129,6 @@
     const renderedViews = new Set();
     const populatedViews = new Set();
     const apiCache = new Map();
-    let playersPromise;
 
     // Build DOM nodes safely
     function createLeagueCard(league){
@@ -225,21 +225,23 @@
       return fetchCachedJson(`weeklyResults:${league.id}`, leagueApiUrl('weeklyResults', league.id));
     }
 
-    function getPlayers(){
-      if (!playersPromise) {
-        playersPromise = fetchCachedJson('players', `${FFL.apiBase}/${FFL.year}/export?TYPE=players&DETAILS=1&JSON=1`)
-          .then(data => {
-            const playerMap = new Map();
-            asArray(data && data.players && data.players.player).forEach(player => {
-              if (player && player.id) playerMap.set(player.id, player);
-            });
-            return playerMap;
-          }).catch(error => {
-            playersPromise = null;
-            throw error;
+    function getPlayersByIds(playerIds){
+      const ids = Array.from(new Set(asArray(playerIds).filter(Boolean)));
+      if (!ids.length) return Promise.resolve(new Map());
+      const params = new URLSearchParams({
+        TYPE: 'players',
+        DETAILS: '1',
+        PLAYERS: ids.join(','),
+        JSON: '1'
+      });
+      return fetchCachedJson(`players:${ids.slice().sort().join(',')}`, `${FFL.apiBase}/${FFL.year}/export?${params.toString()}`)
+        .then(data => {
+          const playerMap = new Map();
+          asArray(data && data.players && data.players.player).forEach(player => {
+            if (player && player.id) playerMap.set(player.id, player);
           });
-      }
-      return playersPromise;
+          return playerMap;
+        });
     }
 
     function getLeagueFranchises(leagueInfo){
@@ -269,8 +271,14 @@
       return box;
     }
 
-    function createTable(headers, rows){
+    function createTable(headers, rows, captionText){
       const table = document.createElement('table');
+      if (captionText) {
+        const caption = document.createElement('caption');
+        caption.className = 'sr-only';
+        caption.textContent = captionText;
+        table.appendChild(caption);
+      }
       const thead = document.createElement('thead');
       const headRow = document.createElement('tr');
       headers.forEach(header => {
@@ -337,7 +345,7 @@
         ]);
       });
 
-      container.appendChild(createTable(['Team', 'Score', 'Opponent', 'Opponent Score'], rows));
+      container.appendChild(createTable(['Team', 'Score', 'Opponent', 'Opponent Score'], rows, title));
       return container;
     }
 
@@ -362,16 +370,12 @@
         formatValue(item.pf),
         formatValue(item.pa)
       ]);
-      container.appendChild(createTable(['Rank', 'Team', 'Record', 'PF', 'PA'], rows));
+      container.appendChild(createTable(['Rank', 'Team', 'Record', 'PF', 'PA'], rows, titleText || 'Standings'));
       return container;
     }
 
     function renderRosterCard(leagueInfo, rosterData, playerMap, franchiseId){
-      const franchises = asArray(
-        rosterData &&
-        rosterData.rosters &&
-        (rosterData.rosters.franchise || rosterData.rosters.franchises)
-      );
+      const franchises = getRostersFranchises(rosterData);
       const roster = franchises.find(item => item && item.id === franchiseId);
       const franchiseName = (getFranchiseMap(leagueInfo).get(franchiseId) || {}).name || `Franchise ${franchiseId}`;
       const container = createWidgetContainer(`${franchiseName} Roster`);
@@ -396,19 +400,32 @@
           item.status || 'ROSTER'
         ];
       });
-      container.appendChild(createTable(['Player', 'Pos', 'NFL', 'Status'], rows));
+      container.appendChild(createTable(['Player', 'Pos', 'NFL', 'Status'], rows, `${franchiseName} roster`));
       return container;
+    }
+
+    function getRostersFranchises(rosterData){
+      return asArray(
+        rosterData &&
+        rosterData.rosters &&
+        (rosterData.rosters.franchise || rosterData.rosters.franchises)
+      );
     }
 
     function findFranchiseWeeklyResult(weeklyResults, franchiseId){
       const matchups = asArray(weeklyResults && weeklyResults.weeklyResults && weeklyResults.weeklyResults.matchup);
-      for (let i = 0; i < matchups.length; i += 1) {
-        const franchises = asArray(matchups[i] && matchups[i].franchise);
-        for (let j = 0; j < franchises.length; j += 1) {
-          if (franchises[j] && franchises[j].id === franchiseId) return { matchup: matchups[i], franchise: franchises[j], franchises };
-        }
-      }
-      return null;
+      return matchups
+        .map(matchup => {
+          const franchises = asArray(matchup && matchup.franchise);
+          const franchise = franchises.find(item => item && item.id === franchiseId);
+          return franchise ? { matchup, franchise, franchises } : null;
+        })
+        .find(Boolean) || null;
+    }
+
+    function toNumber(value){
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : 0;
     }
 
     function renderScheduleCard(leagueInfo, weeklyResults, franchiseId){
@@ -424,8 +441,8 @@
       }
 
       const opponent = result.franchises.find(item => item && item.id !== franchiseId) || {};
-      const score = parseFloat(result.franchise.score || 0);
-      const opponentScore = parseFloat(opponent.score || 0);
+      const score = toNumber(result.franchise.score);
+      const opponentScore = toNumber(opponent.score);
       const outcome = opponent.id ? (score > opponentScore ? 'W' : score < opponentScore ? 'L' : 'T') : '—';
 
       container.appendChild(createTable(['Team', 'Score', 'Opponent', 'Opponent Score', 'Result'], [[
@@ -434,7 +451,7 @@
         (franchiseMap.get(opponent.id) || {}).name || (opponent.id ? `Franchise ${opponent.id}` : 'Bye'),
         formatValue(opponent.score),
         outcome
-      ]]));
+      ]], week ? `Week ${week} matchup` : 'Current matchup'));
       return container;
     }
 
@@ -452,7 +469,7 @@
         ['Teams', totalTeams || '—'],
         ['Starters', starterCount || '—'],
         ['Last Regular Season Week', regularSeasonEnd || '—']
-      ]));
+      ], 'League information'));
       return container;
     }
 
@@ -488,7 +505,7 @@
           formatValue(stats.score)
         ];
       });
-      container.appendChild(createTable(['Starter', 'Pos', 'NFL', 'Score'], rows));
+      container.appendChild(createTable(['Starter', 'Pos', 'NFL', 'Score'], rows, week ? `Week ${week} lineup` : `${franchiseName} lineup`));
       return container;
     }
 
@@ -518,7 +535,7 @@
       const grid = document.getElementById(view + 'Grid');
       if (!grid) return;
 
-      const list = leagues.filter(l => (l.views || []).indexOf(view) !== -1);
+      const list = leagues.filter(l => (l.views || []).includes(view));
       await Promise.all(list.map(async league => {
         const card = Array.from(grid.querySelectorAll('.league-card')).find(item => item.dataset.widgetId === league.id);
         if (!card) return;
@@ -529,15 +546,23 @@
           const needsStandings = view === 'standings' || view === 'bestball';
           const needsRosters = view === 'rosters';
           const needsWeeklyResults = view === 'scores' || view === 'schedules' || view === 'lineups';
-          const needsPlayers = view === 'rosters' || view === 'lineups';
-
-          const [leagueInfo, standingsData, rosterData, weeklyResults, playerMap] = await Promise.all([
+          const [leagueInfo, standingsData, rosterData, weeklyResults] = await Promise.all([
             getLeagueInfo(league),
             needsStandings ? getStandings(league) : Promise.resolve(null),
             needsRosters ? getRosters(league) : Promise.resolve(null),
-            needsWeeklyResults ? getWeeklyResults(league) : Promise.resolve(null),
-            needsPlayers ? getPlayers() : Promise.resolve(new Map())
+            needsWeeklyResults ? getWeeklyResults(league) : Promise.resolve(null)
           ]);
+          let playerMap = new Map();
+          if (view === 'rosters') {
+            const roster = getRostersFranchises(rosterData).find(item => item && item.id === league.franchise);
+            playerMap = await getPlayersByIds(asArray(roster && roster.player).map(player => player && player.id));
+          } else if (view === 'lineups') {
+            const result = findFranchiseWeeklyResult(weeklyResults, league.franchise);
+            const starterIds = (result && result.franchise && result.franchise.starters ? result.franchise.starters : '')
+              .split(',')
+              .filter(Boolean);
+            playerMap = await getPlayersByIds(starterIds);
+          }
 
           appendContent(card, renderCardContent(view, league, leagueInfo, standingsData, rosterData, weeklyResults, playerMap));
         } catch (error) {
@@ -561,7 +586,7 @@
 
       viewSection.querySelectorAll('.league-card').forEach(card => {
         const text = (card.textContent || '').toUpperCase();
-        const match = teamNames.some(name => text.indexOf(name) !== -1);
+        const match = teamNames.some(name => text.includes(name));
         if (match){
           card.style.backgroundColor = 'yellow';
           card.style.fontWeight = 'bold';
