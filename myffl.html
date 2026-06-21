@@ -176,6 +176,8 @@
 
     // Extract HTML from document.write() call in the response text
     function extractHtmlFromDocumentWrite(scriptContent) {
+      console.log('Raw response (first 500 chars):', scriptContent.substring(0, 500));
+      
       // Match document.write('...') - handle escaped quotes and newlines
       const match = scriptContent.match(/document\.write\('(.+?)'\);/s);
       if (match && match[1]) {
@@ -184,8 +186,10 @@
         html = html.replace(/\\'/g, "'");
         html = html.replace(/\\n/g, '');
         html = html.replace(/\\/g, '');
+        console.log('Extracted HTML:', html.substring(0, 200));
         return html;
       }
+      console.log('No match found for document.write()');
       return null;
     }
 
@@ -206,12 +210,15 @@
                                  .replace(/\{franchise\}/g, card.dataset.widgetFranchise)
                                  .replace(/\{year\}/g, FFL.year);
         
+        console.log('Fetching embed for', card.dataset.widgetId, embedUrl);
+        
         // Use corsproxy.io CORS proxy
         const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(embedUrl);
         
         fetch(proxyUrl)
           .then(response => response.text())
           .then(scriptContent => {
+            console.log('Fetch successful for', card.dataset.widgetId);
             // Extract HTML from document.write() call
             const html = extractHtmlFromDocumentWrite(scriptContent);
             if (html) {
@@ -220,6 +227,7 @@
               container.innerHTML = html;
               card.appendChild(document.createElement('hr'));
               card.appendChild(container);
+              console.log('Widget injected for', card.dataset.widgetId);
             } else {
               console.warn('Could not extract HTML from', embedUrl);
             }
