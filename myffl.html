@@ -198,11 +198,11 @@
           const container = document.createElement('div');
           container.className = 'widget-container';
           
-          // Create and append the script tag - this will bypass CORS and execute document.write()
+          // Create and append the script tag - load synchronously (no async) so document.write() works
           const script = document.createElement('script');
           script.type = 'text/javascript';
           script.src = embedUrl;
-          script.async = true;
+          // NOTE: NOT setting async=true - we need synchronous loading for document.write() to work
           
           card.appendChild(document.createElement('hr'));
           card.appendChild(container);
