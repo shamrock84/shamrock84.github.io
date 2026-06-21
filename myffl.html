@@ -30,7 +30,8 @@
     .league-card{padding:.75rem;border:1px solid #ddd;border-radius:6px;text-align:center;background:#fff}
     .league-card a{font-weight:700;color:#0b63c6;text-decoration:none}
     .league-card small{display:block;color:#666;margin-top:.4rem}
-    .league-card .widget-container{margin-top:0.5rem;border-top:1px solid #ddd;padding-top:0.5rem}
+    .league-card .widget-container{margin-top:0.5rem;border-top:1px solid #ddd;padding-top:0.5rem;overflow-x:auto}
+    .league-card .widget-container table{width:100%;font-size:0.85rem;border-collapse:collapse}
 
     /* Utility spacing to mimic old visual separation between rows */
     .view caption{font-weight:bold;margin-bottom:.5rem;display:block}
@@ -176,7 +177,22 @@
       renderedViews.add(view);
     }
 
-    // Inject widget scripts lazily for a view (only once)
+    // Extract HTML from document.write() call in the response text
+    function extractHtmlFromDocumentWrite(scriptContent) {
+      // Match document.write('...')  - handle escaped quotes and newlines
+      const match = scriptContent.match(/document\.write\('(.+?)'\);/s);
+      if (match && match[1]) {
+        let html = match[1];
+        // Unescape common escape sequences
+        html = html.replace(/\\'/g, "'");
+        html = html.replace(/\\n/g, '');
+        html = html.replace(/\\/g, '');
+        return html;
+      }
+      return null;
+    }
+
+    // Inject widget embeds lazily for a view (only once)
     function injectWidgetsForView(view){
       if (injectedWidgets.has(view)) return;
       const grid = document.getElementById(view + 'Grid');
@@ -185,7 +201,7 @@
       const template = embedTemplates[view];
       if (!template) return;
 
-      // Find all cards in this view and inject scripts
+      // Find all cards in this view and fetch/inject embeds
       grid.querySelectorAll('.league-card').forEach(card => {
         // Replace tokens with safe known values
         const embedUrl = template.replace(/\{host\}/g, card.dataset.widgetHost)
@@ -193,23 +209,27 @@
                                  .replace(/\{franchise\}/g, card.dataset.widgetFranchise)
                                  .replace(/\{year\}/g, FFL.year);
         
-        try{
-          // Create a container for the widget
-          const container = document.createElement('div');
-          container.className = 'widget-container';
-          
-          // Create and append the script tag - load synchronously (no async) so document.write() works
-          const script = document.createElement('script');
-          script.type = 'text/javascript';
-          script.src = embedUrl;
-          // NOTE: NOT setting async=true - we need synchronous loading for document.write() to work
-          
-          card.appendChild(document.createElement('hr'));
-          card.appendChild(container);
-          container.appendChild(script);
-        }catch(e){
-          console.error('Widget script injection failed for', embedUrl, e);
-        }
+        // Use a CORS proxy to fetch the content (bypasses CORS policy)
+        const proxyUrl = 'https://cors-anywhere.herokuapp.com/' + embedUrl;
+        
+        fetch(proxyUrl)
+          .then(response => response.text())
+          .then(scriptContent => {
+            // Extract HTML from document.write() call
+            const html = extractHtmlFromDocumentWrite(scriptContent);
+            if (html) {
+              const container = document.createElement('div');
+              container.className = 'widget-container';
+              container.innerHTML = html;
+              card.appendChild(document.createElement('hr'));
+              card.appendChild(container);
+            } else {
+              console.warn('Could not extract HTML from', embedUrl);
+            }
+          })
+          .catch(e => {
+            console.error('Widget embed fetch failed for', embedUrl, e);
+          });
       });
 
       injectedWidgets.add(view);
