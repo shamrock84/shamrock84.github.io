@@ -11,7 +11,6 @@
   <link rel="manifest" href="https://shamrock84.github.io/fflicons/site.webmanifest">
   <meta name="msapplication-TileColor" content="#da532c">
   <meta name="theme-color" content="#ffffff">
-  <link rel="stylesheet" id="skin_stylesheet" href="https://www.myfantasyleague.com/skins/norseman/skin.css" type="text/css" />
 
   <style>
     /* Small, modern layout replacing the old tables with a responsive grid */
@@ -27,20 +26,16 @@
     .view[aria-hidden="false"]{display:block}
 
     .leagues-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(var(--card-min),1fr));gap:var(--gap);align-items:start}
-    .league-card{padding:.75rem;border:1px solid #ddd;border-radius:6px;text-align:center;background:#fff}
-    .league-card a{font-weight:700;color:#0b63c6;text-decoration:none}
-    .league-card small{display:block;color:#666;margin-top:.4rem}
-    .league-card .widget-container{margin-top:0.5rem;border-top:1px solid #ddd;padding-top:0.5rem;overflow-x:auto}
-    .league-card .widget-container table{width:100%;font-size:0.85rem;border-collapse:collapse}
+    .league-card{padding:1rem;border:1px solid #ddd;border-radius:6px;text-align:center;background:#fff}
+    .league-card a{font-weight:700;color:#0b63c6;text-decoration:none;display:inline-block;margin-bottom:0.5rem}
+    .league-card a:hover{text-decoration:underline}
+    .league-card small{display:block;color:#666;font-size:0.85rem}
 
     /* Utility spacing to mimic old visual separation between rows */
     .view caption{font-weight:bold;margin-bottom:.5rem;display:block}
 
     /* Accessibility helper for focus */
     .view-buttons button:focus{outline:3px solid rgba(100,150,255,.25)}
-
-    /* Hide old table-specific classes if present (preserve some original CSS intents) */
-    .contractstatus{display:none}.contractinfo{display:none}
   </style>
 
 </head>
@@ -107,17 +102,6 @@
       urlFor(host, id){ return `https://${host}.myfantasyleague.com/${this.year}/${this.homePath}/${id}` }
     };
 
-    // View-specific embed URL templates
-    const embedTemplates = {
-      scores: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=LIVESCORING_SUMMARY',
-      standings: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=STANDINGS',
-      rosters: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=ROSTER&FRANCHISE={franchise}',
-      schedules: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=FRANCHISE_SCHEDULE&FRANCHISE={franchise}',
-      news: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=MY_NEWS&FRANCHISE={franchise}&COUNT=10',
-      lineups: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=SUBMIT_LINEUP&FRANCHISE={franchise}',
-      bestball: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=BRIEF_STANDINGS'
-    };
-
     // Master list of leagues. Edit here to change every view.
     const leagues = [
       { host: 'www43', id: '26696', name: 'MNMx Dynasty', franchise: '0001', views: ['scores','rosters','schedules','standings','news','lineups'] },
@@ -131,11 +115,10 @@
       { host: 'www43', id: '34203', name: "Rug's Playground", franchise: '0009', views: ['bestball'] }
     ];
 
-    // Keep track of which views we've rendered and which widgets we've injected
+    // Keep track of which views we've rendered
     const renderedViews = new Set();
-    const injectedWidgets = new Set();
 
-    // Build DOM nodes safely (no innerHTML insertion of untrusted content)
+    // Build DOM nodes safely
     function createLeagueCard(league){
       const card = document.createElement('article');
       card.className = 'league-card';
@@ -152,11 +135,6 @@
 
       card.appendChild(link);
       card.appendChild(meta);
-
-      // Store league data for widget injection
-      card.dataset.widgetHost = league.host;
-      card.dataset.widgetId = league.id;
-      card.dataset.widgetFranchise = league.franchise || '';
 
       return card;
     }
@@ -175,42 +153,6 @@
       });
 
       renderedViews.add(view);
-    }
-
-    // Inject widget embeds lazily for a view (only once)
-    function injectWidgetsForView(view){
-      if (injectedWidgets.has(view)) return;
-      const grid = document.getElementById(view + 'Grid');
-      if (!grid) return;
-
-      const template = embedTemplates[view];
-      if (!template) return;
-
-      // Find all cards in this view and inject embeds via script tags
-      grid.querySelectorAll('.league-card').forEach(card => {
-        // Replace tokens with safe known values
-        const embedUrl = template.replace(/\{host\}/g, card.dataset.widgetHost)
-                                 .replace(/\{id\}/g, card.dataset.widgetId)
-                                 .replace(/\{franchise\}/g, card.dataset.widgetFranchise)
-                                 .replace(/\{year\}/g, FFL.year);
-        
-        // Create a container for the widget
-        const container = document.createElement('div');
-        container.className = 'widget-container';
-        
-        // Create and inject script tag - it will execute its document.write() directly into a new document fragment
-        const script = document.createElement('script');
-        script.src = embedUrl;
-        script.type = 'text/javascript';
-        
-        // Append to container - the script will load and render its content
-        container.appendChild(script);
-        
-        card.appendChild(document.createElement('hr'));
-        card.appendChild(container);
-      });
-
-      injectedWidgets.add(view);
     }
 
     // Highlight team names by searching visible league cards' text
@@ -238,8 +180,6 @@
     function showView(view){
       // Render content for the view if needed
       renderView(view);
-      // Inject widgets for this view lazily
-      injectWidgetsForView(view);
 
       // Update visibility and ARIA
       document.querySelectorAll('.view').forEach(sec => {
@@ -271,9 +211,6 @@
     // Public init
     document.addEventListener('DOMContentLoaded', () => {
       wireViewButtons();
-      // Pre-render all views but keep them hidden to make first switch instantaneous.
-      // Alternatively, you could only render the default and render others on demand; we render on demand in renderView.
-
       // Default view
       showView('rosters');
     });
