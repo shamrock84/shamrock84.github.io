@@ -245,6 +245,8 @@
                                  .replace(/\{franchise\}/g, card.dataset.widgetFranchise)
                                  .replace(/\{year\}/g, FFL.year);
         
+        const leagueName = card.querySelector('a').textContent;
+        
         // Use allorigins CORS proxy which returns JSON with contents
         const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(embedUrl);
         
@@ -254,6 +256,9 @@
             // allorigins returns the content in the 'contents' field
             const scriptContent = data.contents;
             if (scriptContent) {
+              // LOG RAW RESPONSE for debugging
+              console.log(`[${view}] ${leagueName} - Raw response (first 500 chars):`, scriptContent.substring(0, 500));
+              
               // Extract HTML from document.write() call or raw HTML
               const html = extractHtmlFromDocumentWrite(scriptContent);
               if (html) {
@@ -262,14 +267,16 @@
                 container.innerHTML = html;
                 card.appendChild(document.createElement('hr'));
                 card.appendChild(container);
-                console.log('Widget loaded for', card.querySelector('a').textContent, 'view:', view);
+                console.log(`✓ Widget loaded for ${leagueName} view: ${view}`);
               } else {
-                console.warn('Could not extract HTML for', view, 'from', embedUrl, 'Response:', scriptContent.substring(0, 100));
+                console.warn(`✗ Could not extract HTML for [${view}] ${leagueName}. Response pattern unknown. First 300 chars: ${scriptContent.substring(0, 300)}`);
               }
+            } else {
+              console.error(`✗ No contents in response for [${view}] ${leagueName}`);
             }
           })
           .catch(e => {
-            console.error('Widget embed fetch failed for', view, embedUrl, e);
+            console.error(`✗ Widget embed fetch failed for [${view}] ${leagueName} at ${embedUrl}:`, e);
           });
       });
 
