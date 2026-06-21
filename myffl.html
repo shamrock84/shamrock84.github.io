@@ -30,6 +30,7 @@
     .league-card a{font-weight:700;color:#0b63c6;text-decoration:none;display:inline-block;margin-bottom:0.5rem}
     .league-card a:hover{text-decoration:underline}
     .league-card small{display:block;color:#666;font-size:0.85rem;margin-bottom:0.5rem}
+    .league-card .widget-container{margin-top:0.5rem;border-top:1px solid #ddd;padding-top:0.5rem;overflow-x:auto}
 
     /* Utility spacing to mimic old visual separation between rows */
     .view caption{font-weight:bold;margin-bottom:.5rem;display:block}
@@ -147,7 +148,7 @@
       card.appendChild(link);
       card.appendChild(meta);
 
-      // Add embed script tag if template exists for this view
+      // Add widget container and inject script (synchronously - no async/defer)
       const template = embedTemplates[view];
       if (template) {
         const embedUrl = template.replace(/\{host\}/g, league.host)
@@ -155,10 +156,16 @@
                                  .replace(/\{franchise\}/g, league.franchise || '')
                                  .replace(/\{year\}/g, FFL.year);
         
+        const container = document.createElement('div');
+        container.className = 'widget-container';
+        
         const script = document.createElement('script');
         script.type = 'text/javascript';
         script.src = embedUrl;
-        card.appendChild(script);
+        // No async or defer - loads synchronously
+        container.appendChild(script);
+        
+        card.appendChild(container);
       }
 
       return card;
