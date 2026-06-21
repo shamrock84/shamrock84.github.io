@@ -179,7 +179,7 @@
 
     // Extract HTML from document.write() call in the response text
     function extractHtmlFromDocumentWrite(scriptContent) {
-      // Match document.write('...')  - handle escaped quotes and newlines
+      // Match document.write('...') - handle escaped quotes and newlines
       const match = scriptContent.match(/document\.write\('(.+?)'\);/s);
       if (match && match[1]) {
         let html = match[1];
@@ -209,22 +209,26 @@
                                  .replace(/\{franchise\}/g, card.dataset.widgetFranchise)
                                  .replace(/\{year\}/g, FFL.year);
         
-        // Use a CORS proxy to fetch the content (bypasses CORS policy)
-        const proxyUrl = 'https://cors-anywhere.herokuapp.com/' + embedUrl;
+        // Use allorigins CORS proxy which returns JSON with contents
+        const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(embedUrl);
         
         fetch(proxyUrl)
-          .then(response => response.text())
-          .then(scriptContent => {
-            // Extract HTML from document.write() call
-            const html = extractHtmlFromDocumentWrite(scriptContent);
-            if (html) {
-              const container = document.createElement('div');
-              container.className = 'widget-container';
-              container.innerHTML = html;
-              card.appendChild(document.createElement('hr'));
-              card.appendChild(container);
-            } else {
-              console.warn('Could not extract HTML from', embedUrl);
+          .then(response => response.json())
+          .then(data => {
+            // allorigins returns the content in the 'contents' field
+            const scriptContent = data.contents;
+            if (scriptContent) {
+              // Extract HTML from document.write() call
+              const html = extractHtmlFromDocumentWrite(scriptContent);
+              if (html) {
+                const container = document.createElement('div');
+                container.className = 'widget-container';
+                container.innerHTML = html;
+                card.appendChild(document.createElement('hr'));
+                card.appendChild(container);
+              } else {
+                console.warn('Could not extract HTML from', embedUrl);
+              }
             }
           })
           .catch(e => {
