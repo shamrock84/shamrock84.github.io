@@ -177,19 +177,55 @@
       renderedViews.add(view);
     }
 
-    // Extract HTML from document.write() call in the response text
+    // Extract HTML from document.write() call - try multiple patterns
     function extractHtmlFromDocumentWrite(scriptContent) {
-      // Match document.write('...') - handle escaped quotes and newlines
-      const match = scriptContent.match(/document\.write\('(.+?)'\);/s);
+      if (!scriptContent) return null;
+      
+      // Try pattern 1: document.write('...');
+      let match = scriptContent.match(/document\.write\('(.+?)'\);?/s);
       if (match && match[1]) {
-        let html = match[1];
-        // Unescape common escape sequences
-        html = html.replace(/\\'/g, "'");
-        html = html.replace(/\\n/g, '');
-        html = html.replace(/\\/g, '');
-        return html;
+        return unescapeHtml(match[1]);
       }
+      
+      // Try pattern 2: document.write("...");
+      match = scriptContent.match(/document\.write\("(.+?)"\);?/s);
+      if (match && match[1]) {
+        return unescapeHtml(match[1]);
+      }
+      
+      // Try pattern 3: Look for raw HTML tables directly (sometimes returned without document.write)
+      if (scriptContent.includes('<table')) {
+        // Extract from first <table to its closing </table>
+        const tableStart = scriptContent.indexOf('<table');
+        if (tableStart !== -1) {
+          const tableEnd = scriptContent.indexOf('</table>', tableStart);
+          if (tableEnd !== -1) {
+            return scriptContent.substring(tableStart, tableEnd + 8);
+          }
+        }
+      }
+      
       return null;
+    }
+
+    // Unescape HTML entities and escape sequences
+    function unescapeHtml(html) {
+      if (!html) return '';
+      
+      // Remove newlines and extra whitespace
+      html = html.replace(/\\n/g, '');
+      
+      // Unescape quotes
+      html = html.replace(/\\'/g, "'");
+      html = html.replace(/\\"/g, '"');
+      
+      // Remove stray backslashes (but preserve intentional ones like \n that were already processed)
+      html = html.replace(/\\(?![nrt])/g, '');
+      
+      // Decode HTML entities
+      const textArea = document.createElement('textarea');
+      textArea.innerHTML = html;
+      return textArea.value;
     }
 
     // Inject widget embeds lazily for a view (only once)
@@ -218,7 +254,7 @@
             // allorigins returns the content in the 'contents' field
             const scriptContent = data.contents;
             if (scriptContent) {
-              // Extract HTML from document.write() call
+              // Extract HTML from document.write() call or raw HTML
               const html = extractHtmlFromDocumentWrite(scriptContent);
               if (html) {
                 const container = document.createElement('div');
@@ -226,13 +262,14 @@
                 container.innerHTML = html;
                 card.appendChild(document.createElement('hr'));
                 card.appendChild(container);
+                console.log('Widget loaded for', card.querySelector('a').textContent, 'view:', view);
               } else {
-                console.warn('Could not extract HTML from', embedUrl);
+                console.warn('Could not extract HTML for', view, 'from', embedUrl, 'Response:', scriptContent.substring(0, 100));
               }
             }
           })
           .catch(e => {
-            console.error('Widget embed fetch failed for', embedUrl, e);
+            console.error('Widget embed fetch failed for', view, embedUrl, e);
           });
       });
 
