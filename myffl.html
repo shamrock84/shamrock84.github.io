@@ -31,7 +31,6 @@
     .league-card a{font-weight:700;color:#0b63c6;text-decoration:none}
     .league-card small{display:block;color:#666;margin-top:.4rem}
     .league-card .widget-container{margin-top:0.5rem;border-top:1px solid #ddd;padding-top:0.5rem}
-    .league-card .widget-container table{width:100%;font-size:0.85rem}
 
     /* Utility spacing to mimic old visual separation between rows */
     .view caption{font-weight:bold;margin-bottom:.5rem;display:block}
@@ -177,19 +176,8 @@
       renderedViews.add(view);
     }
 
-    // Extract HTML from document.write() calls
-    function extractHtmlFromDocumentWrite(scriptContent) {
-      // Match document.write('...') patterns and extract the HTML
-      const match = scriptContent.match(/document\.write\('([^']*)'\)/);
-      if (match && match[1]) {
-        // Unescape the escaped characters
-        return match[1].replace(/\\'/g, "'").replace(/\\/g, '');
-      }
-      return null;
-    }
-
-    // Inject widget embeds lazily for a view (only once)
-    async function injectWidgetsForView(view){
+    // Inject widget scripts lazily for a view (only once)
+    function injectWidgetsForView(view){
       if (injectedWidgets.has(view)) return;
       const grid = document.getElementById(view + 'Grid');
       if (!grid) return;
@@ -197,7 +185,7 @@
       const template = embedTemplates[view];
       if (!template) return;
 
-      // Find all cards in this view and fetch/inject embeds
+      // Find all cards in this view and inject scripts
       grid.querySelectorAll('.league-card').forEach(card => {
         // Replace tokens with safe known values
         const embedUrl = template.replace(/\{host\}/g, card.dataset.widgetHost)
@@ -205,24 +193,23 @@
                                  .replace(/\{franchise\}/g, card.dataset.widgetFranchise)
                                  .replace(/\{year\}/g, FFL.year);
         
-        // Fetch the embed content
-        fetch(embedUrl)
-          .then(response => response.text())
-          .then(html => {
-            // Extract HTML from document.write() call
-            const extractedHtml = extractHtmlFromDocumentWrite(html);
-            if (extractedHtml) {
-              const container = document.createElement('div');
-              container.className = 'widget-container';
-              container.innerHTML = extractedHtml;
-              card.appendChild(container);
-            } else {
-              console.warn('Could not extract HTML from', embedUrl);
-            }
-          })
-          .catch(e => {
-            console.error('Widget embed fetch failed for', embedUrl, e);
-          });
+        try{
+          // Create a container for the widget
+          const container = document.createElement('div');
+          container.className = 'widget-container';
+          
+          // Create and append the script tag - this will bypass CORS and execute document.write()
+          const script = document.createElement('script');
+          script.type = 'text/javascript';
+          script.src = embedUrl;
+          script.async = true;
+          
+          card.appendChild(document.createElement('hr'));
+          card.appendChild(container);
+          container.appendChild(script);
+        }catch(e){
+          console.error('Widget script injection failed for', embedUrl, e);
+        }
       });
 
       injectedWidgets.add(view);
