@@ -31,7 +31,7 @@
     .league-card a{font-weight:700;color:#0b63c6;text-decoration:none}
     .league-card small{display:block;color:#666;margin-top:.4rem}
     .league-card .widget-container{margin-top:0.5rem;border-top:1px solid #ddd;padding-top:0.5rem;overflow-x:auto}
-    .league-card .widget-container iframe{width:100%;border:none;background:#fff}
+    .league-card .widget-container table{width:100%;font-size:0.85rem;border-collapse:collapse}
 
     /* Utility spacing to mimic old visual separation between rows */
     .view caption{font-weight:bold;margin-bottom:.5rem;display:block}
@@ -177,7 +177,39 @@
       renderedViews.add(view);
     }
 
-    // Inject widget embeds as iframes - no CORS issues with iframes!
+    // Extract HTML from document.write() call
+    function extractHtmlFromDocumentWrite(scriptContent) {
+      if (!scriptContent) return null;
+      
+      // Pattern: document.write('...') or document.write("...")
+      let match = scriptContent.match(/document\.write\('([\s\S]*?)'\)\s*;?/);
+      if (match && match[1]) {
+        return unescapeHtml(match[1]);
+      }
+      
+      match = scriptContent.match(/document\.write\("([\s\S]*?)"\)\s*;?/);
+      if (match && match[1]) {
+        return unescapeHtml(match[1]);
+      }
+      
+      return null;
+    }
+
+    // Unescape HTML entities and escape sequences
+    function unescapeHtml(html) {
+      if (!html) return '';
+      
+      html = html.replace(/\\n/g, '');
+      html = html.replace(/\\'/g, "'");
+      html = html.replace(/\\"/g, '"');
+      html = html.replace(/\\(?![nrt])/g, '');
+      
+      const textArea = document.createElement('textarea');
+      textArea.innerHTML = html;
+      return textArea.value;
+    }
+
+    // Inject widget embeds lazily for a view (only once)
     function injectWidgetsForView(view){
       if (injectedWidgets.has(view)) return;
       const grid = document.getElementById(view + 'Grid');
@@ -186,9 +218,8 @@
       const template = embedTemplates[view];
       if (!template) return;
 
-      // Find all cards in this view and inject iframes
+      // Find all cards in this view and fetch/inject embeds
       grid.querySelectorAll('.league-card').forEach(card => {
-        // Replace tokens with safe known values
         const embedUrl = template.replace(/\{host\}/g, card.dataset.widgetHost)
                                  .replace(/\{id\}/g, card.dataset.widgetId)
                                  .replace(/\{franchise\}/g, card.dataset.widgetFranchise)
@@ -196,22 +227,42 @@
         
         const leagueName = card.querySelector('a').textContent;
         
-        // Create iframe to load the embed
-        const container = document.createElement('div');
-        container.className = 'widget-container';
+        // Try jsDelivr CORS proxy - more reliable than allorigins
+        const proxyUrl = 'https://cdn.jsdelivr.net/gh/https://corsproxy.io/?' + encodeURIComponent(embedUrl);
         
-        const iframe = document.createElement('iframe');
-        iframe.src = embedUrl;
-        iframe.setAttribute('title', `${leagueName} ${view} widget`);
-        iframe.setAttribute('loading', 'lazy');
-        iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts');
-        iframe.style.minHeight = '300px';
-        
-        container.appendChild(iframe);
-        card.appendChild(document.createElement('hr'));
-        card.appendChild(container);
-        
-        console.log(`✓ iframe injected for ${leagueName} view: ${view}`);
+        // Fallback to direct fetch without proxy first (might work with same-site requests)
+        fetch(embedUrl, { mode: 'no-cors' })
+          .then(response => response.text())
+          .then(scriptContent => {
+            const html = extractHtmlFromDocumentWrite(scriptContent);
+            if (html) {
+              const container = document.createElement('div');
+              container.className = 'widget-container';
+              container.innerHTML = html;
+              card.appendChild(document.createElement('hr'));
+              card.appendChild(container);
+              console.log(`✓ Widget loaded for ${leagueName} view: ${view}`);
+            }
+          })
+          .catch(() => {
+            // If direct fetch fails, try corsproxy.io
+            fetch('https://corsproxy.io/?' + encodeURIComponent(embedUrl))
+              .then(response => response.text())
+              .then(scriptContent => {
+                const html = extractHtmlFromDocumentWrite(scriptContent);
+                if (html) {
+                  const container = document.createElement('div');
+                  container.className = 'widget-container';
+                  container.innerHTML = html;
+                  card.appendChild(document.createElement('hr'));
+                  card.appendChild(container);
+                  console.log(`✓ Widget loaded (via proxy) for ${leagueName} view: ${view}`);
+                }
+              })
+              .catch(e => {
+                console.error(`✗ Failed to load widget for [${view}] ${leagueName}:`, e);
+              });
+          });
       });
 
       injectedWidgets.add(view);
@@ -227,7 +278,6 @@
         'JLCS BUTT PLUG','CAMEL TOE CAMO','ALEXANDER MATTISONS NECK'
       ];
 
-      // Find all links inside the view and check their textContent
       viewSection.querySelectorAll('.league-card a').forEach(a => {
         const text = (a.textContent || '').toUpperCase();
         const match = teamNames.some(name => text.indexOf(name) !== -1);
@@ -240,24 +290,19 @@
 
     // Show and hide views; attach ARIA states for accessibility
     function showView(view){
-      // Render content for the view if needed
       renderView(view);
-      // Inject widgets for this view lazily
       injectWidgetsForView(view);
 
-      // Update visibility and ARIA
       document.querySelectorAll('.view').forEach(sec => {
         const hidden = sec.id !== view + 'View';
         sec.setAttribute('aria-hidden', hidden ? 'true' : 'false');
       });
 
-      // Update tab buttons pressed state
       document.querySelectorAll('.view-buttons button').forEach(btn => {
         const isPressed = btn.dataset.view === view;
         btn.setAttribute('aria-pressed', isPressed ? 'true' : 'false');
       });
 
-      // perform team highlighting for scores or standings
       if (view === 'scores' || view === 'standings') highlightTeamsInView(view);
     }
 
@@ -275,10 +320,6 @@
     // Public init
     document.addEventListener('DOMContentLoaded', () => {
       wireViewButtons();
-      // Pre-render all views but keep them hidden to make first switch instantaneous.
-      // Alternatively, you could only render the default and render others on demand; we render on demand in renderView.
-
-      // Default view
       showView('rosters');
     });
 
