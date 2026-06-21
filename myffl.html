@@ -29,7 +29,7 @@
     .league-card{padding:1rem;border:1px solid #ddd;border-radius:6px;text-align:center;background:#fff}
     .league-card a{font-weight:700;color:#0b63c6;text-decoration:none;display:inline-block;margin-bottom:0.5rem}
     .league-card a:hover{text-decoration:underline}
-    .league-card small{display:block;color:#666;font-size:0.85rem}
+    .league-card small{display:block;color:#666;font-size:0.85rem;margin-bottom:0.5rem}
 
     /* Utility spacing to mimic old visual separation between rows */
     .view caption{font-weight:bold;margin-bottom:.5rem;display:block}
@@ -102,6 +102,17 @@
       urlFor(host, id){ return `https://${host}.myfantasyleague.com/${this.year}/${this.homePath}/${id}` }
     };
 
+    // View-specific embed URL templates
+    const embedTemplates = {
+      scores: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=LIVESCORING_SUMMARY',
+      standings: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=STANDINGS',
+      rosters: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=ROSTER&FRANCHISE={franchise}',
+      schedules: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=FRANCHISE_SCHEDULE&FRANCHISE={franchise}',
+      news: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=MY_NEWS&FRANCHISE={franchise}&COUNT=10',
+      lineups: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=SUBMIT_LINEUP&FRANCHISE={franchise}',
+      bestball: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=BRIEF_STANDINGS'
+    };
+
     // Master list of leagues. Edit here to change every view.
     const leagues = [
       { host: 'www43', id: '26696', name: 'MNMx Dynasty', franchise: '0001', views: ['scores','rosters','schedules','standings','news','lineups'] },
@@ -119,7 +130,7 @@
     const renderedViews = new Set();
 
     // Build DOM nodes safely
-    function createLeagueCard(league){
+    function createLeagueCard(league, view){
       const card = document.createElement('article');
       card.className = 'league-card';
 
@@ -136,6 +147,20 @@
       card.appendChild(link);
       card.appendChild(meta);
 
+      // Add embed script tag if template exists for this view
+      const template = embedTemplates[view];
+      if (template) {
+        const embedUrl = template.replace(/\{host\}/g, league.host)
+                                 .replace(/\{id\}/g, league.id)
+                                 .replace(/\{franchise\}/g, league.franchise || '')
+                                 .replace(/\{year\}/g, FFL.year);
+        
+        const script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = embedUrl;
+        card.appendChild(script);
+      }
+
       return card;
     }
 
@@ -148,7 +173,7 @@
       const list = leagues.filter(l => (l.views || []).indexOf(view) !== -1);
       // Create cards and append
       list.forEach(league => {
-        const card = createLeagueCard(league);
+        const card = createLeagueCard(league, view);
         grid.appendChild(card);
       });
 
