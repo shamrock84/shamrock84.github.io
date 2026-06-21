@@ -124,6 +124,11 @@
       { host: 'www42', id: '56191', name: 'Worlds Collide', franchise: '0008', views: ['bestball'] },
       { host: 'www43', id: '34203', name: "Rug's Playground", franchise: '0009', views: ['bestball'] }
     ];
+    const highlightedTeams = [
+      'RUMBLE FISH','PC LOAD LETTER','THE MERGE','HODOR','CAPO DEI CAPI','THORGASM',
+      'ALL YOUR BASE ARE BELONG TO US','BLUE STEEL','IONATH KRAKENS','JEFF\'S POLISH MALE ORDER',
+      'JLCS BUTT PLUG','CAMEL TOE CAMO','ALEXANDER MATTISONS NECK'
+    ];
 
     // Keep track of which views we've rendered and populated
     const renderedViews = new Set();
@@ -226,7 +231,7 @@
     }
 
     function getPlayersByIds(playerIds){
-      const ids = Array.from(new Set(asArray(playerIds).filter(Boolean)));
+      const ids = Array.from(new Set(asArray(playerIds).filter(Boolean))).sort();
       if (!ids.length) return Promise.resolve(new Map());
       const params = new URLSearchParams({
         TYPE: 'players',
@@ -234,7 +239,7 @@
         PLAYERS: ids.join(','),
         JSON: '1'
       });
-      return fetchCachedJson(`players:${ids.slice().sort().join(',')}`, `${FFL.apiBase}/${FFL.year}/export?${params.toString()}`)
+      return fetchCachedJson(`players:${ids.join(',')}`, `${FFL.apiBase}/${FFL.year}/export?${params.toString()}`)
         .then(data => {
           const playerMap = new Map();
           asArray(data && data.players && data.players.player).forEach(player => {
@@ -250,6 +255,18 @@
         leagueInfo.league &&
         ((leagueInfo.league.franchises && leagueInfo.league.franchises.franchise) || leagueInfo.league.franchise)
       );
+    }
+
+    function getStandingsRows(standingsData){
+      return asArray(
+        standingsData &&
+        standingsData.standings &&
+        (standingsData.standings.franchise || standingsData.standings.franchise_standings)
+      );
+    }
+
+    function getWeeklyMatchups(weeklyResults){
+      return asArray(weeklyResults && weeklyResults.weeklyResults && weeklyResults.weeklyResults.matchup);
     }
 
     function createWidgetContainer(titleText){
@@ -351,11 +368,7 @@
 
     function renderStandingsCard(leagueInfo, standingsData, titleText){
       const franchiseMap = getFranchiseMap(leagueInfo);
-      const standings = asArray(
-        standingsData &&
-        standingsData.standings &&
-        (standingsData.standings.franchise || standingsData.standings.franchise_standings)
-      );
+      const standings = getStandingsRows(standingsData);
       const container = createWidgetContainer(titleText || 'Standings');
 
       if (!standings.length) {
@@ -413,7 +426,7 @@
     }
 
     function findFranchiseWeeklyResult(weeklyResults, franchiseId){
-      const matchups = asArray(weeklyResults && weeklyResults.weeklyResults && weeklyResults.weeklyResults.matchup);
+      const matchups = getWeeklyMatchups(weeklyResults);
       return matchups
         .map(matchup => {
           const franchises = asArray(matchup && matchup.franchise);
@@ -426,6 +439,13 @@
     function toNumber(value){
       const parsed = Number(value);
       return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    function calculateOutcome(score, opponentScore, hasOpponent){
+      if (!hasOpponent) return '—';
+      if (score > opponentScore) return 'W';
+      if (score < opponentScore) return 'L';
+      return 'T';
     }
 
     function renderScheduleCard(leagueInfo, weeklyResults, franchiseId){
@@ -443,7 +463,7 @@
       const opponent = result.franchises.find(item => item && item.id !== franchiseId) || {};
       const score = toNumber(result.franchise.score);
       const opponentScore = toNumber(opponent.score);
-      const outcome = opponent.id ? (score > opponentScore ? 'W' : score < opponentScore ? 'L' : 'T') : '—';
+      const outcome = calculateOutcome(score, opponentScore, Boolean(opponent.id));
 
       container.appendChild(createTable(['Team', 'Score', 'Opponent', 'Opponent Score', 'Result'], [[
         teamName,
@@ -578,15 +598,9 @@
     function highlightTeamsInView(view){
       const viewSection = document.getElementById(view + 'View');
       if (!viewSection) return;
-      const teamNames = [
-        'RUMBLE FISH','PC LOAD LETTER','THE MERGE','HODOR','CAPO DEI CAPI','THORGASM',
-        'ALL YOUR BASE ARE BELONG TO US','BLUE STEEL','IONATH KRAKENS','JEFF\'S POLISH MALE ORDER',
-        'JLCS BUTT PLUG','CAMEL TOE CAMO','ALEXANDER MATTISONS NECK'
-      ];
-
       viewSection.querySelectorAll('.league-card').forEach(card => {
         const text = (card.textContent || '').toUpperCase();
-        const match = teamNames.some(name => text.includes(name));
+        const match = highlightedTeams.some(name => text.includes(name));
         if (match){
           card.style.backgroundColor = 'yellow';
           card.style.fontWeight = 'bold';
