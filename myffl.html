@@ -27,6 +27,7 @@
 
     .leagues-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(var(--card-min),1fr));gap:var(--gap);align-items:start}
     .league-card{padding:1rem;border:1px solid #ddd;border-radius:6px;text-align:center;background:#fff}
+    .league-card.highlighted-card{background:yellow;font-weight:bold}
     .league-card a{font-weight:700;color:#0b63c6;text-decoration:none;display:inline-block;margin-bottom:0.5rem}
     .league-card a:hover{text-decoration:underline}
     .league-card small{display:block;color:#666;font-size:0.85rem;margin-bottom:0.5rem}
@@ -442,7 +443,7 @@
     }
 
     function calculateOutcome(score, opponentScore, hasOpponent){
-      if (!hasOpponent) return '—';
+      if (!hasOpponent) return 'BYE';
       if (score > opponentScore) return 'W';
       if (score < opponentScore) return 'L';
       return 'T';
@@ -601,13 +602,7 @@
       viewSection.querySelectorAll('.league-card').forEach(card => {
         const text = (card.textContent || '').toUpperCase();
         const match = highlightedTeams.some(name => text.includes(name));
-        if (match){
-          card.style.backgroundColor = 'yellow';
-          card.style.fontWeight = 'bold';
-        } else {
-          card.style.backgroundColor = '#fff';
-          card.style.fontWeight = 'normal';
-        }
+        card.classList.toggle('highlighted-card', match);
       });
     }
 
