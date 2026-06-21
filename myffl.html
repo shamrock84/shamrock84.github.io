@@ -27,11 +27,19 @@
 
     .leagues-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(var(--card-min),1fr));gap:var(--gap);align-items:start}
     .league-card{padding:1rem;border:1px solid #ddd;border-radius:6px;text-align:center;background:#fff}
+    .league-card.highlighted-card{background:yellow;font-weight:bold}
     .league-card a{font-weight:700;color:#0b63c6;text-decoration:none;display:inline-block;margin-bottom:0.5rem}
     .league-card a:hover{text-decoration:underline}
     .league-card small{display:block;color:#666;font-size:0.85rem;margin-bottom:0.5rem}
     .league-card .widget-container{margin-top:0.5rem;border-top:1px solid #ddd;padding-top:0.5rem;overflow-x:auto}
     .league-card .widget-container table{width:100%;font-size:0.85rem;border-collapse:collapse}
+    .league-card .widget-container th,
+    .league-card .widget-container td{border:1px solid #ddd;padding:.35rem .45rem;text-align:left;vertical-align:top}
+    .league-card .widget-container th{background:#f5f5f5}
+    .league-card .widget-title{margin:.25rem 0 .5rem;font-size:.95rem}
+    .league-card .status-message{margin-top:.5rem;padding:.75rem;border:1px solid #ddd;border-radius:6px;background:#fafafa;font-size:.9rem}
+    .league-card .status-message.error{background:#fff4f4;border-color:#efc1c1;color:#8b1e1e}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 
     /* Utility spacing to mimic old visual separation between rows */
     .view caption{font-weight:bold;margin-bottom:.5rem;display:block}
@@ -101,18 +109,8 @@
     const FFL = {
       year: '2026',
       homePath: 'home',
+      apiBase: 'https://api.myfantasyleague.com',
       urlFor(host, id){ return `https://${host}.myfantasyleague.com/${this.year}/${this.homePath}/${id}` }
-    };
-
-    // View-specific embed URL templates
-    const embedTemplates = {
-      scores: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=LIVESCORING_SUMMARY',
-      standings: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=STANDINGS',
-      rosters: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=ROSTER&FRANCHISE={franchise}',
-      schedules: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=FRANCHISE_SCHEDULE&FRANCHISE={franchise}',
-      news: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=MY_NEWS&FRANCHISE={franchise}&COUNT=10',
-      lineups: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=SUBMIT_LINEUP&FRANCHISE={franchise}',
-      bestball: 'https://{host}.myfantasyleague.com/{year}/embed?L={id}&MODULE=BRIEF_STANDINGS'
     };
 
     // Master list of leagues. Edit here to change every view.
@@ -127,10 +125,16 @@
       { host: 'www42', id: '56191', name: 'Worlds Collide', franchise: '0008', views: ['bestball'] },
       { host: 'www43', id: '34203', name: "Rug's Playground", franchise: '0009', views: ['bestball'] }
     ];
+    const highlightedTeams = [
+      'RUMBLE FISH','PC LOAD LETTER','THE MERGE','HODOR','CAPO DEI CAPI','THORGASM',
+      'ALL YOUR BASE ARE BELONG TO US','BLUE STEEL','IONATH KRAKENS','JEFF\'S POLISH MALE ORDER',
+      'JLCS BUTT PLUG','CAMEL TOE CAMO','ALEXANDER MATTISONS NECK'
+    ];
 
-    // Keep track of which views we've rendered and which widgets we've injected
+    // Keep track of which views we've rendered and populated
     const renderedViews = new Set();
-    const injectedWidgets = new Set();
+    const populatedViews = new Set();
+    const apiCache = new Map();
 
     // Build DOM nodes safely
     function createLeagueCard(league){
@@ -150,8 +154,6 @@
       card.appendChild(link);
       card.appendChild(meta);
 
-      // Store league data for widget injection
-      card.dataset.widgetHost = league.host;
       card.dataset.widgetId = league.id;
       card.dataset.widgetFranchise = league.franchise || '';
 
@@ -174,93 +176,445 @@
       renderedViews.add(view);
     }
 
-    // Extract HTML from document.write() call in the response text
-    function extractHtmlFromDocumentWrite(scriptContent) {
-      // Match document.write('...') - handle escaped quotes and newlines
-      const match = scriptContent.match(/document\.write\('(.+?)'\);/s);
-      if (match && match[1]) {
-        let html = match[1];
-        // Unescape common escape sequences
-        html = html.replace(/\\'/g, "'");
-        html = html.replace(/\\n/g, '');
-        html = html.replace(/\\/g, '');
-        return html;
-      }
-      return null;
+    function asArray(value){
+      if (Array.isArray(value)) return value;
+      return value ? [value] : [];
     }
 
-    // Inject widget embeds lazily for a view (only once)
-    function injectWidgetsForView(view){
-      if (injectedWidgets.has(view)) return;
+    function formatValue(value){
+      return value === null || value === undefined || value === '' ? '—' : String(value);
+    }
+
+    function formatRecord(item){
+      const wins = item.h2hw || item.w || item.wins || '0';
+      const losses = item.h2hl || item.l || item.losses || '0';
+      const ties = item.h2ht || item.t || item.ties || '0';
+      return ties !== '0' ? `${wins}-${losses}-${ties}` : `${wins}-${losses}`;
+    }
+
+    function leagueApiUrl(type, leagueId, extraParams){
+      const params = new URLSearchParams({ TYPE: type, L: leagueId, JSON: '1' });
+      Object.entries(extraParams || {}).forEach(([key, value]) => {
+        if (value !== null && value !== undefined && value !== '') params.set(key, value);
+      });
+      return `${FFL.apiBase}/${FFL.year}/export?${params.toString()}`;
+    }
+
+    function fetchCachedJson(cacheKey, url){
+      if (!apiCache.has(cacheKey)) {
+        apiCache.set(cacheKey,
+          fetch(url).then(response => {
+            if (!response.ok) throw new Error(`API request failed (${response.status})`);
+            return response.json();
+          }).catch(error => {
+            console.error(`API request failed for ${cacheKey}`, url, error);
+            apiCache.delete(cacheKey);
+            throw error;
+          })
+        );
+      }
+      return apiCache.get(cacheKey);
+    }
+
+    function getLeagueInfo(league){
+      return fetchCachedJson(`league:${league.id}`, leagueApiUrl('league', league.id));
+    }
+
+    function getStandings(league){
+      return fetchCachedJson(`standings:${league.id}`, leagueApiUrl('standings', league.id));
+    }
+
+    function getRosters(league){
+      return fetchCachedJson(`rosters:${league.id}`, leagueApiUrl('rosters', league.id));
+    }
+
+    function getWeeklyResults(league){
+      return fetchCachedJson(`weeklyResults:${league.id}`, leagueApiUrl('weeklyResults', league.id));
+    }
+
+    // Fetch only the requested players, dedupe/sort ids for stable caching, and return a Map keyed by player id.
+    function getPlayersByIds(playerIds){
+      const ids = Array.from(new Set(asArray(playerIds).filter(Boolean))).sort();
+      if (!ids.length) return Promise.resolve(new Map());
+      const params = new URLSearchParams({
+        TYPE: 'players',
+        DETAILS: '1',
+        PLAYERS: ids.join(','),
+        JSON: '1'
+      });
+      return fetchCachedJson(`players:${ids.join(',')}`, `${FFL.apiBase}/${FFL.year}/export?${params.toString()}`)
+        .then(data => {
+          const playerMap = new Map();
+          asArray(data && data.players && data.players.player).forEach(player => {
+            if (player && player.id) playerMap.set(player.id, player);
+          });
+          return playerMap;
+        });
+    }
+
+    function getLeagueFranchises(leagueInfo){
+      return asArray(
+        leagueInfo &&
+        leagueInfo.league &&
+        ((leagueInfo.league.franchises && leagueInfo.league.franchises.franchise) || leagueInfo.league.franchise)
+      );
+    }
+
+    function getStandingsRows(standingsData){
+      return asArray(
+        standingsData &&
+        standingsData.standings &&
+        (standingsData.standings.franchise || standingsData.standings.franchise_standings)
+      );
+    }
+
+    function getWeeklyMatchups(weeklyResults){
+      return asArray(weeklyResults && weeklyResults.weeklyResults && weeklyResults.weeklyResults.matchup);
+    }
+
+    function createWidgetContainer(titleText){
+      const container = document.createElement('div');
+      container.className = 'widget-container';
+      if (titleText) {
+        const title = document.createElement('h2');
+        title.className = 'widget-title';
+        title.textContent = titleText;
+        container.appendChild(title);
+      }
+      return container;
+    }
+
+    function createStatusMessage(message, isError){
+      const box = document.createElement('div');
+      box.className = `status-message${isError ? ' error' : ''}`;
+      box.textContent = message;
+      return box;
+    }
+
+    function createTable(headers, rows, captionText){
+      const table = document.createElement('table');
+      if (captionText) {
+        const caption = document.createElement('caption');
+        caption.className = 'sr-only';
+        caption.textContent = captionText;
+        table.appendChild(caption);
+      }
+      const thead = document.createElement('thead');
+      const headRow = document.createElement('tr');
+      headers.forEach(header => {
+        const th = document.createElement('th');
+        th.scope = 'col';
+        th.textContent = header;
+        headRow.appendChild(th);
+      });
+      thead.appendChild(headRow);
+
+      const tbody = document.createElement('tbody');
+      rows.forEach(row => {
+        const tr = document.createElement('tr');
+        row.forEach(cell => {
+          const td = document.createElement('td');
+          if (cell instanceof Node) td.appendChild(cell);
+          else td.textContent = formatValue(cell);
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+
+      table.appendChild(thead);
+      table.appendChild(tbody);
+      return table;
+    }
+
+    function appendContent(card, content){
+      const existing = card.querySelector('.widget-container, .status-message');
+      if (existing) existing.remove();
+      card.appendChild(content);
+    }
+
+    function getFranchiseMap(leagueInfo){
+      const franchiseMap = new Map();
+      getLeagueFranchises(leagueInfo).forEach(franchise => {
+        if (franchise && franchise.id) franchiseMap.set(franchise.id, franchise);
+      });
+      return franchiseMap;
+    }
+
+    function renderScoresCard(leagueInfo, weeklyResults){
+      const franchiseMap = getFranchiseMap(leagueInfo);
+      const results = weeklyResults && weeklyResults.weeklyResults ? weeklyResults.weeklyResults : {};
+      const matchups = asArray(results.matchup);
+      const title = results.week ? `Week ${results.week} Scores` : 'Weekly Scores';
+      const container = createWidgetContainer(title);
+
+      if (!matchups.length) {
+        container.appendChild(createStatusMessage('No score data available yet.', false));
+        return container;
+      }
+
+      const rows = [];
+      matchups.forEach(matchup => {
+        const teams = asArray(matchup && matchup.franchise);
+        const teamA = teams[0] || {};
+        const teamB = teams[1] || {};
+        rows.push([
+          (franchiseMap.get(teamA.id) || {}).name || `Franchise ${formatValue(teamA.id)}`,
+          formatValue(teamA.score),
+          (franchiseMap.get(teamB.id) || {}).name || (teamB.id ? `Franchise ${teamB.id}` : 'Bye'),
+          formatValue(teamB.score)
+        ]);
+      });
+
+      container.appendChild(createTable(['Team', 'Score', 'Opponent', 'Opponent Score'], rows, title));
+      return container;
+    }
+
+    function renderStandingsCard(leagueInfo, standingsData, titleText){
+      const franchiseMap = getFranchiseMap(leagueInfo);
+      const standings = getStandingsRows(standingsData);
+      const container = createWidgetContainer(titleText || 'Standings');
+
+      if (!standings.length) {
+        container.appendChild(createStatusMessage('No standings data available yet.', false));
+        return container;
+      }
+
+      const rows = standings.map((item, index) => [
+        index + 1,
+        (franchiseMap.get(item.id || item.franchise_id) || {}).name || `Franchise ${formatValue(item.id || item.franchise_id)}`,
+        formatRecord(item),
+        formatValue(item.pf),
+        formatValue(item.pa)
+      ]);
+      container.appendChild(createTable(['Rank', 'Team', 'Record', 'PF', 'PA'], rows, titleText || 'Standings'));
+      return container;
+    }
+
+    function renderRosterCard(leagueInfo, rosterData, playerMap, franchiseId){
+      const franchises = getRosterFranchises(rosterData);
+      const roster = franchises.find(item => item && item.id === franchiseId);
+      const franchiseName = (getFranchiseMap(leagueInfo).get(franchiseId) || {}).name || `Franchise ${franchiseId}`;
+      const container = createWidgetContainer(`${franchiseName} Roster`);
+
+      if (!roster) {
+        container.appendChild(createStatusMessage('Roster data is unavailable for this franchise.', false));
+        return container;
+      }
+
+      const players = asArray(roster.player);
+      if (!players.length) {
+        container.appendChild(createStatusMessage('No rostered players found.', false));
+        return container;
+      }
+
+      const rows = players.map(item => {
+        const player = playerMap.get(item.id) || {};
+        return [
+          player.name || item.id,
+          player.position || '—',
+          player.team || 'FA',
+          item.status || 'ROSTER'
+        ];
+      });
+      container.appendChild(createTable(['Player', 'Pos', 'NFL', 'Status'], rows, `${franchiseName} roster`));
+      return container;
+    }
+
+    function getRosterFranchises(rosterData){
+      return asArray(
+        rosterData &&
+        rosterData.rosters &&
+        (rosterData.rosters.franchise || rosterData.rosters.franchises)
+      );
+    }
+
+    function extractStarterIds(result){
+      return (result && result.franchise && result.franchise.starters ? result.franchise.starters : '')
+        .split(',')
+        .filter(Boolean);
+    }
+
+    function findFranchiseWeeklyResult(weeklyResults, franchiseId){
+      const matchups = getWeeklyMatchups(weeklyResults);
+      return matchups
+        .map(matchup => {
+          const franchises = asArray(matchup && matchup.franchise);
+          const franchise = franchises.find(item => item && item.id === franchiseId);
+          return franchise ? { matchup, franchise, franchises } : null;
+        })
+        .find(Boolean) || null;
+    }
+
+    function toNumber(value){
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    function calculateOutcome(score, opponentScore, hasOpponent){
+      if (!hasOpponent) return 'BYE';
+      if (score > opponentScore) return 'W';
+      if (score < opponentScore) return 'L';
+      return 'T';
+    }
+
+    function renderScheduleCard(leagueInfo, weeklyResults, franchiseId){
+      const franchiseMap = getFranchiseMap(leagueInfo);
+      const result = findFranchiseWeeklyResult(weeklyResults, franchiseId);
+      const week = weeklyResults && weeklyResults.weeklyResults && weeklyResults.weeklyResults.week;
+      const teamName = (franchiseMap.get(franchiseId) || {}).name || `Franchise ${franchiseId}`;
+      const container = createWidgetContainer(week ? `Week ${week} Matchup` : 'Current Matchup');
+
+      if (!result) {
+        container.appendChild(createStatusMessage('No matchup data available yet.', false));
+        return container;
+      }
+
+      const opponent = result.franchises.find(item => item && item.id !== franchiseId) || {};
+      const score = toNumber(result.franchise.score);
+      const opponentScore = toNumber(opponent.score);
+      const outcome = calculateOutcome(score, opponentScore, Boolean(opponent.id));
+
+      container.appendChild(createTable(['Team', 'Score', 'Opponent', 'Opponent Score', 'Result'], [[
+        teamName,
+        formatValue(result.franchise.score),
+        (franchiseMap.get(opponent.id) || {}).name || (opponent.id ? `Franchise ${opponent.id}` : 'Bye'),
+        formatValue(opponent.score),
+        outcome
+      ]], week ? `Week ${week} matchup` : 'Current matchup'));
+      return container;
+    }
+
+    function renderLeagueInfoCard(leagueInfo, franchiseId){
+      const leagueData = leagueInfo && leagueInfo.league ? leagueInfo.league : {};
+      const franchiseMap = getFranchiseMap(leagueInfo);
+      const franchiseName = (franchiseMap.get(franchiseId) || {}).name || `Franchise ${franchiseId}`;
+      const starterCount = leagueData.starters && leagueData.starters.count;
+      const totalTeams = getLeagueFranchises(leagueInfo).length;
+      const regularSeasonEnd = leagueData.lastRegularSeasonWeek || leagueData.endWeek;
+      const container = createWidgetContainer('League Info');
+      container.appendChild(createTable(['Field', 'Value'], [
+        ['League', leagueData.name || '—'],
+        ['Your Team', franchiseName],
+        ['Teams', totalTeams || '—'],
+        ['Starters', starterCount || '—'],
+        ['Last Regular Season Week', regularSeasonEnd || '—']
+      ], 'League information'));
+      return container;
+    }
+
+    function renderLineupCard(leagueInfo, weeklyResults, playerMap, franchiseId){
+      const result = findFranchiseWeeklyResult(weeklyResults, franchiseId);
+      const franchiseName = (getFranchiseMap(leagueInfo).get(franchiseId) || {}).name || `Franchise ${franchiseId}`;
+      const week = weeklyResults && weeklyResults.weeklyResults && weeklyResults.weeklyResults.week;
+      const container = createWidgetContainer(week ? `Week ${week} Lineup` : `${franchiseName} Lineup`);
+
+      if (!result || !result.franchise) {
+        container.appendChild(createStatusMessage('Lineup data is unavailable until weekly results are published.', false));
+        return container;
+      }
+
+      const playerStats = new Map();
+      asArray(result.franchise.player).forEach(player => {
+        if (player && player.id) playerStats.set(player.id, player);
+      });
+
+      const starterIds = extractStarterIds(result);
+      if (!starterIds.length) {
+        container.appendChild(createStatusMessage('No starters were returned for this franchise.', false));
+        return container;
+      }
+
+      const rows = starterIds.map(playerId => {
+        const player = playerMap.get(playerId) || {};
+        const stats = playerStats.get(playerId) || {};
+        return [
+          player.name || playerId,
+          player.position || '—',
+          player.team || 'FA',
+          formatValue(stats.score)
+        ];
+      });
+      container.appendChild(createTable(['Starter', 'Pos', 'NFL', 'Score'], rows, week ? `Week ${week} lineup` : `${franchiseName} lineup`));
+      return container;
+    }
+
+    function renderCardContent(view, league, leagueInfo, standingsData, rosterData, weeklyResults, playerMap){
+      switch (view) {
+        case 'scores':
+          return renderScoresCard(leagueInfo, weeklyResults);
+        case 'standings':
+          return renderStandingsCard(leagueInfo, standingsData, 'Standings');
+        case 'bestball':
+          return renderStandingsCard(leagueInfo, standingsData, 'Best Ball Standings');
+        case 'rosters':
+          return renderRosterCard(leagueInfo, rosterData, playerMap, league.franchise);
+        case 'schedules':
+          return renderScheduleCard(leagueInfo, weeklyResults, league.franchise);
+        case 'news':
+          return renderLeagueInfoCard(leagueInfo, league.franchise);
+        case 'lineups':
+          return renderLineupCard(leagueInfo, weeklyResults, playerMap, league.franchise);
+        default:
+          return createStatusMessage('This view is not available.', true);
+      }
+    }
+
+    async function populateView(view){
+      if (populatedViews.has(view)) return;
       const grid = document.getElementById(view + 'Grid');
       if (!grid) return;
 
-      const template = embedTemplates[view];
-      if (!template) return;
+      const list = leagues.filter(l => (l.views || []).includes(view));
+      await Promise.all(list.map(async league => {
+        const card = Array.from(grid.querySelectorAll('.league-card')).find(item => item.dataset.widgetId === league.id);
+        if (!card) return;
 
-      // Find all cards in this view and fetch/inject embeds
-      grid.querySelectorAll('.league-card').forEach(card => {
-        // Replace tokens with safe known values
-        const embedUrl = template.replace(/\{host\}/g, card.dataset.widgetHost)
-                                 .replace(/\{id\}/g, card.dataset.widgetId)
-                                 .replace(/\{franchise\}/g, card.dataset.widgetFranchise)
-                                 .replace(/\{year\}/g, FFL.year);
-        
-        // Use allorigins.win CORS proxy
-        const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(embedUrl);
-        
-        fetch(proxyUrl)
-          .then(response => response.json())
-          .then(data => {
-            // allorigins returns the content in the 'contents' field
-            const scriptContent = data.contents;
-            if (scriptContent) {
-              // Extract HTML from document.write() call
-              const html = extractHtmlFromDocumentWrite(scriptContent);
-              if (html) {
-                const container = document.createElement('div');
-                container.className = 'widget-container';
-                container.innerHTML = html;
-                card.appendChild(document.createElement('hr'));
-                card.appendChild(container);
-              }
-            }
-          })
-          .catch(e => {
-            console.error('Widget embed fetch failed for', embedUrl, e);
-          });
-      });
+        appendContent(card, createStatusMessage('Loading league data…', false));
 
-      injectedWidgets.add(view);
+        try {
+          const needsStandings = view === 'standings' || view === 'bestball';
+          const needsRosters = view === 'rosters';
+          const needsWeeklyResults = view === 'scores' || view === 'schedules' || view === 'lineups';
+          const [leagueInfo, standingsData, rosterData, weeklyResults] = await Promise.all([
+            getLeagueInfo(league),
+            needsStandings ? getStandings(league) : Promise.resolve(null),
+            needsRosters ? getRosters(league) : Promise.resolve(null),
+            needsWeeklyResults ? getWeeklyResults(league) : Promise.resolve(null)
+          ]);
+          let playerMap = new Map();
+          if (view === 'rosters') {
+            const roster = getRosterFranchises(rosterData).find(item => item && item.id === league.franchise);
+            playerMap = await getPlayersByIds(asArray(roster && roster.player).map(player => player && player.id));
+          } else if (view === 'lineups') {
+            const result = findFranchiseWeeklyResult(weeklyResults, league.franchise);
+            playerMap = await getPlayersByIds(extractStarterIds(result));
+          }
+
+          appendContent(card, renderCardContent(view, league, leagueInfo, standingsData, rosterData, weeklyResults, playerMap));
+        } catch (error) {
+          console.error(`Failed to load ${view} data for league ${league.id}`, error);
+          appendContent(card, createStatusMessage('Unable to load league data right now.', true));
+        }
+      }));
+
+      populatedViews.add(view);
     }
 
     // Highlight team names by searching visible league cards' text
     function highlightTeamsInView(view){
       const viewSection = document.getElementById(view + 'View');
       if (!viewSection) return;
-      const teamNames = [
-        'RUMBLE FISH','PC LOAD LETTER','THE MERGE','HODOR','CAPO DEI CAPI','THORGASM',
-        'ALL YOUR BASE ARE BELONG TO US','BLUE STEEL','IONATH KRAKENS','JEFF\'S POLISH MALE ORDER',
-        'JLCS BUTT PLUG','CAMEL TOE CAMO','ALEXANDER MATTISONS NECK'
-      ];
-
-      // Find all links inside the view and check their textContent
-      viewSection.querySelectorAll('.league-card a').forEach(a => {
-        const text = (a.textContent || '').toUpperCase();
-        const match = teamNames.some(name => text.indexOf(name) !== -1);
-        if (match){
-          const card = a.closest('.league-card');
-          if (card){card.style.backgroundColor = 'yellow'; card.style.fontWeight = 'bold';}
-        }
+      viewSection.querySelectorAll('.league-card').forEach(card => {
+        const text = (card.textContent || '').toUpperCase();
+        const match = highlightedTeams.some(name => text.includes(name));
+        card.classList.toggle('highlighted-card', match);
       });
     }
 
     // Show and hide views; attach ARIA states for accessibility
-    function showView(view){
+    async function showView(view){
       // Render content for the view if needed
       renderView(view);
-      // Inject widgets for this view lazily
-      injectWidgetsForView(view);
 
       // Update visibility and ARIA
       document.querySelectorAll('.view').forEach(sec => {
@@ -274,8 +628,9 @@
         btn.setAttribute('aria-pressed', isPressed ? 'true' : 'false');
       });
 
-      // perform team highlighting for scores or standings
-      if (view === 'scores' || view === 'standings') highlightTeamsInView(view);
+      // Populate API data for this view lazily
+      await populateView(view);
+      highlightTeamsInView(view);
     }
 
     // Wire up view buttons (no inline handlers)
@@ -297,7 +652,7 @@
     });
 
     // Expose some diagnostics to window for debugging (safe, non-critical)
-    window._myffl = { FFL, leagues, renderView };
+    window._myffl = { FFL, leagues, renderView, populateView, showView };
 
   })();
   </script>
