@@ -12,41 +12,176 @@
   <meta name="msapplication-TileColor" content="#da532c">
   <meta name="theme-color" content="#ffffff">
 
+  <!-- MFL Norseman Skin CSS -->
+  <link rel="stylesheet" href="https://www.myfantasyleague.com/skins/norseman/skin.css">
+
   <style>
-    :root{--gap:12px;--card-min:280px}
-    body{font-family: Arial, Helvetica, sans-serif;margin:1rem;background:#fff;color:#111}
-    header{display:flex;flex-wrap:wrap;align-items:center;gap:1rem;margin-bottom:1rem}
-    .view-buttons{display:flex;gap:.5rem;flex-wrap:wrap}
-    .view-buttons button{padding:.6rem 1rem;border:1px solid #ccc;background:#fafafa;border-radius:6px;cursor:pointer;font-size:0.9rem}
-    .view-buttons button[aria-pressed="true"]{background:#e7f3ff;border-color:#6aa8ff}
+    /* Custom overrides for myFFL dashboard */
+    body {
+      margin: 1rem;
+    }
 
-    main{display:block}
-    .view{display:none}
-    .view[aria-hidden="false"]{display:block}
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
 
-    .leagues-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(var(--card-min),1fr));gap:var(--gap);align-items:start}
-    .league-card{padding:1rem;border:1px solid #ddd;border-radius:6px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,0.05)}
-    .league-card.highlight{background:#fffacd;border-color:#daa520;font-weight:bold}
-    .league-card h3{margin:0 0 0.5rem 0;font-size:1rem}
-    .league-card a{font-weight:700;color:#0b63c6;text-decoration:none;display:inline-block}
-    .league-card a:hover{text-decoration:underline}
-    .league-card small{display:block;color:#666;font-size:0.8rem;margin-bottom:0.5rem}
-    .league-card .loading{color:#999;font-size:0.85rem;padding:1rem 0;text-align:center}
-    .league-card .error{color:#c33;font-size:0.85rem;padding:0.5rem;background:#ffe6e6;border-radius:3px;margin-top:0.5rem}
-    .league-card table{width:100%;font-size:0.8rem;border-collapse:collapse;margin-top:0.5rem}
-    .league-card table th{background:#f5f5f5;padding:0.4rem;text-align:left;border-bottom:1px solid #ddd;font-weight:bold}
-    .league-card table td{padding:0.4rem;border-bottom:1px solid #eee}
-    .league-card table tr:hover{background:#f9f9f9}
+    h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      color: #7ec8e3;
+    }
 
-    .view caption{font-weight:bold;margin-bottom:.5rem;display:block;font-size:1.1rem}
+    .view-buttons {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
 
-    .view-buttons button:focus{outline:3px solid rgba(100,150,255,.25)}
+    .view-buttons button {
+      padding: 0.6rem 1rem;
+      border: 1px solid #668099;
+      background: #25344e;
+      color: #dde5ee;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+
+    .view-buttons button:hover {
+      background: #36475c;
+      color: #7ec8e3;
+    }
+
+    .view-buttons button[aria-pressed="true"] {
+      background: #7ec8e3;
+      color: #1e2633;
+      border-color: #7ec8e3;
+    }
+
+    main {
+      display: block;
+    }
+
+    .view {
+      display: none;
+    }
+
+    .view[aria-hidden="false"] {
+      display: block;
+    }
+
+    .leagues-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem;
+      align-items: start;
+    }
+
+    .league-card {
+      padding: 1rem;
+      border: 1px solid #273347;
+      border-radius: 4px;
+      background: #2c3d56;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    }
+
+    .league-card.highlight {
+      background: #3d5a6a;
+      border-color: #7ec8e3;
+      box-shadow: 0 0 10px rgba(126, 200, 227, 0.3);
+    }
+
+    .league-card h3 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1rem;
+      color: #7ec8e3;
+    }
+
+    .league-card a {
+      font-weight: 700;
+      color: #7ec8e3;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .league-card a:hover {
+      color: #abbfd6;
+      text-decoration: underline;
+    }
+
+    .league-card small {
+      display: block;
+      color: #a0afc0;
+      font-size: 0.8rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .league-card .loading {
+      color: #7ec8e3;
+      font-size: 0.85rem;
+      padding: 1rem 0;
+      text-align: center;
+    }
+
+    .league-card .error {
+      color: #ff6b6b;
+      font-size: 0.85rem;
+      padding: 0.5rem;
+      background: rgba(255, 107, 107, 0.1);
+      border: 1px solid rgba(255, 107, 107, 0.3);
+      border-radius: 3px;
+      margin-top: 0.5rem;
+    }
+
+    .league-card table {
+      width: 100%;
+      font-size: 0.85rem;
+      border-collapse: collapse;
+      margin-top: 0.5rem;
+      background: #1e2633;
+    }
+
+    .league-card table th {
+      background: #19202a;
+      color: #7ec8e3;
+      padding: 0.5rem;
+      text-align: left;
+      border: 1px solid #273347;
+      font-weight: bold;
+    }
+
+    .league-card table td {
+      padding: 0.5rem;
+      border: 1px solid #273347;
+      color: #dde5ee;
+    }
+
+    .league-card table tr:hover {
+      background: #394d5c;
+    }
+
+    .view caption {
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+      display: block;
+      font-size: 1.1rem;
+      color: #7ec8e3;
+    }
+
+    .view-buttons button:focus {
+      outline: 3px solid rgba(126, 200, 227, 0.5);
+    }
   </style>
 
 </head>
 <body>
   <header>
-    <h1 style="margin:0;font-size:1.25rem">myFFL</h1>
+    <h1>myFFL</h1>
     <nav class="view-buttons" role="tablist" aria-label="Select view">
       <button data-view="scores" type="button" role="tab">Scores</button>
       <button data-view="rosters" type="button" role="tab">Rosters</button>
@@ -212,9 +347,11 @@
         const div2 = document.createElement('div');
         div2.style.marginBottom = '0.5rem';
         div2.style.padding = '0.5rem';
-        div2.style.background = '#f9f9f9';
+        div2.style.background = '#1e2633';
         div2.style.borderRadius = '3px';
-        div2.innerHTML = `<strong>${name}</strong><br><small>${playerList}${players.length > 5 ? '...' : ''}</small>`;
+        div2.style.borderLeft = '3px solid #7ec8e3';
+        div2.style.color = '#dde5ee';
+        div2.innerHTML = `<strong style="color:#7ec8e3">${name}</strong><br><small style="color:#a0afc0">${playerList}${players.length > 5 ? '...' : ''}</small>`;
         div.appendChild(div2);
       });
 
@@ -261,13 +398,14 @@
       }
 
       if (upcomingGames.length === 0) {
-        div.innerHTML = '<p style="color:#999;font-size:0.9rem">No upcoming games</p>';
+        div.innerHTML = '<p style="color:#a0afc0;font-size:0.9rem">No upcoming games</p>';
       } else {
         upcomingGames.slice(0, 3).forEach(g => {
           const div2 = document.createElement('div');
           div2.style.marginBottom = '0.5rem';
           div2.style.fontSize = '0.85rem';
-          div2.innerHTML = `Week ${g.week}: ${g.team_name || 'TBD'}`;
+          div2.style.color = '#dde5ee';
+          div2.innerHTML = `Week ${g.week}: <span style="color:#7ec8e3">${g.team_name || 'TBD'}</span>`;
           div.appendChild(div2);
         });
       }
