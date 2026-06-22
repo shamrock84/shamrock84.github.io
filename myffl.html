@@ -1,494 +1,267 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>myFFL</title>
-  <meta http-equiv="cache-control" content="no-cache">
-  <meta http-equiv="pragma" content="no-cache">
-  <link rel="icon" type="image/png" sizes="32x32" href="https://shamrock84.github.io/fflicons/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="https://shamrock84.github.io/fflicons/favicon-16x16.png">
-  <link rel="manifest" href="https://shamrock84.github.io/fflicons/site.webmanifest">
-  <meta name="msapplication-TileColor" content="#da532c">
-  <meta name="theme-color" content="#ffffff">
-
-  <!-- MFL Norseman Skin CSS -->
-  <link rel="stylesheet" href="https://www.myfantasyleague.com/skins/norseman/skin.css">
-
-  <!--
-  <style>
-    /* Custom overrides for myFFL dashboard */
-    body {
-      margin: 1rem;
-    }
-
-    header {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 1rem;
-      margin-bottom: 1rem;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: 1.5rem;
-      color: #7ec8e3;
-    }
-
-    .view-buttons {
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-    }
-
-    .view-buttons button {
-      padding: 0.6rem 1rem;
-      border: 1px solid #668099;
-      background: #25344e;
-      color: #dde5ee;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 0.9rem;
-      transition: all 0.2s ease;
-    }
-
-    .view-buttons button:hover {
-      background: #36475c;
-      color: #7ec8e3;
-    }
-
-    .view-buttons button[aria-pressed="true"] {
-      background: #7ec8e3;
-      color: #1e2633;
-      border-color: #7ec8e3;
-    }
-
-    main {
-      display: block;
-    }
-
-    .view {
-      display: none;
-    }
-
-    .view[aria-hidden="false"] {
-      display: block;
-    }
-
-    .leagues-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 1rem;
-      align-items: start;
-    }
-
-    .league-card {
-      padding: 1rem;
-      border: 1px solid #273347;
-      border-radius: 4px;
-      background: #2c3d56;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-    }
-
-    .league-card.highlight {
-      background: #3d5a6a;
-      border-color: #7ec8e3;
-      box-shadow: 0 0 10px rgba(126, 200, 227, 0.3);
-    }
-
-    .league-card h3 {
-      margin: 0 0 0.5rem 0;
-      font-size: 1rem;
-      color: #7ec8e3;
-    }
-
-    .league-card a {
-      font-weight: 700;
-      color: #7ec8e3;
-      text-decoration: none;
-      display: inline-block;
-    }
-
-    .league-card a:hover {
-      color: #abbfd6;
-      text-decoration: underline;
-    }
-
-    .league-card small {
-      display: block;
-      color: #a0afc0;
-      font-size: 0.8rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .league-card .loading {
-      color: #7ec8e3;
-      font-size: 0.85rem;
-      padding: 1rem 0;
-      text-align: center;
-    }
-
-    .league-card .error {
-      color: #ff6b6b;
-      font-size: 0.85rem;
-      padding: 0.5rem;
-      background: rgba(255, 107, 107, 0.1);
-      border: 1px solid rgba(255, 107, 107, 0.3);
-      border-radius: 3px;
-      margin-top: 0.5rem;
-    }
-
-    .league-card table {
-      width: 100%;
-      font-size: 0.85rem;
-      border-collapse: collapse;
-      margin-top: 0.5rem;
-      background: #1e2633;
-    }
-
-    .league-card table th {
-      background: #19202a;
-      color: #7ec8e3;
-      padding: 0.5rem;
-      text-align: left;
-      border: 1px solid #273347;
-      font-weight: bold;
-    }
-
-    .league-card table td {
-      padding: 0.5rem;
-      border: 1px solid #273347;
-      color: #dde5ee;
-    }
-
-    .league-card table tr:hover {
-      background: #394d5c;
-    }
-
-    .view caption {
-      font-weight: bold;
-      margin-bottom: 0.5rem;
-      display: block;
-      font-size: 1.1rem;
-      color: #7ec8e3;
-    }
-
-    .view-buttons button:focus {
-      outline: 3px solid rgba(126, 200, 227, 0.5);
-    }
-  </style>
-  -->
-  
-</head>
-<body>
-  <header>
-    <h1>myFFL</h1>
-    <nav class="view-buttons" role="tablist" aria-label="Select view">
-      <button data-view="scores" type="button" role="tab">Scores</button>
-      <button data-view="rosters" type="button" role="tab">Rosters</button>
-      <button data-view="standings" type="button" role="tab">Standings</button>
-      <button data-view="schedules" type="button" role="tab">Schedules</button>
-    </nav>
-  </header>
-
-  <main>
-    <section id="scoresView" class="view" aria-hidden="true">
-      <caption>Weekly Scores</caption>
-      <div class="leagues-grid" id="scoresGrid" aria-live="polite"></div>
-    </section>
-
-    <section id="rostersView" class="view" aria-hidden="true">
-      <caption>Rosters</caption>
-      <div class="leagues-grid" id="rostersGrid" aria-live="polite"></div>
-    </section>
-
-    <section id="standingsView" class="view" aria-hidden="true">
-      <caption>Standings</caption>
-      <div class="leagues-grid" id="standingsGrid" aria-live="polite"></div>
-    </section>
-
-    <section id="schedulesView" class="view" aria-hidden="true">
-      <caption>Schedules</caption>
-      <div class="leagues-grid" id="schedulesGrid" aria-live="polite"></div>
-    </section>
-  </main>
-
-  <script>
-  (function(){
-    'use strict';
-
-    const PROXY_URL = 'https://myffl-proxy.onrender.com';
-    const FFL = {
-      year: '2026',
-      homePath: 'home',
-      urlFor(host, id){ return `https://${host}.myfantasyleague.com/${this.year}/${this.homePath}/${id}` }
-    };
-
-    const leagues = [
-      { host: 'www43', id: '26696', name: 'MNMx Dynasty', franchise: '0001', views: ['scores','rosters','schedules','standings'] },
-      { host: 'www46', id: '35217', name: 'Iron Bank', franchise: '0004', views: ['scores','rosters','schedules','standings'] },
-      { host: 'www49', id: '25608', name: 'OSD', franchise: '0004', views: ['scores','rosters','schedules','standings'] },
-      { host: 'www46', id: '34850', name: 'Wise Guys', franchise: '0010', views: ['scores','rosters','schedules','standings'] },
-      { host: 'www43', id: '23545', name: 'Survivor', franchise: '0008', views: ['scores','rosters','schedules','standings'] },
-      { host: 'www47', id: '30641', name: 'Super Cap', franchise: '0003', views: ['scores','rosters','schedules','standings'] },
-      { host: 'www43', id: '64470', name: 'Game On', franchise: '0005', views: ['scores','rosters','schedules','standings'] },
-      { host: 'www42', id: '56191', name: 'Worlds Collide', franchise: '0008', views: ['scores','standings'] },
-      { host: 'www43', id: '34203', name: "Rug's Playground", franchise: '0009', views: ['scores','standings'] }
-    ];
-
-    const teamNames = [
-      'RUMBLE FISH','PC LOAD LETTER','THE MERGE','HODOR','CAPO DEI CAPI','THORGASM',
-      'ALL YOUR BASE ARE BELONG TO US','BLUE STEEL','IONATH KRAKENS','JEFF\'S POLISH MALE ORDER',
-      'JLCS BUTT PLUG','CAMEL TOE CAMO','ALEXANDER MATTISONS NECK'
-    ];
-
-    const renderedViews = new Set();
-    const cache = {};
-
-    function createLeagueCard(league){
-      const card = document.createElement('article');
-      card.className = 'league-card';
-      card.dataset.leagueId = league.id;
-
-      const link = document.createElement('a');
-      link.href = FFL.urlFor(league.host, league.id);
-      link.textContent = league.name;
-      link.rel = 'noopener noreferrer';
-      link.target = '_blank';
-
-      const h3 = document.createElement('h3');
-      h3.appendChild(link);
-
-      const meta = document.createElement('small');
-      meta.textContent = `${league.host}.myfantasyleague.com / ${league.id}`;
-      
-      card.appendChild(h3);
-      //card.appendChild(meta);
-
-      // Check if team name matches highlight list
-      const leagueName = league.name.toUpperCase();
-      if (teamNames.some(name => leagueName.indexOf(name) !== -1)) {
-        card.classList.add('highlight');
-      }
-
-      return card;
-    }
-
-    async function fetchFromProxy(type, id){
-      const cacheKey = `${type}:${id}`;
-      if (cache[cacheKey]) return cache[cacheKey];
-
-      try {
-        const url = `${PROXY_URL}/api/proxy?type=${encodeURIComponent(type)}&L=${encodeURIComponent(id)}`;
-        const response = await fetch(url);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-
-        const data = await response.json();
-        cache[cacheKey] = data;
-        return data;
-      } catch (error) {
-        console.error(`Failed to fetch ${type} for league ${id}:`, error);
-        throw error;
-      }
-    }
-
-    function asArray(value){
-      if (Array.isArray(value)) return value;
-      return value ? [value] : [];
-    }
-
-    function renderStandings(data, card){
-      const table = document.createElement('table');
-      const thead = document.createElement('thead');
-      thead.innerHTML = '<tr><th>Team</th><th>W</th><th>L</th><th>PF</th></tr>';
-      table.appendChild(thead);
-
-      const tbody = document.createElement('tbody');
-      
-      // Extract standings rows
-      let franchises = [];
-      if (data.standings && data.standings.franchise) {
-        franchises = asArray(data.standings.franchise);
-      }
-
-      franchises.forEach(f => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${f.name || 'N/A'}</td>
-          <td>${f.wins || '0'}</td>
-          <td>${f.losses || '0'}</td>
-          <td>${f.pf || '0'}</td>
-        `;
-        tbody.appendChild(row);
-      });
-
-      table.appendChild(tbody);
-      card.appendChild(table);
-    }
-
-    function renderRosters(data, card){
-      const div = document.createElement('div');
-      
-      let franchises = [];
-      if (data.rosters && data.rosters.franchise) {
-        franchises = asArray(data.rosters.franchise);
-      }
-
-      franchises.forEach(f => {
-        const name = f.name || f.id;
-        const players = asArray(f.player);
-        const playerList = players.slice(0, 5).map(p => {
-          const pos = p.position || p.pos || '?';
-          return `${p.name} (${pos})`;
-        }).join(', ');
-        
-        const div2 = document.createElement('div');
-        div2.style.marginBottom = '0.5rem';
-        div2.style.padding = '0.5rem';
-        div2.style.background = '#1e2633';
-        div2.style.borderRadius = '3px';
-        div2.style.borderLeft = '3px solid #7ec8e3';
-        div2.style.color = '#dde5ee';
-        div2.innerHTML = `<strong style="color:#7ec8e3">${name}</strong><br><small style="color:#a0afc0">${playerList}${players.length > 5 ? '...' : ''}</small>`;
-        div.appendChild(div2);
-      });
-
-      card.appendChild(div);
-    }
-
-    function renderScores(data, card){
-      const table = document.createElement('table');
-      const thead = document.createElement('thead');
-      thead.innerHTML = '<tr><th>Team</th><th>Score</th><th>Opponent</th><th>Opp Score</th></tr>';
-      table.appendChild(thead);
-
-      const tbody = document.createElement('tbody');
-      
-      let matchups = [];
-      if (data.weeklyResults && data.weeklyResults.matchup) {
-        matchups = asArray(data.weeklyResults.matchup);
-      }
-
-      matchups.forEach(m => {
-        const teams = asArray(m.franchise);
-        if (teams.length >= 2) {
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td>${teams[0].name || 'N/A'}</td>
-            <td>${teams[0].score || '0'}</td>
-            <td>${teams[1].name || 'N/A'}</td>
-            <td>${teams[1].score || '0'}</td>
-          `;
-          tbody.appendChild(row);
-        }
-      });
-
-      table.appendChild(tbody);
-      card.appendChild(table);
-    }
-
-    function renderSchedules(data, card){
-      const div = document.createElement('div');
-      
-      let upcomingGames = [];
-      if (data.upcomingGames) {
-        upcomingGames = asArray(data.upcomingGames);
-      }
-
-      if (upcomingGames.length === 0) {
-        div.innerHTML = '<p style="color:#a0afc0;font-size:0.9rem">No upcoming games</p>';
-      } else {
-        upcomingGames.slice(0, 3).forEach(g => {
-          const div2 = document.createElement('div');
-          div2.style.marginBottom = '0.5rem';
-          div2.style.fontSize = '0.85rem';
-          div2.style.color = '#dde5ee';
-          div2.innerHTML = `Week ${g.week}: <span style="color:#7ec8e3">${g.team_name || 'TBD'}</span>`;
-          div.appendChild(div2);
-        });
-      }
-
-      card.appendChild(div);
-    }
-
-    async function populateView(view){
-      if (renderedViews.has(view)) return;
-
-      const grid = document.getElementById(view + 'Grid');
-      if (!grid) return;
-
-      const filtered = leagues.filter(l => (l.views || []).indexOf(view) !== -1);
-
-      for (const league of filtered) {
-        const card = createLeagueCard(league);
-        grid.appendChild(card);
-
-        const loading = document.createElement('div');
-        loading.className = 'loading';
-        loading.textContent = 'Loading...';
-        card.appendChild(loading);
-
-        try {
-          let dataType = view;
-          if (view === 'schedules') dataType = 'upcomingGames';
-          
-          const data = await fetchFromProxy(dataType, league.id);
-          card.removeChild(loading);
-          
-          if (view === 'standings') {
-            renderStandings(data, card);
-          } else if (view === 'rosters') {
-            renderRosters(data, card);
-          } else if (view === 'scores') {
-            renderScores(data, card);
-          } else if (view === 'schedules') {
-            renderSchedules(data, card);
-          }
-        } catch (error) {
-          if (loading.parentNode) card.removeChild(loading);
-          const err = document.createElement('div');
-          err.className = 'error';
-          err.textContent = 'Failed to load data';
-          card.appendChild(err);
-        }
-      }
-
-      renderedViews.add(view);
-    }
-
-    function showView(view){
-      populateView(view);
-
-      document.querySelectorAll('.view').forEach(sec => {
-        sec.setAttribute('aria-hidden', sec.id !== view + 'View');
-      });
-
-      document.querySelectorAll('.view-buttons button').forEach(btn => {
-        btn.setAttribute('aria-pressed', btn.dataset.view === view);
-      });
-    }
-
-    function wireViewButtons(){
-      document.querySelectorAll('.view-buttons button').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const view = btn.dataset.view;
-          if (view) showView(view);
-        });
-      });
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      wireViewButtons();
-      showView('rosters');
-    });
-
-    window._myffl = { leagues, PROXY_URL };
-
-  })();
-  </script>
-</body>
+<html>
+	<head>
+		<title>myFFL</title>
+		<META HTTP-EQUIV="CACHE-CONTROL" CONTENT="NO-CACHE">
+		<META HTTP-EQUIV="PRAGMA" CONTENT="NO-CACHE">
+		<!--	<link rel="apple-touch-icon" sizes="144x144" href="https://shamrock84.github.io/fflicons/apple-touch-icon.png">	-->
+			<link rel="icon" type="image/png" sizes="32x32" href="https://shamrock84.github.io/fflicons/favicon-32x32.png">
+			<link rel="icon" type="image/png" sizes="16x16" href="https://shamrock84.github.io/fflicons/favicon-16x16.png">
+			<link rel="manifest" href="https://shamrock84.github.io/fflicons/site.webmanifest">
+			<meta name="msapplication-TileColor" content="#da532c">
+			<meta name="theme-color" content="#ffffff">
+		<link rel="stylesheet" id="skin_stylesheet" href="https://www.myfantasyleague.com/skins/norseman/skin.css" type="text/css"  />
+		<script type="text/javascript">
+			function loadView(value)
+			{
+				//Hide all views
+				var views = document.getElementsByClassName("FFLdiv");
+				for (var i = 0; i < views.length; i++) 
+				{ 
+					views[i].style.display = "none";
+				}
+
+				//Display selected view
+				document.getElementById(value+"View").style.display = "block";
+
+				//highlight team names if in scores or standings view
+				if (value == "scores" || value == "standings")
+				{
+					highlightTeams(value+"Form");
+				}
+			}
+			function highlightTeams(formName)
+			{
+				var tableCells;
+				if (formName == "standingsForm")
+					tableCells = document.forms[formName].getElementsByClassName("fname");
+				else
+					tableCells = document.forms[formName].getElementsByTagName("td");
+
+				for (var i = 0; i < tableCells.length; i++) 
+				{ 
+					var text = tableCells[i].innerHTML.substr(0,200).toUpperCase();
+					if (text.match("RUMBLE FISH") ||
+					    text.match("PC LOAD LETTER") ||
+					    text.match("THE MERGE") ||
+					    text.match("HODOR") ||
+					    text.match("CAPO DEI CAPI") ||
+					    text.match("THORGASM") ||
+					    text.match("ALL YOUR BASE ARE BELONG TO US") ||
+					    text.match("BLUE STEEL") ||
+					    text.match("IONATH KRAKENS") ||
+					    text.match("VIKINGS FIRST ROUND PICK") ||
+					    text.match("PAULYDS PIMP") ||
+					    text.match("MARCUS ALLEN") ||
+					    text.match("JULY") ||
+					    text.match("AUGUST"))
+					{
+						tableCells[i].style.backgroundColor = "yellow";
+						tableCells[i].style.fontWeight = "bold";
+					}
+				}
+			}
+		</script>
+		<style>
+		.contractstatus { display:none; }
+		.contractinfo { display:none; }
+		.total_salary_row th:nth-child(4) { display: none; }
+		.total_salary_row th:nth-child(5) { display: none; }
+		.salary_cap_row th:nth-child(4) { display: none; }
+		.salary_cap_row th:nth-child(5) { display: none; }
+		.cap_room_available_row th:nth-child(4) { display: none; }
+		.cap_room_available_row th:nth-child(5) { display: none; }
+		</style>
+	</head>
+	<body onload="loadView('rosters');"><!--change this value to default to a single view*/-->
+		<form name="viewSelectForm">
+		<br/>
+		<table style="width:100%;text-align:center;">
+		<caption>Select View:</caption>
+		<td><h2><input type="button" name="viewSelect" value="scores" style="display:block;width:100%;" onClick="loadView('scores');highlightTeams('scoresForm')"></h2></td>
+		<td><h2><input type="button" name="viewSelect" value="rosters" style="display:block;width:100%;" onClick="loadView('rosters')"></h2></td>
+		<!--<td><input type="radio" name="viewSelect" value="lineups" onClick="loadView()"></td>-->
+		<td><h2><input type="button" name="viewSelect" value="standings" style="display:block;width:100%;" onClick="loadView('standings');highlightTeams('standingsForm')"></h2></td>
+		<td><h2><input type="button" name="viewSelect" value="bestball" style="display:block;width:100%;" onClick="loadView('bestball');highlightTeams('bestballForm')"></h2></td>
+		<!--<td><input type="radio" name="viewSelect" value="schedules" onClick="loadView()"></td>
+		<td><input type="radio" name="viewSelect" value="news" onClick="loadView()"></td>-->
+		</table>
+		</form>
+		<br/><br/>
+		<div id="scoresView" style="display:none;" class="FFLdiv">
+		<form name="scoresForm">
+		<table style="width:100%">
+		<caption>myFFL Scores</caption>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www43.myfantasyleague.com/2026/home/26696">MNMx Dynasty</a><b><br/><script type="text/javascript" src="https://www43.myfantasyleague.com/2026/embed?L=26696&MODULE=LIVESCORING_SUMMARY"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www46.myfantasyleague.com/2026/home/35217">Iron Bank</a><b><br/><script type="text/javascript" src="https://www46.myfantasyleague.com/2026/embed?L=35217&MODULE=LIVESCORING_SUMMARY"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www49.myfantasyleague.com/2026/home/25608">OSD</a><b><br/><script type="text/javascript" src="https://www49.myfantasyleague.com/2026/embed?L=25608&MODULE=LIVESCORING_SUMMARY"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www46.myfantasyleague.com/2026/home/34850">Wise Guys</a><b><br/><script type="text/javascript" src="https://www46.myfantasyleague.com/2026/embed?L=34850&MODULE=LIVESCORING_SUMMARY"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www43.myfantasyleague.com/2026/home/23545">Survivor</a><b><br/><script type="text/javascript" src="https://www43.myfantasyleague.com/2026/embed?L=23545&MODULE=LIVESCORING_SUMMARY"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www47.myfantasyleague.com/2026/home/30641">Super Cap</a><b><br/><script type="text/javascript" src="https://www47.myfantasyleague.com/2026/embed?L=30641&MODULE=LIVESCORING_SUMMARY"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"></td>				
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www43.myfantasyleague.com/2026/home/64470">Game On</a><b><br/><script type="text/javascript" src="https://www43.myfantasyleague.com/2026/embed?L=64470&MODULE=LIVESCORING_SUMMARY"></script></td>
+			</tr>
+		</table>
+		</form>
+		</div>
+		<div id="bestballView" style="display:none;" class="FFLdiv">
+		<form name="bestballForm">
+		<table style="width:100%">
+		<caption>myFFL BestBall</caption>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www42.myfantasyleague.com/2026/home/56191">Worlds Collide</a><b><br/><script type="text/javascript" src="https://www42.myfantasyleague.com/2026/embed?L=56191&MODULE=BRIEF_STANDINGS"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www43.myfantasyleague.com/2026/home/34203">Rug's Playground</a><b><br/><script type="text/javascript" src="https://www43.myfantasyleague.com/2026/embed?L=34203&MODULE=BRIEF_STANDINGS"></script></td>
+			</tr>
+      <br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www45.myfantasyleague.com/2026/home/72911">April Pre-NFL Draft</a><b><br/><script type="text/javascript" src="https://www45.myfantasyleague.com/2026/embed?L=72911&MODULE=BRIEF_STANDINGS"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www47.myfantasyleague.com/2026/home/54766">May Rookies</a><b><br/><script type="text/javascript" src="https://www47.myfantasyleague.com/2026/embed?L=54766&MODULE=BRIEF_STANDINGS"></script></td>
+			</tr>
+      <br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www47.myfantasyleague.com/2026/home/54458">June Tecmo Ball</a><b><br/><script type="text/javascript" src="https://www47.myfantasyleague.com/2026/embed?L=54458&MODULE=BRIEF_STANDINGS"></script></td>
+			</tr>
+		</table>
+		</form>
+		</div>
+		<div id="rostersView" style="display:none;" class="FFLdiv">
+		<form name="rostersForm">
+		<table style="width:100%">
+		<caption>myFFL Rosters</caption>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www43.myfantasyleague.com/2026/home/26696">MNMx Dynasty</a><b><br/><script type="text/javascript" src="https://www43.myfantasyleague.com/2026/embed?L=26696&MODULE=ROSTER&FRANCHISE=0001"></script></td>
+			    	<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www46.myfantasyleague.com/2026/home/35217">Iron Bank</a><b><br/><script type="text/javascript" src="https://www46.myfantasyleague.com/2026/embed?L=35217&MODULE=ROSTER&FRANCHISE=0004"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www49.myfantasyleague.com/2026/home/25608">OSD</a><b><br/><script type="text/javascript" src="https://www49.myfantasyleague.com/2026/embed?L=25608&MODULE=ROSTER&FRANCHISE=0001"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www46.myfantasyleague.com/2026/home/34850">Wise Guys</a><b><br/><script type="text/javascript" src="https://www46.myfantasyleague.com/2026/embed?L=34850&MODULE=ROSTER&FRANCHISE=0010"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www43.myfantasyleague.com/2026/home/23545">Survivor</a><b><br/><script type="text/javascript" src="https://www43.myfantasyleague.com/2026/embed?L=23545&MODULE=ROSTER&FRANCHISE=0008"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www47.myfantasyleague.com/2026/home/30641">Super Cap</a><b><br/><script type="text/javascript" src="https://www47.myfantasyleague.com/2026/embed?L=30641&MODULE=ROSTER&FRANCHISE=0003"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www43.myfantasyleague.com/2026/home/64470">Game On</a><b><br/><script type="text/javascript" src="https://www43.myfantasyleague.com/2026/embed?L=64470&MODULE=ROSTER&FRANCHISE=0005"></script></td>
+			</tr>
+		</table>
+		</form>
+		</div>
+		<div id="schedulesView" style="display:none;" class="FFLdiv">
+		<form name="schedulesForm">
+		<table style="width:100%">
+		<caption>myFFL Schedules</caption>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www43.myfantasyleague.com/2026/home/26696">MNMx Dynasty</a><b><br/><script type="text/javascript" src="https://www43.myfantasyleague.com/2026/embed?L=26696&MODULE=FRANCHISE_SCHEDULE&FRANCHISE=0001"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www46.myfantasyleague.com/2026/home/35217">Iron Bank</a><b><br/><script type="text/javascript" src="https://www46.myfantasyleague.com/2026/embed?L=35217&MODULE=FRANCHISE_SCHEDULE&FRANCHISE=0004"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www49.myfantasyleague.com/2026/home/25608">OSD</a><b><br/><script type="text/javascript" src="https://www49.myfantasyleague.com/2026/embed?L=25608&MODULE=FRANCHISE_SCHEDULE&FRANCHISE=0001"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www46.myfantasyleague.com/2026/home/34850">Wise Guys</a><b><br/><script type="text/javascript" src="https://www46.myfantasyleague.com/2026/embed?L=34850&MODULE=FRANCHISE_SCHEDULE&FRANCHISE=0010"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www43.myfantasyleague.com/2026/home/23545">Survivor</a><b><br/><script type="text/javascript" src="https://www43.myfantasyleague.com/2026/embed?L=23545&MODULE=FRANCHISE_SCHEDULE&FRANCHISE=0008"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www43.myfantasyleague.com/2026/home/23545">Super Cap</a><b><br/><script type="text/javascript" src="https://www47.myfantasyleague.com/2026/embed?L=30641&MODULE=FRANCHISE_SCHEDULE&FRANCHISE=0003"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www43.myfantasyleague.com/2026/home/64470">Game On</a><b><br/><script type="text/javascript" src="https://www43.myfantasyleague.com/2026/embed?L=64470&MODULE=FRANCHISE_SCHEDULE&FRANCHISE=0005"></script></td>
+			</tr>
+		</table>
+		</form>
+		</div>
+		<div id="standingsView" style="display:none;" class="FFLdiv">
+		<form name="standingsForm">
+		<table style="width:100%">
+		<caption>myFFL Standings</caption>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www43.myfantasyleague.com/2026/home/26696">MNMx Dynasty</a><b><br/><script type="text/javascript" src="https://www43.myfantasyleague.com/2026/embed?L=26696&MODULE=BRIEF_STANDINGS"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www46.myfantasyleague.com/2026/home/35217">Iron Bank</a><b><br/><script type="text/javascript" src="https://www46.myfantasyleague.com/2026/embed?L=35217&MODULE=BRIEF_STANDINGS"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www49.myfantasyleague.com/2026/home/25608">OSD</a><b><br/><script type="text/javascript" src="https://www49.myfantasyleague.com/2026/embed?L=25608&MODULE=BRIEF_STANDINGS"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www46.myfantasyleague.com/2026/home/34850">Wise Guys</a><b><br/><script type="text/javascript" src="https://www46.myfantasyleague.com/2026/embed?L=34850&MODULE=BRIEF_STANDINGS"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www43.myfantasyleague.com/2026/home/23545">Survivor</a><b><br/><script type="text/javascript" src="https://www43.myfantasyleague.com/2026/embed?L=23545&MODULE=BRIEF_STANDINGS"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www47.myfantasyleague.com/2026/home/30641">Super Cap</a><b><br/><script type="text/javascript" src="https://www47.myfantasyleague.com/2026/embed?L=30641&MODULE=BRIEF_STANDINGS"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www43.myfantasyleague.com/2026/home/64470">Game On</a><b><br/><script type="text/javascript" src="https://www43.myfantasyleague.com/2026/embed?L=64470&MODULE=BRIEF_STANDINGS"></script></td>
+			</tr>
+		</table>
+		</form>
+		</div>
+		<div id="newsView" style="display:none;" class="FFLdiv">
+		<form name="newsForm">
+		<table style="width:100%">
+		<caption>myFFL News</caption>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www43.myfantasyleague.com/2026/home/26696">MNMx Dynasty</a><b><br/><script type="text/javascript" src="https://www43.myfantasyleague.com/2026/embed?L=26696&MODULE=MY_NEWS&FRANCHISE=0001&COUNT=10"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www46.myfantasyleague.com/2026/home/35217">Iron Bank</a><b><br/><script type="text/javascript" src="https://www46.myfantasyleague.com/2026/embed?L=35217&MODULE=MY_NEWS&FRANCHISE=0004&COUNT=10"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www49.myfantasyleague.com/2026/home/25608">OSD</a><b><br/><script type="text/javascript" src="https://www49.myfantasyleague.com/2026/embed?L=25608&MODULE=MY_NEWS&FRANCHISE=0001&COUNT=10"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www46.myfantasyleague.com/2026/home/34850">Wise Guys</a><b><br/><script type="text/javascript" src="https://www46.myfantasyleague.com/2026/embed?L=34850&MODULE=MY_NEWS&FRANCHISE=0010&COUNT=10"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www43.myfantasyleague.com/2026/home/23545">Survivor</a><b><br/><script type="text/javascript" src="https://www43.myfantasyleague.com/2026/embed?L=23545&MODULE=MY_NEWS&FRANCHISE=0008&COUNT=10"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www47.myfantasyleague.com/2026/home/30641">Super Cap</a><b><br/><script type="text/javascript" src="https://www47.myfantasyleague.com/2026/embed?L=30641&MODULE=MY_NEWS&FRANCHISE=0003&COUNT=10"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www43.myfantasyleague.com/2026/home/64470">Game On</a><b><br/><script type="text/javascript" src="https://www43.myfantasyleague.com/2026/embed?L=64470&MODULE=MY_NEWS&FRANCHISE=0005&COUNT=10"></script></td>
+			</tr>
+		</table>
+		</form>
+		</div>
+		<div id="lineupsView" style="display:none;" class="FFLdiv">
+		<form name="lineupsForm">
+		<table style="width:100%">
+		<caption>myFFL Lineups</caption>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www43.myfantasyleague.com/2026/home/26696">MNMx Dynasty</a><b><br/><script type="text/javascript" src="https://www43.myfantasyleague.com/2026/embed?L=26696&MODULE=SUBMIT_LINEUP&FRANCHISE=0001"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www46.myfantasyleague.com/2026/home/35217">Iron Bank</a><b><br/><script type="text/javascript" src="https://www46.myfantasyleague.com/2026/embed?L=35217&MODULE=SUBMIT_LINEUP&FRANCHISE=0004"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www49.myfantasyleague.com/2026/home/25608">OSD</a><b><br/><script type="text/javascript" src="https://www49.myfantasyleague.com/2026/embed?L=25608&MODULE=SUBMIT_LINEUP&FRANCHISE=0001"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www46.myfantasyleague.com/2026/home/34850">Wise Guys</a><b><br/><script type="text/javascript" src="https://www46.myfantasyleague.com/2026/embed?L=34850&MODULE=SUBMIT_LINEUP&FRANCHISE=0010"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www43.myfantasyleague.com/2026/home/23545">Survivor</a><b><br/><script type="text/javascript" src="https://www43.myfantasyleague.com/2026/embed?L=23545&MODULE=SUBMIT_LINEUP&FRANCHISE=0008"></script></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www47.myfantasyleague.com/2026/home/30641">Super Cap</a><b><br/><script type="text/javascript" src="https://www47.myfantasyleague.com/2026/embed?L=30641&MODULE=SUBMIT_LINEUP&FRANCHISE=0003"></script></td>
+			</tr>
+			<br/>
+			<tr>
+				<td style="text-align:center;vertical-align:top;width:50%;"></td>
+				<td style="text-align:center;vertical-align:top;width:50%;"><b><a href="https://www43.myfantasyleague.com/2026/home/64470">Game On</a><b><br/><script type="text/javascript" src="https://www43.myfantasyleague.com/2026/embed?L=64470&MODULE=SUBMIT_LINEUP&FRANCHISE=0005"></script></td>
+			</tr>
+		</table>
+		</form>
+		</div>
+	</body>
 </html>
