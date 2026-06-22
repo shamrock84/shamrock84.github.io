@@ -15,6 +15,7 @@
   <!-- MFL Norseman Skin CSS -->
   <link rel="stylesheet" href="https://www.myfantasyleague.com/skins/norseman/skin.css">
 
+  <!--
   <style>
     /* Custom overrides for myFFL dashboard */
     body {
@@ -177,7 +178,8 @@
       outline: 3px solid rgba(126, 200, 227, 0.5);
     }
   </style>
-
+  -->
+  
 </head>
 <body>
   <header>
@@ -260,9 +262,9 @@
 
       const meta = document.createElement('small');
       meta.textContent = `${league.host}.myfantasyleague.com / ${league.id}`;
-
+      
       card.appendChild(h3);
-      card.appendChild(meta);
+      //card.appendChild(meta);
 
       // Check if team name matches highlight list
       const leagueName = league.name.toUpperCase();
