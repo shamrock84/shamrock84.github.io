@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>My Rosters &mdash; myFFL</title>
+	<link rel="icon" type="image/png" sizes="32x32" href="https://shamrock84.github.io/fflicons/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="https://shamrock84.github.io/fflicons/favicon-16x16.png">
+	<link rel="manifest" href="https://shamrock84.github.io/fflicons/site.webmanifest">
+	<meta name="theme-color" content="#0f172a">
+	<style>
+		:root {
+			--bg: #f4f5f7;
+			--card-bg: #ffffff;
+			--text: #1a1d23;
+			--muted: #6b7280;
+			--border: #e5e7eb;
+			--accent: #1d4ed8;
+			--chip-bg: #eef2ff;
+			--roster-bg: #ecfdf5;
+			--roster-text: #065f46;
+			--taxi-bg: #eff6ff;
+			--taxi-text: #1e40af;
+			--ir-bg: #fef2f2;
+			--ir-text: #991b1b;
+		}
+		@media (prefers-color-scheme: dark) {
+			:root {
+				--bg: #0f1115;
+				--card-bg: #191c22;
+				--text: #e7e9ec;
+				--muted: #9aa1ab;
+				--border: #2a2e37;
+				--accent: #6d9bff;
+				--chip-bg: #232a3d;
+				--roster-bg: #0d2b21;
+				--roster-text: #6ee7b7;
+				--taxi-bg: #0e2340;
+				--taxi-text: #93c5fd;
+				--ir-bg: #341313;
+				--ir-text: #fca5a5;
+			}
+		}
+		* { box-sizing: border-box; }
+		body {
+			margin: 0;
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+			background: var(--bg);
+			color: var(--text);
+		}
+		header {
+			padding: 1.5rem 1rem 1rem;
+			text-align: center;
+		}
+		header h1 {
+			margin: 0 0 0.25rem;
+			font-size: 1.75rem;
+		}
+		#updated {
+			color: var(--muted);
+			font-size: 0.85rem;
+		}
+		.controls {
+			max-width: 480px;
+			margin: 1rem auto 0;
+			padding: 0 1rem;
+		}
+		#search {
+			width: 100%;
+			padding: 0.6rem 0.9rem;
+			border-radius: 999px;
+			border: 1px solid var(--border);
+			background: var(--card-bg);
+			color: var(--text);
+			font-size: 1rem;
+		}
+		main {
+			max-width: 1400px;
+			margin: 0 auto;
+			padding: 1.5rem 1rem 3rem;
+		}
+		#status {
+			text-align: center;
+			color: var(--muted);
+			padding: 2rem 0;
+		}
+		.grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+			gap: 1rem;
+		}
+		.card {
+			background: var(--card-bg);
+			border: 1px solid var(--border);
+			border-radius: 12px;
+			padding: 1rem 1.1rem 1.2rem;
+			display: flex;
+			flex-direction: column;
+		}
+		.card h2 {
+			margin: 0;
+			font-size: 1.15rem;
+		}
+		.card h2 a {
+			color: var(--text);
+			text-decoration: none;
+		}
+		.card h2 a:hover {
+			color: var(--accent);
+			text-decoration: underline;
+		}
+		.card .team {
+			color: var(--muted);
+			font-size: 0.85rem;
+			margin: 0.15rem 0 0.75rem;
+		}
+		.error-box {
+			background: var(--ir-bg);
+			color: var(--ir-text);
+			border-radius: 8px;
+			padding: 0.6rem 0.75rem;
+			font-size: 0.85rem;
+		}
+		.group-label {
+			font-size: 0.72rem;
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+			color: var(--muted);
+			margin: 0.75rem 0 0.35rem;
+		}
+		.group-label:first-of-type { margin-top: 0; }
+		table.roster {
+			width: 100%;
+			border-collapse: collapse;
+			font-size: 0.9rem;
+		}
+		table.roster tr.player-row td {
+			padding: 0.3rem 0.2rem;
+			border-bottom: 1px solid var(--border);
+		}
+		table.roster tr.player-row:last-child td {
+			border-bottom: none;
+		}
+		.pos-chip {
+			display: inline-block;
+			min-width: 2rem;
+			text-align: center;
+			background: var(--chip-bg);
+			color: var(--accent);
+			border-radius: 6px;
+			padding: 0.1rem 0.35rem;
+			font-size: 0.72rem;
+			font-weight: 600;
+		}
+		.nfl-team {
+			color: var(--muted);
+			font-size: 0.78rem;
+		}
+		.player-name {
+			font-weight: 500;
+		}
+		tr.status-taxi_squad .pos-chip,
+		tr.status-injured_reserve .pos-chip {
+			opacity: 0.9;
+		}
+		.status-taxi_squad { background: var(--taxi-bg); }
+		.status-injured_reserve { background: var(--ir-bg); }
+		.hidden { display: none !important; }
+		footer {
+			text-align: center;
+			color: var(--muted);
+			font-size: 0.8rem;
+			padding-bottom: 2rem;
+		}
+		footer a { color: var(--accent); }
+	</style>
+</head>
+<body>
+	<header>
+		<h1>My Rosters</h1>
+		<div id="updated">Loading&hellip;</div>
+	</header>
+	<div class="controls">
+		<input type="search" id="search" placeholder="Filter by player name&hellip;" autocomplete="off">
+	</div>
+	<main>
+		<div id="status"></div>
+		<div id="grid" class="grid"></div>
+	</main>
+	<footer>
+		Data pulled from <a href="https://www.myfantasyleague.com" target="_blank" rel="noopener">MyFantasyLeague</a> via a scheduled sync.
+	</footer>
+
+	<script>
+		const STATUS_GROUPS = [
+			{ key: 'ROSTER', label: 'Active Roster' },
+			{ key: 'TAXI_SQUAD', label: 'Taxi Squad' },
+			{ key: 'PRACTICE_SQUAD', label: 'Practice Squad' },
+			{ key: 'INJURED_RESERVE', label: 'Injured Reserve' },
+		];
+
+		function timeAgo(iso) {
+			if (!iso) return 'never';
+			const diffMs = Date.now() - new Date(iso).getTime();
+			const mins = Math.round(diffMs / 60000);
+			if (mins < 1) return 'just now';
+			if (mins < 60) return `${mins} min ago`;
+			const hrs = Math.round(mins / 60);
+			if (hrs < 24) return `${hrs} hr${hrs === 1 ? '' : 's'} ago`;
+			const days = Math.round(hrs / 24);
+			return `${days} day${days === 1 ? '' : 's'} ago`;
+		}
+
+		function el(tag, attrs = {}, children = []) {
+			const node = document.createElement(tag);
+			for (const [k, v] of Object.entries(attrs)) {
+				if (k === 'class') node.className = v;
+				else if (k === 'text') node.textContent = v;
+				else node.setAttribute(k, v);
+			}
+			for (const child of children) node.appendChild(child);
+			return node;
+		}
+
+		function renderCard(league) {
+			const card = el('div', { class: 'card' });
+			const heading = el('h2');
+			const link = el('a', { href: league.url, target: '_blank', rel: 'noopener', text: league.leagueName || league.name });
+			heading.appendChild(link);
+			card.appendChild(heading);
+			card.appendChild(el('div', { class: 'team', text: league.teamName || '' }));
+
+			if (league.error && (!league.players || league.players.length === 0)) {
+				card.appendChild(el('div', { class: 'error-box', text: `Couldn't load this league: ${league.error}` }));
+				return card;
+			}
+
+			if (league.error) {
+				const warn = el('div', { class: 'error-box', text: `Showing data from ${timeAgo(league.updatedAt)} — last sync failed: ${league.error}` });
+				card.appendChild(warn);
+			}
+
+			const byStatus = {};
+			for (const p of league.players || []) {
+				const status = (p.status || 'ROSTER').toUpperCase();
+				(byStatus[status] = byStatus[status] || []).push(p);
+			}
+
+			for (const group of STATUS_GROUPS) {
+				const players = byStatus[group.key];
+				if (!players || players.length === 0) continue;
+				card.appendChild(el('div', { class: 'group-label', text: `${group.label} (${players.length})` }));
+				const table = el('table', { class: 'roster' });
+				for (const p of players) {
+					const row = el('tr', { class: `player-row status-${group.key.toLowerCase()}`, 'data-name': p.name.toLowerCase() });
+					row.appendChild(el('td', {}, [el('span', { class: 'pos-chip', text: p.position || '-' })]));
+					row.appendChild(el('td', { class: 'player-name', text: p.name }));
+					row.appendChild(el('td', { class: 'nfl-team', text: p.team || 'FA' }));
+					table.appendChild(row);
+				}
+				card.appendChild(table);
+			}
+
+			if (!league.players || league.players.length === 0) {
+				card.appendChild(el('div', { class: 'error-box', text: 'No players found on this roster.' }));
+			}
+
+			return card;
+		}
+
+		function applyFilter(query) {
+			const q = query.trim().toLowerCase();
+			document.querySelectorAll('.card').forEach((card) => {
+				let anyVisible = false;
+				card.querySelectorAll('tr.player-row').forEach((row) => {
+					const match = !q || row.dataset.name.includes(q);
+					row.classList.toggle('hidden', !match);
+					if (match) anyVisible = true;
+				});
+				card.classList.toggle('hidden', !!q && !anyVisible);
+			});
+		}
+
+		async function init() {
+			const statusEl = document.getElementById('status');
+			const gridEl = document.getElementById('grid');
+			const updatedEl = document.getElementById('updated');
+
+			try {
+				const res = await fetch('data/rosters.json', { cache: 'no-store' });
+				if (!res.ok) throw new Error(`HTTP ${res.status}`);
+				const data = await res.json();
+
+				updatedEl.textContent = data.generatedAt
+					? `Last synced ${timeAgo(data.generatedAt)}`
+					: 'Not yet synced — run the "Sync MFL Rosters" GitHub Action.';
+
+				if (!data.leagues || data.leagues.length === 0) {
+					statusEl.textContent = 'No leagues configured yet.';
+					return;
+				}
+
+				for (const league of data.leagues) {
+					gridEl.appendChild(renderCard(league));
+				}
+			} catch (err) {
+				statusEl.textContent = `Couldn't load roster data: ${err.message}`;
+				updatedEl.textContent = '';
+			}
+		}
+
+		document.getElementById('search').addEventListener('input', (e) => applyFilter(e.target.value));
+		init();
+	</script>
+</body>
+</html>
