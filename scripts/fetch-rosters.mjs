@@ -14,15 +14,30 @@ const BASE = `https://api.myfantasyleague.com/${YEAR}`;
 const OUTPUT_PATH = fileURLToPath(new URL('../data/rosters.json', import.meta.url));
 
 // Add/remove leagues here. franchiseId is *your* team in that league.
-const LEAGUES = [
-  { id: '26696', franchiseId: '0001', name: 'MNMx Dynasty' },
-  { id: '35217', franchiseId: '0004', name: 'Iron Bank' },
-  { id: '25608', franchiseId: '0001', name: 'OSD' },
-  { id: '34850', franchiseId: '0010', name: 'Wise Guys' },
-  { id: '23545', franchiseId: '0008', name: 'Survivor' },
-  { id: '30641', franchiseId: '0003', name: 'Super Cap' },
-  { id: '64470', franchiseId: '0005', name: 'Game On' },
+// type controls which tab a league shows up under on rosters.html.
+const DYNASTY_LEAGUES = [
+  { id: '26696', franchiseId: '0001', name: 'MNMx Dynasty', type: 'dynasty' },
+  { id: '35217', franchiseId: '0004', name: 'Iron Bank', type: 'dynasty' },
+  { id: '25608', franchiseId: '0001', name: 'OSD', type: 'dynasty' },
+  { id: '34850', franchiseId: '0010', name: 'Wise Guys', type: 'dynasty' },
+  { id: '23545', franchiseId: '0008', name: 'Survivor', type: 'dynasty' },
+  { id: '30641', franchiseId: '0003', name: 'Super Cap', type: 'dynasty' },
+  { id: '64470', franchiseId: '0005', name: 'Game On', type: 'dynasty' },
 ];
+
+// franchiseId is filled in as it's confirmed; leagues without one are skipped
+// (shown on the page as "not configured yet") rather than hit the API.
+const BESTBALL_LEAGUES = [
+  { id: '56191', franchiseId: null, name: 'Worlds Collide', type: 'bestball' },
+  { id: '34203', franchiseId: null, name: "Rug's Playground", type: 'bestball' },
+  { id: '72911', franchiseId: null, name: 'April Pre-NFL Draft', type: 'bestball' },
+  { id: '54766', franchiseId: null, name: 'May Rookies', type: 'bestball' },
+  { id: '54458', franchiseId: null, name: 'June Tecmo Ball', type: 'bestball' },
+  { id: '61777', franchiseId: null, name: 'July Semiquincentennial', type: 'bestball' },
+  { id: '30196', franchiseId: null, name: 'July Fantasy Football for Dummies', type: 'bestball' },
+];
+
+const LEAGUES = [...DYNASTY_LEAGUES, ...BESTBALL_LEAGUES];
 
 const POSITION_ORDER = ['QB', 'RB', 'WR', 'TE', 'PK', 'PN', 'Off', 'DL', 'DE', 'DT', 'LB', 'CB', 'S', 'DB', 'Def'];
 
@@ -124,6 +139,7 @@ async function fetchLeagueRoster(league, cookie, playerMap) {
   return {
     id: league.id,
     name: league.name,
+    type: league.type,
     leagueName: leagueData?.league?.name || league.name,
     franchiseId: league.franchiseId,
     teamName: franchiseInfo?.name || league.name,
@@ -156,6 +172,22 @@ async function main() {
 
   const leagues = [];
   for (const league of LEAGUES) {
+    if (!league.franchiseId) {
+      console.log(`Skipping ${league.name}: no franchiseId configured yet`);
+      leagues.push({
+        id: league.id,
+        name: league.name,
+        type: league.type,
+        leagueName: league.name,
+        franchiseId: null,
+        teamName: league.name,
+        url: `https://www.myfantasyleague.com/${YEAR}/home/${league.id}`,
+        players: [],
+        updatedAt: null,
+        error: 'Franchise ID not configured yet',
+      });
+      continue;
+    }
     try {
       const result = await fetchLeagueRoster(league, cookie, playerMap);
       leagues.push(result);
@@ -166,6 +198,7 @@ async function main() {
       leagues.push({
         id: league.id,
         name: league.name,
+        type: league.type,
         leagueName: prev?.leagueName || league.name,
         franchiseId: league.franchiseId,
         teamName: prev?.teamName || league.name,
