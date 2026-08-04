@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-04T01:52:59.880Z",
+  "generatedAt": "2026-08-04T02:01:49.446Z",
   "year": "2026",
   "leagues": [
     {
@@ -301,7 +301,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T01:52:44.743Z",
+      "updatedAt": "2026-08-04T02:01:40.604Z",
       "error": null,
       "standings": [
         {
@@ -708,7 +708,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T01:52:45.152Z",
+      "updatedAt": "2026-08-04T02:01:41.018Z",
       "error": null,
       "standings": [
         {
@@ -1097,7 +1097,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T01:52:45.592Z",
+      "updatedAt": "2026-08-04T02:01:41.466Z",
       "error": null,
       "standings": [
         {
@@ -1452,7 +1452,7 @@
           "contractYear": "1"
         }
       ],
-      "updatedAt": "2026-08-04T01:52:46.094Z",
+      "updatedAt": "2026-08-04T02:01:41.716Z",
       "error": null,
       "standings": [
         {
@@ -1825,7 +1825,7 @@
           "contractYear": "1"
         }
       ],
-      "updatedAt": "2026-08-04T01:52:46.883Z",
+      "updatedAt": "2026-08-04T02:01:41.951Z",
       "error": null,
       "standings": [
         {
@@ -2189,7 +2189,7 @@
           "contractYear": "1"
         }
       ],
-      "updatedAt": "2026-08-04T01:52:47.655Z",
+      "updatedAt": "2026-08-04T02:01:42.384Z",
       "error": null,
       "standings": [
         {
@@ -2553,7 +2553,7 @@
           "contractYear": ""
         }
       ],
-      "updatedAt": "2026-08-04T01:52:48.059Z",
+      "updatedAt": "2026-08-04T02:01:42.793Z",
       "error": null,
       "standings": [
         {
@@ -2713,6 +2713,8 @@
       "players": [],
       "updatedAt": null,
       "error": "No roster data returned for this franchise",
+      "standings": [],
+      "standingsError": "No standings data returned for this league",
       "scoring": null,
       "scoringError": "No live scoring available yet"
     },
@@ -2728,6 +2730,8 @@
       "players": [],
       "updatedAt": null,
       "error": "No roster data returned for this franchise",
+      "standings": [],
+      "standingsError": "No standings data returned for this league",
       "scoring": null,
       "scoringError": "No live scoring available yet"
     },
@@ -2904,8 +2908,111 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T01:52:49.625Z",
+      "updatedAt": "2026-08-04T02:01:43.670Z",
       "error": null,
+      "standings": [
+        {
+          "franchiseId": "0001",
+          "teamName": "Packers First Round Pick",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0002",
+          "teamName": "I Love Loves",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0003",
+          "teamName": "JLC's Backyard Datacenter",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0004",
+          "teamName": "Drafting before rookies is stupid",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0005",
+          "teamName": "UW Marching Band",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0006",
+          "teamName": "Vikings First Round Pick",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": true
+        },
+        {
+          "franchiseId": "0007",
+          "teamName": "Take your mom's ass",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0008",
+          "teamName": "Pre-April Nuptials",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0009",
+          "teamName": "Wisconsin Sucks",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0010",
+          "teamName": "Who the eff drafts in april",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        }
+      ],
+      "standingsError": null,
       "scoring": null,
       "scoringError": "No live scoring available yet"
     },
@@ -3082,8 +3189,131 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T01:52:50.018Z",
+      "updatedAt": "2026-08-04T02:01:43.863Z",
       "error": null,
+      "standings": [
+        {
+          "franchiseId": "0001",
+          "teamName": "Make Commissioning Great Again",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0002",
+          "teamName": "The Patriot Lay™",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0003",
+          "teamName": "Vrabels Pimp",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0004",
+          "teamName": "PaulyDs Pimp",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": true
+        },
+        {
+          "franchiseId": "0005",
+          "teamName": "JLC's AI Bot",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0006",
+          "teamName": "Damn!  My Vrabels are starting to itch!",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0007",
+          "teamName": "Russini's Shnozz is bigger than Schmidtys Wang",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0008",
+          "teamName": "Sideline Chick",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0009",
+          "teamName": "Rook takes Bishop",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0010",
+          "teamName": "Three Tits Mafia",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0011",
+          "teamName": "Tecmo Bowl 49ers",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0012",
+          "teamName": "The Toughskins",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        }
+      ],
+      "standingsError": null,
       "scoring": null,
       "scoringError": "No live scoring available yet"
     },
@@ -3278,8 +3508,111 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T01:52:50.441Z",
+      "updatedAt": "2026-08-04T02:01:44.051Z",
       "error": null,
+      "standings": [
+        {
+          "franchiseId": "0001",
+          "teamName": "Bo No Mercy",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0002",
+          "teamName": "QB Bills",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0003",
+          "teamName": "Tecmo Bo-lievers",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0004",
+          "teamName": "Marcus Allen",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": true
+        },
+        {
+          "franchiseId": "0005",
+          "teamName": "House of Bo",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0006",
+          "teamName": "Stop Bo If You Can",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0007",
+          "teamName": "Illegal Use of Bo Jackson",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0008",
+          "teamName": "My Bo(s)Jangle",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0009",
+          "teamName": "The Bo Show",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0010",
+          "teamName": "Tim Brown was on the team too",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        }
+      ],
+      "standingsError": null,
       "scoring": null,
       "scoringError": "No live scoring available yet"
     },
@@ -3474,8 +3807,121 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T01:52:50.832Z",
+      "updatedAt": "2026-08-04T02:01:44.113Z",
       "error": null,
+      "standings": [
+        {
+          "franchiseId": "0001",
+          "teamName": "Class of 1776",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0002",
+          "teamName": "The Star-Spangled Slammers",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0003",
+          "teamName": "Hotter than the 4th of July",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": true
+        },
+        {
+          "franchiseId": "0004",
+          "teamName": "Declaration of Dominance ",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0005",
+          "teamName": "Redcoat Slayers",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0006",
+          "teamName": "US Freedom Fighters",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0007",
+          "teamName": "Sons of Biberty",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0008",
+          "teamName": "Bend the knee",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0009",
+          "teamName": "Land of the Free Agency",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0010",
+          "teamName": "E Pluribus Unum Possible",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0011",
+          "teamName": "In Touchdowns We Trust",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        }
+      ],
+      "standingsError": null,
       "scoring": null,
       "scoringError": "No live scoring available yet"
     },
@@ -3652,8 +4098,121 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T01:52:51.219Z",
+      "updatedAt": "2026-08-04T02:01:44.385Z",
       "error": null,
+      "standings": [
+        {
+          "franchiseId": "0001",
+          "teamName": "Overdue Fines",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0002",
+          "teamName": "Judge a Book by Its Roster",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0003",
+          "teamName": "The Plot Thickens",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0004",
+          "teamName": "Audiobooks are NOT reading",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": true
+        },
+        {
+          "franchiseId": "0005",
+          "teamName": "Spine Crackers",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0006",
+          "teamName": "The Book Club Bench",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0007",
+          "teamName": "Bookmarked for Later",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0008",
+          "teamName": "Scratch-n-Sniff",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0009",
+          "teamName": "The Footnotes",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0010",
+          "teamName": "Prologue Problems",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0011",
+          "teamName": "Between Chapters",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        }
+      ],
+      "standingsError": null,
       "scoring": null,
       "scoringError": "No live scoring available yet"
     }
