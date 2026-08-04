@@ -37,13 +37,18 @@ async function main() {
   // guessing again.
   try {
     const year = new Date().getFullYear();
-    const docRes = await fetch(`https://api.myfantasyleague.com/${year}/api_info?L=${league.id}&STATE=details`, {
+    const docRes = await fetch(`https://api.myfantasyleague.com/${year}/api_info?L=${league.id}`, {
       headers: { Cookie: cookie },
     });
     const docText = await docRes.text();
-    const lineupIdx = docText.toLowerCase().indexOf('lineup');
     console.log(`[docs-debug] api_info status ${docRes.status}, length ${docText.length}`);
-    console.log(`[docs-debug] snippet around "lineup": ${docText.slice(Math.max(0, lineupIdx - 200), lineupIdx + 800)}`);
+    for (const needle of ['setLineup', 'TYPE=import', 'import?TYPE', 'Import Commands', 'STARTERS']) {
+      const idx = docText.indexOf(needle);
+      console.log(`[docs-debug] indexOf("${needle}") = ${idx}`);
+      if (idx !== -1) {
+        console.log(`[docs-debug] context: ${docText.slice(Math.max(0, idx - 150), idx + 500)}`);
+      }
+    }
   } catch (err) {
     console.log(`[docs-debug] api_info fetch failed: ${err.message}`);
   }
