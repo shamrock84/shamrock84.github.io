@@ -56,13 +56,15 @@ export async function mflLogin(username, password) {
   return cookie;
 }
 
-export async function mflGet(path, cookie) {
-  const res = await fetch(`${BASE}${path}`, {
+// year defaults to the current season; pass a specific year (e.g. for
+// prior-season lookups) to hit that year's API host instead.
+export async function mflGet(path, cookie, year = YEAR) {
+  const res = await fetch(`https://api.myfantasyleague.com/${year}${path}`, {
     headers: cookie ? { Cookie: cookie } : {},
     redirect: 'follow',
   });
   if (!res.ok) {
-    throw new Error(`MFL request failed (${res.status}): ${path}`);
+    throw new Error(`MFL request failed (${res.status}): ${path} (year ${year})`);
   }
   return res.json();
 }
@@ -113,6 +115,28 @@ export async function fetchMflSeasonPoints(league, cookie, playerIds) {
   return map;
 }
 
+// Same as fetchMflSeasonPoints but for last season — confirmed working
+// against real data for long-running dynasty leagues (same league ID
+// resolves fine against last year's API host). Expected to fail for
+// single-season bestball leagues, which get a fresh ID every year; callers
+// should treat failure as "no prior-year data available", not an error.
+export async function fetchMflPriorYearPoints(league, cookie, playerIds) {
+  if (playerIds.length === 0) return new Map();
+  const priorYear = Number(YEAR) - 1;
+  const data = await mflGet(
+    `/export?TYPE=playerScores&W=YTD&L=${league.id}&PLAYERS=${playerIds.join(',')}&JSON=1`,
+    cookie,
+    priorYear
+  );
+  const rawRows = data?.playerScores?.playerScore;
+  const rows = Array.isArray(rawRows) ? rawRows : rawRows ? [rawRows] : [];
+  const map = new Map();
+  for (const r of rows) {
+    map.set(r.id, r.score !== '' && r.score != null ? Number(r.score) : 0);
+  }
+  return map;
+}
+
 export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks) {
   const [leagueData, rostersData] = await Promise.all([
     mflGet(`/export?TYPE=league&L=${league.id}&JSON=1`, cookie),
@@ -152,17 +176,30 @@ export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks) {
     };
   });
 
-  // Points lookup is best-effort — a hiccup here shouldn't take down a
+  // Points lookups are best-effort — a hiccup here shouldn't take down a
   // roster fetch that otherwise succeeded, so players just show no PTS.
+  // priorYearPts is expected to fail for single-season bestball leagues
+  // (fresh league ID every year) — that's fine, it just stays empty there.
+  const playerIds = basePlayers.map((p) => p.id);
   let pointsMap = new Map();
   try {
-    pointsMap = await fetchMflSeasonPoints(league, cookie, basePlayers.map((p) => p.id));
+    pointsMap = await fetchMflSeasonPoints(league, cookie, playerIds);
   } catch (err) {
     console.error(`Failed to fetch season points for ${league.name}: ${err.message}`);
   }
+  let priorYearPointsMap = new Map();
+  try {
+    priorYearPointsMap = await fetchMflPriorYearPoints(league, cookie, playerIds);
+  } catch (err) {
+    console.error(`Failed to fetch prior-year points for ${league.name}: ${err.message}`);
+  }
 
   const players = basePlayers
-    .map((p) => ({ ...p, pts: pointsMap.has(p.id) ? pointsMap.get(p.id) : null }))
+    .map((p) => ({
+      ...p,
+      pts: pointsMap.has(p.id) ? pointsMap.get(p.id) : null,
+      priorYearPts: priorYearPointsMap.has(p.id) ? priorYearPointsMap.get(p.id) : null,
+    }))
     .sort((a, b) => positionRank(a.position) - positionRank(b.position) || a.name.localeCompare(b.name));
 
   return {

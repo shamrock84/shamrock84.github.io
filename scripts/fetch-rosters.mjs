@@ -71,24 +71,6 @@ async function main() {
     console.error(`Failed to fetch NFL bye weeks: ${err.message}`);
   }
 
-  // TEMP DIAGNOSTIC (prior-year PTS fallback investigation) — remove once
-  // confirmed. Checking whether league 26696 (MNMx Dynasty, a long-running
-  // dynasty league) resolves the same way against last year's API host —
-  // config/leagues.json only stores this year's league IDs, so if dynasty
-  // leagues DON'T keep a stable ID across seasons, there's no prior-year ID
-  // to query at all.
-  try {
-    const priorYear = Number(YEAR) - 1;
-    const res = await fetch(
-      `https://api.myfantasyleague.com/${priorYear}/export?TYPE=playerScores&W=YTD&L=26696&PLAYERS=14783,13604,17044&JSON=1`,
-      { headers: { Cookie: cookie } }
-    );
-    const text = await res.text();
-    console.log(`[prioryear-debug] ${priorYear} playerScores raw (status ${res.status}): ${text.slice(0, 1200)}`);
-  } catch (err) {
-    console.log(`[prioryear-debug] probe failed: ${err.message}`);
-  }
-
   const leagues = [];
   for (const league of LEAGUES) {
     if (!league.franchiseId) {

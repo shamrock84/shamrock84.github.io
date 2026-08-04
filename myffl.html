@@ -249,6 +249,9 @@
 			font-size: 0.82rem;
 			color: var(--muted);
 		}
+		.pts-cell.pts-prior-year {
+			font-style: italic;
+		}
 		tr.status-taxi_squad .pos-chip,
 		tr.status-injured_reserve .pos-chip {
 			opacity: 0.9;
@@ -380,7 +383,11 @@
 				row.appendChild(el('td', { class: 'player-name', text: p.name }));
 				row.appendChild(el('td', { class: 'nfl-team', text: p.team || 'FA' }));
 				row.appendChild(el('td', { class: 'bye-cell', text: p.bye ? String(p.bye) : '—' }));
-				row.appendChild(el('td', { class: 'pts-cell', text: p.pts != null ? Number(p.pts).toFixed(2) : '—' }));
+				const usingPriorYear = !(p.pts > 0) && p.priorYearPts > 0;
+				const ptsValue = usingPriorYear ? p.priorYearPts : p.pts;
+				const ptsAttrs = { class: `pts-cell${usingPriorYear ? ' pts-prior-year' : ''}`, text: ptsValue != null ? Number(ptsValue).toFixed(2) : '—' };
+				if (usingPriorYear) ptsAttrs.title = `${(pageData?.year ?? new Date().getFullYear()) - 1} season total \u2014 current season hasn't started yet`;
+				row.appendChild(el('td', ptsAttrs));
 				if (isAuction) {
 					row.appendChild(el('td', { class: 'salary-cell', text: p.salary ? `$${p.salary}` : '—' }));
 					row.appendChild(el('td', { class: 'years-cell', text: p.contractYear ? String(p.contractYear) : '—' }));
