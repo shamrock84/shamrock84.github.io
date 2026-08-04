@@ -188,6 +188,32 @@
 		}
 		.status-taxi_squad { background: var(--taxi-bg); }
 		.status-injured_reserve { background: var(--ir-bg); }
+		table.standings {
+			width: 100%;
+			border-collapse: collapse;
+			font-size: 0.9rem;
+		}
+		table.standings th {
+			text-align: left;
+			font-size: 0.68rem;
+			text-transform: uppercase;
+			letter-spacing: 0.04em;
+			color: var(--muted);
+			padding: 0 0.2rem 0.4rem;
+		}
+		table.standings td {
+			padding: 0.3rem 0.2rem;
+			border-bottom: 1px solid var(--border);
+		}
+		table.standings tr:last-child td { border-bottom: none; }
+		table.standings th:not(:first-child),
+		table.standings td:not(:first-child) {
+			text-align: right;
+		}
+		tr.me-row td {
+			font-weight: 700;
+			background: var(--chip-bg);
+		}
 		.hidden { display: none !important; }
 		footer {
 			text-align: center;
@@ -246,8 +272,8 @@
 			return node;
 		}
 
-		const TAB_LABELS = { dynasty: 'Dynasty', bestball: 'Best Ball' };
-		const TAB_ORDER = ['dynasty', 'bestball'];
+		const TAB_LABELS = { dynasty: 'Dynasty', bestball: 'Best Ball', standings: 'Standings' };
+		const TAB_ORDER = ['dynasty', 'bestball', 'standings'];
 		let currentTab = null;
 
 		function renderCard(league) {
@@ -296,17 +322,64 @@
 			return card;
 		}
 
+		function renderStandingsCard(league) {
+			const card = el('div', { class: 'card', 'data-type': 'standings' });
+			const heading = el('h2');
+			const link = el('a', { href: league.url, target: '_blank', rel: 'noopener', text: league.leagueName || league.name });
+			heading.appendChild(link);
+			card.appendChild(heading);
+
+			if (league.standingsError && (!league.standings || league.standings.length === 0)) {
+				card.appendChild(el('div', { class: 'error-box', text: `Couldn't load standings: ${league.standingsError}` }));
+				return card;
+			}
+
+			if (league.standingsError) {
+				card.appendChild(el('div', { class: 'error-box', text: `Showing standings from a previous sync — last update failed: ${league.standingsError}` }));
+			}
+
+			const rows = league.standings || [];
+			if (rows.length === 0) {
+				card.appendChild(el('div', { class: 'error-box', text: 'No standings available yet.' }));
+				return card;
+			}
+
+			const table = el('table', { class: 'standings' });
+			const headRow = el('tr');
+			['#', 'Team', 'W-L-T', 'PF', 'PA'].forEach((h) => headRow.appendChild(el('th', { text: h })));
+			table.appendChild(headRow);
+
+			rows.forEach((r, i) => {
+				const row = el('tr', { class: r.isMe ? 'me-row' : '' });
+				row.appendChild(el('td', { text: String(i + 1) }));
+				row.appendChild(el('td', { text: r.teamName }));
+				row.appendChild(el('td', { text: `${r.wins}-${r.losses}${r.ties ? '-' + r.ties : ''}` }));
+				row.appendChild(el('td', { text: r.pointsFor }));
+				row.appendChild(el('td', { text: r.pointsAgainst }));
+				table.appendChild(row);
+			});
+			card.appendChild(table);
+			return card;
+		}
+
 		function updateVisibility() {
 			const q = document.getElementById('search').value.trim().toLowerCase();
 			document.querySelectorAll('.card').forEach((card) => {
 				const tabMatch = !currentTab || card.dataset.type === currentTab;
-				let anyVisible = false;
-				card.querySelectorAll('tr.player-row').forEach((row) => {
-					const match = !q || row.dataset.name.includes(q);
-					row.classList.toggle('hidden', !match);
-					if (match) anyVisible = true;
-				});
-				card.classList.toggle('hidden', !tabMatch || (!!q && !anyVisible));
+				const rows = card.querySelectorAll('tr.player-row');
+				let searchMatch = true;
+				if (q && rows.length > 0) {
+					let anyVisible = false;
+					rows.forEach((row) => {
+						const match = row.dataset.name.includes(q);
+						row.classList.toggle('hidden', !match);
+						if (match) anyVisible = true;
+					});
+					searchMatch = anyVisible;
+				} else {
+					rows.forEach((row) => row.classList.remove('hidden'));
+				}
+				card.classList.toggle('hidden', !tabMatch || !searchMatch);
 			});
 		}
 
@@ -359,9 +432,13 @@
 
 				for (const league of data.leagues) {
 					gridEl.appendChild(renderCard(league));
+					if (league.type === 'dynasty' && Array.isArray(league.standings)) {
+						gridEl.appendChild(renderStandingsCard(league));
+					}
 				}
 
-				renderTabs(new Set(data.leagues.map((l) => l.type).filter(Boolean)));
+				const presentTypes = new Set([...gridEl.querySelectorAll('.card')].map((c) => c.dataset.type).filter(Boolean));
+				renderTabs(presentTypes);
 				updateVisibility();
 			} catch (err) {
 				statusEl.textContent = `Couldn't load roster data: ${err.message}`;

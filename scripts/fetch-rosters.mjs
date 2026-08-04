@@ -148,6 +148,36 @@ async function fetchLeagueRoster(league, cookie, playerMap) {
   };
 }
 
+async function fetchStandings(league, cookie) {
+  const [leagueData, standingsData] = await Promise.all([
+    mflGet(`/export?TYPE=league&L=${league.id}&JSON=1`, cookie),
+    mflGet(`/export?TYPE=leagueStandings&L=${league.id}&JSON=1`, cookie),
+  ]);
+
+  const franchises = leagueData?.league?.franchises?.franchise ?? [];
+  const franchiseList = Array.isArray(franchises) ? franchises : [franchises];
+  const nameById = new Map(franchiseList.map((f) => [f.id, f.name]));
+
+  const rawRows = standingsData?.leagueStandings?.franchise;
+  const rows = Array.isArray(rawRows) ? rawRows : rawRows ? [rawRows] : [];
+
+  if (rows.length === 0) {
+    throw new Error('No standings data returned for this league');
+  }
+
+  // Rows arrive pre-sorted by MFL's own tiebreakers, so rank = array order.
+  return rows.map((r) => ({
+    franchiseId: r.id,
+    teamName: nameById.get(r.id) || r.id,
+    wins: Number(r.h2hw ?? 0),
+    losses: Number(r.h2hl ?? 0),
+    ties: Number(r.h2ht ?? 0),
+    pointsFor: Number(r.pf ?? 0).toFixed(2),
+    pointsAgainst: Number(r.pa ?? 0).toFixed(2),
+    isMe: r.id === league.franchiseId,
+  }));
+}
+
 async function loadPreviousOutput() {
   try {
     const raw = await readFile(OUTPUT_PATH, 'utf8');
@@ -205,6 +235,21 @@ async function main() {
         updatedAt: prev?.updatedAt || null,
         error: err.message,
       });
+    }
+  }
+
+  for (const league of DYNASTY_LEAGUES) {
+    const target = leagues.find((l) => l.id === league.id);
+    if (!target) continue;
+    try {
+      target.standings = await fetchStandings(league, cookie);
+      target.standingsError = null;
+      console.log(`Fetched standings for ${league.name}: ${target.standings.length} teams`);
+    } catch (err) {
+      console.error(`Failed to fetch standings for ${league.name}: ${err.message}`);
+      const prev = previousById.get(league.id);
+      target.standings = prev?.standings || [];
+      target.standingsError = err.message;
     }
   }
 
