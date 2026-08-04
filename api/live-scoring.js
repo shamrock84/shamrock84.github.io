@@ -15,6 +15,7 @@ import {
   fetchMflFranchiseNames,
   fetchScoring,
   fetchEspnScoring,
+  fetchSleeperScoring,
 } from '../scripts/lib/providers.mjs';
 
 const CONFIG_PATH = fileURLToPath(new URL('../config/leagues.json', import.meta.url));
@@ -112,6 +113,10 @@ export default async function handler(req, res) {
       .map(async (league) => {
         if (league.provider === 'espn') {
           const scoring = await fetchEspnScoring(league);
+          return { id: league.id, name: league.name, scoring, scoringError: null };
+        }
+        if (league.provider === 'sleeper') {
+          const scoring = await fetchSleeperScoring(league);
           return { id: league.id, name: league.name, scoring, scoringError: null };
         }
         if (mflLoginError) {

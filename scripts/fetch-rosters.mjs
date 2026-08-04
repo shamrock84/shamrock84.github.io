@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 // Pulls rosters/standings/scoring for every league in config/leagues.json —
-// from MFL (login + session cookie) and/or ESPN (espn_s2/SWID cookies) — and
-// writes it all into one consolidated data/rosters.json for myffl.html to render.
+// from MFL (login + session cookie), ESPN (espn_s2/SWID cookies), and/or
+// Sleeper (fully public API, no auth) — and writes it all into one
+// consolidated data/rosters.json for myffl.html to render.
 //
 // Requires MFL_USERNAME and MFL_PASSWORD env vars (set as GitHub Actions secrets).
 // ESPN leagues additionally require ESPN_S2 and ESPN_SWID env vars; leagues
-// without a provider are assumed to be 'mfl'.
+// without a provider are assumed to be 'mfl'. Sleeper leagues need nothing
+// extra — no login, cookies, or API key.
 //
 // Fetch logic lives in scripts/lib/providers.mjs, shared with the live-scoring
 // Vercel function in api/live-scoring.js — this file is just orchestration.
@@ -25,6 +27,10 @@ import {
   fetchEspnLeagueRoster,
   fetchEspnStandings,
   fetchEspnScoring,
+  loadSleeperPlayerMap,
+  fetchSleeperLeagueRoster,
+  fetchSleeperStandings,
+  fetchSleeperScoring,
 } from './lib/providers.mjs';
 
 const USERNAME = process.env.MFL_USERNAME;
@@ -64,6 +70,13 @@ async function main() {
   const cookie = await mflLogin(USERNAME, PASSWORD);
   const playerMap = await loadPlayerMap(cookie);
 
+  // Sleeper needs no auth at all, but its player database is a ~5MB fetch —
+  // only pull it if a Sleeper league is actually configured.
+  let sleeperPlayerMap = null;
+  if (LEAGUES.some((l) => l.provider === 'sleeper')) {
+    sleeperPlayerMap = await loadSleeperPlayerMap();
+  }
+
   let byeWeeks = new Map();
   try {
     byeWeeks = await fetchNflByeWeeks(cookie);
@@ -94,6 +107,8 @@ async function main() {
     try {
       const result = league.provider === 'espn'
         ? await fetchEspnLeagueRoster(league)
+        : league.provider === 'sleeper'
+        ? await fetchSleeperLeagueRoster(league, sleeperPlayerMap)
         : await fetchLeagueRoster(league, cookie, playerMap, byeWeeks);
       result.tags = league.tags || [];
       leagues.push(result);
@@ -124,6 +139,8 @@ async function main() {
     try {
       target.standings = league.provider === 'espn'
         ? await fetchEspnStandings(league)
+        : league.provider === 'sleeper'
+        ? await fetchSleeperStandings(league)
         : await fetchStandings(league, cookie);
       target.standingsError = null;
       console.log(`Fetched standings for ${league.name}: ${target.standings.length} teams`);
@@ -141,6 +158,8 @@ async function main() {
     try {
       target.scoring = league.provider === 'espn'
         ? await fetchEspnScoring(league)
+        : league.provider === 'sleeper'
+        ? await fetchSleeperScoring(league)
         : await fetchScoring(league, cookie);
       target.scoringError = null;
       console.log(`Fetched scoring for ${league.name}: ${target.scoring.teams.length} teams`);
@@ -156,7 +175,7 @@ async function main() {
   // lineupPilot in config/leagues.json. See fetchMflLineup's comment for why
   // this can't affect any other league's data.
   for (const league of LEAGUES) {
-    if (!league.lineupPilot || league.provider === 'espn') continue;
+    if (!league.lineupPilot || (league.provider && league.provider !== 'mfl')) continue;
     const target = leagues.find((l) => l.id === league.id);
     if (!target || !league.franchiseId) continue;
     try {

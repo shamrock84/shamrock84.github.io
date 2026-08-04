@@ -28,6 +28,9 @@ export function leagueUrl(league) {
   if (league.provider === 'espn') {
     return `https://fantasy.espn.com/football/team?leagueId=${league.id}&teamId=${league.franchiseId}`;
   }
+  if (league.provider === 'sleeper') {
+    return `https://sleeper.com/leagues/${league.id}`;
+  }
   return `https://www.myfantasyleague.com/${YEAR}/home/${league.id}`;
 }
 
@@ -562,4 +565,153 @@ export async function fetchEspnScoring(league) {
     .map((t) => ({ ...t, score: t.score.toFixed(2) }));
 
   return { week: currentPeriod ?? null, teams };
+}
+
+// --- Sleeper ---
+// Sleeper's API is fully public — no login, cookies, or API key needed for
+// any of it, unlike MFL (login) or ESPN (espn_s2/SWID cookies).
+
+const SLEEPER_BASE = 'https://api.sleeper.app/v1';
+
+async function sleeperGet(path) {
+  const res = await fetch(`${SLEEPER_BASE}${path}`);
+  if (!res.ok) {
+    throw new Error(`Sleeper request failed (${res.status}): ${path}`);
+  }
+  return res.json();
+}
+
+// Sleeper's full player database (~12k players) — fetch once and share
+// across every Sleeper league in a sync, same role as loadPlayerMap (MFL).
+export async function loadSleeperPlayerMap() {
+  const data = await sleeperGet('/players/nfl');
+  const map = new Map();
+  for (const [id, p] of Object.entries(data)) {
+    map.set(id, {
+      name: p.full_name || [p.first_name, p.last_name].filter(Boolean).join(' ') || `Unknown Player (${id})`,
+      position: (p.fantasy_positions && p.fantasy_positions[0]) || p.position || '',
+      team: p.team || 'FA',
+    });
+  }
+  return map;
+}
+
+// users + rosters have to be joined to get a display team name — Sleeper
+// rosters only carry an owner_id, the team name lives on the user's
+// metadata (or falls back to their display name).
+async function sleeperTeamNames(league) {
+  const [users, rosters] = await Promise.all([
+    sleeperGet(`/league/${league.id}/users`),
+    sleeperGet(`/league/${league.id}/rosters`),
+  ]);
+  const userById = new Map(users.map((u) => [u.user_id, u]));
+  const names = new Map();
+  for (const r of rosters) {
+    const user = userById.get(r.owner_id);
+    names.set(String(r.roster_id), user?.metadata?.team_name || user?.display_name || `Team ${r.roster_id}`);
+  }
+  return { names, rosters };
+}
+
+export async function fetchSleeperLeagueRoster(league, playerMap) {
+  const [leagueData, { names, rosters }] = await Promise.all([
+    sleeperGet(`/league/${league.id}`),
+    sleeperTeamNames(league),
+  ]);
+
+  const roster = rosters.find((r) => String(r.roster_id) === String(league.franchiseId));
+  if (!roster) {
+    throw new Error(`No roster ${league.franchiseId} found in Sleeper league ${league.id}`);
+  }
+
+  const taxiSet = new Set((roster.taxi || []).map(String));
+  const reserveSet = new Set((roster.reserve || []).map(String));
+
+  const players = (roster.players || [])
+    .map((id) => {
+      const info = playerMap.get(String(id)) || {};
+      let status = 'ROSTER';
+      if (reserveSet.has(String(id))) status = 'INJURED_RESERVE';
+      else if (taxiSet.has(String(id))) status = 'TAXI_SQUAD';
+      return {
+        id: String(id),
+        name: info.name || `Unknown Player (${id})`,
+        position: info.position || '',
+        team: info.team || 'FA',
+        // Sleeper doesn't expose bye weeks or season-to-date fantasy points
+        // through this endpoint (points would need per-week stat pulls
+        // reweighted by this league's custom scoring settings) — left null,
+        // same as the columns already do for any league missing this data.
+        bye: null,
+        pts: null,
+        status,
+      };
+    })
+    .sort((a, b) => positionRank(a.position) - positionRank(b.position) || a.name.localeCompare(b.name));
+
+  return {
+    id: league.id,
+    name: league.name,
+    type: league.type,
+    format: league.format || null,
+    leagueName: leagueData.name || league.name,
+    franchiseId: league.franchiseId,
+    teamName: names.get(String(league.franchiseId)) || league.name,
+    url: leagueUrl(league),
+    players,
+    updatedAt: new Date().toISOString(),
+    error: null,
+  };
+}
+
+export async function fetchSleeperStandings(league) {
+  const { names, rosters } = await sleeperTeamNames(league);
+  if (rosters.length === 0) {
+    throw new Error('No standings data returned for this league');
+  }
+
+  return rosters
+    .map((r) => {
+      const pointsFor = Number(r.settings?.fpts ?? 0) + Number(r.settings?.fpts_decimal ?? 0) / 100;
+      const pointsAgainst = Number(r.settings?.fpts_against ?? 0) + Number(r.settings?.fpts_against_decimal ?? 0) / 100;
+      return {
+        franchiseId: String(r.roster_id),
+        teamName: names.get(String(r.roster_id)) || `Team ${r.roster_id}`,
+        wins: r.settings?.wins ?? 0,
+        losses: r.settings?.losses ?? 0,
+        ties: r.settings?.ties ?? 0,
+        pointsFor: pointsFor.toFixed(2),
+        pointsAgainst: pointsAgainst.toFixed(2),
+        isMe: String(r.roster_id) === String(league.franchiseId),
+      };
+    })
+    .sort((a, b) => b.wins - a.wins || Number(b.pointsFor) - Number(a.pointsFor));
+}
+
+export async function fetchSleeperScoring(league) {
+  const [state, { names }] = await Promise.all([
+    sleeperGet('/state/nfl'),
+    sleeperTeamNames(league),
+  ]);
+  const week = state.week > 0 ? state.week : state.display_week;
+  if (!week) {
+    throw new Error('No live scoring available yet');
+  }
+
+  const matchups = await sleeperGet(`/league/${league.id}/matchups/${week}`);
+  if (!matchups || matchups.length === 0) {
+    throw new Error('No live scoring available yet');
+  }
+
+  const teams = matchups
+    .map((m) => ({
+      franchiseId: String(m.roster_id),
+      teamName: names.get(String(m.roster_id)) || `Team ${m.roster_id}`,
+      score: m.points ?? 0,
+      isMe: String(m.roster_id) === String(league.franchiseId),
+    }))
+    .sort((a, b) => b.score - a.score)
+    .map((t) => ({ ...t, score: t.score.toFixed(2) }));
+
+  return { week, teams };
 }

@@ -1,14 +1,14 @@
-name: Diagnose Sleeper API Fields (manual, read-only)
+name: Test Sleeper Provider Functions (manual, read-only)
 
-# Deliberately workflow_dispatch ONLY. Read-only research to find Sleeper's
-# public API shapes (no auth needed at all) — delete this workflow and
-# scripts/diag-sleeper.mjs once the real fields are confirmed and wired
-# into providers.mjs.
+# Deliberately workflow_dispatch ONLY. Exercises the new Sleeper provider
+# functions (scripts/lib/providers.mjs) against the real SFB16 league before
+# they're trusted in the full sync — delete this workflow and
+# scripts/test-sleeper.mjs once the integration is verified working.
 on:
   workflow_dispatch: {}
 
 jobs:
-  diag:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -19,5 +19,5 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Dump Sleeper API shapes
-        run: node scripts/diag-sleeper.mjs
+      - name: Test Sleeper provider functions
+        run: node scripts/test-sleeper.mjs
