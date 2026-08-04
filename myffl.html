@@ -363,6 +363,10 @@
 			height: 1.05rem;
 			cursor: pointer;
 		}
+		table.lineup-editor-table.read-only input[type="checkbox"] {
+			cursor: default;
+			opacity: 0.6;
+		}
 		table.roster {
 			width: 100%;
 			border-collapse: collapse;
@@ -658,9 +662,13 @@
 		// Pilot lineup editor: a single table with a checkbox column instead of
 		// separate Starters/Bench sections — check the players you want to
 		// start, then Save submits the checked ids to MFL via TYPE=lineup.
+		// Shown read-only (checkboxes disabled, no Save button) when logged
+		// out, so the layout is identical either way — only editability
+		// changes once logged in.
 		function buildLineupEditor(league, players, starterIdSet) {
+			const editable = isLoggedIn();
 			const wrap = el('div', { class: 'lineup-editor' });
-			const table = el('table', { class: 'roster lineup-editor-table' });
+			const table = el('table', { class: `roster lineup-editor-table${editable ? '' : ' read-only'}` });
 			const headRow = el('tr', { class: 'roster-head' });
 			headRow.appendChild(el('th', {}));
 			headRow.appendChild(el('th', {}));
@@ -679,6 +687,7 @@
 
 				const checkbox = el('input', { type: 'checkbox' });
 				checkbox.checked = starterIdSet.has(p.id);
+				checkbox.disabled = !editable;
 				checkbox.dataset.playerId = p.id;
 				checkboxes.push(checkbox);
 				row.appendChild(el('td', {}, [checkbox]));
@@ -697,6 +706,12 @@
 			wrap.appendChild(table);
 
 			const actions = el('div', { class: 'lineup-editor-actions' });
+			if (!editable) {
+				actions.appendChild(buildLoginPrompt());
+				wrap.appendChild(actions);
+				return wrap;
+			}
+
 			const saveBtn = el('button', { type: 'button', class: 'lineup-save-btn', text: 'Save Lineup' });
 			const statusEl = el('span', { class: 'lineup-editor-status' });
 			const logoutBtn = el('button', { type: 'button', class: 'lineup-logout-btn', text: 'Log out' });
@@ -775,22 +790,8 @@
 				if (!players || players.length === 0) continue;
 
 				if (group.key === 'ROSTER' && starterIdSet) {
-					if (isLoggedIn()) {
-						card.appendChild(el('div', { class: 'group-label', text: `${group.label} (${players.length}) — editing lineup` }));
-						card.appendChild(buildLineupEditor(league, players, starterIdSet));
-					} else {
-						const starters = players.filter((p) => starterIdSet.has(p.id));
-						const bench = players.filter((p) => !starterIdSet.has(p.id));
-						if (starters.length > 0) {
-							card.appendChild(el('div', { class: 'group-label', text: `Starters (${starters.length})` }));
-							card.appendChild(buildRosterTable(starters, isAuction, 'starter'));
-						}
-						if (bench.length > 0) {
-							card.appendChild(el('div', { class: 'group-label', text: `Bench (${bench.length})` }));
-							card.appendChild(buildRosterTable(bench, isAuction, 'bench'));
-						}
-						card.appendChild(buildLoginPrompt());
-					}
+					card.appendChild(el('div', { class: 'group-label', text: `${group.label} (${players.length})` }));
+					card.appendChild(buildLineupEditor(league, players, starterIdSet));
 					continue;
 				}
 
