@@ -321,6 +321,21 @@ export async function fetchMflLineup(league, cookie) {
   return { week: '1', starterIds };
 }
 
+// Submits a starting lineup for the given week. Confirmed against MFL's own
+// interactive API-test docs (api_info?STATE=test&CCAT=import&TYPE=lineup):
+// TYPE is "lineup", not "setLineup" — that earlier guess was rejected
+// outright ("Invalid Data Type"). Required: L, W, STARTERS (comma-separated
+// player ids). FRANCHISE_ID is only needed when acting as commissioner on
+// behalf of another owner; harmless to always include since it matches our
+// own franchise here. Like every /import call, this returns XML regardless
+// of JSON=1, so fetch as text.
+export async function submitMflLineup(league, cookie, starterIds, week) {
+  const url = `${BASE}/import?TYPE=lineup&L=${league.id}&FRANCHISE_ID=${league.franchiseId}&W=${week}&STARTERS=${starterIds.join(',')}&JSON=1`;
+  const res = await fetch(url, { headers: { Cookie: cookie }, redirect: 'follow' });
+  const bodyText = await res.text();
+  return { status: res.status, ok: res.ok, bodyText };
+}
+
 // --- ESPN fantasy football (undocumented API, reverse-engineered from the
 // community — field names/IDs below are best-effort; verified working
 // against real leagues for standings/scoring as of this writing) ---

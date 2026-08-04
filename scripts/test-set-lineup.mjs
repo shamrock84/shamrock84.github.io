@@ -1,8 +1,10 @@
 #!/usr/bin/env node
-// One-off, manually-triggered-only diagnostic — NOT part of the regular
-// sync and never wired into a schedule. Currently just fetching MFL's
-// interactive API-test docs page for TYPE=lineup to find the real request
-// shape, before attempting any actual write.
+// One-off, manually-triggered-only test for submitMflLineup — NOT part of
+// the regular sync (scripts/fetch-rosters.mjs) and never wired into a
+// schedule. Re-submits the exact current starters for the lineupPilot
+// league (a no-op if the API call format is correct) and re-fetches
+// afterward to confirm nothing actually changed, instead of trusting a
+// 200 response at face value — this is a write against a real team.
 //
 // Requires MFL_USERNAME/MFL_PASSWORD env vars, same as fetch-rosters.mjs.
 // Run via the "Test Set Lineup" GitHub Actions workflow (workflow_dispatch
@@ -10,7 +12,7 @@
 
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { mflLogin } from './lib/providers.mjs';
+import { mflLogin, fetchMflLineup, submitMflLineup } from './lib/providers.mjs';
 
 const CONFIG_PATH = fileURLToPath(new URL('../config/leagues.json', import.meta.url));
 
@@ -28,14 +30,31 @@ async function main() {
 
   const cookie = await mflLogin(username, password);
 
-  const year = new Date().getFullYear();
-  const url = `https://www03.myfantasyleague.com/${year}/api_info?STATE=test&CCAT=import&TYPE=lineup&L=${league.id}`;
-  console.log(`Fetching ${url}`);
-  const res = await fetch(url, { headers: { Cookie: cookie }, redirect: 'follow' });
-  const text = await res.text();
-  console.log(`status ${res.status}, final url ${res.url}, length ${text.length}`);
-  console.log('--- FULL BODY ---');
-  console.log(text);
+  console.log(`Fetching current starters for ${league.name}...`);
+  const before = await fetchMflLineup(league, cookie);
+  console.log(`Current starters (week ${before.week}): ${before.starterIds.join(', ')}`);
+
+  if (before.starterIds.length === 0) {
+    throw new Error('No current starters found — aborting rather than submitting an empty lineup.');
+  }
+
+  console.log(`Re-submitting the SAME ${before.starterIds.length} starters (no-op test)...`);
+  const result = await submitMflLineup(league, cookie, before.starterIds, before.week);
+  console.log(`submitMflLineup HTTP status: ${result.status} (ok: ${result.ok})`);
+  console.log(`submitMflLineup raw body:\n${result.bodyText}`);
+
+  console.log('Re-fetching to verify nothing changed...');
+  const after = await fetchMflLineup(league, cookie);
+  console.log(`Starters after submit (week ${after.week}): ${after.starterIds.join(', ')}`);
+
+  const beforeSet = new Set(before.starterIds);
+  const afterSet = new Set(after.starterIds);
+  const same = beforeSet.size === afterSet.size && [...beforeSet].every((id) => afterSet.has(id));
+  console.log(
+    same
+      ? 'VERIFIED: starters unchanged after the no-op submit. Safe to build on.'
+      : 'WARNING: starters CHANGED after the no-op submit — do NOT trust this endpoint yet.'
+  );
 }
 
 main().catch((err) => {
