@@ -26,7 +26,7 @@ jobs:
           MFL_USERNAME: ${{ secrets.MFL_USERNAME }}
           MFL_PASSWORD: ${{ secrets.MFL_PASSWORD }}
           ESPN_S2: ${{ secrets.ESPN_S2 }}
-          ESPN_SWID: ${{ secrets.SWID }}
+          ESPN_SWID: ${{ secrets.ESPN_SWID }}
         run: node scripts/fetch-rosters.mjs
 
       - name: Commit and push if changed
