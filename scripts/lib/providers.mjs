@@ -33,8 +33,13 @@ export function leagueUrl(league) {
 
 // --- MFL ---
 
-export async function mflLogin(username, password) {
-  const url = `${BASE}/login?USERNAME=${encodeURIComponent(username)}&PASSWORD=${encodeURIComponent(password)}&XML=1`;
+// leagueId is optional for reads (every /export call carries its own L=
+// param regardless of login scope) but required for /import writes — MFL
+// rejects lineup submissions with "API requires a logged in user in league
+// ID" unless the login itself was scoped to that league.
+export async function mflLogin(username, password, leagueId) {
+  const leagueParam = leagueId ? `&L=${leagueId}` : '';
+  const url = `${BASE}/login?USERNAME=${encodeURIComponent(username)}&PASSWORD=${encodeURIComponent(password)}${leagueParam}&XML=1`;
   const res = await fetch(url, { redirect: 'follow' });
   const text = await res.text();
 

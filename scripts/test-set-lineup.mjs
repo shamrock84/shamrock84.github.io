@@ -28,7 +28,10 @@ async function main() {
   const league = leagues.find((l) => l.lineupPilot);
   if (!league) throw new Error('No lineupPilot league configured in config/leagues.json');
 
-  const cookie = await mflLogin(username, password);
+  // League-scoped login — /import (unlike /export) requires the login
+  // itself to specify L=, confirmed via a live test error ("API requires a
+  // logged in user in league ID").
+  const cookie = await mflLogin(username, password, league.id);
 
   console.log(`Fetching current starters for ${league.name}...`);
   const before = await fetchMflLineup(league, cookie);
