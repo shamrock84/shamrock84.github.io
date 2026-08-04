@@ -207,22 +207,17 @@ export async function fetchScoring(league, cookie, nameById) {
 }
 
 // Which of the franchise's currently-rostered players are set as starters
-// for the current week. Reuses the same liveScoring export fetchScoring
-// pulls team totals from — MFL populates starter/nonstarter status there
-// once the week's lineup is set, even before kickoff. Pilot feature: only
-// called for leagues flagged lineupPilot in config/leagues.json, so an API
-// shape surprise here can't break the rest of the sync.
+// for the current week. liveScoring (what fetchScoring uses) is gated by
+// the season actually being live, so pre-season this uses weeklyResults
+// instead — confirmed against real data that it carries starter/nonstarter
+// status independent of whether the week's games have started.
+// KNOWN LIMITATION: W is hardcoded to 1. Fine while the season hasn't
+// started (there's only ever a week 1 to look at), but needs to track the
+// actual current week once the regular season advances past week 1.
+// Pilot feature: only called for leagues flagged lineupPilot in
+// config/leagues.json, so an API shape surprise here can't break the sync.
 export async function fetchMflLineup(league, cookie) {
-  // liveScoring is gated by the season being live (confirmed via MFL's own
-  // error message), and TYPE=rosters&WEEK=1 turned out not to carry lineup
-  // info at all — its "status" field stayed ROSTER/TAXI_SQUAD regardless of
-  // WEEK. Trying weeklyResults next: it's what MFL uses for a week's actual
-  // starter/bench breakdown, independent of whether the week is "live".
   const weeklyData = await mflGet(`/export?TYPE=weeklyResults&L=${league.id}&W=1&JSON=1`, cookie);
-  // TEMP DIAGNOSTIC (pilot only) — remove once the starter/bench field shape
-  // is confirmed against real MFL data.
-  console.log(`[lineup-debug] ${league.name} weeklyResults(W=1) raw: ${JSON.stringify(weeklyData).slice(0, 3000)}`);
-
   const matchups = weeklyData?.weeklyResults?.matchup;
   const matchupList = Array.isArray(matchups) ? matchups : matchups ? [matchups] : [];
   let mine = null;
