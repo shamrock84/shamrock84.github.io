@@ -236,14 +236,36 @@ async function espnGet(league, viewParams) {
   if (!ESPN_S2 || !ESPN_SWID) {
     throw new Error('ESPN_S2 and ESPN_SWID environment variables are required for ESPN leagues.');
   }
-  const url = `${ESPN_BASE}/${league.id}?${viewParams}`;
-  const res = await fetch(url, {
-    headers: { Cookie: `espn_s2=${ESPN_S2}; SWID=${ESPN_SWID}` },
-  });
-  if (!res.ok) {
-    throw new Error(`ESPN request failed (${res.status}): ${url}`);
+  const cookie = `espn_s2=${ESPN_S2}; SWID=${ESPN_SWID}`;
+  let url = `${ESPN_BASE}/${league.id}?${viewParams}`;
+
+  // fetch() drops the Cookie header on cross-origin redirects (WHATWG spec),
+  // and ESPN's API is known to redirect fantasy.espn.com -> a different host
+  // (e.g. lm-api-reads.fantasy.espn.com) for reads. Follow redirects manually
+  // so our auth cookie doesn't silently vanish mid-request.
+  let res;
+  for (let hop = 0; hop < 5; hop++) {
+    res = await fetch(url, { headers: { Cookie: cookie }, redirect: 'manual' });
+    if (res.status >= 300 && res.status < 400) {
+      const location = res.headers.get('location');
+      if (!location) break;
+      url = new URL(location, url).toString();
+      continue;
+    }
+    break;
   }
-  return res.json();
+
+  const bodyText = await res.text();
+  if (!res.ok) {
+    throw new Error(`ESPN request failed (${res.status}) at ${url}: ${bodyText.slice(0, 300)}`);
+  }
+  try {
+    return JSON.parse(bodyText);
+  } catch (err) {
+    throw new Error(
+      `ESPN response wasn't valid JSON (status ${res.status}, ${bodyText.length} bytes) at ${url}: ${bodyText.slice(0, 300)}`
+    );
+  }
 }
 
 async function fetchEspnLeagueRoster(league) {
