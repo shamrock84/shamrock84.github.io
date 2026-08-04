@@ -33,13 +33,8 @@ export function leagueUrl(league) {
 
 // --- MFL ---
 
-// leagueId is optional for reads (every /export call carries its own L=
-// param regardless of login scope) but required for /import writes — MFL
-// rejects lineup submissions with "API requires a logged in user in league
-// ID" unless the login itself was scoped to that league.
-export async function mflLogin(username, password, leagueId) {
-  const leagueParam = leagueId ? `&L=${leagueId}` : '';
-  const url = `${BASE}/login?USERNAME=${encodeURIComponent(username)}&PASSWORD=${encodeURIComponent(password)}${leagueParam}&XML=1`;
+export async function mflLogin(username, password) {
+  const url = `${BASE}/login?USERNAME=${encodeURIComponent(username)}&PASSWORD=${encodeURIComponent(password)}&XML=1`;
   const res = await fetch(url, { redirect: 'follow' });
   const text = await res.text();
 
@@ -59,6 +54,42 @@ export async function mflLogin(username, password, leagueId) {
     throw new Error(`MFL login did not return a session cookie. Response: ${text.slice(0, 300)}`);
   }
   return cookie;
+}
+
+// Dedicated login for lineup submission, kept fully separate from
+// mflLogin() (used everywhere else) rather than risk touching that
+// proven/shared read path. Confirmed via live testing that /import needs
+// TWO things exports never needed: (1) the login itself scoped to the
+// league via L=, and (2) the import call sent to the SAME regional host
+// (e.g. www43.myfantasyleague.com) that login redirects to — the generic
+// api.myfantasyleague.com host doesn't recognize the league-scoped session
+// even though the cookie itself is domain-wide (.myfantasyleague.com) and
+// present either way. This resolves that host dynamically from the
+// login's redirect chain instead of hardcoding a shard number.
+async function mflLoginForImport(username, password, leagueId) {
+  const url = `${BASE}/login?USERNAME=${encodeURIComponent(username)}&PASSWORD=${encodeURIComponent(password)}&L=${leagueId}&XML=1`;
+  const res = await fetch(url, { redirect: 'follow' });
+  const text = await res.text();
+
+  let cookie = null;
+  const setCookieHeaders = typeof res.headers.getSetCookie === 'function'
+    ? res.headers.getSetCookie()
+    : [res.headers.get('set-cookie')].filter(Boolean);
+  for (const sc of setCookieHeaders) {
+    const m = sc && sc.match(/MFL_USER_ID=[^;]+/);
+    if (m) { cookie = m[0]; break; }
+  }
+  if (!cookie) {
+    const m = text.match(/MFL_USER_ID=[^;"'\s]+/);
+    if (m) cookie = m[0];
+  }
+  if (!cookie) {
+    throw new Error(`MFL league-scoped login did not return a session cookie. Response: ${text.slice(0, 300)}`);
+  }
+
+  const hostMatch = res.url.match(/^https:\/\/([^/]+)\//);
+  const host = hostMatch ? hostMatch[1] : new URL(BASE).host;
+  return { cookie, host };
 }
 
 // year defaults to the current season; pass a specific year (e.g. for
@@ -333,13 +364,16 @@ export async function fetchMflLineup(league, cookie) {
 // player ids). FRANCHISE_ID must be OMITTED here — confirmed via a live
 // test error ("Can not specify a FRANCHISE_ID other than the owner's"):
 // it's only for a commissioner acting on another owner's behalf, and our
-// login IS the owner, so MFL infers the franchise automatically. Like every
-// /import call, this returns XML regardless of JSON=1, so fetch as text.
-export async function submitMflLineup(league, cookie, starterIds, week) {
-  const url = `${BASE}/import?TYPE=lineup&L=${league.id}&W=${week}&STARTERS=${starterIds.join(',')}&JSON=1`;
+// login IS the owner, so MFL infers the franchise automatically. Takes
+// username/password directly (not a pre-existing cookie) because it needs
+// its own league-scoped login — see mflLoginForImport. Like every /import
+// call, this returns XML regardless of JSON=1, so fetch as text.
+export async function submitMflLineup(username, password, league, starterIds, week) {
+  const { cookie, host } = await mflLoginForImport(username, password, league.id);
+  const url = `https://${host}/${YEAR}/import?TYPE=lineup&L=${league.id}&W=${week}&STARTERS=${starterIds.join(',')}&JSON=1`;
   const res = await fetch(url, { headers: { Cookie: cookie }, redirect: 'follow' });
   const bodyText = await res.text();
-  return { status: res.status, ok: res.ok, bodyText };
+  return { status: res.status, ok: res.ok, bodyText, host };
 }
 
 // --- ESPN fantasy football (undocumented API, reverse-engineered from the

@@ -28,30 +28,13 @@ async function main() {
   const league = leagues.find((l) => l.lineupPilot);
   if (!league) throw new Error('No lineupPilot league configured in config/leagues.json');
 
-  // TEMP DIAGNOSTIC — league-scoped login didn't fix the error, so dump
-  // every Set-Cookie header from the raw login response to check whether
-  // MFL sets an additional league-specific cookie our mflLogin() parsing
-  // (which only looks for MFL_USER_ID) is silently discarding.
-  {
-    const year = new Date().getFullYear();
-    const rawLoginUrl = `https://api.myfantasyleague.com/${year}/login?USERNAME=${encodeURIComponent(username)}&PASSWORD=${encodeURIComponent(password)}&L=${league.id}&XML=1`;
-    const rawRes = await fetch(rawLoginUrl, { redirect: 'follow' });
-    const setCookies = typeof rawRes.headers.getSetCookie === 'function'
-      ? rawRes.headers.getSetCookie()
-      : [rawRes.headers.get('set-cookie')].filter(Boolean);
-    console.log(`[login-debug] status ${rawRes.status}, final url ${rawRes.url}`);
-    console.log(`[login-debug] all Set-Cookie headers: ${JSON.stringify(setCookies)}`);
-    const rawBody = await rawRes.text();
-    console.log(`[login-debug] body: ${rawBody.slice(0, 500)}`);
-  }
-
-  // League-scoped login — /import (unlike /export) requires the login
-  // itself to specify L=, confirmed via a live test error ("API requires a
-  // logged in user in league ID").
-  const cookie = await mflLogin(username, password, league.id);
+  // Plain (unscoped) login for the read side — fetchMflLineup works fine
+  // against the generic api.myfantasyleague.com host, same as the rest of
+  // the sync.
+  const readCookie = await mflLogin(username, password);
 
   console.log(`Fetching current starters for ${league.name}...`);
-  const before = await fetchMflLineup(league, cookie);
+  const before = await fetchMflLineup(league, readCookie);
   console.log(`Current starters (week ${before.week}): ${before.starterIds.join(', ')}`);
 
   if (before.starterIds.length === 0) {
@@ -59,12 +42,13 @@ async function main() {
   }
 
   console.log(`Re-submitting the SAME ${before.starterIds.length} starters (no-op test)...`);
-  const result = await submitMflLineup(league, cookie, before.starterIds, before.week);
+  const result = await submitMflLineup(username, password, league, before.starterIds, before.week);
+  console.log(`submitMflLineup used host: ${result.host}`);
   console.log(`submitMflLineup HTTP status: ${result.status} (ok: ${result.ok})`);
   console.log(`submitMflLineup raw body:\n${result.bodyText}`);
 
   console.log('Re-fetching to verify nothing changed...');
-  const after = await fetchMflLineup(league, cookie);
+  const after = await fetchMflLineup(league, readCookie);
   console.log(`Starters after submit (week ${after.week}): ${after.starterIds.join(', ')}`);
 
   const beforeSet = new Set(before.starterIds);
