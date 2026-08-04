@@ -7,39 +7,48 @@
 	<link rel="icon" type="image/png" sizes="32x32" href="https://shamrock84.github.io/fflicons/favicon-32x32.png">
 	<link rel="icon" type="image/png" sizes="16x16" href="https://shamrock84.github.io/fflicons/favicon-16x16.png">
 	<link rel="manifest" href="https://shamrock84.github.io/fflicons/site.webmanifest">
-	<meta name="theme-color" content="#0f172a">
+	<meta name="theme-color" media="(prefers-color-scheme: light)" content="#4F2683">
+	<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#140f1e">
 	<style>
+		/* Minnesota Vikings palette: purple as the primary accent everywhere,
+		   gold reserved specifically for highlighting the user's own team. */
 		:root {
-			--bg: #f4f5f7;
+			--bg: #f5f3f9;
 			--card-bg: #ffffff;
-			--text: #1a1d23;
-			--muted: #6b7280;
-			--border: #e5e7eb;
-			--accent: #1d4ed8;
-			--chip-bg: #eef2ff;
-			--roster-bg: #ecfdf5;
-			--roster-text: #065f46;
+			--text: #1b1425;
+			--muted: #6b6478;
+			--border: #e3daf0;
+			--accent: #4F2683;
+			--chip-bg: #ede3f8;
 			--taxi-bg: #eff6ff;
 			--taxi-text: #1e40af;
 			--ir-bg: #fef2f2;
 			--ir-text: #991b1b;
+			--gold: #FFC62F;
+			--gold-text: #5c4300;
 		}
 		@media (prefers-color-scheme: dark) {
 			:root {
-				--bg: #0f1115;
-				--card-bg: #191c22;
-				--text: #e7e9ec;
-				--muted: #9aa1ab;
-				--border: #2a2e37;
-				--accent: #6d9bff;
-				--chip-bg: #232a3d;
-				--roster-bg: #0d2b21;
-				--roster-text: #6ee7b7;
+				--bg: #140f1e;
+				--card-bg: #1e1730;
+				--text: #ede9f5;
+				--muted: #a79bc2;
+				--border: #362a4a;
+				--accent: #b48ee0;
+				--chip-bg: #2c2145;
 				--taxi-bg: #0e2340;
 				--taxi-text: #93c5fd;
 				--ir-bg: #341313;
 				--ir-text: #fca5a5;
+				--gold: #FFC62F;
+				--gold-text: #3d2e00;
 			}
+		}
+		body::before {
+			content: '';
+			display: block;
+			height: 4px;
+			background: linear-gradient(90deg, var(--accent), var(--gold));
 		}
 		* { box-sizing: border-box; }
 		body {
@@ -55,6 +64,8 @@
 		header h1 {
 			margin: 0 0 0.25rem;
 			font-size: 1.75rem;
+			color: var(--accent);
+			letter-spacing: -0.02em;
 		}
 		#updated {
 			color: var(--muted);
@@ -254,7 +265,8 @@
 		}
 		tr.me-row td {
 			font-weight: 700;
-			background: var(--chip-bg);
+			background: var(--gold);
+			color: var(--gold-text);
 		}
 		.hidden { display: none !important; }
 		footer {
