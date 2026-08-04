@@ -1,0 +1,23 @@
+name: Diagnose Sleeper API Fields (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY. Read-only research to find Sleeper's
+# public API shapes (no auth needed at all) — delete this workflow and
+# scripts/diag-sleeper.mjs once the real fields are confirmed and wired
+# into providers.mjs.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Dump Sleeper API shapes
+        run: node scripts/diag-sleeper.mjs
