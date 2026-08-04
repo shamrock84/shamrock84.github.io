@@ -1,11 +1,13 @@
 {
   "_readme": [
     "Edit this file each offseason instead of touching scripts/fetch-rosters.mjs.",
-    "id: the MFL league ID for the current year (find it in the league's URL).",
-    "franchiseId: your team's 4-digit franchise ID within that league.",
-    "name: display name used on the page.",
-    "type: 'dynasty' or 'bestball' — controls which top-level sub-tab a league appears under.",
-    "format: dynasty leagues only — 'dynasty' (plain roster) or 'auction' (adds Salary/Yrs columns). Omit for bestball leagues.",
+    "provider: 'mfl' (default if omitted) or 'espn' — which fetch logic/auth to use.",
+    "id: the league ID for the current year (find it in the league's URL).",
+    "franchiseId: your team ID within that league (MFL: 4-digit franchise ID; ESPN: numeric team ID).",
+    "name: fallback display name, used only if the live league/team name can't be fetched.",
+    "type: 'dynasty', 'bestball', or 'redraft' — controls which top-level sub-tab a league appears under.",
+    "format: dynasty leagues only — 'dynasty' (plain roster) or 'auction' (adds Salary/Yrs columns). Omit otherwise.",
+    "ESPN leagues additionally require ESPN_S2 and ESPN_SWID GitHub Actions secrets (browser cookies, not a login).",
     "Array order is display order everywhere on the page (Rosters, Standings, Scoring)."
   ],
   "leagues": [
@@ -22,6 +24,7 @@
     { "id": "54766", "franchiseId": "0004", "name": "May Rookies", "type": "bestball" },
     { "id": "54458", "franchiseId": "0004", "name": "June Tecmo Ball", "type": "bestball" },
     { "id": "61777", "franchiseId": "0003", "name": "July Semiquincentennial", "type": "bestball" },
-    { "id": "30196", "franchiseId": "0004", "name": "July Fantasy Football for Dummies", "type": "bestball" }
+    { "id": "30196", "franchiseId": "0004", "name": "July Fantasy Football for Dummies", "type": "bestball" },
+    { "id": "421871710", "franchiseId": "5", "name": "ESPN League 1", "type": "redraft", "provider": "espn" }
   ]
 }

@@ -21,10 +21,12 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Fetch rosters from MFL
+      - name: Fetch rosters from MFL and ESPN
         env:
           MFL_USERNAME: ${{ secrets.MFL_USERNAME }}
           MFL_PASSWORD: ${{ secrets.MFL_PASSWORD }}
+          ESPN_S2: ${{ secrets.ESPN_S2 }}
+          ESPN_SWID: ${{ secrets.ESPN_SWID }}
         run: node scripts/fetch-rosters.mjs
 
       - name: Commit and push if changed

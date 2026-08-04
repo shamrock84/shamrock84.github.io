@@ -1,8 +1,11 @@
 #!/usr/bin/env node
-// Logs into MyFantasyLeague, pulls the roster for each configured league/franchise,
-// and writes a consolidated data/rosters.json for rosters.html to render.
+// Pulls rosters/standings/scoring for every league in config/leagues.json —
+// from MFL (login + session cookie) and/or ESPN (espn_s2/SWID cookies) — and
+// writes it all into one consolidated data/rosters.json for myffl.html to render.
 //
 // Requires MFL_USERNAME and MFL_PASSWORD env vars (set as GitHub Actions secrets).
+// ESPN leagues additionally require ESPN_S2 and ESPN_SWID env vars; leagues
+// without a provider are assumed to be 'mfl'.
 
 import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -11,6 +14,9 @@ const YEAR = process.env.MFL_YEAR || String(new Date().getFullYear());
 const USERNAME = process.env.MFL_USERNAME;
 const PASSWORD = process.env.MFL_PASSWORD;
 const BASE = `https://api.myfantasyleague.com/${YEAR}`;
+const ESPN_S2 = process.env.ESPN_S2;
+const ESPN_SWID = process.env.ESPN_SWID;
+const ESPN_BASE = `https://fantasy.espn.com/apis/v3/games/ffl/seasons/${YEAR}/segments/0/leagues`;
 const OUTPUT_PATH = fileURLToPath(new URL('../data/rosters.json', import.meta.url));
 const CONFIG_PATH = fileURLToPath(new URL('../config/leagues.json', import.meta.url));
 
@@ -134,7 +140,7 @@ async function fetchLeagueRoster(league, cookie, playerMap) {
     leagueName: leagueData?.league?.name || league.name,
     franchiseId: league.franchiseId,
     teamName: franchiseInfo?.name || league.name,
-    url: `https://www.myfantasyleague.com/${YEAR}/home/${league.id}`,
+    url: leagueUrl(league),
     players,
     updatedAt: new Date().toISOString(),
     error: null,
@@ -202,6 +208,131 @@ async function fetchScoring(league, cookie) {
   return { week: live?.week ?? null, teams };
 }
 
+function leagueUrl(league) {
+  if (league.provider === 'espn') {
+    return `https://fantasy.espn.com/football/team?leagueId=${league.id}&teamId=${league.franchiseId}`;
+  }
+  return `https://www.myfantasyleague.com/${YEAR}/home/${league.id}`;
+}
+
+// --- ESPN fantasy football (undocumented API, reverse-engineered from the
+// community — field names/IDs below are best-effort and unverified against
+// a live response; expect to need adjustments once real data comes through) ---
+
+const ESPN_POSITION_MAP = { 1: 'QB', 2: 'RB', 3: 'WR', 4: 'TE', 5: 'PK', 16: 'Def' };
+const ESPN_PRO_TEAM_MAP = {
+  0: 'FA', 1: 'ATL', 2: 'BUF', 3: 'CHI', 4: 'CIN', 5: 'CLE', 6: 'DAL', 7: 'DEN', 8: 'DET', 9: 'GB',
+  10: 'TEN', 11: 'IND', 12: 'KC', 13: 'LV', 14: 'LAR', 15: 'MIA', 16: 'MIN', 17: 'NE', 18: 'NO', 19: 'NYG',
+  20: 'NYJ', 21: 'PHI', 22: 'ARI', 23: 'PIT', 24: 'LAC', 25: 'SF', 26: 'SEA', 27: 'TB', 28: 'WAS', 29: 'CAR',
+  30: 'JAX', 33: 'BAL', 34: 'HOU',
+};
+const ESPN_IR_SLOT_ID = 21;
+
+function espnTeamName(team) {
+  return team?.name || [team?.location, team?.nickname].filter(Boolean).join(' ').trim() || String(team?.id ?? '');
+}
+
+async function espnGet(league, viewParams) {
+  if (!ESPN_S2 || !ESPN_SWID) {
+    throw new Error('ESPN_S2 and ESPN_SWID environment variables are required for ESPN leagues.');
+  }
+  const url = `${ESPN_BASE}/${league.id}?${viewParams}`;
+  const res = await fetch(url, {
+    headers: { Cookie: `espn_s2=${ESPN_S2}; SWID=${ESPN_SWID}` },
+  });
+  if (!res.ok) {
+    throw new Error(`ESPN request failed (${res.status}): ${url}`);
+  }
+  return res.json();
+}
+
+async function fetchEspnLeagueRoster(league) {
+  const data = await espnGet(league, 'view=mRoster&view=mTeam&view=mSettings');
+
+  const teams = data.teams || [];
+  const team = teams.find((t) => String(t.id) === String(league.franchiseId));
+  if (!team) {
+    throw new Error(`No team ${league.franchiseId} found in ESPN league ${league.id}`);
+  }
+
+  const rawEntries = team.roster?.entries || [];
+  const players = rawEntries
+    .map((e) => {
+      const p = e.playerPoolEntry?.player || {};
+      return {
+        id: String(e.playerId),
+        name: p.fullName || `Unknown Player (${e.playerId})`,
+        position: ESPN_POSITION_MAP[p.defaultPositionId] || '',
+        team: ESPN_PRO_TEAM_MAP[p.proTeamId] ?? 'FA',
+        status: e.lineupSlotId === ESPN_IR_SLOT_ID ? 'INJURED_RESERVE' : 'ROSTER',
+      };
+    })
+    .sort((a, b) => positionRank(a.position) - positionRank(b.position) || a.name.localeCompare(b.name));
+
+  return {
+    id: league.id,
+    name: league.name,
+    type: league.type,
+    format: league.format || null,
+    leagueName: data.settings?.name || league.name,
+    franchiseId: league.franchiseId,
+    teamName: espnTeamName(team),
+    url: leagueUrl(league),
+    players,
+    updatedAt: new Date().toISOString(),
+    error: null,
+  };
+}
+
+async function fetchEspnStandings(league) {
+  const data = await espnGet(league, 'view=mTeam');
+  const teams = data.teams || [];
+  if (teams.length === 0) {
+    throw new Error('No standings data returned for this league');
+  }
+
+  return teams
+    .map((t) => ({
+      franchiseId: String(t.id),
+      teamName: espnTeamName(t),
+      wins: t.record?.overall?.wins ?? 0,
+      losses: t.record?.overall?.losses ?? 0,
+      ties: t.record?.overall?.ties ?? 0,
+      pointsFor: Number(t.record?.overall?.pointsFor ?? 0).toFixed(2),
+      pointsAgainst: Number(t.record?.overall?.pointsAgainst ?? 0).toFixed(2),
+      isMe: String(t.id) === String(league.franchiseId),
+    }))
+    .sort((a, b) => b.wins - a.wins || Number(b.pointsFor) - Number(a.pointsFor));
+}
+
+async function fetchEspnScoring(league) {
+  const data = await espnGet(league, 'view=mScoreboard&view=mTeam');
+  const teamsById = new Map((data.teams || []).map((t) => [t.id, espnTeamName(t)]));
+  const currentPeriod = data.status?.currentMatchupPeriod;
+  const schedule = (data.schedule || []).filter((m) => m.matchupPeriodId === currentPeriod);
+
+  const rows = [];
+  for (const m of schedule) {
+    if (m.home) rows.push({ teamId: m.home.teamId, score: m.home.totalPoints ?? 0 });
+    if (m.away) rows.push({ teamId: m.away.teamId, score: m.away.totalPoints ?? 0 });
+  }
+  if (rows.length === 0) {
+    throw new Error('No live scoring available yet');
+  }
+
+  const teams = rows
+    .map((r) => ({
+      franchiseId: String(r.teamId),
+      teamName: teamsById.get(r.teamId) || String(r.teamId),
+      score: r.score,
+      isMe: String(r.teamId) === String(league.franchiseId),
+    }))
+    .sort((a, b) => b.score - a.score)
+    .map((t) => ({ ...t, score: t.score.toFixed(2) }));
+
+  return { week: currentPeriod ?? null, teams };
+}
+
 async function loadPreviousOutput() {
   try {
     const raw = await readFile(OUTPUT_PATH, 'utf8');
@@ -235,7 +366,7 @@ async function main() {
         leagueName: league.name,
         franchiseId: null,
         teamName: league.name,
-        url: `https://www.myfantasyleague.com/${YEAR}/home/${league.id}`,
+        url: leagueUrl(league),
         players: [],
         updatedAt: null,
         error: 'Franchise ID not configured yet',
@@ -243,7 +374,9 @@ async function main() {
       continue;
     }
     try {
-      const result = await fetchLeagueRoster(league, cookie, playerMap);
+      const result = league.provider === 'espn'
+        ? await fetchEspnLeagueRoster(league)
+        : await fetchLeagueRoster(league, cookie, playerMap);
       leagues.push(result);
       console.log(`Fetched ${league.name}: ${result.players.length} players`);
     } catch (err) {
@@ -257,7 +390,7 @@ async function main() {
         leagueName: prev?.leagueName || league.name,
         franchiseId: league.franchiseId,
         teamName: prev?.teamName || league.name,
-        url: prev?.url || `https://www.myfantasyleague.com/${YEAR}/home/${league.id}`,
+        url: prev?.url || leagueUrl(league),
         players: prev?.players || [],
         updatedAt: prev?.updatedAt || null,
         error: err.message,
@@ -269,7 +402,9 @@ async function main() {
     const target = leagues.find((l) => l.id === league.id);
     if (!target || !league.franchiseId) continue;
     try {
-      target.standings = await fetchStandings(league, cookie);
+      target.standings = league.provider === 'espn'
+        ? await fetchEspnStandings(league)
+        : await fetchStandings(league, cookie);
       target.standingsError = null;
       console.log(`Fetched standings for ${league.name}: ${target.standings.length} teams`);
     } catch (err) {
@@ -284,7 +419,9 @@ async function main() {
     const target = leagues.find((l) => l.id === league.id);
     if (!target || !league.franchiseId) continue;
     try {
-      target.scoring = await fetchScoring(league, cookie);
+      target.scoring = league.provider === 'espn'
+        ? await fetchEspnScoring(league)
+        : await fetchScoring(league, cookie);
       target.scoringError = null;
       console.log(`Fetched scoring for ${league.name}: ${target.scoring.teams.length} teams`);
     } catch (err) {
