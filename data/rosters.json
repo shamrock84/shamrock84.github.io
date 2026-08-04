@@ -1,11 +1,12 @@
 {
-  "generatedAt": "2026-08-04T01:44:33.370Z",
+  "generatedAt": "2026-08-04T01:52:59.880Z",
   "year": "2026",
   "leagues": [
     {
       "id": "26696",
       "name": "MNMx Dynasty",
       "type": "dynasty",
+      "format": "dynasty",
       "leagueName": "Minnesota Maniax Dynasty",
       "franchiseId": "0001",
       "teamName": "Rumble Fish",
@@ -16,227 +17,291 @@
           "name": "Fernando Mendoza",
           "position": "QB",
           "team": "LVR",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "14783",
           "name": "Jalen Hurts",
           "position": "QB",
           "team": "PHI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15694",
           "name": "Malik Willis",
           "position": "QB",
           "team": "MIA",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "13592",
           "name": "Sam Darnold",
           "position": "QB",
           "team": "SEA",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16387",
           "name": "Chris Brooks",
           "position": "RB",
           "team": "GBP",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15749",
           "name": "Isiah Pacheco",
           "position": "RB",
           "team": "DET",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17256",
           "name": "Jacory Croskey-Merritt",
           "position": "RB",
           "team": "WAS",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "14802",
           "name": "Jonathan Taylor",
           "position": "RB",
           "team": "IND",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17066",
           "name": "Kyle Monangai",
           "position": "RB",
           "team": "CHI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17044",
           "name": "Omarion Hampton",
           "position": "RB",
           "team": "LAC",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "13604",
           "name": "Saquon Barkley",
           "position": "RB",
           "team": "PHI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16747",
           "name": "Tyrone Tracy",
           "position": "RB",
           "team": "NYG",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17506",
           "name": "Chris Bell",
           "position": "WR",
           "team": "MIA",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "13163",
           "name": "Chris Godwin",
           "position": "WR",
           "team": "TBB",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "13630",
           "name": "Courtland Sutton",
           "position": "WR",
           "team": "DEN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "11675",
           "name": "Davante Adams",
           "position": "WR",
           "team": "LAR",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17514",
           "name": "De'Zhaun Stribling",
           "position": "WR",
           "team": "SFO",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16187",
           "name": "Josh Downs",
           "position": "WR",
           "team": "IND",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16193",
           "name": "Kayshon Boutte",
           "position": "WR",
           "team": "NEP",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16627",
           "name": "Ladd McConkey",
           "position": "WR",
           "team": "LAC",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17070",
           "name": "Luther Burden",
           "position": "WR",
           "team": "CHI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16614",
           "name": "Marvin Harrison Jr.",
           "position": "WR",
           "team": "ARI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16211",
           "name": "Puka Nacua",
           "position": "WR",
           "team": "LAR",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16080",
           "name": "Rashid Shaheed",
           "position": "WR",
           "team": "SEA",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17520",
           "name": "Ted Hurst",
           "position": "WR",
           "team": "TBB",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16269",
           "name": "Brenton Strange",
           "position": "TE",
           "team": "JAC",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "13299",
           "name": "George Kittle",
           "position": "TE",
           "team": "SFO",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15329",
           "name": "Kyle Pitts",
           "position": "TE",
           "team": "ATL",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "13303",
           "name": "Jake Elliott",
           "position": "PK",
           "team": "PHI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16681",
           "name": "Will Reichard",
           "position": "PK",
           "team": "MIN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "0531",
           "name": "Baltimore Ravens",
           "position": "Def",
           "team": "BAL",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "0518",
           "name": "Philadelphia Eagles",
           "position": "Def",
           "team": "PHI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T01:44:21.121Z",
+      "updatedAt": "2026-08-04T01:52:44.743Z",
       "error": null,
       "standings": [
         {
@@ -348,6 +413,7 @@
       "id": "25608",
       "name": "OSD",
       "type": "dynasty",
+      "format": "dynasty",
       "leagueName": "Office Space Dynasty",
       "franchiseId": "0001",
       "teamName": "PC Load Letter",
@@ -358,227 +424,291 @@
           "name": "Brock Purdy",
           "position": "QB",
           "team": "SFO",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16148",
           "name": "Bryce Young",
           "position": "QB",
           "team": "CAR",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "14783",
           "name": "Jalen Hurts",
           "position": "QB",
           "team": "PHI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15694",
           "name": "Malik Willis",
           "position": "QB",
           "team": "MIA",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16598",
           "name": "Bucky Irving",
           "position": "RB",
           "team": "TBB",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16387",
           "name": "Chris Brooks",
           "position": "RB",
           "team": "GBP",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "13130",
           "name": "Christian McCaffrey",
           "position": "RB",
           "team": "SFO",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17481",
           "name": "Demond Claiborne",
           "position": "RB",
           "team": "MIN",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15749",
           "name": "Isiah Pacheco",
           "position": "RB",
           "team": "DET",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "14802",
           "name": "Jonathan Taylor",
           "position": "RB",
           "team": "IND",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17066",
           "name": "Kyle Monangai",
           "position": "RB",
           "team": "CHI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15712",
           "name": "Tyler Allgeier",
           "position": "RB",
           "team": "ARI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16747",
           "name": "Tyrone Tracy",
           "position": "RB",
           "team": "NYG",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "13163",
           "name": "Chris Godwin",
           "position": "WR",
           "team": "TBB",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15282",
           "name": "DeVonta Smith",
           "position": "WR",
           "team": "PHI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17505",
           "name": "Elijah Sarratt",
           "position": "WR",
           "team": "BAL",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "14860",
           "name": "Jauan Jennings",
           "position": "WR",
           "team": "MIN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17083",
           "name": "Jayden Higgins",
           "position": "WR",
           "team": "HOU",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16187",
           "name": "Josh Downs",
           "position": "WR",
           "team": "IND",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16193",
           "name": "Kayshon Boutte",
           "position": "WR",
           "team": "NEP",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16615",
           "name": "Malik Nabers",
           "position": "WR",
           "team": "NYG",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16080",
           "name": "Rashid Shaheed",
           "position": "WR",
           "team": "SEA",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16619",
           "name": "Troy Franklin",
           "position": "WR",
           "team": "DEN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17507",
           "name": "Zachariah Branch",
           "position": "WR",
           "team": "ATL",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16723",
           "name": "AJ Barner",
           "position": "TE",
           "team": "SEA",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16641",
           "name": "Brock Bowers",
           "position": "TE",
           "team": "LVR",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17543",
           "name": "Kenyon Sadiq",
           "position": "TE",
           "team": "NYJ",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "11244",
           "name": "Travis Kelce",
           "position": "TE",
           "team": "KCC",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16846",
           "name": "Jake Bates",
           "position": "PK",
           "team": "DET",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16681",
           "name": "Will Reichard",
           "position": "PK",
           "team": "MIN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "0531",
           "name": "Baltimore Ravens",
           "position": "Def",
           "team": "BAL",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "0518",
           "name": "Philadelphia Eagles",
           "position": "Def",
           "team": "PHI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T01:44:21.454Z",
+      "updatedAt": "2026-08-04T01:52:45.152Z",
       "error": null,
       "standings": [
         {
@@ -690,6 +820,7 @@
       "id": "23545",
       "name": "Survivor",
       "type": "dynasty",
+      "format": "dynasty",
       "leagueName": "Dynasty Survivors",
       "franchiseId": "0008",
       "teamName": "The Merge",
@@ -700,213 +831,273 @@
           "name": "Fernando Mendoza",
           "position": "QB",
           "team": "LVR",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16584",
           "name": "J.J. McCarthy",
           "position": "QB",
           "team": "MIN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "14056",
           "name": "Kyler Murray",
           "position": "QB",
           "team": "MIN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17039",
           "name": "Tyler Shough",
           "position": "QB",
           "team": "NOS",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16167",
           "name": "De'Von Achane",
           "position": "RB",
           "team": "MIA",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17477",
           "name": "Jonah Coleman",
           "position": "RB",
           "team": "DEN",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16178",
           "name": "Keaton Mitchell",
           "position": "RB",
           "team": "LAC",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16757",
           "name": "Kimani Vidal",
           "position": "RB",
           "team": "LAC",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16603",
           "name": "Ray Davis",
           "position": "RB",
           "team": "BUF",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "14823",
           "name": "Rico Dowdle",
           "position": "RB",
           "team": "PIT",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "13604",
           "name": "Saquon Barkley",
           "position": "RB",
           "team": "PHI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17514",
           "name": "De'Zhaun Stribling",
           "position": "WR",
           "team": "SFO",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16788",
           "name": "Devaughn Vele",
           "position": "WR",
           "team": "NOS",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17505",
           "name": "Elijah Sarratt",
           "position": "WR",
           "team": "BAL",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16809",
           "name": "Jalen Coker",
           "position": "WR",
           "team": "CAR",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15786",
           "name": "Jalen Nailor",
           "position": "WR",
           "team": "LVR",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16684",
           "name": "Malik Washington",
           "position": "WR",
           "team": "MIA",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "14842",
           "name": "Michael Pittman",
           "position": "WR",
           "team": "PIT",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15293",
           "name": "Rashod Bateman",
           "position": "WR",
           "team": "BAL",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16778",
           "name": "Ryan Flournoy",
           "position": "WR",
           "team": "DAL",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "12186",
           "name": "Stefon Diggs",
           "position": "WR",
           "team": "FA",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17072",
           "name": "Tre Harris",
           "position": "WR",
           "team": "LAC",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16190",
           "name": "Zay Flowers",
           "position": "WR",
           "team": "BAL",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16213",
           "name": "Dalton Kincaid",
           "position": "TE",
           "team": "BUF",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17105",
           "name": "Gunnar Helm",
           "position": "TE",
           "team": "TEN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15794",
           "name": "Trey McBride",
           "position": "TE",
           "team": "ARI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17424",
           "name": "Charlie Smyth",
           "position": "PK",
           "team": "NOS",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17222",
           "name": "Tyler Loop",
           "position": "PK",
           "team": "BAL",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "0512",
           "name": "Kansas City Chiefs",
           "position": "Def",
           "team": "KCC",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "0529",
           "name": "New Orleans Saints",
           "position": "Def",
           "team": "NOS",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T01:44:21.783Z",
+      "updatedAt": "2026-08-04T01:52:45.592Z",
       "error": null,
       "standings": [
         {
@@ -1038,6 +1229,7 @@
       "id": "35217",
       "name": "Iron Bank",
       "type": "dynasty",
+      "format": "auction",
       "leagueName": "The Iron Bank ",
       "franchiseId": "0004",
       "teamName": "HODOR",
@@ -1048,171 +1240,219 @@
           "name": "C.J. Stroud",
           "position": "QB",
           "team": "HOU",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "6",
+          "contractYear": ""
         },
         {
           "id": "17032",
           "name": "Jaxson Dart",
           "position": "QB",
           "team": "NYG",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "5.38",
+          "contractYear": "2"
         },
         {
           "id": "16581",
           "name": "Jayden Daniels",
           "position": "QB",
           "team": "WAS",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "17.33",
+          "contractYear": "1"
         },
         {
           "id": "15708",
           "name": "Breece Hall",
           "position": "RB",
           "team": "NYJ",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "55.91",
+          "contractYear": "2"
         },
         {
           "id": "17060",
           "name": "DJ Giddens",
           "position": "RB",
           "team": "IND",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": "5.38",
+          "contractYear": "2"
         },
         {
           "id": "17474",
           "name": "Emmett Johnson",
           "position": "RB",
           "team": "KCC",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": "5",
+          "contractYear": "3"
         },
         {
           "id": "16178",
           "name": "Keaton Mitchell",
           "position": "RB",
           "team": "LAC",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "3",
+          "contractYear": ""
         },
         {
           "id": "15711",
           "name": "Kenneth Walker III",
           "position": "RB",
           "team": "KCC",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "55.91",
+          "contractYear": "2"
         },
         {
           "id": "15259",
           "name": "Rhamondre Stevenson",
           "position": "RB",
           "team": "NEP",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "30.05",
+          "contractYear": "1"
         },
         {
           "id": "14085",
           "name": "Tony Pollard",
           "position": "RB",
           "team": "TEN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "52.67",
+          "contractYear": "1"
         },
         {
           "id": "17056",
           "name": "Trevor Etienne",
           "position": "RB",
           "team": "CAR",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": "5.38",
+          "contractYear": "2"
         },
         {
           "id": "15712",
           "name": "Tyler Allgeier",
           "position": "RB",
           "team": "ARI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "16",
+          "contractYear": ""
         },
         {
           "id": "14104",
           "name": "A.J. Brown",
           "position": "WR",
           "team": "NEP",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "70.62",
+          "contractYear": "2"
         },
         {
           "id": "17506",
           "name": "Chris Bell",
           "position": "WR",
           "team": "MIA",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": "15",
+          "contractYear": "3"
         },
         {
           "id": "13630",
           "name": "Courtland Sutton",
           "position": "WR",
           "team": "DEN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "33.51",
+          "contractYear": "1"
         },
         {
           "id": "17505",
           "name": "Elijah Sarratt",
           "position": "WR",
           "team": "BAL",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": "5",
+          "contractYear": "3"
         },
         {
           "id": "17078",
           "name": "Jack Bech",
           "position": "WR",
           "team": "LVR",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": "16.12",
+          "contractYear": "2"
         },
         {
           "id": "16185",
           "name": "Jaxon Smith-Njigba",
           "position": "WR",
           "team": "SEA",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "61.63",
+          "contractYear": "0"
         },
         {
           "id": "17082",
           "name": "Pat Bryant",
           "position": "WR",
           "team": "DEN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "1",
+          "contractYear": ""
         },
         {
           "id": "16194",
           "name": "Rashee Rice",
           "position": "WR",
           "team": "KCC",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "25",
+          "contractYear": "1"
         },
         {
           "id": "16619",
           "name": "Troy Franklin",
           "position": "WR",
           "team": "DEN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "5.78",
+          "contractYear": "1"
         },
         {
           "id": "17104",
           "name": "Colston Loveland",
           "position": "TE",
           "team": "CHI",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": "21.50",
+          "contractYear": "2"
         },
         {
           "id": "16649",
           "name": "Theo Johnson",
           "position": "TE",
           "team": "NYG",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "5.78",
+          "contractYear": "1"
         },
         {
           "id": "15794",
           "name": "Trey McBride",
           "position": "TE",
           "team": "ARI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "70.50",
+          "contractYear": "1"
         }
       ],
-      "updatedAt": "2026-08-04T01:44:22.245Z",
+      "updatedAt": "2026-08-04T01:52:46.094Z",
       "error": null,
       "standings": [
         {
@@ -1344,6 +1584,7 @@
       "id": "34850",
       "name": "Wise Guys",
       "type": "dynasty",
+      "format": "auction",
       "leagueName": "Wise Guys",
       "franchiseId": "0010",
       "teamName": "Capo dei Capi",
@@ -1354,185 +1595,237 @@
           "name": "Aaron Rodgers",
           "position": "QB",
           "team": "PIT",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "4",
+          "contractYear": ""
         },
         {
           "id": "13116",
           "name": "Patrick Mahomes",
           "position": "QB",
           "team": "KCC",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "58",
+          "contractYear": ""
         },
         {
           "id": "17031",
           "name": "Shedeur Sanders",
           "position": "QB",
           "team": "CLE",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": "5.38",
+          "contractYear": "2"
         },
         {
           "id": "15237",
           "name": "Trevor Lawrence",
           "position": "QB",
           "team": "JAC",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "79.12",
+          "contractYear": "0"
         },
         {
           "id": "16596",
           "name": "Braelon Allen",
           "position": "RB",
           "team": "NYJ",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "5",
+          "contractYear": ""
         },
         {
           "id": "15708",
           "name": "Breece Hall",
           "position": "RB",
           "team": "NYJ",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "70",
+          "contractYear": ""
         },
         {
           "id": "16181",
           "name": "Chase Brown",
           "position": "RB",
           "team": "CIN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "63",
+          "contractYear": ""
         },
         {
           "id": "17060",
           "name": "DJ Giddens",
           "position": "RB",
           "team": "IND",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "1.07",
+          "contractYear": "2"
         },
         {
           "id": "17047",
           "name": "Dylan Sampson",
           "position": "RB",
           "team": "CLE",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": "5.38",
+          "contractYear": "2"
         },
         {
           "id": "16597",
           "name": "Jonathon Brooks",
           "position": "RB",
           "team": "CAR",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": "23.11",
+          "contractYear": "1"
         },
         {
           "id": "16178",
           "name": "Keaton Mitchell",
           "position": "RB",
           "team": "LAC",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "5",
+          "contractYear": ""
         },
         {
           "id": "15259",
           "name": "Rhamondre Stevenson",
           "position": "RB",
           "team": "NEP",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "16",
+          "contractYear": ""
         },
         {
           "id": "17509",
           "name": "Chris Brazzell II",
           "position": "WR",
           "team": "CAR",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": "5",
+          "contractYear": "3"
         },
         {
           "id": "13633",
           "name": "Christian Kirk",
           "position": "WR",
           "team": "SFO",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "4.30",
+          "contractYear": "2"
         },
         {
           "id": "17500",
           "name": "Denzel Boston",
           "position": "WR",
           "team": "CLE",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": "15",
+          "contractYear": "3"
         },
         {
           "id": "14833",
           "name": "Jerry Jeudy",
           "position": "WR",
           "team": "CLE",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "1",
+          "contractYear": ""
         },
         {
           "id": "14836",
           "name": "Justin Jefferson",
           "position": "WR",
           "team": "MIN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "62.92",
+          "contractYear": "2"
         },
         {
           "id": "16684",
           "name": "Malik Washington",
           "position": "WR",
           "team": "MIA",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "1",
+          "contractYear": ""
         },
         {
           "id": "17075",
           "name": "Matthew Golden",
           "position": "WR",
           "team": "GBP",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": "16.12",
+          "contractYear": "2"
         },
         {
           "id": "14842",
           "name": "Michael Pittman",
           "position": "WR",
           "team": "PIT",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "9",
+          "contractYear": ""
         },
         {
           "id": "11671",
           "name": "Mike Evans",
           "position": "WR",
           "team": "SFO",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "13",
+          "contractYear": ""
         },
         {
           "id": "15293",
           "name": "Rashod Bateman",
           "position": "WR",
           "team": "BAL",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "1.15",
+          "contractYear": "1"
         },
         {
           "id": "13192",
           "name": "David Njoku",
           "position": "TE",
           "team": "LAC",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "1",
+          "contractYear": ""
         },
         {
           "id": "16645",
           "name": "Erick All",
           "position": "TE",
           "team": "CIN",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": "5.78",
+          "contractYear": "1"
         },
         {
           "id": "15798",
           "name": "Isaiah Likely",
           "position": "TE",
           "team": "NYG",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "25",
+          "contractYear": ""
         },
         {
           "id": "13671",
           "name": "Mark Andrews",
           "position": "TE",
           "team": "BAL",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "48.07",
+          "contractYear": "1"
         }
       ],
-      "updatedAt": "2026-08-04T01:44:22.534Z",
+      "updatedAt": "2026-08-04T01:52:46.883Z",
       "error": null,
       "standings": [
         {
@@ -1664,6 +1957,7 @@
       "id": "30641",
       "name": "Super Cap",
       "type": "dynasty",
+      "format": "auction",
       "leagueName": "Super Cap",
       "franchiseId": "0003",
       "teamName": "THORgasm",
@@ -1674,178 +1968,228 @@
           "name": "Bryce Young",
           "position": "QB",
           "team": "CAR",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "31",
+          "contractYear": "0"
         },
         {
           "id": "14783",
           "name": "Jalen Hurts",
           "position": "QB",
           "team": "PHI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "28.90",
+          "contractYear": "1"
         },
         {
           "id": "16583",
           "name": "Michael Penix Jr.",
           "position": "QB",
           "team": "ATL",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "17.33",
+          "contractYear": "1"
         },
         {
           "id": "13319",
           "name": "Aaron Jones",
           "position": "RB",
           "team": "MIN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "10",
+          "contractYear": "0"
         },
         {
           "id": "14797",
           "name": "D'Andre Swift",
           "position": "RB",
           "team": "CHI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "53",
+          "contractYear": "0"
         },
         {
           "id": "17478",
           "name": "Kaytron Allen",
           "position": "RB",
           "team": "WAS",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": "5",
+          "contractYear": "3"
         },
         {
           "id": "15710",
           "name": "Kyren Williams",
           "position": "RB",
           "team": "LAR",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "56.36",
+          "contractYear": "2"
         },
         {
           "id": "15721",
           "name": "Rachaad White",
           "position": "RB",
           "team": "WAS",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "18",
+          "contractYear": "0"
         },
         {
           "id": "16603",
           "name": "Ray Davis",
           "position": "RB",
           "team": "BUF",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": "5.78",
+          "contractYear": "1"
         },
         {
           "id": "14085",
           "name": "Tony Pollard",
           "position": "RB",
           "team": "TEN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "26.88",
+          "contractYear": "1"
         },
         {
           "id": "17519",
           "name": "Bryce Lance",
           "position": "WR",
           "team": "NOS",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "1",
+          "contractYear": ""
         },
         {
           "id": "13629",
           "name": "Calvin Ridley",
           "position": "WR",
           "team": "TEN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "37.62",
+          "contractYear": "2"
         },
         {
           "id": "14832",
           "name": "CeeDee Lamb",
           "position": "WR",
           "team": "DAL",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "58.16",
+          "contractYear": ""
         },
         {
           "id": "17078",
           "name": "Jack Bech",
           "position": "WR",
           "team": "LVR",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": "10.75",
+          "contractYear": "2"
         },
         {
           "id": "17083",
           "name": "Jayden Higgins",
           "position": "WR",
           "team": "HOU",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": "16.12",
+          "contractYear": "2"
         },
         {
           "id": "16184",
           "name": "Jayden Reed",
           "position": "WR",
           "team": "GBP",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "25",
+          "contractYear": "1"
         },
         {
           "id": "17080",
           "name": "Jaylin Noel",
           "position": "WR",
           "team": "HOU",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": "5.38",
+          "contractYear": "2"
         },
         {
           "id": "14833",
           "name": "Jerry Jeudy",
           "position": "WR",
           "team": "CLE",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "1",
+          "contractYear": "0"
         },
         {
           "id": "17499",
           "name": "Makai Lemon",
           "position": "WR",
           "team": "PHI",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": "25",
+          "contractYear": "3"
         },
         {
           "id": "16206",
           "name": "Michael Wilson",
           "position": "WR",
           "team": "ARI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "29",
+          "contractYear": ""
         },
         {
           "id": "17520",
           "name": "Ted Hurst",
           "position": "WR",
           "team": "TBB",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": "5",
+          "contractYear": "3"
         },
         {
           "id": "16639",
           "name": "Xavier Legette",
           "position": "WR",
           "team": "CAR",
-          "status": "TAXI_SQUAD"
+          "status": "TAXI_SQUAD",
+          "salary": "17.33",
+          "contractYear": "1"
         },
         {
           "id": "16641",
           "name": "Brock Bowers",
           "position": "TE",
           "team": "LVR",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "40.44",
+          "contractYear": "1"
         },
         {
           "id": "13671",
           "name": "Mark Andrews",
           "position": "TE",
           "team": "BAL",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "12",
+          "contractYear": "0"
         },
         {
           "id": "16649",
           "name": "Theo Johnson",
           "position": "TE",
           "team": "NYG",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "1.15",
+          "contractYear": "1"
         }
       ],
-      "updatedAt": "2026-08-04T01:44:22.831Z",
+      "updatedAt": "2026-08-04T01:52:47.655Z",
       "error": null,
       "standings": [
         {
@@ -1977,6 +2321,7 @@
       "id": "64470",
       "name": "Game On",
       "type": "dynasty",
+      "format": "auction",
       "leagueName": "Game On",
       "franchiseId": "0005",
       "teamName": "All Your Base Are Belong To Us",
@@ -1987,178 +2332,228 @@
           "name": "Anthony Richardson",
           "position": "QB",
           "team": "IND",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "15",
+          "contractYear": "0"
         },
         {
           "id": "17466",
           "name": "Carson Beck",
           "position": "QB",
           "team": "ARI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "5",
+          "contractYear": ""
         },
         {
           "id": "17037",
           "name": "Dillon Gabriel",
           "position": "QB",
           "team": "CLE",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "2.15",
+          "contractYear": "2"
         },
         {
           "id": "17468",
           "name": "Drew Allar",
           "position": "QB",
           "team": "PIT",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "1",
+          "contractYear": ""
         },
         {
           "id": "11150",
           "name": "Geno Smith",
           "position": "QB",
           "team": "NYJ",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "28",
+          "contractYear": ""
         },
         {
           "id": "14778",
           "name": "Tua Tagovailoa",
           "position": "QB",
           "team": "ATL",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "31",
+          "contractYear": "0"
         },
         {
           "id": "17039",
           "name": "Tyler Shough",
           "position": "QB",
           "team": "NOS",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "3.22",
+          "contractYear": "2"
         },
         {
           "id": "17060",
           "name": "DJ Giddens",
           "position": "RB",
           "team": "IND",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "1.07",
+          "contractYear": "2"
         },
         {
           "id": "16608",
           "name": "George Holani",
           "position": "RB",
           "team": "SEA",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "1",
+          "contractYear": ""
         },
         {
           "id": "14802",
           "name": "Jonathan Taylor",
           "position": "RB",
           "team": "IND",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "67.73",
+          "contractYear": "0"
         },
         {
           "id": "17478",
           "name": "Kaytron Allen",
           "position": "RB",
           "team": "WAS",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "3",
+          "contractYear": ""
         },
         {
           "id": "16178",
           "name": "Keaton Mitchell",
           "position": "RB",
           "team": "LAC",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "3.47",
+          "contractYear": "1"
         },
         {
           "id": "17476",
           "name": "Nicholas Singleton",
           "position": "RB",
           "team": "TEN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "10",
+          "contractYear": ""
         },
         {
           "id": "13604",
           "name": "Saquon Barkley",
           "position": "RB",
           "team": "PHI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "56",
+          "contractYear": "1"
         },
         {
           "id": "14840",
           "name": "Brandon Aiyuk",
           "position": "WR",
           "team": "SFO",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "54.32",
+          "contractYear": "1"
         },
         {
           "id": "14122",
           "name": "Darius Slayton",
           "position": "WR",
           "team": "NYG",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "1.07",
+          "contractYear": "2"
         },
         {
           "id": "11675",
           "name": "Davante Adams",
           "position": "WR",
           "team": "LAR",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "51",
+          "contractYear": "0"
         },
         {
           "id": "14102",
           "name": "DK Metcalf",
           "position": "WR",
           "team": "PIT",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "46.23",
+          "contractYear": "2"
         },
         {
           "id": "16195",
           "name": "Dontayvion Wicks",
           "position": "WR",
           "team": "PHI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "17.34",
+          "contractYear": "1"
         },
         {
           "id": "17134",
           "name": "Kyle Williams",
           "position": "WR",
           "team": "NEP",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "1",
+          "contractYear": ""
         },
         {
           "id": "16684",
           "name": "Malik Washington",
           "position": "WR",
           "team": "MIA",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "1.07",
+          "contractYear": "2"
         },
         {
           "id": "16619",
           "name": "Troy Franklin",
           "position": "WR",
           "team": "DEN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "10.41",
+          "contractYear": "1"
         },
         {
           "id": "15799",
           "name": "Jake Ferguson",
           "position": "TE",
           "team": "DAL",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "13.97",
+          "contractYear": "2"
         },
         {
           "id": "17546",
           "name": "Michael Trigg",
           "position": "TE",
           "team": "DAL",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "1",
+          "contractYear": ""
         },
         {
           "id": "11247",
           "name": "Zach Ertz",
           "position": "TE",
           "team": "FA",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": "5",
+          "contractYear": ""
         }
       ],
-      "updatedAt": "2026-08-04T01:44:23.119Z",
+      "updatedAt": "2026-08-04T01:52:48.059Z",
       "error": null,
       "standings": [
         {
@@ -2310,6 +2705,7 @@
       "id": "56191",
       "name": "Worlds Collide",
       "type": "bestball",
+      "format": null,
       "leagueName": "Worlds Collide",
       "franchiseId": "0012",
       "teamName": "Worlds Collide",
@@ -2324,6 +2720,7 @@
       "id": "34203",
       "name": "Rug's Playground",
       "type": "bestball",
+      "format": null,
       "leagueName": "Rug's Playground",
       "franchiseId": "0006",
       "teamName": "Rug's Playground",
@@ -2338,6 +2735,7 @@
       "id": "72911",
       "name": "April Pre-NFL Draft",
       "type": "bestball",
+      "format": null,
       "leagueName": "April Pre-NFL Draft",
       "franchiseId": "0006",
       "teamName": "Vikings First Round Pick",
@@ -2348,129 +2746,165 @@
           "name": "Josh Allen",
           "position": "QB",
           "team": "BUF",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "14056",
           "name": "Kyler Murray",
           "position": "QB",
           "team": "MIN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15694",
           "name": "Malik Willis",
           "position": "QB",
           "team": "MIA",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16583",
           "name": "Michael Penix Jr.",
           "position": "QB",
           "team": "ATL",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17031",
           "name": "Shedeur Sanders",
           "position": "QB",
           "team": "CLE",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "13319",
           "name": "Aaron Jones",
           "position": "RB",
           "team": "MIN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15261",
           "name": "Chuba Hubbard",
           "position": "RB",
           "team": "CAR",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16167",
           "name": "De'Von Achane",
           "position": "RB",
           "team": "MIA",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15711",
           "name": "Kenneth Walker III",
           "position": "RB",
           "team": "KCC",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "14823",
           "name": "Rico Dowdle",
           "position": "RB",
           "team": "PIT",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15754",
           "name": "Chris Olave",
           "position": "WR",
           "team": "NOS",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15284",
           "name": "Jaylen Waddle",
           "position": "WR",
           "team": "DEN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17070",
           "name": "Luther Burden",
           "position": "WR",
           "team": "CHI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "11671",
           "name": "Mike Evans",
           "position": "WR",
           "team": "SFO",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15290",
           "name": "Nico Collins",
           "position": "WR",
           "team": "HOU",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15889",
           "name": "Chigoziem Okonkwo",
           "position": "TE",
           "team": "WAS",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15798",
           "name": "Isaiah Likely",
           "position": "TE",
           "team": "NYG",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16222",
           "name": "Tucker Kraft",
           "position": "TE",
           "team": "GBP",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T01:44:23.686Z",
+      "updatedAt": "2026-08-04T01:52:49.625Z",
       "error": null,
       "scoring": null,
       "scoringError": "No live scoring available yet"
@@ -2479,6 +2913,7 @@
       "id": "54766",
       "name": "May Rookies",
       "type": "bestball",
+      "format": null,
       "leagueName": "May Rookies",
       "franchiseId": "0004",
       "teamName": "PaulyDs Pimp",
@@ -2489,129 +2924,165 @@
           "name": "Daniel Jones",
           "position": "QB",
           "team": "IND",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16580",
           "name": "Drake Maye",
           "position": "QB",
           "team": "NEP",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16583",
           "name": "Michael Penix Jr.",
           "position": "QB",
           "team": "ATL",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16598",
           "name": "Bucky Irving",
           "position": "RB",
           "team": "TBB",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17045",
           "name": "Cam Skattebo",
           "position": "RB",
           "team": "NYG",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16603",
           "name": "Ray Davis",
           "position": "RB",
           "team": "BUF",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17068",
           "name": "RJ Harvey",
           "position": "RB",
           "team": "DEN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "13604",
           "name": "Saquon Barkley",
           "position": "RB",
           "team": "PHI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16747",
           "name": "Tyrone Tracy",
           "position": "RB",
           "team": "NYG",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15768",
           "name": "Alec Pierce",
           "position": "WR",
           "team": "IND",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "14840",
           "name": "Brandon Aiyuk",
           "position": "WR",
           "team": "SFO",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "14860",
           "name": "Jauan Jennings",
           "position": "WR",
           "team": "MIN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16185",
           "name": "Jaxon Smith-Njigba",
           "position": "WR",
           "team": "SEA",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17070",
           "name": "Luther Burden",
           "position": "WR",
           "team": "CHI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16190",
           "name": "Zay Flowers",
           "position": "WR",
           "team": "BAL",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "13772",
           "name": "Dalton Schultz",
           "position": "TE",
           "team": "HOU",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17099",
           "name": "Oronde Gadsden",
           "position": "TE",
           "team": "LAC",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17107",
           "name": "Terrance Ferguson",
           "position": "TE",
           "team": "LAR",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T01:44:24.098Z",
+      "updatedAt": "2026-08-04T01:52:50.018Z",
       "error": null,
       "scoring": null,
       "scoringError": "No live scoring available yet"
@@ -2620,6 +3091,7 @@
       "id": "54458",
       "name": "June Tecmo Ball",
       "type": "bestball",
+      "format": null,
       "leagueName": "June Tecmo Ball",
       "franchiseId": "0004",
       "teamName": "Marcus Allen",
@@ -2630,143 +3102,183 @@
           "name": "Geno Smith",
           "position": "QB",
           "team": "NYJ",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "14777",
           "name": "Joe Burrow",
           "position": "QB",
           "team": "CIN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15694",
           "name": "Malik Willis",
           "position": "QB",
           "team": "MIA",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17039",
           "name": "Tyler Shough",
           "position": "QB",
           "team": "NOS",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17052",
           "name": "Bhayshul Tuten",
           "position": "RB",
           "team": "JAC",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "13130",
           "name": "Christian McCaffrey",
           "position": "RB",
           "team": "SFO",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17473",
           "name": "Jadarian Price",
           "position": "RB",
           "team": "SEA",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15715",
           "name": "James Cook",
           "position": "RB",
           "team": "BUF",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15256",
           "name": "Javonte Williams",
           "position": "RB",
           "team": "DAL",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15972",
           "name": "Jordan Mason",
           "position": "RB",
           "team": "MIN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "14073",
           "name": "Josh Jacobs",
           "position": "RB",
           "team": "GBP",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15710",
           "name": "Kyren Williams",
           "position": "RB",
           "team": "LAR",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17068",
           "name": "RJ Harvey",
           "position": "RB",
           "team": "DEN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15253",
           "name": "Travis Etienne",
           "position": "RB",
           "team": "NOS",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16747",
           "name": "Tyrone Tracy",
           "position": "RB",
           "team": "NYG",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "14840",
           "name": "Brandon Aiyuk",
           "position": "WR",
           "team": "SFO",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16614",
           "name": "Marvin Harrison Jr.",
           "position": "WR",
           "team": "ARI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16213",
           "name": "Dalton Kincaid",
           "position": "TE",
           "team": "BUF",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "13772",
           "name": "Dalton Schultz",
           "position": "TE",
           "team": "HOU",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "13671",
           "name": "Mark Andrews",
           "position": "TE",
           "team": "BAL",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T01:44:24.560Z",
+      "updatedAt": "2026-08-04T01:52:50.441Z",
       "error": null,
       "scoring": null,
       "scoringError": "No live scoring available yet"
@@ -2775,6 +3287,7 @@
       "id": "61777",
       "name": "July Semiquincentennial",
       "type": "bestball",
+      "format": null,
       "leagueName": "July Semiquincentennial",
       "franchiseId": "0003",
       "teamName": "Hotter than the 4th of July",
@@ -2785,143 +3298,183 @@
           "name": "Jordan Love",
           "position": "QB",
           "team": "GBP",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "13589",
           "name": "Josh Allen",
           "position": "QB",
           "team": "BUF",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15694",
           "name": "Malik Willis",
           "position": "QB",
           "team": "MIA",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "14778",
           "name": "Tua Tagovailoa",
           "position": "QB",
           "team": "ATL",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17052",
           "name": "Bhayshul Tuten",
           "position": "RB",
           "team": "JAC",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16593",
           "name": "Blake Corum",
           "position": "RB",
           "team": "LAR",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15708",
           "name": "Breece Hall",
           "position": "RB",
           "team": "NYJ",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16174",
           "name": "Chris Rodriguez",
           "position": "RB",
           "team": "JAC",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15256",
           "name": "Javonte Williams",
           "position": "RB",
           "team": "DAL",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15742",
           "name": "Jaylen Warren",
           "position": "RB",
           "team": "PIT",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16178",
           "name": "Keaton Mitchell",
           "position": "RB",
           "team": "LAC",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16747",
           "name": "Tyrone Tracy",
           "position": "RB",
           "team": "NYG",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15754",
           "name": "Chris Olave",
           "position": "WR",
           "team": "NOS",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17500",
           "name": "Denzel Boston",
           "position": "WR",
           "team": "CLE",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "14836",
           "name": "Justin Jefferson",
           "position": "WR",
           "team": "MIN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16193",
           "name": "Kayshon Boutte",
           "position": "WR",
           "team": "NEP",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17070",
           "name": "Luther Burden",
           "position": "WR",
           "team": "CHI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17104",
           "name": "Colston Loveland",
           "position": "TE",
           "team": "CHI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15798",
           "name": "Isaiah Likely",
           "position": "TE",
           "team": "NYG",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17099",
           "name": "Oronde Gadsden",
           "position": "TE",
           "team": "LAC",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T01:44:24.881Z",
+      "updatedAt": "2026-08-04T01:52:50.832Z",
       "error": null,
       "scoring": null,
       "scoringError": "No live scoring available yet"
@@ -2930,6 +3483,7 @@
       "id": "30196",
       "name": "July Fantasy Football for Dummies",
       "type": "bestball",
+      "format": null,
       "leagueName": "July Fantasy Football for Dummies",
       "franchiseId": "0004",
       "teamName": "Audiobooks are NOT reading",
@@ -2940,129 +3494,165 @@
           "name": "Jalen Hurts",
           "position": "QB",
           "team": "PHI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15694",
           "name": "Malik Willis",
           "position": "QB",
           "team": "MIA",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "17039",
           "name": "Tyler Shough",
           "position": "QB",
           "team": "NOS",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16174",
           "name": "Chris Rodriguez",
           "position": "RB",
           "team": "JAC",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15261",
           "name": "Chuba Hubbard",
           "position": "RB",
           "team": "CAR",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "14797",
           "name": "D'Andre Swift",
           "position": "RB",
           "team": "CHI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "14071",
           "name": "David Montgomery",
           "position": "RB",
           "team": "HOU",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "14800",
           "name": "J.K. Dobbins",
           "position": "RB",
           "team": "DEN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15972",
           "name": "Jordan Mason",
           "position": "RB",
           "team": "MIN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16178",
           "name": "Keaton Mitchell",
           "position": "RB",
           "team": "LAC",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15282",
           "name": "DeVonta Smith",
           "position": "WR",
           "team": "PHI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "14860",
           "name": "Jauan Jennings",
           "position": "WR",
           "team": "MIN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16186",
           "name": "Jordan Addison",
           "position": "WR",
           "team": "MIN",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "11671",
           "name": "Mike Evans",
           "position": "WR",
           "team": "SFO",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15290",
           "name": "Nico Collins",
           "position": "WR",
           "team": "HOU",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16080",
           "name": "Rashid Shaheed",
           "position": "WR",
           "team": "SEA",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "16641",
           "name": "Brock Bowers",
           "position": "TE",
           "team": "LVR",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         },
         {
           "id": "15794",
           "name": "Trey McBride",
           "position": "TE",
           "team": "ARI",
-          "status": "ROSTER"
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T01:44:25.227Z",
+      "updatedAt": "2026-08-04T01:52:51.219Z",
       "error": null,
       "scoring": null,
       "scoringError": "No live scoring available yet"
