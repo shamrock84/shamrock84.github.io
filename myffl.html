@@ -129,14 +129,42 @@
 			margin: 1rem auto 0;
 			padding: 0 1rem;
 		}
+		.search-wrap {
+			position: relative;
+		}
 		#search {
 			width: 100%;
-			padding: 0.6rem 0.9rem;
+			padding: 0.6rem 2.2rem 0.6rem 0.9rem;
 			border-radius: 999px;
 			border: 1px solid var(--border);
 			background: var(--card-bg);
 			color: var(--text);
 			font-size: 1rem;
+		}
+		/* Custom clear button replaces the inconsistent native one (Firefox
+		   doesn't show one at all for type=search; WebKit's is hard to style). */
+		#search::-webkit-search-cancel-button {
+			display: none;
+		}
+		#search-clear {
+			position: absolute;
+			right: 0.5rem;
+			top: 50%;
+			transform: translateY(-50%);
+			width: 1.5rem;
+			height: 1.5rem;
+			border: none;
+			border-radius: 50%;
+			background: transparent;
+			color: var(--muted);
+			font-size: 1.2rem;
+			line-height: 1;
+			cursor: pointer;
+			padding: 0;
+		}
+		#search-clear:hover {
+			background: var(--chip-bg);
+			color: var(--text);
 		}
 		main {
 			max-width: 1400px;
@@ -310,7 +338,10 @@
 	<div class="tabs subtabs" id="subtabs" role="tablist"></div>
 	<div id="live-status" class="hidden"></div>
 	<div class="controls">
-		<input type="search" id="search" placeholder="Filter by player name&hellip;" autocomplete="off">
+		<div class="search-wrap">
+			<input type="search" id="search" placeholder="Filter by player name&hellip;" autocomplete="off">
+			<button type="button" id="search-clear" class="hidden" aria-label="Clear search">&times;</button>
+		</div>
 	</div>
 	<main>
 		<div id="status"></div>
@@ -748,7 +779,21 @@
 			}
 		}
 
-		document.getElementById('search').addEventListener('input', updateVisibility);
+		const searchInput = document.getElementById('search');
+		const searchClearBtn = document.getElementById('search-clear');
+		function updateSearchClearVisibility() {
+			searchClearBtn.classList.toggle('hidden', searchInput.value.length === 0);
+		}
+		searchInput.addEventListener('input', () => {
+			updateVisibility();
+			updateSearchClearVisibility();
+		});
+		searchClearBtn.addEventListener('click', () => {
+			searchInput.value = '';
+			searchInput.focus();
+			updateVisibility();
+			updateSearchClearVisibility();
+		});
 		init();
 	</script>
 </body>
