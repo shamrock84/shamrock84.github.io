@@ -408,6 +408,35 @@
 			border-top: 2px solid color-mix(in srgb, var(--accent) 70%, var(--border));
 			padding-top: 0.4rem;
 		}
+		table.salary-summary {
+			width: 100%;
+			border-collapse: collapse;
+			font-size: 0.85rem;
+			margin-top: 0.4rem;
+		}
+		table.salary-summary td {
+			padding: 0.3rem 0.2rem;
+			border-top: 1px solid var(--border);
+		}
+		table.salary-summary td:first-child {
+			color: var(--muted);
+		}
+		table.salary-summary td:last-child {
+			text-align: right;
+			font-variant-numeric: tabular-nums;
+			font-weight: 600;
+		}
+		table.salary-summary tr.salary-total td {
+			font-weight: 600;
+			color: var(--text);
+		}
+		table.salary-summary tr.salary-cap-room td {
+			font-weight: 700;
+			color: var(--accent);
+		}
+		table.salary-summary tr.salary-cap-room.salary-negative td {
+			color: var(--ir-text);
+		}
 		.pos-chip {
 			display: inline-block;
 			min-width: 2rem;
@@ -649,6 +678,32 @@
 			return table;
 		}
 
+		// Auction/salary-cap leagues only, shown right after the Active Roster
+		// group — mirrors the Salary Adjustments/Total/Salary Cap/Cap Room
+		// Available rows MFL's own roster page shows. Total = this season's
+		// Active Roster salaries (rosterPlayers) + Salary Adjustments (drops,
+		// carry-overs, etc., summed server-side from MFL's adjustment history).
+		function buildSalarySummary(league, rosterPlayers) {
+			if (league.salaryCap == null) return null;
+			const rosterSalaryTotal = rosterPlayers.reduce((sum, p) => sum + (Number(p.salary) || 0), 0);
+			const adjustments = Number(league.salaryAdjustments) || 0;
+			const total = rosterSalaryTotal + adjustments;
+			const capRoom = league.salaryCap - total;
+
+			const table = el('table', { class: 'salary-summary' });
+			const row = (label, value, cls) => {
+				const tr = el('tr', cls ? { class: cls } : {});
+				tr.appendChild(el('td', { text: label }));
+				tr.appendChild(el('td', { text: `$${value.toFixed(2)}` }));
+				table.appendChild(tr);
+			};
+			row('Salary Adjustments', adjustments);
+			row('Total', total, 'salary-total');
+			row('Salary Cap', league.salaryCap);
+			row('Cap Room Available', capRoom, `salary-cap-room${capRoom < 0 ? ' salary-negative' : ''}`);
+			return table;
+		}
+
 		function buildLoginPrompt() {
 			const wrap = el('div', { class: 'lineup-login' });
 			const toggleBtn = el('button', { type: 'button', class: 'lineup-login-toggle', text: 'Log in to edit lineup' });
@@ -831,14 +886,17 @@
 				const players = byStatus[group.key];
 				if (!players || players.length === 0) continue;
 
+				card.appendChild(el('div', { class: 'group-label', text: `${group.label} (${players.length})` }));
 				if (group.key === 'ROSTER' && starterIdSet) {
-					card.appendChild(el('div', { class: 'group-label', text: `${group.label} (${players.length})` }));
 					card.appendChild(buildLineupEditor(league, players, starterIdSet));
-					continue;
+				} else {
+					card.appendChild(buildRosterTable(players, isAuction, group.key.toLowerCase()));
 				}
 
-				card.appendChild(el('div', { class: 'group-label', text: `${group.label} (${players.length})` }));
-				card.appendChild(buildRosterTable(players, isAuction, group.key.toLowerCase()));
+				if (group.key === 'ROSTER' && isAuction && league.salaryCap != null) {
+					const summary = buildSalarySummary(league, players);
+					if (summary) card.appendChild(summary);
+				}
 			}
 
 			if (!league.players || league.players.length === 0) {

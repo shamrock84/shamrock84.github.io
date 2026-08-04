@@ -173,6 +173,19 @@ export async function fetchMflPriorYearPoints(league, cookie, playerIds) {
   return map;
 }
 
+// Auction/salary-cap leagues only. TYPE=salaryAdjustments returns the whole
+// league's adjustment history (drops, carry-overs, etc.) regardless of the
+// FRANCHISE param, so this fetches once and sums the entries that belong to
+// our franchise — matches the "Salary Adjustments" total MFL's own UI shows.
+async function fetchSalaryAdjustments(league, cookie) {
+  const data = await mflGet(`/export?TYPE=salaryAdjustments&L=${league.id}&JSON=1`, cookie);
+  const rawRows = data?.salaryAdjustments?.salaryAdjustment;
+  const rows = Array.isArray(rawRows) ? rawRows : rawRows ? [rawRows] : [];
+  return rows
+    .filter((r) => r.franchise_id === league.franchiseId)
+    .reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+}
+
 export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks) {
   const [leagueData, rostersData] = await Promise.all([
     mflGet(`/export?TYPE=league&L=${league.id}&JSON=1`, cookie),
@@ -238,6 +251,21 @@ export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks) {
     }))
     .sort((a, b) => positionRank(a.position) - positionRank(b.position) || a.name.localeCompare(b.name));
 
+  // Salary cap totals: only meaningful for auction-format leagues. The cap
+  // amount comes off the league export we already fetched above; salary
+  // adjustments needs its own request.
+  let salaryCap = null;
+  let salaryAdjustments = null;
+  if (league.format === 'auction') {
+    const capAmount = leagueData?.league?.salaryCapAmount;
+    salaryCap = capAmount ? Number(capAmount) : null;
+    try {
+      salaryAdjustments = await fetchSalaryAdjustments(league, cookie);
+    } catch (err) {
+      console.error(`Failed to fetch salary adjustments for ${league.name}: ${err.message}`);
+    }
+  }
+
   return {
     id: league.id,
     name: league.name,
@@ -248,6 +276,8 @@ export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks) {
     teamName: franchiseInfo?.name || league.name,
     url: leagueUrl(league),
     players,
+    salaryCap,
+    salaryAdjustments,
     updatedAt: new Date().toISOString(),
     error: null,
   };
