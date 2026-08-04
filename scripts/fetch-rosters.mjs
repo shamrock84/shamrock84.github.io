@@ -15,16 +15,18 @@ const OUTPUT_PATH = fileURLToPath(new URL('../data/rosters.json', import.meta.ur
 
 // Add/remove leagues here. franchiseId is *your* team in that league.
 // type controls which tab a league shows up under on rosters.html.
+// format is a dynasty-league subclass: 'dynasty' rosters render as before,
+// 'auction' rosters additionally show each player's salary and contract years.
 // Display order matters here and is preserved verbatim on the page
 // (rosters, scoring, and standings cards all follow this order).
 const DYNASTY_LEAGUES = [
-  { id: '26696', franchiseId: '0001', name: 'MNMx Dynasty', type: 'dynasty' },
-  { id: '25608', franchiseId: '0001', name: 'OSD', type: 'dynasty' },
-  { id: '23545', franchiseId: '0008', name: 'Survivor', type: 'dynasty' },
-  { id: '35217', franchiseId: '0004', name: 'Iron Bank', type: 'dynasty' },
-  { id: '34850', franchiseId: '0010', name: 'Wise Guys', type: 'dynasty' },
-  { id: '30641', franchiseId: '0003', name: 'Super Cap', type: 'dynasty' },
-  { id: '64470', franchiseId: '0005', name: 'Game On', type: 'dynasty' },
+  { id: '26696', franchiseId: '0001', name: 'MNMx Dynasty', type: 'dynasty', format: 'dynasty' },
+  { id: '25608', franchiseId: '0001', name: 'OSD', type: 'dynasty', format: 'dynasty' },
+  { id: '23545', franchiseId: '0008', name: 'Survivor', type: 'dynasty', format: 'dynasty' },
+  { id: '35217', franchiseId: '0004', name: 'Iron Bank', type: 'dynasty', format: 'auction' },
+  { id: '34850', franchiseId: '0010', name: 'Wise Guys', type: 'dynasty', format: 'auction' },
+  { id: '30641', franchiseId: '0003', name: 'Super Cap', type: 'dynasty', format: 'auction' },
+  { id: '64470', franchiseId: '0005', name: 'Game On', type: 'dynasty', format: 'auction' },
 ];
 
 const BESTBALL_LEAGUES = [
@@ -132,6 +134,10 @@ async function fetchLeagueRoster(league, cookie, playerMap) {
         position: info.position || '',
         team: info.team || 'FA',
         status: p.status || 'ROSTER',
+        // Only meaningful for auction-format leagues; MFL includes these on
+        // the roster export directly for leagues with a salary cap enabled.
+        salary: p.salary ?? null,
+        contractYear: p.contractYear ?? null,
       };
     })
     .sort((a, b) => positionRank(a.position) - positionRank(b.position) || a.name.localeCompare(b.name));
@@ -140,6 +146,7 @@ async function fetchLeagueRoster(league, cookie, playerMap) {
     id: league.id,
     name: league.name,
     type: league.type,
+    format: league.format || null,
     leagueName: leagueData?.league?.name || league.name,
     franchiseId: league.franchiseId,
     teamName: franchiseInfo?.name || league.name,
@@ -239,6 +246,7 @@ async function main() {
         id: league.id,
         name: league.name,
         type: league.type,
+        format: league.format || null,
         leagueName: league.name,
         franchiseId: null,
         teamName: league.name,
@@ -260,6 +268,7 @@ async function main() {
         id: league.id,
         name: league.name,
         type: league.type,
+        format: league.format || null,
         leagueName: prev?.leagueName || league.name,
         franchiseId: league.franchiseId,
         teamName: prev?.teamName || league.name,
