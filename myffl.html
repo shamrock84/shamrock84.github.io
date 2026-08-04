@@ -318,7 +318,7 @@
 		// Live-scoring proxy (Vercel), separate from the 4-hour GitHub Actions
 		// sync — polled only while the Scoring tab is open. Filled in once
 		// deployed; polling is a no-op while this is empty.
-		const LIVE_SCORING_URL = '';
+		const LIVE_SCORING_URL = 'https://shamrock84-github-io.vercel.app/api/live-scoring';
 		const LIVE_SCORING_POLL_MS = 30000;
 
 		function renderCard(league) {
