@@ -16,6 +16,7 @@ import {
   YEAR,
   leagueUrl,
   mflLogin,
+  mflGet,
   loadPlayerMap,
   fetchLeagueRoster,
   fetchStandings,
@@ -62,6 +63,23 @@ async function main() {
 
   const cookie = await mflLogin(USERNAME, PASSWORD);
   const playerMap = await loadPlayerMap(cookie);
+
+  // TEMP DIAGNOSTIC (BYE/PTS column investigation) — remove once data
+  // sources are confirmed. Checks whether TYPE=players already carries bye
+  // week info, and whether TYPE=playerScores exposes season-to-date totals.
+  try {
+    const rawPlayersData = await mflGet('/export?TYPE=players&DETAILS=1&JSON=1', cookie);
+    const sample = (rawPlayersData?.players?.player ?? []).find((p) => p.id === '14783');
+    console.log(`[columns-debug] sample player (14783) raw: ${JSON.stringify(sample)}`);
+  } catch (err) {
+    console.log(`[columns-debug] players probe failed: ${err.message}`);
+  }
+  try {
+    const scoresProbe = await mflGet('/export?TYPE=playerScores&W=YTD&L=26696&JSON=1', cookie);
+    console.log(`[columns-debug] playerScores(YTD) raw: ${JSON.stringify(scoresProbe).slice(0, 2000)}`);
+  } catch (err) {
+    console.log(`[columns-debug] playerScores probe failed: ${err.message}`);
+  }
 
   const leagues = [];
   for (const league of LEAGUES) {
