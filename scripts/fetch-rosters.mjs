@@ -12,34 +12,18 @@ const USERNAME = process.env.MFL_USERNAME;
 const PASSWORD = process.env.MFL_PASSWORD;
 const BASE = `https://api.myfantasyleague.com/${YEAR}`;
 const OUTPUT_PATH = fileURLToPath(new URL('../data/rosters.json', import.meta.url));
+const CONFIG_PATH = fileURLToPath(new URL('../config/leagues.json', import.meta.url));
 
-// Add/remove leagues here. franchiseId is *your* team in that league.
-// type controls which tab a league shows up under on rosters.html.
-// format is a dynasty-league subclass: 'dynasty' rosters render as before,
-// 'auction' rosters additionally show each player's salary and contract years.
-// Display order matters here and is preserved verbatim on the page
-// (rosters, scoring, and standings cards all follow this order).
-const DYNASTY_LEAGUES = [
-  { id: '26696', franchiseId: '0001', name: 'MNMx Dynasty', type: 'dynasty', format: 'dynasty' },
-  { id: '25608', franchiseId: '0001', name: 'OSD', type: 'dynasty', format: 'dynasty' },
-  { id: '23545', franchiseId: '0008', name: 'Survivor', type: 'dynasty', format: 'dynasty' },
-  { id: '35217', franchiseId: '0004', name: 'Iron Bank', type: 'dynasty', format: 'auction' },
-  { id: '34850', franchiseId: '0010', name: 'Wise Guys', type: 'dynasty', format: 'auction' },
-  { id: '30641', franchiseId: '0003', name: 'Super Cap', type: 'dynasty', format: 'auction' },
-  { id: '64470', franchiseId: '0005', name: 'Game On', type: 'dynasty', format: 'auction' },
-];
-
-const BESTBALL_LEAGUES = [
-  { id: '56191', franchiseId: '0012', name: 'Worlds Collide', type: 'bestball' },
-  { id: '34203', franchiseId: '0006', name: "Rug's Playground", type: 'bestball' },
-  { id: '72911', franchiseId: '0006', name: 'April Pre-NFL Draft', type: 'bestball' },
-  { id: '54766', franchiseId: '0004', name: 'May Rookies', type: 'bestball' },
-  { id: '54458', franchiseId: '0004', name: 'June Tecmo Ball', type: 'bestball' },
-  { id: '61777', franchiseId: '0003', name: 'July Semiquincentennial', type: 'bestball' },
-  { id: '30196', franchiseId: '0004', name: 'July Fantasy Football for Dummies', type: 'bestball' },
-];
-
-const LEAGUES = [...DYNASTY_LEAGUES, ...BESTBALL_LEAGUES];
+// League/franchise IDs live in config/leagues.json, not here — edit that file
+// each offseason instead of this script. See its _readme field for the schema.
+async function loadLeagueConfig() {
+  const raw = await readFile(CONFIG_PATH, 'utf8');
+  const parsed = JSON.parse(raw);
+  if (!Array.isArray(parsed.leagues) || parsed.leagues.length === 0) {
+    throw new Error(`${CONFIG_PATH} has no leagues configured`);
+  }
+  return parsed.leagues;
+}
 
 const POSITION_ORDER = ['QB', 'RB', 'WR', 'TE', 'PK', 'PN', 'Off', 'DL', 'DE', 'DT', 'LB', 'CB', 'S', 'DB', 'Def'];
 
@@ -232,6 +216,7 @@ async function main() {
     throw new Error('MFL_USERNAME and MFL_PASSWORD environment variables are required.');
   }
 
+  const LEAGUES = await loadLeagueConfig();
   const previous = await loadPreviousOutput();
   const previousById = new Map((previous?.leagues ?? []).map((l) => [l.id, l]));
 
