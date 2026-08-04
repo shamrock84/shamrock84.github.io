@@ -325,12 +325,13 @@ export async function fetchMflLineup(league, cookie) {
 // interactive API-test docs (api_info?STATE=test&CCAT=import&TYPE=lineup):
 // TYPE is "lineup", not "setLineup" — that earlier guess was rejected
 // outright ("Invalid Data Type"). Required: L, W, STARTERS (comma-separated
-// player ids). FRANCHISE_ID is only needed when acting as commissioner on
-// behalf of another owner; harmless to always include since it matches our
-// own franchise here. Like every /import call, this returns XML regardless
-// of JSON=1, so fetch as text.
+// player ids). FRANCHISE_ID must be OMITTED here — confirmed via a live
+// test error ("Can not specify a FRANCHISE_ID other than the owner's"):
+// it's only for a commissioner acting on another owner's behalf, and our
+// login IS the owner, so MFL infers the franchise automatically. Like every
+// /import call, this returns XML regardless of JSON=1, so fetch as text.
 export async function submitMflLineup(league, cookie, starterIds, week) {
-  const url = `${BASE}/import?TYPE=lineup&L=${league.id}&FRANCHISE_ID=${league.franchiseId}&W=${week}&STARTERS=${starterIds.join(',')}&JSON=1`;
+  const url = `${BASE}/import?TYPE=lineup&L=${league.id}&W=${week}&STARTERS=${starterIds.join(',')}&JSON=1`;
   const res = await fetch(url, { headers: { Cookie: cookie }, redirect: 'follow' });
   const bodyText = await res.text();
   return { status: res.status, ok: res.ok, bodyText };
