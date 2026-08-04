@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-04T15:01:01.171Z",
+  "generatedAt": "2026-08-04T15:05:53.945Z",
   "year": "2026",
   "leagues": [
     {
@@ -301,7 +301,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T15:00:46.038Z",
+      "updatedAt": "2026-08-04T15:05:31.729Z",
       "error": null,
       "standings": [
         {
@@ -708,7 +708,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T15:00:46.446Z",
+      "updatedAt": "2026-08-04T15:05:32.133Z",
       "error": null,
       "standings": [
         {
@@ -1097,7 +1097,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T15:00:47.052Z",
+      "updatedAt": "2026-08-04T15:05:32.560Z",
       "error": null,
       "standings": [
         {
@@ -1452,7 +1452,7 @@
           "contractYear": "1"
         }
       ],
-      "updatedAt": "2026-08-04T15:00:47.470Z",
+      "updatedAt": "2026-08-04T15:05:32.953Z",
       "error": null,
       "standings": [
         {
@@ -1834,7 +1834,7 @@
           "contractYear": "1"
         }
       ],
-      "updatedAt": "2026-08-04T15:00:47.694Z",
+      "updatedAt": "2026-08-04T15:05:33.380Z",
       "error": null,
       "standings": [
         {
@@ -2198,7 +2198,7 @@
           "contractYear": "1"
         }
       ],
-      "updatedAt": "2026-08-04T15:00:48.123Z",
+      "updatedAt": "2026-08-04T15:05:33.746Z",
       "error": null,
       "standings": [
         {
@@ -2562,7 +2562,7 @@
           "contractYear": ""
         }
       ],
-      "updatedAt": "2026-08-04T15:00:48.590Z",
+      "updatedAt": "2026-08-04T15:05:34.126Z",
       "error": null,
       "standings": [
         {
@@ -2917,7 +2917,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T15:00:49.419Z",
+      "updatedAt": "2026-08-04T15:05:40.198Z",
       "error": null,
       "standings": [
         {
@@ -3198,7 +3198,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T15:00:49.803Z",
+      "updatedAt": "2026-08-04T15:05:40.772Z",
       "error": null,
       "standings": [
         {
@@ -3517,7 +3517,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T15:00:50.185Z",
+      "updatedAt": "2026-08-04T15:05:41.254Z",
       "error": null,
       "standings": [
         {
@@ -3816,7 +3816,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T15:00:50.579Z",
+      "updatedAt": "2026-08-04T15:05:41.613Z",
       "error": null,
       "standings": [
         {
@@ -4107,7 +4107,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T15:00:50.956Z",
+      "updatedAt": "2026-08-04T15:05:41.996Z",
       "error": null,
       "standings": [
         {
@@ -4223,7 +4223,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=league&L=30196&JSON=1"
+      "scoringError": "No live scoring available yet"
     },
     {
       "id": "421871710",
@@ -4236,11 +4236,11 @@
       "url": "https://fantasy.espn.com/football/team?leagueId=421871710&teamId=5",
       "players": [],
       "updatedAt": null,
-      "error": "ESPN_S2 and ESPN_SWID environment variables are required for ESPN leagues.",
+      "error": "Unexpected end of JSON input",
       "standings": [],
-      "standingsError": "ESPN_S2 and ESPN_SWID environment variables are required for ESPN leagues.",
+      "standingsError": "Unexpected end of JSON input",
       "scoring": null,
-      "scoringError": "ESPN_S2 and ESPN_SWID environment variables are required for ESPN leagues."
+      "scoringError": "Unexpected end of JSON input"
     },
     {
       "id": "1966972",
@@ -4253,11 +4253,11 @@
       "url": "https://fantasy.espn.com/football/team?leagueId=1966972&teamId=10",
       "players": [],
       "updatedAt": null,
-      "error": "ESPN_S2 and ESPN_SWID environment variables are required for ESPN leagues.",
+      "error": "Unexpected end of JSON input",
       "standings": [],
-      "standingsError": "ESPN_S2 and ESPN_SWID environment variables are required for ESPN leagues.",
+      "standingsError": "Unexpected end of JSON input",
       "scoring": null,
-      "scoringError": "ESPN_S2 and ESPN_SWID environment variables are required for ESPN leagues."
+      "scoringError": "Unexpected end of JSON input"
     }
   ]
 }
