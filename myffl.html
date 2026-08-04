@@ -78,6 +78,19 @@
 		#updated {
 			color: var(--muted);
 			font-size: 0.85rem;
+			background: none;
+			border: none;
+			font-family: inherit;
+			cursor: pointer;
+			padding: 0.2rem 0.4rem;
+			border-radius: 999px;
+		}
+		#updated:hover:not(:disabled) {
+			color: var(--accent);
+			text-decoration: underline;
+		}
+		#updated:disabled {
+			cursor: default;
 		}
 		#live-status {
 			text-align: center;
@@ -332,7 +345,7 @@
 <body>
 	<header>
 		<h1><img src="images/ffl_black.gif" alt="myFFL" class="site-logo"></h1>
-		<div id="updated">Loading&hellip;</div>
+		<button type="button" id="updated">Loading&hellip;</button>
 	</header>
 	<div class="tabs" id="tabs" role="tablist"></div>
 	<div class="tabs subtabs" id="subtabs" role="tablist"></div>
@@ -390,12 +403,17 @@
 		let currentLeagueType = null;
 		let pageData = null;
 		let liveScoringTimer = null;
+		let syncPollTimer = null;
 
 		// Live-scoring proxy (Vercel), separate from the 4-hour GitHub Actions
 		// sync — polled only while the Scoring tab is open. Filled in once
 		// deployed; polling is a no-op while this is empty.
 		const LIVE_SCORING_URL = 'https://shamrock84-github-io.vercel.app/api/live-scoring';
 		const LIVE_SCORING_POLL_MS = 30000;
+
+		// Same Vercel deployment, different endpoint: kicks off a fresh GitHub
+		// Actions sync run on demand instead of waiting up to 4 hours.
+		const TRIGGER_SYNC_URL = 'https://shamrock84-github-io.vercel.app/api/trigger-sync';
 
 		function buildRosterTable(players, isAuction, statusKey) {
 			const table = el('table', { class: 'roster' });
@@ -736,6 +754,8 @@
 			updateSearchVisibility();
 		}
 
+		// Safe to call more than once (e.g. after a manual sync completes) —
+		// clears the grid before repopulating instead of appending duplicates.
 		async function init() {
 			const statusEl = document.getElementById('status');
 			const gridEl = document.getElementById('grid');
@@ -751,6 +771,9 @@
 				updatedEl.textContent = data.generatedAt
 					? `Last synced ${timeAgo(data.generatedAt)}`
 					: 'Not yet synced — run the "Sync MFL Rosters" GitHub Action.';
+
+				statusEl.textContent = '';
+				gridEl.innerHTML = '';
 
 				if (!data.leagues || data.leagues.length === 0) {
 					statusEl.textContent = 'No leagues configured yet.';
@@ -778,6 +801,62 @@
 				updatedEl.textContent = '';
 			}
 		}
+
+		// Kicks off a real GitHub Actions sync run instead of waiting up to 4
+		// hours for the next scheduled one, then polls the committed JSON for
+		// a fresh generatedAt so the page updates itself once it lands (the
+		// run + a GitHub Pages rebuild typically take under a minute).
+		async function triggerManualSync() {
+			const updatedEl = document.getElementById('updated');
+			const previousGeneratedAt = pageData?.generatedAt;
+
+			updatedEl.disabled = true;
+			updatedEl.textContent = 'Requesting sync…';
+
+			try {
+				const res = await fetch(TRIGGER_SYNC_URL, { method: 'POST' });
+				const body = await res.json().catch(() => ({}));
+				if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+
+				updatedEl.textContent = 'Sync started — checking for fresh data…';
+				if (syncPollTimer) clearInterval(syncPollTimer);
+				let attempts = 0;
+				const maxAttempts = 10; // ~100s at 10s apart
+				syncPollTimer = setInterval(async () => {
+					attempts++;
+					try {
+						const checkRes = await fetch(`data/rosters.json?t=${Date.now()}`, { cache: 'no-store' });
+						if (checkRes.ok) {
+							const fresh = await checkRes.json();
+							if (fresh.generatedAt && fresh.generatedAt !== previousGeneratedAt) {
+								clearInterval(syncPollTimer);
+								syncPollTimer = null;
+								await init();
+								updatedEl.disabled = false;
+								return;
+							}
+						}
+					} catch {
+						// Transient fetch hiccup — just keep polling until maxAttempts.
+					}
+					if (attempts >= maxAttempts) {
+						clearInterval(syncPollTimer);
+						syncPollTimer = null;
+						updatedEl.disabled = false;
+						updatedEl.textContent = previousGeneratedAt
+							? `Last synced ${timeAgo(previousGeneratedAt)} — still syncing, check back soon`
+							: 'Still syncing — check back soon';
+					}
+				}, 10000);
+			} catch (err) {
+				updatedEl.disabled = false;
+				updatedEl.textContent = `Couldn't start sync: ${err.message}`;
+				setTimeout(() => {
+					if (pageData?.generatedAt) updatedEl.textContent = `Last synced ${timeAgo(pageData.generatedAt)}`;
+				}, 4000);
+			}
+		}
+		document.getElementById('updated').addEventListener('click', triggerManualSync);
 
 		const searchInput = document.getElementById('search');
 		const searchClearBtn = document.getElementById('search-clear');
