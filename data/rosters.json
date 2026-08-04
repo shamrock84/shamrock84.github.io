@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-04T23:00:06.077Z",
+  "generatedAt": "2026-08-04T23:38:52.599Z",
   "year": "2026",
   "leagues": [
     {
@@ -399,8 +399,9 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-04T22:59:43.492Z",
+      "updatedAt": "2026-08-04T23:38:37.094Z",
       "error": null,
+      "tags": [],
       "standings": [
         {
           "franchiseId": "0001",
@@ -917,8 +918,9 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-04T22:59:44.596Z",
+      "updatedAt": "2026-08-04T23:38:38.053Z",
       "error": null,
+      "tags": [],
       "standings": [
         {
           "franchiseId": "0001",
@@ -1024,8 +1026,19 @@
       "standingsError": null,
       "scoring": null,
       "scoringError": "No live scoring available yet",
-      "starters": null,
-      "lineupError": "MFL request failed (429): /export?TYPE=weeklyResults&L=25608&W=1&JSON=1 (year 2026)"
+      "lineupWeek": "1",
+      "starters": [
+        "14783",
+        "13130",
+        "14802",
+        "13163",
+        "16615",
+        "15282",
+        "16641",
+        "16681",
+        "0518"
+      ],
+      "lineupError": null
     },
     {
       "id": "23545",
@@ -1400,8 +1413,9 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-04T22:59:45.663Z",
+      "updatedAt": "2026-08-04T23:38:38.914Z",
       "error": null,
+      "tags": [],
       "standings": [
         {
           "franchiseId": "0001",
@@ -1842,8 +1856,11 @@
       ],
       "salaryCap": 550,
       "salaryAdjustments": 3.2699999999999996,
-      "updatedAt": "2026-08-04T22:59:46.918Z",
+      "updatedAt": "2026-08-04T23:38:39.824Z",
       "error": null,
+      "tags": [
+        "Best Ball"
+      ],
       "standings": [
         {
           "franchiseId": "0001",
@@ -2307,8 +2324,12 @@
       ],
       "salaryCap": 500,
       "salaryAdjustments": 4.68,
-      "updatedAt": "2026-08-04T22:59:48.465Z",
+      "updatedAt": "2026-08-04T23:38:40.559Z",
       "error": null,
+      "tags": [
+        "Superflex",
+        "Best Ball"
+      ],
       "standings": [
         {
           "franchiseId": "0001",
@@ -2748,8 +2769,12 @@
       ],
       "salaryCap": 500,
       "salaryAdjustments": 10.09,
-      "updatedAt": "2026-08-04T22:59:49.734Z",
+      "updatedAt": "2026-08-04T23:38:41.408Z",
       "error": null,
+      "tags": [
+        "Superflex",
+        "Best Ball"
+      ],
       "standings": [
         {
           "franchiseId": "0001",
@@ -2874,7 +2899,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=league&L=30641&JSON=1 (year 2026)"
+      "scoringError": "No live scoring available yet"
     },
     {
       "id": "64470",
@@ -3189,8 +3214,12 @@
       ],
       "salaryCap": 500,
       "salaryAdjustments": 58.24,
-      "updatedAt": "2026-08-04T22:59:51.076Z",
+      "updatedAt": "2026-08-04T23:38:42.322Z",
       "error": null,
+      "tags": [
+        "Superflex",
+        "Best Ball"
+      ],
       "standings": [
         {
           "franchiseId": "0001",
@@ -3342,6 +3371,7 @@
       "name": "Worlds Collide",
       "type": "bestball",
       "format": null,
+      "tags": [],
       "leagueName": "Worlds Collide",
       "franchiseId": "0012",
       "teamName": "Worlds Collide",
@@ -3359,6 +3389,7 @@
       "name": "Rug's Playground",
       "type": "bestball",
       "format": null,
+      "tags": [],
       "leagueName": "Rug's Playground",
       "franchiseId": "0006",
       "teamName": "Rug's Playground",
@@ -3600,8 +3631,11 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-04T22:59:52.338Z",
+      "updatedAt": "2026-08-04T23:38:43.012Z",
       "error": null,
+      "tags": [
+        "Superflex"
+      ],
       "standings": [
         {
           "franchiseId": "0001",
@@ -3706,7 +3740,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=league&L=72911&JSON=1 (year 2026)"
+      "scoringError": "No live scoring available yet"
     },
     {
       "id": "54766",
@@ -3937,8 +3971,11 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-04T22:59:53.209Z",
+      "updatedAt": "2026-08-04T23:38:43.734Z",
       "error": null,
+      "tags": [
+        "Superflex"
+      ],
       "standings": [
         {
           "franchiseId": "0001",
@@ -4063,7 +4100,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=league&L=54766&JSON=1 (year 2026)"
+      "scoringError": "No live scoring available yet"
     },
     {
       "id": "54458",
@@ -4318,8 +4355,11 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-04T22:59:54.088Z",
+      "updatedAt": "2026-08-04T23:38:44.372Z",
       "error": null,
+      "tags": [
+        "SFB"
+      ],
       "standings": [
         {
           "franchiseId": "0001",
@@ -4424,7 +4464,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=league&L=54458&JSON=1 (year 2026)"
+      "scoringError": "No live scoring available yet"
     },
     {
       "id": "61777",
@@ -4679,8 +4719,11 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-04T22:59:55.025Z",
+      "updatedAt": "2026-08-04T23:38:44.773Z",
       "error": null,
+      "tags": [
+        "SFB"
+      ],
       "standings": [
         {
           "franchiseId": "0001",
@@ -4795,7 +4838,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=61777&JSON=1 (year 2026)"
+      "scoringError": "No live scoring available yet"
     },
     {
       "id": "30196",
@@ -5026,8 +5069,11 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-04T22:59:55.859Z",
+      "updatedAt": "2026-08-04T23:38:45.186Z",
       "error": null,
+      "tags": [
+        "Superflex"
+      ],
       "standings": [
         {
           "franchiseId": "0001",
@@ -5142,7 +5188,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=30196&JSON=1 (year 2026)"
+      "scoringError": "No live scoring available yet"
     },
     {
       "id": "421871710",
@@ -5154,8 +5200,9 @@
       "teamName": "Jeffer Justinson",
       "url": "https://fantasy.espn.com/football/team?leagueId=421871710&teamId=5",
       "players": [],
-      "updatedAt": "2026-08-04T22:59:56.053Z",
+      "updatedAt": "2026-08-04T23:38:45.358Z",
       "error": null,
+      "tags": [],
       "standings": [
         {
           "franchiseId": "1",
@@ -5336,8 +5383,9 @@
       "teamName": "Big Dart Energy",
       "url": "https://fantasy.espn.com/football/team?leagueId=1966972&teamId=10",
       "players": [],
-      "updatedAt": "2026-08-04T22:59:56.147Z",
+      "updatedAt": "2026-08-04T23:38:45.426Z",
       "error": null,
+      "tags": [],
       "standings": [
         {
           "franchiseId": "1",
