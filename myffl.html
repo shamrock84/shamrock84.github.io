@@ -265,13 +265,17 @@
 		}
 		.card-head {
 			display: flex;
+			flex-wrap: wrap;
 			align-items: flex-start;
 			justify-content: space-between;
-			gap: 0.5rem;
+			gap: 0.4rem 0.5rem;
 		}
 		.card h2 {
 			margin: 0;
 			font-size: 1.15rem;
+			min-width: 0;
+			flex: 1 1 auto;
+			overflow-wrap: break-word;
 		}
 		.card h2 a {
 			color: var(--text);
@@ -287,6 +291,12 @@
 			justify-content: flex-end;
 			gap: 0.3rem;
 			flex-shrink: 0;
+		}
+		/* More than 3 badges gets cramped on one line, especially on narrow
+		   cards — cap the row width so a 4th+ badge wraps to a second line
+		   instead of squeezing the title or overflowing. */
+		.badges.badges-wrap {
+			max-width: 12.5rem;
 		}
 		.badge {
 			display: inline-block;
@@ -894,7 +904,7 @@
 			heading.appendChild(link);
 			cardHead.appendChild(heading);
 			if (badgeLabels.length > 0) {
-				const badgesEl = el('div', { class: 'badges' });
+				const badgesEl = el('div', { class: `badges${badgeLabels.length > 3 ? ' badges-wrap' : ''}` });
 				for (const label of badgeLabels) {
 					badgesEl.appendChild(el('span', { class: 'badge', text: label }));
 				}
