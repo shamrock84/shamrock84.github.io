@@ -60,26 +60,6 @@
 			color: var(--muted);
 			font-size: 0.85rem;
 		}
-		.updated-row {
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			gap: 0.6rem;
-		}
-		#refresh-btn {
-			border: 1px solid var(--border);
-			background: var(--card-bg);
-			color: var(--accent);
-			padding: 0.15rem 0.6rem;
-			border-radius: 999px;
-			font-size: 0.78rem;
-			font-weight: 600;
-			cursor: pointer;
-		}
-		#refresh-btn:disabled {
-			opacity: 0.6;
-			cursor: default;
-		}
 		.tabs {
 			display: flex;
 			justify-content: center;
@@ -280,10 +260,7 @@
 <body>
 	<header>
 		<h1>My Leagues</h1>
-		<div class="updated-row">
-			<span id="updated">Loading&hellip;</span>
-			<button type="button" id="refresh-btn" title="Reload the latest synced data">&#8635; Refresh</button>
-		</div>
+		<div id="updated">Loading&hellip;</div>
 	</header>
 	<div class="tabs" id="tabs" role="tablist"></div>
 	<div class="tabs subtabs" id="subtabs" role="tablist"></div>
@@ -572,14 +549,10 @@
 			renderSubTabs();
 		}
 
-		async function loadAndRender() {
+		async function init() {
 			const statusEl = document.getElementById('status');
 			const gridEl = document.getElementById('grid');
 			const updatedEl = document.getElementById('updated');
-			const refreshBtn = document.getElementById('refresh-btn');
-
-			refreshBtn.disabled = true;
-			statusEl.textContent = '';
 
 			try {
 				// Cache-bust so GitHub Pages' CDN can't serve a stale snapshot after a sync.
@@ -592,14 +565,10 @@
 					: 'Not yet synced — run the "Sync MFL Rosters" GitHub Action.';
 
 				if (!data.leagues || data.leagues.length === 0) {
-					gridEl.innerHTML = '';
 					statusEl.textContent = 'No leagues configured yet.';
 					return;
 				}
 
-				// currentView/currentLeagueType (module state) survive this rebuild, so a
-				// refresh keeps whichever tab/sub-tab the user was already looking at.
-				gridEl.innerHTML = '';
 				for (const league of data.leagues) {
 					gridEl.appendChild(renderCard(league));
 					if (league.standings !== undefined || league.standingsError) {
@@ -616,14 +585,11 @@
 			} catch (err) {
 				statusEl.textContent = `Couldn't load roster data: ${err.message}`;
 				updatedEl.textContent = '';
-			} finally {
-				refreshBtn.disabled = false;
 			}
 		}
 
 		document.getElementById('search').addEventListener('input', updateVisibility);
-		document.getElementById('refresh-btn').addEventListener('click', loadAndRender);
-		loadAndRender();
+		init();
 	</script>
 </body>
 </html>
