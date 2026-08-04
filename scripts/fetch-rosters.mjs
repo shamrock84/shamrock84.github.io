@@ -20,6 +20,7 @@ import {
   fetchLeagueRoster,
   fetchStandings,
   fetchScoring,
+  fetchMflLineup,
   fetchEspnLeagueRoster,
   fetchEspnStandings,
   fetchEspnScoring,
@@ -137,6 +138,26 @@ async function main() {
       const prev = previousById.get(league.id);
       target.scoring = prev?.scoring || null;
       target.scoringError = err.message;
+    }
+  }
+
+  // Pilot: current-week starters/bench, only for leagues flagged
+  // lineupPilot in config/leagues.json. See fetchMflLineup's comment for why
+  // this can't affect any other league's data.
+  for (const league of LEAGUES) {
+    if (!league.lineupPilot || league.provider === 'espn') continue;
+    const target = leagues.find((l) => l.id === league.id);
+    if (!target || !league.franchiseId) continue;
+    try {
+      const { week, starterIds } = await fetchMflLineup(league, cookie);
+      target.lineupWeek = week;
+      target.starters = starterIds;
+      target.lineupError = null;
+      console.log(`Fetched lineup for ${league.name}: ${starterIds.length} starters`);
+    } catch (err) {
+      console.error(`Failed to fetch lineup for ${league.name}: ${err.message}`);
+      target.starters = null;
+      target.lineupError = err.message;
     }
   }
 

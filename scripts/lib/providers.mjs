@@ -206,6 +206,32 @@ export async function fetchScoring(league, cookie, nameById) {
   return { week: live?.week ?? null, teams };
 }
 
+// Which of the franchise's currently-rostered players are set as starters
+// for the current week. Reuses the same liveScoring export fetchScoring
+// pulls team totals from — MFL populates starter/nonstarter status there
+// once the week's lineup is set, even before kickoff. Pilot feature: only
+// called for leagues flagged lineupPilot in config/leagues.json, so an API
+// shape surprise here can't break the rest of the sync.
+export async function fetchMflLineup(league, cookie) {
+  const liveData = await mflGet(`/export?TYPE=liveScoring&L=${league.id}&JSON=1`, cookie);
+  const live = liveData?.liveScoring;
+  const rawRows = live?.franchise;
+  const rows = Array.isArray(rawRows) ? rawRows : rawRows ? [rawRows] : [];
+  const mine = rows.find((f) => f.id === league.franchiseId);
+  if (!mine) {
+    throw new Error('No live scoring data for this franchise yet');
+  }
+
+  const rawPlayers = mine.player
+    ? (Array.isArray(mine.player) ? mine.player : [mine.player])
+    : [];
+  const starterIds = rawPlayers
+    .filter((p) => String(p.status || '').toLowerCase() === 'starter')
+    .map((p) => p.id);
+
+  return { week: live?.week ?? null, starterIds };
+}
+
 // --- ESPN fantasy football (undocumented API, reverse-engineered from the
 // community — field names/IDs below are best-effort; verified working
 // against real leagues for standings/scoring as of this writing) ---

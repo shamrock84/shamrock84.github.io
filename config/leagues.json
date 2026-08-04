@@ -8,10 +8,11 @@
     "type: 'dynasty', 'bestball', or 'redraft' — controls which top-level sub-tab a league appears under.",
     "format: dynasty leagues only — 'dynasty' (plain roster) or 'auction' (adds Salary/Yrs columns). Omit otherwise.",
     "ESPN leagues additionally require ESPN_S2 and ESPN_SWID GitHub Actions secrets (browser cookies, not a login).",
-    "Array order is display order everywhere on the page (Rosters, Standings, Scoring)."
+    "Array order is display order everywhere on the page (Rosters, Standings, Scoring).",
+    "lineupPilot: MFL only. When true, the sync also fetches this week's starters via TYPE=liveScoring and the Rosters card splits the Active Roster group into Starters/Bench. Currently piloting on one league before rolling out further."
   ],
   "leagues": [
-    { "id": "26696", "franchiseId": "0001", "name": "MNMx Dynasty", "type": "dynasty", "format": "dynasty" },
+    { "id": "26696", "franchiseId": "0001", "name": "MNMx Dynasty", "type": "dynasty", "format": "dynasty", "lineupPilot": true },
     { "id": "25608", "franchiseId": "0001", "name": "OSD", "type": "dynasty", "format": "dynasty" },
     { "id": "23545", "franchiseId": "0008", "name": "Survivor", "type": "dynasty", "format": "dynasty" },
     { "id": "35217", "franchiseId": "0004", "name": "Iron Bank", "type": "dynasty", "format": "auction" },

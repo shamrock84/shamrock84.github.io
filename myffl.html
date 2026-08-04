@@ -359,6 +359,31 @@
 		const LIVE_SCORING_URL = 'https://shamrock84-github-io.vercel.app/api/live-scoring';
 		const LIVE_SCORING_POLL_MS = 30000;
 
+		function buildRosterTable(players, isAuction, statusKey) {
+			const table = el('table', { class: 'roster' });
+			if (isAuction) {
+				const headRow = el('tr', { class: 'roster-head' });
+				['', 'Player', 'Team', 'Salary', 'Yrs'].forEach((h) => headRow.appendChild(el('th', { text: h })));
+				table.appendChild(headRow);
+			}
+			let prevPosition = null;
+			for (const p of players) {
+				const posBoundary = prevPosition !== null && p.position !== prevPosition;
+				prevPosition = p.position;
+				const rowClass = `player-row status-${statusKey}${posBoundary ? ' pos-boundary' : ''}`;
+				const row = el('tr', { class: rowClass, 'data-name': p.name.toLowerCase() });
+				row.appendChild(el('td', {}, [el('span', { class: 'pos-chip', text: p.position || '-' })]));
+				row.appendChild(el('td', { class: 'player-name', text: p.name }));
+				row.appendChild(el('td', { class: 'nfl-team', text: p.team || 'FA' }));
+				if (isAuction) {
+					row.appendChild(el('td', { class: 'salary-cell', text: p.salary ? `$${p.salary}` : '—' }));
+					row.appendChild(el('td', { class: 'years-cell', text: p.contractYear ? String(p.contractYear) : '—' }));
+				}
+				table.appendChild(row);
+			}
+			return table;
+		}
+
 		function renderCard(league) {
 			const card = el('div', { class: 'card', 'data-view': 'rosters', 'data-league-type': league.type || '' });
 			const heading = el('h2');
@@ -384,33 +409,32 @@
 			}
 
 			const isAuction = league.format === 'auction';
+			// Pilot: leagues with a fetched starters list split Active Roster into
+			// Starters/Bench instead of one flat table. Everything else (and any
+			// league where the lineup fetch failed/hasn't run) falls back to the
+			// plain grouping below, unchanged.
+			const starterIdSet = Array.isArray(league.starters) ? new Set(league.starters) : null;
 
 			for (const group of STATUS_GROUPS) {
 				const players = byStatus[group.key];
 				if (!players || players.length === 0) continue;
-				card.appendChild(el('div', { class: 'group-label', text: `${group.label} (${players.length})` }));
-				const table = el('table', { class: 'roster' });
-				if (isAuction) {
-					const headRow = el('tr', { class: 'roster-head' });
-					['', 'Player', 'Team', 'Salary', 'Yrs'].forEach((h) => headRow.appendChild(el('th', { text: h })));
-					table.appendChild(headRow);
-				}
-				let prevPosition = null;
-				for (const p of players) {
-					const posBoundary = prevPosition !== null && p.position !== prevPosition;
-					prevPosition = p.position;
-					const rowClass = `player-row status-${group.key.toLowerCase()}${posBoundary ? ' pos-boundary' : ''}`;
-					const row = el('tr', { class: rowClass, 'data-name': p.name.toLowerCase() });
-					row.appendChild(el('td', {}, [el('span', { class: 'pos-chip', text: p.position || '-' })]));
-					row.appendChild(el('td', { class: 'player-name', text: p.name }));
-					row.appendChild(el('td', { class: 'nfl-team', text: p.team || 'FA' }));
-					if (isAuction) {
-						row.appendChild(el('td', { class: 'salary-cell', text: p.salary ? `$${p.salary}` : '—' }));
-						row.appendChild(el('td', { class: 'years-cell', text: p.contractYear ? String(p.contractYear) : '—' }));
+
+				if (group.key === 'ROSTER' && starterIdSet) {
+					const starters = players.filter((p) => starterIdSet.has(p.id));
+					const bench = players.filter((p) => !starterIdSet.has(p.id));
+					if (starters.length > 0) {
+						card.appendChild(el('div', { class: 'group-label', text: `Starters (${starters.length})` }));
+						card.appendChild(buildRosterTable(starters, isAuction, 'starter'));
 					}
-					table.appendChild(row);
+					if (bench.length > 0) {
+						card.appendChild(el('div', { class: 'group-label', text: `Bench (${bench.length})` }));
+						card.appendChild(buildRosterTable(bench, isAuction, 'bench'));
+					}
+					continue;
 				}
-				card.appendChild(table);
+
+				card.appendChild(el('div', { class: 'group-label', text: `${group.label} (${players.length})` }));
+				card.appendChild(buildRosterTable(players, isAuction, group.key.toLowerCase()));
 			}
 
 			if (!league.players || league.players.length === 0) {
