@@ -28,6 +28,23 @@ async function main() {
   const league = leagues.find((l) => l.lineupPilot);
   if (!league) throw new Error('No lineupPilot league configured in config/leagues.json');
 
+  // TEMP DIAGNOSTIC — league-scoped login didn't fix the error, so dump
+  // every Set-Cookie header from the raw login response to check whether
+  // MFL sets an additional league-specific cookie our mflLogin() parsing
+  // (which only looks for MFL_USER_ID) is silently discarding.
+  {
+    const year = new Date().getFullYear();
+    const rawLoginUrl = `https://api.myfantasyleague.com/${year}/login?USERNAME=${encodeURIComponent(username)}&PASSWORD=${encodeURIComponent(password)}&L=${league.id}&XML=1`;
+    const rawRes = await fetch(rawLoginUrl, { redirect: 'follow' });
+    const setCookies = typeof rawRes.headers.getSetCookie === 'function'
+      ? rawRes.headers.getSetCookie()
+      : [rawRes.headers.get('set-cookie')].filter(Boolean);
+    console.log(`[login-debug] status ${rawRes.status}, final url ${rawRes.url}`);
+    console.log(`[login-debug] all Set-Cookie headers: ${JSON.stringify(setCookies)}`);
+    const rawBody = await rawRes.text();
+    console.log(`[login-debug] body: ${rawBody.slice(0, 500)}`);
+  }
+
   // League-scoped login — /import (unlike /export) requires the login
   // itself to specify L=, confirmed via a live test error ("API requires a
   // logged in user in league ID").
