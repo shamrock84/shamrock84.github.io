@@ -272,7 +272,13 @@ async function espnGet(league, viewParams) {
 }
 
 async function fetchEspnLeagueRoster(league) {
-  const data = await espnGet(league, 'view=mRoster&view=mTeam&view=mSettings');
+  // mRoster alone returns team objects with an empty roster.entries unless
+  // scoped to a specific team/period — rosterForTeamId + scoringPeriodId
+  // populate it. scoringPeriodId=1 is a safe pre-season default.
+  const data = await espnGet(
+    league,
+    `view=mRoster&view=mTeam&view=mSettings&rosterForTeamId=${league.franchiseId}&scoringPeriodId=1`
+  );
 
   const teams = data.teams || [];
   const team = teams.find((t) => String(t.id) === String(league.franchiseId));
