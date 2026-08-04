@@ -15,12 +15,14 @@ const OUTPUT_PATH = fileURLToPath(new URL('../data/rosters.json', import.meta.ur
 
 // Add/remove leagues here. franchiseId is *your* team in that league.
 // type controls which tab a league shows up under on rosters.html.
+// Display order matters here and is preserved verbatim on the page
+// (rosters, scoring, and standings cards all follow this order).
 const DYNASTY_LEAGUES = [
   { id: '26696', franchiseId: '0001', name: 'MNMx Dynasty', type: 'dynasty' },
-  { id: '35217', franchiseId: '0004', name: 'Iron Bank', type: 'dynasty' },
   { id: '25608', franchiseId: '0001', name: 'OSD', type: 'dynasty' },
-  { id: '34850', franchiseId: '0010', name: 'Wise Guys', type: 'dynasty' },
   { id: '23545', franchiseId: '0008', name: 'Survivor', type: 'dynasty' },
+  { id: '35217', franchiseId: '0004', name: 'Iron Bank', type: 'dynasty' },
+  { id: '34850', franchiseId: '0010', name: 'Wise Guys', type: 'dynasty' },
   { id: '30641', franchiseId: '0003', name: 'Super Cap', type: 'dynasty' },
   { id: '64470', franchiseId: '0005', name: 'Game On', type: 'dynasty' },
 ];
