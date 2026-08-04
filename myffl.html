@@ -98,6 +98,31 @@
 			color: var(--muted);
 			font-size: 0.85rem;
 		}
+		.auth-control {
+			display: flex;
+			justify-content: center;
+			margin-top: 0.4rem;
+		}
+		.auth-control:empty {
+			margin-top: 0;
+		}
+		.auth-control .lineup-login {
+			margin-top: 0;
+		}
+		.auth-status-text {
+			font-size: 0.8rem;
+			color: var(--muted);
+			margin-right: 0.4rem;
+		}
+		.auth-logout-btn {
+			background: none;
+			border: none;
+			color: var(--muted);
+			font-size: 0.78rem;
+			cursor: pointer;
+			padding: 0;
+			text-decoration: underline;
+		}
 		#sync-btn {
 			display: inline-flex;
 			align-items: center;
@@ -487,6 +512,7 @@
 				</svg>
 			</button>
 		</div>
+		<div id="auth-control" class="auth-control"></div>
 	</header>
 	<div class="tabs" id="tabs" role="tablist"></div>
 	<div class="tabs subtabs" id="subtabs" role="tablist"></div>
@@ -705,19 +731,17 @@
 			}
 			wrap.appendChild(table);
 
-			const actions = el('div', { class: 'lineup-editor-actions' });
+			// Logging in/out is handled once, globally (see renderAuthControl) —
+			// nothing to show per-card when read-only.
 			if (!editable) {
-				actions.appendChild(buildLoginPrompt());
-				wrap.appendChild(actions);
 				return wrap;
 			}
 
+			const actions = el('div', { class: 'lineup-editor-actions' });
 			const saveBtn = el('button', { type: 'button', class: 'lineup-save-btn', text: 'Save Lineup' });
 			const statusEl = el('span', { class: 'lineup-editor-status' });
-			const logoutBtn = el('button', { type: 'button', class: 'lineup-logout-btn', text: 'Log out' });
 			actions.appendChild(saveBtn);
 			actions.appendChild(statusEl);
-			actions.appendChild(logoutBtn);
 			wrap.appendChild(actions);
 
 			saveBtn.addEventListener('click', async () => {
@@ -749,9 +773,27 @@
 				}
 			});
 
-			logoutBtn.addEventListener('click', doLogout);
-
 			return wrap;
+		}
+
+		// Single site-wide login/logout control (header) — MFL uses one login
+		// for all leagues, so each pilot league's card no longer duplicates it.
+		function renderAuthControl() {
+			const container = document.getElementById('auth-control');
+			if (!container) return;
+			container.innerHTML = '';
+
+			const hasPilotLeague = (pageData?.leagues || []).some((l) => Array.isArray(l.starters));
+			if (!hasPilotLeague) return;
+
+			if (isLoggedIn()) {
+				container.appendChild(el('span', { class: 'auth-status-text', text: 'Logged in to edit lineups' }));
+				const logoutBtn = el('button', { type: 'button', class: 'auth-logout-btn', text: 'Log out' });
+				logoutBtn.addEventListener('click', doLogout);
+				container.appendChild(logoutBtn);
+			} else {
+				container.appendChild(buildLoginPrompt());
+			}
 		}
 
 		function renderCard(league) {
@@ -1059,6 +1101,7 @@
 			const data = pageData;
 			if (!data) return;
 
+			renderAuthControl();
 			statusEl.textContent = '';
 			gridEl.innerHTML = '';
 
