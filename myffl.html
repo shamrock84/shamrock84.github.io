@@ -75,22 +75,42 @@
 				filter: invert(1);
 			}
 		}
+		.updated-row {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 0.3rem;
+		}
 		#updated {
 			color: var(--muted);
 			font-size: 0.85rem;
-			background: none;
+		}
+		#sync-btn {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 1.4rem;
+			height: 1.4rem;
+			padding: 0;
 			border: none;
-			font-family: inherit;
+			border-radius: 50%;
+			background: none;
+			color: var(--muted);
 			cursor: pointer;
-			padding: 0.2rem 0.4rem;
-			border-radius: 999px;
 		}
-		#updated:hover:not(:disabled) {
+		#sync-btn:hover:not(:disabled) {
+			background: var(--chip-bg);
 			color: var(--accent);
-			text-decoration: underline;
 		}
-		#updated:disabled {
+		#sync-btn:disabled {
 			cursor: default;
+			opacity: 0.6;
+		}
+		#sync-btn.spinning svg {
+			animation: sync-spin 0.9s linear infinite;
+		}
+		@keyframes sync-spin {
+			to { transform: rotate(360deg); }
 		}
 		#live-status {
 			text-align: center;
@@ -345,7 +365,16 @@
 <body>
 	<header>
 		<h1><img src="images/ffl_black.gif" alt="myFFL" class="site-logo"></h1>
-		<button type="button" id="updated">Loading&hellip;</button>
+		<div class="updated-row">
+			<span id="updated">Loading&hellip;</span>
+			<button type="button" id="sync-btn" aria-label="Sync now" title="Sync now">
+				<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+					<polyline points="23 4 23 10 17 10"></polyline>
+					<polyline points="1 20 1 14 7 14"></polyline>
+					<path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+				</svg>
+			</button>
+		</div>
 	</header>
 	<div class="tabs" id="tabs" role="tablist"></div>
 	<div class="tabs subtabs" id="subtabs" role="tablist"></div>
@@ -808,9 +837,11 @@
 		// run + a GitHub Pages rebuild typically take under a minute).
 		async function triggerManualSync() {
 			const updatedEl = document.getElementById('updated');
+			const syncBtn = document.getElementById('sync-btn');
 			const previousGeneratedAt = pageData?.generatedAt;
 
-			updatedEl.disabled = true;
+			syncBtn.disabled = true;
+			syncBtn.classList.add('spinning');
 			updatedEl.textContent = 'Requesting sync…';
 
 			try {
@@ -832,7 +863,8 @@
 								clearInterval(syncPollTimer);
 								syncPollTimer = null;
 								await init();
-								updatedEl.disabled = false;
+								syncBtn.disabled = false;
+								syncBtn.classList.remove('spinning');
 								return;
 							}
 						}
@@ -842,21 +874,23 @@
 					if (attempts >= maxAttempts) {
 						clearInterval(syncPollTimer);
 						syncPollTimer = null;
-						updatedEl.disabled = false;
+						syncBtn.disabled = false;
+						syncBtn.classList.remove('spinning');
 						updatedEl.textContent = previousGeneratedAt
 							? `Last synced ${timeAgo(previousGeneratedAt)} — still syncing, check back soon`
 							: 'Still syncing — check back soon';
 					}
 				}, 10000);
 			} catch (err) {
-				updatedEl.disabled = false;
+				syncBtn.disabled = false;
+				syncBtn.classList.remove('spinning');
 				updatedEl.textContent = `Couldn't start sync: ${err.message}`;
 				setTimeout(() => {
 					if (pageData?.generatedAt) updatedEl.textContent = `Last synced ${timeAgo(pageData.generatedAt)}`;
 				}, 4000);
 			}
 		}
-		document.getElementById('updated').addEventListener('click', triggerManualSync);
+		document.getElementById('sync-btn').addEventListener('click', triggerManualSync);
 
 		const searchInput = document.getElementById('search');
 		const searchClearBtn = document.getElementById('search-clear');
