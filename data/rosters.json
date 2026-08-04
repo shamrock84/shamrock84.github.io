@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-04T01:17:53.104Z",
+  "generatedAt": "2026-08-04T01:44:33.370Z",
   "year": "2026",
   "leagues": [
     {
@@ -236,7 +236,7 @@
           "status": "ROSTER"
         }
       ],
-      "updatedAt": "2026-08-04T01:17:42.847Z",
+      "updatedAt": "2026-08-04T01:44:21.121Z",
       "error": null,
       "standings": [
         {
@@ -332,312 +332,6 @@
         {
           "franchiseId": "0010",
           "teamName": "BarstoolSaints",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        }
-      ],
-      "standingsError": null,
-      "scoring": null,
-      "scoringError": "No live scoring available yet"
-    },
-    {
-      "id": "35217",
-      "name": "Iron Bank",
-      "type": "dynasty",
-      "leagueName": "The Iron Bank ",
-      "franchiseId": "0004",
-      "teamName": "HODOR",
-      "url": "https://www.myfantasyleague.com/2026/home/35217",
-      "players": [
-        {
-          "id": "16150",
-          "name": "C.J. Stroud",
-          "position": "QB",
-          "team": "HOU",
-          "status": "ROSTER"
-        },
-        {
-          "id": "17032",
-          "name": "Jaxson Dart",
-          "position": "QB",
-          "team": "NYG",
-          "status": "ROSTER"
-        },
-        {
-          "id": "16581",
-          "name": "Jayden Daniels",
-          "position": "QB",
-          "team": "WAS",
-          "status": "ROSTER"
-        },
-        {
-          "id": "15708",
-          "name": "Breece Hall",
-          "position": "RB",
-          "team": "NYJ",
-          "status": "ROSTER"
-        },
-        {
-          "id": "17060",
-          "name": "DJ Giddens",
-          "position": "RB",
-          "team": "IND",
-          "status": "TAXI_SQUAD"
-        },
-        {
-          "id": "17474",
-          "name": "Emmett Johnson",
-          "position": "RB",
-          "team": "KCC",
-          "status": "TAXI_SQUAD"
-        },
-        {
-          "id": "16178",
-          "name": "Keaton Mitchell",
-          "position": "RB",
-          "team": "LAC",
-          "status": "ROSTER"
-        },
-        {
-          "id": "15711",
-          "name": "Kenneth Walker III",
-          "position": "RB",
-          "team": "KCC",
-          "status": "ROSTER"
-        },
-        {
-          "id": "15259",
-          "name": "Rhamondre Stevenson",
-          "position": "RB",
-          "team": "NEP",
-          "status": "ROSTER"
-        },
-        {
-          "id": "14085",
-          "name": "Tony Pollard",
-          "position": "RB",
-          "team": "TEN",
-          "status": "ROSTER"
-        },
-        {
-          "id": "17056",
-          "name": "Trevor Etienne",
-          "position": "RB",
-          "team": "CAR",
-          "status": "TAXI_SQUAD"
-        },
-        {
-          "id": "15712",
-          "name": "Tyler Allgeier",
-          "position": "RB",
-          "team": "ARI",
-          "status": "ROSTER"
-        },
-        {
-          "id": "14104",
-          "name": "A.J. Brown",
-          "position": "WR",
-          "team": "NEP",
-          "status": "ROSTER"
-        },
-        {
-          "id": "17506",
-          "name": "Chris Bell",
-          "position": "WR",
-          "team": "MIA",
-          "status": "TAXI_SQUAD"
-        },
-        {
-          "id": "13630",
-          "name": "Courtland Sutton",
-          "position": "WR",
-          "team": "DEN",
-          "status": "ROSTER"
-        },
-        {
-          "id": "17505",
-          "name": "Elijah Sarratt",
-          "position": "WR",
-          "team": "BAL",
-          "status": "TAXI_SQUAD"
-        },
-        {
-          "id": "17078",
-          "name": "Jack Bech",
-          "position": "WR",
-          "team": "LVR",
-          "status": "TAXI_SQUAD"
-        },
-        {
-          "id": "16185",
-          "name": "Jaxon Smith-Njigba",
-          "position": "WR",
-          "team": "SEA",
-          "status": "ROSTER"
-        },
-        {
-          "id": "17082",
-          "name": "Pat Bryant",
-          "position": "WR",
-          "team": "DEN",
-          "status": "ROSTER"
-        },
-        {
-          "id": "16194",
-          "name": "Rashee Rice",
-          "position": "WR",
-          "team": "KCC",
-          "status": "ROSTER"
-        },
-        {
-          "id": "16619",
-          "name": "Troy Franklin",
-          "position": "WR",
-          "team": "DEN",
-          "status": "ROSTER"
-        },
-        {
-          "id": "17104",
-          "name": "Colston Loveland",
-          "position": "TE",
-          "team": "CHI",
-          "status": "TAXI_SQUAD"
-        },
-        {
-          "id": "16649",
-          "name": "Theo Johnson",
-          "position": "TE",
-          "team": "NYG",
-          "status": "ROSTER"
-        },
-        {
-          "id": "15794",
-          "name": "Trey McBride",
-          "position": "TE",
-          "team": "ARI",
-          "status": "ROSTER"
-        }
-      ],
-      "updatedAt": "2026-08-04T01:17:43.257Z",
-      "error": null,
-      "standings": [
-        {
-          "franchiseId": "0001",
-          "teamName": "The FOOKING Hand of the King",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "0002",
-          "teamName": "Master of Coin",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "0003",
-          "teamName": "Greyjoy: The Ironborn",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "0004",
-          "teamName": "HODOR",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": true
-        },
-        {
-          "franchiseId": "0005",
-          "teamName": "Sir Ilyn's House of Payne",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "0006",
-          "teamName": "Super Saucy McNultys",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "0007",
-          "teamName": "WunWun No WinWin",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "0008",
-          "teamName": "Valyrian Steelers",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "0009",
-          "teamName": "Three Eyed Ravens",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "0010",
-          "teamName": "Joegon",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "0011",
-          "teamName": "Lord of Light",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "0012",
-          "teamName": "Azor Ahai",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -884,7 +578,7 @@
           "status": "ROSTER"
         }
       ],
-      "updatedAt": "2026-08-04T01:17:43.640Z",
+      "updatedAt": "2026-08-04T01:44:21.454Z",
       "error": null,
       "standings": [
         {
@@ -980,326 +674,6 @@
         {
           "franchiseId": "0010",
           "teamName": "Milton's Maulers",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        }
-      ],
-      "standingsError": null,
-      "scoring": null,
-      "scoringError": "No live scoring available yet"
-    },
-    {
-      "id": "34850",
-      "name": "Wise Guys",
-      "type": "dynasty",
-      "leagueName": "Wise Guys",
-      "franchiseId": "0010",
-      "teamName": "Capo dei Capi",
-      "url": "https://www.myfantasyleague.com/2026/home/34850",
-      "players": [
-        {
-          "id": "7836",
-          "name": "Aaron Rodgers",
-          "position": "QB",
-          "team": "PIT",
-          "status": "ROSTER"
-        },
-        {
-          "id": "13116",
-          "name": "Patrick Mahomes",
-          "position": "QB",
-          "team": "KCC",
-          "status": "ROSTER"
-        },
-        {
-          "id": "17031",
-          "name": "Shedeur Sanders",
-          "position": "QB",
-          "team": "CLE",
-          "status": "TAXI_SQUAD"
-        },
-        {
-          "id": "15237",
-          "name": "Trevor Lawrence",
-          "position": "QB",
-          "team": "JAC",
-          "status": "ROSTER"
-        },
-        {
-          "id": "16596",
-          "name": "Braelon Allen",
-          "position": "RB",
-          "team": "NYJ",
-          "status": "ROSTER"
-        },
-        {
-          "id": "15708",
-          "name": "Breece Hall",
-          "position": "RB",
-          "team": "NYJ",
-          "status": "ROSTER"
-        },
-        {
-          "id": "16181",
-          "name": "Chase Brown",
-          "position": "RB",
-          "team": "CIN",
-          "status": "ROSTER"
-        },
-        {
-          "id": "17060",
-          "name": "DJ Giddens",
-          "position": "RB",
-          "team": "IND",
-          "status": "ROSTER"
-        },
-        {
-          "id": "17047",
-          "name": "Dylan Sampson",
-          "position": "RB",
-          "team": "CLE",
-          "status": "TAXI_SQUAD"
-        },
-        {
-          "id": "16597",
-          "name": "Jonathon Brooks",
-          "position": "RB",
-          "team": "CAR",
-          "status": "TAXI_SQUAD"
-        },
-        {
-          "id": "16178",
-          "name": "Keaton Mitchell",
-          "position": "RB",
-          "team": "LAC",
-          "status": "ROSTER"
-        },
-        {
-          "id": "15259",
-          "name": "Rhamondre Stevenson",
-          "position": "RB",
-          "team": "NEP",
-          "status": "ROSTER"
-        },
-        {
-          "id": "17509",
-          "name": "Chris Brazzell II",
-          "position": "WR",
-          "team": "CAR",
-          "status": "TAXI_SQUAD"
-        },
-        {
-          "id": "13633",
-          "name": "Christian Kirk",
-          "position": "WR",
-          "team": "SFO",
-          "status": "ROSTER"
-        },
-        {
-          "id": "17500",
-          "name": "Denzel Boston",
-          "position": "WR",
-          "team": "CLE",
-          "status": "TAXI_SQUAD"
-        },
-        {
-          "id": "14833",
-          "name": "Jerry Jeudy",
-          "position": "WR",
-          "team": "CLE",
-          "status": "ROSTER"
-        },
-        {
-          "id": "14836",
-          "name": "Justin Jefferson",
-          "position": "WR",
-          "team": "MIN",
-          "status": "ROSTER"
-        },
-        {
-          "id": "16684",
-          "name": "Malik Washington",
-          "position": "WR",
-          "team": "MIA",
-          "status": "ROSTER"
-        },
-        {
-          "id": "17075",
-          "name": "Matthew Golden",
-          "position": "WR",
-          "team": "GBP",
-          "status": "TAXI_SQUAD"
-        },
-        {
-          "id": "14842",
-          "name": "Michael Pittman",
-          "position": "WR",
-          "team": "PIT",
-          "status": "ROSTER"
-        },
-        {
-          "id": "11671",
-          "name": "Mike Evans",
-          "position": "WR",
-          "team": "SFO",
-          "status": "ROSTER"
-        },
-        {
-          "id": "15293",
-          "name": "Rashod Bateman",
-          "position": "WR",
-          "team": "BAL",
-          "status": "ROSTER"
-        },
-        {
-          "id": "13192",
-          "name": "David Njoku",
-          "position": "TE",
-          "team": "LAC",
-          "status": "ROSTER"
-        },
-        {
-          "id": "16645",
-          "name": "Erick All",
-          "position": "TE",
-          "team": "CIN",
-          "status": "TAXI_SQUAD"
-        },
-        {
-          "id": "15798",
-          "name": "Isaiah Likely",
-          "position": "TE",
-          "team": "NYG",
-          "status": "ROSTER"
-        },
-        {
-          "id": "13671",
-          "name": "Mark Andrews",
-          "position": "TE",
-          "team": "BAL",
-          "status": "ROSTER"
-        }
-      ],
-      "updatedAt": "2026-08-04T01:17:43.992Z",
-      "error": null,
-      "standings": [
-        {
-          "franchiseId": "0001",
-          "teamName": "Naked Bootleggers",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "0002",
-          "teamName": "Made Men",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "0003",
-          "teamName": "Groot's Gangbusters",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "0004",
-          "teamName": "Hitmen",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "0005",
-          "teamName": "Super Saucy McNultys",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "0006",
-          "teamName": "Pennywise",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "0007",
-          "teamName": "Consigliere",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "0008",
-          "teamName": "We’re the Vipers",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "0009",
-          "teamName": "Pizzo",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "0010",
-          "teamName": "Capo dei Capi",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": true
-        },
-        {
-          "franchiseId": "0011",
-          "teamName": "Teflon Trav",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "0012",
-          "teamName": "Cement Shoes",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -1532,7 +906,7 @@
           "status": "ROSTER"
         }
       ],
-      "updatedAt": "2026-08-04T01:17:44.369Z",
+      "updatedAt": "2026-08-04T01:44:21.783Z",
       "error": null,
       "standings": [
         {
@@ -1648,6 +1022,632 @@
         {
           "franchiseId": "0012",
           "teamName": "Boston Redemption",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        }
+      ],
+      "standingsError": null,
+      "scoring": null,
+      "scoringError": "No live scoring available yet"
+    },
+    {
+      "id": "35217",
+      "name": "Iron Bank",
+      "type": "dynasty",
+      "leagueName": "The Iron Bank ",
+      "franchiseId": "0004",
+      "teamName": "HODOR",
+      "url": "https://www.myfantasyleague.com/2026/home/35217",
+      "players": [
+        {
+          "id": "16150",
+          "name": "C.J. Stroud",
+          "position": "QB",
+          "team": "HOU",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17032",
+          "name": "Jaxson Dart",
+          "position": "QB",
+          "team": "NYG",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16581",
+          "name": "Jayden Daniels",
+          "position": "QB",
+          "team": "WAS",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15708",
+          "name": "Breece Hall",
+          "position": "RB",
+          "team": "NYJ",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17060",
+          "name": "DJ Giddens",
+          "position": "RB",
+          "team": "IND",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "17474",
+          "name": "Emmett Johnson",
+          "position": "RB",
+          "team": "KCC",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "16178",
+          "name": "Keaton Mitchell",
+          "position": "RB",
+          "team": "LAC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15711",
+          "name": "Kenneth Walker III",
+          "position": "RB",
+          "team": "KCC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15259",
+          "name": "Rhamondre Stevenson",
+          "position": "RB",
+          "team": "NEP",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14085",
+          "name": "Tony Pollard",
+          "position": "RB",
+          "team": "TEN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17056",
+          "name": "Trevor Etienne",
+          "position": "RB",
+          "team": "CAR",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "15712",
+          "name": "Tyler Allgeier",
+          "position": "RB",
+          "team": "ARI",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14104",
+          "name": "A.J. Brown",
+          "position": "WR",
+          "team": "NEP",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17506",
+          "name": "Chris Bell",
+          "position": "WR",
+          "team": "MIA",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "13630",
+          "name": "Courtland Sutton",
+          "position": "WR",
+          "team": "DEN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17505",
+          "name": "Elijah Sarratt",
+          "position": "WR",
+          "team": "BAL",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "17078",
+          "name": "Jack Bech",
+          "position": "WR",
+          "team": "LVR",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "16185",
+          "name": "Jaxon Smith-Njigba",
+          "position": "WR",
+          "team": "SEA",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17082",
+          "name": "Pat Bryant",
+          "position": "WR",
+          "team": "DEN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16194",
+          "name": "Rashee Rice",
+          "position": "WR",
+          "team": "KCC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16619",
+          "name": "Troy Franklin",
+          "position": "WR",
+          "team": "DEN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17104",
+          "name": "Colston Loveland",
+          "position": "TE",
+          "team": "CHI",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "16649",
+          "name": "Theo Johnson",
+          "position": "TE",
+          "team": "NYG",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15794",
+          "name": "Trey McBride",
+          "position": "TE",
+          "team": "ARI",
+          "status": "ROSTER"
+        }
+      ],
+      "updatedAt": "2026-08-04T01:44:22.245Z",
+      "error": null,
+      "standings": [
+        {
+          "franchiseId": "0001",
+          "teamName": "The FOOKING Hand of the King",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0002",
+          "teamName": "Master of Coin",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0003",
+          "teamName": "Greyjoy: The Ironborn",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0004",
+          "teamName": "HODOR",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": true
+        },
+        {
+          "franchiseId": "0005",
+          "teamName": "Sir Ilyn's House of Payne",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0006",
+          "teamName": "Super Saucy McNultys",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0007",
+          "teamName": "WunWun No WinWin",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0008",
+          "teamName": "Valyrian Steelers",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0009",
+          "teamName": "Three Eyed Ravens",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0010",
+          "teamName": "Joegon",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0011",
+          "teamName": "Lord of Light",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0012",
+          "teamName": "Azor Ahai",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        }
+      ],
+      "standingsError": null,
+      "scoring": null,
+      "scoringError": "No live scoring available yet"
+    },
+    {
+      "id": "34850",
+      "name": "Wise Guys",
+      "type": "dynasty",
+      "leagueName": "Wise Guys",
+      "franchiseId": "0010",
+      "teamName": "Capo dei Capi",
+      "url": "https://www.myfantasyleague.com/2026/home/34850",
+      "players": [
+        {
+          "id": "7836",
+          "name": "Aaron Rodgers",
+          "position": "QB",
+          "team": "PIT",
+          "status": "ROSTER"
+        },
+        {
+          "id": "13116",
+          "name": "Patrick Mahomes",
+          "position": "QB",
+          "team": "KCC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17031",
+          "name": "Shedeur Sanders",
+          "position": "QB",
+          "team": "CLE",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "15237",
+          "name": "Trevor Lawrence",
+          "position": "QB",
+          "team": "JAC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16596",
+          "name": "Braelon Allen",
+          "position": "RB",
+          "team": "NYJ",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15708",
+          "name": "Breece Hall",
+          "position": "RB",
+          "team": "NYJ",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16181",
+          "name": "Chase Brown",
+          "position": "RB",
+          "team": "CIN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17060",
+          "name": "DJ Giddens",
+          "position": "RB",
+          "team": "IND",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17047",
+          "name": "Dylan Sampson",
+          "position": "RB",
+          "team": "CLE",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "16597",
+          "name": "Jonathon Brooks",
+          "position": "RB",
+          "team": "CAR",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "16178",
+          "name": "Keaton Mitchell",
+          "position": "RB",
+          "team": "LAC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15259",
+          "name": "Rhamondre Stevenson",
+          "position": "RB",
+          "team": "NEP",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17509",
+          "name": "Chris Brazzell II",
+          "position": "WR",
+          "team": "CAR",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "13633",
+          "name": "Christian Kirk",
+          "position": "WR",
+          "team": "SFO",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17500",
+          "name": "Denzel Boston",
+          "position": "WR",
+          "team": "CLE",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "14833",
+          "name": "Jerry Jeudy",
+          "position": "WR",
+          "team": "CLE",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14836",
+          "name": "Justin Jefferson",
+          "position": "WR",
+          "team": "MIN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16684",
+          "name": "Malik Washington",
+          "position": "WR",
+          "team": "MIA",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17075",
+          "name": "Matthew Golden",
+          "position": "WR",
+          "team": "GBP",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "14842",
+          "name": "Michael Pittman",
+          "position": "WR",
+          "team": "PIT",
+          "status": "ROSTER"
+        },
+        {
+          "id": "11671",
+          "name": "Mike Evans",
+          "position": "WR",
+          "team": "SFO",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15293",
+          "name": "Rashod Bateman",
+          "position": "WR",
+          "team": "BAL",
+          "status": "ROSTER"
+        },
+        {
+          "id": "13192",
+          "name": "David Njoku",
+          "position": "TE",
+          "team": "LAC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16645",
+          "name": "Erick All",
+          "position": "TE",
+          "team": "CIN",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "15798",
+          "name": "Isaiah Likely",
+          "position": "TE",
+          "team": "NYG",
+          "status": "ROSTER"
+        },
+        {
+          "id": "13671",
+          "name": "Mark Andrews",
+          "position": "TE",
+          "team": "BAL",
+          "status": "ROSTER"
+        }
+      ],
+      "updatedAt": "2026-08-04T01:44:22.534Z",
+      "error": null,
+      "standings": [
+        {
+          "franchiseId": "0001",
+          "teamName": "Naked Bootleggers",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0002",
+          "teamName": "Made Men",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0003",
+          "teamName": "Groot's Gangbusters",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0004",
+          "teamName": "Hitmen",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0005",
+          "teamName": "Super Saucy McNultys",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0006",
+          "teamName": "Pennywise",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0007",
+          "teamName": "Consigliere",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0008",
+          "teamName": "We’re the Vipers",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0009",
+          "teamName": "Pizzo",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0010",
+          "teamName": "Capo dei Capi",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": true
+        },
+        {
+          "franchiseId": "0011",
+          "teamName": "Teflon Trav",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0012",
+          "teamName": "Cement Shoes",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -1845,7 +1845,7 @@
           "status": "ROSTER"
         }
       ],
-      "updatedAt": "2026-08-04T01:17:44.768Z",
+      "updatedAt": "2026-08-04T01:44:22.831Z",
       "error": null,
       "standings": [
         {
@@ -2158,7 +2158,7 @@
           "status": "ROSTER"
         }
       ],
-      "updatedAt": "2026-08-04T01:17:45.030Z",
+      "updatedAt": "2026-08-04T01:44:23.119Z",
       "error": null,
       "standings": [
         {
@@ -2470,7 +2470,7 @@
           "status": "ROSTER"
         }
       ],
-      "updatedAt": "2026-08-04T01:17:45.639Z",
+      "updatedAt": "2026-08-04T01:44:23.686Z",
       "error": null,
       "scoring": null,
       "scoringError": "No live scoring available yet"
@@ -2611,7 +2611,7 @@
           "status": "ROSTER"
         }
       ],
-      "updatedAt": "2026-08-04T01:17:45.968Z",
+      "updatedAt": "2026-08-04T01:44:24.098Z",
       "error": null,
       "scoring": null,
       "scoringError": "No live scoring available yet"
@@ -2766,7 +2766,7 @@
           "status": "ROSTER"
         }
       ],
-      "updatedAt": "2026-08-04T01:17:46.264Z",
+      "updatedAt": "2026-08-04T01:44:24.560Z",
       "error": null,
       "scoring": null,
       "scoringError": "No live scoring available yet"
@@ -2921,7 +2921,7 @@
           "status": "ROSTER"
         }
       ],
-      "updatedAt": "2026-08-04T01:17:46.568Z",
+      "updatedAt": "2026-08-04T01:44:24.881Z",
       "error": null,
       "scoring": null,
       "scoringError": "No live scoring available yet"
@@ -3062,7 +3062,7 @@
           "status": "ROSTER"
         }
       ],
-      "updatedAt": "2026-08-04T01:17:46.858Z",
+      "updatedAt": "2026-08-04T01:44:25.227Z",
       "error": null,
       "scoring": null,
       "scoringError": "No live scoring available yet"
