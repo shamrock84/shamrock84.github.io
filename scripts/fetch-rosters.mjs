@@ -25,16 +25,14 @@ const DYNASTY_LEAGUES = [
   { id: '64470', franchiseId: '0005', name: 'Game On', type: 'dynasty' },
 ];
 
-// franchiseId is filled in as it's confirmed; leagues without one are skipped
-// (shown on the page as "not configured yet") rather than hit the API.
 const BESTBALL_LEAGUES = [
-  { id: '56191', franchiseId: null, name: 'Worlds Collide', type: 'bestball' },
-  { id: '34203', franchiseId: null, name: "Rug's Playground", type: 'bestball' },
-  { id: '72911', franchiseId: null, name: 'April Pre-NFL Draft', type: 'bestball' },
-  { id: '54766', franchiseId: null, name: 'May Rookies', type: 'bestball' },
-  { id: '54458', franchiseId: null, name: 'June Tecmo Ball', type: 'bestball' },
-  { id: '61777', franchiseId: null, name: 'July Semiquincentennial', type: 'bestball' },
-  { id: '30196', franchiseId: null, name: 'July Fantasy Football for Dummies', type: 'bestball' },
+  { id: '56191', franchiseId: '0012', name: 'Worlds Collide', type: 'bestball' },
+  { id: '34203', franchiseId: '0006', name: "Rug's Playground", type: 'bestball' },
+  { id: '72911', franchiseId: '0006', name: 'April Pre-NFL Draft', type: 'bestball' },
+  { id: '54766', franchiseId: '0004', name: 'May Rookies', type: 'bestball' },
+  { id: '54458', franchiseId: '0004', name: 'June Tecmo Ball', type: 'bestball' },
+  { id: '61777', franchiseId: '0003', name: 'July Semiquincentennial', type: 'bestball' },
+  { id: '30196', franchiseId: '0004', name: 'July Fantasy Football for Dummies', type: 'bestball' },
 ];
 
 const LEAGUES = [...DYNASTY_LEAGUES, ...BESTBALL_LEAGUES];
