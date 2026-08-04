@@ -37,20 +37,28 @@ async function main() {
   // guessing again.
   try {
     const year = new Date().getFullYear();
-    const docRes = await fetch(`https://api.myfantasyleague.com/${year}/api_info?L=${league.id}`, {
+    // The generic api.myfantasyleague.com host's api_info page turned out to
+    // just be site navigation, not real docs. Try the real "Starting
+    // Lineups" page instead — the actual web form a human uses, found via
+    // the nav menu in a prior round (O=06 on this league's numbered www
+    // host). If it has a real <form>, its action/field names tell us the
+    // true submission mechanism directly, no more guessing at import TYPEs.
+    const formRes = await fetch(`https://www43.myfantasyleague.com/${year}/options?L=${league.id}&O=06`, {
       headers: { Cookie: cookie },
+      redirect: 'follow',
     });
-    const docText = await docRes.text();
-    console.log(`[docs-debug] api_info status ${docRes.status}, length ${docText.length}`);
-    for (const needle of ['setLineup', 'TYPE=import', 'import?TYPE', 'Import Commands', 'STARTERS']) {
-      const idx = docText.indexOf(needle);
-      console.log(`[docs-debug] indexOf("${needle}") = ${idx}`);
-      if (idx !== -1) {
-        console.log(`[docs-debug] context: ${docText.slice(Math.max(0, idx - 150), idx + 500)}`);
-      }
+    const formText = await formRes.text();
+    console.log(`[form-debug] options?O=06 status ${formRes.status}, final url ${formRes.url}, length ${formText.length}`);
+    const formTagIdx = formText.indexOf('<form');
+    console.log(`[form-debug] first <form> at index ${formTagIdx}`);
+    if (formTagIdx !== -1) {
+      console.log(`[form-debug] form + surrounding: ${formText.slice(formTagIdx, formTagIdx + 1500)}`);
     }
+    // Also grab all <input>/<select> field names anywhere on the page.
+    const fieldNames = [...formText.matchAll(/name="([^"]+)"/g)].map((m) => m[1]);
+    console.log(`[form-debug] all name="..." attributes found: ${JSON.stringify([...new Set(fieldNames)])}`);
   } catch (err) {
-    console.log(`[docs-debug] api_info fetch failed: ${err.message}`);
+    console.log(`[form-debug] options page fetch failed: ${err.message}`);
   }
 
   console.log(`Fetching current starters for ${league.name}...`);
