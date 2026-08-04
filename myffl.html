@@ -516,6 +516,10 @@
 			}
 		}
 
+		function updateSearchVisibility() {
+			document.querySelector('.controls').classList.toggle('hidden', currentView !== 'rosters');
+		}
+
 		function renderViewTabs(views) {
 			const tabsEl = document.getElementById('tabs');
 			tabsEl.innerHTML = '';
@@ -538,6 +542,7 @@
 						currentView = view;
 						tabsEl.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b === btn));
 						renderSubTabs();
+						updateSearchVisibility();
 						updateVisibility();
 					});
 					tabsEl.appendChild(btn);
@@ -547,6 +552,7 @@
 			}
 
 			renderSubTabs();
+			updateSearchVisibility();
 		}
 
 		async function init() {
