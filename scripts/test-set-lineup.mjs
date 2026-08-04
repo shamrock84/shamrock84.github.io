@@ -30,6 +30,24 @@ async function main() {
 
   const cookie = await mflLogin(username, password);
 
+  // TEMP DIAGNOSTIC — MFL rejected TYPE=setLineup outright ("Invalid Data
+  // Type"), meaning the type name itself is wrong, not just a param. Pull
+  // MFL's own API docs page (reachable from GH Actions' network, unlike the
+  // sandbox this was developed in) to find the real type name instead of
+  // guessing again.
+  try {
+    const year = new Date().getFullYear();
+    const docRes = await fetch(`https://api.myfantasyleague.com/${year}/api_info?L=${league.id}&STATE=details`, {
+      headers: { Cookie: cookie },
+    });
+    const docText = await docRes.text();
+    const lineupIdx = docText.toLowerCase().indexOf('lineup');
+    console.log(`[docs-debug] api_info status ${docRes.status}, length ${docText.length}`);
+    console.log(`[docs-debug] snippet around "lineup": ${docText.slice(Math.max(0, lineupIdx - 200), lineupIdx + 800)}`);
+  } catch (err) {
+    console.log(`[docs-debug] api_info fetch failed: ${err.message}`);
+  }
+
   console.log(`Fetching current starters for ${league.name}...`);
   const before = await fetchMflLineup(league, cookie);
   console.log(`Current starters (week ${before.week}): ${before.starterIds.join(', ')}`);
