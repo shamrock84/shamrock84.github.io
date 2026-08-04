@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-04T20:34:47.997Z",
+  "generatedAt": "2026-08-04T22:27:04.754Z",
   "year": "2026",
   "leagues": [
     {
@@ -397,7 +397,7 @@
           "priorYearPts": 172.6
         }
       ],
-      "updatedAt": "2026-08-04T20:34:26.795Z",
+      "updatedAt": "2026-08-04T22:26:53.253Z",
       "error": null,
       "standings": [
         {
@@ -913,7 +913,7 @@
           "priorYearPts": 146
         }
       ],
-      "updatedAt": "2026-08-04T20:34:28.092Z",
+      "updatedAt": "2026-08-04T22:26:53.814Z",
       "error": null,
       "standings": [
         {
@@ -1019,7 +1019,10 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet"
+      "scoringError": "No live scoring available yet",
+      "lineupWeek": "1",
+      "starters": [],
+      "lineupError": null
     },
     {
       "id": "23545",
@@ -1392,7 +1395,7 @@
           "priorYearPts": 118
         }
       ],
-      "updatedAt": "2026-08-04T20:34:29.104Z",
+      "updatedAt": "2026-08-04T22:26:54.493Z",
       "error": null,
       "standings": [
         {
@@ -1518,7 +1521,9 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet"
+      "scoringError": "No live scoring available yet",
+      "starters": null,
+      "lineupError": "MFL request failed (429): /export?TYPE=weeklyResults&L=23545&W=1&JSON=1 (year 2026)"
     },
     {
       "id": "35217",
@@ -1819,7 +1824,7 @@
           "priorYearPts": 303.4
         }
       ],
-      "updatedAt": "2026-08-04T20:34:30.145Z",
+      "updatedAt": "2026-08-04T22:26:55.077Z",
       "error": null,
       "standings": [
         {
@@ -2282,7 +2287,7 @@
           "priorYearPts": 130.6
         }
       ],
-      "updatedAt": "2026-08-04T20:34:31.216Z",
+      "updatedAt": "2026-08-04T22:26:55.525Z",
       "error": null,
       "standings": [
         {
@@ -2721,7 +2726,7 @@
           "priorYearPts": 129.8
         }
       ],
-      "updatedAt": "2026-08-04T20:34:31.992Z",
+      "updatedAt": "2026-08-04T22:26:56.062Z",
       "error": null,
       "standings": [
         {
@@ -2847,7 +2852,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet"
+      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=30641&JSON=1 (year 2026)"
     },
     {
       "id": "64470",
@@ -3160,7 +3165,7 @@
           "priorYearPts": 138.9
         }
       ],
-      "updatedAt": "2026-08-04T20:34:32.901Z",
+      "updatedAt": "2026-08-04T22:26:56.525Z",
       "error": null,
       "standings": [
         {
@@ -3569,7 +3574,7 @@
           "priorYearPts": null
         }
       ],
-      "updatedAt": "2026-08-04T20:34:33.693Z",
+      "updatedAt": "2026-08-04T22:26:57.023Z",
       "error": null,
       "standings": [
         {
@@ -3675,7 +3680,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet"
+      "scoringError": "MFL request failed (429): /export?TYPE=league&L=72911&JSON=1 (year 2026)"
     },
     {
       "id": "54766",
@@ -3904,7 +3909,7 @@
           "priorYearPts": null
         }
       ],
-      "updatedAt": "2026-08-04T20:34:34.486Z",
+      "updatedAt": "2026-08-04T22:26:57.489Z",
       "error": null,
       "standings": [
         {
@@ -4283,7 +4288,7 @@
           "priorYearPts": null
         }
       ],
-      "updatedAt": "2026-08-04T20:34:35.226Z",
+      "updatedAt": "2026-08-04T22:26:57.978Z",
       "error": null,
       "standings": [
         {
@@ -4642,7 +4647,7 @@
           "priorYearPts": null
         }
       ],
-      "updatedAt": "2026-08-04T20:34:35.993Z",
+      "updatedAt": "2026-08-04T22:26:58.382Z",
       "error": null,
       "standings": [
         {
@@ -4758,7 +4763,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet"
+      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=61777&JSON=1 (year 2026)"
     },
     {
       "id": "30196",
@@ -4987,7 +4992,7 @@
           "priorYearPts": null
         }
       ],
-      "updatedAt": "2026-08-04T20:34:36.401Z",
+      "updatedAt": "2026-08-04T22:26:58.952Z",
       "error": null,
       "standings": [
         {
@@ -5103,7 +5108,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet"
+      "scoringError": "MFL request failed (429): /export?TYPE=league&L=30196&JSON=1 (year 2026)"
     },
     {
       "id": "421871710",
@@ -5115,7 +5120,7 @@
       "teamName": "Jeffer Justinson",
       "url": "https://fantasy.espn.com/football/team?leagueId=421871710&teamId=5",
       "players": [],
-      "updatedAt": "2026-08-04T20:34:36.530Z",
+      "updatedAt": "2026-08-04T22:26:59.036Z",
       "error": null,
       "standings": [
         {
@@ -5297,7 +5302,7 @@
       "teamName": "Big Dart Energy",
       "url": "https://fantasy.espn.com/football/team?leagueId=1966972&teamId=10",
       "players": [],
-      "updatedAt": "2026-08-04T20:34:36.596Z",
+      "updatedAt": "2026-08-04T22:26:59.091Z",
       "error": null,
       "standings": [
         {
