@@ -63,9 +63,17 @@
 		}
 		header h1 {
 			margin: 0 0 0.25rem;
-			font-size: 1.75rem;
-			color: var(--accent);
-			letter-spacing: -0.02em;
+		}
+		.site-logo {
+			height: 64px;
+			width: auto;
+			display: block;
+			margin: 0 auto;
+		}
+		@media (prefers-color-scheme: dark) {
+			.site-logo {
+				filter: invert(1);
+			}
 		}
 		#updated {
 			color: var(--muted);
@@ -280,7 +288,7 @@
 </head>
 <body>
 	<header>
-		<h1>myFFL</h1>
+		<h1><img src="images/ffl_black.gif" alt="myFFL" class="site-logo"></h1>
 		<div id="updated">Loading&hellip;</div>
 	</header>
 	<div class="tabs" id="tabs" role="tablist"></div>
