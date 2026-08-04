@@ -12,6 +12,13 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
+      - name: Simulate the browser's CORS preflight (OPTIONS)
+        run: |
+          curl -sS -i -X OPTIONS https://shamrock84-github-io.vercel.app/api/login \
+            -H "Origin: https://shamrock84.github.io" \
+            -H "Access-Control-Request-Method: POST" \
+            -H "Access-Control-Request-Headers: content-type"
+
       - name: Hit /api/login with a wrong password
         run: |
           curl -sS -X POST https://shamrock84-github-io.vercel.app/api/login \
