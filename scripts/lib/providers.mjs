@@ -321,6 +321,24 @@ export async function fetchMflLineup(league, cookie) {
   return { week: '1', starterIds };
 }
 
+// Submits a starting lineup for the given week. UNVERIFIED request shape —
+// MFL's setLineup import command isn't something this project has called
+// before. Safe-tested via scripts/test-set-lineup.mjs, which re-submits a
+// league's exact CURRENT starters (a no-op if the format is right) and
+// re-fetches afterward to confirm nothing actually changed, rather than
+// guessing blind against a real lineup. Only ever called for lineupPilot
+// leagues, and only from the write-side UI once that test has passed.
+export async function submitMflLineup(league, cookie, starterIds, week) {
+  const data = await mflGet(
+    `/import?TYPE=setLineup&L=${league.id}&FRANCHISE_ID=${league.franchiseId}&W=${week}&STARTERS=${starterIds.join(',')}&JSON=1`,
+    cookie
+  );
+  if (data?.error) {
+    throw new Error(typeof data.error === 'string' ? data.error : data.error?.$t || JSON.stringify(data.error));
+  }
+  return data;
+}
+
 // --- ESPN fantasy football (undocumented API, reverse-engineered from the
 // community — field names/IDs below are best-effort; verified working
 // against real leagues for standings/scoring as of this writing) ---
