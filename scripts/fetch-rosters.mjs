@@ -16,7 +16,10 @@ const PASSWORD = process.env.MFL_PASSWORD;
 const BASE = `https://api.myfantasyleague.com/${YEAR}`;
 const ESPN_S2 = process.env.ESPN_S2;
 const ESPN_SWID = process.env.ESPN_SWID;
-const ESPN_BASE = `https://fantasy.espn.com/apis/v3/games/ffl/seasons/${YEAR}/segments/0/leagues`;
+// fantasy.espn.com's API redirects (sometimes to a generic marketing page
+// instead of a clean auth error) — lm-api-reads is the current stable host
+// used directly by maintained ESPN API client libraries.
+const ESPN_BASE = `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${YEAR}/segments/0/leagues`;
 const OUTPUT_PATH = fileURLToPath(new URL('../data/rosters.json', import.meta.url));
 const CONFIG_PATH = fileURLToPath(new URL('../config/leagues.json', import.meta.url));
 
