@@ -178,6 +178,37 @@ async function fetchStandings(league, cookie) {
   }));
 }
 
+async function fetchScoring(league, cookie) {
+  const [leagueData, liveData] = await Promise.all([
+    mflGet(`/export?TYPE=league&L=${league.id}&JSON=1`, cookie),
+    mflGet(`/export?TYPE=liveScoring&L=${league.id}&JSON=1`, cookie),
+  ]);
+
+  const franchises = leagueData?.league?.franchises?.franchise ?? [];
+  const franchiseList = Array.isArray(franchises) ? franchises : [franchises];
+  const nameById = new Map(franchiseList.map((f) => [f.id, f.name]));
+
+  const live = liveData?.liveScoring;
+  const rawRows = live?.franchise;
+  const rows = Array.isArray(rawRows) ? rawRows : rawRows ? [rawRows] : [];
+
+  if (rows.length === 0) {
+    throw new Error('No live scoring available yet');
+  }
+
+  const teams = rows
+    .map((f) => ({
+      franchiseId: f.id,
+      teamName: nameById.get(f.id) || f.id,
+      score: Number(f.score ?? 0),
+      isMe: f.id === league.franchiseId,
+    }))
+    .sort((a, b) => b.score - a.score)
+    .map((t) => ({ ...t, score: t.score.toFixed(2) }));
+
+  return { week: live?.week ?? null, teams };
+}
+
 async function loadPreviousOutput() {
   try {
     const raw = await readFile(OUTPUT_PATH, 'utf8');
@@ -250,6 +281,21 @@ async function main() {
       const prev = previousById.get(league.id);
       target.standings = prev?.standings || [];
       target.standingsError = err.message;
+    }
+  }
+
+  for (const league of LEAGUES) {
+    const target = leagues.find((l) => l.id === league.id);
+    if (!target || !league.franchiseId) continue;
+    try {
+      target.scoring = await fetchScoring(league, cookie);
+      target.scoringError = null;
+      console.log(`Fetched scoring for ${league.name}: ${target.scoring.teams.length} teams`);
+    } catch (err) {
+      console.error(`Failed to fetch scoring for ${league.name}: ${err.message}`);
+      const prev = previousById.get(league.id);
+      target.scoring = prev?.scoring || null;
+      target.scoringError = err.message;
     }
   }
 

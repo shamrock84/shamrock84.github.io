@@ -286,8 +286,8 @@
 			return node;
 		}
 
-		const VIEW_LABELS = { rosters: 'Rosters', standings: 'Standings' };
-		const VIEW_ORDER = ['rosters', 'standings'];
+		const VIEW_LABELS = { rosters: 'Rosters', standings: 'Standings', scoring: 'Scoring' };
+		const VIEW_ORDER = ['rosters', 'standings', 'scoring'];
 		const LEAGUE_TYPE_LABELS = { dynasty: 'Dynasty', bestball: 'Best Ball' };
 		const LEAGUE_TYPE_ORDER = ['dynasty', 'bestball'];
 		let currentView = 'rosters';
@@ -373,6 +373,49 @@
 				row.appendChild(el('td', { text: `${r.wins}-${r.losses}${r.ties ? '-' + r.ties : ''}` }));
 				row.appendChild(el('td', { text: r.pointsFor }));
 				row.appendChild(el('td', { text: r.pointsAgainst }));
+				table.appendChild(row);
+			});
+			card.appendChild(table);
+			return card;
+		}
+
+		function renderScoringCard(league) {
+			const card = el('div', { class: 'card', 'data-view': 'scoring', 'data-league-type': league.type || '' });
+			const heading = el('h2');
+			const link = el('a', { href: league.url, target: '_blank', rel: 'noopener', text: league.leagueName || league.name });
+			heading.appendChild(link);
+			card.appendChild(heading);
+
+			const teams = league.scoring?.teams || [];
+
+			if (league.scoringError && teams.length === 0) {
+				card.appendChild(el('div', { class: 'error-box', text: `No live scoring yet: ${league.scoringError}` }));
+				return card;
+			}
+
+			if (league.scoringError) {
+				card.appendChild(el('div', { class: 'error-box', text: `Showing scores from a previous sync — last update failed: ${league.scoringError}` }));
+			}
+
+			if (teams.length === 0) {
+				card.appendChild(el('div', { class: 'error-box', text: 'No live scoring available yet.' }));
+				return card;
+			}
+
+			if (league.scoring?.week) {
+				card.appendChild(el('div', { class: 'team', text: `Week ${league.scoring.week}` }));
+			}
+
+			const table = el('table', { class: 'standings' });
+			const headRow = el('tr');
+			['#', 'Team', 'Score'].forEach((h) => headRow.appendChild(el('th', { text: h })));
+			table.appendChild(headRow);
+
+			teams.forEach((t, i) => {
+				const row = el('tr', { class: t.isMe ? 'me-row' : '' });
+				row.appendChild(el('td', { text: String(i + 1) }));
+				row.appendChild(el('td', { text: t.teamName }));
+				row.appendChild(el('td', { text: t.score }));
 				table.appendChild(row);
 			});
 			card.appendChild(table);
@@ -499,6 +542,9 @@
 					gridEl.appendChild(renderCard(league));
 					if (league.type === 'dynasty' && Array.isArray(league.standings)) {
 						gridEl.appendChild(renderStandingsCard(league));
+					}
+					if (league.scoring !== undefined || league.scoringError) {
+						gridEl.appendChild(renderScoringCard(league));
 					}
 				}
 
