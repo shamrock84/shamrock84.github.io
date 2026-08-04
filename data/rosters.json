@@ -1,10 +1,11 @@
 {
-  "generatedAt": "2026-08-04T00:10:27.466Z",
+  "generatedAt": "2026-08-04T00:47:14.138Z",
   "year": "2026",
   "leagues": [
     {
       "id": "26696",
       "name": "MNMx Dynasty",
+      "type": "dynasty",
       "leagueName": "Minnesota Maniax Dynasty",
       "franchiseId": "0001",
       "teamName": "Rumble Fish",
@@ -235,12 +236,13 @@
           "status": "ROSTER"
         }
       ],
-      "updatedAt": "2026-08-04T00:10:25.362Z",
+      "updatedAt": "2026-08-04T00:47:10.851Z",
       "error": null
     },
     {
       "id": "35217",
       "name": "Iron Bank",
+      "type": "dynasty",
       "leagueName": "The Iron Bank ",
       "franchiseId": "0004",
       "teamName": "HODOR",
@@ -415,12 +417,13 @@
           "status": "ROSTER"
         }
       ],
-      "updatedAt": "2026-08-04T00:10:25.796Z",
+      "updatedAt": "2026-08-04T00:47:11.247Z",
       "error": null
     },
     {
       "id": "25608",
       "name": "OSD",
+      "type": "dynasty",
       "leagueName": "Office Space Dynasty",
       "franchiseId": "0001",
       "teamName": "PC Load Letter",
@@ -651,12 +654,13 @@
           "status": "ROSTER"
         }
       ],
-      "updatedAt": "2026-08-04T00:10:26.138Z",
+      "updatedAt": "2026-08-04T00:47:11.636Z",
       "error": null
     },
     {
       "id": "34850",
       "name": "Wise Guys",
+      "type": "dynasty",
       "leagueName": "Wise Guys",
       "franchiseId": "0010",
       "teamName": "Capo dei Capi",
@@ -845,12 +849,13 @@
           "status": "ROSTER"
         }
       ],
-      "updatedAt": "2026-08-04T00:10:26.449Z",
+      "updatedAt": "2026-08-04T00:47:11.953Z",
       "error": null
     },
     {
       "id": "23545",
       "name": "Survivor",
+      "type": "dynasty",
       "leagueName": "Dynasty Survivors",
       "franchiseId": "0008",
       "teamName": "The Merge",
@@ -1067,12 +1072,13 @@
           "status": "ROSTER"
         }
       ],
-      "updatedAt": "2026-08-04T00:10:26.782Z",
+      "updatedAt": "2026-08-04T00:47:12.231Z",
       "error": null
     },
     {
       "id": "30641",
       "name": "Super Cap",
+      "type": "dynasty",
       "leagueName": "Super Cap",
       "franchiseId": "0003",
       "teamName": "THORgasm",
@@ -1254,12 +1260,13 @@
           "status": "ROSTER"
         }
       ],
-      "updatedAt": "2026-08-04T00:10:27.136Z",
+      "updatedAt": "2026-08-04T00:47:12.551Z",
       "error": null
     },
     {
       "id": "64470",
       "name": "Game On",
+      "type": "dynasty",
       "leagueName": "Game On",
       "franchiseId": "0005",
       "teamName": "All Your Base Are Belong To Us",
@@ -1441,7 +1448,754 @@
           "status": "ROSTER"
         }
       ],
-      "updatedAt": "2026-08-04T00:10:27.466Z",
+      "updatedAt": "2026-08-04T00:47:12.801Z",
+      "error": null
+    },
+    {
+      "id": "56191",
+      "name": "Worlds Collide",
+      "type": "bestball",
+      "leagueName": "Worlds Collide",
+      "franchiseId": "0012",
+      "teamName": "Worlds Collide",
+      "url": "https://www.myfantasyleague.com/2026/home/56191",
+      "players": [],
+      "updatedAt": null,
+      "error": "No roster data returned for this franchise"
+    },
+    {
+      "id": "34203",
+      "name": "Rug's Playground",
+      "type": "bestball",
+      "leagueName": "Rug's Playground",
+      "franchiseId": "0006",
+      "teamName": "Rug's Playground",
+      "url": "https://www.myfantasyleague.com/2026/home/34203",
+      "players": [],
+      "updatedAt": null,
+      "error": "No roster data returned for this franchise"
+    },
+    {
+      "id": "72911",
+      "name": "April Pre-NFL Draft",
+      "type": "bestball",
+      "leagueName": "April Pre-NFL Draft",
+      "franchiseId": "0006",
+      "teamName": "Vikings First Round Pick",
+      "url": "https://www.myfantasyleague.com/2026/home/72911",
+      "players": [
+        {
+          "id": "13589",
+          "name": "Josh Allen",
+          "position": "QB",
+          "team": "BUF",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14056",
+          "name": "Kyler Murray",
+          "position": "QB",
+          "team": "MIN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15694",
+          "name": "Malik Willis",
+          "position": "QB",
+          "team": "MIA",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16583",
+          "name": "Michael Penix Jr.",
+          "position": "QB",
+          "team": "ATL",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17031",
+          "name": "Shedeur Sanders",
+          "position": "QB",
+          "team": "CLE",
+          "status": "ROSTER"
+        },
+        {
+          "id": "13319",
+          "name": "Aaron Jones",
+          "position": "RB",
+          "team": "MIN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15261",
+          "name": "Chuba Hubbard",
+          "position": "RB",
+          "team": "CAR",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16167",
+          "name": "De'Von Achane",
+          "position": "RB",
+          "team": "MIA",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15711",
+          "name": "Kenneth Walker III",
+          "position": "RB",
+          "team": "KCC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14823",
+          "name": "Rico Dowdle",
+          "position": "RB",
+          "team": "PIT",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15754",
+          "name": "Chris Olave",
+          "position": "WR",
+          "team": "NOS",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15284",
+          "name": "Jaylen Waddle",
+          "position": "WR",
+          "team": "DEN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17070",
+          "name": "Luther Burden",
+          "position": "WR",
+          "team": "CHI",
+          "status": "ROSTER"
+        },
+        {
+          "id": "11671",
+          "name": "Mike Evans",
+          "position": "WR",
+          "team": "SFO",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15290",
+          "name": "Nico Collins",
+          "position": "WR",
+          "team": "HOU",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15889",
+          "name": "Chigoziem Okonkwo",
+          "position": "TE",
+          "team": "WAS",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15798",
+          "name": "Isaiah Likely",
+          "position": "TE",
+          "team": "NYG",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16222",
+          "name": "Tucker Kraft",
+          "position": "TE",
+          "team": "GBP",
+          "status": "ROSTER"
+        }
+      ],
+      "updatedAt": "2026-08-04T00:47:13.284Z",
+      "error": null
+    },
+    {
+      "id": "54766",
+      "name": "May Rookies",
+      "type": "bestball",
+      "leagueName": "May Rookies",
+      "franchiseId": "0004",
+      "teamName": "PaulyDs Pimp",
+      "url": "https://www.myfantasyleague.com/2026/home/54766",
+      "players": [
+        {
+          "id": "14059",
+          "name": "Daniel Jones",
+          "position": "QB",
+          "team": "IND",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16580",
+          "name": "Drake Maye",
+          "position": "QB",
+          "team": "NEP",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16583",
+          "name": "Michael Penix Jr.",
+          "position": "QB",
+          "team": "ATL",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16598",
+          "name": "Bucky Irving",
+          "position": "RB",
+          "team": "TBB",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17045",
+          "name": "Cam Skattebo",
+          "position": "RB",
+          "team": "NYG",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16603",
+          "name": "Ray Davis",
+          "position": "RB",
+          "team": "BUF",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17068",
+          "name": "RJ Harvey",
+          "position": "RB",
+          "team": "DEN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "13604",
+          "name": "Saquon Barkley",
+          "position": "RB",
+          "team": "PHI",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16747",
+          "name": "Tyrone Tracy",
+          "position": "RB",
+          "team": "NYG",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15768",
+          "name": "Alec Pierce",
+          "position": "WR",
+          "team": "IND",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14840",
+          "name": "Brandon Aiyuk",
+          "position": "WR",
+          "team": "SFO",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14860",
+          "name": "Jauan Jennings",
+          "position": "WR",
+          "team": "MIN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16185",
+          "name": "Jaxon Smith-Njigba",
+          "position": "WR",
+          "team": "SEA",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17070",
+          "name": "Luther Burden",
+          "position": "WR",
+          "team": "CHI",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16190",
+          "name": "Zay Flowers",
+          "position": "WR",
+          "team": "BAL",
+          "status": "ROSTER"
+        },
+        {
+          "id": "13772",
+          "name": "Dalton Schultz",
+          "position": "TE",
+          "team": "HOU",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17099",
+          "name": "Oronde Gadsden",
+          "position": "TE",
+          "team": "LAC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17107",
+          "name": "Terrance Ferguson",
+          "position": "TE",
+          "team": "LAR",
+          "status": "ROSTER"
+        }
+      ],
+      "updatedAt": "2026-08-04T00:47:13.519Z",
+      "error": null
+    },
+    {
+      "id": "54458",
+      "name": "June Tecmo Ball",
+      "type": "bestball",
+      "leagueName": "June Tecmo Ball",
+      "franchiseId": "0004",
+      "teamName": "Marcus Allen",
+      "url": "https://www.myfantasyleague.com/2026/home/54458",
+      "players": [
+        {
+          "id": "11150",
+          "name": "Geno Smith",
+          "position": "QB",
+          "team": "NYJ",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14777",
+          "name": "Joe Burrow",
+          "position": "QB",
+          "team": "CIN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15694",
+          "name": "Malik Willis",
+          "position": "QB",
+          "team": "MIA",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17039",
+          "name": "Tyler Shough",
+          "position": "QB",
+          "team": "NOS",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17052",
+          "name": "Bhayshul Tuten",
+          "position": "RB",
+          "team": "JAC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "13130",
+          "name": "Christian McCaffrey",
+          "position": "RB",
+          "team": "SFO",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17473",
+          "name": "Jadarian Price",
+          "position": "RB",
+          "team": "SEA",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15715",
+          "name": "James Cook",
+          "position": "RB",
+          "team": "BUF",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15256",
+          "name": "Javonte Williams",
+          "position": "RB",
+          "team": "DAL",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15972",
+          "name": "Jordan Mason",
+          "position": "RB",
+          "team": "MIN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14073",
+          "name": "Josh Jacobs",
+          "position": "RB",
+          "team": "GBP",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15710",
+          "name": "Kyren Williams",
+          "position": "RB",
+          "team": "LAR",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17068",
+          "name": "RJ Harvey",
+          "position": "RB",
+          "team": "DEN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15253",
+          "name": "Travis Etienne",
+          "position": "RB",
+          "team": "NOS",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16747",
+          "name": "Tyrone Tracy",
+          "position": "RB",
+          "team": "NYG",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14840",
+          "name": "Brandon Aiyuk",
+          "position": "WR",
+          "team": "SFO",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16614",
+          "name": "Marvin Harrison Jr.",
+          "position": "WR",
+          "team": "ARI",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16213",
+          "name": "Dalton Kincaid",
+          "position": "TE",
+          "team": "BUF",
+          "status": "ROSTER"
+        },
+        {
+          "id": "13772",
+          "name": "Dalton Schultz",
+          "position": "TE",
+          "team": "HOU",
+          "status": "ROSTER"
+        },
+        {
+          "id": "13671",
+          "name": "Mark Andrews",
+          "position": "TE",
+          "team": "BAL",
+          "status": "ROSTER"
+        }
+      ],
+      "updatedAt": "2026-08-04T00:47:13.693Z",
+      "error": null
+    },
+    {
+      "id": "61777",
+      "name": "July Semiquincentennial",
+      "type": "bestball",
+      "leagueName": "July Semiquincentennial",
+      "franchiseId": "0003",
+      "teamName": "Hotter than the 4th of July",
+      "url": "https://www.myfantasyleague.com/2026/home/61777",
+      "players": [
+        {
+          "id": "14782",
+          "name": "Jordan Love",
+          "position": "QB",
+          "team": "GBP",
+          "status": "ROSTER"
+        },
+        {
+          "id": "13589",
+          "name": "Josh Allen",
+          "position": "QB",
+          "team": "BUF",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15694",
+          "name": "Malik Willis",
+          "position": "QB",
+          "team": "MIA",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14778",
+          "name": "Tua Tagovailoa",
+          "position": "QB",
+          "team": "ATL",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17052",
+          "name": "Bhayshul Tuten",
+          "position": "RB",
+          "team": "JAC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16593",
+          "name": "Blake Corum",
+          "position": "RB",
+          "team": "LAR",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15708",
+          "name": "Breece Hall",
+          "position": "RB",
+          "team": "NYJ",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16174",
+          "name": "Chris Rodriguez",
+          "position": "RB",
+          "team": "JAC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15256",
+          "name": "Javonte Williams",
+          "position": "RB",
+          "team": "DAL",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15742",
+          "name": "Jaylen Warren",
+          "position": "RB",
+          "team": "PIT",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16178",
+          "name": "Keaton Mitchell",
+          "position": "RB",
+          "team": "LAC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16747",
+          "name": "Tyrone Tracy",
+          "position": "RB",
+          "team": "NYG",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15754",
+          "name": "Chris Olave",
+          "position": "WR",
+          "team": "NOS",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17500",
+          "name": "Denzel Boston",
+          "position": "WR",
+          "team": "CLE",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14836",
+          "name": "Justin Jefferson",
+          "position": "WR",
+          "team": "MIN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16193",
+          "name": "Kayshon Boutte",
+          "position": "WR",
+          "team": "NEP",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17070",
+          "name": "Luther Burden",
+          "position": "WR",
+          "team": "CHI",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17104",
+          "name": "Colston Loveland",
+          "position": "TE",
+          "team": "CHI",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15798",
+          "name": "Isaiah Likely",
+          "position": "TE",
+          "team": "NYG",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17099",
+          "name": "Oronde Gadsden",
+          "position": "TE",
+          "team": "LAC",
+          "status": "ROSTER"
+        }
+      ],
+      "updatedAt": "2026-08-04T00:47:13.897Z",
+      "error": null
+    },
+    {
+      "id": "30196",
+      "name": "July Fantasy Football for Dummies",
+      "type": "bestball",
+      "leagueName": "July Fantasy Football for Dummies",
+      "franchiseId": "0004",
+      "teamName": "Audiobooks are NOT reading",
+      "url": "https://www.myfantasyleague.com/2026/home/30196",
+      "players": [
+        {
+          "id": "14783",
+          "name": "Jalen Hurts",
+          "position": "QB",
+          "team": "PHI",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15694",
+          "name": "Malik Willis",
+          "position": "QB",
+          "team": "MIA",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17039",
+          "name": "Tyler Shough",
+          "position": "QB",
+          "team": "NOS",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16174",
+          "name": "Chris Rodriguez",
+          "position": "RB",
+          "team": "JAC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15261",
+          "name": "Chuba Hubbard",
+          "position": "RB",
+          "team": "CAR",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14797",
+          "name": "D'Andre Swift",
+          "position": "RB",
+          "team": "CHI",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14071",
+          "name": "David Montgomery",
+          "position": "RB",
+          "team": "HOU",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14800",
+          "name": "J.K. Dobbins",
+          "position": "RB",
+          "team": "DEN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15972",
+          "name": "Jordan Mason",
+          "position": "RB",
+          "team": "MIN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16178",
+          "name": "Keaton Mitchell",
+          "position": "RB",
+          "team": "LAC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15282",
+          "name": "DeVonta Smith",
+          "position": "WR",
+          "team": "PHI",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14860",
+          "name": "Jauan Jennings",
+          "position": "WR",
+          "team": "MIN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16186",
+          "name": "Jordan Addison",
+          "position": "WR",
+          "team": "MIN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "11671",
+          "name": "Mike Evans",
+          "position": "WR",
+          "team": "SFO",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15290",
+          "name": "Nico Collins",
+          "position": "WR",
+          "team": "HOU",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16080",
+          "name": "Rashid Shaheed",
+          "position": "WR",
+          "team": "SEA",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16641",
+          "name": "Brock Bowers",
+          "position": "TE",
+          "team": "LVR",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15794",
+          "name": "Trey McBride",
+          "position": "TE",
+          "team": "ARI",
+          "status": "ROSTER"
+        }
+      ],
+      "updatedAt": "2026-08-04T00:47:14.138Z",
       "error": null
     }
   ]
