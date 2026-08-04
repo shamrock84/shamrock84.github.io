@@ -852,7 +852,13 @@
 				updatedEl.textContent = 'Sync started — checking for fresh data…';
 				if (syncPollTimer) clearInterval(syncPollTimer);
 				let attempts = 0;
-				const maxAttempts = 10; // ~100s at 10s apart
+				// The GitHub Action itself typically finishes in under a minute, but
+				// GitHub Pages then needs its own ~30-90s to rebuild before the new
+				// data/rosters.json is actually live — end-to-end this regularly
+				// runs close to 2 minutes. 24 attempts * 10s = 4 min gives that
+				// comfortable headroom instead of giving up while Pages is still
+				// mid-deploy.
+				const maxAttempts = 24;
 				syncPollTimer = setInterval(async () => {
 					attempts++;
 					try {
@@ -876,9 +882,10 @@
 						syncPollTimer = null;
 						syncBtn.disabled = false;
 						syncBtn.classList.remove('spinning');
-						updatedEl.textContent = previousGeneratedAt
-							? `Last synced ${timeAgo(previousGeneratedAt)} — still syncing, check back soon`
-							: 'Still syncing — check back soon';
+						// Deliberately not "Last synced X ago — still syncing": that
+						// combination goes stale and misleading the moment the sync
+						// actually finishes a minute after this message appears.
+						updatedEl.textContent = "Taking longer than usual — reload the page in a bit to check";
 					}
 				}, 10000);
 			} catch (err) {
