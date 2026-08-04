@@ -1,0 +1,21 @@
+name: Test Login Endpoint (manual, no secrets needed)
+
+# Deliberately workflow_dispatch ONLY. Hits the deployed api/login endpoint
+# with a deliberately wrong password to confirm SITE_PASSWORD/SESSION_SECRET
+# are configured on Vercel (401 "Incorrect password" = configured; 500
+# "not configured" = env vars missing). GitHub Actions runners have real
+# internet access, unlike the dev sandbox this was built in.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit /api/login with a wrong password
+        run: |
+          curl -sS -X POST https://shamrock84-github-io.vercel.app/api/login \
+            -H "Content-Type: application/json" \
+            -H "Origin: https://shamrock84.github.io" \
+            -d '{"password":"deliberately-wrong-test-password"}' \
+            -w "\nHTTP_STATUS:%{http_code}\n"
