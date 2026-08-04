@@ -213,25 +213,30 @@ export async function fetchScoring(league, cookie, nameById) {
 // called for leagues flagged lineupPilot in config/leagues.json, so an API
 // shape surprise here can't break the rest of the sync.
 export async function fetchMflLineup(league, cookie) {
-  // liveScoring (what fetchScoring/the Scoring tab use) is gated by the
-  // season actually being live — MFL returns an explicit error before then,
-  // regardless of whether a lineup is set. TYPE=rosters with WEEK=1 instead
-  // reflects the configured lineup itself, which should be available as
-  // soon as the roster/lineup is set, not just once games start.
-  const rostersData = await mflGet(`/export?TYPE=rosters&L=${league.id}&FRANCHISE=${league.franchiseId}&WEEK=1&JSON=1`, cookie);
+  // liveScoring is gated by the season being live (confirmed via MFL's own
+  // error message), and TYPE=rosters&WEEK=1 turned out not to carry lineup
+  // info at all — its "status" field stayed ROSTER/TAXI_SQUAD regardless of
+  // WEEK. Trying weeklyResults next: it's what MFL uses for a week's actual
+  // starter/bench breakdown, independent of whether the week is "live".
+  const weeklyData = await mflGet(`/export?TYPE=weeklyResults&L=${league.id}&W=1&JSON=1`, cookie);
   // TEMP DIAGNOSTIC (pilot only) — remove once the starter/bench field shape
   // is confirmed against real MFL data.
-  console.log(`[lineup-debug] ${league.name} rosters(WEEK=1) raw: ${JSON.stringify(rostersData).slice(0, 3000)}`);
+  console.log(`[lineup-debug] ${league.name} weeklyResults(W=1) raw: ${JSON.stringify(weeklyData).slice(0, 3000)}`);
 
-  const rosterFranchise = Array.isArray(rostersData?.rosters?.franchise)
-    ? rostersData.rosters.franchise[0]
-    : rostersData?.rosters?.franchise;
-  if (!rosterFranchise) {
-    throw new Error('No week-1 roster data returned for this franchise yet');
+  const matchups = weeklyData?.weeklyResults?.matchup;
+  const matchupList = Array.isArray(matchups) ? matchups : matchups ? [matchups] : [];
+  let mine = null;
+  for (const m of matchupList) {
+    const franchises = Array.isArray(m.franchise) ? m.franchise : m.franchise ? [m.franchise] : [];
+    const found = franchises.find((f) => f.id === league.franchiseId);
+    if (found) { mine = found; break; }
+  }
+  if (!mine) {
+    throw new Error('No week-1 weeklyResults data for this franchise yet');
   }
 
-  const rawPlayers = rosterFranchise.player
-    ? (Array.isArray(rosterFranchise.player) ? rosterFranchise.player : [rosterFranchise.player])
+  const rawPlayers = mine.player
+    ? (Array.isArray(mine.player) ? mine.player : [mine.player])
     : [];
   const starterIds = rawPlayers
     .filter((p) => String(p.status || '').toLowerCase() === 'starter')
