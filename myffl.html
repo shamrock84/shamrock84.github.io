@@ -60,6 +60,15 @@
 			color: var(--muted);
 			font-size: 0.85rem;
 		}
+		#live-status {
+			text-align: center;
+			font-size: 0.78rem;
+			margin-top: 0.5rem;
+			color: var(--muted);
+		}
+		#live-status.live-error {
+			color: var(--ir-text);
+		}
 		.tabs {
 			display: flex;
 			justify-content: center;
@@ -264,6 +273,7 @@
 	</header>
 	<div class="tabs" id="tabs" role="tablist"></div>
 	<div class="tabs subtabs" id="subtabs" role="tablist"></div>
+	<div id="live-status" class="hidden"></div>
 	<div class="controls">
 		<input type="search" id="search" placeholder="Filter by player name&hellip;" autocomplete="off">
 	</div>
@@ -528,6 +538,12 @@
 			document.querySelector('.controls').classList.toggle('hidden', currentView !== 'rosters');
 		}
 
+		function setLiveStatus(text, isError) {
+			const el = document.getElementById('live-status');
+			el.textContent = text;
+			el.classList.toggle('live-error', !!isError);
+		}
+
 		async function refreshLiveScoring() {
 			if (!LIVE_SCORING_URL || !pageData) return;
 			try {
@@ -551,18 +567,23 @@
 					}
 				}
 				updateVisibility();
+				setLiveStatus(`Live updates on — last refreshed ${timeAgo(live.generatedAt)}`, false);
 			} catch (err) {
 				console.warn(`Live scoring refresh failed: ${err.message}`);
+				setLiveStatus(`Live update failed: ${err.message}`, true);
 			}
 		}
 
 		function startLiveScoringPolling() {
-			if (liveScoringTimer || !LIVE_SCORING_URL) return;
+			if (!LIVE_SCORING_URL) return;
+			document.getElementById('live-status').classList.remove('hidden');
+			if (liveScoringTimer) return;
 			refreshLiveScoring();
 			liveScoringTimer = setInterval(refreshLiveScoring, LIVE_SCORING_POLL_MS);
 		}
 
 		function stopLiveScoringPolling() {
+			document.getElementById('live-status').classList.add('hidden');
 			if (liveScoringTimer) {
 				clearInterval(liveScoringTimer);
 				liveScoringTimer = null;
