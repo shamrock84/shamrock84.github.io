@@ -9,12 +9,12 @@
     "format: dynasty leagues only — 'dynasty' (plain roster) or 'auction' (adds Salary/Yrs columns). Omit otherwise.",
     "ESPN leagues additionally require ESPN_S2 and ESPN_SWID GitHub Actions secrets (browser cookies, not a login).",
     "Array order is display order everywhere on the page (Rosters, Standings, Scoring).",
-    "lineupPilot: MFL only. When true, the sync also fetches this week's starters via TYPE=liveScoring and the Rosters card splits the Active Roster group into Starters/Bench. Currently piloting on one league before rolling out further."
+    "lineupPilot: MFL only. When true, the sync also fetches this week's starters via TYPE=liveScoring and the Rosters card shows a checkbox lineup editor (login required to actually save) instead of the plain Active Roster table. Set on every MFL league that requires a submitted starting lineup."
   ],
   "leagues": [
     { "id": "26696", "franchiseId": "0001", "name": "MNMx Dynasty", "type": "dynasty", "format": "dynasty", "lineupPilot": true },
-    { "id": "25608", "franchiseId": "0001", "name": "OSD", "type": "dynasty", "format": "dynasty" },
-    { "id": "23545", "franchiseId": "0008", "name": "Survivor", "type": "dynasty", "format": "dynasty" },
+    { "id": "25608", "franchiseId": "0001", "name": "OSD", "type": "dynasty", "format": "dynasty", "lineupPilot": true },
+    { "id": "23545", "franchiseId": "0008", "name": "Survivor", "type": "dynasty", "format": "dynasty", "lineupPilot": true },
     { "id": "35217", "franchiseId": "0004", "name": "Iron Bank", "type": "dynasty", "format": "auction" },
     { "id": "34850", "franchiseId": "0010", "name": "Wise Guys", "type": "dynasty", "format": "auction" },
     { "id": "30641", "franchiseId": "0003", "name": "Super Cap", "type": "dynasty", "format": "auction" },

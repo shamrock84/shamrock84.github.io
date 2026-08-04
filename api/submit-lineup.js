@@ -1,5 +1,7 @@
-// Vercel serverless function: submits a starting lineup to MFL for the
-// lineupPilot league (currently just MNMx Dynasty — config/leagues.json).
+// Vercel serverless function: submits a starting lineup to MFL for any
+// league flagged lineupPilot in config/leagues.json. The client sends which
+// league via leagueId; only ids that are actually flagged lineupPilot are
+// accepted, so this can't be used to write to an arbitrary MFL league.
 // Requires a valid Bearer token from api/login.js; the password itself is
 // never sent here, only the signed token it issued.
 //
@@ -19,10 +21,10 @@ const ALLOWED_ORIGINS = new Set([
   'https://shamrock84.github.io',
 ]);
 
-async function loadLineupPilotLeague() {
+async function loadLineupPilotLeague(leagueId) {
   const raw = await readFile(CONFIG_PATH, 'utf8');
   const leagues = JSON.parse(raw).leagues || [];
-  return leagues.find((l) => l.lineupPilot && l.provider !== 'espn') || null;
+  return leagues.find((l) => l.id === leagueId && l.lineupPilot && l.provider !== 'espn') || null;
 }
 
 export default async function handler(req, res) {
@@ -62,15 +64,19 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { starterIds } = req.body || {};
+  const { leagueId, starterIds } = req.body || {};
+  if (typeof leagueId !== 'string' || !leagueId) {
+    res.status(400).json({ error: 'leagueId is required.' });
+    return;
+  }
   if (!Array.isArray(starterIds) || starterIds.length === 0 || !starterIds.every((id) => typeof id === 'string')) {
     res.status(400).json({ error: 'starterIds must be a non-empty array of player id strings.' });
     return;
   }
 
-  const league = await loadLineupPilotLeague();
+  const league = await loadLineupPilotLeague(leagueId);
   if (!league) {
-    res.status(500).json({ error: 'No lineupPilot league configured.' });
+    res.status(400).json({ error: 'Unknown or non-lineup-editable league.' });
     return;
   }
 

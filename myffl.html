@@ -732,7 +732,7 @@
 					const res = await fetch(SUBMIT_LINEUP_URL, {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
-						body: JSON.stringify({ starterIds }),
+						body: JSON.stringify({ leagueId: league.id, starterIds }),
 					});
 					const body = await res.json().catch(() => ({}));
 					if (res.status === 401) {
