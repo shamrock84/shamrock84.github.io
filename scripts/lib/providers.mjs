@@ -214,6 +214,11 @@ export async function fetchScoring(league, cookie, nameById) {
 // shape surprise here can't break the rest of the sync.
 export async function fetchMflLineup(league, cookie) {
   const liveData = await mflGet(`/export?TYPE=liveScoring&L=${league.id}&JSON=1`, cookie);
+  // TEMP DIAGNOSTIC (pilot only) — remove once the starter/bench field shape
+  // is confirmed against real MFL data; submitting a lineup didn't populate
+  // this the way expected, so dump the raw response to see what MFL is
+  // actually sending back instead of guessing further blind.
+  console.log(`[lineup-debug] ${league.name} liveScoring raw: ${JSON.stringify(liveData).slice(0, 3000)}`);
   const live = liveData?.liveScoring;
   const rawRows = live?.franchise;
   const rows = Array.isArray(rawRows) ? rawRows : rawRows ? [rawRows] : [];
