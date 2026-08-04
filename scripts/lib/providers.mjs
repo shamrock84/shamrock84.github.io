@@ -81,7 +81,39 @@ export async function loadPlayerMap(cookie) {
   return map;
 }
 
-export async function fetchLeagueRoster(league, cookie, playerMap) {
+// Bye week per NFL team, e.g. "PHI" -> "10". One global call (not
+// per-league) — team codes match the `team` field already on every player
+// record, so no translation needed.
+export async function fetchNflByeWeeks(cookie) {
+  const data = await mflGet('/export?TYPE=nflByeWeeks&JSON=1', cookie);
+  const list = data?.nflByeWeeks?.team ?? [];
+  const map = new Map();
+  for (const t of list) {
+    map.set(t.id, t.bye_week ?? null);
+  }
+  return map;
+}
+
+// Season-to-date fantasy points for a specific set of players, under this
+// league's own scoring rules. MFL requires an explicit PLAYERS= list — a
+// bare league-wide request just returns an empty placeholder. Reads 0 for
+// everyone before the season starts, which is correct (no games played).
+export async function fetchMflSeasonPoints(league, cookie, playerIds) {
+  if (playerIds.length === 0) return new Map();
+  const data = await mflGet(
+    `/export?TYPE=playerScores&W=YTD&L=${league.id}&PLAYERS=${playerIds.join(',')}&JSON=1`,
+    cookie
+  );
+  const rawRows = data?.playerScores?.playerScore;
+  const rows = Array.isArray(rawRows) ? rawRows : rawRows ? [rawRows] : [];
+  const map = new Map();
+  for (const r of rows) {
+    map.set(r.id, r.score !== '' && r.score != null ? Number(r.score) : 0);
+  }
+  return map;
+}
+
+export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks) {
   const [leagueData, rostersData] = await Promise.all([
     mflGet(`/export?TYPE=league&L=${league.id}&JSON=1`, cookie),
     mflGet(`/export?TYPE=rosters&L=${league.id}&FRANCHISE=${league.franchiseId}&JSON=1`, cookie),
@@ -104,21 +136,33 @@ export async function fetchLeagueRoster(league, cookie, playerMap) {
     ? (Array.isArray(rosterFranchise.player) ? rosterFranchise.player : [rosterFranchise.player])
     : [];
 
-  const players = rawPlayers
-    .map((p) => {
-      const info = playerMap.get(p.id) || {};
-      return {
-        id: p.id,
-        name: info.name || `Unknown Player (${p.id})`,
-        position: info.position || '',
-        team: info.team || 'FA',
-        status: p.status || 'ROSTER',
-        // Only meaningful for auction-format leagues; MFL includes these on
-        // the roster export directly for leagues with a salary cap enabled.
-        salary: p.salary ?? null,
-        contractYear: p.contractYear ?? null,
-      };
-    })
+  const basePlayers = rawPlayers.map((p) => {
+    const info = playerMap.get(p.id) || {};
+    return {
+      id: p.id,
+      name: info.name || `Unknown Player (${p.id})`,
+      position: info.position || '',
+      team: info.team || 'FA',
+      bye: byeWeeks?.get(info.team) ?? null,
+      status: p.status || 'ROSTER',
+      // Only meaningful for auction-format leagues; MFL includes these on
+      // the roster export directly for leagues with a salary cap enabled.
+      salary: p.salary ?? null,
+      contractYear: p.contractYear ?? null,
+    };
+  });
+
+  // Points lookup is best-effort — a hiccup here shouldn't take down a
+  // roster fetch that otherwise succeeded, so players just show no PTS.
+  let pointsMap = new Map();
+  try {
+    pointsMap = await fetchMflSeasonPoints(league, cookie, basePlayers.map((p) => p.id));
+  } catch (err) {
+    console.error(`Failed to fetch season points for ${league.name}: ${err.message}`);
+  }
+
+  const players = basePlayers
+    .map((p) => ({ ...p, pts: pointsMap.has(p.id) ? pointsMap.get(p.id) : null }))
     .sort((a, b) => positionRank(a.position) - positionRank(b.position) || a.name.localeCompare(b.name));
 
   return {
@@ -297,9 +341,14 @@ export async function fetchEspnLeagueRoster(league) {
   // mRoster alone returns team objects with an empty roster.entries unless
   // scoped to a specific team/period — rosterForTeamId + scoringPeriodId
   // populate it. scoringPeriodId=1 is a safe pre-season default.
+  // proTeamSchedules_wl is an attempt at getting bye weeks alongside the
+  // rest — UNVERIFIED, since both ESPN leagues have 0 players (no draft
+  // yet) so there's nothing to check this against. Bye/pts extraction below
+  // is defensive and falls back to null on any shape mismatch rather than
+  // breaking the roster fetch.
   const data = await espnGet(
     league,
-    `view=mRoster&view=mTeam&view=mSettings&rosterForTeamId=${league.franchiseId}&scoringPeriodId=1`
+    `view=mRoster&view=mTeam&view=mSettings&view=proTeamSchedules_wl&rosterForTeamId=${league.franchiseId}&scoringPeriodId=1`
   );
 
   const teams = data.teams || [];
@@ -308,15 +357,22 @@ export async function fetchEspnLeagueRoster(league) {
     throw new Error(`No team ${league.franchiseId} found in ESPN league ${league.id}`);
   }
 
+  const byeByProTeamId = new Map(
+    (data.settings?.proTeams || []).map((t) => [t.id, t.byeWeek ?? null])
+  );
+
   const rawEntries = team.roster?.entries || [];
   const players = rawEntries
     .map((e) => {
       const p = e.playerPoolEntry?.player || {};
+      const seasonStat = (p.stats || []).find((s) => s.statSourceId === 0 && s.statSplitTypeId === 0);
       return {
         id: String(e.playerId),
         name: p.fullName || `Unknown Player (${e.playerId})`,
         position: ESPN_POSITION_MAP[p.defaultPositionId] || '',
         team: ESPN_PRO_TEAM_MAP[p.proTeamId] ?? 'FA',
+        bye: byeByProTeamId.get(p.proTeamId) ?? null,
+        pts: seasonStat?.appliedTotal ?? null,
         status: e.lineupSlotId === ESPN_IR_SLOT_ID ? 'INJURED_RESERVE' : 'ROSTER',
       };
     })

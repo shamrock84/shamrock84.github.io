@@ -241,15 +241,13 @@
 			font-weight: 600;
 		}
 		.salary-cell,
-		.years-cell {
+		.years-cell,
+		.bye-cell,
+		.pts-cell {
 			text-align: right;
 			font-variant-numeric: tabular-nums;
 			font-size: 0.82rem;
 			color: var(--muted);
-		}
-		tr.roster-head th:nth-child(4),
-		tr.roster-head th:nth-child(5) {
-			text-align: right;
 		}
 		tr.status-taxi_squad .pos-chip,
 		tr.status-injured_reserve .pos-chip {
@@ -361,11 +359,17 @@
 
 		function buildRosterTable(players, isAuction, statusKey) {
 			const table = el('table', { class: 'roster' });
+			const headRow = el('tr', { class: 'roster-head' });
+			headRow.appendChild(el('th', {}));
+			headRow.appendChild(el('th', { text: 'Player' }));
+			headRow.appendChild(el('th', { text: 'Team' }));
+			headRow.appendChild(el('th', { class: 'bye-cell', text: 'Bye' }));
+			headRow.appendChild(el('th', { class: 'pts-cell', text: 'Pts' }));
 			if (isAuction) {
-				const headRow = el('tr', { class: 'roster-head' });
-				['', 'Player', 'Team', 'Salary', 'Yrs'].forEach((h) => headRow.appendChild(el('th', { text: h })));
-				table.appendChild(headRow);
+				headRow.appendChild(el('th', { class: 'salary-cell', text: 'Salary' }));
+				headRow.appendChild(el('th', { class: 'years-cell', text: 'Yrs' }));
 			}
+			table.appendChild(headRow);
 			let prevPosition = null;
 			for (const p of players) {
 				const posBoundary = prevPosition !== null && p.position !== prevPosition;
@@ -375,6 +379,8 @@
 				row.appendChild(el('td', {}, [el('span', { class: 'pos-chip', text: p.position || '-' })]));
 				row.appendChild(el('td', { class: 'player-name', text: p.name }));
 				row.appendChild(el('td', { class: 'nfl-team', text: p.team || 'FA' }));
+				row.appendChild(el('td', { class: 'bye-cell', text: p.bye ? String(p.bye) : '—' }));
+				row.appendChild(el('td', { class: 'pts-cell', text: p.pts != null ? Number(p.pts).toFixed(2) : '—' }));
 				if (isAuction) {
 					row.appendChild(el('td', { class: 'salary-cell', text: p.salary ? `$${p.salary}` : '—' }));
 					row.appendChild(el('td', { class: 'years-cell', text: p.contractYear ? String(p.contractYear) : '—' }));

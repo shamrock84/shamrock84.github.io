@@ -16,8 +16,8 @@ import {
   YEAR,
   leagueUrl,
   mflLogin,
-  mflGet,
   loadPlayerMap,
+  fetchNflByeWeeks,
   fetchLeagueRoster,
   fetchStandings,
   fetchScoring,
@@ -64,14 +64,11 @@ async function main() {
   const cookie = await mflLogin(USERNAME, PASSWORD);
   const playerMap = await loadPlayerMap(cookie);
 
-  // TEMP DIAGNOSTIC round 3 (PTS column investigation) — bye weeks confirmed
-  // working via TYPE=nflByeWeeks (team codes match our existing team field
-  // exactly). playerScores still needs an L= param alongside PLAYERS=.
+  let byeWeeks = new Map();
   try {
-    const scoresProbe = await mflGet('/export?TYPE=playerScores&W=YTD&L=26696&PLAYERS=14783,13604,17044&JSON=1', cookie);
-    console.log(`[columns-debug] playerScores(YTD, L+PLAYERS) raw: ${JSON.stringify(scoresProbe).slice(0, 1500)}`);
+    byeWeeks = await fetchNflByeWeeks(cookie);
   } catch (err) {
-    console.log(`[columns-debug] playerScores probe failed: ${err.message}`);
+    console.error(`Failed to fetch NFL bye weeks: ${err.message}`);
   }
 
   const leagues = [];
@@ -96,7 +93,7 @@ async function main() {
     try {
       const result = league.provider === 'espn'
         ? await fetchEspnLeagueRoster(league)
-        : await fetchLeagueRoster(league, cookie, playerMap);
+        : await fetchLeagueRoster(league, cookie, playerMap, byeWeeks);
       leagues.push(result);
       console.log(`Fetched ${league.name}: ${result.players.length} players`);
     } catch (err) {
