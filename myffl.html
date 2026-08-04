@@ -271,6 +271,98 @@
 			margin: 0.75rem 0 0.35rem;
 		}
 		.group-label:first-of-type { margin-top: 0; }
+		.lineup-login {
+			margin-top: 0.6rem;
+		}
+		.lineup-login-toggle {
+			background: none;
+			border: none;
+			color: var(--accent);
+			font-size: 0.8rem;
+			font-weight: 600;
+			cursor: pointer;
+			padding: 0;
+		}
+		.lineup-login-toggle:hover {
+			text-decoration: underline;
+		}
+		.lineup-login-form {
+			display: flex;
+			align-items: center;
+			gap: 0.4rem;
+			margin-top: 0.4rem;
+			flex-wrap: wrap;
+		}
+		.lineup-login-form input[type="password"] {
+			flex: 1;
+			min-width: 0;
+			padding: 0.4rem 0.6rem;
+			border-radius: 6px;
+			border: 1px solid var(--border);
+			background: var(--card-bg);
+			color: var(--text);
+			font-size: 0.85rem;
+		}
+		.lineup-login-form button[type="submit"] {
+			border: 1px solid var(--accent);
+			background: var(--accent);
+			color: #fff;
+			padding: 0.4rem 0.8rem;
+			border-radius: 6px;
+			font-size: 0.85rem;
+			font-weight: 600;
+			cursor: pointer;
+		}
+		.lineup-login-form button[type="submit"]:disabled {
+			opacity: 0.6;
+			cursor: default;
+		}
+		.lineup-login-status {
+			font-size: 0.78rem;
+			color: var(--ir-text);
+		}
+		.lineup-editor-actions {
+			display: flex;
+			align-items: center;
+			gap: 0.6rem;
+			margin-top: 0.6rem;
+			flex-wrap: wrap;
+		}
+		.lineup-save-btn {
+			border: 1px solid var(--accent);
+			background: var(--accent);
+			color: #fff;
+			padding: 0.4rem 0.9rem;
+			border-radius: 999px;
+			font-size: 0.85rem;
+			font-weight: 600;
+			cursor: pointer;
+		}
+		.lineup-save-btn:disabled {
+			opacity: 0.6;
+			cursor: default;
+		}
+		.lineup-logout-btn {
+			background: none;
+			border: none;
+			color: var(--muted);
+			font-size: 0.78rem;
+			cursor: pointer;
+			padding: 0;
+			text-decoration: underline;
+		}
+		.lineup-editor-status {
+			font-size: 0.8rem;
+			color: var(--muted);
+		}
+		table.lineup-editor-table td:first-child {
+			width: 1.6rem;
+		}
+		table.lineup-editor-table input[type="checkbox"] {
+			width: 1.05rem;
+			height: 1.05rem;
+			cursor: pointer;
+		}
 		table.roster {
 			width: 100%;
 			border-collapse: collapse;
@@ -460,6 +552,36 @@
 		// Actions sync run on demand instead of waiting up to 4 hours.
 		const TRIGGER_SYNC_URL = 'https://shamrock84-github-io.vercel.app/api/trigger-sync';
 
+		// Lineup-editing pilot: login exchanges the shared site password for a
+		// signed token (stored in localStorage), sent as a Bearer token when
+		// submitting a lineup. Only relevant for leagues with a starters list.
+		const LOGIN_URL = 'https://shamrock84-github-io.vercel.app/api/login';
+		const SUBMIT_LINEUP_URL = 'https://shamrock84-github-io.vercel.app/api/submit-lineup';
+		const AUTH_TOKEN_KEY = 'mflAuthToken';
+		let authToken = localStorage.getItem(AUTH_TOKEN_KEY) || null;
+
+		function isLoggedIn() {
+			return !!authToken;
+		}
+
+		async function doLogin(password) {
+			const res = await fetch(LOGIN_URL, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ password }),
+			});
+			const body = await res.json().catch(() => ({}));
+			if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+			authToken = body.token;
+			localStorage.setItem(AUTH_TOKEN_KEY, authToken);
+		}
+
+		function doLogout() {
+			authToken = null;
+			localStorage.removeItem(AUTH_TOKEN_KEY);
+			renderGrid();
+		}
+
 		function buildRosterTable(players, isAuction, statusKey) {
 			const table = el('table', { class: 'roster' });
 			const headRow = el('tr', { class: 'roster-head' });
@@ -495,6 +617,126 @@
 				table.appendChild(row);
 			}
 			return table;
+		}
+
+		function buildLoginPrompt() {
+			const wrap = el('div', { class: 'lineup-login' });
+			const toggleBtn = el('button', { type: 'button', class: 'lineup-login-toggle', text: 'Log in to edit lineup' });
+			const form = el('form', { class: 'lineup-login-form hidden' });
+			const input = el('input', { type: 'password', placeholder: 'Password', autocomplete: 'current-password' });
+			const submitBtn = el('button', { type: 'submit', text: 'Log in' });
+			const statusEl = el('span', { class: 'lineup-login-status' });
+			form.appendChild(input);
+			form.appendChild(submitBtn);
+			form.appendChild(statusEl);
+
+			toggleBtn.addEventListener('click', () => {
+				toggleBtn.classList.add('hidden');
+				form.classList.remove('hidden');
+				input.focus();
+			});
+
+			form.addEventListener('submit', async (e) => {
+				e.preventDefault();
+				if (!input.value) return;
+				statusEl.textContent = 'Logging in…';
+				submitBtn.disabled = true;
+				try {
+					await doLogin(input.value);
+					renderGrid();
+				} catch (err) {
+					statusEl.textContent = err.message;
+					submitBtn.disabled = false;
+				}
+			});
+
+			wrap.appendChild(toggleBtn);
+			wrap.appendChild(form);
+			return wrap;
+		}
+
+		// Pilot lineup editor: a single table with a checkbox column instead of
+		// separate Starters/Bench sections — check the players you want to
+		// start, then Save submits the checked ids to MFL via TYPE=lineup.
+		function buildLineupEditor(league, players, starterIdSet) {
+			const wrap = el('div', { class: 'lineup-editor' });
+			const table = el('table', { class: 'roster lineup-editor-table' });
+			const headRow = el('tr', { class: 'roster-head' });
+			headRow.appendChild(el('th', {}));
+			headRow.appendChild(el('th', {}));
+			headRow.appendChild(el('th', { text: 'Player' }));
+			headRow.appendChild(el('th', { text: 'Team' }));
+			headRow.appendChild(el('th', { class: 'bye-cell', text: 'Bye' }));
+			headRow.appendChild(el('th', { class: 'pts-cell', text: 'Pts' }));
+			table.appendChild(headRow);
+
+			const checkboxes = [];
+			let prevPosition = null;
+			for (const p of players) {
+				const posBoundary = prevPosition !== null && p.position !== prevPosition;
+				prevPosition = p.position;
+				const row = el('tr', { class: `player-row${posBoundary ? ' pos-boundary' : ''}`, 'data-name': p.name.toLowerCase() });
+
+				const checkbox = el('input', { type: 'checkbox' });
+				checkbox.checked = starterIdSet.has(p.id);
+				checkbox.dataset.playerId = p.id;
+				checkboxes.push(checkbox);
+				row.appendChild(el('td', {}, [checkbox]));
+
+				row.appendChild(el('td', {}, [el('span', { class: 'pos-chip', text: p.position || '-' })]));
+				row.appendChild(el('td', { class: 'player-name', text: p.name }));
+				row.appendChild(el('td', { class: 'nfl-team', text: p.team || 'FA' }));
+				row.appendChild(el('td', { class: 'bye-cell', text: p.bye ? String(p.bye) : '—' }));
+				const usingPriorYear = !(p.pts > 0) && p.priorYearPts > 0;
+				const ptsValue = usingPriorYear ? p.priorYearPts : p.pts;
+				const ptsAttrs = { class: `pts-cell${usingPriorYear ? ' pts-prior-year' : ''}`, text: ptsValue != null ? Number(ptsValue).toFixed(2) : '—' };
+				row.appendChild(el('td', ptsAttrs));
+
+				table.appendChild(row);
+			}
+			wrap.appendChild(table);
+
+			const actions = el('div', { class: 'lineup-editor-actions' });
+			const saveBtn = el('button', { type: 'button', class: 'lineup-save-btn', text: 'Save Lineup' });
+			const statusEl = el('span', { class: 'lineup-editor-status' });
+			const logoutBtn = el('button', { type: 'button', class: 'lineup-logout-btn', text: 'Log out' });
+			actions.appendChild(saveBtn);
+			actions.appendChild(statusEl);
+			actions.appendChild(logoutBtn);
+			wrap.appendChild(actions);
+
+			saveBtn.addEventListener('click', async () => {
+				const starterIds = checkboxes.filter((cb) => cb.checked).map((cb) => cb.dataset.playerId);
+				if (starterIds.length === 0) {
+					statusEl.textContent = 'Select at least one starter.';
+					return;
+				}
+				saveBtn.disabled = true;
+				statusEl.textContent = 'Saving…';
+				try {
+					const res = await fetch(SUBMIT_LINEUP_URL, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+						body: JSON.stringify({ starterIds }),
+					});
+					const body = await res.json().catch(() => ({}));
+					if (res.status === 401) {
+						doLogout();
+						return;
+					}
+					if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+					league.starters = starterIds;
+					statusEl.textContent = 'Saved.';
+					setTimeout(renderGrid, 800);
+				} catch (err) {
+					statusEl.textContent = `Couldn't save: ${err.message}`;
+					saveBtn.disabled = false;
+				}
+			});
+
+			logoutBtn.addEventListener('click', doLogout);
+
+			return wrap;
 		}
 
 		function renderCard(league) {
@@ -533,15 +775,21 @@
 				if (!players || players.length === 0) continue;
 
 				if (group.key === 'ROSTER' && starterIdSet) {
-					const starters = players.filter((p) => starterIdSet.has(p.id));
-					const bench = players.filter((p) => !starterIdSet.has(p.id));
-					if (starters.length > 0) {
-						card.appendChild(el('div', { class: 'group-label', text: `Starters (${starters.length})` }));
-						card.appendChild(buildRosterTable(starters, isAuction, 'starter'));
-					}
-					if (bench.length > 0) {
-						card.appendChild(el('div', { class: 'group-label', text: `Bench (${bench.length})` }));
-						card.appendChild(buildRosterTable(bench, isAuction, 'bench'));
+					if (isLoggedIn()) {
+						card.appendChild(el('div', { class: 'group-label', text: `${group.label} (${players.length}) — editing lineup` }));
+						card.appendChild(buildLineupEditor(league, players, starterIdSet));
+					} else {
+						const starters = players.filter((p) => starterIdSet.has(p.id));
+						const bench = players.filter((p) => !starterIdSet.has(p.id));
+						if (starters.length > 0) {
+							card.appendChild(el('div', { class: 'group-label', text: `Starters (${starters.length})` }));
+							card.appendChild(buildRosterTable(starters, isAuction, 'starter'));
+						}
+						if (bench.length > 0) {
+							card.appendChild(el('div', { class: 'group-label', text: `Bench (${bench.length})` }));
+							card.appendChild(buildRosterTable(bench, isAuction, 'bench'));
+						}
+						card.appendChild(buildLoginPrompt());
 					}
 					continue;
 				}
@@ -801,9 +1049,43 @@
 
 		// Safe to call more than once (e.g. after a manual sync completes) —
 		// clears the grid before repopulating instead of appending duplicates.
-		async function init() {
+		// Pure render from the already-loaded pageData — no network call.
+		// Reused by init() (after a fresh load) and by login/logout/lineup-save
+		// (which only need to re-render, not re-fetch).
+		function renderGrid() {
 			const statusEl = document.getElementById('status');
 			const gridEl = document.getElementById('grid');
+			const data = pageData;
+			if (!data) return;
+
+			statusEl.textContent = '';
+			gridEl.innerHTML = '';
+
+			if (!data.leagues || data.leagues.length === 0) {
+				statusEl.textContent = 'No leagues configured yet.';
+				return;
+			}
+
+			for (const league of data.leagues) {
+				gridEl.appendChild(renderCard(league));
+				if (league.standings !== undefined || league.standingsError) {
+					gridEl.appendChild(renderStandingsCard(league));
+				}
+				if (league.scoring !== undefined || league.scoringError) {
+					gridEl.appendChild(renderScoringCard(league));
+				}
+			}
+
+			const presentViews = new Set([...gridEl.querySelectorAll('.card')].map((c) => c.dataset.view).filter(Boolean));
+			renderViewTabs(presentViews);
+			updateVisibility();
+			if (currentView === 'scoring') {
+				startLiveScoringPolling();
+			}
+		}
+
+		async function init() {
+			const statusEl = document.getElementById('status');
 			const updatedEl = document.getElementById('updated');
 
 			try {
@@ -817,30 +1099,7 @@
 					? `Last synced ${timeAgo(data.generatedAt)}`
 					: 'Not yet synced — run the "Sync MFL Rosters" GitHub Action.';
 
-				statusEl.textContent = '';
-				gridEl.innerHTML = '';
-
-				if (!data.leagues || data.leagues.length === 0) {
-					statusEl.textContent = 'No leagues configured yet.';
-					return;
-				}
-
-				for (const league of data.leagues) {
-					gridEl.appendChild(renderCard(league));
-					if (league.standings !== undefined || league.standingsError) {
-						gridEl.appendChild(renderStandingsCard(league));
-					}
-					if (league.scoring !== undefined || league.scoringError) {
-						gridEl.appendChild(renderScoringCard(league));
-					}
-				}
-
-				const presentViews = new Set([...gridEl.querySelectorAll('.card')].map((c) => c.dataset.view).filter(Boolean));
-				renderViewTabs(presentViews);
-				updateVisibility();
-				if (currentView === 'scoring') {
-					startLiveScoringPolling();
-				}
+				renderGrid();
 			} catch (err) {
 				statusEl.textContent = `Couldn't load roster data: ${err.message}`;
 				updatedEl.textContent = '';
