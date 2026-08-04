@@ -1,0 +1,26 @@
+name: Test Set Lineup (manual, safe no-op)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here.
+# This is diagnostic-only right now (fetching docs pages), but will
+# exercise a write against a real MFL team once the format is confirmed —
+# it must only ever run when someone explicitly asks for it.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Test submitMflLineup (re-submits current starters, verifies no change)
+        env:
+          MFL_USERNAME: ${{ secrets.MFL_USERNAME }}
+          MFL_PASSWORD: ${{ secrets.MFL_PASSWORD }}
+        run: node scripts/test-set-lineup.mjs
