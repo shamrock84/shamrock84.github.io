@@ -208,6 +208,10 @@
 		table.roster tr.player-row:last-child td {
 			border-bottom: none;
 		}
+		table.roster tr.player-row.pos-boundary td {
+			border-top: 2px solid var(--accent);
+			padding-top: 0.45rem;
+		}
 		.pos-chip {
 			display: inline-block;
 			min-width: 2rem;
@@ -390,8 +394,12 @@
 					['', 'Player', 'Team', 'Salary', 'Yrs'].forEach((h) => headRow.appendChild(el('th', { text: h })));
 					table.appendChild(headRow);
 				}
+				let prevPosition = null;
 				for (const p of players) {
-					const row = el('tr', { class: `player-row status-${group.key.toLowerCase()}`, 'data-name': p.name.toLowerCase() });
+					const posBoundary = prevPosition !== null && p.position !== prevPosition;
+					prevPosition = p.position;
+					const rowClass = `player-row status-${group.key.toLowerCase()}${posBoundary ? ' pos-boundary' : ''}`;
+					const row = el('tr', { class: rowClass, 'data-name': p.name.toLowerCase() });
 					row.appendChild(el('td', {}, [el('span', { class: 'pos-chip', text: p.position || '-' })]));
 					row.appendChild(el('td', { class: 'player-name', text: p.name }));
 					row.appendChild(el('td', { class: 'nfl-team', text: p.team || 'FA' }));
