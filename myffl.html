@@ -312,6 +312,14 @@
 		const LEAGUE_TYPE_ORDER = ['dynasty', 'bestball', 'redraft'];
 		let currentView = 'rosters';
 		let currentLeagueType = null;
+		let pageData = null;
+		let liveScoringTimer = null;
+
+		// Live-scoring proxy (Vercel), separate from the 4-hour GitHub Actions
+		// sync — polled only while the Scoring tab is open. Filled in once
+		// deployed; polling is a no-op while this is empty.
+		const LIVE_SCORING_URL = '';
+		const LIVE_SCORING_POLL_MS = 30000;
 
 		function renderCard(league) {
 			const card = el('div', { class: 'card', 'data-view': 'rosters', 'data-league-type': league.type || '' });
@@ -520,6 +528,47 @@
 			document.querySelector('.controls').classList.toggle('hidden', currentView !== 'rosters');
 		}
 
+		async function refreshLiveScoring() {
+			if (!LIVE_SCORING_URL || !pageData) return;
+			try {
+				const res = await fetch(`${LIVE_SCORING_URL}?t=${Date.now()}`, { cache: 'no-store' });
+				if (!res.ok) throw new Error(`HTTP ${res.status}`);
+				const live = await res.json();
+				const byId = new Map((live.leagues || []).map((l) => [l.id, l]));
+
+				for (const league of pageData.leagues) {
+					const update = byId.get(league.id);
+					if (!update) continue;
+					league.scoring = update.scoring;
+					league.scoringError = update.scoringError;
+				}
+
+				const gridEl = document.getElementById('grid');
+				gridEl.querySelectorAll('.card[data-view="scoring"]').forEach((c) => c.remove());
+				for (const league of pageData.leagues) {
+					if (league.scoring !== undefined || league.scoringError) {
+						gridEl.appendChild(renderScoringCard(league));
+					}
+				}
+				updateVisibility();
+			} catch (err) {
+				console.warn(`Live scoring refresh failed: ${err.message}`);
+			}
+		}
+
+		function startLiveScoringPolling() {
+			if (liveScoringTimer || !LIVE_SCORING_URL) return;
+			refreshLiveScoring();
+			liveScoringTimer = setInterval(refreshLiveScoring, LIVE_SCORING_POLL_MS);
+		}
+
+		function stopLiveScoringPolling() {
+			if (liveScoringTimer) {
+				clearInterval(liveScoringTimer);
+				liveScoringTimer = null;
+			}
+		}
+
 		function renderViewTabs(views) {
 			const tabsEl = document.getElementById('tabs');
 			tabsEl.innerHTML = '';
@@ -544,6 +593,11 @@
 						renderSubTabs();
 						updateSearchVisibility();
 						updateVisibility();
+						if (currentView === 'scoring') {
+							startLiveScoringPolling();
+						} else {
+							stopLiveScoringPolling();
+						}
 					});
 					tabsEl.appendChild(btn);
 				}
@@ -565,6 +619,7 @@
 				const res = await fetch(`data/rosters.json?t=${Date.now()}`, { cache: 'no-store' });
 				if (!res.ok) throw new Error(`HTTP ${res.status}`);
 				const data = await res.json();
+				pageData = data;
 
 				updatedEl.textContent = data.generatedAt
 					? `Last synced ${timeAgo(data.generatedAt)}`
@@ -588,6 +643,9 @@
 				const presentViews = new Set([...gridEl.querySelectorAll('.card')].map((c) => c.dataset.view).filter(Boolean));
 				renderViewTabs(presentViews);
 				updateVisibility();
+				if (currentView === 'scoring') {
+					startLiveScoringPolling();
+				}
 			} catch (err) {
 				statusEl.textContent = `Couldn't load roster data: ${err.message}`;
 				updatedEl.textContent = '';
