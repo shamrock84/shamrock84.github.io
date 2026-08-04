@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>My Rosters &mdash; myFFL</title>
+	<title>My Leagues &mdash; myFFL</title>
 	<link rel="icon" type="image/png" sizes="32x32" href="https://shamrock84.github.io/fflicons/favicon-32x32.png">
 	<link rel="icon" type="image/png" sizes="16x16" href="https://shamrock84.github.io/fflicons/favicon-16x16.png">
 	<link rel="manifest" href="https://shamrock84.github.io/fflicons/site.webmanifest">
@@ -82,6 +82,19 @@
 			background: var(--accent);
 			border-color: var(--accent);
 			color: #fff;
+		}
+		.subtabs {
+			margin-top: 0.6rem;
+		}
+		.subtabs .tab-btn {
+			padding: 0.3rem 0.8rem;
+			font-size: 0.78rem;
+			background: transparent;
+		}
+		.subtabs .tab-btn.active {
+			background: var(--chip-bg);
+			border-color: var(--accent);
+			color: var(--accent);
 		}
 		.controls {
 			max-width: 480px;
@@ -226,10 +239,11 @@
 </head>
 <body>
 	<header>
-		<h1>My Rosters</h1>
+		<h1>My Leagues</h1>
 		<div id="updated">Loading&hellip;</div>
 	</header>
 	<div class="tabs" id="tabs" role="tablist"></div>
+	<div class="tabs subtabs" id="subtabs" role="tablist"></div>
 	<div class="controls">
 		<input type="search" id="search" placeholder="Filter by player name&hellip;" autocomplete="off">
 	</div>
@@ -272,12 +286,15 @@
 			return node;
 		}
 
-		const TAB_LABELS = { dynasty: 'Dynasty', bestball: 'Best Ball', standings: 'Standings' };
-		const TAB_ORDER = ['dynasty', 'bestball', 'standings'];
-		let currentTab = null;
+		const VIEW_LABELS = { rosters: 'Rosters', standings: 'Standings' };
+		const VIEW_ORDER = ['rosters', 'standings'];
+		const LEAGUE_TYPE_LABELS = { dynasty: 'Dynasty', bestball: 'Best Ball' };
+		const LEAGUE_TYPE_ORDER = ['dynasty', 'bestball'];
+		let currentView = 'rosters';
+		let currentLeagueType = null;
 
 		function renderCard(league) {
-			const card = el('div', { class: 'card', 'data-type': league.type || '' });
+			const card = el('div', { class: 'card', 'data-view': 'rosters', 'data-league-type': league.type || '' });
 			const heading = el('h2');
 			const link = el('a', { href: league.url, target: '_blank', rel: 'noopener', text: league.leagueName || league.name });
 			heading.appendChild(link);
@@ -323,7 +340,7 @@
 		}
 
 		function renderStandingsCard(league) {
-			const card = el('div', { class: 'card', 'data-type': 'standings' });
+			const card = el('div', { class: 'card', 'data-view': 'standings', 'data-league-type': league.type || '' });
 			const heading = el('h2');
 			const link = el('a', { href: league.url, target: '_blank', rel: 'noopener', text: league.leagueName || league.name });
 			heading.appendChild(link);
@@ -365,7 +382,8 @@
 		function updateVisibility() {
 			const q = document.getElementById('search').value.trim().toLowerCase();
 			document.querySelectorAll('.card').forEach((card) => {
-				const tabMatch = !currentTab || card.dataset.type === currentTab;
+				const viewMatch = card.dataset.view === currentView;
+				const typeMatch = !currentLeagueType || card.dataset.leagueType === currentLeagueType;
 				const rows = card.querySelectorAll('tr.player-row');
 				let searchMatch = true;
 				if (q && rows.length > 0) {
@@ -379,35 +397,82 @@
 				} else {
 					rows.forEach((row) => row.classList.remove('hidden'));
 				}
-				card.classList.toggle('hidden', !tabMatch || !searchMatch);
+				card.classList.toggle('hidden', !viewMatch || !typeMatch || !searchMatch);
 			});
 		}
 
-		function renderTabs(types) {
-			const tabsEl = document.getElementById('tabs');
-			const present = TAB_ORDER.filter((t) => types.has(t)).concat(
-				[...types].filter((t) => !TAB_ORDER.includes(t))
+		// Sub-tabs (Dynasty / Best Ball) are scoped to whichever top-level view is active,
+		// so they're recomputed every time the view changes rather than once up front.
+		function renderSubTabs() {
+			const subtabsEl = document.getElementById('subtabs');
+			subtabsEl.innerHTML = '';
+
+			const typesInView = new Set(
+				[...document.querySelectorAll(`.card[data-view="${currentView}"]`)]
+					.map((c) => c.dataset.leagueType)
+					.filter(Boolean)
 			);
+			const present = LEAGUE_TYPE_ORDER.filter((t) => typesInView.has(t)).concat(
+				[...typesInView].filter((t) => !LEAGUE_TYPE_ORDER.includes(t))
+			);
+
 			if (present.length <= 1) {
-				tabsEl.classList.add('hidden');
-				currentTab = null;
+				subtabsEl.classList.add('hidden');
+				currentLeagueType = present[0] || null;
 				return;
 			}
-			currentTab = present[0];
+
+			subtabsEl.classList.remove('hidden');
+			if (!currentLeagueType || !present.includes(currentLeagueType)) {
+				currentLeagueType = present[0];
+			}
 			for (const type of present) {
 				const btn = el('button', {
-					class: `tab-btn${type === currentTab ? ' active' : ''}`,
+					class: `tab-btn${type === currentLeagueType ? ' active' : ''}`,
 					type: 'button',
 					role: 'tab',
-					text: TAB_LABELS[type] || type,
+					text: LEAGUE_TYPE_LABELS[type] || type,
 				});
 				btn.addEventListener('click', () => {
-					currentTab = type;
-					tabsEl.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b === btn));
+					currentLeagueType = type;
+					subtabsEl.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b === btn));
 					updateVisibility();
 				});
-				tabsEl.appendChild(btn);
+				subtabsEl.appendChild(btn);
 			}
+		}
+
+		function renderViewTabs(views) {
+			const tabsEl = document.getElementById('tabs');
+			tabsEl.innerHTML = '';
+			const present = VIEW_ORDER.filter((v) => views.has(v)).concat(
+				[...views].filter((v) => !VIEW_ORDER.includes(v))
+			);
+			if (present.length === 0) return;
+			if (!present.includes(currentView)) currentView = present[0];
+
+			if (present.length > 1) {
+				tabsEl.classList.remove('hidden');
+				for (const view of present) {
+					const btn = el('button', {
+						class: `tab-btn${view === currentView ? ' active' : ''}`,
+						type: 'button',
+						role: 'tab',
+						text: VIEW_LABELS[view] || view,
+					});
+					btn.addEventListener('click', () => {
+						currentView = view;
+						tabsEl.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b === btn));
+						renderSubTabs();
+						updateVisibility();
+					});
+					tabsEl.appendChild(btn);
+				}
+			} else {
+				tabsEl.classList.add('hidden');
+			}
+
+			renderSubTabs();
 		}
 
 		async function init() {
@@ -437,8 +502,8 @@
 					}
 				}
 
-				const presentTypes = new Set([...gridEl.querySelectorAll('.card')].map((c) => c.dataset.type).filter(Boolean));
-				renderTabs(presentTypes);
+				const presentViews = new Set([...gridEl.querySelectorAll('.card')].map((c) => c.dataset.view).filter(Boolean));
+				renderViewTabs(presentViews);
 				updateVisibility();
 			} catch (err) {
 				statusEl.textContent = `Couldn't load roster data: ${err.message}`;
