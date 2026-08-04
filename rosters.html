@@ -355,8 +355,8 @@
 					row.appendChild(el('td', { class: 'player-name', text: p.name }));
 					row.appendChild(el('td', { class: 'nfl-team', text: p.team || 'FA' }));
 					if (isAuction) {
-						row.appendChild(el('td', { class: 'salary-cell', text: p.salary != null ? `$${p.salary}` : '—' }));
-						row.appendChild(el('td', { class: 'years-cell', text: p.contractYear != null ? String(p.contractYear) : '—' }));
+						row.appendChild(el('td', { class: 'salary-cell', text: p.salary ? `$${p.salary}` : '—' }));
+						row.appendChild(el('td', { class: 'years-cell', text: p.contractYear ? String(p.contractYear) : '—' }));
 					}
 					table.appendChild(row);
 				}
