@@ -40,7 +40,8 @@ async function main() {
 
   console.log(`Re-submitting the SAME ${before.starterIds.length} starters (no-op test)...`);
   const result = await submitMflLineup(league, cookie, before.starterIds, before.week);
-  console.log(`submitMflLineup raw response: ${JSON.stringify(result)}`);
+  console.log(`submitMflLineup HTTP status: ${result.status} (ok: ${result.ok})`);
+  console.log(`submitMflLineup raw body:\n${result.bodyText}`);
 
   console.log('Re-fetching to verify nothing changed...');
   const after = await fetchMflLineup(league, cookie);
