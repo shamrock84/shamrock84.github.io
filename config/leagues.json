@@ -9,7 +9,8 @@
     "format: dynasty leagues only — 'dynasty' (plain roster) or 'auction' (adds Salary/Yrs columns). Omit otherwise.",
     "ESPN leagues additionally require ESPN_S2 and ESPN_SWID GitHub Actions secrets (browser cookies, not a login).",
     "Array order is display order everywhere on the page (Rosters, Standings, Scoring).",
-    "lineupPilot: MFL only. When true, the sync also fetches this week's starters via TYPE=liveScoring and the Rosters card shows a checkbox lineup editor (login required to actually save) instead of the plain Active Roster table. Set on every MFL league that requires a submitted starting lineup."
+    "lineupPilot: MFL only. When true, the sync also fetches this week's starters via TYPE=liveScoring and the Rosters card shows a checkbox lineup editor (login required to actually save) instead of the plain Active Roster table. Set on every MFL league that requires a submitted starting lineup.",
+    "tags: optional array of extra badge labels shown in the card's upper-right corner (e.g. 'Superflex') — anything not already derivable from type/format. Type (Dynasty/Best Ball/Redraft) and Salary Cap badges are added automatically, no need to repeat those here."
   ],
   "leagues": [
     { "id": "26696", "franchiseId": "0001", "name": "MNMx Dynasty", "type": "dynasty", "format": "dynasty", "lineupPilot": true },

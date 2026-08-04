@@ -263,6 +263,12 @@
 			display: flex;
 			flex-direction: column;
 		}
+		.card-head {
+			display: flex;
+			align-items: flex-start;
+			justify-content: space-between;
+			gap: 0.5rem;
+		}
 		.card h2 {
 			margin: 0;
 			font-size: 1.15rem;
@@ -274,6 +280,25 @@
 		.card h2 a:hover {
 			color: var(--accent);
 			text-decoration: underline;
+		}
+		.badges {
+			display: flex;
+			flex-wrap: wrap;
+			justify-content: flex-end;
+			gap: 0.3rem;
+			flex-shrink: 0;
+		}
+		.badge {
+			display: inline-block;
+			background: var(--chip-bg);
+			color: var(--accent);
+			border-radius: 999px;
+			padding: 0.15rem 0.55rem;
+			font-size: 0.68rem;
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 0.03em;
+			white-space: nowrap;
 		}
 		.card .team {
 			color: var(--muted);
@@ -853,10 +878,29 @@
 
 		function renderCard(league) {
 			const card = el('div', { class: 'card', 'data-view': 'rosters', 'data-league-type': league.type || '' });
+
+			const isAuction = league.format === 'auction';
+			// Badges: league type + salary cap are derived from data we already
+			// have; anything else (Superflex, etc.) is a manual "tags" array in
+			// config/leagues.json since MFL doesn't expose it in a reliable form.
+			const badgeLabels = [];
+			if (LEAGUE_TYPE_LABELS[league.type]) badgeLabels.push(LEAGUE_TYPE_LABELS[league.type]);
+			if (isAuction) badgeLabels.push('Salary Cap');
+			if (Array.isArray(league.tags)) badgeLabels.push(...league.tags);
+
+			const cardHead = el('div', { class: 'card-head' });
 			const heading = el('h2');
 			const link = el('a', { href: league.url, target: '_blank', rel: 'noopener', text: league.leagueName || league.name });
 			heading.appendChild(link);
-			card.appendChild(heading);
+			cardHead.appendChild(heading);
+			if (badgeLabels.length > 0) {
+				const badgesEl = el('div', { class: 'badges' });
+				for (const label of badgeLabels) {
+					badgesEl.appendChild(el('span', { class: 'badge', text: label }));
+				}
+				cardHead.appendChild(badgesEl);
+			}
+			card.appendChild(cardHead);
 			card.appendChild(el('div', { class: 'team', text: league.teamName || '' }));
 
 			if (league.error && (!league.players || league.players.length === 0)) {
@@ -875,7 +919,6 @@
 				(byStatus[status] = byStatus[status] || []).push(p);
 			}
 
-			const isAuction = league.format === 'auction';
 			// Pilot: leagues with a fetched starters list split Active Roster into
 			// Starters/Bench instead of one flat table. Everything else (and any
 			// league where the lineup fetch failed/hasn't run) falls back to the

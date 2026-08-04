@@ -80,6 +80,7 @@ async function main() {
         name: league.name,
         type: league.type,
         format: league.format || null,
+        tags: league.tags || [],
         leagueName: league.name,
         franchiseId: null,
         teamName: league.name,
@@ -94,6 +95,7 @@ async function main() {
       const result = league.provider === 'espn'
         ? await fetchEspnLeagueRoster(league)
         : await fetchLeagueRoster(league, cookie, playerMap, byeWeeks);
+      result.tags = league.tags || [];
       leagues.push(result);
       console.log(`Fetched ${league.name}: ${result.players.length} players`);
     } catch (err) {
@@ -104,6 +106,7 @@ async function main() {
         name: league.name,
         type: league.type,
         format: league.format || null,
+        tags: league.tags || [],
         leagueName: prev?.leagueName || league.name,
         franchiseId: league.franchiseId,
         teamName: prev?.teamName || league.name,
