@@ -1,13 +1,1448 @@
 {
-  "generatedAt": null,
+  "generatedAt": "2026-08-04T00:10:27.466Z",
   "year": "2026",
   "leagues": [
-    { "id": "26696", "name": "MNMx Dynasty", "leagueName": "MNMx Dynasty", "franchiseId": "0001", "teamName": "MNMx Dynasty", "url": "https://www.myfantasyleague.com/2026/home/26696", "players": [], "updatedAt": null, "error": "Not yet synced" },
-    { "id": "35217", "name": "Iron Bank", "leagueName": "Iron Bank", "franchiseId": "0004", "teamName": "Iron Bank", "url": "https://www.myfantasyleague.com/2026/home/35217", "players": [], "updatedAt": null, "error": "Not yet synced" },
-    { "id": "25608", "name": "OSD", "leagueName": "OSD", "franchiseId": "0001", "teamName": "OSD", "url": "https://www.myfantasyleague.com/2026/home/25608", "players": [], "updatedAt": null, "error": "Not yet synced" },
-    { "id": "34850", "name": "Wise Guys", "leagueName": "Wise Guys", "franchiseId": "0010", "teamName": "Wise Guys", "url": "https://www.myfantasyleague.com/2026/home/34850", "players": [], "updatedAt": null, "error": "Not yet synced" },
-    { "id": "23545", "name": "Survivor", "leagueName": "Survivor", "franchiseId": "0008", "teamName": "Survivor", "url": "https://www.myfantasyleague.com/2026/home/23545", "players": [], "updatedAt": null, "error": "Not yet synced" },
-    { "id": "30641", "name": "Super Cap", "leagueName": "Super Cap", "franchiseId": "0003", "teamName": "Super Cap", "url": "https://www.myfantasyleague.com/2026/home/30641", "players": [], "updatedAt": null, "error": "Not yet synced" },
-    { "id": "64470", "name": "Game On", "leagueName": "Game On", "franchiseId": "0005", "teamName": "Game On", "url": "https://www.myfantasyleague.com/2026/home/64470", "players": [], "updatedAt": null, "error": "Not yet synced" }
+    {
+      "id": "26696",
+      "name": "MNMx Dynasty",
+      "leagueName": "Minnesota Maniax Dynasty",
+      "franchiseId": "0001",
+      "teamName": "Rumble Fish",
+      "url": "https://www.myfantasyleague.com/2026/home/26696",
+      "players": [
+        {
+          "id": "17462",
+          "name": "Fernando Mendoza",
+          "position": "QB",
+          "team": "LVR",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "14783",
+          "name": "Jalen Hurts",
+          "position": "QB",
+          "team": "PHI",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15694",
+          "name": "Malik Willis",
+          "position": "QB",
+          "team": "MIA",
+          "status": "ROSTER"
+        },
+        {
+          "id": "13592",
+          "name": "Sam Darnold",
+          "position": "QB",
+          "team": "SEA",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16387",
+          "name": "Chris Brooks",
+          "position": "RB",
+          "team": "GBP",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15749",
+          "name": "Isiah Pacheco",
+          "position": "RB",
+          "team": "DET",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17256",
+          "name": "Jacory Croskey-Merritt",
+          "position": "RB",
+          "team": "WAS",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14802",
+          "name": "Jonathan Taylor",
+          "position": "RB",
+          "team": "IND",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17066",
+          "name": "Kyle Monangai",
+          "position": "RB",
+          "team": "CHI",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17044",
+          "name": "Omarion Hampton",
+          "position": "RB",
+          "team": "LAC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "13604",
+          "name": "Saquon Barkley",
+          "position": "RB",
+          "team": "PHI",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16747",
+          "name": "Tyrone Tracy",
+          "position": "RB",
+          "team": "NYG",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17506",
+          "name": "Chris Bell",
+          "position": "WR",
+          "team": "MIA",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "13163",
+          "name": "Chris Godwin",
+          "position": "WR",
+          "team": "TBB",
+          "status": "ROSTER"
+        },
+        {
+          "id": "13630",
+          "name": "Courtland Sutton",
+          "position": "WR",
+          "team": "DEN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "11675",
+          "name": "Davante Adams",
+          "position": "WR",
+          "team": "LAR",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17514",
+          "name": "De'Zhaun Stribling",
+          "position": "WR",
+          "team": "SFO",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "16187",
+          "name": "Josh Downs",
+          "position": "WR",
+          "team": "IND",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16193",
+          "name": "Kayshon Boutte",
+          "position": "WR",
+          "team": "NEP",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16627",
+          "name": "Ladd McConkey",
+          "position": "WR",
+          "team": "LAC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17070",
+          "name": "Luther Burden",
+          "position": "WR",
+          "team": "CHI",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16614",
+          "name": "Marvin Harrison Jr.",
+          "position": "WR",
+          "team": "ARI",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16211",
+          "name": "Puka Nacua",
+          "position": "WR",
+          "team": "LAR",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16080",
+          "name": "Rashid Shaheed",
+          "position": "WR",
+          "team": "SEA",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17520",
+          "name": "Ted Hurst",
+          "position": "WR",
+          "team": "TBB",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "16269",
+          "name": "Brenton Strange",
+          "position": "TE",
+          "team": "JAC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "13299",
+          "name": "George Kittle",
+          "position": "TE",
+          "team": "SFO",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15329",
+          "name": "Kyle Pitts",
+          "position": "TE",
+          "team": "ATL",
+          "status": "ROSTER"
+        },
+        {
+          "id": "13303",
+          "name": "Jake Elliott",
+          "position": "PK",
+          "team": "PHI",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16681",
+          "name": "Will Reichard",
+          "position": "PK",
+          "team": "MIN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "0531",
+          "name": "Baltimore Ravens",
+          "position": "Def",
+          "team": "BAL",
+          "status": "ROSTER"
+        },
+        {
+          "id": "0518",
+          "name": "Philadelphia Eagles",
+          "position": "Def",
+          "team": "PHI",
+          "status": "ROSTER"
+        }
+      ],
+      "updatedAt": "2026-08-04T00:10:25.362Z",
+      "error": null
+    },
+    {
+      "id": "35217",
+      "name": "Iron Bank",
+      "leagueName": "The Iron Bank ",
+      "franchiseId": "0004",
+      "teamName": "HODOR",
+      "url": "https://www.myfantasyleague.com/2026/home/35217",
+      "players": [
+        {
+          "id": "16150",
+          "name": "C.J. Stroud",
+          "position": "QB",
+          "team": "HOU",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17032",
+          "name": "Jaxson Dart",
+          "position": "QB",
+          "team": "NYG",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16581",
+          "name": "Jayden Daniels",
+          "position": "QB",
+          "team": "WAS",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15708",
+          "name": "Breece Hall",
+          "position": "RB",
+          "team": "NYJ",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17060",
+          "name": "DJ Giddens",
+          "position": "RB",
+          "team": "IND",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "17474",
+          "name": "Emmett Johnson",
+          "position": "RB",
+          "team": "KCC",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "16178",
+          "name": "Keaton Mitchell",
+          "position": "RB",
+          "team": "LAC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15711",
+          "name": "Kenneth Walker III",
+          "position": "RB",
+          "team": "KCC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15259",
+          "name": "Rhamondre Stevenson",
+          "position": "RB",
+          "team": "NEP",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14085",
+          "name": "Tony Pollard",
+          "position": "RB",
+          "team": "TEN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17056",
+          "name": "Trevor Etienne",
+          "position": "RB",
+          "team": "CAR",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "15712",
+          "name": "Tyler Allgeier",
+          "position": "RB",
+          "team": "ARI",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14104",
+          "name": "A.J. Brown",
+          "position": "WR",
+          "team": "NEP",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17506",
+          "name": "Chris Bell",
+          "position": "WR",
+          "team": "MIA",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "13630",
+          "name": "Courtland Sutton",
+          "position": "WR",
+          "team": "DEN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17505",
+          "name": "Elijah Sarratt",
+          "position": "WR",
+          "team": "BAL",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "17078",
+          "name": "Jack Bech",
+          "position": "WR",
+          "team": "LVR",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "16185",
+          "name": "Jaxon Smith-Njigba",
+          "position": "WR",
+          "team": "SEA",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17082",
+          "name": "Pat Bryant",
+          "position": "WR",
+          "team": "DEN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16194",
+          "name": "Rashee Rice",
+          "position": "WR",
+          "team": "KCC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16619",
+          "name": "Troy Franklin",
+          "position": "WR",
+          "team": "DEN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17104",
+          "name": "Colston Loveland",
+          "position": "TE",
+          "team": "CHI",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "16649",
+          "name": "Theo Johnson",
+          "position": "TE",
+          "team": "NYG",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15794",
+          "name": "Trey McBride",
+          "position": "TE",
+          "team": "ARI",
+          "status": "ROSTER"
+        }
+      ],
+      "updatedAt": "2026-08-04T00:10:25.796Z",
+      "error": null
+    },
+    {
+      "id": "25608",
+      "name": "OSD",
+      "leagueName": "Office Space Dynasty",
+      "franchiseId": "0001",
+      "teamName": "PC Load Letter",
+      "url": "https://www.myfantasyleague.com/2026/home/25608",
+      "players": [
+        {
+          "id": "15698",
+          "name": "Brock Purdy",
+          "position": "QB",
+          "team": "SFO",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16148",
+          "name": "Bryce Young",
+          "position": "QB",
+          "team": "CAR",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14783",
+          "name": "Jalen Hurts",
+          "position": "QB",
+          "team": "PHI",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15694",
+          "name": "Malik Willis",
+          "position": "QB",
+          "team": "MIA",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16598",
+          "name": "Bucky Irving",
+          "position": "RB",
+          "team": "TBB",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16387",
+          "name": "Chris Brooks",
+          "position": "RB",
+          "team": "GBP",
+          "status": "ROSTER"
+        },
+        {
+          "id": "13130",
+          "name": "Christian McCaffrey",
+          "position": "RB",
+          "team": "SFO",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17481",
+          "name": "Demond Claiborne",
+          "position": "RB",
+          "team": "MIN",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "15749",
+          "name": "Isiah Pacheco",
+          "position": "RB",
+          "team": "DET",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14802",
+          "name": "Jonathan Taylor",
+          "position": "RB",
+          "team": "IND",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17066",
+          "name": "Kyle Monangai",
+          "position": "RB",
+          "team": "CHI",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15712",
+          "name": "Tyler Allgeier",
+          "position": "RB",
+          "team": "ARI",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16747",
+          "name": "Tyrone Tracy",
+          "position": "RB",
+          "team": "NYG",
+          "status": "ROSTER"
+        },
+        {
+          "id": "13163",
+          "name": "Chris Godwin",
+          "position": "WR",
+          "team": "TBB",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15282",
+          "name": "DeVonta Smith",
+          "position": "WR",
+          "team": "PHI",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17505",
+          "name": "Elijah Sarratt",
+          "position": "WR",
+          "team": "BAL",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "14860",
+          "name": "Jauan Jennings",
+          "position": "WR",
+          "team": "MIN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17083",
+          "name": "Jayden Higgins",
+          "position": "WR",
+          "team": "HOU",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16187",
+          "name": "Josh Downs",
+          "position": "WR",
+          "team": "IND",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16193",
+          "name": "Kayshon Boutte",
+          "position": "WR",
+          "team": "NEP",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16615",
+          "name": "Malik Nabers",
+          "position": "WR",
+          "team": "NYG",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16080",
+          "name": "Rashid Shaheed",
+          "position": "WR",
+          "team": "SEA",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16619",
+          "name": "Troy Franklin",
+          "position": "WR",
+          "team": "DEN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17507",
+          "name": "Zachariah Branch",
+          "position": "WR",
+          "team": "ATL",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "16723",
+          "name": "AJ Barner",
+          "position": "TE",
+          "team": "SEA",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16641",
+          "name": "Brock Bowers",
+          "position": "TE",
+          "team": "LVR",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17543",
+          "name": "Kenyon Sadiq",
+          "position": "TE",
+          "team": "NYJ",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "11244",
+          "name": "Travis Kelce",
+          "position": "TE",
+          "team": "KCC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16846",
+          "name": "Jake Bates",
+          "position": "PK",
+          "team": "DET",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16681",
+          "name": "Will Reichard",
+          "position": "PK",
+          "team": "MIN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "0531",
+          "name": "Baltimore Ravens",
+          "position": "Def",
+          "team": "BAL",
+          "status": "ROSTER"
+        },
+        {
+          "id": "0518",
+          "name": "Philadelphia Eagles",
+          "position": "Def",
+          "team": "PHI",
+          "status": "ROSTER"
+        }
+      ],
+      "updatedAt": "2026-08-04T00:10:26.138Z",
+      "error": null
+    },
+    {
+      "id": "34850",
+      "name": "Wise Guys",
+      "leagueName": "Wise Guys",
+      "franchiseId": "0010",
+      "teamName": "Capo dei Capi",
+      "url": "https://www.myfantasyleague.com/2026/home/34850",
+      "players": [
+        {
+          "id": "7836",
+          "name": "Aaron Rodgers",
+          "position": "QB",
+          "team": "PIT",
+          "status": "ROSTER"
+        },
+        {
+          "id": "13116",
+          "name": "Patrick Mahomes",
+          "position": "QB",
+          "team": "KCC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17031",
+          "name": "Shedeur Sanders",
+          "position": "QB",
+          "team": "CLE",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "15237",
+          "name": "Trevor Lawrence",
+          "position": "QB",
+          "team": "JAC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16596",
+          "name": "Braelon Allen",
+          "position": "RB",
+          "team": "NYJ",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15708",
+          "name": "Breece Hall",
+          "position": "RB",
+          "team": "NYJ",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16181",
+          "name": "Chase Brown",
+          "position": "RB",
+          "team": "CIN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17060",
+          "name": "DJ Giddens",
+          "position": "RB",
+          "team": "IND",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17047",
+          "name": "Dylan Sampson",
+          "position": "RB",
+          "team": "CLE",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "16597",
+          "name": "Jonathon Brooks",
+          "position": "RB",
+          "team": "CAR",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "16178",
+          "name": "Keaton Mitchell",
+          "position": "RB",
+          "team": "LAC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15259",
+          "name": "Rhamondre Stevenson",
+          "position": "RB",
+          "team": "NEP",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17509",
+          "name": "Chris Brazzell II",
+          "position": "WR",
+          "team": "CAR",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "13633",
+          "name": "Christian Kirk",
+          "position": "WR",
+          "team": "SFO",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17500",
+          "name": "Denzel Boston",
+          "position": "WR",
+          "team": "CLE",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "14833",
+          "name": "Jerry Jeudy",
+          "position": "WR",
+          "team": "CLE",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14836",
+          "name": "Justin Jefferson",
+          "position": "WR",
+          "team": "MIN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16684",
+          "name": "Malik Washington",
+          "position": "WR",
+          "team": "MIA",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17075",
+          "name": "Matthew Golden",
+          "position": "WR",
+          "team": "GBP",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "14842",
+          "name": "Michael Pittman",
+          "position": "WR",
+          "team": "PIT",
+          "status": "ROSTER"
+        },
+        {
+          "id": "11671",
+          "name": "Mike Evans",
+          "position": "WR",
+          "team": "SFO",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15293",
+          "name": "Rashod Bateman",
+          "position": "WR",
+          "team": "BAL",
+          "status": "ROSTER"
+        },
+        {
+          "id": "13192",
+          "name": "David Njoku",
+          "position": "TE",
+          "team": "LAC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16645",
+          "name": "Erick All",
+          "position": "TE",
+          "team": "CIN",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "15798",
+          "name": "Isaiah Likely",
+          "position": "TE",
+          "team": "NYG",
+          "status": "ROSTER"
+        },
+        {
+          "id": "13671",
+          "name": "Mark Andrews",
+          "position": "TE",
+          "team": "BAL",
+          "status": "ROSTER"
+        }
+      ],
+      "updatedAt": "2026-08-04T00:10:26.449Z",
+      "error": null
+    },
+    {
+      "id": "23545",
+      "name": "Survivor",
+      "leagueName": "Dynasty Survivors",
+      "franchiseId": "0008",
+      "teamName": "The Merge",
+      "url": "https://www.myfantasyleague.com/2026/home/23545",
+      "players": [
+        {
+          "id": "17462",
+          "name": "Fernando Mendoza",
+          "position": "QB",
+          "team": "LVR",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "16584",
+          "name": "J.J. McCarthy",
+          "position": "QB",
+          "team": "MIN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14056",
+          "name": "Kyler Murray",
+          "position": "QB",
+          "team": "MIN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17039",
+          "name": "Tyler Shough",
+          "position": "QB",
+          "team": "NOS",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16167",
+          "name": "De'Von Achane",
+          "position": "RB",
+          "team": "MIA",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17477",
+          "name": "Jonah Coleman",
+          "position": "RB",
+          "team": "DEN",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "16178",
+          "name": "Keaton Mitchell",
+          "position": "RB",
+          "team": "LAC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16757",
+          "name": "Kimani Vidal",
+          "position": "RB",
+          "team": "LAC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16603",
+          "name": "Ray Davis",
+          "position": "RB",
+          "team": "BUF",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14823",
+          "name": "Rico Dowdle",
+          "position": "RB",
+          "team": "PIT",
+          "status": "ROSTER"
+        },
+        {
+          "id": "13604",
+          "name": "Saquon Barkley",
+          "position": "RB",
+          "team": "PHI",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17514",
+          "name": "De'Zhaun Stribling",
+          "position": "WR",
+          "team": "SFO",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "16788",
+          "name": "Devaughn Vele",
+          "position": "WR",
+          "team": "NOS",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17505",
+          "name": "Elijah Sarratt",
+          "position": "WR",
+          "team": "BAL",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "16809",
+          "name": "Jalen Coker",
+          "position": "WR",
+          "team": "CAR",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15786",
+          "name": "Jalen Nailor",
+          "position": "WR",
+          "team": "LVR",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16684",
+          "name": "Malik Washington",
+          "position": "WR",
+          "team": "MIA",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14842",
+          "name": "Michael Pittman",
+          "position": "WR",
+          "team": "PIT",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15293",
+          "name": "Rashod Bateman",
+          "position": "WR",
+          "team": "BAL",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16778",
+          "name": "Ryan Flournoy",
+          "position": "WR",
+          "team": "DAL",
+          "status": "ROSTER"
+        },
+        {
+          "id": "12186",
+          "name": "Stefon Diggs",
+          "position": "WR",
+          "team": "FA",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17072",
+          "name": "Tre Harris",
+          "position": "WR",
+          "team": "LAC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16190",
+          "name": "Zay Flowers",
+          "position": "WR",
+          "team": "BAL",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16213",
+          "name": "Dalton Kincaid",
+          "position": "TE",
+          "team": "BUF",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17105",
+          "name": "Gunnar Helm",
+          "position": "TE",
+          "team": "TEN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15794",
+          "name": "Trey McBride",
+          "position": "TE",
+          "team": "ARI",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17424",
+          "name": "Charlie Smyth",
+          "position": "PK",
+          "team": "NOS",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17222",
+          "name": "Tyler Loop",
+          "position": "PK",
+          "team": "BAL",
+          "status": "ROSTER"
+        },
+        {
+          "id": "0512",
+          "name": "Kansas City Chiefs",
+          "position": "Def",
+          "team": "KCC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "0529",
+          "name": "New Orleans Saints",
+          "position": "Def",
+          "team": "NOS",
+          "status": "ROSTER"
+        }
+      ],
+      "updatedAt": "2026-08-04T00:10:26.782Z",
+      "error": null
+    },
+    {
+      "id": "30641",
+      "name": "Super Cap",
+      "leagueName": "Super Cap",
+      "franchiseId": "0003",
+      "teamName": "THORgasm",
+      "url": "https://www.myfantasyleague.com/2026/home/30641",
+      "players": [
+        {
+          "id": "16148",
+          "name": "Bryce Young",
+          "position": "QB",
+          "team": "CAR",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14783",
+          "name": "Jalen Hurts",
+          "position": "QB",
+          "team": "PHI",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16583",
+          "name": "Michael Penix Jr.",
+          "position": "QB",
+          "team": "ATL",
+          "status": "ROSTER"
+        },
+        {
+          "id": "13319",
+          "name": "Aaron Jones",
+          "position": "RB",
+          "team": "MIN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14797",
+          "name": "D'Andre Swift",
+          "position": "RB",
+          "team": "CHI",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17478",
+          "name": "Kaytron Allen",
+          "position": "RB",
+          "team": "WAS",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "15710",
+          "name": "Kyren Williams",
+          "position": "RB",
+          "team": "LAR",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15721",
+          "name": "Rachaad White",
+          "position": "RB",
+          "team": "WAS",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16603",
+          "name": "Ray Davis",
+          "position": "RB",
+          "team": "BUF",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "14085",
+          "name": "Tony Pollard",
+          "position": "RB",
+          "team": "TEN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17519",
+          "name": "Bryce Lance",
+          "position": "WR",
+          "team": "NOS",
+          "status": "ROSTER"
+        },
+        {
+          "id": "13629",
+          "name": "Calvin Ridley",
+          "position": "WR",
+          "team": "TEN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14832",
+          "name": "CeeDee Lamb",
+          "position": "WR",
+          "team": "DAL",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17078",
+          "name": "Jack Bech",
+          "position": "WR",
+          "team": "LVR",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "17083",
+          "name": "Jayden Higgins",
+          "position": "WR",
+          "team": "HOU",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "16184",
+          "name": "Jayden Reed",
+          "position": "WR",
+          "team": "GBP",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17080",
+          "name": "Jaylin Noel",
+          "position": "WR",
+          "team": "HOU",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "14833",
+          "name": "Jerry Jeudy",
+          "position": "WR",
+          "team": "CLE",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17499",
+          "name": "Makai Lemon",
+          "position": "WR",
+          "team": "PHI",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "16206",
+          "name": "Michael Wilson",
+          "position": "WR",
+          "team": "ARI",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17520",
+          "name": "Ted Hurst",
+          "position": "WR",
+          "team": "TBB",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "16639",
+          "name": "Xavier Legette",
+          "position": "WR",
+          "team": "CAR",
+          "status": "TAXI_SQUAD"
+        },
+        {
+          "id": "16641",
+          "name": "Brock Bowers",
+          "position": "TE",
+          "team": "LVR",
+          "status": "ROSTER"
+        },
+        {
+          "id": "13671",
+          "name": "Mark Andrews",
+          "position": "TE",
+          "team": "BAL",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16649",
+          "name": "Theo Johnson",
+          "position": "TE",
+          "team": "NYG",
+          "status": "ROSTER"
+        }
+      ],
+      "updatedAt": "2026-08-04T00:10:27.136Z",
+      "error": null
+    },
+    {
+      "id": "64470",
+      "name": "Game On",
+      "leagueName": "Game On",
+      "franchiseId": "0005",
+      "teamName": "All Your Base Are Belong To Us",
+      "url": "https://www.myfantasyleague.com/2026/home/64470",
+      "players": [
+        {
+          "id": "16152",
+          "name": "Anthony Richardson",
+          "position": "QB",
+          "team": "IND",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17466",
+          "name": "Carson Beck",
+          "position": "QB",
+          "team": "ARI",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17037",
+          "name": "Dillon Gabriel",
+          "position": "QB",
+          "team": "CLE",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17468",
+          "name": "Drew Allar",
+          "position": "QB",
+          "team": "PIT",
+          "status": "ROSTER"
+        },
+        {
+          "id": "11150",
+          "name": "Geno Smith",
+          "position": "QB",
+          "team": "NYJ",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14778",
+          "name": "Tua Tagovailoa",
+          "position": "QB",
+          "team": "ATL",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17039",
+          "name": "Tyler Shough",
+          "position": "QB",
+          "team": "NOS",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17060",
+          "name": "DJ Giddens",
+          "position": "RB",
+          "team": "IND",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16608",
+          "name": "George Holani",
+          "position": "RB",
+          "team": "SEA",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14802",
+          "name": "Jonathan Taylor",
+          "position": "RB",
+          "team": "IND",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17478",
+          "name": "Kaytron Allen",
+          "position": "RB",
+          "team": "WAS",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16178",
+          "name": "Keaton Mitchell",
+          "position": "RB",
+          "team": "LAC",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17476",
+          "name": "Nicholas Singleton",
+          "position": "RB",
+          "team": "TEN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "13604",
+          "name": "Saquon Barkley",
+          "position": "RB",
+          "team": "PHI",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14840",
+          "name": "Brandon Aiyuk",
+          "position": "WR",
+          "team": "SFO",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14122",
+          "name": "Darius Slayton",
+          "position": "WR",
+          "team": "NYG",
+          "status": "ROSTER"
+        },
+        {
+          "id": "11675",
+          "name": "Davante Adams",
+          "position": "WR",
+          "team": "LAR",
+          "status": "ROSTER"
+        },
+        {
+          "id": "14102",
+          "name": "DK Metcalf",
+          "position": "WR",
+          "team": "PIT",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16195",
+          "name": "Dontayvion Wicks",
+          "position": "WR",
+          "team": "PHI",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17134",
+          "name": "Kyle Williams",
+          "position": "WR",
+          "team": "NEP",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16684",
+          "name": "Malik Washington",
+          "position": "WR",
+          "team": "MIA",
+          "status": "ROSTER"
+        },
+        {
+          "id": "16619",
+          "name": "Troy Franklin",
+          "position": "WR",
+          "team": "DEN",
+          "status": "ROSTER"
+        },
+        {
+          "id": "15799",
+          "name": "Jake Ferguson",
+          "position": "TE",
+          "team": "DAL",
+          "status": "ROSTER"
+        },
+        {
+          "id": "17546",
+          "name": "Michael Trigg",
+          "position": "TE",
+          "team": "DAL",
+          "status": "ROSTER"
+        },
+        {
+          "id": "11247",
+          "name": "Zach Ertz",
+          "position": "TE",
+          "team": "FA",
+          "status": "ROSTER"
+        }
+      ],
+      "updatedAt": "2026-08-04T00:10:27.466Z",
+      "error": null
+    }
   ]
 }
