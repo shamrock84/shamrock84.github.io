@@ -64,11 +64,24 @@
 		header h1 {
 			margin: 0 0 0.25rem;
 		}
+		.site-title {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
 		.site-logo {
 			height: 64px;
 			width: auto;
 			display: block;
-			margin: 0 auto;
+		}
+		.site-logo-prefix {
+			font-family: Georgia, 'Times New Roman', serif;
+			font-weight: 700;
+			font-size: 1.85rem;
+			line-height: 1;
+			color: var(--text);
+			margin-right: 0.15rem;
+			margin-top: 0.75rem;
 		}
 		@media (prefers-color-scheme: dark) {
 			.site-logo {
@@ -364,7 +377,10 @@
 </head>
 <body>
 	<header>
-		<h1><img src="images/ffl_black.gif" alt="myFFL" class="site-logo"></h1>
+		<h1 class="site-title">
+			<span class="site-logo-prefix">my</span>
+			<img src="images/ffl_black.gif" alt="FFL" class="site-logo">
+		</h1>
 		<div class="updated-row">
 			<span id="updated">Loading&hellip;</span>
 			<button type="button" id="sync-btn" aria-label="Sync now" title="Sync now">
