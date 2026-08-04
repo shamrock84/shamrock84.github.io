@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-04T14:26:41.055Z",
+  "generatedAt": "2026-08-04T15:01:01.171Z",
   "year": "2026",
   "leagues": [
     {
@@ -301,7 +301,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T14:26:25.807Z",
+      "updatedAt": "2026-08-04T15:00:46.038Z",
       "error": null,
       "standings": [
         {
@@ -708,7 +708,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T14:26:26.420Z",
+      "updatedAt": "2026-08-04T15:00:46.446Z",
       "error": null,
       "standings": [
         {
@@ -1097,7 +1097,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T14:26:26.808Z",
+      "updatedAt": "2026-08-04T15:00:47.052Z",
       "error": null,
       "standings": [
         {
@@ -1452,7 +1452,7 @@
           "contractYear": "1"
         }
       ],
-      "updatedAt": "2026-08-04T14:26:27.266Z",
+      "updatedAt": "2026-08-04T15:00:47.470Z",
       "error": null,
       "standings": [
         {
@@ -1834,7 +1834,7 @@
           "contractYear": "1"
         }
       ],
-      "updatedAt": "2026-08-04T14:26:27.629Z",
+      "updatedAt": "2026-08-04T15:00:47.694Z",
       "error": null,
       "standings": [
         {
@@ -2198,7 +2198,7 @@
           "contractYear": "1"
         }
       ],
-      "updatedAt": "2026-08-04T14:26:28.004Z",
+      "updatedAt": "2026-08-04T15:00:48.123Z",
       "error": null,
       "standings": [
         {
@@ -2562,7 +2562,7 @@
           "contractYear": ""
         }
       ],
-      "updatedAt": "2026-08-04T14:26:28.300Z",
+      "updatedAt": "2026-08-04T15:00:48.590Z",
       "error": null,
       "standings": [
         {
@@ -2917,7 +2917,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T14:26:29.029Z",
+      "updatedAt": "2026-08-04T15:00:49.419Z",
       "error": null,
       "standings": [
         {
@@ -3198,7 +3198,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T14:26:29.350Z",
+      "updatedAt": "2026-08-04T15:00:49.803Z",
       "error": null,
       "standings": [
         {
@@ -3517,7 +3517,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T14:26:29.485Z",
+      "updatedAt": "2026-08-04T15:00:50.185Z",
       "error": null,
       "standings": [
         {
@@ -3816,7 +3816,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T14:26:29.767Z",
+      "updatedAt": "2026-08-04T15:00:50.579Z",
       "error": null,
       "standings": [
         {
@@ -4107,7 +4107,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T14:26:30.429Z",
+      "updatedAt": "2026-08-04T15:00:50.956Z",
       "error": null,
       "standings": [
         {
@@ -4223,7 +4223,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet"
+      "scoringError": "MFL request failed (429): /export?TYPE=league&L=30196&JSON=1"
     },
     {
       "id": "421871710",
@@ -4234,6 +4234,23 @@
       "franchiseId": "5",
       "teamName": "ESPN League 1",
       "url": "https://fantasy.espn.com/football/team?leagueId=421871710&teamId=5",
+      "players": [],
+      "updatedAt": null,
+      "error": "ESPN_S2 and ESPN_SWID environment variables are required for ESPN leagues.",
+      "standings": [],
+      "standingsError": "ESPN_S2 and ESPN_SWID environment variables are required for ESPN leagues.",
+      "scoring": null,
+      "scoringError": "ESPN_S2 and ESPN_SWID environment variables are required for ESPN leagues."
+    },
+    {
+      "id": "1966972",
+      "name": "ESPN League 2",
+      "type": "redraft",
+      "format": null,
+      "leagueName": "ESPN League 2",
+      "franchiseId": "10",
+      "teamName": "ESPN League 2",
+      "url": "https://fantasy.espn.com/football/team?leagueId=1966972&teamId=10",
       "players": [],
       "updatedAt": null,
       "error": "ESPN_S2 and ESPN_SWID environment variables are required for ESPN leagues.",
