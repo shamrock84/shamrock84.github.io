@@ -321,24 +321,6 @@ export async function fetchMflLineup(league, cookie) {
   return { week: '1', starterIds };
 }
 
-// Submits a starting lineup for the given week. UNVERIFIED request shape —
-// MFL's setLineup import command isn't something this project has called
-// before. Safe-tested via scripts/test-set-lineup.mjs, which re-submits a
-// league's exact CURRENT starters (a no-op if the format is right) and
-// re-fetches afterward to confirm nothing actually changed, rather than
-// guessing blind against a real lineup. Only ever called for lineupPilot
-// leagues, and only from the write-side UI once that test has passed.
-export async function submitMflLineup(league, cookie, starterIds, week) {
-  // Unlike every export used elsewhere in this file, /import doesn't honor
-  // JSON=1 — it returns XML regardless. Fetch as text and hand back the raw
-  // body; callers (currently just the diagnostic test script) are
-  // responsible for interpreting it until the real shape is confirmed.
-  const url = `${BASE}/import?TYPE=setLineup&L=${league.id}&FRANCHISE_ID=${league.franchiseId}&W=${week}&STARTERS=${starterIds.join(',')}&JSON=1`;
-  const res = await fetch(url, { headers: { Cookie: cookie }, redirect: 'follow' });
-  const bodyText = await res.text();
-  return { status: res.status, ok: res.ok, bodyText };
-}
-
 // --- ESPN fantasy football (undocumented API, reverse-engineered from the
 // community — field names/IDs below are best-effort; verified working
 // against real leagues for standings/scoring as of this writing) ---
