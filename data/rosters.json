@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-04T15:08:05.831Z",
+  "generatedAt": "2026-08-04T15:09:53.497Z",
   "year": "2026",
   "leagues": [
     {
@@ -301,7 +301,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T15:07:58.437Z",
+      "updatedAt": "2026-08-04T15:09:39.152Z",
       "error": null,
       "standings": [
         {
@@ -708,7 +708,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T15:07:58.654Z",
+      "updatedAt": "2026-08-04T15:09:39.558Z",
       "error": null,
       "standings": [
         {
@@ -1097,7 +1097,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T15:07:58.871Z",
+      "updatedAt": "2026-08-04T15:09:39.938Z",
       "error": null,
       "standings": [
         {
@@ -1452,7 +1452,7 @@
           "contractYear": "1"
         }
       ],
-      "updatedAt": "2026-08-04T15:07:59.047Z",
+      "updatedAt": "2026-08-04T15:09:40.415Z",
       "error": null,
       "standings": [
         {
@@ -1834,7 +1834,7 @@
           "contractYear": "1"
         }
       ],
-      "updatedAt": "2026-08-04T15:07:59.257Z",
+      "updatedAt": "2026-08-04T15:09:40.782Z",
       "error": null,
       "standings": [
         {
@@ -2198,7 +2198,7 @@
           "contractYear": "1"
         }
       ],
-      "updatedAt": "2026-08-04T15:07:59.456Z",
+      "updatedAt": "2026-08-04T15:09:41.183Z",
       "error": null,
       "standings": [
         {
@@ -2562,7 +2562,7 @@
           "contractYear": ""
         }
       ],
-      "updatedAt": "2026-08-04T15:07:59.721Z",
+      "updatedAt": "2026-08-04T15:09:41.481Z",
       "error": null,
       "standings": [
         {
@@ -2917,7 +2917,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T15:08:00.004Z",
+      "updatedAt": "2026-08-04T15:09:42.155Z",
       "error": null,
       "standings": [
         {
@@ -3198,7 +3198,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T15:08:00.244Z",
+      "updatedAt": "2026-08-04T15:09:42.507Z",
       "error": null,
       "standings": [
         {
@@ -3517,7 +3517,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T15:08:00.443Z",
+      "updatedAt": "2026-08-04T15:09:42.823Z",
       "error": null,
       "standings": [
         {
@@ -3816,7 +3816,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T15:08:00.744Z",
+      "updatedAt": "2026-08-04T15:09:43.393Z",
       "error": null,
       "standings": [
         {
@@ -4107,7 +4107,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T15:08:00.923Z",
+      "updatedAt": "2026-08-04T15:09:43.815Z",
       "error": null,
       "standings": [
         {
@@ -4236,11 +4236,11 @@
       "url": "https://fantasy.espn.com/football/team?leagueId=421871710&teamId=5",
       "players": [],
       "updatedAt": null,
-      "error": "ESPN_S2 and ESPN_SWID environment variables are required for ESPN leagues.",
+      "error": "ESPN response wasn't valid JSON (status 202, 0 bytes) at https://www.espn.com/fantasy/: ",
       "standings": [],
-      "standingsError": "ESPN_S2 and ESPN_SWID environment variables are required for ESPN leagues.",
+      "standingsError": "ESPN response wasn't valid JSON (status 202, 0 bytes) at https://www.espn.com/fantasy/: ",
       "scoring": null,
-      "scoringError": "ESPN_S2 and ESPN_SWID environment variables are required for ESPN leagues."
+      "scoringError": "ESPN response wasn't valid JSON (status 202, 0 bytes) at https://www.espn.com/fantasy/: "
     },
     {
       "id": "1966972",
@@ -4253,11 +4253,11 @@
       "url": "https://fantasy.espn.com/football/team?leagueId=1966972&teamId=10",
       "players": [],
       "updatedAt": null,
-      "error": "ESPN_S2 and ESPN_SWID environment variables are required for ESPN leagues.",
+      "error": "ESPN response wasn't valid JSON (status 202, 0 bytes) at https://www.espn.com/fantasy/: ",
       "standings": [],
-      "standingsError": "ESPN_S2 and ESPN_SWID environment variables are required for ESPN leagues.",
+      "standingsError": "ESPN response wasn't valid JSON (status 202, 0 bytes) at https://www.espn.com/fantasy/: ",
       "scoring": null,
-      "scoringError": "ESPN_S2 and ESPN_SWID environment variables are required for ESPN leagues."
+      "scoringError": "ESPN response wasn't valid JSON (status 202, 0 bytes) at https://www.espn.com/fantasy/: "
     }
   ]
 }
