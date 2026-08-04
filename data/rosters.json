@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-04T14:09:15.917Z",
+  "generatedAt": "2026-08-04T14:26:41.055Z",
   "year": "2026",
   "leagues": [
     {
@@ -301,7 +301,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T14:09:02.687Z",
+      "updatedAt": "2026-08-04T14:26:25.807Z",
       "error": null,
       "standings": [
         {
@@ -708,7 +708,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T14:09:03.102Z",
+      "updatedAt": "2026-08-04T14:26:26.420Z",
       "error": null,
       "standings": [
         {
@@ -1097,7 +1097,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T14:09:03.549Z",
+      "updatedAt": "2026-08-04T14:26:26.808Z",
       "error": null,
       "standings": [
         {
@@ -1452,7 +1452,7 @@
           "contractYear": "1"
         }
       ],
-      "updatedAt": "2026-08-04T14:09:03.906Z",
+      "updatedAt": "2026-08-04T14:26:27.266Z",
       "error": null,
       "standings": [
         {
@@ -1834,7 +1834,7 @@
           "contractYear": "1"
         }
       ],
-      "updatedAt": "2026-08-04T14:09:04.650Z",
+      "updatedAt": "2026-08-04T14:26:27.629Z",
       "error": null,
       "standings": [
         {
@@ -2198,7 +2198,7 @@
           "contractYear": "1"
         }
       ],
-      "updatedAt": "2026-08-04T14:09:05.163Z",
+      "updatedAt": "2026-08-04T14:26:28.004Z",
       "error": null,
       "standings": [
         {
@@ -2562,7 +2562,7 @@
           "contractYear": ""
         }
       ],
-      "updatedAt": "2026-08-04T14:09:05.588Z",
+      "updatedAt": "2026-08-04T14:26:28.300Z",
       "error": null,
       "standings": [
         {
@@ -2917,7 +2917,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T14:09:06.321Z",
+      "updatedAt": "2026-08-04T14:26:29.029Z",
       "error": null,
       "standings": [
         {
@@ -3198,7 +3198,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T14:09:06.677Z",
+      "updatedAt": "2026-08-04T14:26:29.350Z",
       "error": null,
       "standings": [
         {
@@ -3517,7 +3517,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T14:09:06.993Z",
+      "updatedAt": "2026-08-04T14:26:29.485Z",
       "error": null,
       "standings": [
         {
@@ -3816,7 +3816,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T14:09:07.323Z",
+      "updatedAt": "2026-08-04T14:26:29.767Z",
       "error": null,
       "standings": [
         {
@@ -4107,7 +4107,7 @@
           "contractYear": null
         }
       ],
-      "updatedAt": "2026-08-04T14:09:07.619Z",
+      "updatedAt": "2026-08-04T14:26:30.429Z",
       "error": null,
       "standings": [
         {
@@ -4224,6 +4224,23 @@
       "standingsError": null,
       "scoring": null,
       "scoringError": "No live scoring available yet"
+    },
+    {
+      "id": "421871710",
+      "name": "ESPN League 1",
+      "type": "redraft",
+      "format": null,
+      "leagueName": "ESPN League 1",
+      "franchiseId": "5",
+      "teamName": "ESPN League 1",
+      "url": "https://fantasy.espn.com/football/team?leagueId=421871710&teamId=5",
+      "players": [],
+      "updatedAt": null,
+      "error": "ESPN_S2 and ESPN_SWID environment variables are required for ESPN leagues.",
+      "standings": [],
+      "standingsError": "ESPN_S2 and ESPN_SWID environment variables are required for ESPN leagues.",
+      "scoring": null,
+      "scoringError": "ESPN_S2 and ESPN_SWID environment variables are required for ESPN leagues."
     }
   ]
 }
