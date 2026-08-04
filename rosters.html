@@ -571,7 +571,7 @@
 
 				for (const league of data.leagues) {
 					gridEl.appendChild(renderCard(league));
-					if (league.type === 'dynasty' && Array.isArray(league.standings)) {
+					if (league.standings !== undefined || league.standingsError) {
 						gridEl.appendChild(renderStandingsCard(league));
 					}
 					if (league.scoring !== undefined || league.scoringError) {

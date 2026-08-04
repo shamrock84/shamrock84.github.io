@@ -280,9 +280,9 @@ async function main() {
     }
   }
 
-  for (const league of DYNASTY_LEAGUES) {
+  for (const league of LEAGUES) {
     const target = leagues.find((l) => l.id === league.id);
-    if (!target) continue;
+    if (!target || !league.franchiseId) continue;
     try {
       target.standings = await fetchStandings(league, cookie);
       target.standingsError = null;
