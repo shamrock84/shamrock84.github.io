@@ -64,19 +64,12 @@ async function main() {
   const cookie = await mflLogin(USERNAME, PASSWORD);
   const playerMap = await loadPlayerMap(cookie);
 
-  // TEMP DIAGNOSTIC round 2 (BYE/PTS column investigation) — remove once
-  // data sources are confirmed. Round 1 showed TYPE=players has no bye week
-  // field at all, and the playerScores probe was malformed (needs an
-  // explicit PLAYERS= list, not a bare league-wide request).
+  // TEMP DIAGNOSTIC round 3 (PTS column investigation) — bye weeks confirmed
+  // working via TYPE=nflByeWeeks (team codes match our existing team field
+  // exactly). playerScores still needs an L= param alongside PLAYERS=.
   try {
-    const byeProbe = await mflGet('/export?TYPE=nflByeWeeks&JSON=1', cookie);
-    console.log(`[columns-debug] nflByeWeeks raw: ${JSON.stringify(byeProbe).slice(0, 1500)}`);
-  } catch (err) {
-    console.log(`[columns-debug] nflByeWeeks probe failed: ${err.message}`);
-  }
-  try {
-    const scoresProbe = await mflGet('/export?TYPE=playerScores&W=YTD&PLAYERS=14783,13604,17044&JSON=1', cookie);
-    console.log(`[columns-debug] playerScores(YTD, real players) raw: ${JSON.stringify(scoresProbe).slice(0, 1500)}`);
+    const scoresProbe = await mflGet('/export?TYPE=playerScores&W=YTD&L=26696&PLAYERS=14783,13604,17044&JSON=1', cookie);
+    console.log(`[columns-debug] playerScores(YTD, L+PLAYERS) raw: ${JSON.stringify(scoresProbe).slice(0, 1500)}`);
   } catch (err) {
     console.log(`[columns-debug] playerScores probe failed: ${err.message}`);
   }
