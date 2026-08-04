@@ -287,7 +287,8 @@
 			const updatedEl = document.getElementById('updated');
 
 			try {
-				const res = await fetch('data/rosters.json', { cache: 'no-store' });
+				// Cache-bust so GitHub Pages' CDN can't serve a stale snapshot after a sync.
+				const res = await fetch(`data/rosters.json?t=${Date.now()}`, { cache: 'no-store' });
 				if (!res.ok) throw new Error(`HTTP ${res.status}`);
 				const data = await res.json();
 
