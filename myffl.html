@@ -762,6 +762,18 @@
 			return el('td', attrs);
 		}
 
+		// Position groups (QB, RB, WR, ...) stay intact — same order as
+		// everywhere else on the page — but within each group, best overall
+		// ECR sorts first. Unranked players (FantasyPros doesn't cover every
+		// deep-bench/taxi stash) fall to the end of their position group in
+		// whatever order they arrived in, which is already position-then-name
+		// from the sync (see providers.mjs), rather than scattering randomly.
+		function sortByPositionThenEcr(players) {
+			return [...players].sort(
+				(a, b) => positionRank(a.position) - positionRank(b.position) || (a.ecr?.rank ?? Infinity) - (b.ecr?.rank ?? Infinity)
+			);
+		}
+
 		function buildRosterTable(players, isAuction, statusKey) {
 			const table = el('table', { class: 'roster' });
 			const headRow = el('tr', { class: 'roster-head' });
@@ -777,7 +789,7 @@
 			}
 			table.appendChild(headRow);
 			let prevPosition = null;
-			for (const p of players) {
+			for (const p of sortByPositionThenEcr(players)) {
 				const posBoundary = prevPosition !== null && p.position !== prevPosition;
 				prevPosition = p.position;
 				const rowClass = `player-row status-${statusKey}${posBoundary ? ' pos-boundary' : ''}`;
@@ -885,7 +897,7 @@
 
 			const checkboxes = [];
 			let prevPosition = null;
-			for (const p of players) {
+			for (const p of sortByPositionThenEcr(players)) {
 				const posBoundary = prevPosition !== null && p.position !== prevPosition;
 				prevPosition = p.position;
 				const row = el('tr', { class: `player-row${posBoundary ? ' pos-boundary' : ''}`, 'data-name': p.name.toLowerCase() });
