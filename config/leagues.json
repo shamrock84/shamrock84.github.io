@@ -7,7 +7,7 @@
     "name: fallback display name, used only if the live league/team name can't be fetched.",
     "type: 'dynasty', 'salarycap', 'bestball', or 'redraft' — controls which top-level sub-tab a league appears under, in that order. Purely a display concern; it does not imply anything about roster rules.",
     "format: dynasty/salarycap leagues only — 'dynasty' (plain roster) or 'auction' (adds Salary/Yrs columns and the cap summary). Omit otherwise.",
-    "NOTE: 'salarycap' leagues are dynasty leagues with a cap, so they take DYNASTY FantasyPros rankings like plain dynasty leagues do (see DYNASTY_RANKED_TYPES in scripts/lib/fantasypros.mjs). Add any future keeper-style type to that set, or its veterans get priced off redraft rankings.",
+    "NOTE: only 'dynasty' leagues get DYNASTY FantasyPros rankings. 'salarycap' leagues use DRAFT rankings like best ball and redraft do — deliberate, despite their contracts and taxi squads, because they're managed on a redraft cadence (cap resets, annual re-auction). Override rankingType on an individual league if one ever needs to differ.",
     "ESPN leagues additionally require ESPN_S2 and ESPN_SWID GitHub Actions secrets (browser cookies, not a login).",
     "Array order is display order everywhere on the page (Rosters, Standings, Scoring).",
     "lineupPilot: MFL only. When true, the sync also fetches this week's starters via TYPE=liveScoring and the Rosters card shows a checkbox lineup editor (login required to actually save) instead of the plain Active Roster table. Set on every MFL league that requires a submitted starting lineup.",

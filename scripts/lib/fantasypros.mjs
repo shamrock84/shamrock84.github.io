@@ -132,19 +132,20 @@ function lookupPlayer(index, player) {
   return byTeam.length === 1 ? byTeam[0] : null;
 }
 
-// `type` picks which sub-tab a league renders under, which is a display
-// concern — but keeper-style leagues need dynasty rankings regardless of
-// which tab they sit in. Salary-cap leagues are dynasty leagues with a cap
-// bolted on (multi-year contracts, taxi squads), so they belong here too;
-// without this they'd silently fall through to DRAFT rankings and quietly
-// misprice every veteran on the roster.
-const DYNASTY_RANKED_TYPES = new Set(['dynasty', 'salarycap']);
-
-// Which ranking set a league should be scored against. Keeper leagues want
-// dynasty rankings; everything else wants preseason draft rankings. Both are
-// overridable per league in config/leagues.json (rankingType/scoring) —
-// notably, switch dynasty/draft to ROS once the regular season is underway,
-// since draft rankings go stale the moment real games are played.
+// Which ranking set a league is scored against. The Dynasty sub-tab is the
+// only one that gets dynasty rankings — salary-cap, best ball and redraft
+// all use draft rankings.
+//
+// Salary-cap leagues carry multi-year contracts and taxi squads, so putting
+// them on draft rankings reads like an oversight. It isn't: they're managed
+// on a redraft cadence here (the cap resets and the roster gets re-auctioned
+// annually), so draft rankings match how the decisions actually get made.
+// Don't "correct" this to follow roster mechanics — if a single league ever
+// needs to differ, set rankingType on it in config/leagues.json.
+//
+// Scoring is overridable there too, and rankingType is what you switch to
+// ROS once the regular season is underway, since draft rankings go stale the
+// moment real games are played.
 //
 // Superflex leagues rank QBs far higher than a 1-QB league does, which is
 // exactly what FantasyPros' "OP" (offensive player) list represents. OP only
@@ -154,7 +155,7 @@ export function rankingSpecForLeague(league) {
   const tags = Array.isArray(league.tags) ? league.tags : [];
   const isSuperflex = tags.some((t) => /superflex/i.test(String(t)));
   return {
-    type: league.rankingType || (DYNASTY_RANKED_TYPES.has(league.type) ? 'DYNASTY' : 'DRAFT'),
+    type: league.rankingType || (league.type === 'dynasty' ? 'DYNASTY' : 'DRAFT'),
     scoring: league.scoring || 'PPR',
     positions: isSuperflex ? ['OP', 'ALL'] : ['ALL'],
   };
