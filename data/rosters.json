@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-05T10:34:42.915Z",
+  "generatedAt": "2026-08-05T12:39:36.992Z",
   "year": "2026",
   "leagues": [
     {
@@ -591,7 +591,7 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-05T10:33:32.831Z",
+      "updatedAt": "2026-08-05T12:38:47.601Z",
       "error": null,
       "tags": [],
       "standings": [
@@ -1312,7 +1312,7 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-05T10:33:35.570Z",
+      "updatedAt": "2026-08-05T12:38:48.477Z",
       "error": null,
       "tags": [],
       "standings": [
@@ -1991,7 +1991,7 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-05T10:33:36.848Z",
+      "updatedAt": "2026-08-05T12:38:49.751Z",
       "error": null,
       "tags": [],
       "standings": [
@@ -2588,7 +2588,7 @@
       ],
       "salaryCap": 550,
       "salaryAdjustments": 3.2699999999999996,
-      "updatedAt": "2026-08-05T10:33:38.244Z",
+      "updatedAt": "2026-08-05T12:38:50.973Z",
       "error": null,
       "tags": [
         "Best Ball"
@@ -3228,7 +3228,7 @@
       ],
       "salaryCap": 500,
       "salaryAdjustments": 4.68,
-      "updatedAt": "2026-08-05T10:33:39.867Z",
+      "updatedAt": "2026-08-05T12:38:51.925Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -3307,7 +3307,7 @@
         },
         {
           "franchiseId": "0008",
-          "teamName": "We’re the Vipers",
+          "teamName": "Weâre the Vipers",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -3358,7 +3358,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=34850&JSON=1 (year 2026)",
+      "scoringError": "No live scoring available yet",
       "rankings": {
         "type": "DRAFT",
         "scoring": "PPR",
@@ -3680,7 +3680,7 @@
           "pts": 0,
           "priorYearPts": 55.6,
           "ecr": {
-            "rank": 181,
+            "rank": 182,
             "posRank": "WR71",
             "tier": 11,
             "delta": null
@@ -3788,7 +3788,7 @@
           "pts": 0,
           "priorYearPts": 177.2,
           "ecr": {
-            "rank": 36,
+            "rank": 37,
             "posRank": "TE2",
             "tier": 5,
             "delta": null
@@ -3833,7 +3833,7 @@
       ],
       "salaryCap": 500,
       "salaryAdjustments": 10.09,
-      "updatedAt": "2026-08-05T10:33:41.277Z",
+      "updatedAt": "2026-08-05T12:38:53.059Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -4426,7 +4426,7 @@
       ],
       "salaryCap": 500,
       "salaryAdjustments": 58.24,
-      "updatedAt": "2026-08-05T10:33:43.865Z",
+      "updatedAt": "2026-08-05T12:38:54.230Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -4772,7 +4772,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 37,
+            "rank": 36,
             "posRank": "RB8",
             "tier": 5,
             "delta": null
@@ -4955,7 +4955,7 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-05T10:33:45.831Z",
+      "updatedAt": "2026-08-05T12:38:55.614Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -5413,7 +5413,7 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-05T10:33:47.000Z",
+      "updatedAt": "2026-08-05T12:38:56.240Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -5927,7 +5927,7 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-05T10:33:47.771Z",
+      "updatedAt": "2026-08-05T12:38:56.987Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -6037,7 +6037,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet",
+      "scoringError": "MFL request failed (429): /export?TYPE=league&L=54458&JSON=1 (year 2026)",
       "rankings": {
         "type": "DRAFT",
         "scoring": "PPR",
@@ -6422,7 +6422,7 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-05T10:33:48.735Z",
+      "updatedAt": "2026-08-05T12:38:57.710Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -6864,7 +6864,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 36,
+            "rank": 37,
             "posRank": "TE2",
             "tier": 5,
             "delta": null
@@ -6891,7 +6891,7 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-05T10:33:50.391Z",
+      "updatedAt": "2026-08-05T12:38:58.531Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -7333,7 +7333,7 @@
           }
         }
       ],
-      "updatedAt": "2026-08-05T10:33:50.524Z",
+      "updatedAt": "2026-08-05T12:38:58.622Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -7561,7 +7561,7 @@
       "teamName": "Big Dart Energy",
       "url": "https://fantasy.espn.com/football/team?leagueId=1966972&teamId=10",
       "players": [],
-      "updatedAt": "2026-08-05T10:33:50.639Z",
+      "updatedAt": "2026-08-05T12:38:58.748Z",
       "error": null,
       "tags": [],
       "standings": [
@@ -7744,7 +7744,7 @@
       "teamName": "Jeffer Justinson",
       "url": "https://fantasy.espn.com/football/team?leagueId=421871710&teamId=5",
       "players": [],
-      "updatedAt": "2026-08-05T10:33:50.708Z",
+      "updatedAt": "2026-08-05T12:38:58.811Z",
       "error": null,
       "tags": [],
       "standings": [
