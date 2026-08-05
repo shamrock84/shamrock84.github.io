@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-05T00:05:27.510Z",
+  "generatedAt": "2026-08-05T00:41:05.185Z",
   "year": "2026",
   "leagues": [
     {
@@ -399,7 +399,7 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-05T00:05:01.213Z",
+      "updatedAt": "2026-08-05T00:40:39.490Z",
       "error": null,
       "tags": [],
       "standings": [
@@ -918,7 +918,7 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-05T00:05:03.252Z",
+      "updatedAt": "2026-08-05T00:40:40.752Z",
       "error": null,
       "tags": [],
       "standings": [
@@ -1025,20 +1025,9 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet",
-      "lineupWeek": "1",
-      "starters": [
-        "14783",
-        "13130",
-        "14802",
-        "13163",
-        "16615",
-        "15282",
-        "16641",
-        "16681",
-        "0518"
-      ],
-      "lineupError": null
+      "scoringError": "MFL request failed (429): /export?TYPE=league&L=25608&JSON=1 (year 2026)",
+      "starters": null,
+      "lineupError": "MFL request failed (429): /export?TYPE=weeklyResults&L=25608&W=1&JSON=1 (year 2026)"
     },
     {
       "id": "23545",
@@ -1413,7 +1402,7 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-05T00:05:04.798Z",
+      "updatedAt": "2026-08-05T00:40:42.030Z",
       "error": null,
       "tags": [],
       "standings": [
@@ -1541,19 +1530,8 @@
       "standingsError": null,
       "scoring": null,
       "scoringError": "No live scoring available yet",
-      "lineupWeek": "1",
-      "starters": [
-        "14056",
-        "16167",
-        "13604",
-        "16809",
-        "16190",
-        "14842",
-        "15794",
-        "17222",
-        "0512"
-      ],
-      "lineupError": null
+      "starters": null,
+      "lineupError": "MFL request failed (429): /export?TYPE=weeklyResults&L=23545&W=1&JSON=1 (year 2026)"
     },
     {
       "id": "35217",
@@ -1856,7 +1834,7 @@
       ],
       "salaryCap": 550,
       "salaryAdjustments": 3.2699999999999996,
-      "updatedAt": "2026-08-05T00:05:06.444Z",
+      "updatedAt": "2026-08-05T00:40:43.381Z",
       "error": null,
       "tags": [
         "Best Ball"
@@ -1985,7 +1963,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet"
+      "scoringError": "MFL request failed (429): /export?TYPE=league&L=35217&JSON=1 (year 2026)"
     },
     {
       "id": "34850",
@@ -2324,7 +2302,7 @@
       ],
       "salaryCap": 500,
       "salaryAdjustments": 4.68,
-      "updatedAt": "2026-08-05T00:05:07.824Z",
+      "updatedAt": "2026-08-05T00:40:44.986Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -2769,7 +2747,7 @@
       ],
       "salaryCap": 500,
       "salaryAdjustments": 10.09,
-      "updatedAt": "2026-08-05T00:05:09.194Z",
+      "updatedAt": "2026-08-05T00:40:46.244Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -3214,7 +3192,7 @@
       ],
       "salaryCap": 500,
       "salaryAdjustments": 58.24,
-      "updatedAt": "2026-08-05T00:05:10.720Z",
+      "updatedAt": "2026-08-05T00:40:47.705Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -3364,7 +3342,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet"
+      "scoringError": "MFL request failed (429): /export?TYPE=league&L=64470&JSON=1 (year 2026)"
     },
     {
       "id": "56191",
@@ -3382,7 +3360,7 @@
       "standings": [],
       "standingsError": "No standings data returned for this league",
       "scoring": null,
-      "scoringError": "No live scoring available yet"
+      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=56191&JSON=1 (year 2026)"
     },
     {
       "id": "34203",
@@ -3400,7 +3378,7 @@
       "standings": [],
       "standingsError": "No standings data returned for this league",
       "scoring": null,
-      "scoringError": "No live scoring available yet"
+      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=34203&JSON=1 (year 2026)"
     },
     {
       "id": "72911",
@@ -3631,7 +3609,7 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-05T00:05:12.054Z",
+      "updatedAt": "2026-08-05T00:40:49.036Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -3740,7 +3718,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet"
+      "scoringError": "MFL request failed (429): /export?TYPE=league&L=72911&JSON=1 (year 2026)"
     },
     {
       "id": "54766",
@@ -3971,7 +3949,7 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-05T00:05:12.818Z",
+      "updatedAt": "2026-08-05T00:40:49.744Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -4100,7 +4078,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet"
+      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=54766&JSON=1 (year 2026)"
     },
     {
       "id": "54458",
@@ -4355,7 +4333,7 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-05T00:05:13.599Z",
+      "updatedAt": "2026-08-05T00:40:50.651Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -4465,7 +4443,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=league&L=54458&JSON=1 (year 2026)"
+      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=54458&JSON=1 (year 2026)"
     },
     {
       "id": "61777",
@@ -4720,7 +4698,7 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-05T00:05:14.552Z",
+      "updatedAt": "2026-08-05T00:40:51.765Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -4840,7 +4818,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=league&L=61777&JSON=1 (year 2026)"
+      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=61777&JSON=1 (year 2026)"
     },
     {
       "id": "30196",
@@ -5071,7 +5049,7 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-05T00:05:15.509Z",
+      "updatedAt": "2026-08-05T00:40:52.495Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -5190,373 +5168,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet"
-    },
-    {
-      "id": "421871710",
-      "name": "ESPN League 1",
-      "type": "redraft",
-      "format": null,
-      "leagueName": "Lincoln Hates Fantasy",
-      "franchiseId": "5",
-      "teamName": "Jeffer Justinson",
-      "url": "https://fantasy.espn.com/football/team?leagueId=421871710&teamId=5",
-      "players": [],
-      "updatedAt": "2026-08-05T00:05:15.617Z",
-      "error": null,
-      "tags": [],
-      "standings": [
-        {
-          "franchiseId": "1",
-          "teamName": "Run achane on her ",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "2",
-          "teamName": "Linclon's Loud Team",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "3",
-          "teamName": "I am him",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "4",
-          "teamName": "Bones Killa ",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "5",
-          "teamName": "Jeffer Justinson",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": true
-        },
-        {
-          "franchiseId": "6",
-          "teamName": "Braden's Squad",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "7",
-          "teamName": "BobNado",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "8",
-          "teamName": "Dcker in her TD's",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "9",
-          "teamName": "KEVIN's Top-Notch Team",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "10",
-          "teamName": "Jackin goff",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        }
-      ],
-      "standingsError": null,
-      "scoring": {
-        "week": 1,
-        "teams": [
-          {
-            "franchiseId": "6",
-            "teamName": "Braden's Squad",
-            "score": "0.00",
-            "isMe": false
-          },
-          {
-            "franchiseId": "10",
-            "teamName": "Jackin goff",
-            "score": "0.00",
-            "isMe": false
-          },
-          {
-            "franchiseId": "3",
-            "teamName": "I am him",
-            "score": "0.00",
-            "isMe": false
-          },
-          {
-            "franchiseId": "9",
-            "teamName": "KEVIN's Top-Notch Team",
-            "score": "0.00",
-            "isMe": false
-          },
-          {
-            "franchiseId": "8",
-            "teamName": "Dcker in her TD's",
-            "score": "0.00",
-            "isMe": false
-          },
-          {
-            "franchiseId": "5",
-            "teamName": "Jeffer Justinson",
-            "score": "0.00",
-            "isMe": true
-          },
-          {
-            "franchiseId": "7",
-            "teamName": "BobNado",
-            "score": "0.00",
-            "isMe": false
-          },
-          {
-            "franchiseId": "1",
-            "teamName": "Run achane on her ",
-            "score": "0.00",
-            "isMe": false
-          },
-          {
-            "franchiseId": "2",
-            "teamName": "Linclon's Loud Team",
-            "score": "0.00",
-            "isMe": false
-          },
-          {
-            "franchiseId": "4",
-            "teamName": "Bones Killa ",
-            "score": "0.00",
-            "isMe": false
-          }
-        ]
-      },
-      "scoringError": null
-    },
-    {
-      "id": "1966972",
-      "name": "ESPN League 2",
-      "type": "redraft",
-      "format": null,
-      "leagueName": "No Minute Like The Last Minute",
-      "franchiseId": "10",
-      "teamName": "Big Dart Energy",
-      "url": "https://fantasy.espn.com/football/team?leagueId=1966972&teamId=10",
-      "players": [],
-      "updatedAt": "2026-08-05T00:05:15.681Z",
-      "error": null,
-      "tags": [],
-      "standings": [
-        {
-          "franchiseId": "1",
-          "teamName": "Team Nico",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "2",
-          "teamName": "Feeling 22",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "3",
-          "teamName": "You Don't Know Jackson",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "4",
-          "teamName": "Turn On The Jettas",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "7",
-          "teamName": "You Like That?!!!",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "8",
-          "teamName": "The Micah Parsons Project",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "9",
-          "teamName": "da magic SKOL bus",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "10",
-          "teamName": "Big Dart Energy",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": true
-        },
-        {
-          "franchiseId": "11",
-          "teamName": "MKE Mayer",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        },
-        {
-          "franchiseId": "12",
-          "teamName": "Uncle Rico",
-          "wins": 0,
-          "losses": 0,
-          "ties": 0,
-          "pointsFor": "0.00",
-          "pointsAgainst": "0.00",
-          "isMe": false
-        }
-      ],
-      "standingsError": null,
-      "scoring": {
-        "week": 1,
-        "teams": [
-          {
-            "franchiseId": "4",
-            "teamName": "Turn On The Jettas",
-            "score": "0.00",
-            "isMe": false
-          },
-          {
-            "franchiseId": "1",
-            "teamName": "Team Nico",
-            "score": "0.00",
-            "isMe": false
-          },
-          {
-            "franchiseId": "2",
-            "teamName": "Feeling 22",
-            "score": "0.00",
-            "isMe": false
-          },
-          {
-            "franchiseId": "10",
-            "teamName": "Big Dart Energy",
-            "score": "0.00",
-            "isMe": true
-          },
-          {
-            "franchiseId": "9",
-            "teamName": "da magic SKOL bus",
-            "score": "0.00",
-            "isMe": false
-          },
-          {
-            "franchiseId": "12",
-            "teamName": "Uncle Rico",
-            "score": "0.00",
-            "isMe": false
-          },
-          {
-            "franchiseId": "8",
-            "teamName": "The Micah Parsons Project",
-            "score": "0.00",
-            "isMe": false
-          },
-          {
-            "franchiseId": "3",
-            "teamName": "You Don't Know Jackson",
-            "score": "0.00",
-            "isMe": false
-          },
-          {
-            "franchiseId": "11",
-            "teamName": "MKE Mayer",
-            "score": "0.00",
-            "isMe": false
-          },
-          {
-            "franchiseId": "7",
-            "teamName": "You Like That?!!!",
-            "score": "0.00",
-            "isMe": false
-          }
-        ]
-      },
-      "scoringError": null
+      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=30196&JSON=1 (year 2026)"
     },
     {
       "id": "1367867592919760896",
@@ -5749,7 +5361,7 @@
           "status": "ROSTER"
         }
       ],
-      "updatedAt": "2026-08-05T00:05:15.791Z",
+      "updatedAt": "2026-08-05T00:40:52.660Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -5950,6 +5562,372 @@
           {
             "franchiseId": "12",
             "teamName": "ChadS-MN",
+            "score": "0.00",
+            "isMe": false
+          }
+        ]
+      },
+      "scoringError": null
+    },
+    {
+      "id": "1966972",
+      "name": "ESPN League 2",
+      "type": "redraft",
+      "format": null,
+      "leagueName": "No Minute Like The Last Minute",
+      "franchiseId": "10",
+      "teamName": "Big Dart Energy",
+      "url": "https://fantasy.espn.com/football/team?leagueId=1966972&teamId=10",
+      "players": [],
+      "updatedAt": "2026-08-05T00:40:52.797Z",
+      "error": null,
+      "tags": [],
+      "standings": [
+        {
+          "franchiseId": "1",
+          "teamName": "Team Nico",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "2",
+          "teamName": "Feeling 22",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "3",
+          "teamName": "You Don't Know Jackson",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "4",
+          "teamName": "Turn On The Jettas",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "7",
+          "teamName": "You Like That?!!!",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "8",
+          "teamName": "The Micah Parsons Project",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "9",
+          "teamName": "da magic SKOL bus",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "10",
+          "teamName": "Big Dart Energy",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": true
+        },
+        {
+          "franchiseId": "11",
+          "teamName": "MKE Mayer",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "12",
+          "teamName": "Uncle Rico",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        }
+      ],
+      "standingsError": null,
+      "scoring": {
+        "week": 1,
+        "teams": [
+          {
+            "franchiseId": "4",
+            "teamName": "Turn On The Jettas",
+            "score": "0.00",
+            "isMe": false
+          },
+          {
+            "franchiseId": "1",
+            "teamName": "Team Nico",
+            "score": "0.00",
+            "isMe": false
+          },
+          {
+            "franchiseId": "2",
+            "teamName": "Feeling 22",
+            "score": "0.00",
+            "isMe": false
+          },
+          {
+            "franchiseId": "10",
+            "teamName": "Big Dart Energy",
+            "score": "0.00",
+            "isMe": true
+          },
+          {
+            "franchiseId": "9",
+            "teamName": "da magic SKOL bus",
+            "score": "0.00",
+            "isMe": false
+          },
+          {
+            "franchiseId": "12",
+            "teamName": "Uncle Rico",
+            "score": "0.00",
+            "isMe": false
+          },
+          {
+            "franchiseId": "8",
+            "teamName": "The Micah Parsons Project",
+            "score": "0.00",
+            "isMe": false
+          },
+          {
+            "franchiseId": "3",
+            "teamName": "You Don't Know Jackson",
+            "score": "0.00",
+            "isMe": false
+          },
+          {
+            "franchiseId": "11",
+            "teamName": "MKE Mayer",
+            "score": "0.00",
+            "isMe": false
+          },
+          {
+            "franchiseId": "7",
+            "teamName": "You Like That?!!!",
+            "score": "0.00",
+            "isMe": false
+          }
+        ]
+      },
+      "scoringError": null
+    },
+    {
+      "id": "421871710",
+      "name": "ESPN League 1",
+      "type": "redraft",
+      "format": null,
+      "leagueName": "Lincoln Hates Fantasy",
+      "franchiseId": "5",
+      "teamName": "Jeffer Justinson",
+      "url": "https://fantasy.espn.com/football/team?leagueId=421871710&teamId=5",
+      "players": [],
+      "updatedAt": "2026-08-05T00:40:52.868Z",
+      "error": null,
+      "tags": [],
+      "standings": [
+        {
+          "franchiseId": "1",
+          "teamName": "Run achane on her ",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "2",
+          "teamName": "Linclon's Loud Team",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "3",
+          "teamName": "I am him",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "4",
+          "teamName": "Bones Killa ",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "5",
+          "teamName": "Jeffer Justinson",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": true
+        },
+        {
+          "franchiseId": "6",
+          "teamName": "Braden's Squad",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "7",
+          "teamName": "BobNado",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "8",
+          "teamName": "Dcker in her TD's",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "9",
+          "teamName": "KEVIN's Top-Notch Team",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "10",
+          "teamName": "Jackin goff",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        }
+      ],
+      "standingsError": null,
+      "scoring": {
+        "week": 1,
+        "teams": [
+          {
+            "franchiseId": "6",
+            "teamName": "Braden's Squad",
+            "score": "0.00",
+            "isMe": false
+          },
+          {
+            "franchiseId": "10",
+            "teamName": "Jackin goff",
+            "score": "0.00",
+            "isMe": false
+          },
+          {
+            "franchiseId": "3",
+            "teamName": "I am him",
+            "score": "0.00",
+            "isMe": false
+          },
+          {
+            "franchiseId": "9",
+            "teamName": "KEVIN's Top-Notch Team",
+            "score": "0.00",
+            "isMe": false
+          },
+          {
+            "franchiseId": "8",
+            "teamName": "Dcker in her TD's",
+            "score": "0.00",
+            "isMe": false
+          },
+          {
+            "franchiseId": "5",
+            "teamName": "Jeffer Justinson",
+            "score": "0.00",
+            "isMe": true
+          },
+          {
+            "franchiseId": "7",
+            "teamName": "BobNado",
+            "score": "0.00",
+            "isMe": false
+          },
+          {
+            "franchiseId": "1",
+            "teamName": "Run achane on her ",
+            "score": "0.00",
+            "isMe": false
+          },
+          {
+            "franchiseId": "2",
+            "teamName": "Linclon's Loud Team",
+            "score": "0.00",
+            "isMe": false
+          },
+          {
+            "franchiseId": "4",
+            "teamName": "Bones Killa ",
             "score": "0.00",
             "isMe": false
           }
