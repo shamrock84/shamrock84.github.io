@@ -532,6 +532,19 @@
 		.pts-cell.pts-prior-year {
 			font-style: italic;
 		}
+		/* Yrs cell when standing in for a not-yet-official MFL contract length —
+		   a compact select, styled like a chip so it reads as "editable/
+		   unofficial" rather than a plain data value like the rest of the row. */
+		.years-select {
+			font: inherit;
+			font-size: 0.82rem;
+			color: var(--accent);
+			background: var(--chip-bg);
+			border: 1px solid var(--border);
+			border-radius: 4px;
+			padding: 0.05rem 0.15rem;
+			text-align: right;
+		}
 		/* Top-24 overall gets the accent treatment so the studs on a roster
 		   stand out at a glance without having to read every row. */
 		.ecr-cell.ecr-elite {
@@ -733,6 +746,37 @@
 		const LEAGUE_TYPE_STORAGE_KEY = 'myfflLeagueType';
 		let currentView = localStorage.getItem(VIEW_STORAGE_KEY) || 'rosters';
 		let currentLeagueType = localStorage.getItem(LEAGUE_TYPE_STORAGE_KEY) || null;
+
+		// Locally-planned contract length (1/2/3 years) for a Salary Cap roster
+		// spot that doesn't have a real one from MFL yet — a personal planning
+		// aid, never sent anywhere. Keyed by league id then player id, since
+		// the same player can sit on rosters in more than one Salary Cap
+		// league with a different plan in each. Once a real contractYear shows
+		// up from a sync it always wins and the dropdown simply stops
+		// rendering for that player — any leftover saved plan is harmless and
+		// isn't proactively cleaned up.
+		const CONTRACT_PLAN_STORAGE_KEY = 'myfflContractPlans';
+		function loadContractPlans() {
+			try {
+				return JSON.parse(localStorage.getItem(CONTRACT_PLAN_STORAGE_KEY) || '{}');
+			} catch {
+				return {};
+			}
+		}
+		function getContractPlan(leagueId, playerId) {
+			return loadContractPlans()[leagueId]?.[playerId] || '';
+		}
+		function setContractPlan(leagueId, playerId, years) {
+			const plans = loadContractPlans();
+			if (!years) {
+				delete plans[leagueId]?.[playerId];
+				if (plans[leagueId] && Object.keys(plans[leagueId]).length === 0) delete plans[leagueId];
+			} else {
+				plans[leagueId] = plans[leagueId] || {};
+				plans[leagueId][playerId] = years;
+			}
+			localStorage.setItem(CONTRACT_PLAN_STORAGE_KEY, JSON.stringify(plans));
+		}
 		let pageData = null;
 		let liveScoringTimer = null;
 		let syncPollTimer = null;
@@ -812,7 +856,28 @@
 			);
 		}
 
-		function buildRosterTable(players, isAuction, statusKey) {
+		// Yrs cell for an auction/salary-cap roster row. A real contract length
+		// from MFL always wins; only when MFL hasn't set one yet does this fall
+		// back to a local planning dropdown (1/2/3 years) so a manager can
+		// pencil in how long they intend to keep a player before it's official.
+		function buildYearsCell(p, leagueId) {
+			if (p.contractYear) {
+				return el('td', { class: 'years-cell', text: String(p.contractYear) });
+			}
+			const td = el('td', { class: 'years-cell years-cell-plan' });
+			const select = el('select', { class: 'years-select', title: 'Plan a contract length — not official until MFL sets one' });
+			for (const value of ['', '1', '2', '3']) {
+				select.appendChild(el('option', { value, text: value || '—' }));
+			}
+			select.value = getContractPlan(leagueId, p.id);
+			select.addEventListener('change', () => {
+				setContractPlan(leagueId, p.id, select.value);
+			});
+			td.appendChild(select);
+			return td;
+		}
+
+		function buildRosterTable(players, isAuction, statusKey, leagueId) {
 			const table = el('table', { class: 'roster' });
 			const headRow = el('tr', { class: 'roster-head' });
 			headRow.appendChild(el('th', {}));
@@ -844,7 +909,7 @@
 				row.appendChild(el('td', ptsAttrs));
 				if (isAuction) {
 					row.appendChild(el('td', { class: 'salary-cell', text: p.salary ? `$${p.salary}` : '—' }));
-					row.appendChild(el('td', { class: 'years-cell', text: p.contractYear ? String(p.contractYear) : '—' }));
+					row.appendChild(buildYearsCell(p, leagueId));
 				}
 				table.appendChild(row);
 			}
@@ -1085,7 +1150,7 @@
 				if (group.key === 'ROSTER' && starterIdSet) {
 					card.appendChild(buildLineupEditor(league, players, starterIdSet));
 				} else {
-					card.appendChild(buildRosterTable(players, isAuction, group.key.toLowerCase()));
+					card.appendChild(buildRosterTable(players, isAuction, group.key.toLowerCase(), league.id));
 				}
 
 				if (group.key === 'ROSTER' && isAuction && league.salaryCap != null) {
