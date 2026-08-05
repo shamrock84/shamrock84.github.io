@@ -698,10 +698,15 @@
 		// their league type.
 		const SUBTAB_GROUP = { dynasty: 'dynasty', salarycap: 'dynasty', bestball: 'bestball', redraft: 'redraft' };
 		const SUBTAB_ORDER = ['dynasty', 'bestball', 'redraft'];
-		// Only where a sub-tab's name needs to say more than a single league
-		// type does (LEAGUE_TYPE_LABELS) — everything else falls through to
-		// that shared wording, so "Best Ball" and "Redraft" aren't repeated here.
-		const SUBTAB_LABEL_OVERRIDES = { dynasty: 'Dynasty/Salary Cap' };
+		// Only where a sub-tab's name needs to differ from LEAGUE_TYPE_LABELS —
+		// everything else falls through to that shared wording, so "Redraft"
+		// isn't repeated here. bestball's sub-tab reads "Draft Only" rather
+		// than "Best Ball" so it isn't mistaken for the Best Ball *scoring*
+		// badge, which shows up on cards outside this sub-tab too (e.g. a
+		// salary-cap league that happens to use best-ball scoring) — the type
+		// badge on individual cards still reads "Best Ball" via
+		// LEAGUE_TYPE_LABELS, unaffected.
+		const SUBTAB_LABEL_OVERRIDES = { dynasty: 'Dynasty/Salary Cap', bestball: 'Draft Only' };
 
 		function subtabType(league) {
 			return SUBTAB_GROUP[league.type] || league.type;
