@@ -545,6 +545,19 @@
 			padding: 0.05rem 0.15rem;
 			text-align: right;
 		}
+		/* Salary cell's own not-yet-official planning dropdown — visually the
+		   same treatment as .years-select but kept as a separate rule so the
+		   two can diverge independently later. */
+		.salary-select {
+			font: inherit;
+			font-size: 0.82rem;
+			color: var(--accent);
+			background: var(--chip-bg);
+			border: 1px solid var(--border);
+			border-radius: 4px;
+			padding: 0.05rem 0.15rem;
+			text-align: right;
+		}
 		/* Top-24 overall gets the accent treatment so the studs on a roster
 		   stand out at a glance without having to read every row. */
 		.ecr-cell.ecr-elite {
@@ -777,6 +790,36 @@
 			}
 			localStorage.setItem(CONTRACT_PLAN_STORAGE_KEY, JSON.stringify(plans));
 		}
+
+		// Locally-planned salary ($1-200, whole dollars) for a Salary Cap
+		// roster spot that doesn't have a real one from MFL yet. Same shape
+		// and purpose as the contract-length plan above, but deliberately its
+		// own storage key and functions rather than a shared "plan" helper —
+		// salary and contract length are different domains (money vs. term),
+		// and keeping them independent means a change to one's rules (e.g.
+		// what counts as "unset") can never accidentally leak into the other.
+		const SALARY_PLAN_STORAGE_KEY = 'myfflSalaryPlans';
+		function loadSalaryPlans() {
+			try {
+				return JSON.parse(localStorage.getItem(SALARY_PLAN_STORAGE_KEY) || '{}');
+			} catch {
+				return {};
+			}
+		}
+		function getSalaryPlan(leagueId, playerId) {
+			return loadSalaryPlans()[leagueId]?.[playerId] || '';
+		}
+		function setSalaryPlan(leagueId, playerId, salary) {
+			const plans = loadSalaryPlans();
+			if (!salary) {
+				delete plans[leagueId]?.[playerId];
+				if (plans[leagueId] && Object.keys(plans[leagueId]).length === 0) delete plans[leagueId];
+			} else {
+				plans[leagueId] = plans[leagueId] || {};
+				plans[leagueId][playerId] = salary;
+			}
+			localStorage.setItem(SALARY_PLAN_STORAGE_KEY, JSON.stringify(plans));
+		}
 		let pageData = null;
 		let liveScoringTimer = null;
 		let syncPollTimer = null;
@@ -880,6 +923,29 @@
 			return td;
 		}
 
+		// Salary cell for an auction/salary-cap roster row. Same shape as
+		// buildYearsCell (a real value from MFL always wins; blank OR a
+		// literal 0 falls back to a local planning dropdown), gated by its own
+		// independent condition and storage — see SALARY_PLAN_STORAGE_KEY.
+		// $200 is the top of MFL's own salary UI, so the dropdown spans 1-200.
+		function buildSalaryCell(p, leagueId) {
+			if (Number(p.salary) > 0) {
+				return el('td', { class: 'salary-cell', text: `$${p.salary}` });
+			}
+			const td = el('td', { class: 'salary-cell salary-cell-plan' });
+			const select = el('select', { class: 'salary-select', title: 'Plan a salary — not official until MFL sets one' });
+			select.appendChild(el('option', { value: '', text: '—' }));
+			for (let dollars = 1; dollars <= 200; dollars++) {
+				select.appendChild(el('option', { value: String(dollars), text: `$${dollars}` }));
+			}
+			select.value = getSalaryPlan(leagueId, p.id);
+			select.addEventListener('change', () => {
+				setSalaryPlan(leagueId, p.id, select.value);
+			});
+			td.appendChild(select);
+			return td;
+		}
+
 		function buildRosterTable(players, isAuction, statusKey, leagueId) {
 			const table = el('table', { class: 'roster' });
 			const headRow = el('tr', { class: 'roster-head' });
@@ -911,7 +977,7 @@
 				if (usingPriorYear) ptsAttrs.title = `${(pageData?.year ?? new Date().getFullYear()) - 1} season total \u2014 current season hasn't started yet`;
 				row.appendChild(el('td', ptsAttrs));
 				if (isAuction) {
-					row.appendChild(el('td', { class: 'salary-cell', text: p.salary ? `$${p.salary}` : '—' }));
+					row.appendChild(buildSalaryCell(p, leagueId));
 					row.appendChild(buildYearsCell(p, leagueId));
 				}
 				table.appendChild(row);
