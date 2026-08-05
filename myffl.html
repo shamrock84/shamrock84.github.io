@@ -568,6 +568,31 @@
 			font-size: 0.72rem;
 			margin-top: 0.1rem;
 		}
+		.pager {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 0.75rem;
+			margin-top: 0.75rem;
+		}
+		.pager-btn {
+			border: 1px solid var(--border);
+			background: var(--card-bg);
+			color: var(--accent);
+			padding: 0.3rem 0.8rem;
+			border-radius: 999px;
+			font-size: 0.8rem;
+			font-weight: 600;
+			cursor: pointer;
+		}
+		.pager-btn:disabled {
+			opacity: 0.4;
+			cursor: default;
+		}
+		.pager-label {
+			font-size: 0.78rem;
+			color: var(--muted);
+		}
 		.hidden { display: none !important; }
 		footer {
 			text-align: center;
@@ -648,6 +673,11 @@
 		const VIEW_ORDER = ['rosters', 'scoring', 'standings', 'analytics'];
 		const LEAGUE_TYPE_LABELS = { dynasty: 'Dynasty', bestball: 'Best Ball', redraft: 'Redraft' };
 		const LEAGUE_TYPE_ORDER = ['dynasty', 'bestball', 'redraft'];
+		const POSITION_ORDER = ['QB', 'RB', 'WR', 'TE', 'PK', 'Def'];
+		function positionRank(pos) {
+			const idx = POSITION_ORDER.indexOf(pos);
+			return idx === -1 ? POSITION_ORDER.length : idx;
+		}
 		let currentView = 'rosters';
 		let currentLeagueType = null;
 		let pageData = null;
@@ -1092,10 +1122,17 @@
 					exposure: total > 0 ? (info.leagues.length / total) * 100 : 0,
 				}))
 				.filter((r) => r.count > 1)
-				.sort((a, b) => b.exposure - a.exposure || b.count - a.count || a.name.localeCompare(b.name));
+				.sort((a, b) =>
+					b.exposure - a.exposure ||
+					b.count - a.count ||
+					positionRank(a.position) - positionRank(b.position) ||
+					a.name.localeCompare(b.name)
+				);
 
 			return { total, rows };
 		}
+
+		const ANALYTICS_PAGE_SIZE = 10;
 
 		function renderAnalyticsCard(type, leagues) {
 			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': type });
@@ -1117,22 +1154,61 @@
 			}
 
 			const table = el('table', { class: 'standings' });
-			const headRow = el('tr');
-			['Player', 'Pos', 'Owned In', 'Exposure'].forEach((h) => headRow.appendChild(el('th', { text: h })));
-			table.appendChild(headRow);
-
-			for (const r of rows) {
-				const row = el('tr');
-				const nameCell = el('td');
-				nameCell.appendChild(el('div', { text: r.name }));
-				nameCell.appendChild(el('div', { class: 'exposure-leagues', text: r.leagues.join(', ') }));
-				row.appendChild(nameCell);
-				row.appendChild(el('td', { text: r.position || '-' }));
-				row.appendChild(el('td', { text: `${r.count}/${total}` }));
-				row.appendChild(el('td', { text: `${Math.round(r.exposure)}%` }));
-				table.appendChild(row);
-			}
 			card.appendChild(table);
+
+			const pageCount = Math.ceil(rows.length / ANALYTICS_PAGE_SIZE);
+			let page = 0;
+			let pager = null;
+			let prevBtn = null;
+			let nextBtn = null;
+			let pageLabel = null;
+			if (pageCount > 1) {
+				pager = el('div', { class: 'pager' });
+				prevBtn = el('button', { type: 'button', class: 'pager-btn', text: 'Prev' });
+				pageLabel = el('span', { class: 'pager-label' });
+				nextBtn = el('button', { type: 'button', class: 'pager-btn', text: 'Next' });
+				pager.appendChild(prevBtn);
+				pager.appendChild(pageLabel);
+				pager.appendChild(nextBtn);
+				card.appendChild(pager);
+			}
+
+			function renderPage() {
+				table.innerHTML = '';
+				const headRow = el('tr');
+				['Player', 'Pos', 'Owned In', 'Exposure'].forEach((h) => headRow.appendChild(el('th', { text: h })));
+				table.appendChild(headRow);
+
+				const start = page * ANALYTICS_PAGE_SIZE;
+				for (const r of rows.slice(start, start + ANALYTICS_PAGE_SIZE)) {
+					const row = el('tr');
+					const nameCell = el('td');
+					nameCell.appendChild(el('div', { text: r.name }));
+					nameCell.appendChild(el('div', { class: 'exposure-leagues', text: r.leagues.join(', ') }));
+					row.appendChild(nameCell);
+					row.appendChild(el('td', { text: r.position || '-' }));
+					row.appendChild(el('td', { text: `${r.count}/${total}` }));
+					row.appendChild(el('td', { text: `${Math.round(r.exposure)}%` }));
+					table.appendChild(row);
+				}
+
+				if (pager) {
+					pageLabel.textContent = `Page ${page + 1} of ${pageCount}`;
+					prevBtn.disabled = page === 0;
+					nextBtn.disabled = page >= pageCount - 1;
+				}
+			}
+
+			if (pager) {
+				prevBtn.addEventListener('click', () => {
+					if (page > 0) { page--; renderPage(); }
+				});
+				nextBtn.addEventListener('click', () => {
+					if (page < pageCount - 1) { page++; renderPage(); }
+				});
+			}
+
+			renderPage();
 			return card;
 		}
 
