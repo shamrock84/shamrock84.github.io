@@ -622,10 +622,54 @@ async function sleeperTeamNames(league) {
   return { names, rosters };
 }
 
-export async function fetchSleeperLeagueRoster(league, playerMap) {
-  const [leagueData, { names, rosters }] = await Promise.all([
+// MFL's nflByeWeeks map (shared with the MFL sync — bye weeks are a plain
+// NFL-schedule fact, not provider-specific) is keyed by MFL's own team
+// codes, which use non-standard 3-letter abbreviations for 8 teams. Sleeper
+// uses the standard codes for all of them. Confirmed against MFL's actual
+// TYPE=nflByeWeeks team list — every other team's code already matches.
+const SLEEPER_TEAM_TO_MFL_BYE_KEY = {
+  GB: 'GBP',
+  JAX: 'JAC',
+  KC: 'KCC',
+  LV: 'LVR',
+  NE: 'NEP',
+  NO: 'NOS',
+  SF: 'SFO',
+  TB: 'TBB',
+};
+
+// Sleeper doesn't expose season-to-date fantasy points directly, but each
+// week's matchups response includes players_points — every rostered
+// player's score for that week, already computed under this league's own
+// scoring settings. Summing those across every completed week gives the
+// same "season points under this league's rules" that MFL/ESPN show,
+// without needing to pull raw stats and reimplement scoring ourselves.
+export async function fetchSleeperSeasonPoints(league) {
+  const state = await sleeperGet('/state/nfl');
+  // Preseason: state.week is 0 and nothing has been played yet.
+  const lastCompletedWeek = state.week > 0 ? state.week : 0;
+  if (lastCompletedWeek === 0) return new Map();
+
+  const weeklyMatchups = await Promise.all(
+    Array.from({ length: lastCompletedWeek }, (_, i) => sleeperGet(`/league/${league.id}/matchups/${i + 1}`))
+  );
+
+  const totals = new Map();
+  for (const matchups of weeklyMatchups) {
+    for (const m of matchups || []) {
+      for (const [playerId, points] of Object.entries(m.players_points || {})) {
+        totals.set(playerId, (totals.get(playerId) || 0) + (Number(points) || 0));
+      }
+    }
+  }
+  return totals;
+}
+
+export async function fetchSleeperLeagueRoster(league, playerMap, byeWeeks) {
+  const [leagueData, { names, rosters }, seasonPoints] = await Promise.all([
     sleeperGet(`/league/${league.id}`),
     sleeperTeamNames(league),
+    fetchSleeperSeasonPoints(league).catch(() => new Map()),
   ]);
 
   const roster = rosters.find((r) => String(r.roster_id) === String(league.franchiseId));
@@ -642,17 +686,14 @@ export async function fetchSleeperLeagueRoster(league, playerMap) {
       let status = 'ROSTER';
       if (reserveSet.has(String(id))) status = 'INJURED_RESERVE';
       else if (taxiSet.has(String(id))) status = 'TAXI_SQUAD';
+      const byeKey = SLEEPER_TEAM_TO_MFL_BYE_KEY[info.team] || info.team;
       return {
         id: String(id),
         name: info.name || `Unknown Player (${id})`,
         position: info.position || '',
         team: info.team || 'FA',
-        // Sleeper doesn't expose bye weeks or season-to-date fantasy points
-        // through this endpoint (points would need per-week stat pulls
-        // reweighted by this league's custom scoring settings) — left null,
-        // same as the columns already do for any league missing this data.
-        bye: null,
-        pts: null,
+        bye: byeWeeks?.get(byeKey) ?? null,
+        pts: seasonPoints.has(String(id)) ? seasonPoints.get(String(id)) : null,
         status,
       };
     })

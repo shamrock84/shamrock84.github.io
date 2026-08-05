@@ -108,7 +108,7 @@ async function main() {
       const result = league.provider === 'espn'
         ? await fetchEspnLeagueRoster(league)
         : league.provider === 'sleeper'
-        ? await fetchSleeperLeagueRoster(league, sleeperPlayerMap)
+        ? await fetchSleeperLeagueRoster(league, sleeperPlayerMap, byeWeeks)
         : await fetchLeagueRoster(league, cookie, playerMap, byeWeeks);
       result.tags = league.tags || [];
       leagues.push(result);

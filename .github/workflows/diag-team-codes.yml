@@ -1,13 +1,14 @@
-name: Diagnose MFL Team Codes (manual, read-only)
+name: Test Sleeper Bye Weeks and Points (manual, read-only)
 
-# Deliberately workflow_dispatch ONLY. Read-only research to build an
-# accurate MFL-team-code crosswalk for Sleeper bye weeks — delete this
-# workflow and scripts/diag-team-codes.mjs once confirmed and wired in.
+# Deliberately workflow_dispatch ONLY. Verifies the MFL-team-code crosswalk
+# and the season-points aggregation against the real SFB16 league before
+# trusting them in the full sync — delete this workflow and
+# scripts/test-sleeper-bye-pts.mjs once verified working.
 on:
   workflow_dispatch: {}
 
 jobs:
-  diag:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -18,8 +19,8 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Dump MFL team codes
+      - name: Test Sleeper bye weeks and points
         env:
           MFL_USERNAME: ${{ secrets.MFL_USERNAME }}
           MFL_PASSWORD: ${{ secrets.MFL_PASSWORD }}
-        run: node scripts/diag-team-codes.mjs
+        run: node scripts/test-sleeper-bye-pts.mjs
