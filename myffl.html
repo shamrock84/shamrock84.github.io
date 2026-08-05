@@ -452,10 +452,6 @@
 		table.roster tr.player-row:last-child td {
 			border-bottom: none;
 		}
-		table.roster tr.player-row.pos-boundary td {
-			border-top: 2px solid color-mix(in srgb, var(--accent) 70%, var(--border));
-			padding-top: 0.4rem;
-		}
 		table.salary-summary {
 			width: 100%;
 			border-collapse: collapse;
@@ -762,6 +758,17 @@
 			return el('td', attrs);
 		}
 
+		// Ranked players first (best overall ECR first), unranked players after
+		// in whatever order they arrived in — which is already position-then-
+		// name from the sync (see providers.mjs), so deep bench/taxi players
+		// FantasyPros doesn't rank still land somewhere sensible instead of in
+		// an arbitrary order. Stable sort makes that fallback work: every
+		// unranked player compares equal (Infinity) to every other, so their
+		// relative order never changes.
+		function sortByEcr(players) {
+			return [...players].sort((a, b) => (a.ecr?.rank ?? Infinity) - (b.ecr?.rank ?? Infinity));
+		}
+
 		function buildRosterTable(players, isAuction, statusKey) {
 			const table = el('table', { class: 'roster' });
 			const headRow = el('tr', { class: 'roster-head' });
@@ -776,12 +783,11 @@
 				headRow.appendChild(el('th', { class: 'years-cell', text: 'Yrs' }));
 			}
 			table.appendChild(headRow);
-			let prevPosition = null;
-			for (const p of players) {
-				const posBoundary = prevPosition !== null && p.position !== prevPosition;
-				prevPosition = p.position;
-				const rowClass = `player-row status-${statusKey}${posBoundary ? ' pos-boundary' : ''}`;
-				const row = el('tr', { class: rowClass, 'data-name': p.name.toLowerCase() });
+			// Sorted by ECR now, so position no longer groups into contiguous
+			// blocks — the old pos-boundary divider line between them doesn't
+			// apply anymore. The position chip on each row still shows it.
+			for (const p of sortByEcr(players)) {
+				const row = el('tr', { class: `player-row status-${statusKey}`, 'data-name': p.name.toLowerCase() });
 				row.appendChild(el('td', {}, [el('span', { class: 'pos-chip', text: p.position || '-' })]));
 				row.appendChild(el('td', { class: 'player-name', text: p.name }));
 				row.appendChild(el('td', { class: 'nfl-team', text: p.team || 'FA' }));
@@ -884,11 +890,8 @@
 			table.appendChild(headRow);
 
 			const checkboxes = [];
-			let prevPosition = null;
-			for (const p of players) {
-				const posBoundary = prevPosition !== null && p.position !== prevPosition;
-				prevPosition = p.position;
-				const row = el('tr', { class: `player-row${posBoundary ? ' pos-boundary' : ''}`, 'data-name': p.name.toLowerCase() });
+			for (const p of sortByEcr(players)) {
+				const row = el('tr', { class: 'player-row', 'data-name': p.name.toLowerCase() });
 
 				const checkbox = el('input', { type: 'checkbox' });
 				checkbox.checked = starterIdSet.has(p.id);
