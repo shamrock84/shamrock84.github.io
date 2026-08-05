@@ -95,13 +95,22 @@ async function mflLoginForImport(username, password, leagueId) {
   return { cookie, host };
 }
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 // year defaults to the current season; pass a specific year (e.g. for
-// prior-season lookups) to hit that year's API host instead.
-export async function mflGet(path, cookie, year = YEAR) {
+// prior-season lookups) to hit that year's API host instead. A full sync
+// makes a lot of MFL requests back-to-back, and MFL rate-limits bursts
+// (429) — retry with a short backoff instead of failing leagues that just
+// happened to be later in the sync.
+export async function mflGet(path, cookie, year = YEAR, attempt = 1) {
   const res = await fetch(`https://api.myfantasyleague.com/${year}${path}`, {
     headers: cookie ? { Cookie: cookie } : {},
     redirect: 'follow',
   });
+  if (res.status === 429 && attempt < 4) {
+    await sleep(attempt * 1500);
+    return mflGet(path, cookie, year, attempt + 1);
+  }
   if (!res.ok) {
     throw new Error(`MFL request failed (${res.status}): ${path} (year ${year})`);
   }
