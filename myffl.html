@@ -684,10 +684,10 @@
 
 		const VIEW_LABELS = { rosters: 'Rosters', standings: 'Standings', scoring: 'Scoring', analytics: 'Analytics' };
 		const VIEW_ORDER = ['rosters', 'scoring', 'standings', 'analytics'];
-		const LEAGUE_TYPE_LABELS = { dynasty: 'Dynasty', bestball: 'Best Ball', redraft: 'Redraft' };
+		const LEAGUE_TYPE_LABELS = { dynasty: 'Dynasty', salarycap: 'Salary Cap', bestball: 'Best Ball', redraft: 'Redraft' };
 		// FantasyPros' ranking-type codes, spelled out for the card footnote.
 		const ECR_TYPE_LABELS = { DYNASTY: 'Dynasty', DRAFT: 'Draft', ROS: 'Rest-of-season', WEEKLY: 'Weekly', ADP: 'ADP' };
-		const LEAGUE_TYPE_ORDER = ['dynasty', 'bestball', 'redraft'];
+		const LEAGUE_TYPE_ORDER = ['dynasty', 'salarycap', 'bestball', 'redraft'];
 		const POSITION_ORDER = ['QB', 'RB', 'WR', 'TE', 'PK', 'Def'];
 		function positionRank(pos) {
 			const idx = POSITION_ORDER.indexOf(pos);
@@ -985,7 +985,9 @@
 			// config/leagues.json since MFL doesn't expose it in a reliable form.
 			const badgeLabels = [];
 			if (LEAGUE_TYPE_LABELS[league.type]) badgeLabels.push(LEAGUE_TYPE_LABELS[league.type]);
-			if (isAuction) badgeLabels.push('Salary Cap');
+			// Salary-cap leagues have their own sub-tab, so the type badge already
+			// reads "Salary Cap" — don't stamp it on twice for auction formats.
+			if (isAuction && !badgeLabels.includes('Salary Cap')) badgeLabels.push('Salary Cap');
 			if (Array.isArray(league.tags)) badgeLabels.push(...league.tags);
 
 			const cardHead = el('div', { class: 'card-head' });

@@ -132,7 +132,15 @@ function lookupPlayer(index, player) {
   return byTeam.length === 1 ? byTeam[0] : null;
 }
 
-// Which ranking set a league should be scored against. Dynasty leagues want
+// `type` picks which sub-tab a league renders under, which is a display
+// concern — but keeper-style leagues need dynasty rankings regardless of
+// which tab they sit in. Salary-cap leagues are dynasty leagues with a cap
+// bolted on (multi-year contracts, taxi squads), so they belong here too;
+// without this they'd silently fall through to DRAFT rankings and quietly
+// misprice every veteran on the roster.
+const DYNASTY_RANKED_TYPES = new Set(['dynasty', 'salarycap']);
+
+// Which ranking set a league should be scored against. Keeper leagues want
 // dynasty rankings; everything else wants preseason draft rankings. Both are
 // overridable per league in config/leagues.json (rankingType/scoring) —
 // notably, switch dynasty/draft to ROS once the regular season is underway,
@@ -146,7 +154,7 @@ export function rankingSpecForLeague(league) {
   const tags = Array.isArray(league.tags) ? league.tags : [];
   const isSuperflex = tags.some((t) => /superflex/i.test(String(t)));
   return {
-    type: league.rankingType || (league.type === 'dynasty' ? 'DYNASTY' : 'DRAFT'),
+    type: league.rankingType || (DYNASTY_RANKED_TYPES.has(league.type) ? 'DYNASTY' : 'DRAFT'),
     scoring: league.scoring || 'PPR',
     positions: isSuperflex ? ['OP', 'ALL'] : ['ALL'],
   };
