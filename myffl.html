@@ -684,23 +684,35 @@
 
 		const VIEW_LABELS = { rosters: 'Rosters', standings: 'Standings', scoring: 'Scoring', analytics: 'Analytics' };
 		const VIEW_ORDER = ['rosters', 'scoring', 'standings', 'analytics'];
+		// Per-league type — still what individual Rosters cards badge
+		// themselves with (a Salary Cap league's card says "Salary Cap", not
+		// "Dynasty/Salary Cap"), just no longer what any sub-tab is named
+		// after. See SUBTAB_GROUP/SUBTAB_LABEL_OVERRIDES below for that.
 		const LEAGUE_TYPE_LABELS = { dynasty: 'Dynasty', salarycap: 'Salary Cap', bestball: 'Best Ball', redraft: 'Redraft' };
 		// FantasyPros' ranking-type codes, spelled out for the card footnote.
 		const ECR_TYPE_LABELS = { DYNASTY: 'Dynasty', DRAFT: 'Draft', ROS: 'Rest-of-season', WEEKLY: 'Weekly', ADP: 'ADP' };
-		const LEAGUE_TYPE_ORDER = ['dynasty', 'salarycap', 'bestball', 'redraft'];
-		// Analytics-only grouping: Dynasty and Salary Cap leagues share one
-		// exposure card (and hence one sub-tab) instead of the separate ones
-		// Rosters/Standings/Scoring keep — a salary-cap roster is still a
-		// dynasty-style keeper roster for exposure purposes. `key` becomes the
-		// card's data-league-type; `label` becomes both its sub-tab text (via
-		// data-subtab-label — see renderSubTabs) and reuses LEAGUE_TYPE_LABELS'
-		// wording where a group maps to a single existing type, so the card
-		// heading can just say "Player Exposure" without repeating it.
-		const ANALYTICS_GROUPS = [
-			{ key: 'dynasty', label: 'Dynasty/Salary Cap', types: ['dynasty', 'salarycap'] },
-			{ key: 'bestball', label: 'Best Ball', types: ['bestball'] },
-			{ key: 'redraft', label: 'Redraft', types: ['redraft'] },
-		];
+		// Which sub-tab a league's cards render under, in every view (Rosters,
+		// Scoring, Standings, Analytics) — Dynasty and Salary Cap share one
+		// sub-tab everywhere, since a salary-cap roster is still a
+		// dynasty-style keeper roster; the other two are one-to-one with
+		// their league type.
+		const SUBTAB_GROUP = { dynasty: 'dynasty', salarycap: 'dynasty', bestball: 'bestball', redraft: 'redraft' };
+		const SUBTAB_ORDER = ['dynasty', 'bestball', 'redraft'];
+		// Only where a sub-tab's name needs to say more than a single league
+		// type does (LEAGUE_TYPE_LABELS) — everything else falls through to
+		// that shared wording, so "Best Ball" and "Redraft" aren't repeated here.
+		const SUBTAB_LABEL_OVERRIDES = { dynasty: 'Dynasty/Salary Cap' };
+
+		function subtabType(league) {
+			return SUBTAB_GROUP[league.type] || league.type;
+		}
+
+		// Reverse of SUBTAB_GROUP: every underlying league.type that folds
+		// into a given sub-tab. Used by the Analytics exposure card to know
+		// which leagues to combine into one group.
+		function typesInSubtab(groupKey) {
+			return Object.keys(SUBTAB_GROUP).filter((t) => SUBTAB_GROUP[t] === groupKey);
+		}
 		const POSITION_ORDER = ['QB', 'RB', 'WR', 'TE', 'PK', 'Def'];
 		function positionRank(pos) {
 			const idx = POSITION_ORDER.indexOf(pos);
@@ -1002,7 +1014,7 @@
 		}
 
 		function renderCard(league) {
-			const card = el('div', { class: 'card', 'data-view': 'rosters', 'data-league-type': league.type || '' });
+			const card = el('div', { class: 'card', 'data-view': 'rosters', 'data-league-type': subtabType(league) || '' });
 
 			const isAuction = league.format === 'auction';
 			// Badges: league type + salary cap are derived from data we already
@@ -1088,7 +1100,7 @@
 		}
 
 		function renderStandingsCard(league) {
-			const card = el('div', { class: 'card', 'data-view': 'standings', 'data-league-type': league.type || '' });
+			const card = el('div', { class: 'card', 'data-view': 'standings', 'data-league-type': subtabType(league) || '' });
 			const heading = el('h2');
 			const link = el('a', { href: league.url, target: '_blank', rel: 'noopener', text: league.leagueName || league.name });
 			heading.appendChild(link);
@@ -1128,7 +1140,7 @@
 		}
 
 		function renderScoringCard(league) {
-			const card = el('div', { class: 'card', 'data-view': 'scoring', 'data-league-type': league.type || '' });
+			const card = el('div', { class: 'card', 'data-view': 'scoring', 'data-league-type': subtabType(league) || '' });
 			const heading = el('h2');
 			const link = el('a', { href: league.url, target: '_blank', rel: 'noopener', text: league.leagueName || league.name });
 			heading.appendChild(link);
@@ -1176,7 +1188,7 @@
 		// roster data. Matched by player name since MFL/ESPN/Sleeper each use
 		// their own player ids — names are the one thing that lines up.
 		// `types` is an array so a group can span more than one league type
-		// (Dynasty and Salary Cap share an exposure card — see ANALYTICS_GROUPS).
+		// (Dynasty and Salary Cap share an exposure card — see SUBTAB_GROUP).
 		function computePlayerExposure(leagues, types) {
 			const eligible = leagues.filter((l) => types.includes(l.type) && Array.isArray(l.players) && l.players.length > 0);
 			const byPlayer = new Map();
@@ -1216,8 +1228,8 @@
 
 		const ANALYTICS_PAGE_SIZE = 10;
 
-		function renderAnalyticsCard(groupKey, label, types, leagues) {
-			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey, 'data-subtab-label': label });
+		function renderAnalyticsCard(groupKey, types, leagues) {
+			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
 			const heading = el('h2', { text: 'Player Exposure' });
 			card.appendChild(heading);
 
@@ -1327,8 +1339,8 @@
 					.map((c) => c.dataset.leagueType)
 					.filter(Boolean)
 			);
-			const present = LEAGUE_TYPE_ORDER.filter((t) => typesInView.has(t)).concat(
-				[...typesInView].filter((t) => !LEAGUE_TYPE_ORDER.includes(t))
+			const present = SUBTAB_ORDER.filter((t) => typesInView.has(t)).concat(
+				[...typesInView].filter((t) => !SUBTAB_ORDER.includes(t))
 			);
 
 			if (present.length <= 1) {
@@ -1342,14 +1354,7 @@
 				currentLeagueType = present[0];
 			}
 			for (const type of present) {
-				// Analytics cards carry their own data-subtab-label (see
-				// ANALYTICS_GROUPS/renderAnalyticsCard) since a group there can
-				// mean something the shared LEAGUE_TYPE_LABELS name doesn't say
-				// (Dynasty + Salary Cap combined) — Rosters/Standings/Scoring
-				// cards never set it, so they fall through to the shared label
-				// exactly as before.
-				const cardWithType = document.querySelector(`.card[data-view="${currentView}"][data-league-type="${type}"]`);
-				const label = cardWithType?.dataset.subtabLabel || LEAGUE_TYPE_LABELS[type] || type;
+				const label = SUBTAB_LABEL_OVERRIDES[type] || LEAGUE_TYPE_LABELS[type] || type;
 				const btn = el('button', {
 					class: `tab-btn${type === currentLeagueType ? ' active' : ''}`,
 					type: 'button',
@@ -1491,9 +1496,10 @@
 				}
 			}
 
-			for (const group of ANALYTICS_GROUPS) {
-				if (!data.leagues.some((l) => group.types.includes(l.type))) continue;
-				gridEl.appendChild(renderAnalyticsCard(group.key, group.label, group.types, data.leagues));
+			for (const groupKey of SUBTAB_ORDER) {
+				const types = typesInSubtab(groupKey);
+				if (!data.leagues.some((l) => types.includes(l.type))) continue;
+				gridEl.appendChild(renderAnalyticsCard(groupKey, types, data.leagues));
 			}
 
 			const presentViews = new Set([...gridEl.querySelectorAll('.card')].map((c) => c.dataset.view).filter(Boolean));
