@@ -27,6 +27,8 @@ jobs:
           MFL_PASSWORD: ${{ secrets.MFL_PASSWORD }}
           ESPN_S2: ${{ secrets.ESPN_S2 }}
           ESPN_SWID: ${{ secrets.ESPN_SWID }}
+          # Optional — without it the sync just skips the ECR columns.
+          FANTASYPROS_API_KEY: ${{ secrets.FANTASYPROS_API_KEY }}
         run: node scripts/fetch-rosters.mjs
 
       - name: Commit and push if changed

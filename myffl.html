@@ -515,6 +515,7 @@
 		.salary-cell,
 		.years-cell,
 		.bye-cell,
+		.ecr-cell,
 		.pts-cell {
 			text-align: right;
 			font-variant-numeric: tabular-nums;
@@ -524,11 +525,23 @@
 		tr.roster-head th.salary-cell,
 		tr.roster-head th.years-cell,
 		tr.roster-head th.bye-cell,
+		tr.roster-head th.ecr-cell,
 		tr.roster-head th.pts-cell {
 			text-align: right;
 		}
 		.pts-cell.pts-prior-year {
 			font-style: italic;
+		}
+		/* Top-24 overall gets the accent treatment so the studs on a roster
+		   stand out at a glance without having to read every row. */
+		.ecr-cell.ecr-elite {
+			color: var(--accent);
+			font-weight: 600;
+		}
+		.rankings-note {
+			margin-top: 0.6rem;
+			font-size: 0.7rem;
+			color: var(--muted);
 		}
 		tr.status-taxi_squad .pos-chip,
 		tr.status-injured_reserve .pos-chip {
@@ -672,6 +685,8 @@
 		const VIEW_LABELS = { rosters: 'Rosters', standings: 'Standings', scoring: 'Scoring', analytics: 'Analytics' };
 		const VIEW_ORDER = ['rosters', 'scoring', 'standings', 'analytics'];
 		const LEAGUE_TYPE_LABELS = { dynasty: 'Dynasty', bestball: 'Best Ball', redraft: 'Redraft' };
+		// FantasyPros' ranking-type codes, spelled out for the card footnote.
+		const ECR_TYPE_LABELS = { DYNASTY: 'Dynasty', DRAFT: 'Draft', ROS: 'Rest-of-season', WEEKLY: 'Weekly', ADP: 'ADP' };
 		const LEAGUE_TYPE_ORDER = ['dynasty', 'bestball', 'redraft'];
 		const POSITION_ORDER = ['QB', 'RB', 'WR', 'TE', 'PK', 'Def'];
 		function positionRank(pos) {
@@ -724,6 +739,29 @@
 			renderGrid();
 		}
 
+		// FantasyPros consensus rank, attached to players during the sync (see
+		// scripts/lib/fantasypros.mjs). Shows the positional rank ("RB4") since
+		// that's what's actionable at a glance, with the overall rank and tier
+		// on hover. Players FantasyPros doesn't rank — deep-bench dynasty
+		// stashes, mostly — fall through to an em dash like any other missing
+		// value, and the whole column is empty when no API key is configured.
+		function buildEcrCell(p) {
+			const ecr = p.ecr;
+			if (!ecr || (ecr.posRank == null && ecr.rank == null)) {
+				return el('td', { class: 'ecr-cell', text: '—' });
+			}
+			const isElite = ecr.rank != null && ecr.rank <= 24;
+			const details = [];
+			if (ecr.rank != null) details.push(`Overall ECR ${ecr.rank}`);
+			if (ecr.tier != null) details.push(`Tier ${ecr.tier}`);
+			const attrs = {
+				class: `ecr-cell${isElite ? ' ecr-elite' : ''}`,
+				text: ecr.posRank || String(ecr.rank),
+			};
+			if (details.length > 0) attrs.title = details.join(' · ');
+			return el('td', attrs);
+		}
+
 		function buildRosterTable(players, isAuction, statusKey) {
 			const table = el('table', { class: 'roster' });
 			const headRow = el('tr', { class: 'roster-head' });
@@ -731,6 +769,7 @@
 			headRow.appendChild(el('th', { text: 'Player' }));
 			headRow.appendChild(el('th', { text: 'Team' }));
 			headRow.appendChild(el('th', { class: 'bye-cell', text: 'Bye' }));
+			headRow.appendChild(el('th', { class: 'ecr-cell', text: 'ECR' }));
 			headRow.appendChild(el('th', { class: 'pts-cell', text: 'Pts' }));
 			if (isAuction) {
 				headRow.appendChild(el('th', { class: 'salary-cell', text: 'Salary' }));
@@ -747,6 +786,7 @@
 				row.appendChild(el('td', { class: 'player-name', text: p.name }));
 				row.appendChild(el('td', { class: 'nfl-team', text: p.team || 'FA' }));
 				row.appendChild(el('td', { class: 'bye-cell', text: p.bye ? String(p.bye) : '—' }));
+				row.appendChild(buildEcrCell(p));
 				const usingPriorYear = !(p.pts > 0) && p.priorYearPts > 0;
 				const ptsValue = usingPriorYear ? p.priorYearPts : p.pts;
 				const ptsAttrs = { class: `pts-cell${usingPriorYear ? ' pts-prior-year' : ''}`, text: ptsValue != null ? Number(ptsValue).toFixed(2) : '—' };
@@ -839,6 +879,7 @@
 			headRow.appendChild(el('th', { text: 'Player' }));
 			headRow.appendChild(el('th', { text: 'Team' }));
 			headRow.appendChild(el('th', { class: 'bye-cell', text: 'Bye' }));
+			headRow.appendChild(el('th', { class: 'ecr-cell', text: 'ECR' }));
 			headRow.appendChild(el('th', { class: 'pts-cell', text: 'Pts' }));
 			table.appendChild(headRow);
 
@@ -860,6 +901,7 @@
 				row.appendChild(el('td', { class: 'player-name', text: p.name }));
 				row.appendChild(el('td', { class: 'nfl-team', text: p.team || 'FA' }));
 				row.appendChild(el('td', { class: 'bye-cell', text: p.bye ? String(p.bye) : '—' }));
+				row.appendChild(buildEcrCell(p));
 				const usingPriorYear = !(p.pts > 0) && p.priorYearPts > 0;
 				const ptsValue = usingPriorYear ? p.priorYearPts : p.pts;
 				const ptsAttrs = { class: `pts-cell${usingPriorYear ? ' pts-prior-year' : ''}`, text: ptsValue != null ? Number(ptsValue).toFixed(2) : '—' };
@@ -1002,6 +1044,17 @@
 
 			if (!league.players || league.players.length === 0) {
 				card.appendChild(el('div', { class: 'error-box', text: 'No players found on this roster.' }));
+			}
+
+			// Which FantasyPros ranking set the ECR column is showing. Worth
+			// stating outright: dynasty and draft rankings disagree sharply on
+			// the same player, so an unlabelled rank invites misreading.
+			if (league.rankings) {
+				const r = league.rankings;
+				const parts = [`${ECR_TYPE_LABELS[r.type] || r.type} ${r.scoring} rankings`];
+				if (r.totalExperts) parts.push(`${r.totalExperts} experts`);
+				if (r.lastUpdated) parts.push(`updated ${r.lastUpdated}`);
+				card.appendChild(el('div', { class: 'rankings-note', text: `ECR: ${parts.join(' · ')}` }));
 			}
 
 			return card;

@@ -32,6 +32,7 @@ import {
   fetchSleeperStandings,
   fetchSleeperScoring,
 } from './lib/providers.mjs';
+import { attachRankings, fantasyProsApiKey } from './lib/fantasypros.mjs';
 
 const USERNAME = process.env.MFL_USERNAME;
 const PASSWORD = process.env.MFL_PASSWORD;
@@ -188,6 +189,22 @@ async function main() {
       console.error(`Failed to fetch lineup for ${league.name}: ${err.message}`);
       target.starters = null;
       target.lineupError = err.message;
+    }
+  }
+
+  // FantasyPros consensus rankings, layered over whatever rosters we managed
+  // to fetch above. Skipped entirely without an API key so the sync behaves
+  // exactly as it did before this existed, and never allowed to fail the run
+  // — every league keeps its roster whether or not rankings came through.
+  const fpApiKey = fantasyProsApiKey();
+  if (!fpApiKey) {
+    console.log('Skipping FantasyPros rankings: FANTASYPROS_API_KEY not set');
+  } else {
+    try {
+      const summary = await attachRankings(leagues, LEAGUES, { apiKey: fpApiKey, season: YEAR });
+      for (const line of summary) console.log(`FantasyPros — ${line}`);
+    } catch (err) {
+      console.error(`Failed to attach FantasyPros rankings: ${err.message}`);
     }
   }
 
