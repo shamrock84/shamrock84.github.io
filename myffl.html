@@ -857,11 +857,14 @@
 		}
 
 		// Yrs cell for an auction/salary-cap roster row. A real contract length
-		// from MFL always wins; only when MFL hasn't set one yet does this fall
-		// back to a local planning dropdown (1/2/3 years) so a manager can
-		// pencil in how long they intend to keep a player before it's official.
+		// from MFL always wins; only when MFL hasn't set one yet (blank OR a
+		// literal 0 — MFL sends this field as a string, so "0" is truthy and
+		// needs an explicit numeric check, not just `if (p.contractYear)`)
+		// does this fall back to a local planning dropdown (1/2/3 years) so a
+		// manager can pencil in how long they intend to keep a player before
+		// it's official.
 		function buildYearsCell(p, leagueId) {
-			if (p.contractYear) {
+			if (Number(p.contractYear) > 0) {
 				return el('td', { class: 'years-cell', text: String(p.contractYear) });
 			}
 			const td = el('td', { class: 'years-cell years-cell-plan' });
