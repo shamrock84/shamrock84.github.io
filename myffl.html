@@ -723,8 +723,16 @@
 			const idx = POSITION_ORDER.indexOf(pos);
 			return idx === -1 ? POSITION_ORDER.length : idx;
 		}
-		let currentView = 'rosters';
-		let currentLeagueType = null;
+		// Remember the last tab/sub-tab a visitor picked across reloads. Only
+		// written on an actual click (see renderViewTabs/renderSubTabs below),
+		// never when a stored value gets silently corrected because this
+		// session's data doesn't currently have that view/sub-tab — a
+		// transient gap (e.g. one sync with an empty Redraft) shouldn't
+		// overwrite a real saved preference.
+		const VIEW_STORAGE_KEY = 'myfflView';
+		const LEAGUE_TYPE_STORAGE_KEY = 'myfflLeagueType';
+		let currentView = localStorage.getItem(VIEW_STORAGE_KEY) || 'rosters';
+		let currentLeagueType = localStorage.getItem(LEAGUE_TYPE_STORAGE_KEY) || null;
 		let pageData = null;
 		let liveScoringTimer = null;
 		let syncPollTimer = null;
@@ -1368,6 +1376,7 @@
 				});
 				btn.addEventListener('click', () => {
 					currentLeagueType = type;
+					localStorage.setItem(LEAGUE_TYPE_STORAGE_KEY, currentLeagueType);
 					subtabsEl.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b === btn));
 					updateVisibility();
 				});
@@ -1451,6 +1460,7 @@
 					});
 					btn.addEventListener('click', () => {
 						currentView = view;
+						localStorage.setItem(VIEW_STORAGE_KEY, currentView);
 						tabsEl.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b === btn));
 						renderSubTabs();
 						updateSearchVisibility();
