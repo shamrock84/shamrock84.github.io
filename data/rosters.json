@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-04T23:38:52.599Z",
+  "generatedAt": "2026-08-05T00:01:21.581Z",
   "year": "2026",
   "leagues": [
     {
@@ -399,7 +399,7 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-04T23:38:37.094Z",
+      "updatedAt": "2026-08-05T00:01:09.798Z",
       "error": null,
       "tags": [],
       "standings": [
@@ -507,19 +507,8 @@
       "standingsError": null,
       "scoring": null,
       "scoringError": "No live scoring available yet",
-      "lineupWeek": "1",
-      "starters": [
-        "14783",
-        "13604",
-        "17044",
-        "14802",
-        "11675",
-        "16211",
-        "13299",
-        "16681",
-        "0518"
-      ],
-      "lineupError": null
+      "starters": null,
+      "lineupError": "MFL request failed (429): /export?TYPE=weeklyResults&L=26696&W=1&JSON=1 (year 2026)"
     },
     {
       "id": "25608",
@@ -918,7 +907,7 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-04T23:38:38.053Z",
+      "updatedAt": "2026-08-05T00:01:10.254Z",
       "error": null,
       "tags": [],
       "standings": [
@@ -1413,7 +1402,7 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-04T23:38:38.914Z",
+      "updatedAt": "2026-08-05T00:01:10.876Z",
       "error": null,
       "tags": [],
       "standings": [
@@ -1856,7 +1845,7 @@
       ],
       "salaryCap": 550,
       "salaryAdjustments": 3.2699999999999996,
-      "updatedAt": "2026-08-04T23:38:39.824Z",
+      "updatedAt": "2026-08-05T00:01:11.493Z",
       "error": null,
       "tags": [
         "Best Ball"
@@ -2324,7 +2313,7 @@
       ],
       "salaryCap": 500,
       "salaryAdjustments": 4.68,
-      "updatedAt": "2026-08-04T23:38:40.559Z",
+      "updatedAt": "2026-08-05T00:01:12.288Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -2769,7 +2758,7 @@
       ],
       "salaryCap": 500,
       "salaryAdjustments": 10.09,
-      "updatedAt": "2026-08-04T23:38:41.408Z",
+      "updatedAt": "2026-08-05T00:01:13.223Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -3214,7 +3203,7 @@
       ],
       "salaryCap": 500,
       "salaryAdjustments": 58.24,
-      "updatedAt": "2026-08-04T23:38:42.322Z",
+      "updatedAt": "2026-08-05T00:01:14.015Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -3631,7 +3620,7 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-04T23:38:43.012Z",
+      "updatedAt": "2026-08-05T00:01:14.672Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -3740,7 +3729,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet"
+      "scoringError": "MFL request failed (429): /export?TYPE=league&L=72911&JSON=1 (year 2026)"
     },
     {
       "id": "54766",
@@ -3971,7 +3960,7 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-04T23:38:43.734Z",
+      "updatedAt": "2026-08-05T00:01:15.115Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -4355,7 +4344,7 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-04T23:38:44.372Z",
+      "updatedAt": "2026-08-05T00:01:15.473Z",
       "error": null,
       "tags": [
         "SFB"
@@ -4719,7 +4708,7 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-04T23:38:44.773Z",
+      "updatedAt": "2026-08-05T00:01:15.743Z",
       "error": null,
       "tags": [
         "SFB"
@@ -4838,7 +4827,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet"
+      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=61777&JSON=1 (year 2026)"
     },
     {
       "id": "30196",
@@ -5069,7 +5058,7 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-04T23:38:45.186Z",
+      "updatedAt": "2026-08-05T00:01:16.245Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -5188,7 +5177,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet"
+      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=30196&JSON=1 (year 2026)"
     },
     {
       "id": "421871710",
@@ -5200,7 +5189,7 @@
       "teamName": "Jeffer Justinson",
       "url": "https://fantasy.espn.com/football/team?leagueId=421871710&teamId=5",
       "players": [],
-      "updatedAt": "2026-08-04T23:38:45.358Z",
+      "updatedAt": "2026-08-05T00:01:16.387Z",
       "error": null,
       "tags": [],
       "standings": [
@@ -5383,7 +5372,7 @@
       "teamName": "Big Dart Energy",
       "url": "https://fantasy.espn.com/football/team?leagueId=1966972&teamId=10",
       "players": [],
-      "updatedAt": "2026-08-04T23:38:45.426Z",
+      "updatedAt": "2026-08-05T00:01:16.471Z",
       "error": null,
       "tags": [],
       "standings": [
@@ -5549,6 +5538,405 @@
           {
             "franchiseId": "7",
             "teamName": "You Like That?!!!",
+            "score": "0.00",
+            "isMe": false
+          }
+        ]
+      },
+      "scoringError": null
+    },
+    {
+      "id": "1367867592919760896",
+      "name": "SFB16 Cloud Strife",
+      "type": "redraft",
+      "format": null,
+      "leagueName": "#SFB16 - Cloud Strife (Final Fantasy VII)",
+      "franchiseId": "4",
+      "teamName": "Gold Chocobo",
+      "url": "https://sleeper.com/leagues/1367867592919760896",
+      "players": [
+        {
+          "id": "13269",
+          "name": "Fernando Mendoza",
+          "position": "QB",
+          "team": "LV",
+          "bye": null,
+          "pts": null,
+          "status": "ROSTER"
+        },
+        {
+          "id": "11565",
+          "name": "J.J. McCarthy",
+          "position": "QB",
+          "team": "MIN",
+          "bye": null,
+          "pts": null,
+          "status": "ROSTER"
+        },
+        {
+          "id": "3257",
+          "name": "Jacoby Brissett",
+          "position": "QB",
+          "team": "ARI",
+          "bye": null,
+          "pts": null,
+          "status": "ROSTER"
+        },
+        {
+          "id": "5849",
+          "name": "Kyler Murray",
+          "position": "QB",
+          "team": "MIN",
+          "bye": null,
+          "pts": null,
+          "status": "ROSTER"
+        },
+        {
+          "id": "8161",
+          "name": "Malik Willis",
+          "position": "QB",
+          "team": "MIA",
+          "bye": null,
+          "pts": null,
+          "status": "ROSTER"
+        },
+        {
+          "id": "11559",
+          "name": "Michael Penix",
+          "position": "QB",
+          "team": "ATL",
+          "bye": null,
+          "pts": null,
+          "status": "ROSTER"
+        },
+        {
+          "id": "12481",
+          "name": "Cam Skattebo",
+          "position": "RB",
+          "team": "NYG",
+          "bye": null,
+          "pts": null,
+          "status": "ROSTER"
+        },
+        {
+          "id": "9224",
+          "name": "Chase Brown",
+          "position": "RB",
+          "team": "CIN",
+          "bye": null,
+          "pts": null,
+          "status": "ROSTER"
+        },
+        {
+          "id": "11435",
+          "name": "Emanuel Wilson",
+          "position": "RB",
+          "team": "SEA",
+          "bye": null,
+          "pts": null,
+          "status": "ROSTER"
+        },
+        {
+          "id": "5850",
+          "name": "Josh Jacobs",
+          "position": "RB",
+          "team": "GB",
+          "bye": null,
+          "pts": null,
+          "status": "ROSTER"
+        },
+        {
+          "id": "8150",
+          "name": "Kyren Williams",
+          "position": "RB",
+          "team": "LAR",
+          "bye": null,
+          "pts": null,
+          "status": "ROSTER"
+        },
+        {
+          "id": "5967",
+          "name": "Tony Pollard",
+          "position": "RB",
+          "team": "TEN",
+          "bye": null,
+          "pts": null,
+          "status": "ROSTER"
+        },
+        {
+          "id": "11655",
+          "name": "Tyrone Tracy",
+          "position": "RB",
+          "team": "NYG",
+          "bye": null,
+          "pts": null,
+          "status": "ROSTER"
+        },
+        {
+          "id": "12474",
+          "name": "Woody Marks",
+          "position": "RB",
+          "team": "HOU",
+          "bye": null,
+          "pts": null,
+          "status": "ROSTER"
+        },
+        {
+          "id": "6786",
+          "name": "CeeDee Lamb",
+          "position": "WR",
+          "team": "DAL",
+          "bye": null,
+          "pts": null,
+          "status": "ROSTER"
+        },
+        {
+          "id": "6794",
+          "name": "Justin Jefferson",
+          "position": "WR",
+          "team": "MIN",
+          "bye": null,
+          "pts": null,
+          "status": "ROSTER"
+        },
+        {
+          "id": "13317",
+          "name": "Ted Hurst",
+          "position": "WR",
+          "team": "TB",
+          "bye": null,
+          "pts": null,
+          "status": "ROSTER"
+        },
+        {
+          "id": "9480",
+          "name": "Brenton Strange",
+          "position": "TE",
+          "team": "JAX",
+          "bye": null,
+          "pts": null,
+          "status": "ROSTER"
+        },
+        {
+          "id": "12487",
+          "name": "Terrance Ferguson",
+          "position": "TE",
+          "team": "LAR",
+          "bye": null,
+          "pts": null,
+          "status": "ROSTER"
+        },
+        {
+          "id": "9484",
+          "name": "Tucker Kraft",
+          "position": "TE",
+          "team": "GB",
+          "bye": null,
+          "pts": null,
+          "status": "ROSTER"
+        }
+      ],
+      "updatedAt": "2026-08-05T00:01:16.537Z",
+      "error": null,
+      "tags": [
+        "Superflex",
+        "SFB"
+      ],
+      "standings": [
+        {
+          "franchiseId": "1",
+          "teamName": "UnicornBolt",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "2",
+          "teamName": "XIII",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "3",
+          "teamName": "JTivs9",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "4",
+          "teamName": "Gold Chocobo",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": true
+        },
+        {
+          "franchiseId": "5",
+          "teamName": "CouchScoutsCoop",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "6",
+          "teamName": "Bam Knights of the Round",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "7",
+          "teamName": "poppykimish",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "8",
+          "teamName": "DFSKyle",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "9",
+          "teamName": "mmidlikowski",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "10",
+          "teamName": "Camlawfff",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "11",
+          "teamName": "Orashna",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "12",
+          "teamName": "ChadS-MN",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        }
+      ],
+      "standingsError": null,
+      "scoring": {
+        "week": 1,
+        "teams": [
+          {
+            "franchiseId": "1",
+            "teamName": "UnicornBolt",
+            "score": "0.00",
+            "isMe": false
+          },
+          {
+            "franchiseId": "2",
+            "teamName": "XIII",
+            "score": "0.00",
+            "isMe": false
+          },
+          {
+            "franchiseId": "3",
+            "teamName": "JTivs9",
+            "score": "0.00",
+            "isMe": false
+          },
+          {
+            "franchiseId": "4",
+            "teamName": "Gold Chocobo",
+            "score": "0.00",
+            "isMe": true
+          },
+          {
+            "franchiseId": "5",
+            "teamName": "CouchScoutsCoop",
+            "score": "0.00",
+            "isMe": false
+          },
+          {
+            "franchiseId": "6",
+            "teamName": "Bam Knights of the Round",
+            "score": "0.00",
+            "isMe": false
+          },
+          {
+            "franchiseId": "7",
+            "teamName": "poppykimish",
+            "score": "0.00",
+            "isMe": false
+          },
+          {
+            "franchiseId": "8",
+            "teamName": "DFSKyle",
+            "score": "0.00",
+            "isMe": false
+          },
+          {
+            "franchiseId": "9",
+            "teamName": "mmidlikowski",
+            "score": "0.00",
+            "isMe": false
+          },
+          {
+            "franchiseId": "10",
+            "teamName": "Camlawfff",
+            "score": "0.00",
+            "isMe": false
+          },
+          {
+            "franchiseId": "11",
+            "teamName": "Orashna",
+            "score": "0.00",
+            "isMe": false
+          },
+          {
+            "franchiseId": "12",
+            "teamName": "ChadS-MN",
             "score": "0.00",
             "isMe": false
           }
