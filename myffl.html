@@ -310,6 +310,19 @@
 			letter-spacing: 0.03em;
 			white-space: nowrap;
 		}
+		/* On narrow screens, a long league name and its badges can just barely
+		   both fit on one line — technically no overflow, but cramped with
+		   almost no breathing room. Stack them instead so the title gets the
+		   full row to itself (and can wrap onto multiple lines if it's long)
+		   and badges sit on their own row below. */
+		@media (max-width: 600px) {
+			.card-head {
+				flex-direction: column;
+			}
+			.badges {
+				justify-content: flex-start;
+			}
+		}
 		.card .team {
 			color: var(--muted);
 			font-size: 0.85rem;
