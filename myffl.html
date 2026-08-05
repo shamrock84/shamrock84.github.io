@@ -563,6 +563,11 @@
 			background: var(--gold);
 			color: var(--gold-text);
 		}
+		.exposure-leagues {
+			color: var(--muted);
+			font-size: 0.72rem;
+			margin-top: 0.1rem;
+		}
 		.hidden { display: none !important; }
 		footer {
 			text-align: center;
@@ -639,8 +644,8 @@
 			return node;
 		}
 
-		const VIEW_LABELS = { rosters: 'Rosters', standings: 'Standings', scoring: 'Scoring' };
-		const VIEW_ORDER = ['rosters', 'scoring', 'standings'];
+		const VIEW_LABELS = { rosters: 'Rosters', standings: 'Standings', scoring: 'Scoring', analytics: 'Analytics' };
+		const VIEW_ORDER = ['rosters', 'scoring', 'standings', 'analytics'];
 		const LEAGUE_TYPE_LABELS = { dynasty: 'Dynasty', bestball: 'Best Ball', redraft: 'Redraft' };
 		const LEAGUE_TYPE_ORDER = ['dynasty', 'bestball', 'redraft'];
 		let currentView = 'rosters';
@@ -1055,6 +1060,82 @@
 			return card;
 		}
 
+		// Exposure: how many of your leagues (of this one type — dynasty
+		// exposure and bestball exposure aren't the same question) roster a
+		// given player, as a share of every league of that type with usable
+		// roster data. Matched by player name since MFL/ESPN/Sleeper each use
+		// their own player ids — names are the one thing that lines up.
+		function computePlayerExposure(leagues, type) {
+			const eligible = leagues.filter((l) => l.type === type && Array.isArray(l.players) && l.players.length > 0);
+			const byPlayer = new Map();
+
+			for (const league of eligible) {
+				const label = league.leagueName || league.name;
+				const seen = new Set();
+				for (const p of league.players || []) {
+					if (seen.has(p.name)) continue;
+					seen.add(p.name);
+					if (!byPlayer.has(p.name)) {
+						byPlayer.set(p.name, { position: p.position, leagues: [] });
+					}
+					byPlayer.get(p.name).leagues.push(label);
+				}
+			}
+
+			const total = eligible.length;
+			const rows = [...byPlayer.entries()]
+				.map(([name, info]) => ({
+					name,
+					position: info.position,
+					leagues: info.leagues,
+					count: info.leagues.length,
+					exposure: total > 0 ? (info.leagues.length / total) * 100 : 0,
+				}))
+				.filter((r) => r.count > 1)
+				.sort((a, b) => b.exposure - a.exposure || b.count - a.count || a.name.localeCompare(b.name));
+
+			return { total, rows };
+		}
+
+		function renderAnalyticsCard(type, leagues) {
+			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': type });
+			const heading = el('h2', { text: `${LEAGUE_TYPE_LABELS[type] || type} Player Exposure` });
+			card.appendChild(heading);
+
+			const { total, rows } = computePlayerExposure(leagues, type);
+
+			if (total < 2) {
+				card.appendChild(el('div', { class: 'error-box', text: 'Need at least 2 leagues of this type with roster data to show exposure.' }));
+				return card;
+			}
+
+			card.appendChild(el('div', { class: 'team', text: `Across ${total} leagues` }));
+
+			if (rows.length === 0) {
+				card.appendChild(el('div', { class: 'error-box', text: 'No players owned in more than one league yet.' }));
+				return card;
+			}
+
+			const table = el('table', { class: 'standings' });
+			const headRow = el('tr');
+			['Player', 'Pos', 'Owned In', 'Exposure'].forEach((h) => headRow.appendChild(el('th', { text: h })));
+			table.appendChild(headRow);
+
+			for (const r of rows) {
+				const row = el('tr');
+				const nameCell = el('td');
+				nameCell.appendChild(el('div', { text: r.name }));
+				nameCell.appendChild(el('div', { class: 'exposure-leagues', text: r.leagues.join(', ') }));
+				row.appendChild(nameCell);
+				row.appendChild(el('td', { text: r.position || '-' }));
+				row.appendChild(el('td', { text: `${r.count}/${total}` }));
+				row.appendChild(el('td', { text: `${Math.round(r.exposure)}%` }));
+				table.appendChild(row);
+			}
+			card.appendChild(table);
+			return card;
+		}
+
 		function updateVisibility() {
 			const q = document.getElementById('search').value.trim().toLowerCase();
 			document.querySelectorAll('.card').forEach((card) => {
@@ -1242,6 +1323,11 @@
 				if (league.scoring !== undefined || league.scoringError) {
 					gridEl.appendChild(renderScoringCard(league));
 				}
+			}
+
+			const typesForAnalytics = LEAGUE_TYPE_ORDER.filter((t) => data.leagues.some((l) => l.type === t));
+			for (const type of typesForAnalytics) {
+				gridEl.appendChild(renderAnalyticsCard(type, data.leagues));
 			}
 
 			const presentViews = new Set([...gridEl.querySelectorAll('.card')].map((c) => c.dataset.view).filter(Boolean));
