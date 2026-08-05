@@ -688,6 +688,18 @@
 		// FantasyPros' ranking-type codes, spelled out for the card footnote.
 		const ECR_TYPE_LABELS = { DYNASTY: 'Dynasty', DRAFT: 'Draft', ROS: 'Rest-of-season', WEEKLY: 'Weekly', ADP: 'ADP' };
 		const LEAGUE_TYPE_ORDER = ['dynasty', 'salarycap', 'bestball', 'redraft'];
+		// Analytics-only grouping: Dynasty and Salary Cap leagues share one
+		// exposure card (and hence one sub-tab) instead of the separate ones
+		// Rosters/Standings/Scoring keep — a salary-cap roster is still a
+		// dynasty-style keeper roster for exposure purposes. `key` becomes the
+		// card's data-league-type (and so the sub-tab, via LEAGUE_TYPE_LABELS),
+		// `label` is spelled out in the card heading since it covers more than
+		// the sub-tab name implies.
+		const ANALYTICS_GROUPS = [
+			{ key: 'dynasty', label: 'Dynasty + Salary Cap', types: ['dynasty', 'salarycap'] },
+			{ key: 'bestball', label: 'Best Ball', types: ['bestball'] },
+			{ key: 'redraft', label: 'Redraft', types: ['redraft'] },
+		];
 		const POSITION_ORDER = ['QB', 'RB', 'WR', 'TE', 'PK', 'Def'];
 		function positionRank(pos) {
 			const idx = POSITION_ORDER.indexOf(pos);
@@ -1157,13 +1169,15 @@
 			return card;
 		}
 
-		// Exposure: how many of your leagues (of this one type — dynasty
+		// Exposure: how many of your leagues (within this one group — dynasty
 		// exposure and bestball exposure aren't the same question) roster a
-		// given player, as a share of every league of that type with usable
+		// given player, as a share of every league in that group with usable
 		// roster data. Matched by player name since MFL/ESPN/Sleeper each use
 		// their own player ids — names are the one thing that lines up.
-		function computePlayerExposure(leagues, type) {
-			const eligible = leagues.filter((l) => l.type === type && Array.isArray(l.players) && l.players.length > 0);
+		// `types` is an array so a group can span more than one league type
+		// (Dynasty and Salary Cap share an exposure card — see ANALYTICS_GROUPS).
+		function computePlayerExposure(leagues, types) {
+			const eligible = leagues.filter((l) => types.includes(l.type) && Array.isArray(l.players) && l.players.length > 0);
 			const byPlayer = new Map();
 
 			for (const league of eligible) {
@@ -1201,15 +1215,15 @@
 
 		const ANALYTICS_PAGE_SIZE = 10;
 
-		function renderAnalyticsCard(type, leagues) {
-			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': type });
-			const heading = el('h2', { text: `${LEAGUE_TYPE_LABELS[type] || type} Player Exposure` });
+		function renderAnalyticsCard(groupKey, label, types, leagues) {
+			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
+			const heading = el('h2', { text: `${label} Player Exposure` });
 			card.appendChild(heading);
 
-			const { total, rows } = computePlayerExposure(leagues, type);
+			const { total, rows } = computePlayerExposure(leagues, types);
 
 			if (total < 2) {
-				card.appendChild(el('div', { class: 'error-box', text: 'Need at least 2 leagues of this type with roster data to show exposure.' }));
+				card.appendChild(el('div', { class: 'error-box', text: 'Need at least 2 leagues in this group with roster data to show exposure.' }));
 				return card;
 			}
 
@@ -1468,9 +1482,9 @@
 				}
 			}
 
-			const typesForAnalytics = LEAGUE_TYPE_ORDER.filter((t) => data.leagues.some((l) => l.type === t));
-			for (const type of typesForAnalytics) {
-				gridEl.appendChild(renderAnalyticsCard(type, data.leagues));
+			for (const group of ANALYTICS_GROUPS) {
+				if (!data.leagues.some((l) => group.types.includes(l.type))) continue;
+				gridEl.appendChild(renderAnalyticsCard(group.key, group.label, group.types, data.leagues));
 			}
 
 			const presentViews = new Set([...gridEl.querySelectorAll('.card')].map((c) => c.dataset.view).filter(Boolean));
