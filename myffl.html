@@ -292,8 +292,8 @@
 			gap: 0.3rem;
 			flex-shrink: 0;
 		}
-		/* More than 3 badges gets cramped on one line, especially on narrow
-		   cards — cap the row width so a 4th+ badge wraps to a second line
+		/* More than 2 badges gets cramped on one line, especially on narrow
+		   cards — cap the row width so a 3rd+ badge wraps to a second line
 		   instead of squeezing the title or overflowing. */
 		.badges.badges-wrap {
 			max-width: 12.5rem;
@@ -904,7 +904,7 @@
 			heading.appendChild(link);
 			cardHead.appendChild(heading);
 			if (badgeLabels.length > 0) {
-				const badgesEl = el('div', { class: `badges${badgeLabels.length > 3 ? ' badges-wrap' : ''}` });
+				const badgesEl = el('div', { class: `badges${badgeLabels.length > 2 ? ' badges-wrap' : ''}` });
 				for (const label of badgeLabels) {
 					badgesEl.appendChild(el('span', { class: 'badge', text: label }));
 				}
