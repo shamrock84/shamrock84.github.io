@@ -1,0 +1,25 @@
+name: Diagnose FantasyPros API (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY. Read-only research to learn the real
+# consensus-rankings response shape (their docs pages are blocked by bot
+# protection from the dev sandbox's fetch tools) — delete this workflow and
+# scripts/diag-fantasypros.mjs once confirmed and wired into providers.mjs.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Dump FantasyPros API response shapes
+        env:
+          FANTASYPROS_API_KEY: ${{ secrets.FANTASYPROS_API_KEY }}
+        run: node scripts/diag-fantasypros.mjs
