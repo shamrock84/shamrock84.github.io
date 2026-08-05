@@ -485,6 +485,14 @@
 		table.salary-summary tr.salary-cap-room.salary-negative td {
 			color: var(--ir-text);
 		}
+		/* Total/Cap Room when they include at least one locally-planned salary
+		   standing in for a real one — dashed underline on the dollar figure
+		   itself flags "this number isn't fully official yet" without
+		   demoting its visual weight the way italics would. Hover for why. */
+		table.salary-summary tr.salary-has-plan td:last-child {
+			text-decoration: underline dashed;
+			text-underline-offset: 0.15rem;
+		}
 		.pos-chip {
 			display: inline-block;
 			min-width: 2rem;
@@ -928,7 +936,10 @@
 		// literal 0 falls back to a local planning dropdown), gated by its own
 		// independent condition and storage — see SALARY_PLAN_STORAGE_KEY.
 		// $200 is the top of MFL's own salary UI, so the dropdown spans 1-200.
-		function buildSalaryCell(p, leagueId) {
+		// onSalaryChange (optional) fires after every save so the cap summary
+		// — which folds this plan into Total/Cap Room, see effectiveSalary —
+		// can rebuild itself immediately instead of going stale until reload.
+		function buildSalaryCell(p, leagueId, onSalaryChange) {
 			if (Number(p.salary) > 0) {
 				return el('td', { class: 'salary-cell', text: `$${p.salary}` });
 			}
@@ -941,12 +952,13 @@
 			select.value = getSalaryPlan(leagueId, p.id);
 			select.addEventListener('change', () => {
 				setSalaryPlan(leagueId, p.id, select.value);
+				onSalaryChange?.();
 			});
 			td.appendChild(select);
 			return td;
 		}
 
-		function buildRosterTable(players, isAuction, statusKey, leagueId) {
+		function buildRosterTable(players, isAuction, statusKey, leagueId, onSalaryChange) {
 			const table = el('table', { class: 'roster' });
 			const headRow = el('tr', { class: 'roster-head' });
 			headRow.appendChild(el('th', {}));
@@ -977,7 +989,7 @@
 				if (usingPriorYear) ptsAttrs.title = `${(pageData?.year ?? new Date().getFullYear()) - 1} season total \u2014 current season hasn't started yet`;
 				row.appendChild(el('td', ptsAttrs));
 				if (isAuction) {
-					row.appendChild(buildSalaryCell(p, leagueId));
+					row.appendChild(buildSalaryCell(p, leagueId, onSalaryChange));
 					row.appendChild(buildYearsCell(p, leagueId));
 				}
 				table.appendChild(row);
@@ -985,29 +997,56 @@
 			return table;
 		}
 
+		// Best-known salary for cap-math purposes: MFL's real number if it's
+		// set, otherwise the manager's own locally-planned value (still
+		// unofficial — see SALARY_PLAN_STORAGE_KEY), otherwise $0. Doesn't
+		// affect what the Salary cell itself renders — that stays strictly
+		// real-vs-dropdown so the dropdown never disappears just because a
+		// plan was saved.
+		function effectiveSalary(league, p) {
+			const real = Number(p.salary);
+			if (real > 0) return real;
+			const planned = Number(getSalaryPlan(league.id, p.id));
+			return planned > 0 ? planned : 0;
+		}
+
 		// Auction/salary-cap leagues only, shown right after the Active Roster
 		// group — mirrors the Salary Adjustments/Total/Salary Cap/Cap Room
 		// Available rows MFL's own roster page shows. Total = this season's
-		// Active Roster salaries (rosterPlayers) + Salary Adjustments (drops,
-		// carry-overs, etc., summed server-side from MFL's adjustment history).
+		// Active Roster salaries (rosterPlayers, falling back to a locally-
+		// planned salary for anyone MFL hasn't priced yet — see
+		// effectiveSalary) + Salary Adjustments (drops, carry-overs, etc.,
+		// summed server-side from MFL's adjustment history).
 		function buildSalarySummary(league, rosterPlayers) {
 			if (league.salaryCap == null) return null;
-			const rosterSalaryTotal = rosterPlayers.reduce((sum, p) => sum + (Number(p.salary) || 0), 0);
+			let plannedCount = 0;
+			const rosterSalaryTotal = rosterPlayers.reduce((sum, p) => {
+				if (!(Number(p.salary) > 0) && Number(getSalaryPlan(league.id, p.id)) > 0) plannedCount++;
+				return sum + effectiveSalary(league, p);
+			}, 0);
 			const adjustments = Number(league.salaryAdjustments) || 0;
 			const total = rosterSalaryTotal + adjustments;
 			const capRoom = league.salaryCap - total;
+			// Total/Cap Room mix in unofficial numbers whenever a planned salary
+			// stood in for a real one — flagged rather than left to look like a
+			// hard, all-official figure.
+			const plannedNote = plannedCount > 0
+				? `Includes ${plannedCount} locally-planned ${plannedCount === 1 ? 'salary' : 'salaries'}, not yet official`
+				: null;
 
 			const table = el('table', { class: 'salary-summary' });
-			const row = (label, value, cls) => {
+			const row = (label, value, cls, title) => {
 				const tr = el('tr', cls ? { class: cls } : {});
 				tr.appendChild(el('td', { text: label }));
-				tr.appendChild(el('td', { text: `$${value.toFixed(2)}` }));
+				const valueAttrs = { text: `$${value.toFixed(2)}` };
+				if (title) valueAttrs.title = title;
+				tr.appendChild(el('td', valueAttrs));
 				table.appendChild(tr);
 			};
 			row('Salary Adjustments', adjustments);
-			row('Total', total, 'salary-total');
+			row('Total', total, `salary-total${plannedNote ? ' salary-has-plan' : ''}`, plannedNote);
 			row('Salary Cap', league.salaryCap);
-			row('Cap Room Available', capRoom, `salary-cap-room${capRoom < 0 ? ' salary-negative' : ''}`);
+			row('Cap Room Available', capRoom, `salary-cap-room${capRoom < 0 ? ' salary-negative' : ''}${plannedNote ? ' salary-has-plan' : ''}`, plannedNote);
 			return table;
 		}
 
@@ -1216,16 +1255,27 @@
 				if (!players || players.length === 0) continue;
 
 				card.appendChild(el('div', { class: 'group-label', text: `${group.label} (${players.length})` }));
+
+				// The cap summary reads these players' salaries, so a planned-
+				// salary pick inside the table needs to rebuild it live rather
+				// than leaving a stale Total/Cap Room on screen until reload.
+				const needsCapSummary = group.key === 'ROSTER' && isAuction && league.salaryCap != null;
+				let summaryEl = needsCapSummary ? buildSalarySummary(league, players) : null;
+
 				if (group.key === 'ROSTER' && starterIdSet) {
 					card.appendChild(buildLineupEditor(league, players, starterIdSet));
 				} else {
-					card.appendChild(buildRosterTable(players, isAuction, group.key.toLowerCase(), league.id));
+					const onSalaryChange = needsCapSummary
+						? () => {
+							const fresh = buildSalarySummary(league, players);
+							if (summaryEl && fresh) summaryEl.replaceWith(fresh);
+							summaryEl = fresh;
+						}
+						: undefined;
+					card.appendChild(buildRosterTable(players, isAuction, group.key.toLowerCase(), league.id, onSalaryChange));
 				}
 
-				if (group.key === 'ROSTER' && isAuction && league.salaryCap != null) {
-					const summary = buildSalarySummary(league, players);
-					if (summary) card.appendChild(summary);
-				}
+				if (summaryEl) card.appendChild(summaryEl);
 			}
 
 			if (!league.players || league.players.length === 0) {
