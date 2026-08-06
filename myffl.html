@@ -26,6 +26,8 @@
 			--ir-text: #991b1b;
 			--gold: #FFC62F;
 			--gold-text: #5c4300;
+			--gold-chip-bg: #fff3d1;
+			--gold-chip-text: #7a5c00;
 			--warn-bg: #fff7e6;
 			--warn-text: #92400e;
 		}
@@ -44,6 +46,8 @@
 				--ir-text: #fca5a5;
 				--gold: #FFC62F;
 				--gold-text: #3d2e00;
+				--gold-chip-bg: #3d2e05;
+				--gold-chip-text: #f0c33e;
 				--warn-bg: #3a2a0d;
 				--warn-text: #fbbf24;
 			}
@@ -325,8 +329,8 @@
 			white-space: nowrap;
 		}
 		.badge-provider {
-			background: var(--gold);
-			color: var(--gold-text);
+			background: var(--gold-chip-bg);
+			color: var(--gold-chip-text);
 		}
 		/* Badges always stay to the right of the title (card-head is nowrap,
 		   never drops badges to their own row) — the title just shrinks and
