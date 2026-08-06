@@ -95,6 +95,7 @@ async function main() {
         name: league.name,
         type: league.type,
         format: league.format || null,
+        provider: league.provider || null,
         tags: league.tags || [],
         leagueName: league.name,
         franchiseId: null,
@@ -113,6 +114,7 @@ async function main() {
         ? await fetchSleeperLeagueRoster(league, sleeperPlayerMap, byeWeeks)
         : await fetchLeagueRoster(league, cookie, playerMap, byeWeeks);
       result.tags = league.tags || [];
+      result.provider = league.provider || null;
       leagues.push(result);
       console.log(`Fetched ${league.name}: ${result.players.length} players`);
     } catch (err) {
@@ -123,6 +125,7 @@ async function main() {
         name: league.name,
         type: league.type,
         format: league.format || null,
+        provider: league.provider || null,
         tags: league.tags || [],
         leagueName: prev?.leagueName || league.name,
         franchiseId: league.franchiseId,
