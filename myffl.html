@@ -981,7 +981,7 @@
 			headRow.appendChild(el('th', { text: 'Player' }));
 			headRow.appendChild(el('th', { text: 'Team' }));
 			headRow.appendChild(el('th', { class: 'bye-cell', text: 'Bye' }));
-			headRow.appendChild(el('th', { class: 'ecr-cell', text: 'ECR' }));
+			if (isLoggedIn()) headRow.appendChild(el('th', { class: 'ecr-cell', text: 'ECR' }));
 			headRow.appendChild(el('th', { class: 'pts-cell', text: 'Pts' }));
 			if (isAuction) {
 				headRow.appendChild(el('th', { class: 'salary-cell', text: 'Salary' }));
@@ -998,7 +998,7 @@
 				row.appendChild(el('td', { class: 'player-name', text: p.name }));
 				row.appendChild(el('td', { class: 'nfl-team', text: p.team || 'FA' }));
 				row.appendChild(el('td', { class: 'bye-cell', text: p.bye ? String(p.bye) : '—' }));
-				row.appendChild(buildEcrCell(p));
+				if (isLoggedIn()) row.appendChild(buildEcrCell(p));
 				const usingPriorYear = !(p.pts > 0) && p.priorYearPts > 0;
 				const ptsValue = usingPriorYear ? p.priorYearPts : p.pts;
 				const ptsAttrs = { class: `pts-cell${usingPriorYear ? ' pts-prior-year' : ''}`, text: ptsValue != null ? Number(ptsValue).toFixed(2) : '—' };
@@ -1131,7 +1131,7 @@
 			headRow.appendChild(el('th', { text: 'Player' }));
 			headRow.appendChild(el('th', { text: 'Team' }));
 			headRow.appendChild(el('th', { class: 'bye-cell', text: 'Bye' }));
-			headRow.appendChild(el('th', { class: 'ecr-cell', text: 'ECR' }));
+			if (editable) headRow.appendChild(el('th', { class: 'ecr-cell', text: 'ECR' }));
 			headRow.appendChild(el('th', { class: 'pts-cell', text: 'Pts' }));
 			table.appendChild(headRow);
 
@@ -1154,7 +1154,7 @@
 				row.appendChild(el('td', { class: 'player-name', text: p.name }));
 				row.appendChild(el('td', { class: 'nfl-team', text: p.team || 'FA' }));
 				row.appendChild(el('td', { class: 'bye-cell', text: p.bye ? String(p.bye) : '—' }));
-				row.appendChild(buildEcrCell(p));
+				if (editable) row.appendChild(buildEcrCell(p));
 				const usingPriorYear = !(p.pts > 0) && p.priorYearPts > 0;
 				const ptsValue = usingPriorYear ? p.priorYearPts : p.pts;
 				const ptsAttrs = { class: `pts-cell${usingPriorYear ? ' pts-prior-year' : ''}`, text: ptsValue != null ? Number(ptsValue).toFixed(2) : '—' };
@@ -1315,7 +1315,11 @@
 			// Which FantasyPros ranking set the ECR column is showing. Worth
 			// stating outright: dynasty and draft rankings disagree sharply on
 			// the same player, so an unlabelled rank invites misreading.
-			if (league.rankings) {
+			// Logged out, the column itself isn't rendered (see
+			// buildRosterTable/buildLineupEditor) — an "advanced feature" like
+			// everything else login unlocks — so this footnote about it would
+			// be a dangling reference to a column that isn't there.
+			if (isLoggedIn() && league.rankings) {
 				const r = league.rankings;
 				const parts = [`${ECR_TYPE_LABELS[r.type] || r.type} ${r.scoring} rankings`];
 				if (r.totalExperts) parts.push(`${r.totalExperts} experts`);
