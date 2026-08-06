@@ -24,6 +24,40 @@ export function formatPlayerName(raw) {
   return parts.length === 2 ? `${parts[1]} ${parts[0]}` : raw;
 }
 
+// NFL injury-report designation (Questionable/Doubtful/Out/etc.), collapsed
+// to the short badge MFL's own roster page shows next to a name — e.g. "(O)"
+// for Out. Each provider spells these differently (MFL: "Out"; ESPN:
+// "OUT"/"INJURY_RESERVE" with underscores; Sleeper: "IR"/"Sus"), so this is
+// the one place that reconciles them into a single vocabulary. Returns null
+// for anyone healthy/unlisted so callers can skip rendering a badge entirely
+// rather than showing something like "(ACTIVE)".
+const INJURY_STATUS_MAP = {
+  QUESTIONABLE: 'Q',
+  DOUBTFUL: 'D',
+  OUT: 'O',
+  PROBABLE: 'P',
+  'DAY TO DAY': 'DTD',
+  'INJURY RESERVE': 'IR',
+  'INJURED RESERVE': 'IR',
+  IR: 'IR',
+  PUP: 'PUP',
+  'PHYSICALLY UNABLE TO PERFORM': 'PUP',
+  NFI: 'NFI',
+  'NON FOOTBALL INJURY': 'NFI',
+  SUSPENDED: 'SUSP',
+  SUS: 'SUSP',
+  SUSPENSION: 'SUSP',
+  COV: 'COVID',
+  'COVID-19': 'COVID',
+};
+
+export function normalizeInjuryStatus(raw) {
+  if (!raw) return null;
+  const key = String(raw).trim().toUpperCase().replace(/[_-]/g, ' ');
+  if (!key || key === 'ACTIVE' || key === 'HEALTHY') return null;
+  return INJURY_STATUS_MAP[key] || (key.length <= 4 ? key : key.slice(0, 3));
+}
+
 export function leagueUrl(league) {
   if (league.provider === 'espn') {
     return `https://fantasy.espn.com/football/team?leagueId=${league.id}&teamId=${league.franchiseId}`;
@@ -144,6 +178,22 @@ export async function fetchNflByeWeeks(cookie) {
   return map;
 }
 
+// NFL injury report, keyed by MFL player id — like fetchNflByeWeeks, a
+// plain NFL-schedule-adjacent fact rather than anything league-specific, so
+// one global call per sync instead of once per league. MFL's TYPE=injuries
+// doesn't take a league param at all.
+export async function fetchMflInjuries(cookie) {
+  const data = await mflGet('/export?TYPE=injuries&JSON=1', cookie);
+  const rawRows = data?.injuries?.injury;
+  const rows = Array.isArray(rawRows) ? rawRows : rawRows ? [rawRows] : [];
+  const map = new Map();
+  for (const r of rows) {
+    const status = normalizeInjuryStatus(r.status);
+    if (status) map.set(r.id, status);
+  }
+  return map;
+}
+
 // Season-to-date fantasy points for a specific set of players, under this
 // league's own scoring rules. MFL requires an explicit PLAYERS= list — a
 // bare league-wide request just returns an empty placeholder. Reads 0 for
@@ -198,7 +248,7 @@ async function fetchSalaryAdjustments(league, cookie) {
     .reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
 }
 
-export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks) {
+export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, injuries) {
   const [leagueData, rostersData] = await Promise.all([
     mflGet(`/export?TYPE=league&L=${league.id}&JSON=1`, cookie),
     mflGet(`/export?TYPE=rosters&L=${league.id}&FRANCHISE=${league.franchiseId}&JSON=1`, cookie),
@@ -234,6 +284,7 @@ export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks) {
       // the roster export directly for leagues with a salary cap enabled.
       salary: p.salary ?? null,
       contractYear: p.contractYear ?? null,
+      injuryStatus: injuries?.get(p.id) ?? null,
     };
   });
 
@@ -508,6 +559,7 @@ export async function fetchEspnLeagueRoster(league) {
         bye: byeByProTeamId.get(p.proTeamId) ?? null,
         pts: seasonStat?.appliedTotal ?? null,
         status: e.lineupSlotId === ESPN_IR_SLOT_ID ? 'INJURED_RESERVE' : 'ROSTER',
+        injuryStatus: normalizeInjuryStatus(p.injuryStatus),
       };
     })
     .sort((a, b) => positionRank(a.position) - positionRank(b.position) || a.name.localeCompare(b.name));
@@ -600,6 +652,7 @@ export async function loadSleeperPlayerMap() {
       name: p.full_name || [p.first_name, p.last_name].filter(Boolean).join(' ') || `Unknown Player (${id})`,
       position: (p.fantasy_positions && p.fantasy_positions[0]) || p.position || '',
       team: p.team || 'FA',
+      injuryStatus: normalizeInjuryStatus(p.injury_status),
     });
   }
   return map;
@@ -695,6 +748,7 @@ export async function fetchSleeperLeagueRoster(league, playerMap, byeWeeks) {
         bye: byeWeeks?.get(byeKey) ?? null,
         pts: seasonPoints.has(String(id)) ? seasonPoints.get(String(id)) : null,
         status,
+        injuryStatus: info.injuryStatus ?? null,
       };
     })
     .sort((a, b) => positionRank(a.position) - positionRank(b.position) || a.name.localeCompare(b.name));

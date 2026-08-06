@@ -520,6 +520,12 @@
 		.player-name {
 			font-weight: 500;
 		}
+		.injury-badge {
+			color: var(--ir-text);
+			font-weight: 600;
+			margin-left: 0.35rem;
+			font-size: 0.78rem;
+		}
 		tr.roster-head th {
 			text-align: left;
 			font-size: 0.65rem;
@@ -917,6 +923,17 @@
 			renderGrid();
 		}
 
+		// NFL injury-report designation, already collapsed to a short badge
+		// (Q/D/O/IR/...) server-side — see normalizeInjuryStatus in
+		// providers.mjs. Mirrors how MFL's own roster page shows it: right
+		// after the player's name, in parens. No visibility gate — unlike a
+		// planned salary or contract length, an NFL team's own public injury
+		// report isn't this manager's strategy to protect from league mates.
+		function buildInjuryBadge(p) {
+			if (!p.injuryStatus) return null;
+			return el('span', { class: 'injury-badge', text: `(${p.injuryStatus})` });
+		}
+
 		// FantasyPros consensus rank, attached to players during the sync (see
 		// scripts/lib/fantasypros.mjs). Shows the positional rank ("RB4") since
 		// that's what's actionable at a glance, with the overall rank and tier
@@ -1049,7 +1066,10 @@
 				const rowClass = `player-row status-${statusKey}${posBoundary ? ' pos-boundary' : ''}`;
 				const row = el('tr', { class: rowClass, 'data-name': p.name.toLowerCase() });
 				row.appendChild(el('td', {}, [el('span', { class: 'pos-chip', text: p.position || '-' })]));
-				row.appendChild(el('td', { class: 'player-name', text: p.name }));
+				const nameCell = el('td', { class: 'player-name', text: p.name });
+				const injuryBadge = buildInjuryBadge(p);
+				if (injuryBadge) nameCell.appendChild(injuryBadge);
+				row.appendChild(nameCell);
 				row.appendChild(el('td', { class: 'nfl-team', text: p.team || 'FA' }));
 				row.appendChild(el('td', { class: 'bye-cell', text: p.bye ? String(p.bye) : '—' }));
 				if (isLoggedIn()) row.appendChild(buildEcrCell(p));
@@ -1215,7 +1235,10 @@
 				}
 
 				row.appendChild(el('td', {}, [el('span', { class: 'pos-chip', text: p.position || '-' })]));
-				row.appendChild(el('td', { class: 'player-name', text: p.name }));
+				const nameCell = el('td', { class: 'player-name', text: p.name });
+				const injuryBadge = buildInjuryBadge(p);
+				if (injuryBadge) nameCell.appendChild(injuryBadge);
+				row.appendChild(nameCell);
 				row.appendChild(el('td', { class: 'nfl-team', text: p.team || 'FA' }));
 				row.appendChild(el('td', { class: 'bye-cell', text: p.bye ? String(p.bye) : '—' }));
 				if (visible) row.appendChild(buildEcrCell(p));
