@@ -428,17 +428,16 @@
 			font-size: 0.8rem;
 			color: var(--muted);
 		}
-		table.lineup-editor-table td:first-child {
+		/* Only when editable — logged out, the checkbox column is omitted
+		   entirely (see buildLineupEditor), so the first column is the
+		   position chip and shouldn't be squeezed to checkbox width. */
+		table.lineup-editor-table:not(.read-only) td:first-child {
 			width: 1.6rem;
 		}
 		table.lineup-editor-table input[type="checkbox"] {
 			width: 1.05rem;
 			height: 1.05rem;
 			cursor: pointer;
-		}
-		table.lineup-editor-table.read-only input[type="checkbox"] {
-			cursor: default;
-			opacity: 0.6;
 		}
 		table.roster {
 			width: 100%;
@@ -914,9 +913,19 @@
 		// does this fall back to a local planning dropdown (1/2/3 years) so a
 		// manager can pencil in how long they intend to keep a player before
 		// it's official.
+		//
+		// The dropdown and whatever's been planned are only shown while
+		// logged in — this page has no per-viewer access control, so anyone
+		// with the URL sees it logged out, including league mates. A planned
+		// contract length is exactly the kind of strategy that shouldn't leak
+		// to them; logged out, an unset value renders as a plain "—", the
+		// same thing the API itself actually returned.
 		function buildYearsCell(p, leagueId) {
 			if (Number(p.contractYear) > 0) {
 				return el('td', { class: 'years-cell', text: String(p.contractYear) });
+			}
+			if (!isLoggedIn()) {
+				return el('td', { class: 'years-cell', text: '—' });
 			}
 			const td = el('td', { class: 'years-cell years-cell-plan' });
 			const select = el('select', { class: 'years-select', title: 'Plan a contract length — not official until MFL sets one' });
@@ -939,9 +948,16 @@
 		// onSalaryChange (optional) fires after every save so the cap summary
 		// — which folds this plan into Total/Cap Room, see effectiveSalary —
 		// can rebuild itself immediately instead of going stale until reload.
+		//
+		// Same login gate as buildYearsCell, same reason: a planned salary is
+		// strategy, and this page has no viewer-level access control — logged
+		// out, an unset value renders as a plain "—" instead of the dropdown.
 		function buildSalaryCell(p, leagueId, onSalaryChange) {
 			if (Number(p.salary) > 0) {
 				return el('td', { class: 'salary-cell', text: `$${p.salary}` });
+			}
+			if (!isLoggedIn()) {
+				return el('td', { class: 'salary-cell', text: '—' });
 			}
 			const td = el('td', { class: 'salary-cell salary-cell-plan' });
 			const select = el('select', { class: 'salary-select', title: 'Plan a salary — not official until MFL sets one' });
@@ -997,17 +1013,26 @@
 			return table;
 		}
 
+		// The manager's own locally-planned salary for a still-unset roster
+		// spot, or null if there isn't one — or the viewer isn't logged in.
+		// A plan is exactly the kind of strategy that shouldn't leak to a
+		// league mate who just has the URL, so it's withheld from cap math
+		// here too, not just from what the Salary cell itself renders.
+		function plannedSalary(league, p) {
+			if (!isLoggedIn()) return null;
+			const planned = Number(getSalaryPlan(league.id, p.id));
+			return planned > 0 ? planned : null;
+		}
+
 		// Best-known salary for cap-math purposes: MFL's real number if it's
-		// set, otherwise the manager's own locally-planned value (still
-		// unofficial — see SALARY_PLAN_STORAGE_KEY), otherwise $0. Doesn't
-		// affect what the Salary cell itself renders — that stays strictly
-		// real-vs-dropdown so the dropdown never disappears just because a
-		// plan was saved.
+		// set, otherwise the manager's own locally-planned value (see
+		// plannedSalary), otherwise $0. Doesn't affect what the Salary cell
+		// itself renders — that stays strictly real-vs-dropdown so the
+		// dropdown never disappears just because a plan was saved.
 		function effectiveSalary(league, p) {
 			const real = Number(p.salary);
 			if (real > 0) return real;
-			const planned = Number(getSalaryPlan(league.id, p.id));
-			return planned > 0 ? planned : 0;
+			return plannedSalary(league, p) ?? 0;
 		}
 
 		// Auction/salary-cap leagues only, shown right after the Active Roster
@@ -1021,7 +1046,7 @@
 			if (league.salaryCap == null) return null;
 			let plannedCount = 0;
 			const rosterSalaryTotal = rosterPlayers.reduce((sum, p) => {
-				if (!(Number(p.salary) > 0) && Number(getSalaryPlan(league.id, p.id)) > 0) plannedCount++;
+				if (!(Number(p.salary) > 0) && plannedSalary(league, p) != null) plannedCount++;
 				return sum + effectiveSalary(league, p);
 			}, 0);
 			const adjustments = Number(league.salaryAdjustments) || 0;
@@ -1089,15 +1114,19 @@
 		// Pilot lineup editor: a single table with a checkbox column instead of
 		// separate Starters/Bench sections — check the players you want to
 		// start, then Submit Lineup sends the checked ids to MFL via TYPE=lineup.
-		// Shown read-only (checkboxes disabled, no Submit Lineup button) when
-		// logged out, so the layout is identical either way — only editability
-		// changes once logged in.
+		//
+		// This page has no viewer-level access control — anyone with the URL
+		// sees it logged out, including league mates — so who's starting is
+		// exactly the kind of thing that shouldn't leak to them ahead of
+		// game time. Logged out, the checkbox column isn't just disabled,
+		// it's omitted entirely: nothing on the page reveals starter/bench
+		// status, only the Submit Lineup button and its actions disappear.
 		function buildLineupEditor(league, players, starterIdSet) {
 			const editable = isLoggedIn();
 			const wrap = el('div', { class: 'lineup-editor' });
 			const table = el('table', { class: `roster lineup-editor-table${editable ? '' : ' read-only'}` });
 			const headRow = el('tr', { class: 'roster-head' });
-			headRow.appendChild(el('th', {}));
+			if (editable) headRow.appendChild(el('th', {}));
 			headRow.appendChild(el('th', {}));
 			headRow.appendChild(el('th', { text: 'Player' }));
 			headRow.appendChild(el('th', { text: 'Team' }));
@@ -1113,12 +1142,13 @@
 				prevPosition = p.position;
 				const row = el('tr', { class: `player-row${posBoundary ? ' pos-boundary' : ''}`, 'data-name': p.name.toLowerCase() });
 
-				const checkbox = el('input', { type: 'checkbox' });
-				checkbox.checked = starterIdSet.has(p.id);
-				checkbox.disabled = !editable;
-				checkbox.dataset.playerId = p.id;
-				checkboxes.push(checkbox);
-				row.appendChild(el('td', {}, [checkbox]));
+				if (editable) {
+					const checkbox = el('input', { type: 'checkbox' });
+					checkbox.checked = starterIdSet.has(p.id);
+					checkbox.dataset.playerId = p.id;
+					checkboxes.push(checkbox);
+					row.appendChild(el('td', {}, [checkbox]));
+				}
 
 				row.appendChild(el('td', {}, [el('span', { class: 'pos-chip', text: p.position || '-' })]));
 				row.appendChild(el('td', { class: 'player-name', text: p.name }));
