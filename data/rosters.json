@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-06T01:54:42.865Z",
+  "generatedAt": "2026-08-06T02:00:42.416Z",
   "year": "2026",
   "leagues": [
     {
@@ -591,9 +591,10 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-06T01:53:40.899Z",
+      "updatedAt": "2026-08-06T02:00:00.052Z",
       "error": null,
       "tags": [],
+      "provider": null,
       "standings": [
         {
           "franchiseId": "0001",
@@ -1312,9 +1313,10 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-06T01:53:41.722Z",
+      "updatedAt": "2026-08-06T02:00:01.119Z",
       "error": null,
       "tags": [],
+      "provider": null,
       "standings": [
         {
           "franchiseId": "0001",
@@ -1991,9 +1993,10 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-06T01:53:43.312Z",
+      "updatedAt": "2026-08-06T02:00:02.031Z",
       "error": null,
       "tags": [],
+      "provider": null,
       "standings": [
         {
           "franchiseId": "0001",
@@ -2588,11 +2591,12 @@
       ],
       "salaryCap": 550,
       "salaryAdjustments": 3.2699999999999996,
-      "updatedAt": "2026-08-06T01:53:45.536Z",
+      "updatedAt": "2026-08-06T02:00:03.082Z",
       "error": null,
       "tags": [
         "Best Ball"
       ],
+      "provider": null,
       "standings": [
         {
           "franchiseId": "0001",
@@ -3228,12 +3232,13 @@
       ],
       "salaryCap": 500,
       "salaryAdjustments": 4.68,
-      "updatedAt": "2026-08-06T01:53:47.114Z",
+      "updatedAt": "2026-08-06T02:00:04.384Z",
       "error": null,
       "tags": [
         "Superflex",
         "Best Ball"
       ],
+      "provider": null,
       "standings": [
         {
           "franchiseId": "0001",
@@ -3833,12 +3838,13 @@
       ],
       "salaryCap": 500,
       "salaryAdjustments": 10.09,
-      "updatedAt": "2026-08-06T01:53:48.772Z",
+      "updatedAt": "2026-08-06T02:00:05.310Z",
       "error": null,
       "tags": [
         "Superflex",
         "Best Ball"
       ],
+      "provider": null,
       "standings": [
         {
           "franchiseId": "0001",
@@ -4426,12 +4432,13 @@
       ],
       "salaryCap": 500,
       "salaryAdjustments": 58.24,
-      "updatedAt": "2026-08-06T01:53:50.820Z",
+      "updatedAt": "2026-08-06T02:00:06.606Z",
       "error": null,
       "tags": [
         "Superflex",
         "Best Ball"
       ],
+      "provider": null,
       "standings": [
         {
           "franchiseId": "0001",
@@ -4593,6 +4600,7 @@
       "name": "Worlds Collide",
       "type": "bestball",
       "format": null,
+      "provider": null,
       "tags": [],
       "leagueName": "Worlds Collide",
       "franchiseId": "0012",
@@ -4611,6 +4619,7 @@
       "name": "Rug's Playground",
       "type": "bestball",
       "format": null,
+      "provider": null,
       "tags": [],
       "leagueName": "Rug's Playground",
       "franchiseId": "0006",
@@ -4955,11 +4964,12 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-06T01:53:51.835Z",
+      "updatedAt": "2026-08-06T02:00:08.468Z",
       "error": null,
       "tags": [
         "Superflex"
       ],
+      "provider": null,
       "standings": [
         {
           "franchiseId": "0001",
@@ -5413,11 +5423,12 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-06T01:53:52.621Z",
+      "updatedAt": "2026-08-06T02:00:09.230Z",
       "error": null,
       "tags": [
         "Superflex"
       ],
+      "provider": null,
       "standings": [
         {
           "franchiseId": "0001",
@@ -5927,12 +5938,13 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-06T01:53:53.224Z",
+      "updatedAt": "2026-08-06T02:00:10.044Z",
       "error": null,
       "tags": [
         "Superflex",
         "SFB"
       ],
+      "provider": null,
       "standings": [
         {
           "franchiseId": "0001",
@@ -6037,7 +6049,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=54458&JSON=1 (year 2026)",
+      "scoringError": "No live scoring available yet",
       "rankings": {
         "type": "DRAFT",
         "scoring": "PPR",
@@ -6422,12 +6434,13 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-06T01:53:53.751Z",
+      "updatedAt": "2026-08-06T02:00:10.921Z",
       "error": null,
       "tags": [
         "Superflex",
         "SFB"
       ],
+      "provider": null,
       "standings": [
         {
           "franchiseId": "0001",
@@ -6891,11 +6904,12 @@
       ],
       "salaryCap": null,
       "salaryAdjustments": null,
-      "updatedAt": "2026-08-06T01:53:54.414Z",
+      "updatedAt": "2026-08-06T02:00:11.606Z",
       "error": null,
       "tags": [
         "Superflex"
       ],
+      "provider": null,
       "standings": [
         {
           "franchiseId": "0001",
@@ -7010,7 +7024,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=30196&JSON=1 (year 2026)",
+      "scoringError": "No live scoring available yet",
       "rankings": {
         "type": "DRAFT",
         "scoring": "PPR",
@@ -7333,12 +7347,13 @@
           }
         }
       ],
-      "updatedAt": "2026-08-06T01:53:54.513Z",
+      "updatedAt": "2026-08-06T02:00:11.640Z",
       "error": null,
       "tags": [
         "Superflex",
         "SFB"
       ],
+      "provider": "sleeper",
       "standings": [
         {
           "franchiseId": "1",
@@ -7563,9 +7578,10 @@
       "teamName": "Big Dart Energy",
       "url": "https://fantasy.espn.com/football/team?leagueId=1966972&teamId=10",
       "players": [],
-      "updatedAt": "2026-08-06T01:53:54.727Z",
+      "updatedAt": "2026-08-06T02:00:11.806Z",
       "error": null,
       "tags": [],
+      "provider": "espn",
       "standings": [
         {
           "franchiseId": "1",
@@ -7746,9 +7762,10 @@
       "teamName": "Jeffer Justinson",
       "url": "https://fantasy.espn.com/football/team?leagueId=421871710&teamId=5",
       "players": [],
-      "updatedAt": "2026-08-06T01:53:54.823Z",
+      "updatedAt": "2026-08-06T02:00:11.906Z",
       "error": null,
       "tags": [],
+      "provider": "espn",
       "standings": [
         {
           "franchiseId": "1",
