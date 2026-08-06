@@ -592,6 +592,10 @@
 			cursor: help;
 		}
 		.needs-contract-banner {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 0.6rem;
 			margin-bottom: 0.5rem;
 			padding: 0.4rem 0.6rem;
 			border-radius: 8px;
@@ -599,6 +603,12 @@
 			color: var(--warn-text);
 			font-size: 0.8rem;
 			font-weight: 600;
+		}
+		.contract-email-link {
+			flex-shrink: 0;
+			color: var(--warn-text);
+			text-decoration: underline;
+			white-space: nowrap;
 		}
 		table.standings {
 			width: 100%;
@@ -814,6 +824,18 @@
 				plans[leagueId][playerId] = years;
 			}
 			localStorage.setItem(CONTRACT_PLAN_STORAGE_KEY, JSON.stringify(plans));
+		}
+
+		// Where each Salary Cap league's contract-length summary email should
+		// go — override per league by id here once the real address is known.
+		// Falls back to a single placeholder until then (currently every
+		// league, while this feature is still being verified).
+		const CONTRACT_EMAIL_DEFAULT = 'melbosffl@gmail.com';
+		const CONTRACT_EMAIL_OVERRIDES = {
+			// '35217': 'commissioner@example.com', // The Iron Bank
+		};
+		function contractEmailFor(league) {
+			return CONTRACT_EMAIL_OVERRIDES[league.id] || CONTRACT_EMAIL_DEFAULT;
 		}
 
 		// Locally-planned salary ($1-200, whole dollars) for a Salary Cap
@@ -1255,6 +1277,40 @@
 			}
 		}
 
+		// "Email Contracts" link for the needs-contract banner — a mailto:
+		// pre-filled with every player this manager has actually pencilled in
+		// a length for (not just every player still missing one; once a real
+		// contractYear lands from a sync, that player drops out here too,
+		// same as they drop out of the banner count and stop showing the
+		// dropdown at all). Returns null (renders nothing) if there's nothing
+		// to send yet, or if logged out — the planned lengths themselves are
+		// exactly the private data the dropdown is already gated on, so the
+		// email summarizing them needs the same gate.
+		function buildContractEmailLink(league) {
+			if (!isLoggedIn()) return null;
+			const plans = (league.players || [])
+				.filter((p) => !(Number(p.contractYear) > 0))
+				.map((p) => ({ name: p.name, years: getContractPlan(league.id, p.id) }))
+				.filter((p) => p.years);
+			if (plans.length === 0) return null;
+
+			const year = pageData?.year ?? new Date().getFullYear();
+			// .trim() — MFL's own league-name export has a stray trailing
+			// space on at least one league, invisible everywhere else on the
+			// page since HTML collapses whitespace, but not in a raw subject.
+			const leagueName = (league.leagueName || league.name).trim();
+			const teamName = (league.teamName || league.name).trim();
+			const subject = `${year} ${leagueName} Contract Lengths for ${teamName}`;
+			const body = plans.map((p) => `${p.name}: ${p.years} year${p.years === '1' ? '' : 's'}`).join('\n');
+			const email = contractEmailFor(league);
+
+			return el('a', {
+				href: `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,
+				class: 'contract-email-link',
+				text: '✉ Email Contracts',
+			});
+		}
+
 		function renderCard(league) {
 			const card = el('div', { class: 'card', 'data-view': 'rosters', 'data-league-type': subtabType(league) || '' });
 
@@ -1268,10 +1324,13 @@
 			if (isAuction) {
 				const needsContractCount = (league.players || []).filter((p) => !(Number(p.contractYear) > 0)).length;
 				if (needsContractCount > 0) {
-					card.appendChild(el('div', {
-						class: 'needs-contract-banner',
+					const banner = el('div', { class: 'needs-contract-banner' });
+					banner.appendChild(el('span', {
 						text: `⚠ ${needsContractCount} player${needsContractCount === 1 ? '' : 's'} need${needsContractCount === 1 ? 's' : ''} a contract length set`,
 					}));
+					const emailLink = buildContractEmailLink(league);
+					if (emailLink) banner.appendChild(emailLink);
+					card.appendChild(banner);
 				}
 			}
 
