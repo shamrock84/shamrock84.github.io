@@ -105,6 +105,7 @@ async function main() {
         format: league.format || null,
         provider: league.provider || null,
         tags: league.tags || [],
+        rulesUrl: league.rulesUrl || null,
         leagueName: league.name,
         franchiseId: null,
         teamName: league.name,
@@ -123,6 +124,7 @@ async function main() {
         : await fetchLeagueRoster(league, cookie, playerMap, byeWeeks, injuries);
       result.tags = league.tags || [];
       result.provider = league.provider || null;
+      result.rulesUrl = league.rulesUrl || null;
       leagues.push(result);
       console.log(`Fetched ${league.name}: ${result.players.length} players`);
     } catch (err) {
@@ -135,6 +137,7 @@ async function main() {
         format: league.format || null,
         provider: league.provider || null,
         tags: league.tags || [],
+        rulesUrl: league.rulesUrl || null,
         leagueName: prev?.leagueName || league.name,
         franchiseId: league.franchiseId,
         teamName: prev?.teamName || league.name,
