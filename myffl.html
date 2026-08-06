@@ -324,6 +324,10 @@
 			letter-spacing: 0.03em;
 			white-space: nowrap;
 		}
+		.badge-provider {
+			background: var(--gold);
+			color: var(--gold-text);
+		}
 		/* Badges always stay to the right of the title (card-head is nowrap,
 		   never drops badges to their own row) — the title just shrinks and
 		   wraps onto more lines to make room, via min-width:0 +
@@ -1391,6 +1395,34 @@
 			return heading;
 		}
 
+		// Every league has exactly one hosting provider — MFL is the default
+		// when `provider` is unset (see config/leagues.json), matching every
+		// other provider-branch in this file.
+		function providerBadgeLabel(league) {
+			if (league.provider === 'espn') return 'ESPN';
+			if (league.provider === 'sleeper') return 'Sleeper';
+			return 'MFL';
+		}
+
+		// Card-head row shared by Rosters/Standings/Scoring: the league name
+		// heading plus a badge strip. The provider badge (MFL/ESPN/Sleeper)
+		// always leads the strip and is styled gold instead of the usual
+		// purple, so which site actually hosts a league reads at a glance
+		// instead of blending in with Superflex/Best Ball/etc. `extraLabels`
+		// (type, Salary Cap, tags) is Rosters-only — Standings/Scoring just
+		// get the provider badge on its own.
+		function buildCardHead(league, extraLabels = []) {
+			const cardHead = el('div', { class: 'card-head' });
+			cardHead.appendChild(buildLeagueHeading(league));
+			const labels = [providerBadgeLabel(league), ...extraLabels];
+			const badgesEl = el('div', { class: `badges${labels.length > 2 ? ' badges-wrap' : ''}` });
+			labels.forEach((label, i) => {
+				badgesEl.appendChild(el('span', { class: `badge${i === 0 ? ' badge-provider' : ''}`, text: label }));
+			});
+			cardHead.appendChild(badgesEl);
+			return cardHead;
+		}
+
 		function renderCard(league) {
 			const card = el('div', { class: 'card', 'data-view': 'rosters', 'data-league-type': subtabType(league) || '' });
 
@@ -1424,16 +1456,7 @@
 			if (isAuction && !badgeLabels.includes('Salary Cap')) badgeLabels.push('Salary Cap');
 			if (Array.isArray(league.tags)) badgeLabels.push(...league.tags);
 
-			const cardHead = el('div', { class: 'card-head' });
-			cardHead.appendChild(buildLeagueHeading(league));
-			if (badgeLabels.length > 0) {
-				const badgesEl = el('div', { class: `badges${badgeLabels.length > 2 ? ' badges-wrap' : ''}` });
-				for (const label of badgeLabels) {
-					badgesEl.appendChild(el('span', { class: 'badge', text: label }));
-				}
-				cardHead.appendChild(badgesEl);
-			}
-			card.appendChild(cardHead);
+			card.appendChild(buildCardHead(league, badgeLabels));
 			card.appendChild(el('div', { class: 'team', text: league.teamName || '' }));
 
 			if (league.error && (!league.players || league.players.length === 0)) {
@@ -1510,7 +1533,7 @@
 
 		function renderStandingsCard(league) {
 			const card = el('div', { class: 'card', 'data-view': 'standings', 'data-league-type': subtabType(league) || '' });
-			card.appendChild(buildLeagueHeading(league));
+			card.appendChild(buildCardHead(league));
 
 			if (league.standingsError && (!league.standings || league.standings.length === 0)) {
 				card.appendChild(el('div', { class: 'error-box', text: `Couldn't load standings: ${league.standingsError}` }));
@@ -1547,7 +1570,7 @@
 
 		function renderScoringCard(league) {
 			const card = el('div', { class: 'card', 'data-view': 'scoring', 'data-league-type': subtabType(league) || '' });
-			card.appendChild(buildLeagueHeading(league));
+			card.appendChild(buildCardHead(league));
 
 			const teams = league.scoring?.teams || [];
 
