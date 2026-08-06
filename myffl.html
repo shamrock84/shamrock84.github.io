@@ -1008,7 +1008,7 @@
 		// out, an unset value renders as a plain "—" instead of the dropdown.
 		function buildSalaryCell(p, leagueId, onSalaryChange) {
 			if (Number(p.salary) > 0) {
-				return el('td', { class: 'salary-cell', text: `$${p.salary}` });
+				return el('td', { class: 'salary-cell', text: `$${Number(p.salary).toFixed(2)}` });
 			}
 			if (!isLoggedIn()) {
 				return el('td', { class: 'salary-cell', text: '—' });
@@ -1017,7 +1017,7 @@
 			const select = el('select', { class: 'salary-select', title: 'Plan a salary — not official until MFL sets one' });
 			select.appendChild(el('option', { value: '', text: '—' }));
 			for (let dollars = 1; dollars <= 200; dollars++) {
-				select.appendChild(el('option', { value: String(dollars), text: `$${dollars}` }));
+				select.appendChild(el('option', { value: String(dollars), text: `$${dollars.toFixed(2)}` }));
 			}
 			select.value = getSalaryPlan(leagueId, p.id);
 			select.addEventListener('change', () => {
