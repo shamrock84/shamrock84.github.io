@@ -26,6 +26,8 @@
 			--ir-text: #991b1b;
 			--gold: #FFC62F;
 			--gold-text: #5c4300;
+			--warn-bg: #fff7e6;
+			--warn-text: #92400e;
 		}
 		@media (prefers-color-scheme: dark) {
 			:root {
@@ -42,6 +44,8 @@
 				--ir-text: #fca5a5;
 				--gold: #FFC62F;
 				--gold-text: #3d2e00;
+				--warn-bg: #3a2a0d;
+				--warn-text: #fbbf24;
 			}
 		}
 		body::before {
@@ -582,6 +586,30 @@
 		}
 		.status-taxi_squad { background: var(--taxi-bg); }
 		.status-injured_reserve { background: var(--ir-bg); }
+		/* A Salary Cap roster spot with no real contract length set — comes
+		   after the taxi/IR tints in source order so it wins the background
+		   on a row that's both (e.g. an unpriced taxi-squad rookie), since
+		   the contract deadline is the thing that actually needs action. */
+		tr.needs-contract {
+			background: var(--warn-bg);
+		}
+		tr.needs-contract td:first-child {
+			box-shadow: inset 3px 0 0 0 var(--warn-text);
+		}
+		.contract-warn-icon {
+			color: var(--warn-text);
+			margin-right: 0.25rem;
+			cursor: help;
+		}
+		.needs-contract-banner {
+			margin-bottom: 0.5rem;
+			padding: 0.4rem 0.6rem;
+			border-radius: 8px;
+			background: var(--warn-bg);
+			color: var(--warn-text);
+			font-size: 0.8rem;
+			font-weight: 600;
+		}
 		table.standings {
 			width: 100%;
 			border-collapse: collapse;
@@ -924,10 +952,18 @@
 			if (Number(p.contractYear) > 0) {
 				return el('td', { class: 'years-cell', text: String(p.contractYear) });
 			}
+			// Contracts are due every offseason in early September — flag this
+			// unmistakably (icon + row tint, see .needs-contract) rather than
+			// leaving it as just another blank dash to notice on a scroll-past.
+			const warnIcon = el('span', {
+				class: 'contract-warn-icon',
+				title: 'Contract length not set yet — due early September',
+				text: '⚠',
+			});
 			if (!isLoggedIn()) {
-				return el('td', { class: 'years-cell', text: '—' });
+				return el('td', { class: 'years-cell' }, [warnIcon, el('span', { text: '—' })]);
 			}
-			const td = el('td', { class: 'years-cell years-cell-plan' });
+			const td = el('td', { class: 'years-cell years-cell-plan' }, [warnIcon]);
 			const select = el('select', { class: 'years-select', title: 'Plan a contract length — not official until MFL sets one' });
 			for (const value of ['', '1', '2', '3']) {
 				select.appendChild(el('option', { value, text: value || '—' }));
@@ -992,7 +1028,8 @@
 			for (const p of sortByPositionThenEcr(players)) {
 				const posBoundary = prevPosition !== null && p.position !== prevPosition;
 				prevPosition = p.position;
-				const rowClass = `player-row status-${statusKey}${posBoundary ? ' pos-boundary' : ''}`;
+				const needsContract = isAuction && !(Number(p.contractYear) > 0);
+				const rowClass = `player-row status-${statusKey}${posBoundary ? ' pos-boundary' : ''}${needsContract ? ' needs-contract' : ''}`;
 				const row = el('tr', { class: rowClass, 'data-name': p.name.toLowerCase() });
 				row.appendChild(el('td', {}, [el('span', { class: 'pos-chip', text: p.position || '-' })]));
 				row.appendChild(el('td', { class: 'player-name', text: p.name }));
@@ -1272,6 +1309,20 @@
 			for (const p of league.players || []) {
 				const status = (p.status || 'ROSTER').toUpperCase();
 				(byStatus[status] = byStatus[status] || []).push(p);
+			}
+
+			// Contracts are due every offseason in early September — surface a
+			// count up top so it's visible without scrolling through the whole
+			// roster to spot the individually-flagged rows (see needs-contract
+			// in buildRosterTable/buildYearsCell).
+			if (isAuction) {
+				const needsContractCount = (league.players || []).filter((p) => !(Number(p.contractYear) > 0)).length;
+				if (needsContractCount > 0) {
+					card.appendChild(el('div', {
+						class: 'needs-contract-banner',
+						text: `⚠ ${needsContractCount} player${needsContractCount === 1 ? '' : 's'} need${needsContractCount === 1 ? 's' : ''} a contract length set`,
+					}));
+				}
 			}
 
 			// Pilot: leagues with a fetched starters list split Active Roster into
