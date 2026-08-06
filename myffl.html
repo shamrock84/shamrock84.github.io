@@ -1088,9 +1088,9 @@
 
 		// Pilot lineup editor: a single table with a checkbox column instead of
 		// separate Starters/Bench sections — check the players you want to
-		// start, then Save submits the checked ids to MFL via TYPE=lineup.
-		// Shown read-only (checkboxes disabled, no Save button) when logged
-		// out, so the layout is identical either way — only editability
+		// start, then Submit Lineup sends the checked ids to MFL via TYPE=lineup.
+		// Shown read-only (checkboxes disabled, no Submit Lineup button) when
+		// logged out, so the layout is identical either way — only editability
 		// changes once logged in.
 		function buildLineupEditor(league, players, starterIdSet) {
 			const editable = isLoggedIn();
@@ -1141,7 +1141,7 @@
 			}
 
 			const actions = el('div', { class: 'lineup-editor-actions' });
-			const saveBtn = el('button', { type: 'button', class: 'lineup-save-btn', text: 'Save Lineup' });
+			const saveBtn = el('button', { type: 'button', class: 'lineup-save-btn', text: 'Submit Lineup' });
 			const statusEl = el('span', { class: 'lineup-editor-status' });
 			actions.appendChild(saveBtn);
 			actions.appendChild(statusEl);
@@ -1154,7 +1154,7 @@
 					return;
 				}
 				saveBtn.disabled = true;
-				statusEl.textContent = 'Saving…';
+				statusEl.textContent = 'Submitting…';
 				try {
 					const res = await fetch(SUBMIT_LINEUP_URL, {
 						method: 'POST',
@@ -1168,10 +1168,10 @@
 					}
 					if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
 					league.starters = starterIds;
-					statusEl.textContent = 'Saved.';
+					statusEl.textContent = 'Submitted.';
 					setTimeout(renderGrid, 800);
 				} catch (err) {
-					statusEl.textContent = `Couldn't save: ${err.message}`;
+					statusEl.textContent = `Couldn't submit: ${err.message}`;
 					saveBtn.disabled = false;
 				}
 			});
