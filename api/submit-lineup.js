@@ -5,6 +5,14 @@
 // Requires a valid Bearer token from api/login.js; the password itself is
 // never sent here, only the signed token it issued.
 //
+// Only MFL leagues get past loadLineupPilotLeague below — deliberately an
+// allowlist (provider === 'mfl' or unset), not a denylist of the providers
+// that can't write. Sleeper and ESPN leagues can also carry lineupPilot: true
+// now (myffl.html renders their current starters read-only, no Save
+// control), and an allowlist means a future no-write provider added the
+// same way can never fall through here by omission the way a denylist
+// would require remembering to update.
+//
 // Requires MFL_USERNAME/MFL_PASSWORD (same as live-scoring.js) plus
 // SESSION_SECRET (shared with login.js) as Vercel project environment
 // variables.
@@ -24,7 +32,7 @@ const ALLOWED_ORIGINS = new Set([
 async function loadLineupPilotLeague(leagueId) {
   const raw = await readFile(CONFIG_PATH, 'utf8');
   const leagues = JSON.parse(raw).leagues || [];
-  return leagues.find((l) => l.id === leagueId && l.lineupPilot && l.provider !== 'espn') || null;
+  return leagues.find((l) => l.id === leagueId && l.lineupPilot && (!l.provider || l.provider === 'mfl')) || null;
 }
 
 export default async function handler(req, res) {

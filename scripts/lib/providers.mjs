@@ -765,3 +765,31 @@ export async function fetchSleeperScoring(league) {
 
   return { week, teams };
 }
+
+// Read-only: which of the franchise's players are currently set as
+// starters. Unlike fetchMflLineup, this is never paired with a submit
+// function — Sleeper's public API has no lineup-write endpoint (confirmed
+// against their own docs: "This is a read only API. At this time, there's
+// no write API access."), so myffl.html only ever renders this for
+// display, never with a Save/Submit control. Same week-resolution as
+// fetchSleeperScoring (display_week covers preseason, before state.week
+// ticks past 0). Pilot feature: only called for leagues flagged
+// lineupPilot in config/leagues.json.
+export async function fetchSleeperLineup(league) {
+  const state = await sleeperGet('/state/nfl');
+  const week = state.week > 0 ? state.week : state.display_week;
+  if (!week) {
+    throw new Error('No current week available yet');
+  }
+
+  const matchups = await sleeperGet(`/league/${league.id}/matchups/${week}`);
+  const mine = (matchups || []).find((m) => String(m.roster_id) === String(league.franchiseId));
+  if (!mine) {
+    throw new Error(`No matchup data for roster ${league.franchiseId} in week ${week}`);
+  }
+
+  // Sleeper represents an empty starting slot as the literal string "0",
+  // not an omitted entry — filter those out along with any other falsy id.
+  const starterIds = (mine.starters || []).filter((id) => id && id !== '0').map(String);
+  return { week: String(week), starterIds };
+}

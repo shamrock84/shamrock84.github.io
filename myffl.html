@@ -432,9 +432,15 @@
 			font-size: 0.8rem;
 			color: var(--muted);
 		}
-		/* Only when editable — logged out, the checkbox column is omitted
-		   entirely (see buildLineupEditor), so the first column is the
-		   position chip and shouldn't be squeezed to checkbox width. */
+		.lineup-editor-note {
+			margin-top: 0.6rem;
+			font-size: 0.78rem;
+			color: var(--muted);
+		}
+		/* Only when the checkbox column exists at all — logged out, it's
+		   omitted entirely (see buildLineupEditor's `visible` gate), so the
+		   first column is the position chip and shouldn't be squeezed to
+		   checkbox width. */
 		table.lineup-editor-table:not(.read-only) td:first-child {
 			width: 1.6rem;
 		}
@@ -1169,17 +1175,26 @@
 		// game time. Logged out, the checkbox column isn't just disabled,
 		// it's omitted entirely: nothing on the page reveals starter/bench
 		// status, only the Submit Lineup button and its actions disappear.
+		//
+		// `visible` (login) and `writable` (login AND a provider that can
+		// actually accept a write) are separate gates, not one. Sleeper
+		// leagues can carry lineupPilot too, but Sleeper's public API has no
+		// lineup-write endpoint at all — visible when logged in (same privacy
+		// gate as MFL), but permanently read-only: checkboxes render disabled,
+		// for reference, and no Submit control ever appears regardless of
+		// login state.
 		function buildLineupEditor(league, players, starterIdSet) {
-			const editable = isLoggedIn();
+			const visible = isLoggedIn();
+			const writable = visible && (!league.provider || league.provider === 'mfl');
 			const wrap = el('div', { class: 'lineup-editor' });
-			const table = el('table', { class: `roster lineup-editor-table${editable ? '' : ' read-only'}` });
+			const table = el('table', { class: `roster lineup-editor-table${visible ? '' : ' read-only'}` });
 			const headRow = el('tr', { class: 'roster-head' });
-			if (editable) headRow.appendChild(el('th', {}));
+			if (visible) headRow.appendChild(el('th', {}));
 			headRow.appendChild(el('th', {}));
 			headRow.appendChild(el('th', { text: 'Player' }));
 			headRow.appendChild(el('th', { text: 'Team' }));
 			headRow.appendChild(el('th', { class: 'bye-cell', text: 'Bye' }));
-			if (editable) headRow.appendChild(el('th', { class: 'ecr-cell', text: 'ECR' }));
+			if (visible) headRow.appendChild(el('th', { class: 'ecr-cell', text: 'ECR' }));
 			headRow.appendChild(el('th', { class: 'pts-cell', text: 'Pts' }));
 			table.appendChild(headRow);
 
@@ -1190,9 +1205,10 @@
 				prevPosition = p.position;
 				const row = el('tr', { class: `player-row${posBoundary ? ' pos-boundary' : ''}`, 'data-name': p.name.toLowerCase() });
 
-				if (editable) {
+				if (visible) {
 					const checkbox = el('input', { type: 'checkbox' });
 					checkbox.checked = starterIdSet.has(p.id);
+					checkbox.disabled = !writable;
 					checkbox.dataset.playerId = p.id;
 					checkboxes.push(checkbox);
 					row.appendChild(el('td', {}, [checkbox]));
@@ -1202,7 +1218,7 @@
 				row.appendChild(el('td', { class: 'player-name', text: p.name }));
 				row.appendChild(el('td', { class: 'nfl-team', text: p.team || 'FA' }));
 				row.appendChild(el('td', { class: 'bye-cell', text: p.bye ? String(p.bye) : '—' }));
-				if (editable) row.appendChild(buildEcrCell(p));
+				if (visible) row.appendChild(buildEcrCell(p));
 				const usingPriorYear = !(p.pts > 0) && p.priorYearPts > 0;
 				const ptsValue = usingPriorYear ? p.priorYearPts : p.pts;
 				const ptsAttrs = { class: `pts-cell${usingPriorYear ? ' pts-prior-year' : ''}`, text: ptsValue != null ? Number(ptsValue).toFixed(2) : '—' };
@@ -1213,8 +1229,16 @@
 			wrap.appendChild(table);
 
 			// Logging in/out is handled once, globally (see renderAuthControl) —
-			// nothing to show per-card when read-only.
-			if (!editable) {
+			// nothing to show per-card when the checkbox column itself is hidden.
+			if (!visible) {
+				return wrap;
+			}
+
+			if (!writable) {
+				wrap.appendChild(el('div', {
+					class: 'lineup-editor-note',
+					text: "Sleeper doesn't support setting lineups through their API — set this one directly in the Sleeper app.",
+				}));
 				return wrap;
 			}
 
