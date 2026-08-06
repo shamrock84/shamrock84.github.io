@@ -1220,7 +1220,7 @@
 			if (!hasPilotLeague) return;
 
 			if (isLoggedIn()) {
-				container.appendChild(el('span', { class: 'auth-status-text', text: 'Logged in to edit lineups' }));
+				container.appendChild(el('span', { class: 'auth-status-text', text: 'Logged in for advanced features' }));
 				const logoutBtn = el('button', { type: 'button', class: 'auth-logout-btn', text: 'Log out' });
 				logoutBtn.addEventListener('click', doLogout);
 				container.appendChild(logoutBtn);
