@@ -24,6 +24,7 @@ import {
   fetchStandings,
   fetchScoring,
   fetchMflLineup,
+  fetchSleeperLineup,
   fetchEspnLeagueRoster,
   fetchEspnStandings,
   fetchEspnScoring,
@@ -94,6 +95,7 @@ async function main() {
         name: league.name,
         type: league.type,
         format: league.format || null,
+        provider: league.provider || null,
         tags: league.tags || [],
         leagueName: league.name,
         franchiseId: null,
@@ -112,6 +114,7 @@ async function main() {
         ? await fetchSleeperLeagueRoster(league, sleeperPlayerMap, byeWeeks)
         : await fetchLeagueRoster(league, cookie, playerMap, byeWeeks);
       result.tags = league.tags || [];
+      result.provider = league.provider || null;
       leagues.push(result);
       console.log(`Fetched ${league.name}: ${result.players.length} players`);
     } catch (err) {
@@ -122,6 +125,7 @@ async function main() {
         name: league.name,
         type: league.type,
         format: league.format || null,
+        provider: league.provider || null,
         tags: league.tags || [],
         leagueName: prev?.leagueName || league.name,
         franchiseId: league.franchiseId,
@@ -174,13 +178,19 @@ async function main() {
 
   // Pilot: current-week starters/bench, only for leagues flagged
   // lineupPilot in config/leagues.json. See fetchMflLineup's comment for why
-  // this can't affect any other league's data.
+  // this can't affect any other league's data. Sleeper leagues get the same
+  // read-only starters fetch (fetchSleeperLineup) — myffl.html renders it
+  // without a Submit control for those, since Sleeper's API has no write
+  // endpoint. ESPN isn't included: no read (or write) lineup fetch exists
+  // for it yet.
   for (const league of LEAGUES) {
-    if (!league.lineupPilot || (league.provider && league.provider !== 'mfl')) continue;
+    if (!league.lineupPilot || (league.provider && league.provider !== 'mfl' && league.provider !== 'sleeper')) continue;
     const target = leagues.find((l) => l.id === league.id);
     if (!target || !league.franchiseId) continue;
     try {
-      const { week, starterIds } = await fetchMflLineup(league, cookie);
+      const { week, starterIds } = league.provider === 'sleeper'
+        ? await fetchSleeperLineup(league)
+        : await fetchMflLineup(league, cookie);
       target.lineupWeek = week;
       target.starters = starterIds;
       target.lineupError = null;
