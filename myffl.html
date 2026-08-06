@@ -586,16 +586,6 @@
 		}
 		.status-taxi_squad { background: var(--taxi-bg); }
 		.status-injured_reserve { background: var(--ir-bg); }
-		/* A Salary Cap roster spot with no real contract length set — comes
-		   after the taxi/IR tints in source order so it wins the background
-		   on a row that's both (e.g. an unpriced taxi-squad rookie), since
-		   the contract deadline is the thing that actually needs action. */
-		tr.needs-contract {
-			background: var(--warn-bg);
-		}
-		tr.needs-contract td:first-child {
-			box-shadow: inset 3px 0 0 0 var(--warn-text);
-		}
 		.contract-warn-icon {
 			color: var(--warn-text);
 			margin-right: 0.25rem;
@@ -952,9 +942,9 @@
 			if (Number(p.contractYear) > 0) {
 				return el('td', { class: 'years-cell', text: String(p.contractYear) });
 			}
-			// Contracts are due every offseason in early September — flag this
-			// unmistakably (icon + row tint, see .needs-contract) rather than
-			// leaving it as just another blank dash to notice on a scroll-past.
+			// Contracts are due every offseason in early September — flag it
+			// with an icon (and see the card-level banner in renderCard)
+			// rather than leaving it as just another blank dash to spot.
 			const warnIcon = el('span', {
 				class: 'contract-warn-icon',
 				title: 'Contract length not set yet — due early September',
@@ -1028,8 +1018,7 @@
 			for (const p of sortByPositionThenEcr(players)) {
 				const posBoundary = prevPosition !== null && p.position !== prevPosition;
 				prevPosition = p.position;
-				const needsContract = isAuction && !(Number(p.contractYear) > 0);
-				const rowClass = `player-row status-${statusKey}${posBoundary ? ' pos-boundary' : ''}${needsContract ? ' needs-contract' : ''}`;
+				const rowClass = `player-row status-${statusKey}${posBoundary ? ' pos-boundary' : ''}`;
 				const row = el('tr', { class: rowClass, 'data-name': p.name.toLowerCase() });
 				row.appendChild(el('td', {}, [el('span', { class: 'pos-chip', text: p.position || '-' })]));
 				row.appendChild(el('td', { class: 'player-name', text: p.name }));
@@ -1270,6 +1259,22 @@
 			const card = el('div', { class: 'card', 'data-view': 'rosters', 'data-league-type': subtabType(league) || '' });
 
 			const isAuction = league.format === 'auction';
+
+			// Contracts are due every offseason in early September — surface a
+			// count at the very top of the card, above the league name and
+			// badges, so it's the first thing seen without scrolling into the
+			// roster to spot individual flagged players (see the icon in
+			// buildYearsCell).
+			if (isAuction) {
+				const needsContractCount = (league.players || []).filter((p) => !(Number(p.contractYear) > 0)).length;
+				if (needsContractCount > 0) {
+					card.appendChild(el('div', {
+						class: 'needs-contract-banner',
+						text: `⚠ ${needsContractCount} player${needsContractCount === 1 ? '' : 's'} need${needsContractCount === 1 ? 's' : ''} a contract length set`,
+					}));
+				}
+			}
+
 			// Badges: league type + salary cap are derived from data we already
 			// have; anything else (Superflex, etc.) is a manual "tags" array in
 			// config/leagues.json since MFL doesn't expose it in a reliable form.
@@ -1309,20 +1314,6 @@
 			for (const p of league.players || []) {
 				const status = (p.status || 'ROSTER').toUpperCase();
 				(byStatus[status] = byStatus[status] || []).push(p);
-			}
-
-			// Contracts are due every offseason in early September — surface a
-			// count up top so it's visible without scrolling through the whole
-			// roster to spot the individually-flagged rows (see needs-contract
-			// in buildRosterTable/buildYearsCell).
-			if (isAuction) {
-				const needsContractCount = (league.players || []).filter((p) => !(Number(p.contractYear) > 0)).length;
-				if (needsContractCount > 0) {
-					card.appendChild(el('div', {
-						class: 'needs-contract-banner',
-						text: `⚠ ${needsContractCount} player${needsContractCount === 1 ? '' : 's'} need${needsContractCount === 1 ? 's' : ''} a contract length set`,
-					}));
-				}
 			}
 
 			// Pilot: leagues with a fetched starters list split Active Roster into
