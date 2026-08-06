@@ -20,6 +20,7 @@ import {
   mflLogin,
   loadPlayerMap,
   fetchNflByeWeeks,
+  fetchMflInjuries,
   fetchLeagueRoster,
   fetchStandings,
   fetchScoring,
@@ -86,6 +87,13 @@ async function main() {
     console.error(`Failed to fetch NFL bye weeks: ${err.message}`);
   }
 
+  let injuries = new Map();
+  try {
+    injuries = await fetchMflInjuries(cookie);
+  } catch (err) {
+    console.error(`Failed to fetch NFL injury report: ${err.message}`);
+  }
+
   const leagues = [];
   for (const league of LEAGUES) {
     if (!league.franchiseId) {
@@ -112,7 +120,7 @@ async function main() {
         ? await fetchEspnLeagueRoster(league)
         : league.provider === 'sleeper'
         ? await fetchSleeperLeagueRoster(league, sleeperPlayerMap, byeWeeks)
-        : await fetchLeagueRoster(league, cookie, playerMap, byeWeeks);
+        : await fetchLeagueRoster(league, cookie, playerMap, byeWeeks, injuries);
       result.tags = league.tags || [];
       result.provider = league.provider || null;
       leagues.push(result);
