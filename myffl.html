@@ -1277,7 +1277,7 @@
 			}
 		}
 
-		// "Email Contracts" link for the needs-contract banner — a mailto:
+		// "Send via Email" link for the needs-contract banner — a mailto:
 		// pre-filled with every player this manager has actually pencilled in
 		// a length for (not just every player still missing one; once a real
 		// contractYear lands from a sync, that player drops out here too,
@@ -1307,7 +1307,7 @@
 			return el('a', {
 				href: `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,
 				class: 'contract-email-link',
-				text: '✉ Email Contracts',
+				text: '✉ Send via Email',
 			});
 		}
 
