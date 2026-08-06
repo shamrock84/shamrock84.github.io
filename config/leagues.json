@@ -13,7 +13,8 @@
     "lineupPilot: MFL or Sleeper. When true, the sync also fetches this week's starters (MFL via TYPE=liveScoring, Sleeper via its matchups endpoint) and the Rosters card shows a checkbox editor instead of the plain Active Roster table. On MFL it's a real editor (login required to actually submit); Sleeper's public API has no write endpoint at all, so its version is permanently read-only regardless of login — checkboxes shown for reference only, no Save button ever. Set on every league that requires a submitted starting lineup.",
     "tags: optional array of extra badge labels shown in the card's upper-right corner (e.g. 'Superflex') — anything not already derivable from type/format. Type (Dynasty/Best Ball/Redraft) and Salary Cap badges are added automatically, no need to repeat those here. A 'Superflex' tag also switches that league's FantasyPros rankings to their superflex (OP) list.",
     "rankingType: optional FantasyPros ranking set behind the ECR column — defaults to DYNASTY for dynasty leagues and DRAFT for everything else. Switch to ROS once the regular season starts; draft rankings go stale as soon as real games are played. Needs a FANTASYPROS_API_KEY secret — without one the ECR column is simply blank and nothing else changes.",
-    "scoring: optional FantasyPros scoring format for the ECR column — 'PPR' (default), 'HALF', or 'STD'."
+    "scoring: optional FantasyPros scoring format for the ECR column — 'PPR' (default), 'HALF', or 'STD'.",
+    "rulesUrl: optional link to the league's actual rules page/doc. When set, shows a small 📝 icon next to the league name on the Rosters, Standings, and Scoring cards, opening it in a new tab. Omitted entirely for leagues without one."
   ],
   "leagues": [
     { "id": "26696", "franchiseId": "0001", "name": "MNMx Dynasty", "type": "dynasty", "format": "dynasty", "lineupPilot": true },
