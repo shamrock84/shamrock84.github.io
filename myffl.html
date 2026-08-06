@@ -446,6 +446,10 @@
 			font-size: 0.8rem;
 			color: var(--muted);
 		}
+		.lineup-requirements {
+			font-size: 0.78rem;
+			color: var(--muted);
+		}
 		.lineup-editor-note {
 			margin-top: 0.6rem;
 			font-size: 0.78rem;
@@ -1283,6 +1287,14 @@
 			const saveBtn = el('button', { type: 'button', class: 'lineup-save-btn', text: 'Submit Lineup' });
 			const statusEl = el('span', { class: 'lineup-editor-status' });
 			actions.appendChild(saveBtn);
+			// league.startingLineup (e.g. "1 QB, 2-3 RB, 2-3 WR, 1-2 TE, 1 PK, 1
+			// Def") comes pre-formatted from MFL's own starting-lineup slot
+			// requirements — see formatStartingLineupRequirement in
+			// providers.mjs. Missing rather than blank for leagues where MFL's
+			// export didn't parse cleanly, so there's nothing to render then.
+			if (league.startingLineup) {
+				actions.appendChild(el('span', { class: 'lineup-requirements', text: league.startingLineup }));
+			}
 			actions.appendChild(statusEl);
 			wrap.appendChild(actions);
 

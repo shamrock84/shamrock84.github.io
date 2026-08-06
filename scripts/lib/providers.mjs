@@ -248,6 +248,57 @@ async function fetchSalaryAdjustments(league, cookie) {
     .reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
 }
 
+// Starting-lineup slot requirements (e.g. "1 QB, 2-3 RB, 2-3 WR, 1-2 TE, 1
+// PK, 1 Def"), parsed from TYPE=league's `starters.position` node — the
+// same league export fetchLeagueRoster already fetches for franchise/team
+// info, just a different part of it. A slot's own `limit` can already be a
+// range ("2-3") for a single position; a slot whose `name` joins multiple
+// positions with "+" (e.g. "RB+WR+TE") is a genuine flex spot — it widens
+// every position it's eligible for by its own max, without lowering any of
+// their already-established minimums (a flex slot is optional on top of
+// the dedicated ones, not a second guaranteed starter at every position it
+// could fill).
+export function formatStartingLineupRequirement(leagueData) {
+  const rawSlots = leagueData?.league?.starters?.position;
+  const slots = Array.isArray(rawSlots) ? rawSlots : rawSlots ? [rawSlots] : [];
+  if (slots.length === 0) return null;
+
+  const dedicated = new Map(); // position -> { min, max }
+  const flexMax = new Map(); // position -> extra max contributed by flex slots
+
+  for (const slot of slots) {
+    const positions = String(slot.name || '').split('+').map((s) => s.trim()).filter(Boolean);
+    if (positions.length === 0) continue;
+    const [minStr, maxStr] = String(slot.limit ?? '').split('-');
+    const min = Number(minStr) || 0;
+    const max = maxStr !== undefined ? (Number(maxStr) || min) : min;
+    if (min === 0 && max === 0) continue;
+
+    if (positions.length === 1) {
+      const pos = positions[0];
+      const existing = dedicated.get(pos) || { min: 0, max: 0 };
+      dedicated.set(pos, { min: existing.min + min, max: existing.max + max });
+    } else {
+      for (const pos of positions) {
+        flexMax.set(pos, (flexMax.get(pos) || 0) + max);
+      }
+    }
+  }
+
+  const allPositions = new Set([...dedicated.keys(), ...flexMax.keys()]);
+  const parts = [...allPositions]
+    .sort((a, b) => positionRank(a) - positionRank(b))
+    .map((pos) => {
+      const ded = dedicated.get(pos) || { min: 0, max: 0 };
+      const totalMax = ded.max + (flexMax.get(pos) || 0);
+      if (ded.min === 0 && totalMax === 0) return null;
+      return ded.min === totalMax ? `${ded.min} ${pos}` : `${ded.min}-${totalMax} ${pos}`;
+    })
+    .filter(Boolean);
+
+  return parts.length > 0 ? parts.join(', ') : null;
+}
+
 export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, injuries) {
   const [leagueData, rostersData] = await Promise.all([
     mflGet(`/export?TYPE=league&L=${league.id}&JSON=1`, cookie),
@@ -329,6 +380,13 @@ export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, inj
     }
   }
 
+  let startingLineup = null;
+  try {
+    startingLineup = formatStartingLineupRequirement(leagueData);
+  } catch (err) {
+    console.error(`Failed to parse starting lineup requirements for ${league.name}: ${err.message}`);
+  }
+
   return {
     id: league.id,
     name: league.name,
@@ -341,6 +399,7 @@ export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, inj
     players,
     salaryCap,
     salaryAdjustments,
+    startingLineup,
     updatedAt: new Date().toISOString(),
     error: null,
   };
