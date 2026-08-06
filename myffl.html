@@ -28,8 +28,6 @@
 			--gold-text: #5c4300;
 			--gold-chip-bg: #fff3d1;
 			--gold-chip-text: #7a5c00;
-			--warn-bg: #fff7e6;
-			--warn-text: #92400e;
 		}
 		@media (prefers-color-scheme: dark) {
 			:root {
@@ -48,8 +46,6 @@
 				--gold-text: #3d2e00;
 				--gold-chip-bg: #3d2e05;
 				--gold-chip-text: #f0c33e;
-				--warn-bg: #3a2a0d;
-				--warn-text: #fbbf24;
 			}
 		}
 		body::before {
@@ -617,7 +613,7 @@
 		.status-taxi_squad { background: var(--taxi-bg); }
 		.status-injured_reserve { background: var(--ir-bg); }
 		.contract-warn-icon {
-			color: var(--warn-text);
+			color: var(--gold-chip-text);
 			margin-right: 0.25rem;
 			cursor: help;
 		}
@@ -629,14 +625,14 @@
 			margin-bottom: 0.5rem;
 			padding: 0.4rem 0.6rem;
 			border-radius: 8px;
-			background: var(--warn-bg);
-			color: var(--warn-text);
+			background: var(--gold-chip-bg);
+			color: var(--gold-chip-text);
 			font-size: 0.8rem;
 			font-weight: 600;
 		}
 		.contract-email-link {
 			flex-shrink: 0;
-			color: var(--warn-text);
+			color: var(--gold-chip-text);
 			text-decoration: underline;
 			white-space: nowrap;
 		}
