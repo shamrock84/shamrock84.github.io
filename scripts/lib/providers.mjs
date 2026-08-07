@@ -248,6 +248,90 @@ export async function espnLeagueExists(league, season) {
   }
 }
 
+// --- Scoring format detection -------------------------------------------
+//
+// config/leagues.json's `scoring` picks which FantasyPros list the ECR column
+// is drawn from, and that choice comes down to a single number: what a
+// reception is worth. 1 is PPR, 0.5 is half, 0 (or no rule at all) is standard.
+// Every provider publishes it, so it never needs to be transcribed from a rules
+// document by hand.
+//
+// Anything that isn't one of those three values returns null rather than being
+// rounded to the nearest. FantasyPros publishes exactly three lists; a league
+// scoring 0.25 or 1.5 per catch isn't any of them, and guessing would put the
+// ECR column quietly on the wrong one.
+export function receptionPointsToFormat(points) {
+  if (points == null || !Number.isFinite(points)) return null;
+  if (points === 0) return 'STD';
+  if (points === 0.5) return 'HALF';
+  if (points === 1) return 'PPR';
+  return null;
+}
+
+// MFL's exports come from XML, so every leaf is wrapped as {$t: "value"} and a
+// single-element list arrives as a bare object rather than an array.
+const mflText = (v) => (v && typeof v === 'object' ? v.$t : v);
+const asArray = (v) => (Array.isArray(v) ? v : v == null ? [] : [v]);
+
+// TYPE=rules, verified against the real API (probe-league-scoring.yml):
+//   rules.positionRules[] = { positions: "QB|RB|WR|TE|PK", rule: [ ... ] }
+//   rule[]                = { event: {$t:"CC"}, points: {$t:"*1"}, range: {...} }
+// CC is the catch/reception event. The leading * on points means "per event",
+// which is exactly the per-reception rate wanted here.
+//
+// Rules are scoped to position groups, so a league with a TE premium has more
+// than one CC rule at different rates. The base rate is the one that describes
+// the league, so the most common value wins and ties go to the lowest — a
+// premium applied to one position shouldn't outvote what everyone else gets.
+export async function fetchMflReceptionPoints(league, cookie) {
+  const data = await mflGet(`/export?TYPE=rules&L=${league.id}&JSON=1`, cookie, seasonOf(league));
+  const values = [];
+  for (const group of asArray(data?.rules?.positionRules)) {
+    for (const rule of asArray(group?.rule)) {
+      if (mflText(rule?.event) !== 'CC') continue;
+      const n = Number(String(mflText(rule?.points) ?? '').replace(/^\*/, ''));
+      if (Number.isFinite(n)) values.push(n);
+    }
+  }
+  // No reception rule at all is a real answer, not a failure: that's standard.
+  if (values.length === 0) return { points: 0, values };
+  const counts = new Map();
+  for (const v of values) counts.set(v, (counts.get(v) || 0) + 1);
+  const best = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0][0];
+  return { points: best, values };
+}
+
+// statId 53 is receptions. An absent item means the league scores none.
+export async function fetchEspnReceptionPoints(league) {
+  const data = await espnGet(league, 'view=mSettings');
+  const items = data?.settings?.scoringSettings?.scoringItems || [];
+  const rec = items.find((i) => i.statId === 53);
+  const points = rec ? Number(rec.points) : 0;
+  return { points: Number.isFinite(points) ? points : null, values: rec ? [points] : [] };
+}
+
+// scoring_settings.rec. Note bonus_rec_te and rec_fd sit alongside it — those
+// are bonuses on top, not the base rate, so they're deliberately ignored.
+export async function fetchSleeperReceptionPoints(league) {
+  const data = await sleeperGet(`/league/${league.id}`);
+  const rec = data?.scoring_settings?.rec;
+  const points = rec == null ? 0 : Number(rec);
+  return { points: Number.isFinite(points) ? points : null, values: [points] };
+}
+
+// { format, points, values } — format is null when the league doesn't map onto
+// one of FantasyPros' three lists, which is the caller's cue to leave it alone.
+export async function detectScoringFormat(league, cookie) {
+  const provider = league.provider || 'mfl';
+  const read = provider === 'espn'
+    ? fetchEspnReceptionPoints(league)
+    : provider === 'sleeper'
+    ? fetchSleeperReceptionPoints(league)
+    : fetchMflReceptionPoints(league, cookie);
+  const { points, values } = await read;
+  return { format: receptionPointsToFormat(points), points, values };
+}
+
 export async function loadPlayerMap(cookie) {
   const data = await mflGet('/export?TYPE=players&DETAILS=1&JSON=1', cookie);
   const list = data?.players?.player ?? [];
