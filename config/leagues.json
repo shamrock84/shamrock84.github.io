@@ -1,6 +1,8 @@
 {
   "_readme": [
     "Edit this file each offseason instead of touching scripts/fetch-rosters.mjs.",
+    "You normally shouldn't need to edit it by hand at all: the Admin tab on myffl.html (visible once logged in) edits this same file and commits it, validated by api/save-leagues.js. Hand-editing still works and is the fallback if that endpoint is misconfigured.",
+    "Any field added here that the Admin tab doesn't know about is preserved untouched when it saves, so adding one by hand is safe — but do teach the tab about it if it's meant to be editable.",
     "provider: 'mfl' (default if omitted), 'espn', or 'sleeper' — which fetch logic/auth to use. Sleeper needs no auth at all.",
     "id: the league ID for the current year (find it in the league's URL).",
     "franchiseId: your team ID within that league (MFL: 4-digit franchise ID; ESPN: numeric team ID; Sleeper: numeric roster_id, found by matching your username against /v1/league/<id>/users + /v1/league/<id>/rosters).",
