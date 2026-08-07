@@ -365,12 +365,13 @@ export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, inj
     }))
     .sort((a, b) => positionRank(a.position) - positionRank(b.position) || a.name.localeCompare(b.name));
 
-  // Salary cap totals: only meaningful for auction-format leagues. The cap
-  // amount comes off the league export we already fetched above; salary
-  // adjustments needs its own request.
+  // Salary cap totals: only meaningful for salary-cap leagues. The cap amount
+  // comes off the league export we already fetched above; salary adjustments
+  // needs its own request. This used to key off a separate `format: 'auction'`
+  // field that always agreed with the type, so the type alone drives it now.
   let salaryCap = null;
   let salaryAdjustments = null;
-  if (league.format === 'auction') {
+  if (league.type === 'salarycap') {
     const capAmount = leagueData?.league?.salaryCapAmount;
     salaryCap = capAmount ? Number(capAmount) : null;
     try {
@@ -391,7 +392,6 @@ export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, inj
     id: league.id,
     name: league.name,
     type: league.type,
-    format: league.format || null,
     leagueName: leagueData?.league?.name || league.name,
     franchiseId: league.franchiseId,
     teamName: franchiseInfo?.name || league.name,
@@ -627,7 +627,6 @@ export async function fetchEspnLeagueRoster(league) {
     id: league.id,
     name: league.name,
     type: league.type,
-    format: league.format || null,
     leagueName: data.settings?.name || league.name,
     franchiseId: league.franchiseId,
     teamName: espnTeamName(team),
@@ -816,7 +815,6 @@ export async function fetchSleeperLeagueRoster(league, playerMap, byeWeeks) {
     id: league.id,
     name: league.name,
     type: league.type,
-    format: league.format || null,
     leagueName: leagueData.name || league.name,
     franchiseId: league.franchiseId,
     teamName: names.get(String(league.franchiseId)) || league.name,

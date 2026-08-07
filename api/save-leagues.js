@@ -29,9 +29,15 @@ const REPO = 'shamrock84.github.io';
 const PATH = 'config/leagues.json';
 const BRANCH = 'main';
 
-const LEAGUE_TYPES = new Set(['dynasty', 'salarycap', 'bestball', 'redraft']);
+const LEAGUE_TYPES = new Set(['dynasty', 'salarycap', 'draftonly', 'redraft']);
 const PROVIDERS = new Set(['mfl', 'espn', 'sleeper']);
-const FORMATS = new Set(['dynasty', 'auction']);
+
+// Retired fields. Anything listed here is stripped on save rather than being
+// carried through by mergeLeague's unknown-key passthrough, which is what keeps
+// a removed field from living forever in the config.
+//   format — 'auction' always agreed with type 'salarycap', which now drives
+//            the salary/contract UI on its own; 'dynasty' was never read.
+const RETIRED_KEYS = new Set(['format']);
 const RANKING_TYPES = new Set(['DYNASTY', 'DRAFT', 'ROS', 'WEEKLY', 'ADP']);
 const SCORING_FORMATS = new Set(['PPR', 'HALF', 'STD']);
 
@@ -39,7 +45,7 @@ const SCORING_FORMATS = new Set(['PPR', 'HALF', 'STD']);
 // diff rather than a reshuffle. Anything not listed here is preserved and
 // appended after — see mergeLeague below for why that matters.
 const KEY_ORDER = [
-  'id', 'franchiseId', 'name', 'type', 'format', 'provider',
+  'id', 'franchiseId', 'name', 'type', 'provider',
   'tags', 'lineupPilot', 'rankingType', 'scoring', 'rulesUrl',
 ];
 
@@ -67,7 +73,13 @@ function validate(leagues) {
     const label = isNonEmptyString(league.name) ? `${where} (${league.name.trim()})` : where;
 
     if (!isNonEmptyString(league.id)) errors.push(`${label}: league ID is required.`);
-    if (!isNonEmptyString(league.name)) errors.push(`${label}: name is required.`);
+    // Optional. The Admin tab stopped setting it once the name shown there
+    // came from the live sync instead, and it was only ever a fallback for
+    // when the provider can't be reached. Still has to be text if present,
+    // so a hand-edited config can't put an object here.
+    if (league.name != null && typeof league.name !== 'string') {
+      errors.push(`${label}: name must be text.`);
+    }
     if (!LEAGUE_TYPES.has(league.type)) {
       errors.push(`${label}: type must be one of ${[...LEAGUE_TYPES].join(', ')}.`);
     }
@@ -81,9 +93,6 @@ function validate(leagues) {
     }
     if (league.provider != null && !PROVIDERS.has(league.provider)) {
       errors.push(`${label}: provider must be one of ${[...PROVIDERS].join(', ')}, or left blank for MFL.`);
-    }
-    if (league.format != null && !FORMATS.has(league.format)) {
-      errors.push(`${label}: format must be dynasty or auction, or left blank.`);
     }
     if (league.rankingType != null && !RANKING_TYPES.has(league.rankingType)) {
       errors.push(`${label}: rankings must be one of ${[...RANKING_TYPES].join(', ')}, or left blank.`);
@@ -125,9 +134,8 @@ function mergeLeague(league) {
 
   put('id', String(league.id).trim());
   put('franchiseId', league.franchiseId == null ? '' : String(league.franchiseId).trim());
-  put('name', String(league.name).trim());
+  put('name', league.name == null ? '' : String(league.name).trim());
   put('type', league.type);
-  put('format', league.format);
   put('provider', league.provider);
   if (Array.isArray(league.tags) && league.tags.length) out.tags = league.tags.map((t) => t.trim());
   if (league.lineupPilot === true) out.lineupPilot = true;
@@ -136,7 +144,7 @@ function mergeLeague(league) {
   put('rulesUrl', league.rulesUrl);
 
   for (const [k, v] of Object.entries(league)) {
-    if (!KEY_ORDER.includes(k) && v !== undefined) out[k] = v;
+    if (!KEY_ORDER.includes(k) && !RETIRED_KEYS.has(k) && v !== undefined) out[k] = v;
   }
   return out;
 }
