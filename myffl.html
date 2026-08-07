@@ -2071,9 +2071,29 @@
 
 		// Blank means "leave the key out", which is not the same as an empty
 		// value — an omitted provider means MFL, an omitted rankingType means
-		// "pick automatically from the league type". The labels say so.
+		// "pick automatically from the league type and the time of year". The
+		// labels, and the note above the table, say so.
 		const ADMIN_PROVIDERS = [['', 'MFL'], ['espn', 'ESPN'], ['sleeper', 'Sleeper']];
 		const ADMIN_TYPES = [['dynasty', 'Dynasty'], ['salarycap', 'Salary Cap'], ['draftonly', 'Draft Only'], ['redraft', 'Redraft']];
+		// Is the NFL regular season on? A deliberate second copy of the rule
+		// in nflSeasonPhase() in scripts/lib/fantasypros.mjs — this page has no
+		// build step and can't import from scripts/, so the alternative would be
+		// a fetch just to word a sentence. The sync is the side that actually
+		// picks the ranking set; this only describes it, so the two drifting
+		// apart would mislead rather than break anything. Keep them in step.
+		//
+		// Season runs from the Thursday after the first Monday in September
+		// (Labor Day) through the second Sunday in February (the Super Bowl).
+		function nflInSeason(now = new Date()) {
+			const nth = (year, month, weekday, n) => {
+				const firstDow = new Date(Date.UTC(year, month, 1)).getUTCDay();
+				return Date.UTC(year, month, 1 + ((weekday - firstDow + 7) % 7) + (n - 1) * 7);
+			};
+			const year = now.getUTCFullYear();
+			const day = 24 * 60 * 60 * 1000;
+			return now.getTime() >= nth(year, 8, 1, 1) + 3 * day || now.getTime() < nth(year, 1, 0, 2) + day;
+		}
+
 		const ADMIN_RANKINGS = [['', 'Automatic'], ['DYNASTY', 'Dynasty'], ['DRAFT', 'Draft'], ['ROS', 'Rest-of-season'], ['WEEKLY', 'Weekly'], ['ADP', 'ADP']];
 		const ADMIN_SCORING = [['', 'PPR'], ['HALF', 'Half PPR'], ['STD', 'Standard']];
 
@@ -2163,6 +2183,22 @@
 			card.appendChild(el('div', {
 				class: 'admin-note',
 				text: 'Changes here go live on the site as soon as you press Save. New or changed leagues show up on the other tabs after the next sync.',
+			}));
+
+			// Rankings is the one column here whose "Automatic" changes by
+			// itself, so say what it does and what it resolves to today —
+			// otherwise it reads as though nothing is set at all. Stated once
+			// above the table rather than per row: in season the answer is
+			// Rest-of-season for every league whatever its type, and a per-row
+			// label would go stale the moment someone edited that row's Type,
+			// since changing a dropdown doesn't re-render the table.
+			card.appendChild(el('div', {
+				class: 'admin-note',
+				text: 'Rankings left on Automatic follow the NFL calendar by themselves: Rest-of-season from kickoff through the Super Bowl, then Dynasty (dynasty leagues) or Draft (everything else) until the next kickoff. '
+					+ (nflInSeason()
+						? 'The season is underway, so right now that means Rest-of-season.'
+						: 'It is the offseason, so right now that means Dynasty or Draft.')
+					+ ' Picking anything else pins that league to one set year-round.',
 			}));
 
 			const scroller = el('div', { class: 'admin-scroll' });

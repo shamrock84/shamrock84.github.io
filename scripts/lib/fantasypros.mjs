@@ -132,30 +132,81 @@ function lookupPlayer(index, player) {
   return byTeam.length === 1 ? byTeam[0] : null;
 }
 
-// Which ranking set a league is scored against. The Dynasty sub-tab is the
-// only one that gets dynasty rankings — salary-cap, best ball and redraft
-// all use draft rankings.
+// Where we are in the NFL calendar, computed from two rules rather than from a
+// schedule lookup, so nothing has to be remembered or re-entered each year:
 //
-// Salary-cap leagues carry multi-year contracts and taxi squads, so putting
-// them on draft rankings reads like an oversight. It isn't: they're managed
-// on a redraft cadence here (the cap resets and the roster gets re-auctioned
-// annually), so draft rankings match how the decisions actually get made.
-// Don't "correct" this to follow roster mechanics — if a single league ever
-// needs to differ, set rankingType on it in config/leagues.json.
+//   kickoff  — the Thursday after Labor Day (the first Monday in September)
+//   flip-back — the Super Bowl, the second Sunday in February
 //
-// Scoring is overridable there too, and rankingType is what you switch to
-// ROS once the regular season is underway, since draft rankings go stale the
-// moment real games are played.
+// Both have held every year since the 17-game season arrived in 2021, and both
+// are only used to pick between ranking sets, so being a day out at either edge
+// costs nothing: draft and rest-of-season rankings barely disagree before a
+// game has been played, and nothing at all is played the week after the Super
+// Bowl. Note the Labor Day step — taking "the first Thursday in September"
+// directly would be a week early whenever September starts on a Thursday.
+//
+// All UTC. The sync runs in UTC, and shifting these to Eastern would mean
+// carrying a timezone table to move a boundary by a few hours in the middle of
+// a week when nothing changes.
+function nthWeekdayUtc(year, month, weekday, n) {
+  const firstDow = new Date(Date.UTC(year, month, 1)).getUTCDay();
+  const offset = (weekday - firstDow + 7) % 7;
+  return Date.UTC(year, month, 1 + offset + (n - 1) * 7);
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// { inSeason, season } — season being the NFL season year, which is the
+// calendar year everywhere except between New Year and the Super Bowl, when
+// the season still running is the previous year's.
+export function nflSeasonPhase(now = new Date()) {
+  const year = now.getUTCFullYear();
+  // First Monday in September, plus three days.
+  const kickoff = nthWeekdayUtc(year, 8, 1, 1) + 3 * DAY_MS;
+  // Second Sunday in February. The game ends around 03:00 UTC on the Monday,
+  // so the day after is when the offseason has unambiguously begun.
+  const offseasonBegins = nthWeekdayUtc(year, 1, 0, 2) + DAY_MS;
+  const t = now.getTime();
+
+  if (t >= kickoff) return { inSeason: true, season: year };
+  if (t < offseasonBegins) return { inSeason: true, season: year - 1 };
+  return { inSeason: false, season: year };
+}
+
+// The ranking set a league gets when config/leagues.json doesn't pin one.
+//
+// In season it's rest-of-season for everything, including dynasty: once real
+// games are being played, preseason draft and dynasty lists go stale, and the
+// question every lineup and waiver decision actually asks is who helps between
+// now and the end of the year. Out of season it reverts to the list that
+// matches how the league is run.
+//
+// The Dynasty sub-tab is the only one that gets dynasty rankings — salary-cap,
+// draft-only and redraft all use draft rankings. Salary-cap leagues carry
+// multi-year contracts and taxi squads, so putting them on draft rankings reads
+// like an oversight. It isn't: they're managed on a redraft cadence here (the
+// cap resets and the roster gets re-auctioned annually), so draft rankings match
+// how the decisions actually get made. Don't "correct" this to follow roster
+// mechanics — if a single league ever needs to differ, set rankingType on it in
+// config/leagues.json, which also opts that league out of the seasonal flip
+// entirely and pins it year-round.
+export function automaticRankingType(league, now = new Date()) {
+  if (nflSeasonPhase(now).inSeason) return 'ROS';
+  return league.type === 'dynasty' ? 'DYNASTY' : 'DRAFT';
+}
+
+// Which ranking set a league is scored against. Scoring is overridable in
+// config/leagues.json too.
 //
 // Superflex leagues rank QBs far higher than a 1-QB league does, which is
 // exactly what FantasyPros' "OP" (offensive player) list represents. OP only
 // covers offense, so those leagues fall back to the ALL list for kickers,
 // defenses and IDP.
-export function rankingSpecForLeague(league) {
+export function rankingSpecForLeague(league, now = new Date()) {
   const tags = Array.isArray(league.tags) ? league.tags : [];
   const isSuperflex = tags.some((t) => /superflex/i.test(String(t)));
   return {
-    type: league.rankingType || (league.type === 'dynasty' ? 'DYNASTY' : 'DRAFT'),
+    type: league.rankingType || automaticRankingType(league, now),
     scoring: league.scoring || 'PPR',
     positions: isSuperflex ? ['OP', 'ALL'] : ['ALL'],
   };
@@ -197,14 +248,16 @@ export function createRankingsProvider(apiKey, season) {
 // Failures are per-league and non-fatal: a league whose ranking set can't be
 // fetched keeps its roster and just carries a rankingsError, matching how
 // standings/scoring/lineup failures are already handled by the sync.
-export async function attachRankings(leagues, leagueConfigs, { apiKey, season }) {
+// `now` exists so the seasonal default (see automaticRankingType) is testable
+// without waiting for September.
+export async function attachRankings(leagues, leagueConfigs, { apiKey, season, now = new Date() }) {
   const provider = createRankingsProvider(apiKey, season);
   const configById = new Map(leagueConfigs.map((l) => [l.id, l]));
   const summary = [];
 
   for (const league of leagues) {
     if (!league.players || league.players.length === 0) continue;
-    const spec = rankingSpecForLeague(configById.get(league.id) || league);
+    const spec = rankingSpecForLeague(configById.get(league.id) || league, now);
 
     try {
       const sets = await Promise.all(

@@ -34,7 +34,7 @@ import {
   fetchSleeperStandings,
   fetchSleeperScoring,
 } from './lib/providers.mjs';
-import { attachRankings, fantasyProsApiKey } from './lib/fantasypros.mjs';
+import { attachRankings, fantasyProsApiKey, nflSeasonPhase } from './lib/fantasypros.mjs';
 
 const USERNAME = process.env.MFL_USERNAME;
 const PASSWORD = process.env.MFL_PASSWORD;
@@ -219,8 +219,19 @@ async function main() {
   if (!fpApiKey) {
     console.log('Skipping FantasyPros rankings: FANTASYPROS_API_KEY not set');
   } else {
+    // One clock reading for the whole step, so the season year and the
+    // in-season/offseason decision can't disagree across the boundary.
+    //
+    // YEAR is the calendar year, which is the season year except between New
+    // Year and the Super Bowl — exactly the stretch where the automatic
+    // ranking set is now ROS, and asking FantasyPros for next season's ROS
+    // list comes back empty. An explicit MFL_YEAR still wins, as everywhere.
+    const now = new Date();
+    const phase = nflSeasonPhase(now);
+    const season = process.env.MFL_YEAR || String(phase.season);
+    console.log(`FantasyPros — ${season} season, ${phase.inSeason ? 'in season' : 'offseason'}`);
     try {
-      const summary = await attachRankings(leagues, LEAGUES, { apiKey: fpApiKey, season: YEAR });
+      const summary = await attachRankings(leagues, LEAGUES, { apiKey: fpApiKey, season, now });
       for (const line of summary) console.log(`FantasyPros — ${line}`);
     } catch (err) {
       console.error(`Failed to attach FantasyPros rankings: ${err.message}`);
