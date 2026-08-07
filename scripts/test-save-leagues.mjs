@@ -24,7 +24,7 @@ function check(name, pass, detail = '') {
 }
 
 // A minimal league that passes, so each case below varies exactly one thing.
-const base = () => ({ id: '123', franchiseId: '0001', name: 'Test', type: 'bestball' });
+const base = () => ({ id: '123', franchiseId: '0001', name: 'Test', type: 'draftonly' });
 const withField = (k, v) => [{ ...base(), [k]: v }];
 
 // ---- validate: the happy path is the real config ----
@@ -39,7 +39,7 @@ check('rejects a missing id', validate(withField('id', '')).length > 0);
 check('rejects a non-text name', validate(withField('name', { oops: 1 })).length > 0);
 check('rejects an unknown type', validate(withField('type', 'keeper')).length > 0);
 check('rejects an unknown provider', validate(withField('provider', 'yahoo')).length > 0);
-check('rejects an unknown format', validate(withField('format', 'snake')).length > 0);
+check('rejects the retired bestball type', validate(withField('type', 'bestball')).length > 0);
 check('rejects an unknown ranking type', validate(withField('rankingType', 'VIBES')).length > 0);
 check('rejects an unknown scoring format', validate(withField('scoring', 'TE-PREMIUM')).length > 0);
 check('rejects a non-boolean lineup flag', validate(withField('lineupPilot', 'yes')).length > 0);
@@ -70,12 +70,19 @@ check('error messages fall back to the row number when unnamed',
 check('error messages name the league', validate([{ ...base(), type: 'bogus' }])[0].includes('Test'));
 
 // ---- mergeLeague ----
-const merged = mergeLeague({ ...base(), franchiseId: '', format: undefined, tags: [], lineupPilot: false, rulesUrl: '' });
+const merged = mergeLeague({ ...base(), franchiseId: '', tags: [], lineupPilot: false, rulesUrl: '' });
 check('drops a blank team id', !('franchiseId' in merged), JSON.stringify(merged));
 check('drops empty tags', !('tags' in merged));
 check('drops lineupPilot when off', !('lineupPilot' in merged));
 check('drops a blank rules link', !('rulesUrl' in merged));
-check('keeps the required fields', merged.id === '123' && merged.name === 'Test' && merged.type === 'bestball');
+check('keeps the required fields', merged.id === '123' && merged.name === 'Test' && merged.type === 'draftonly');
+// Retired keys are stripped rather than carried through by the unknown-field
+// passthrough — otherwise a removed field would live in the config forever.
+check('strips the retired format key',
+  !('format' in mergeLeague({ ...base(), format: 'auction' })),
+  JSON.stringify(mergeLeague({ ...base(), format: 'auction' })));
+check('still preserves genuinely unknown keys alongside retired ones',
+  mergeLeague({ ...base(), format: 'auction', somethingNew: 1 }).somethingNew === 1);
 check('drops a blank name', !('name' in mergeLeague({ id: '1', type: 'redraft', name: '' })));
 // Regression: String(undefined) is the string "undefined", which would have
 // written a league literally named undefined into the config.
