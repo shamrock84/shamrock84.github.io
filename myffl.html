@@ -2078,9 +2078,10 @@
 		// Is the NFL regular season on? A deliberate second copy of the rule
 		// in nflSeasonPhase() in scripts/lib/fantasypros.mjs — this page has no
 		// build step and can't import from scripts/, so the alternative would be
-		// a fetch just to word a sentence. The sync is the side that actually
-		// picks the ranking set; this only describes it, so the two drifting
-		// apart would mislead rather than break anything. Keep them in step.
+		// a fetch just to word one sentence of the legend under the Admin table.
+		// The sync is the side that actually picks the ranking set; this only
+		// describes it, so the two drifting apart would mislead rather than
+		// break anything. Keep them in step.
 		//
 		// Season runs from the Thursday after the first Monday in September
 		// (Labor Day) through the second Sunday in February (the Super Bowl).
@@ -2185,22 +2186,6 @@
 				text: 'Changes here go live on the site as soon as you press Save. New or changed leagues show up on the other tabs after the next sync.',
 			}));
 
-			// Rankings is the one column here whose "Automatic" changes by
-			// itself, so say what it does and what it resolves to today —
-			// otherwise it reads as though nothing is set at all. Stated once
-			// above the table rather than per row: in season the answer is
-			// Rest-of-season for every league whatever its type, and a per-row
-			// label would go stale the moment someone edited that row's Type,
-			// since changing a dropdown doesn't re-render the table.
-			card.appendChild(el('div', {
-				class: 'admin-note',
-				text: 'Rankings left on Automatic follow the NFL calendar by themselves: Rest-of-season from kickoff through the Super Bowl, then Dynasty (dynasty leagues) or Draft (everything else) until the next kickoff. '
-					+ (nflInSeason()
-						? 'The season is underway, so right now that means Rest-of-season.'
-						: 'It is the offseason, so right now that means Dynasty or Draft.')
-					+ ' Picking anything else pins that league to one set year-round.',
-			}));
-
 			const scroller = el('div', { class: 'admin-scroll' });
 			const table = el('table', { class: 'admin-table' });
 			const headRow = el('tr', { class: 'roster-head' });
@@ -2289,7 +2274,11 @@
 
 			card.appendChild(el('div', {
 				class: 'admin-legend',
-				text: 'Name is read-only — it comes from the league itself at each sync, so there is nothing here to edit. My team ID is your own team within that league (MFL uses 4 digits like 0001; ESPN and Sleeper use plain numbers). Type set to Salary Cap is what adds the Salary and Yrs columns and the cap summary to that league’s card. Lineups shows a lineup editor on the Rosters tab — MFL can be submitted from here, Sleeper is view-only. Rankings on Automatic uses dynasty rankings for dynasty leagues and draft rankings everywhere else.',
+				text: 'Name is read-only — it comes from the league itself at each sync, so there is nothing here to edit. My team ID is your own team within that league (MFL uses 4 digits like 0001; ESPN and Sleeper use plain numbers). Type set to Salary Cap is what adds the Salary and Yrs columns and the cap summary to that league’s card. Lineups shows a lineup editor on the Rosters tab — MFL can be submitted from here, Sleeper is view-only. Rankings on Automatic follows the NFL calendar by itself: every league switches to rest-of-season rankings once the season kicks off, then back to dynasty rankings for dynasty leagues and draft rankings everywhere else once the Super Bowl is over. '
+					+ (nflInSeason()
+						? 'The season is underway, so Automatic currently means rest-of-season everywhere. '
+						: 'It is the offseason, so Automatic currently means dynasty or draft. ')
+					+ 'Picking anything else pins that league to that one set year-round.',
 			}));
 
 			const addBtn = el('button', { type: 'button', class: 'admin-add-btn', text: '+ Add a league' });
