@@ -879,6 +879,22 @@
 			color: var(--muted);
 			font-weight: 600;
 		}
+		/* Per-league notices. The Admin tab shows config values while every other
+		   tab shows synced values, and nothing used to say when the two disagreed —
+		   which made a wrong team ID look like a save that silently reverted. */
+		.admin-notice {
+			font-size: 0.72rem;
+			line-height: 1.4;
+			margin: 0.3rem 0 0 1.8rem;
+			padding: 0.25rem 0.5rem;
+			border-radius: 5px;
+			background: var(--chip-bg);
+			color: var(--accent);
+		}
+		.admin-notice-error {
+			background: var(--ir-bg);
+			color: var(--ir-text);
+		}
 		.admin-league-actions {
 			display: flex;
 			justify-content: flex-end;
@@ -2304,6 +2320,33 @@
 			}
 		}
 
+		// Which config fields differ from what the last sync actually used. Only the
+		// ones the sync echoes back verbatim are comparable — scoring and rankingType
+		// are overrides it consumes rather than records, so they aren't checked here.
+		function configDrift(cfg, live) {
+			const norm = (v) => (v == null || v === '' ? null : String(v));
+			const out = [];
+			if (norm(cfg.franchiseId) !== norm(live.franchiseId)) out.push('My team ID');
+			if (norm(cfg.type) !== norm(live.type)) out.push('Type');
+			if (norm(cfg.provider) !== norm(live.provider)) out.push('Site');
+			if (JSON.stringify(cfg.tags || []) !== JSON.stringify(live.tags || [])) out.push('Tags');
+			if (norm(cfg.rulesUrl) !== norm(live.rulesUrl)) out.push('Rules link');
+			if (cfg.season && norm(cfg.season) !== norm(live.season)) out.push('Season');
+			return out;
+		}
+
+		// True when the served config matches this row, field for field. Used to
+		// confirm a save actually reached the page rather than assuming it did.
+		function sameLeagueConfig(a, b) {
+			const norm = (v) => (v == null || v === '' ? null : String(v));
+			if (!a || !b) return false;
+			for (const k of ['id', 'franchiseId', 'type', 'provider', 'rulesUrl', 'scoring', 'rankingType', 'season']) {
+				if (norm(a[k]) !== norm(b[k])) return false;
+			}
+			if (JSON.stringify(a.tags || []) !== JSON.stringify(b.tags || [])) return false;
+			return Boolean(a.lineupPilot) === Boolean(b.lineupPilot);
+		}
+
 		function refreshAdminCard() {
 			const existing = document.querySelector('.card[data-view="admin"]');
 			if (!existing) return;
@@ -2456,6 +2499,41 @@
 				if (league.rulesUrl) bits.push('Rules link');
 				node.appendChild(el('div', { class: 'admin-blurb', text: bits.join(' · ') }));
 
+				// The two things this tab used to hide. A league whose config no longer
+				// matches the last sync looked identical to one that was working, and
+				// the sync's own error for that league was sitting in data/rosters.json
+				// unread — which is exactly the answer when a team ID is wrong.
+				const notices = [];
+				if (!live) {
+					if (league.id) notices.push({ text: 'Not synced yet — this league appears on the other tabs after the next sync.' });
+				} else {
+					const drift = configDrift(league, live);
+					if (drift.length) {
+						notices.push({ text: `Saved but not synced yet — ${drift.join(', ')} ${drift.length === 1 ? 'differs' : 'differ'} from what the last sync used.` });
+					}
+					// The roster error decides whether the card renders at all, so it
+					// leads. standings and lineup are worth surfacing too.
+					//
+					// scoringError is deliberately not: live scoring doesn't exist outside
+					// game days, so "No live scoring available yet" is the normal state for
+					// nearly every league for most of the year. Flagging it red on fourteen
+					// of eighteen rows would teach you to ignore these notices, which costs
+					// more than the one it would occasionally catch.
+					if (live.error) notices.push({ error: true, text: `Last sync failed: ${live.error}` });
+					else {
+						const partial = [
+							['standings', live.standingsError],
+							['lineup', live.lineupError],
+						].filter(([, e]) => e);
+						if (partial.length) {
+							notices.push({ error: true, text: `Last sync: ${partial.map(([what, e]) => `${what} — ${e}`).join('; ')}` });
+						}
+					}
+				}
+				for (const n of notices) {
+					node.appendChild(el('div', { class: `admin-notice${n.error ? ' admin-notice-error' : ''}`, text: n.text }));
+				}
+
 				if (isOpen) {
 					const fields = el('div', { class: 'admin-fields' });
 					const field = (labelText, control, wide = false) => {
@@ -2596,10 +2674,24 @@
 			const actions = el('div', { class: 'lineup-editor-actions' });
 			const saveBtn = el('button', { type: 'button', class: 'lineup-save-btn', text: 'Save changes' });
 			const revertBtn = el('button', { type: 'button', class: 'admin-revert-btn', text: 'Discard edits' });
+			// Re-read the served config without a full page reload, so "is the page
+			// showing me stale values?" is answerable in one click.
+			const reloadBtn = el('button', { type: 'button', class: 'admin-revert-btn', text: 'Reload from site' });
 			const statusEl = el('span', { class: 'lineup-editor-status' });
 			actions.appendChild(saveBtn);
 			actions.appendChild(revertBtn);
+			actions.appendChild(reloadBtn);
 			actions.appendChild(statusEl);
+
+			reloadBtn.addEventListener('click', async () => {
+				if (adminDraft && !window.confirm('Reload the league list from the site?\n\nAny unsaved edits here are discarded.')) return;
+				reloadBtn.disabled = true;
+				statusEl.textContent = 'Reloading…';
+				await loadLeagueConfig();
+				adminDraft = null;
+				adminExpanded.clear();
+				refreshAdminCard();
+			});
 			card.appendChild(actions);
 
 			const problemsEl = el('ul', { class: 'admin-problems hidden' });
@@ -2662,7 +2754,26 @@
 					leagueConfig.leagues = JSON.parse(JSON.stringify(adminDraft));
 					adminDraft = null;
 					adminExpanded.clear();
-					statusEl.textContent = `Saved ${body.count} leagues.`;
+					// Saving commits to the repository, but this page reads
+					// config/leagues.json through GitHub Pages, which keeps serving the
+					// previous copy until it redeploys. Reloading inside that window
+					// shows the pre-save values and is indistinguishable from the save
+					// having silently reverted — so confirm rather than assume.
+					const savedLeagues = leagueConfig.leagues;
+					statusEl.textContent = `Saved ${body.count} leagues. Confirming…`;
+					setTimeout(async () => {
+						try {
+							const check = await fetch(`${LEAGUES_CONFIG_URL}?t=${Date.now()}`, { cache: 'no-store' });
+							const served = (await check.json()).leagues || [];
+							const live = served.length === savedLeagues.length
+								&& savedLeagues.every((l, i) => sameLeagueConfig(l, served[i]));
+							statusEl.textContent = live
+								? `Saved ${body.count} leagues — confirmed live.`
+								: `Saved ${body.count} leagues. The site is still serving the previous copy; it usually catches up within a minute. Your change is committed either way.`;
+						} catch {
+							statusEl.textContent = `Saved ${body.count} leagues.`;
+						}
+					}, 5000);
 					const syncNow = el('button', { type: 'button', class: 'admin-revert-btn', text: 'Sync now' });
 					syncNow.addEventListener('click', () => {
 						statusEl.textContent = 'Syncing — watch the header for progress.';
