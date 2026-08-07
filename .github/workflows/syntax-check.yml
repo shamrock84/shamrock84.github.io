@@ -74,6 +74,12 @@ jobs:
       - name: Test the automatic ranking-set calendar
         run: node scripts/test-season-phase.mjs
 
+      # Which season each league is read from during the rollover window. Both
+      # ways of getting this wrong are silent: too early and cards go empty,
+      # too late and last season's rosters render like fresh ones.
+      - name: Test the per-league season rollover
+        run: node scripts/test-season-rollover.mjs
+
       - name: Validate config/leagues.json
         run: |
           node --input-type=module -e '

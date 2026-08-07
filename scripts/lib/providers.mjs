@@ -9,7 +9,24 @@ const ESPN_SWID = process.env.ESPN_SWID;
 // fantasy.espn.com's API redirects (sometimes to a generic marketing page
 // instead of a clean auth error) — lm-api-reads is the current stable host
 // used directly by maintained ESPN API client libraries.
-const ESPN_BASE = `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${YEAR}/segments/0/leagues`;
+const espnBase = (season) =>
+  `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${season}/segments/0/leagues`;
+
+// Which season a given league is being read from. YEAR is only the fallback:
+// leagues roll over to a new season on their own commissioner's schedule,
+// anywhere from February to April for MFL and later still for redraft, so the
+// sync resolves a season per league (see resolveSeason in fetch-rosters.mjs)
+// and hangs it on the league object. Every league-scoped call below reads it
+// from here, which is why none of them needed a new parameter.
+//
+// Global lookups — the player database, bye weeks, the injury report — stay on
+// YEAR deliberately. They aren't league-scoped, MFL player IDs are stable
+// across seasons, and the one field that is season-specific (bye weeks) only
+// matters once games are being played, by which point every league has rolled
+// over and the distinction is moot.
+export function seasonOf(league) {
+  return String(league?.season || YEAR);
+}
 
 export const POSITION_ORDER = ['QB', 'RB', 'WR', 'TE', 'PK', 'PN', 'Off', 'DL', 'DE', 'DT', 'LB', 'CB', 'S', 'DB', 'Def'];
 
@@ -65,7 +82,7 @@ export function leagueUrl(league) {
   if (league.provider === 'sleeper') {
     return `https://sleeper.com/leagues/${league.id}`;
   }
-  return `https://www.myfantasyleague.com/${YEAR}/home/${league.id}`;
+  return `https://www.myfantasyleague.com/${seasonOf(league)}/home/${league.id}`;
 }
 
 // --- MFL ---
@@ -103,8 +120,8 @@ export async function mflLogin(username, password) {
 // even though the cookie itself is domain-wide (.myfantasyleague.com) and
 // present either way. This resolves that host dynamically from the
 // login's redirect chain instead of hardcoding a shard number.
-async function mflLoginForImport(username, password, leagueId) {
-  const url = `${BASE}/login?USERNAME=${encodeURIComponent(username)}&PASSWORD=${encodeURIComponent(password)}&L=${leagueId}&XML=1`;
+async function mflLoginForImport(username, password, leagueId, season = YEAR) {
+  const url = `https://api.myfantasyleague.com/${season}/login?USERNAME=${encodeURIComponent(username)}&PASSWORD=${encodeURIComponent(password)}&L=${leagueId}&XML=1`;
   const res = await fetch(url, { redirect: 'follow' });
   const text = await res.text();
 
@@ -149,6 +166,49 @@ export async function mflGet(path, cookie, year = YEAR, attempt = 1) {
     throw new Error(`MFL request failed (${res.status}): ${path} (year ${year})`);
   }
   return res.json();
+}
+
+// Does this league exist yet in the given season? This is what lets the sync
+// follow each league's own rollover instead of a date on the calendar: MFL
+// commissioners roll a league over anywhere between February and April, and
+// redraft leagues later still, so "it's 2027 now" says nothing about whether
+// any particular league has a 2027 home yet.
+//
+// Deliberately TYPE=league and not TYPE=rosters. A redraft league that HAS
+// rolled over has no players on it until the draft, so an empty-roster test
+// would strand exactly those leagues on last season all summer. The league
+// record exists the moment the commissioner rolls over, which is the thing
+// actually being asked about.
+//
+// Returns false rather than throwing: "not there yet" is the expected answer
+// for most of the year, not an error. MFL has been observed to signal a
+// missing league both as an HTTP error and as a 200 carrying an <error> body,
+// so both are treated as absence — see .github/workflows/probe-mfl-season.yml,
+// which exists to check that against the real API.
+export async function mflLeagueExists(league, cookie, season) {
+  try {
+    const data = await mflGet(`/export?TYPE=league&L=${league.id}&JSON=1`, cookie, season);
+    if (data?.error) return false;
+    return Boolean(data?.league?.id || data?.league?.name);
+  } catch {
+    return false;
+  }
+}
+
+// ESPN keeps the same league id across seasons and 404s on a season the league
+// isn't in yet, so the same question is answerable the same way.
+//
+// Sleeper has no equivalent and deliberately isn't probed: there, a new season
+// is a whole new league id and the old one keeps answering forever, so nothing
+// can be inferred from a request succeeding. Those stay put until the id is
+// edited in the Admin tab, which is the desired behaviour anyway.
+export async function espnLeagueExists(league, season) {
+  try {
+    const data = await espnGet({ ...league, season }, 'view=mSettings');
+    return Boolean(data?.id || data?.settings);
+  } catch {
+    return false;
+  }
 }
 
 export async function loadPlayerMap(cookie) {
@@ -202,7 +262,8 @@ export async function fetchMflSeasonPoints(league, cookie, playerIds) {
   if (playerIds.length === 0) return new Map();
   const data = await mflGet(
     `/export?TYPE=playerScores&W=YTD&L=${league.id}&PLAYERS=${playerIds.join(',')}&JSON=1`,
-    cookie
+    cookie,
+    seasonOf(league)
   );
   const rawRows = data?.playerScores?.playerScore;
   const rows = Array.isArray(rawRows) ? rawRows : rawRows ? [rawRows] : [];
@@ -220,7 +281,7 @@ export async function fetchMflSeasonPoints(league, cookie, playerIds) {
 // should treat failure as "no prior-year data available", not an error.
 export async function fetchMflPriorYearPoints(league, cookie, playerIds) {
   if (playerIds.length === 0) return new Map();
-  const priorYear = Number(YEAR) - 1;
+  const priorYear = Number(seasonOf(league)) - 1;
   const data = await mflGet(
     `/export?TYPE=playerScores&W=YTD&L=${league.id}&PLAYERS=${playerIds.join(',')}&JSON=1`,
     cookie,
@@ -240,7 +301,7 @@ export async function fetchMflPriorYearPoints(league, cookie, playerIds) {
 // FRANCHISE param, so this fetches once and sums the entries that belong to
 // our franchise — matches the "Salary Adjustments" total MFL's own UI shows.
 async function fetchSalaryAdjustments(league, cookie) {
-  const data = await mflGet(`/export?TYPE=salaryAdjustments&L=${league.id}&JSON=1`, cookie);
+  const data = await mflGet(`/export?TYPE=salaryAdjustments&L=${league.id}&JSON=1`, cookie, seasonOf(league));
   const rawRows = data?.salaryAdjustments?.salaryAdjustment;
   const rows = Array.isArray(rawRows) ? rawRows : rawRows ? [rawRows] : [];
   return rows
@@ -301,8 +362,8 @@ export function formatStartingLineupRequirement(leagueData) {
 
 export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, injuries) {
   const [leagueData, rostersData] = await Promise.all([
-    mflGet(`/export?TYPE=league&L=${league.id}&JSON=1`, cookie),
-    mflGet(`/export?TYPE=rosters&L=${league.id}&FRANCHISE=${league.franchiseId}&JSON=1`, cookie),
+    mflGet(`/export?TYPE=league&L=${league.id}&JSON=1`, cookie, seasonOf(league)),
+    mflGet(`/export?TYPE=rosters&L=${league.id}&FRANCHISE=${league.franchiseId}&JSON=1`, cookie, seasonOf(league)),
   ]);
 
   const franchises = leagueData?.league?.franchises?.franchise ?? [];
@@ -407,8 +468,8 @@ export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, inj
 
 export async function fetchStandings(league, cookie) {
   const [leagueData, standingsData] = await Promise.all([
-    mflGet(`/export?TYPE=league&L=${league.id}&JSON=1`, cookie),
-    mflGet(`/export?TYPE=leagueStandings&L=${league.id}&JSON=1`, cookie),
+    mflGet(`/export?TYPE=league&L=${league.id}&JSON=1`, cookie, seasonOf(league)),
+    mflGet(`/export?TYPE=leagueStandings&L=${league.id}&JSON=1`, cookie, seasonOf(league)),
   ]);
 
   const franchises = leagueData?.league?.franchises?.franchise ?? [];
@@ -439,7 +500,7 @@ export async function fetchStandings(league, cookie) {
 // TYPE=league that fetchScoring needs). Callers that already have this
 // cached (e.g. the live-scoring proxy) can skip re-fetching it every poll.
 export async function fetchMflFranchiseNames(league, cookie) {
-  const leagueData = await mflGet(`/export?TYPE=league&L=${league.id}&JSON=1`, cookie);
+  const leagueData = await mflGet(`/export?TYPE=league&L=${league.id}&JSON=1`, cookie, seasonOf(league));
   const franchises = leagueData?.league?.franchises?.franchise ?? [];
   const franchiseList = Array.isArray(franchises) ? franchises : [franchises];
   return new Map(franchiseList.map((f) => [f.id, f.name]));
@@ -451,7 +512,7 @@ export async function fetchMflFranchiseNames(league, cookie) {
 export async function fetchScoring(league, cookie, nameById) {
   const [names, liveData] = await Promise.all([
     nameById ? Promise.resolve(nameById) : fetchMflFranchiseNames(league, cookie),
-    mflGet(`/export?TYPE=liveScoring&L=${league.id}&JSON=1`, cookie),
+    mflGet(`/export?TYPE=liveScoring&L=${league.id}&JSON=1`, cookie, seasonOf(league)),
   ]);
 
   const live = liveData?.liveScoring;
@@ -486,7 +547,7 @@ export async function fetchScoring(league, cookie, nameById) {
 // Pilot feature: only called for leagues flagged lineupPilot in
 // config/leagues.json, so an API shape surprise here can't break the sync.
 export async function fetchMflLineup(league, cookie) {
-  const weeklyData = await mflGet(`/export?TYPE=weeklyResults&L=${league.id}&W=1&JSON=1`, cookie);
+  const weeklyData = await mflGet(`/export?TYPE=weeklyResults&L=${league.id}&W=1&JSON=1`, cookie, seasonOf(league));
   const matchups = weeklyData?.weeklyResults?.matchup;
   const matchupList = Array.isArray(matchups) ? matchups : matchups ? [matchups] : [];
   let mine = null;
@@ -521,8 +582,9 @@ export async function fetchMflLineup(league, cookie) {
 // its own league-scoped login — see mflLoginForImport. Like every /import
 // call, this returns XML regardless of JSON=1, so fetch as text.
 export async function submitMflLineup(username, password, league, starterIds, week) {
-  const { cookie, host } = await mflLoginForImport(username, password, league.id);
-  const url = `https://${host}/${YEAR}/import?TYPE=lineup&L=${league.id}&W=${week}&STARTERS=${starterIds.join(',')}&JSON=1`;
+  const season = seasonOf(league);
+  const { cookie, host } = await mflLoginForImport(username, password, league.id, season);
+  const url = `https://${host}/${season}/import?TYPE=lineup&L=${league.id}&W=${week}&STARTERS=${starterIds.join(',')}&JSON=1`;
   const res = await fetch(url, { headers: { Cookie: cookie }, redirect: 'follow' });
   const bodyText = await res.text();
   return { status: res.status, ok: res.ok, bodyText, host };
@@ -550,7 +612,7 @@ export async function espnGet(league, viewParams) {
     throw new Error('ESPN_S2 and ESPN_SWID environment variables are required for ESPN leagues.');
   }
   const cookie = `espn_s2=${ESPN_S2}; SWID=${ESPN_SWID}`;
-  let url = `${ESPN_BASE}/${league.id}?${viewParams}`;
+  let url = `${espnBase(seasonOf(league))}/${league.id}?${viewParams}`;
 
   // fetch() drops the Cookie header on cross-origin redirects (WHATWG spec),
   // and ESPN's API is known to redirect fantasy.espn.com -> a different host
