@@ -344,8 +344,11 @@ export async function detectScoringFormat(league, cookie) {
     : provider === 'sleeper'
     ? fetchSleeperReceptionPoints(league)
     : fetchMflReceptionPoints(league, cookie);
-  const { points, values } = await read;
-  return { format: receptionPointsToFormat(points), points, values };
+  // Spread rather than repack: the per-position breakdown is the evidence for
+  // the base rate, and dropping it here left the probe printing "undefined"
+  // for exactly the nine leagues whose answer most needed checking.
+  const info = await read;
+  return { ...info, format: receptionPointsToFormat(info.points) };
 }
 
 export async function loadPlayerMap(cookie) {
