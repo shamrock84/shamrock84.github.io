@@ -699,8 +699,8 @@
 		}
 		.hidden { display: none !important; }
 		/* Admin tab. The grid is a responsive multi-column layout, but this
-		   card is one wide table — let it span every column instead of being
-		   squeezed into one. */
+		   card holds the full league list — let it span every column instead of
+		   being squeezed into one. */
 		.admin-card {
 			grid-column: 1 / -1;
 		}
@@ -715,69 +715,163 @@
 			line-height: 1.5;
 			margin-top: 0.6rem;
 		}
-		/* Thirteen columns don't fit a phone. Scroll the table rather than the
-		   page, so the rest of the card stays put. */
-		.admin-scroll {
-			overflow-x: auto;
+		/* One collapsible card per league, replacing a thirteen-column table
+		   that only fitted by scrolling sideways — which on a phone scrolled the
+		   league's own name out of view before you reached the field you were
+		   editing. */
+		.admin-list {
+			display: flex;
+			flex-direction: column;
+			gap: 0.45rem;
 		}
-		.admin-table {
-			border-collapse: collapse;
-			width: 100%;
-			font-size: 0.82rem;
+		.admin-league {
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			padding: 0.5rem 0.6rem;
 		}
-		.admin-table th {
+		.admin-league.admin-open {
+			border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+		}
+		.admin-league-head {
+			display: flex;
+			align-items: center;
+			gap: 0.4rem;
+		}
+		.admin-grip {
+			color: var(--muted);
+			cursor: grab;
+			line-height: 1;
+			flex-shrink: 0;
+		}
+		.admin-league-head:active .admin-grip {
+			cursor: grabbing;
+		}
+		/* The whole head is the disclosure target, so a mis-aimed tap still
+		   opens the card rather than doing nothing. */
+		.admin-disclosure {
+			display: flex;
+			align-items: center;
+			gap: 0.35rem;
+			flex: 1;
+			min-width: 0;
+			font: inherit;
 			text-align: left;
+			color: var(--text);
+			background: none;
+			border: 0;
+			padding: 0.1rem 0;
+			cursor: pointer;
+		}
+		.admin-caret {
+			color: var(--accent);
 			font-size: 0.7rem;
+			flex-shrink: 0;
+		}
+		.admin-league-name {
+			font-weight: 600;
+			font-size: 0.9rem;
+			min-width: 0;
+			overflow-wrap: break-word;
+		}
+		/* Deliberately its own flex row rather than the shared .badges: that
+		   caps its width at 6.5rem under 600px to protect a card title, which
+		   here would stack four badges into a column. */
+		.admin-badges {
+			display: flex;
+			flex-wrap: wrap;
+			justify-content: flex-end;
+			gap: 0.25rem;
+			flex-shrink: 0;
+			max-width: 45%;
+		}
+		/* Narrow screens: give the league name the full width and let the badges
+		   drop to their own line, rather than wrapping a three-word name into
+		   three lines to keep four chips beside it. */
+		@media (max-width: 600px) {
+			.admin-league-head {
+				flex-wrap: wrap;
+			}
+			.admin-badges {
+				order: 3;
+				flex-basis: 100%;
+				max-width: 100%;
+				justify-content: flex-start;
+				margin-left: 1.8rem;
+			}
+		}
+		/* Touch devices don't fire HTML5 drag events at all, so don't show a grip
+		   advertising a gesture that cannot work there — ↑/↓ is the way to
+		   reorder on a phone. */
+		@media (hover: none) {
+			.admin-grip {
+				display: none;
+			}
+		}
+		.admin-blurb {
+			color: var(--muted);
+			font-size: 0.75rem;
+			line-height: 1.4;
+			margin: 0.15rem 0 0 1.8rem;
+		}
+		/* However many columns fit, one on a phone. This is the bit that removes
+		   the horizontal scrolling, so don't pin it to a fixed column count. */
+		.admin-fields {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+			gap: 0.5rem 0.6rem;
+			margin-top: 0.6rem;
+			padding-top: 0.6rem;
+			border-top: 1px solid var(--border);
+		}
+		.admin-field {
+			display: flex;
+			flex-direction: column;
+			gap: 0.2rem;
+			min-width: 0;
+		}
+		/* 1 / -1 rather than span 2: with auto-fit down to a single column, a
+		   2-column span would conjure an implicit second column and reintroduce
+		   the sideways scroll this whole layout exists to remove. */
+		.admin-field-wide {
+			grid-column: 1 / -1;
+		}
+		.admin-field-check {
+			flex-direction: row;
+			align-items: center;
+			gap: 0.4rem;
+			cursor: pointer;
+		}
+		.admin-field-label {
+			font-size: 0.68rem;
 			text-transform: uppercase;
 			letter-spacing: 0.04em;
 			color: var(--muted);
 			font-weight: 600;
-			padding: 0 0.3rem 0.35rem;
-			white-space: nowrap;
 		}
-		.admin-table td {
-			padding: 0.2rem 0.3rem;
-			vertical-align: middle;
+		.admin-league-actions {
+			display: flex;
+			justify-content: flex-end;
+			margin-top: 0.5rem;
 		}
-		.admin-row:not(:last-child) td {
-			border-bottom: 1px solid var(--border);
+		/* Drag feedback. Insets rather than borders so showing where a card will
+		   land doesn't nudge every card below it by a pixel. */
+		.admin-league.admin-dragging {
+			opacity: 0.4;
 		}
-		.admin-input {
-			font: inherit;
-			font-size: 0.82rem;
-			color: var(--text);
-			background: var(--card-bg);
-			border: 1px solid var(--border);
-			border-radius: 4px;
-			padding: 0.25rem 0.35rem;
-			width: 100%;
-			min-width: 5.5rem;
-			box-sizing: border-box;
+		.admin-league.admin-drop-before {
+			box-shadow: inset 0 3px 0 0 var(--accent);
 		}
-		.admin-input:focus {
-			outline: 2px solid var(--accent);
-			outline-offset: -1px;
-		}
-		.admin-select {
-			background: var(--chip-bg);
-			color: var(--accent);
-			min-width: 7rem;
-		}
-		/* Wide enough for a 19-digit Sleeper league id to be mostly legible
-		   without pushing every other column off-screen. */
-		.admin-narrow { min-width: 6.5rem; }
-		.admin-wide { min-width: 9rem; }
-		.admin-name {
-			white-space: nowrap;
-			padding-right: 0.6rem;
+		.admin-league.admin-drop-after {
+			box-shadow: inset 0 -3px 0 0 var(--accent);
 		}
 		.admin-name-pending {
 			color: var(--muted);
 			font-style: italic;
 		}
-		.admin-move, .admin-remove, .admin-check {
-			white-space: nowrap;
-			text-align: center;
+		.admin-move {
+			display: flex;
+			gap: 0.2rem;
+			flex-shrink: 0;
 		}
 		.admin-icon-btn {
 			font: inherit;
@@ -1084,6 +1178,7 @@
 			// Unsaved Admin edits belong to the session that made them — leaving
 			// them in memory would hand them to whoever logs in next.
 			adminDraft = null;
+			adminExpanded.clear();
 			renderGrid();
 		}
 
@@ -2103,9 +2198,18 @@
 		// logout and after a successful save.
 		let adminDraft = null;
 		let adminConfigLoading = false;
+		// Which league cards are open, keyed by object reference rather than by id
+		// or position: a league can be added before it has an id, and reordering or
+		// removing shuffles every index. adminDraft holds the same objects across
+		// re-renders, so identity is the only stable key available.
+		const adminExpanded = new Set();
+		// Index of the card currently being dragged, or null. Module-level because
+		// dragover/drop fire on the card being dragged *over*, which has no other
+		// way to know what started the drag.
+		let adminDragFrom = null;
 
-		function adminText(value, placeholder, onChange, extraClass = '') {
-			const input = el('input', { type: 'text', class: `admin-input ${extraClass}`.trim(), placeholder: placeholder || '' });
+		function adminText(value, placeholder, onChange) {
+			const input = el('input', { type: 'text', class: 'admin-input', placeholder: placeholder || '' });
 			input.value = value == null ? '' : String(value);
 			input.addEventListener('input', () => onChange(input.value));
 			return input;
@@ -2125,6 +2229,28 @@
 			}
 			sel.addEventListener('change', () => onChange(sel.value));
 			return sel;
+		}
+
+		// The label a dropdown would show for a stored value, so the collapsed
+		// blurb can't drift from the expanded control: both read the same list.
+		function adminLabelFor(options, value) {
+			const current = value == null ? '' : String(value);
+			return options.find(([v]) => v === current)?.[1] || current;
+		}
+
+		// Array order is display order on every other tab, so reordering here is a
+		// real setting rather than cosmetic table sorting.
+		function moveLeague(from, to) {
+			if (!adminDraft || from === to || to < 0 || to >= adminDraft.length) return;
+			const [moved] = adminDraft.splice(from, 1);
+			adminDraft.splice(to, 0, moved);
+			refreshAdminCard();
+		}
+
+		function clearDropMarks() {
+			for (const node of document.querySelectorAll('.admin-league')) {
+				node.classList.remove('admin-drop-before', 'admin-drop-after');
+			}
 		}
 
 		function refreshAdminCard() {
@@ -2186,91 +2312,191 @@
 				text: 'Changes here go live on the site as soon as you press Save. New or changed leagues show up on the other tabs after the next sync.',
 			}));
 
-			const scroller = el('div', { class: 'admin-scroll' });
-			const table = el('table', { class: 'admin-table' });
-			const headRow = el('tr', { class: 'roster-head' });
-			for (const label of ['', 'Name', 'League ID', 'My team ID', 'Site', 'Type', 'Tags', 'Lineups', 'Rankings', 'Scoring', 'Rules link', '']) {
-				headRow.appendChild(el('th', { text: label }));
-			}
-			table.appendChild(headRow);
+			// One card per league instead of one row of a thirteen-column table.
+			// Collapsed, a card is a one-line blurb of what the league is;
+			// expanded, its fields wrap into as many columns as there is room
+			// for, so nothing ever scrolls sideways.
+			const list = el('div', { class: 'admin-list' });
 
 			adminDraft.forEach((league, i) => {
-				const row = el('tr', { class: 'admin-row' });
+				const node = el('div', { class: 'admin-league' });
+				const isOpen = adminExpanded.has(league);
+				if (isOpen) node.classList.add('admin-open');
 
-				const moveCell = el('td', { class: 'admin-move' });
-				const up = el('button', { type: 'button', class: 'admin-icon-btn', title: 'Move up', text: '↑' });
-				const down = el('button', { type: 'button', class: 'admin-icon-btn', title: 'Move down', text: '↓' });
-				up.disabled = i === 0;
-				down.disabled = i === adminDraft.length - 1;
-				// Array order is display order on every other tab, so this is a
-				// real setting rather than cosmetic table sorting.
-				up.addEventListener('click', () => {
-					[adminDraft[i - 1], adminDraft[i]] = [adminDraft[i], adminDraft[i - 1]];
-					refreshAdminCard();
-				});
-				down.addEventListener('click', () => {
-					[adminDraft[i + 1], adminDraft[i]] = [adminDraft[i], adminDraft[i + 1]];
-					refreshAdminCard();
-				});
-				moveCell.appendChild(up);
-				moveCell.appendChild(down);
-				row.appendChild(moveCell);
+				const head = el('div', { class: 'admin-league-head' });
+				// Only the head carries draggable, never the whole card: a
+				// draggable container swallows text selection inside its own
+				// inputs in WebKit, and the head is the one part with none.
+				head.draggable = true;
+				head.appendChild(el('span', { class: 'admin-grip', title: 'Drag to reorder', 'aria-hidden': 'true', text: '⠿' }));
 
 				// Read-only, and showing the live name from the last sync rather
 				// than the config's own `name`. That field is only a fallback
 				// for when the provider can't be reached, so editing it changed
 				// nothing visible on any other tab — it was a control that
-				// looked like it did something and didn't. The column stays
-				// because without it the table is 18 rows of bare league IDs
+				// looked like it did something and didn't. It stays as the card
+				// title because without it this is a list of bare league IDs
 				// with no way to tell which one you're about to remove.
 				const live = (pageData?.leagues || []).find((l) => l.id === league.id);
-				const label = live?.leagueName || league.name || '';
-				row.appendChild(el('td', { class: 'admin-name' }, [
-					label
-						? el('span', { text: label })
-						: el('span', { class: 'admin-name-pending', text: 'Name appears after the next sync' }),
-				]));
-				row.appendChild(el('td', {}, [adminText(league.id, 'e.g. 26696', (v) => { league.id = v; }, 'admin-narrow')]));
-				row.appendChild(el('td', {}, [adminText(league.franchiseId, 'e.g. 0001', (v) => { league.franchiseId = v; }, 'admin-narrow')]));
-				row.appendChild(el('td', {}, [adminSelect(ADMIN_PROVIDERS, league.provider, (v) => { league.provider = v || undefined; })]));
-				row.appendChild(el('td', {}, [adminSelect(ADMIN_TYPES, league.type, (v) => { league.type = v; })]));
-				// Generic placeholder rather than a realistic example: greyed-out
-				// sample tags in the many untagged rows read as real values at a
-				// glance, which is exactly the wrong impression on an edit screen.
-				row.appendChild(el('td', {}, [adminText((league.tags || []).join(', '), 'comma, separated', (v) => {
-					const tags = v.split(',').map((t) => t.trim()).filter(Boolean);
-					league.tags = tags.length ? tags : undefined;
-				}, 'admin-wide')]));
+				const name = live?.leagueName || league.name || '';
 
-				const lineupCell = el('td', { class: 'admin-check' });
-				const lineupBox = el('input', { type: 'checkbox', title: 'Show a lineup editor for this league' });
-				lineupBox.checked = league.lineupPilot === true;
-				lineupBox.addEventListener('change', () => { league.lineupPilot = lineupBox.checked ? true : undefined; });
-				lineupCell.appendChild(lineupBox);
-				row.appendChild(lineupCell);
-
-				row.appendChild(el('td', {}, [adminSelect(ADMIN_RANKINGS, league.rankingType, (v) => { league.rankingType = v || undefined; })]));
-				// An explicit "PPR" and an omitted value mean the same thing, so
-				// normalise to blank rather than showing a redundant option.
-				row.appendChild(el('td', {}, [adminSelect(ADMIN_SCORING, league.scoring === 'PPR' ? '' : league.scoring, (v) => { league.scoring = v || undefined; })]));
-				row.appendChild(el('td', {}, [adminText(league.rulesUrl, 'https://…', (v) => { league.rulesUrl = v || undefined; }, 'admin-wide')]));
-
-				const removeCell = el('td', { class: 'admin-remove' });
-				const removeBtn = el('button', { type: 'button', class: 'admin-icon-btn admin-remove-btn', title: 'Remove this league', text: '✕' });
-				removeBtn.addEventListener('click', () => {
-					const label = league.name || league.id || 'this league';
-					if (!window.confirm(`Remove ${label} from the site?\n\nNothing is deleted at MFL, ESPN, or Sleeper — it just stops showing up here.`)) return;
-					adminDraft.splice(i, 1);
+				const toggle = el('button', { type: 'button', class: 'admin-disclosure', 'aria-expanded': isOpen ? 'true' : 'false' });
+				toggle.appendChild(el('span', { class: 'admin-caret', 'aria-hidden': 'true', text: isOpen ? '▾' : '▸' }));
+				toggle.appendChild(name
+					? el('span', { class: 'admin-league-name', text: name })
+					: el('span', { class: 'admin-league-name admin-name-pending', text: 'Name appears after the next sync' }));
+				toggle.addEventListener('click', () => {
+					if (isOpen) adminExpanded.delete(league);
+					else adminExpanded.add(league);
 					refreshAdminCard();
 				});
-				removeCell.appendChild(removeBtn);
-				row.appendChild(removeCell);
+				head.appendChild(toggle);
 
-				table.appendChild(row);
+				// Same chips as a Rosters card, built from the draft rather than
+				// from synced data so an unsaved change to Site or Type shows up
+				// here immediately.
+				const chips = [providerBadgeLabel(league), LEAGUE_TYPE_LABELS[league.type] || league.type || '?', ...(league.tags || [])];
+				const badges = el('div', { class: 'admin-badges' });
+				chips.forEach((text, n) => badges.appendChild(el('span', { class: `badge${n === 0 ? ' badge-provider' : ''}`, text })));
+				head.appendChild(badges);
+
+				// Touch devices don't fire HTML5 drag events at all, so these are
+				// not a redundant second way to reorder — they are the only way
+				// on a phone, and the only way from a keyboard.
+				const moves = el('div', { class: 'admin-move' });
+				const up = el('button', { type: 'button', class: 'admin-icon-btn', title: 'Move up', text: '↑' });
+				const down = el('button', { type: 'button', class: 'admin-icon-btn', title: 'Move down', text: '↓' });
+				up.disabled = i === 0;
+				down.disabled = i === adminDraft.length - 1;
+				up.addEventListener('click', () => moveLeague(i, i - 1));
+				down.addEventListener('click', () => moveLeague(i, i + 1));
+				moves.appendChild(up);
+				moves.appendChild(down);
+				head.appendChild(moves);
+				node.appendChild(head);
+
+				// Everything the collapsed card can say without being opened.
+				// Reads off the same option lists the dropdowns below use, so
+				// the two can't disagree about what a stored value is called.
+				const bits = [league.id ? `ID ${league.id}` : 'No league ID yet'];
+				if (league.franchiseId) bits.push(`Team ${league.franchiseId}`);
+				bits.push(adminLabelFor(ADMIN_SCORING, league.scoring === 'PPR' ? '' : league.scoring));
+				bits.push(`${adminLabelFor(ADMIN_RANKINGS, league.rankingType)} rankings`);
+				if (league.lineupPilot) bits.push('Lineup editor');
+				if (league.rulesUrl) bits.push('Rules link');
+				node.appendChild(el('div', { class: 'admin-blurb', text: bits.join(' · ') }));
+
+				if (isOpen) {
+					const fields = el('div', { class: 'admin-fields' });
+					const field = (labelText, control, wide = false) => {
+						const wrap = el('label', { class: `admin-field${wide ? ' admin-field-wide' : ''}` });
+						wrap.appendChild(el('span', { class: 'admin-field-label', text: labelText }));
+						wrap.appendChild(control);
+						fields.appendChild(wrap);
+					};
+					// Re-render after a dropdown or checkbox changes so the chips
+					// and the blurb above follow along. Only safe for controls
+					// whose value is already committed when they fire — doing it
+					// on a text input's every keystroke would throw away focus
+					// mid-word.
+					const changed = (apply) => (v) => { apply(v); refreshAdminCard(); };
+
+					field('League ID', adminText(league.id, 'e.g. 26696', (v) => { league.id = v; }));
+					field('My team ID', adminText(league.franchiseId, 'e.g. 0001', (v) => { league.franchiseId = v; }));
+					field('Site', adminSelect(ADMIN_PROVIDERS, league.provider, changed((v) => { league.provider = v || undefined; })));
+					field('Type', adminSelect(ADMIN_TYPES, league.type, changed((v) => { league.type = v; })));
+					field('Rankings', adminSelect(ADMIN_RANKINGS, league.rankingType, changed((v) => { league.rankingType = v || undefined; })));
+					// An explicit "PPR" and an omitted value mean the same thing, so
+					// normalise to blank rather than showing a redundant option.
+					field('Scoring', adminSelect(ADMIN_SCORING, league.scoring === 'PPR' ? '' : league.scoring, changed((v) => { league.scoring = v || undefined; })));
+
+					const lineupWrap = el('label', { class: 'admin-field admin-field-check' });
+					const lineupBox = el('input', { type: 'checkbox' });
+					lineupBox.checked = league.lineupPilot === true;
+					lineupBox.addEventListener('change', () => {
+						league.lineupPilot = lineupBox.checked ? true : undefined;
+						refreshAdminCard();
+					});
+					lineupWrap.appendChild(lineupBox);
+					lineupWrap.appendChild(el('span', { class: 'admin-field-label', text: 'Lineup editor' }));
+					fields.appendChild(lineupWrap);
+
+					// Generic placeholder rather than a realistic example: greyed-out
+					// sample tags in the many untagged leagues read as real values at
+					// a glance, which is exactly the wrong impression on an edit form.
+					field('Tags', adminText((league.tags || []).join(', '), 'comma, separated', (v) => {
+						const tags = v.split(',').map((t) => t.trim()).filter(Boolean);
+						league.tags = tags.length ? tags : undefined;
+					}), true);
+					field('Rules link', adminText(league.rulesUrl, 'https://…', (v) => { league.rulesUrl = v || undefined; }), true);
+					node.appendChild(fields);
+
+					// Behind the disclosure rather than on the collapsed row: at
+					// eighteen leagues a permanently visible ✕ next to every one
+					// of them is a lot of surface for a destructive mis-tap.
+					const removeBtn = el('button', { type: 'button', class: 'admin-icon-btn admin-remove-btn', text: '✕ Remove this league' });
+					removeBtn.addEventListener('click', () => {
+						const label = name || league.id || 'this league';
+						if (!window.confirm(`Remove ${label} from the site?\n\nNothing is deleted at MFL, ESPN, or Sleeper — it just stops showing up here.`)) return;
+						adminExpanded.delete(league);
+						adminDraft.splice(i, 1);
+						refreshAdminCard();
+					});
+					node.appendChild(el('div', { class: 'admin-league-actions' }, [removeBtn]));
+				}
+
+				// Where in the list a drop would land: top half of a card means
+				// above it, bottom half below.
+				const dropsAfter = (e) => {
+					const box = node.getBoundingClientRect();
+					return e.clientY > box.top + box.height / 2;
+				};
+
+				node.addEventListener('dragstart', (e) => {
+					adminDragFrom = i;
+					e.dataTransfer.effectAllowed = 'move';
+					// Firefox refuses to start a drag at all unless data is set.
+					e.dataTransfer.setData('text/plain', String(i));
+					// The handle is the head; what's moving is the whole card.
+					e.dataTransfer.setDragImage(node, 16, 16);
+					// Deferred: the drag image is snapshotted after this handler
+					// returns, so dimming synchronously would dim the ghost too.
+					setTimeout(() => node.classList.add('admin-dragging'), 0);
+				});
+				node.addEventListener('dragend', () => {
+					adminDragFrom = null;
+					node.classList.remove('admin-dragging');
+					clearDropMarks();
+				});
+				node.addEventListener('dragover', (e) => {
+					if (adminDragFrom === null || adminDragFrom === i) return;
+					e.preventDefault();
+					e.dataTransfer.dropEffect = 'move';
+					clearDropMarks();
+					node.classList.add(dropsAfter(e) ? 'admin-drop-after' : 'admin-drop-before');
+				});
+				node.addEventListener('dragleave', () => {
+					node.classList.remove('admin-drop-before', 'admin-drop-after');
+				});
+				node.addEventListener('drop', (e) => {
+					if (adminDragFrom === null) return;
+					e.preventDefault();
+					const from = adminDragFrom;
+					adminDragFrom = null;
+					clearDropMarks();
+					// Insertion point in the pre-removal array, then corrected for
+					// the hole the dragged card leaves behind when it's above the
+					// target. Without that correction a downward drag lands one
+					// short every time.
+					let insertAt = i + (dropsAfter(e) ? 1 : 0);
+					if (from < insertAt) insertAt--;
+					moveLeague(from, insertAt);
+				});
+
+				list.appendChild(node);
 			});
 
-			scroller.appendChild(table);
-			card.appendChild(scroller);
+			card.appendChild(list);
 
 			card.appendChild(el('div', {
 				class: 'admin-legend',
@@ -2285,10 +2511,14 @@
 			addBtn.addEventListener('click', () => {
 				// No name: it isn't editable here any more, and the sync fills in
 				// the real one from the provider on its next run.
-				adminDraft.push({ id: '', franchiseId: '', type: 'draftonly' });
+				const fresh = { id: '', franchiseId: '', type: 'draftonly' };
+				adminDraft.push(fresh);
+				// Opened straight away: collapsed it would be a blank card with
+				// nothing to say and no obvious next step.
+				adminExpanded.add(fresh);
 				refreshAdminCard();
-				const rows = document.querySelectorAll('.admin-row');
-				const last = rows[rows.length - 1];
+				const nodes = document.querySelectorAll('.admin-league');
+				const last = nodes[nodes.length - 1];
 				if (last) {
 					last.scrollIntoView({ block: 'nearest' });
 					last.querySelector('input')?.focus();
@@ -2311,6 +2541,7 @@
 			revertBtn.addEventListener('click', () => {
 				if (!window.confirm('Throw away every change you\'ve made since the last save?')) return;
 				adminDraft = null;
+				adminExpanded.clear();
 				refreshAdminCard();
 			});
 
@@ -2342,6 +2573,7 @@
 					}
 					leagueConfig.leagues = JSON.parse(JSON.stringify(adminDraft));
 					adminDraft = null;
+					adminExpanded.clear();
 					statusEl.textContent = `Saved ${body.count} leagues.`;
 					const syncNow = el('button', { type: 'button', class: 'admin-revert-btn', text: 'Sync now' });
 					syncNow.addEventListener('click', () => {
