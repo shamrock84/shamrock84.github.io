@@ -1639,7 +1639,9 @@
 				.filter((p) => p.years);
 			if (plans.length === 0) return null;
 
-			const year = pageData?.year ?? new Date().getFullYear();
+			// That league's own season — during the rollover window it can
+			// legitimately differ from the rest of the site's.
+			const year = league.season ?? pageData?.year ?? new Date().getFullYear();
 			// .trim() — MFL's own league-name export has a stray trailing
 			// space on at least one league, invisible everywhere else on the
 			// page since HTML collapses whitespace, but not in a raw subject.
@@ -2379,6 +2381,15 @@
 				// from synced data so an unsaved change to Site or Type shows up
 				// here immediately.
 				const chips = [providerBadgeLabel(league), LEAGUE_TYPE_LABELS[league.type] || league.type || '?', ...(league.tags || [])];
+				// Leagues roll over to a new season on their own commissioner's
+				// schedule, so through the spring some sit a season behind the
+				// rest. That's expected and self-correcting, but it has to be
+				// visible — a stale roster renders exactly like a fresh one.
+				// Nothing shows once everything has caught up.
+				const onSeason = live?.season ? String(live.season) : null;
+				if (onSeason && pageData?.year && onSeason !== String(pageData.year)) {
+					chips.push(`${onSeason} season`);
+				}
 				const badges = el('div', { class: 'admin-badges' });
 				chips.forEach((text, n) => badges.appendChild(el('span', { class: `badge${n === 0 ? ' badge-provider' : ''}`, text })));
 				head.appendChild(badges);
@@ -2432,6 +2443,11 @@
 					// An explicit "PPR" and an omitted value mean the same thing, so
 					// normalise to blank rather than showing a redundant option.
 					field('Scoring', adminSelect(ADMIN_SCORING, league.scoring === 'PPR' ? '' : league.scoring, changed((v) => { league.scoring = v || undefined; })));
+					// Free text rather than a dropdown: the useful values are
+					// "whatever this league has rolled over to" and, rarely, one
+					// specific year — not a list anyone can enumerate ahead of
+					// time. Blank is the normal state and means "follow it".
+					field('Season', adminText(league.season, 'auto', (v) => { league.season = v || undefined; }));
 
 					const lineupWrap = el('label', { class: 'admin-field admin-field-check' });
 					const lineupBox = el('input', { type: 'checkbox' });
@@ -2562,6 +2578,7 @@
 				'Save goes live at once. New or changed leagues appear on the other tabs after the next sync.',
 				'Type Salary Cap is what adds the Salary and Yrs columns and the cap summary to a league\'s card.',
 				'Lineups puts a lineup editor on the Rosters tab — MFL submits from here, Sleeper is view-only.',
+				'Season follows each league\'s own rollover — leave it blank and the sync stays on the old season until the new one exists, which is why a league can show a season chip in the spring. Fill it in only to pin one.',
 				// The one setting on this screen that changes without being touched,
 				// so it says what it resolves to today as well as what it does.
 				`Rankings on Automatic tracks the NFL calendar: rest-of-season in season, dynasty or draft otherwise (right now: ${nflInSeason() ? 'rest-of-season' : 'dynasty or draft'}). Any other choice pins that league year-round.`,

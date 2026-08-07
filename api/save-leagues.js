@@ -46,7 +46,7 @@ const SCORING_FORMATS = new Set(['PPR', 'HALF', 'STD']);
 // appended after — see mergeLeague below for why that matters.
 const KEY_ORDER = [
   'id', 'franchiseId', 'name', 'type', 'provider',
-  'tags', 'lineupPilot', 'rankingType', 'scoring', 'rulesUrl',
+  'tags', 'lineupPilot', 'rankingType', 'scoring', 'season', 'rulesUrl',
 ];
 
 function isNonEmptyString(v) {
@@ -100,6 +100,16 @@ function validate(leagues) {
     if (league.scoring != null && !SCORING_FORMATS.has(league.scoring)) {
       errors.push(`${label}: scoring must be one of ${[...SCORING_FORMATS].join(', ')}, or left blank.`);
     }
+    // Pins the league to one season instead of letting the sync follow its
+    // rollover. Range-checked rather than free-form: this value goes straight
+    // into a provider URL path, and a typo here doesn't fail loudly — it just
+    // makes the league quietly stop updating.
+    if (league.season != null && league.season !== '') {
+      const year = Number(league.season);
+      if (!Number.isInteger(year) || year < 2000 || year > 2100) {
+        errors.push(`${label}: season must be a four-digit year, or left blank to follow the league's own rollover.`);
+      }
+    }
     if (league.lineupPilot != null && typeof league.lineupPilot !== 'boolean') {
       errors.push(`${label}: lineup editor setting must be on or off.`);
     }
@@ -141,6 +151,7 @@ function mergeLeague(league) {
   if (league.lineupPilot === true) out.lineupPilot = true;
   put('rankingType', league.rankingType);
   put('scoring', league.scoring);
+  put('season', league.season == null ? '' : String(league.season).trim());
   put('rulesUrl', league.rulesUrl);
 
   for (const [k, v] of Object.entries(league)) {

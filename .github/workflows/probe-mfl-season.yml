@@ -1,0 +1,46 @@
+name: Probe MFL Season (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here, the
+# same rule the other two manual workflows follow. This exists to answer one
+# question against the real API: what does MFL return for a league in a season
+# that doesn't exist yet?
+#
+# That answer is what resolveSeason (scripts/fetch-rosters.mjs) relies on to
+# decide whether a league has rolled over, and it can't be checked from a
+# sandbox — myfantasyleague.com isn't reachable from there. Read-only:
+# TYPE=league exports only, nothing is written to any provider.
+#
+# Useful times to run it: once now, to confirm detection works before the
+# rollover window matters, and again if leagues ever appear stuck on the wrong
+# season.
+on:
+  workflow_dispatch:
+    inputs:
+      league_id:
+        description: 'League ID to probe (from config/leagues.json)'
+        required: true
+        default: '26696'
+      seasons:
+        description: 'Comma-separated seasons — pick one the league is in and one it cannot be'
+        required: true
+        default: '2026,2028'
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Ask MFL about this league in each season
+        env:
+          MFL_USERNAME: ${{ secrets.MFL_USERNAME }}
+          MFL_PASSWORD: ${{ secrets.MFL_PASSWORD }}
+          PROBE_LEAGUE_ID: ${{ inputs.league_id }}
+          PROBE_SEASONS: ${{ inputs.seasons }}
+        run: node scripts/probe-mfl-season.mjs

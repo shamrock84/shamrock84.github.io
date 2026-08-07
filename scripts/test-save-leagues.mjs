@@ -42,6 +42,14 @@ check('rejects an unknown provider', validate(withField('provider', 'yahoo')).le
 check('rejects the retired bestball type', validate(withField('type', 'bestball')).length > 0);
 check('rejects an unknown ranking type', validate(withField('rankingType', 'VIBES')).length > 0);
 check('rejects an unknown scoring format', validate(withField('scoring', 'TE-PREMIUM')).length > 0);
+// The season pin goes straight into a provider URL path, and a bad one doesn't
+// fail loudly — the league just quietly stops updating.
+check('rejects a non-numeric season', validate(withField('season', 'next')).length > 0);
+check('rejects a two-digit season', validate(withField('season', '27')).length > 0);
+check('rejects a fractional season', validate(withField('season', '2027.5')).length > 0);
+check('allows a four-digit season', validate(withField('season', '2027')).length === 0,
+  JSON.stringify(validate(withField('season', '2027'))));
+check('allows a blank season (follow the rollover)', validate(withField('season', '')).length === 0);
 check('rejects a non-boolean lineup flag', validate(withField('lineupPilot', 'yes')).length > 0);
 check('rejects tags that are not a list', validate(withField('tags', 'Superflex')).length > 0);
 check('rejects a rules link with no scheme', validate(withField('rulesUrl', 'docs.google.com/x')).length > 0);
@@ -75,6 +83,8 @@ check('drops a blank team id', !('franchiseId' in merged), JSON.stringify(merged
 check('drops empty tags', !('tags' in merged));
 check('drops lineupPilot when off', !('lineupPilot' in merged));
 check('drops a blank rules link', !('rulesUrl' in merged));
+check('drops a blank season', !('season' in mergeLeague({ ...base(), season: '' })));
+check('keeps a season pin as a string', mergeLeague({ ...base(), season: 2027 }).season === '2027');
 check('keeps the required fields', merged.id === '123' && merged.name === 'Test' && merged.type === 'draftonly');
 // Retired keys are stripped rather than carried through by the unknown-field
 // passthrough — otherwise a removed field would live in the config forever.
