@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-07T19:45:43.322Z",
+  "generatedAt": "2026-08-07T20:21:32.623Z",
   "year": "2026",
   "leagues": [
     {
@@ -623,12 +623,13 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1 QB, 2-3 RB, 2-3 WR, 1-2 TE, 1 PK, 1 Def",
-      "updatedAt": "2026-08-07T19:43:48.002Z",
+      "updatedAt": "2026-08-07T20:19:09.406Z",
       "error": null,
       "tags": [],
       "provider": null,
       "rulesUrl": null,
       "season": "2026",
+      "scoringDetected": "PPR",
       "standings": [
         {
           "franchiseId": "0001",
@@ -1379,12 +1380,13 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1 QB, 2 RB, 3 WR, 1 TE, 1 PK, 1 Def",
-      "updatedAt": "2026-08-07T19:43:48.715Z",
+      "updatedAt": "2026-08-07T20:19:10.761Z",
       "error": null,
       "tags": [],
       "provider": null,
       "rulesUrl": null,
       "season": "2026",
+      "scoringDetected": "PPR",
       "standings": [
         {
           "franchiseId": "0001",
@@ -2091,12 +2093,13 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1 QB, 2 RB, 3 WR, 1 TE, 1 PK, 1 Def",
-      "updatedAt": "2026-08-07T19:43:49.350Z",
+      "updatedAt": "2026-08-07T20:19:12.174Z",
       "error": null,
       "tags": [],
       "provider": null,
       "rulesUrl": "https://docs.google.com/document/d/1rrv_5DLogDurYtknvrdzJn3GyaiS0AmkF__vsCJDwaQ/edit?usp=drivesdk",
       "season": "2026",
+      "scoringDetected": "PPR",
       "standings": [
         {
           "franchiseId": "0001",
@@ -2344,8 +2347,8 @@
           "pts": 0,
           "priorYearPts": 6.6,
           "ecr": {
-            "rank": 266,
-            "posRank": "RB75",
+            "rank": 264,
+            "posRank": "RB74",
             "tier": 12,
             "delta": null
           }
@@ -2363,8 +2366,8 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 186,
-            "posRank": "RB59",
+            "rank": 184,
+            "posRank": "RB58",
             "tier": 10,
             "delta": null
           }
@@ -2420,7 +2423,7 @@
           "pts": 0,
           "priorYearPts": 145.5,
           "ecr": {
-            "rank": 80,
+            "rank": 83,
             "posRank": "RB28",
             "tier": 7,
             "delta": null
@@ -2458,7 +2461,7 @@
           "pts": 0,
           "priorYearPts": 11.7,
           "ecr": {
-            "rank": 310,
+            "rank": 311,
             "posRank": "RB93",
             "tier": 12,
             "delta": null
@@ -2515,9 +2518,9 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 258,
-            "posRank": "WR92",
-            "tier": 12,
+            "rank": 255,
+            "posRank": "WR90",
+            "tier": 11,
             "delta": null
           }
         },
@@ -2534,7 +2537,7 @@
           "pts": 0,
           "priorYearPts": 223.2,
           "ecr": {
-            "rank": 82,
+            "rank": 81,
             "posRank": "WR37",
             "tier": 7,
             "delta": null
@@ -2554,8 +2557,8 @@
           "priorYearPts": 0,
           "ecr": {
             "rank": 256,
-            "posRank": "WR90",
-            "tier": 12,
+            "posRank": "WR91",
+            "tier": 11,
             "delta": null
           }
         },
@@ -2648,8 +2651,8 @@
           "pts": 0,
           "priorYearPts": 179.1,
           "ecr": {
-            "rank": 185,
-            "posRank": "WR72",
+            "rank": 182,
+            "posRank": "WR71",
             "tier": 10,
             "delta": null
           }
@@ -2667,9 +2670,9 @@
           "pts": 0,
           "priorYearPts": 143,
           "ecr": {
-            "rank": 36,
+            "rank": 35,
             "posRank": "TE3",
-            "tier": 5,
+            "tier": 4,
             "delta": null
           }
         },
@@ -2705,7 +2708,7 @@
           "pts": 0,
           "priorYearPts": 303.4,
           "ecr": {
-            "rank": 16,
+            "rank": 18,
             "posRank": "TE1",
             "tier": 3,
             "delta": null
@@ -2715,7 +2718,7 @@
       "salaryCap": 550,
       "salaryAdjustments": 3.2699999999999996,
       "startingLineup": "1 QB, 2-3 RB, 3-4 WR, 1-2 TE",
-      "updatedAt": "2026-08-07T19:43:49.979Z",
+      "updatedAt": "2026-08-07T20:19:13.915Z",
       "error": null,
       "tags": [
         "Best Ball"
@@ -2723,6 +2726,7 @@
       "provider": null,
       "rulesUrl": "https://docs.google.com/document/d/1RjWuKjAcLoiTESH_Yh2U9dfq7anm7W9souiEnjuN-Z0/edit?usp=drivesdk",
       "season": "2026",
+      "scoringDetected": "PPR",
       "standings": [
         {
           "franchiseId": "0001",
@@ -2847,13 +2851,13 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=league&L=35217&JSON=1 (year 2026)",
+      "scoringError": "No live scoring available yet",
       "rankings": {
         "type": "DRAFT",
         "scoring": "PPR",
         "position": "ALL",
         "lastUpdated": "8/07",
-        "totalExperts": 89,
+        "totalExperts": 90,
         "matched": 24,
         "total": 24
       },
@@ -2881,9 +2885,9 @@
           "pts": 0,
           "priorYearPts": 175.19,
           "ecr": {
-            "rank": 111,
+            "rank": 134,
             "posRank": "QB29",
-            "tier": 8,
+            "tier": 7,
             "delta": null
           }
         },
@@ -2900,9 +2904,9 @@
           "pts": 0,
           "priorYearPts": 242.18,
           "ecr": {
-            "rank": 25,
+            "rank": 26,
             "posRank": "QB14",
-            "tier": 4,
+            "tier": 3,
             "delta": null
           }
         },
@@ -2919,9 +2923,9 @@
           "pts": 0,
           "priorYearPts": 67.13,
           "ecr": {
-            "rank": 205,
+            "rank": 242,
             "posRank": "QB35",
-            "tier": 11,
+            "tier": 9,
             "delta": null
           }
         },
@@ -2938,9 +2942,9 @@
           "pts": 0,
           "priorYearPts": 271.98,
           "ecr": {
-            "rank": 15,
+            "rank": 14,
             "posRank": "QB9",
-            "tier": 3,
+            "tier": 2,
             "delta": null
           }
         },
@@ -2957,9 +2961,9 @@
           "pts": 0,
           "priorYearPts": 14.3,
           "ecr": {
-            "rank": 174,
-            "posRank": "RB55",
-            "tier": 10,
+            "rank": 177,
+            "posRank": "RB56",
+            "tier": 8,
             "delta": null
           }
         },
@@ -2976,9 +2980,9 @@
           "pts": 0,
           "priorYearPts": 194.61,
           "ecr": {
-            "rank": 59,
-            "posRank": "RB14",
-            "tier": 6,
+            "rank": 57,
+            "posRank": "RB16",
+            "tier": 5,
             "delta": null
           }
         },
@@ -2995,9 +2999,9 @@
           "pts": 0,
           "priorYearPts": 230.1,
           "ecr": {
-            "rank": 30,
-            "posRank": "RB6",
-            "tier": 4,
+            "rank": 29,
+            "posRank": "RB7",
+            "tier": 3,
             "delta": null
           }
         },
@@ -3014,9 +3018,9 @@
           "pts": 0,
           "priorYearPts": 6.6,
           "ecr": {
-            "rank": 242,
-            "posRank": "RB74",
-            "tier": 12,
+            "rank": 227,
+            "posRank": "RB73",
+            "tier": 9,
             "delta": null
           }
         },
@@ -3033,9 +3037,9 @@
           "pts": 0,
           "priorYearPts": 68.7,
           "ecr": {
-            "rank": 151,
-            "posRank": "RB49",
-            "tier": 10,
+            "rank": 148,
+            "posRank": "RB48",
+            "tier": 8,
             "delta": null
           }
         },
@@ -3052,9 +3056,9 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 127,
-            "posRank": "RB39",
-            "tier": 9,
+            "rank": 123,
+            "posRank": "RB38",
+            "tier": 7,
             "delta": null
           }
         },
@@ -3071,9 +3075,9 @@
           "pts": 0,
           "priorYearPts": 50.7,
           "ecr": {
-            "rank": 156,
-            "posRank": "RB51",
-            "tier": 10,
+            "rank": 155,
+            "posRank": "RB52",
+            "tier": 8,
             "delta": null
           }
         },
@@ -3091,8 +3095,8 @@
           "priorYearPts": 117.9,
           "ecr": {
             "rank": 120,
-            "posRank": "RB36",
-            "tier": 9,
+            "posRank": "RB37",
+            "tier": 7,
             "delta": null
           }
         },
@@ -3109,9 +3113,9 @@
           "pts": 0,
           "priorYearPts": 129.5,
           "ecr": {
-            "rank": 100,
-            "posRank": "RB28",
-            "tier": 8,
+            "rank": 96,
+            "posRank": "RB29",
+            "tier": 6,
             "delta": null
           }
         },
@@ -3129,8 +3133,8 @@
           "priorYearPts": 0,
           "ecr": {
             "rank": 279,
-            "posRank": "WR110",
-            "tier": 13,
+            "posRank": "WR109",
+            "tier": 10,
             "delta": null
           }
         },
@@ -3147,9 +3151,9 @@
           "pts": 0,
           "priorYearPts": 43.7,
           "ecr": {
-            "rank": 227,
-            "posRank": "WR90",
-            "tier": 12,
+            "rank": 232,
+            "posRank": "WR92",
+            "tier": 9,
             "delta": null
           }
         },
@@ -3166,9 +3170,9 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 160,
-            "posRank": "WR59",
-            "tier": 10,
+            "rank": 164,
+            "posRank": "WR60",
+            "tier": 8,
             "delta": null
           }
         },
@@ -3185,9 +3189,9 @@
           "pts": 0,
           "priorYearPts": 96.5,
           "ecr": {
-            "rank": 157,
-            "posRank": "WR57",
-            "tier": 10,
+            "rank": 163,
+            "posRank": "WR59",
+            "tier": 8,
             "delta": null
           }
         },
@@ -3204,7 +3208,7 @@
           "pts": 0,
           "priorYearPts": 145.1,
           "ecr": {
-            "rank": 20,
+            "rank": 21,
             "posRank": "WR6",
             "tier": 3,
             "delta": null
@@ -3223,9 +3227,9 @@
           "pts": 0,
           "priorYearPts": 83.4,
           "ecr": {
-            "rank": 189,
-            "posRank": "WR75",
-            "tier": 11,
+            "rank": 182,
+            "posRank": "WR70",
+            "tier": 9,
             "delta": null
           }
         },
@@ -3242,9 +3246,9 @@
           "pts": 0,
           "priorYearPts": 54.2,
           "ecr": {
-            "rank": 141,
+            "rank": 143,
             "posRank": "WR54",
-            "tier": 9,
+            "tier": 7,
             "delta": null
           }
         },
@@ -3261,9 +3265,9 @@
           "pts": 0,
           "priorYearPts": 162.3,
           "ecr": {
-            "rank": 97,
-            "posRank": "WR36",
-            "tier": 8,
+            "rank": 106,
+            "posRank": "WR39",
+            "tier": 7,
             "delta": null
           }
         },
@@ -3280,9 +3284,9 @@
           "pts": 0,
           "priorYearPts": 65.4,
           "ecr": {
-            "rank": 70,
-            "posRank": "WR25",
-            "tier": 7,
+            "rank": 72,
+            "posRank": "WR26",
+            "tier": 5,
             "delta": null
           }
         },
@@ -3299,9 +3303,9 @@
           "pts": 0,
           "priorYearPts": 44.9,
           "ecr": {
-            "rank": 202,
-            "posRank": "WR81",
-            "tier": 11,
+            "rank": 200,
+            "posRank": "WR78",
+            "tier": 9,
             "delta": null
           }
         },
@@ -3318,9 +3322,9 @@
           "pts": 0,
           "priorYearPts": 86.3,
           "ecr": {
-            "rank": 216,
+            "rank": 204,
             "posRank": "TE29",
-            "tier": 11,
+            "tier": 9,
             "delta": null
           }
         },
@@ -3337,9 +3341,9 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 313,
-            "posRank": "TE48",
-            "tier": 13,
+            "rank": 305,
+            "posRank": "TE47",
+            "tier": 11,
             "delta": null
           }
         },
@@ -3356,10 +3360,10 @@
           "pts": 0,
           "priorYearPts": 56.5,
           "ecr": {
-            "rank": 129,
-            "posRank": "TE13",
-            "tier": 9,
-            "delta": null
+            "rank": 133,
+            "posRank": "TE15",
+            "tier": 7,
+            "delta": 2
           }
         },
         {
@@ -3375,9 +3379,9 @@
           "pts": 0,
           "priorYearPts": 130.6,
           "ecr": {
-            "rank": 135,
-            "posRank": "TE15",
-            "tier": 9,
+            "rank": 131,
+            "posRank": "TE14",
+            "tier": 7,
             "delta": null
           }
         }
@@ -3385,7 +3389,7 @@
       "salaryCap": 500,
       "salaryAdjustments": 4.68,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-07T19:43:50.606Z",
+      "updatedAt": "2026-08-07T20:19:15.615Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -3394,6 +3398,7 @@
       "provider": null,
       "rulesUrl": "https://docs.google.com/document/d/19qYWLsJ3VincokvAn5NrgP4f7cBxz8A-mE91ryo2LsA/edit?usp=drivesdk",
       "season": "2026",
+      "scoringDetected": "HALF",
       "standings": [
         {
           "franchiseId": "0001",
@@ -3518,13 +3523,13 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=league&L=34850&JSON=1 (year 2026)",
+      "scoringError": "No live scoring available yet",
       "rankings": {
         "type": "DRAFT",
-        "scoring": "PPR",
+        "scoring": "HALF",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 86,
+        "totalExperts": 88,
         "matched": 27,
         "total": 27
       },
@@ -3552,9 +3557,9 @@
           "pts": 0,
           "priorYearPts": 169.14,
           "ecr": {
-            "rank": 76,
+            "rank": 84,
             "posRank": "QB26",
-            "tier": 7,
+            "tier": 6,
             "delta": null
           }
         },
@@ -3573,7 +3578,7 @@
           "ecr": {
             "rank": 6,
             "posRank": "QB6",
-            "tier": 2,
+            "tier": 1,
             "delta": null
           }
         },
@@ -3590,9 +3595,9 @@
           "pts": 0,
           "priorYearPts": 97.62,
           "ecr": {
-            "rank": 184,
+            "rank": 215,
             "posRank": "QB32",
-            "tier": 11,
+            "tier": 9,
             "delta": null
           }
         },
@@ -3609,9 +3614,9 @@
           "pts": 0,
           "priorYearPts": 105.7,
           "ecr": {
-            "rank": 125,
-            "posRank": "RB38",
-            "tier": 9,
+            "rank": 124,
+            "posRank": "RB39",
+            "tier": 7,
             "delta": null
           }
         },
@@ -3628,9 +3633,9 @@
           "pts": 0,
           "priorYearPts": 209.3,
           "ecr": {
-            "rank": 80,
+            "rank": 75,
             "posRank": "RB21",
-            "tier": 7,
+            "tier": 5,
             "delta": null
           }
         },
@@ -3647,9 +3652,9 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 206,
+            "rank": 202,
             "posRank": "RB64",
-            "tier": 11,
+            "tier": 9,
             "delta": null
           }
         },
@@ -3666,9 +3671,9 @@
           "pts": 0,
           "priorYearPts": 235.7,
           "ecr": {
-            "rank": 60,
-            "posRank": "RB15",
-            "tier": 6,
+            "rank": 49,
+            "posRank": "RB13",
+            "tier": 5,
             "delta": null
           }
         },
@@ -3686,8 +3691,8 @@
           "priorYearPts": 117.9,
           "ecr": {
             "rank": 120,
-            "posRank": "RB36",
-            "tier": 9,
+            "posRank": "RB37",
+            "tier": 7,
             "delta": null
           }
         },
@@ -3704,9 +3709,9 @@
           "pts": 0,
           "priorYearPts": 34.7,
           "ecr": {
-            "rank": 188,
-            "posRank": "RB59",
-            "tier": 11,
+            "rank": 181,
+            "posRank": "RB57",
+            "tier": 8,
             "delta": null
           }
         },
@@ -3723,9 +3728,9 @@
           "pts": 0,
           "priorYearPts": 165.3,
           "ecr": {
-            "rank": 101,
-            "posRank": "RB29",
-            "tier": 8,
+            "rank": 92,
+            "posRank": "RB28",
+            "tier": 6,
             "delta": null
           }
         },
@@ -3742,9 +3747,9 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 310,
-            "posRank": "WR125",
-            "tier": 13,
+            "rank": 307,
+            "posRank": "WR123",
+            "tier": 11,
             "delta": null
           }
         },
@@ -3761,9 +3766,9 @@
           "pts": 0,
           "priorYearPts": 38.8,
           "ecr": {
-            "rank": 182,
-            "posRank": "WR72",
-            "tier": 11,
+            "rank": 186,
+            "posRank": "WR73",
+            "tier": 9,
             "delta": null
           }
         },
@@ -3780,7 +3785,7 @@
           "pts": 0,
           "priorYearPts": 165.5,
           "ecr": {
-            "rank": 18,
+            "rank": 19,
             "posRank": "WR5",
             "tier": 3,
             "delta": null
@@ -3799,9 +3804,9 @@
           "pts": 0,
           "priorYearPts": 32.4,
           "ecr": {
-            "rank": 217,
-            "posRank": "WR86",
-            "tier": 11,
+            "rank": 225,
+            "posRank": "WR88",
+            "tier": 9,
             "delta": null
           }
         },
@@ -3818,9 +3823,9 @@
           "pts": 0,
           "priorYearPts": 103.7,
           "ecr": {
-            "rank": 128,
-            "posRank": "WR48",
-            "tier": 9,
+            "rank": 132,
+            "posRank": "WR49",
+            "tier": 7,
             "delta": null
           }
         },
@@ -3839,7 +3844,7 @@
           "ecr": {
             "rank": 122,
             "posRank": "WR47",
-            "tier": 9,
+            "tier": 7,
             "delta": null
           }
         },
@@ -3856,9 +3861,9 @@
           "pts": 0,
           "priorYearPts": 55.6,
           "ecr": {
-            "rank": 183,
-            "posRank": "WR73",
-            "tier": 11,
+            "rank": 201,
+            "posRank": "WR79",
+            "tier": 9,
             "delta": null
           }
         },
@@ -3875,9 +3880,9 @@
           "pts": 0,
           "priorYearPts": 96.5,
           "ecr": {
-            "rank": 157,
-            "posRank": "WR57",
-            "tier": 10,
+            "rank": 163,
+            "posRank": "WR59",
+            "tier": 8,
             "delta": null
           }
         },
@@ -3894,9 +3899,9 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 117,
-            "posRank": "WR45",
-            "tier": 9,
+            "rank": 116,
+            "posRank": "WR44",
+            "tier": 7,
             "delta": null
           }
         },
@@ -3913,9 +3918,9 @@
           "pts": 0,
           "priorYearPts": 165.2,
           "ecr": {
-            "rank": 109,
-            "posRank": "WR42",
-            "tier": 8,
+            "rank": 107,
+            "posRank": "WR40",
+            "tier": 7,
             "delta": null
           }
         },
@@ -3932,10 +3937,10 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 236,
-            "posRank": "WR95",
-            "tier": 12,
-            "delta": -10
+            "rank": 249,
+            "posRank": "WR99",
+            "tier": 10,
+            "delta": -14
           }
         },
         {
@@ -3951,9 +3956,9 @@
           "pts": 0,
           "priorYearPts": 69.1,
           "ecr": {
-            "rank": 241,
-            "posRank": "WR99",
-            "tier": 12,
+            "rank": 245,
+            "posRank": "WR96",
+            "tier": 10,
             "delta": null
           }
         },
@@ -3970,9 +3975,9 @@
           "pts": 0,
           "priorYearPts": 177.2,
           "ecr": {
-            "rank": 37,
-            "posRank": "TE2",
-            "tier": 5,
+            "rank": 32,
+            "posRank": "TE1",
+            "tier": 3,
             "delta": null
           }
         },
@@ -3989,9 +3994,9 @@
           "pts": 0,
           "priorYearPts": 130.6,
           "ecr": {
-            "rank": 135,
-            "posRank": "TE15",
-            "tier": 9,
+            "rank": 131,
+            "posRank": "TE14",
+            "tier": 7,
             "delta": null
           }
         },
@@ -4008,9 +4013,9 @@
           "pts": 0,
           "priorYearPts": 129.8,
           "ecr": {
-            "rank": 246,
-            "posRank": "TE35",
-            "tier": 12,
+            "rank": 251,
+            "posRank": "TE36",
+            "tier": 10,
             "delta": null
           }
         }
@@ -4018,7 +4023,7 @@
       "salaryCap": 500,
       "salaryAdjustments": 10.09,
       "startingLineup": "1-2 QB, 2-4 RB, 2-4 WR, 1-3 TE",
-      "updatedAt": "2026-08-07T19:43:51.178Z",
+      "updatedAt": "2026-08-07T20:19:17.324Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -4027,6 +4032,7 @@
       "provider": null,
       "rulesUrl": "https://docs.google.com/document/d/1QV4fal0Be3-jbiHsDMm_SHe4DwoPAFNFJe44qWbRKes/edit?usp=drivesdk",
       "season": "2026",
+      "scoringDetected": "HALF",
       "standings": [
         {
           "franchiseId": "0001",
@@ -4151,13 +4157,13 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet",
+      "scoringError": "MFL request failed (429): /export?TYPE=league&L=30641&JSON=1 (year 2026)",
       "rankings": {
         "type": "DRAFT",
-        "scoring": "PPR",
+        "scoring": "HALF",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 86,
+        "totalExperts": 88,
         "matched": 25,
         "total": 25
       },
@@ -4185,9 +4191,9 @@
           "pts": 0,
           "priorYearPts": 1.56,
           "ecr": {
-            "rank": 356,
-            "posRank": "QB40",
-            "tier": 14,
+            "rank": 372,
+            "posRank": "QB39",
+            "tier": 12,
             "delta": null
           }
         },
@@ -4204,9 +4210,9 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 325,
+            "rank": 358,
             "posRank": "QB37",
-            "tier": 14,
+            "tier": 12,
             "delta": null
           }
         },
@@ -4234,7 +4240,13 @@
           "contractYear": "",
           "injuryStatus": null,
           "pts": 0,
-          "priorYearPts": 0
+          "priorYearPts": 0,
+          "ecr": {
+            "rank": 589,
+            "posRank": "QB61",
+            "tier": 13,
+            "delta": null
+          }
         },
         {
           "id": "11150",
@@ -4249,9 +4261,9 @@
           "pts": 0,
           "priorYearPts": 140.3,
           "ecr": {
-            "rank": 102,
+            "rank": 113,
             "posRank": "QB28",
-            "tier": 8,
+            "tier": 7,
             "delta": null
           }
         },
@@ -4268,9 +4280,9 @@
           "pts": 0,
           "priorYearPts": 129.32,
           "ecr": {
-            "rank": 145,
+            "rank": 180,
             "posRank": "QB31",
-            "tier": 10,
+            "tier": 8,
             "delta": null
           }
         },
@@ -4289,7 +4301,7 @@
           "ecr": {
             "rank": 47,
             "posRank": "QB20",
-            "tier": 5,
+            "tier": 4,
             "delta": null
           }
         },
@@ -4306,9 +4318,9 @@
           "pts": 0,
           "priorYearPts": 6.6,
           "ecr": {
-            "rank": 242,
-            "posRank": "RB74",
-            "tier": 12,
+            "rank": 227,
+            "posRank": "RB73",
+            "tier": 9,
             "delta": null
           }
         },
@@ -4325,9 +4337,9 @@
           "pts": 0,
           "priorYearPts": 13.8,
           "ecr": {
-            "rank": 228,
-            "posRank": "RB71",
-            "tier": 12,
+            "rank": 218,
+            "posRank": "RB69",
+            "tier": 9,
             "delta": null
           }
         },
@@ -4344,9 +4356,9 @@
           "pts": 0,
           "priorYearPts": 345.4,
           "ecr": {
-            "rank": 22,
+            "rank": 18,
             "posRank": "RB4",
-            "tier": 4,
+            "tier": 3,
             "delta": null
           }
         },
@@ -4363,9 +4375,9 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 206,
+            "rank": 202,
             "posRank": "RB64",
-            "tier": 11,
+            "tier": 9,
             "delta": null
           }
         },
@@ -4382,9 +4394,9 @@
           "pts": 0,
           "priorYearPts": 50.7,
           "ecr": {
-            "rank": 156,
-            "posRank": "RB51",
-            "tier": 10,
+            "rank": 155,
+            "posRank": "RB52",
+            "tier": 8,
             "delta": null
           }
         },
@@ -4401,9 +4413,9 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 203,
-            "posRank": "RB63",
-            "tier": 11,
+            "rank": 198,
+            "posRank": "RB62",
+            "tier": 9,
             "delta": null
           }
         },
@@ -4420,9 +4432,9 @@
           "pts": 0,
           "priorYearPts": 220.8,
           "ecr": {
-            "rank": 42,
-            "posRank": "RB10",
-            "tier": 5,
+            "rank": 31,
+            "posRank": "RB8",
+            "tier": 3,
             "delta": null
           }
         },
@@ -4439,9 +4451,9 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 240,
-            "posRank": "WR98",
-            "tier": 12,
+            "rank": 259,
+            "posRank": "WR102",
+            "tier": 10,
             "delta": null
           }
         },
@@ -4458,9 +4470,9 @@
           "pts": 0,
           "priorYearPts": 72.9,
           "ecr": {
-            "rank": 235,
-            "posRank": "WR94",
-            "tier": 12,
+            "rank": 240,
+            "posRank": "WR95",
+            "tier": 9,
             "delta": null
           }
         },
@@ -4477,9 +4489,9 @@
           "pts": 0,
           "priorYearPts": 195.9,
           "ecr": {
-            "rank": 68,
-            "posRank": "WR24",
-            "tier": 7,
+            "rank": 66,
+            "posRank": "WR23",
+            "tier": 5,
             "delta": null
           }
         },
@@ -4496,9 +4508,9 @@
           "pts": 0,
           "priorYearPts": 163.7,
           "ecr": {
-            "rank": 93,
+            "rank": 94,
             "posRank": "WR33",
-            "tier": 8,
+            "tier": 6,
             "delta": null
           }
         },
@@ -4515,9 +4527,9 @@
           "pts": 0,
           "priorYearPts": 61.8,
           "ecr": {
-            "rank": 187,
-            "posRank": "WR74",
-            "tier": 11,
+            "rank": 194,
+            "posRank": "WR75",
+            "tier": 9,
             "delta": null
           }
         },
@@ -4534,9 +4546,9 @@
           "pts": 0,
           "priorYearPts": 48.7,
           "ecr": {
-            "rank": 258,
-            "posRank": "WR103",
-            "tier": 12,
+            "rank": 266,
+            "posRank": "WR104",
+            "tier": 10,
             "delta": null
           }
         },
@@ -4553,9 +4565,9 @@
           "pts": 0,
           "priorYearPts": 83.4,
           "ecr": {
-            "rank": 189,
-            "posRank": "WR75",
-            "tier": 11,
+            "rank": 182,
+            "posRank": "WR70",
+            "tier": 9,
             "delta": null
           }
         },
@@ -4572,9 +4584,9 @@
           "pts": 0,
           "priorYearPts": 143.6,
           "ecr": {
-            "rank": 180,
-            "posRank": "WR71",
-            "tier": 11,
+            "rank": 195,
+            "posRank": "WR76",
+            "tier": 9,
             "delta": null
           }
         },
@@ -4591,9 +4603,9 @@
           "pts": 0,
           "priorYearPts": 206.85,
           "ecr": {
-            "rank": 124,
-            "posRank": "TE11",
-            "tier": 9,
+            "rank": 128,
+            "posRank": "TE12",
+            "tier": 7,
             "delta": null
           }
         },
@@ -4610,10 +4622,10 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 440,
-            "posRank": "TE80",
-            "tier": 15,
-            "delta": -11
+            "rank": 452,
+            "posRank": "TE86",
+            "tier": 13,
+            "delta": -12
           }
         },
         {
@@ -4629,9 +4641,9 @@
           "pts": 0,
           "priorYearPts": 138.9,
           "ecr": {
-            "rank": 360,
+            "rank": 354,
             "posRank": "TE59",
-            "tier": 14,
+            "tier": 12,
             "delta": null
           }
         }
@@ -4639,7 +4651,7 @@
       "salaryCap": 500,
       "salaryAdjustments": 58.24,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-07T19:43:52.471Z",
+      "updatedAt": "2026-08-07T20:19:18.974Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -4648,6 +4660,7 @@
       "provider": null,
       "rulesUrl": "https://docs.google.com/document/d/1jeE5Mr80nhnUK53DmbwYOHLbHZxSXsVjEcH4LufBvIE/edit?usp=drivesdk",
       "season": "2026",
+      "scoringDetected": "HALF",
       "standings": [
         {
           "franchiseId": "0001",
@@ -4795,11 +4808,11 @@
       "scoringError": "No live scoring available yet",
       "rankings": {
         "type": "DRAFT",
-        "scoring": "PPR",
+        "scoring": "HALF",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 86,
-        "matched": 23,
+        "totalExperts": 88,
+        "matched": 24,
         "total": 25
       },
       "rankingsError": null
@@ -4816,12 +4829,13 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-3 RB, 3-4 WR, 1-2 TE",
-      "updatedAt": "2026-08-07T19:43:52.696Z",
+      "updatedAt": "2026-08-07T20:19:19.391Z",
       "error": null,
       "tags": [],
       "provider": null,
       "rulesUrl": null,
       "season": "2026",
+      "scoringDetected": "PPR",
       "standings": [
         {
           "franchiseId": "0001",
@@ -4970,7 +4984,7 @@
           "pts": 2.26,
           "priorYearPts": 163.46,
           "ecr": {
-            "rank": 372,
+            "rank": 374,
             "posRank": "QB41",
             "tier": 14,
             "delta": null
@@ -4989,7 +5003,7 @@
           "pts": 336.22,
           "priorYearPts": 177.14,
           "ecr": {
-            "rank": 39,
+            "rank": 40,
             "posRank": "QB3",
             "tier": 5,
             "delta": null
@@ -5065,7 +5079,7 @@
           "pts": 15.3,
           "priorYearPts": 80.9,
           "ecr": {
-            "rank": 171,
+            "rank": 173,
             "posRank": "RB55",
             "tier": 10,
             "delta": null
@@ -5198,8 +5212,8 @@
           "pts": 166.4,
           "priorYearPts": 190.7,
           "ecr": {
-            "rank": 96,
-            "posRank": "WR43",
+            "rank": 98,
+            "posRank": "WR44",
             "tier": 7,
             "delta": null
           }
@@ -5341,12 +5355,13 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-3 RB, 3-4 WR, 1-2 TE",
-      "updatedAt": "2026-08-07T19:43:54.430Z",
+      "updatedAt": "2026-08-07T20:19:20.595Z",
       "error": null,
       "tags": [],
       "provider": null,
       "rulesUrl": null,
       "season": "2025",
+      "scoringDetected": "PPR",
       "standings": [
         {
           "franchiseId": "0004",
@@ -5521,7 +5536,7 @@
         "scoring": "PPR",
         "position": "ALL",
         "lastUpdated": "8/07",
-        "totalExperts": 89,
+        "totalExperts": 90,
         "matched": 20,
         "total": 20
       },
@@ -5570,7 +5585,7 @@
           "ecr": {
             "rank": 39,
             "posRank": "QB17",
-            "tier": 5,
+            "tier": 4,
             "delta": null
           }
         },
@@ -5587,9 +5602,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 53,
+            "rank": 56,
             "posRank": "QB21",
-            "tier": 6,
+            "tier": 5,
             "delta": null
           }
         },
@@ -5606,9 +5621,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 184,
+            "rank": 215,
             "posRank": "QB32",
-            "tier": 11,
+            "tier": 9,
             "delta": null
           }
         },
@@ -5625,9 +5640,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 205,
+            "rank": 242,
             "posRank": "QB35",
-            "tier": 11,
+            "tier": 9,
             "delta": null
           }
         },
@@ -5644,9 +5659,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 125,
-            "posRank": "RB38",
-            "tier": 9,
+            "rank": 124,
+            "posRank": "RB39",
+            "tier": 7,
             "delta": null
           }
         },
@@ -5663,9 +5678,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 104,
+            "rank": 100,
             "posRank": "RB30",
-            "tier": 8,
+            "tier": 6,
             "delta": null
           }
         },
@@ -5682,9 +5697,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 36,
-            "posRank": "RB8",
-            "tier": 5,
+            "rank": 33,
+            "posRank": "RB9",
+            "tier": 4,
             "delta": null
           }
         },
@@ -5701,9 +5716,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 44,
-            "posRank": "RB11",
-            "tier": 5,
+            "rank": 40,
+            "posRank": "RB12",
+            "tier": 4,
             "delta": null
           }
         },
@@ -5720,9 +5735,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 108,
+            "rank": 102,
             "posRank": "RB31",
-            "tier": 8,
+            "tier": 6,
             "delta": null
           }
         },
@@ -5739,9 +5754,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 38,
+            "rank": 44,
             "posRank": "WR12",
-            "tier": 5,
+            "tier": 4,
             "delta": null
           }
         },
@@ -5758,9 +5773,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 55,
-            "posRank": "WR20",
-            "tier": 6,
+            "rank": 62,
+            "posRank": "WR21",
+            "tier": 5,
             "delta": null
           }
         },
@@ -5777,9 +5792,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 65,
-            "posRank": "WR23",
-            "tier": 6,
+            "rank": 67,
+            "posRank": "WR24",
+            "tier": 5,
             "delta": null
           }
         },
@@ -5796,9 +5811,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 70,
-            "posRank": "WR25",
-            "tier": 7,
+            "rank": 72,
+            "posRank": "WR26",
+            "tier": 5,
             "delta": null
           }
         },
@@ -5815,7 +5830,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 29,
+            "rank": 34,
             "posRank": "WR9",
             "tier": 4,
             "delta": null
@@ -5847,10 +5862,10 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 129,
-            "posRank": "TE13",
-            "tier": 9,
-            "delta": null
+            "rank": 133,
+            "posRank": "TE15",
+            "tier": 7,
+            "delta": 2
           }
         },
         {
@@ -5866,9 +5881,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 89,
-            "posRank": "TE6",
-            "tier": 8,
+            "rank": 86,
+            "posRank": "TE5",
+            "tier": 6,
             "delta": null
           }
         }
@@ -5876,7 +5891,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-07T19:43:54.884Z",
+      "updatedAt": "2026-08-07T20:19:21.639Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -5884,6 +5899,7 @@
       "provider": null,
       "rulesUrl": null,
       "season": "2026",
+      "scoringDetected": "HALF",
       "standings": [
         {
           "franchiseId": "0001",
@@ -5988,13 +6004,13 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet",
+      "scoringError": "MFL request failed (429): /export?TYPE=league&L=72911&JSON=1 (year 2026)",
       "rankings": {
         "type": "DRAFT",
-        "scoring": "PPR",
+        "scoring": "HALF",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 86,
+        "totalExperts": 88,
         "matched": 17,
         "total": 18
       },
@@ -6022,9 +6038,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 71,
+            "rank": 80,
             "posRank": "QB25",
-            "tier": 7,
+            "tier": 6,
             "delta": null
           }
         },
@@ -6060,9 +6076,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 184,
+            "rank": 215,
             "posRank": "QB32",
-            "tier": 11,
+            "tier": 9,
             "delta": null
           }
         },
@@ -6079,9 +6095,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 79,
-            "posRank": "RB20",
-            "tier": 7,
+            "rank": 76,
+            "posRank": "RB22",
+            "tier": 5,
             "delta": null
           }
         },
@@ -6098,9 +6114,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 73,
+            "rank": 69,
             "posRank": "RB19",
-            "tier": 7,
+            "tier": 5,
             "delta": null
           }
         },
@@ -6117,9 +6133,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 188,
-            "posRank": "RB59",
-            "tier": 11,
+            "rank": 181,
+            "posRank": "RB57",
+            "tier": 8,
             "delta": null
           }
         },
@@ -6136,9 +6152,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 110,
-            "posRank": "RB32",
-            "tier": 8,
+            "rank": 109,
+            "posRank": "RB33",
+            "tier": 7,
             "delta": null
           }
         },
@@ -6155,9 +6171,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 42,
-            "posRank": "RB10",
-            "tier": 5,
+            "rank": 31,
+            "posRank": "RB8",
+            "tier": 3,
             "delta": null
           }
         },
@@ -6174,9 +6190,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 140,
+            "rank": 135,
             "posRank": "RB42",
-            "tier": 9,
+            "tier": 7,
             "delta": null
           }
         },
@@ -6193,9 +6209,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 99,
-            "posRank": "WR38",
-            "tier": 8,
+            "rank": 95,
+            "posRank": "WR34",
+            "tier": 6,
             "delta": null
           }
         },
@@ -6212,9 +6228,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 240,
-            "posRank": "WR98",
-            "tier": 12,
+            "rank": 259,
+            "posRank": "WR102",
+            "tier": 10,
             "delta": null
           }
         },
@@ -6231,9 +6247,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 155,
+            "rank": 157,
             "posRank": "WR56",
-            "tier": 10,
+            "tier": 8,
             "delta": null
           }
         },
@@ -6252,7 +6268,7 @@
           "ecr": {
             "rank": 13,
             "posRank": "WR3",
-            "tier": 3,
+            "tier": 2,
             "delta": null
           }
         },
@@ -6269,9 +6285,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 65,
-            "posRank": "WR23",
-            "tier": 6,
+            "rank": 67,
+            "posRank": "WR24",
+            "tier": 5,
             "delta": null
           }
         },
@@ -6288,9 +6304,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 46,
+            "rank": 48,
             "posRank": "WR14",
-            "tier": 5,
+            "tier": 4,
             "delta": null
           }
         },
@@ -6307,9 +6323,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 171,
+            "rank": 162,
             "posRank": "TE21",
-            "tier": 10,
+            "tier": 8,
             "delta": null
           }
         },
@@ -6326,9 +6342,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 165,
+            "rank": 158,
             "posRank": "TE20",
-            "tier": 10,
+            "tier": 8,
             "delta": null
           }
         },
@@ -6345,9 +6361,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 214,
-            "posRank": "TE28",
-            "tier": 11,
+            "rank": 187,
+            "posRank": "TE25",
+            "tier": 9,
             "delta": null
           }
         }
@@ -6355,7 +6371,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-07T19:43:55.180Z",
+      "updatedAt": "2026-08-07T20:19:22.571Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -6363,6 +6379,7 @@
       "provider": null,
       "rulesUrl": null,
       "season": "2026",
+      "scoringDetected": "HALF",
       "standings": [
         {
           "franchiseId": "0001",
@@ -6485,15 +6502,15 @@
           "isMe": false
         }
       ],
-      "standingsError": null,
+      "standingsError": "MFL request failed (429): /export?TYPE=league&L=54766&JSON=1 (year 2026)",
       "scoring": null,
       "scoringError": "MFL request failed (429): /export?TYPE=league&L=54766&JSON=1 (year 2026)",
       "rankings": {
         "type": "DRAFT",
-        "scoring": "PPR",
+        "scoring": "HALF",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 86,
+        "totalExperts": 88,
         "matched": 18,
         "total": 18
       },
@@ -6521,9 +6538,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 102,
+            "rank": 113,
             "posRank": "QB28",
-            "tier": 8,
+            "tier": 7,
             "delta": null
           }
         },
@@ -6559,9 +6576,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 53,
+            "rank": 56,
             "posRank": "QB21",
-            "tier": 6,
+            "tier": 5,
             "delta": null
           }
         },
@@ -6580,7 +6597,7 @@
           "ecr": {
             "rank": 47,
             "posRank": "QB20",
-            "tier": 5,
+            "tier": 4,
             "delta": null
           }
         },
@@ -6597,9 +6614,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 86,
+            "rank": 83,
             "posRank": "RB25",
-            "tier": 8,
+            "tier": 6,
             "delta": null
           }
         },
@@ -6618,7 +6635,7 @@
           "ecr": {
             "rank": 17,
             "posRank": "RB3",
-            "tier": 3,
+            "tier": 2,
             "delta": null
           }
         },
@@ -6635,9 +6652,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 92,
-            "posRank": "RB27",
-            "tier": 8,
+            "rank": 85,
+            "posRank": "RB26",
+            "tier": 6,
             "delta": null
           }
         },
@@ -6654,9 +6671,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 32,
-            "posRank": "RB7",
-            "tier": 5,
+            "rank": 23,
+            "posRank": "RB5",
+            "tier": 3,
             "delta": null
           }
         },
@@ -6673,9 +6690,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 66,
+            "rank": 61,
             "posRank": "RB17",
-            "tier": 6,
+            "tier": 5,
             "delta": null
           }
         },
@@ -6692,9 +6709,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 134,
+            "rank": 127,
             "posRank": "RB41",
-            "tier": 9,
+            "tier": 7,
             "delta": null
           }
         },
@@ -6711,9 +6728,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 64,
-            "posRank": "RB16",
-            "tier": 6,
+            "rank": 55,
+            "posRank": "RB15",
+            "tier": 5,
             "delta": null
           }
         },
@@ -6730,9 +6747,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 60,
-            "posRank": "RB15",
-            "tier": 6,
+            "rank": 49,
+            "posRank": "RB13",
+            "tier": 5,
             "delta": null
           }
         },
@@ -6749,9 +6766,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 110,
-            "posRank": "RB32",
-            "tier": 8,
+            "rank": 109,
+            "posRank": "RB33",
+            "tier": 7,
             "delta": null
           }
         },
@@ -6768,9 +6785,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 69,
+            "rank": 65,
             "posRank": "RB18",
-            "tier": 7,
+            "tier": 5,
             "delta": null
           }
         },
@@ -6787,9 +6804,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 140,
+            "rank": 135,
             "posRank": "RB42",
-            "tier": 9,
+            "tier": 7,
             "delta": null
           }
         },
@@ -6806,9 +6823,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 240,
-            "posRank": "WR98",
-            "tier": 12,
+            "rank": 259,
+            "posRank": "WR102",
+            "tier": 10,
             "delta": null
           }
         },
@@ -6825,9 +6842,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 87,
+            "rank": 90,
             "posRank": "WR31",
-            "tier": 8,
+            "tier": 6,
             "delta": null
           }
         },
@@ -6845,8 +6862,8 @@
           "priorYearPts": null,
           "ecr": {
             "rank": 126,
-            "posRank": "TE12",
-            "tier": 9,
+            "posRank": "TE11",
+            "tier": 7,
             "delta": null
           }
         },
@@ -6863,9 +6880,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 171,
+            "rank": 162,
             "posRank": "TE21",
-            "tier": 10,
+            "tier": 8,
             "delta": null
           }
         },
@@ -6882,9 +6899,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 135,
-            "posRank": "TE15",
-            "tier": 9,
+            "rank": 131,
+            "posRank": "TE14",
+            "tier": 7,
             "delta": null
           }
         }
@@ -6892,7 +6909,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "0-2 QB, 0-8 RB, 0-8 WR, 0-8 TE",
-      "updatedAt": "2026-08-07T19:43:55.517Z",
+      "updatedAt": "2026-08-07T20:19:23.403Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -6901,6 +6918,7 @@
       "provider": null,
       "rulesUrl": "https://scottfishbowl.com/rules2026.php",
       "season": "2026",
+      "scoringDetected": "HALF",
       "standings": [
         {
           "franchiseId": "0001",
@@ -7003,15 +7021,15 @@
           "isMe": false
         }
       ],
-      "standingsError": null,
+      "standingsError": "MFL request failed (429): /export?TYPE=leagueStandings&L=54458&JSON=1 (year 2026)",
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=54458&JSON=1 (year 2026)",
+      "scoringError": "MFL request failed (429): /export?TYPE=league&L=54458&JSON=1 (year 2026)",
       "rankings": {
         "type": "DRAFT",
-        "scoring": "PPR",
+        "scoring": "HALF",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 86,
+        "totalExperts": 88,
         "matched": 20,
         "total": 20
       },
@@ -7039,9 +7057,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 45,
+            "rank": 46,
             "posRank": "QB19",
-            "tier": 5,
+            "tier": 4,
             "delta": null
           }
         },
@@ -7077,9 +7095,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 53,
+            "rank": 56,
             "posRank": "QB21",
-            "tier": 6,
+            "tier": 5,
             "delta": null
           }
         },
@@ -7096,9 +7114,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 145,
+            "rank": 180,
             "posRank": "QB31",
-            "tier": 10,
+            "tier": 8,
             "delta": null
           }
         },
@@ -7115,9 +7133,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 86,
+            "rank": 83,
             "posRank": "RB25",
-            "tier": 8,
+            "tier": 6,
             "delta": null
           }
         },
@@ -7134,9 +7152,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 123,
-            "posRank": "RB37",
-            "tier": 9,
+            "rank": 110,
+            "posRank": "RB34",
+            "tier": 7,
             "delta": null
           }
         },
@@ -7153,9 +7171,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 59,
-            "posRank": "RB14",
-            "tier": 6,
+            "rank": 57,
+            "posRank": "RB16",
+            "tier": 5,
             "delta": null
           }
         },
@@ -7172,9 +7190,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 146,
-            "posRank": "RB46",
-            "tier": 10,
+            "rank": 137,
+            "posRank": "RB43",
+            "tier": 7,
             "delta": null
           }
         },
@@ -7191,9 +7209,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 66,
+            "rank": 61,
             "posRank": "RB17",
-            "tier": 6,
+            "tier": 5,
             "delta": null
           }
         },
@@ -7210,9 +7228,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 90,
-            "posRank": "RB26",
-            "tier": 8,
+            "rank": 89,
+            "posRank": "RB27",
+            "tier": 6,
             "delta": null
           }
         },
@@ -7229,9 +7247,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 156,
-            "posRank": "RB51",
-            "tier": 10,
+            "rank": 155,
+            "posRank": "RB52",
+            "tier": 8,
             "delta": null
           }
         },
@@ -7248,9 +7266,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 140,
+            "rank": 135,
             "posRank": "RB42",
-            "tier": 9,
+            "tier": 7,
             "delta": null
           }
         },
@@ -7267,9 +7285,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 38,
+            "rank": 44,
             "posRank": "WR12",
-            "tier": 5,
+            "tier": 4,
             "delta": null
           }
         },
@@ -7286,9 +7304,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 160,
-            "posRank": "WR59",
-            "tier": 10,
+            "rank": 164,
+            "posRank": "WR60",
+            "tier": 8,
             "delta": null
           }
         },
@@ -7305,7 +7323,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 20,
+            "rank": 21,
             "posRank": "WR6",
             "tier": 3,
             "delta": null
@@ -7324,9 +7342,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 177,
-            "posRank": "WR69",
-            "tier": 11,
+            "rank": 176,
+            "posRank": "WR67",
+            "tier": 8,
             "delta": null
           }
         },
@@ -7343,9 +7361,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 65,
-            "posRank": "WR23",
-            "tier": 6,
+            "rank": 67,
+            "posRank": "WR24",
+            "tier": 5,
             "delta": null
           }
         },
@@ -7362,9 +7380,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 54,
+            "rank": 59,
             "posRank": "TE3",
-            "tier": 6,
+            "tier": 5,
             "delta": null
           }
         },
@@ -7381,10 +7399,10 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 129,
-            "posRank": "TE13",
-            "tier": 9,
-            "delta": null
+            "rank": 133,
+            "posRank": "TE15",
+            "tier": 7,
+            "delta": 2
           }
         },
         {
@@ -7400,9 +7418,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 165,
+            "rank": 158,
             "posRank": "TE20",
-            "tier": 10,
+            "tier": 8,
             "delta": null
           }
         }
@@ -7410,7 +7428,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "0-2 QB, 0-8 RB, 0-8 WR, 0-8 TE",
-      "updatedAt": "2026-08-07T19:43:55.822Z",
+      "updatedAt": "2026-08-07T20:19:24.482Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -7419,6 +7437,7 @@
       "provider": null,
       "rulesUrl": "https://scottfishbowl.com/rules2026.php",
       "season": "2026",
+      "scoringDetected": "HALF",
       "standings": [
         {
           "franchiseId": "0001",
@@ -7533,13 +7552,13 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=league&L=61777&JSON=1 (year 2026)",
+      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=61777&JSON=1 (year 2026)",
       "rankings": {
         "type": "DRAFT",
-        "scoring": "PPR",
+        "scoring": "HALF",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 86,
+        "totalExperts": 88,
         "matched": 20,
         "total": 20
       },
@@ -7569,7 +7588,7 @@
           "ecr": {
             "rank": 6,
             "posRank": "QB6",
-            "tier": 2,
+            "tier": 1,
             "delta": null
           }
         },
@@ -7586,9 +7605,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 53,
+            "rank": 56,
             "posRank": "QB21",
-            "tier": 6,
+            "tier": 5,
             "delta": null
           }
         },
@@ -7607,7 +7626,7 @@
           "ecr": {
             "rank": 47,
             "posRank": "QB20",
-            "tier": 5,
+            "tier": 4,
             "delta": null
           }
         },
@@ -7624,9 +7643,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 146,
-            "posRank": "RB46",
-            "tier": 10,
+            "rank": 137,
+            "posRank": "RB43",
+            "tier": 7,
             "delta": null
           }
         },
@@ -7643,9 +7662,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 104,
+            "rank": 100,
             "posRank": "RB30",
-            "tier": 8,
+            "tier": 6,
             "delta": null
           }
         },
@@ -7662,9 +7681,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 80,
+            "rank": 75,
             "posRank": "RB21",
-            "tier": 7,
+            "tier": 5,
             "delta": null
           }
         },
@@ -7681,9 +7700,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 83,
+            "rank": 78,
             "posRank": "RB23",
-            "tier": 7,
+            "tier": 6,
             "delta": null
           }
         },
@@ -7700,9 +7719,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 116,
-            "posRank": "RB34",
-            "tier": 9,
+            "rank": 104,
+            "posRank": "RB32",
+            "tier": 7,
             "delta": null
           }
         },
@@ -7719,9 +7738,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 134,
+            "rank": 127,
             "posRank": "RB41",
-            "tier": 9,
+            "tier": 7,
             "delta": null
           }
         },
@@ -7738,9 +7757,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 156,
-            "posRank": "RB51",
-            "tier": 10,
+            "rank": 155,
+            "posRank": "RB52",
+            "tier": 8,
             "delta": null
           }
         },
@@ -7757,9 +7776,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 40,
+            "rank": 45,
             "posRank": "WR13",
-            "tier": 5,
+            "tier": 4,
             "delta": null
           }
         },
@@ -7776,9 +7795,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 155,
+            "rank": 157,
             "posRank": "WR56",
-            "tier": 10,
+            "tier": 8,
             "delta": null
           }
         },
@@ -7795,9 +7814,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 119,
-            "posRank": "WR46",
-            "tier": 9,
+            "rank": 117,
+            "posRank": "WR45",
+            "tier": 7,
             "delta": null
           }
         },
@@ -7814,9 +7833,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 70,
-            "posRank": "WR25",
-            "tier": 7,
+            "rank": 72,
+            "posRank": "WR26",
+            "tier": 5,
             "delta": null
           }
         },
@@ -7833,7 +7852,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 29,
+            "rank": 34,
             "posRank": "WR9",
             "tier": 4,
             "delta": null
@@ -7852,9 +7871,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 150,
+            "rank": 146,
             "posRank": "WR55",
-            "tier": 10,
+            "tier": 8,
             "delta": null
           }
         },
@@ -7871,9 +7890,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 37,
-            "posRank": "TE2",
-            "tier": 5,
+            "rank": 32,
+            "posRank": "TE1",
+            "tier": 3,
             "delta": null
           }
         },
@@ -7890,9 +7909,9 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 33,
-            "posRank": "TE1",
-            "tier": 5,
+            "rank": 41,
+            "posRank": "TE2",
+            "tier": 4,
             "delta": null
           }
         }
@@ -7900,7 +7919,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-07T19:43:56.161Z",
+      "updatedAt": "2026-08-07T20:19:25.976Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -7908,6 +7927,7 @@
       "provider": null,
       "rulesUrl": null,
       "season": "2026",
+      "scoringDetected": "HALF",
       "standings": [
         {
           "franchiseId": "0001",
@@ -8022,13 +8042,13 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet",
+      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=30196&JSON=1 (year 2026)",
       "rankings": {
         "type": "DRAFT",
-        "scoring": "PPR",
+        "scoring": "HALF",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 86,
+        "totalExperts": 88,
         "matched": 18,
         "total": 18
       },
@@ -8058,7 +8078,7 @@
           "ecr": {
             "rank": 17,
             "posRank": "RB3",
-            "tier": 3,
+            "tier": 2,
             "delta": null
           }
         }
@@ -8066,7 +8086,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-07T19:43:56.585Z",
+      "updatedAt": "2026-08-07T20:19:27.113Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -8075,6 +8095,7 @@
       "provider": null,
       "rulesUrl": null,
       "season": "2026",
+      "scoringDetected": "HALF",
       "standings": [
         {
           "franchiseId": "0001",
@@ -8199,13 +8220,13 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet",
+      "scoringError": "MFL request failed (429): /export?TYPE=league&L=26222&JSON=1 (year 2026)",
       "rankings": {
         "type": "DRAFT",
-        "scoring": "PPR",
+        "scoring": "HALF",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 86,
+        "totalExperts": 88,
         "matched": 1,
         "total": 1
       },
@@ -8230,9 +8251,9 @@
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
-            "rank": 138,
+            "rank": 165,
             "posRank": "QB30",
-            "tier": 9,
+            "tier": 8,
             "delta": null
           }
         },
@@ -8246,9 +8267,9 @@
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
-            "rank": 302,
+            "rank": 322,
             "posRank": "QB36",
-            "tier": 13,
+            "tier": 11,
             "delta": null
           }
         },
@@ -8262,9 +8283,9 @@
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
-            "rank": 82,
+            "rank": 88,
             "posRank": "QB27",
-            "tier": 7,
+            "tier": 6,
             "delta": null
           }
         },
@@ -8280,7 +8301,7 @@
           "ecr": {
             "rank": 39,
             "posRank": "QB17",
-            "tier": 5,
+            "tier": 4,
             "delta": null
           }
         },
@@ -8294,9 +8315,9 @@
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
-            "rank": 53,
+            "rank": 56,
             "posRank": "QB21",
-            "tier": 6,
+            "tier": 5,
             "delta": null
           }
         },
@@ -8310,9 +8331,9 @@
           "status": "ROSTER",
           "injuryStatus": "Q",
           "ecr": {
-            "rank": 184,
+            "rank": 215,
             "posRank": "QB32",
-            "tier": 11,
+            "tier": 9,
             "delta": null
           }
         },
@@ -8326,9 +8347,9 @@
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
-            "rank": 73,
+            "rank": 69,
             "posRank": "RB19",
-            "tier": 7,
+            "tier": 5,
             "delta": null
           }
         },
@@ -8342,9 +8363,9 @@
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
-            "rank": 30,
-            "posRank": "RB6",
-            "tier": 4,
+            "rank": 29,
+            "posRank": "RB7",
+            "tier": 3,
             "delta": null
           }
         },
@@ -8358,9 +8379,9 @@
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
-            "rank": 201,
-            "posRank": "RB62",
-            "tier": 11,
+            "rank": 192,
+            "posRank": "RB61",
+            "tier": 9,
             "delta": null
           }
         },
@@ -8374,9 +8395,9 @@
           "status": "ROSTER",
           "injuryStatus": "Q",
           "ecr": {
-            "rank": 64,
-            "posRank": "RB16",
-            "tier": 6,
+            "rank": 55,
+            "posRank": "RB15",
+            "tier": 5,
             "delta": null
           }
         },
@@ -8390,9 +8411,9 @@
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
-            "rank": 60,
-            "posRank": "RB15",
-            "tier": 6,
+            "rank": 49,
+            "posRank": "RB13",
+            "tier": 5,
             "delta": null
           }
         },
@@ -8406,9 +8427,9 @@
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
-            "rank": 101,
-            "posRank": "RB29",
-            "tier": 8,
+            "rank": 92,
+            "posRank": "RB28",
+            "tier": 6,
             "delta": null
           }
         },
@@ -8422,9 +8443,9 @@
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
-            "rank": 140,
+            "rank": 135,
             "posRank": "RB42",
-            "tier": 9,
+            "tier": 7,
             "delta": null
           }
         },
@@ -8438,9 +8459,9 @@
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
-            "rank": 142,
-            "posRank": "RB43",
-            "tier": 9,
+            "rank": 139,
+            "posRank": "RB44",
+            "tier": 7,
             "delta": null
           }
         },
@@ -8454,7 +8475,7 @@
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
-            "rank": 18,
+            "rank": 19,
             "posRank": "WR5",
             "tier": 3,
             "delta": null
@@ -8470,7 +8491,7 @@
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
-            "rank": 20,
+            "rank": 21,
             "posRank": "WR6",
             "tier": 3,
             "delta": null
@@ -8486,10 +8507,10 @@
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
-            "rank": 236,
-            "posRank": "WR95",
-            "tier": 12,
-            "delta": -10
+            "rank": 249,
+            "posRank": "WR99",
+            "tier": 10,
+            "delta": -14
           }
         },
         {
@@ -8502,9 +8523,9 @@
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
-            "rank": 154,
-            "posRank": "TE18",
-            "tier": 10,
+            "rank": 149,
+            "posRank": "TE17",
+            "tier": 8,
             "delta": null
           }
         },
@@ -8518,9 +8539,9 @@
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
-            "rank": 214,
-            "posRank": "TE28",
-            "tier": 11,
+            "rank": 187,
+            "posRank": "TE25",
+            "tier": 9,
             "delta": null
           }
         },
@@ -8534,14 +8555,14 @@
           "status": "ROSTER",
           "injuryStatus": "Q",
           "ecr": {
-            "rank": 89,
-            "posRank": "TE6",
-            "tier": 8,
+            "rank": 86,
+            "posRank": "TE5",
+            "tier": 6,
             "delta": null
           }
         }
       ],
-      "updatedAt": "2026-08-07T19:43:56.670Z",
+      "updatedAt": "2026-08-07T20:19:27.301Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -8550,6 +8571,7 @@
       "provider": "sleeper",
       "rulesUrl": "https://scottfishbowl.com/rules2026.php",
       "season": "2026",
+      "scoringDetected": "HALF",
       "standings": [
         {
           "franchiseId": "1",
@@ -8767,10 +8789,10 @@
       "lineupError": null,
       "rankings": {
         "type": "DRAFT",
-        "scoring": "PPR",
+        "scoring": "HALF",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 86,
+        "totalExperts": 88,
         "matched": 20,
         "total": 20
       },
@@ -8785,12 +8807,13 @@
       "teamName": "Big Dart Energy",
       "url": "https://fantasy.espn.com/football/team?leagueId=1966972&teamId=10",
       "players": [],
-      "updatedAt": "2026-08-07T19:43:56.766Z",
+      "updatedAt": "2026-08-07T20:19:27.478Z",
       "error": null,
       "tags": [],
       "provider": "espn",
-      "rulesUrl": null,
+      "rulesUrl": "https://fantasy.espn.com/football/league/settings?leagueId=1966972",
       "season": "2026",
+      "scoringDetected": "HALF",
       "standings": [
         {
           "franchiseId": "1",
@@ -8970,12 +8993,13 @@
       "teamName": "Jeffer Justinson",
       "url": "https://fantasy.espn.com/football/team?leagueId=421871710&teamId=5",
       "players": [],
-      "updatedAt": "2026-08-07T19:43:56.868Z",
+      "updatedAt": "2026-08-07T20:19:27.567Z",
       "error": null,
       "tags": [],
       "provider": "espn",
       "rulesUrl": "https://fantasy.espn.com/football/league/settings?leagueId=421871710",
       "season": "2026",
+      "scoringDetected": "PPR",
       "standings": [
         {
           "franchiseId": "1",
