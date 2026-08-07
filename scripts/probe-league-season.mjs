@@ -13,8 +13,10 @@
 // league is definitely in and one it cannot possibly be — the useful result is
 // the two side by side.
 //
-// MFL: confirmed 2026-08 against league 26696. A season the league is in
-// returns {encoding, league, version}; a season it isn't in returns HTTP 404.
+// Both confirmed 2026-08. MFL (league 26696): a season the league is in returns
+// {encoding, league, version}; one it isn't in returns HTTP 404. ESPN (league
+// 1966972): a season it's in returns a body with id/seasonId/settings; one it
+// isn't in returns HTTP 404 with a JSON GENERAL_NOT_FOUND payload.
 //
 // ESPN has a wrinkle MFL doesn't, and it's the main reason to run this: expired
 // or missing espn_s2/SWID cookies make every request fail, which reads as "the

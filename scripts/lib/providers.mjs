@@ -204,14 +204,18 @@ export async function mflLeagueExists(league, cookie, season) {
 // ESPN keeps the same league id across seasons, so the same question is
 // answerable the same way — expected to 404 on a season the league isn't in.
 //
-// Unlike the MFL twin above, this is NOT yet confirmed against the real API;
-// run probe-league-season.yml with an ESPN id to settle it. The failure mode to
-// watch for is specific: ESPN reads are cookie-authenticated, so expired
-// espn_s2/SWID make every season fail, which reads here as "doesn't exist" for
-// all of them. That's safe — the league stays where it is and is never dragged
-// backwards — but it means an ESPN league would silently never roll over. The
-// roster fetch for that league would be erroring too, so it shows up on the
-// card either way.
+// Confirmed alongside MFL via probe-league-season.yml (league 1966972, seasons
+// 2026 and 2028): a season the league is in returns a body with id, seasonId
+// and settings; a season it isn't in returns HTTP 404 with a JSON
+// GENERAL_NOT_FOUND payload, which espnGet turns into a throw.
+//
+// One caveat MFL doesn't have, and it survives that verification: ESPN reads
+// are cookie-authenticated, so expired espn_s2/SWID make every season fail,
+// which reads here as "doesn't exist" for all of them. Safe — the league stays
+// where it is and is never dragged backwards — but it means an ESPN league
+// would silently never roll over. Two things catch it: the roster fetch for
+// that league would be erroring on its card anyway, and the probe treats a
+// false control season as a hard failure for exactly this reason.
 //
 // Sleeper has no equivalent and deliberately isn't probed: there, a new season
 // is a whole new league id and the old one keeps answering forever, so nothing
