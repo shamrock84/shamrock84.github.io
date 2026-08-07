@@ -62,6 +62,11 @@ async function loadPreviousOutput() {
   }
 }
 
+// How far back to look when a league has no known-good season to fall back on.
+// Two seasons covers a league whose new site isn't up yet, and one that missed a
+// year entirely; further back than that is a stale config, not a rollover.
+const SEASON_LOOKBACK = 2;
+
 // Which season each league is actually read from, resolved per league rather
 // than taken from the calendar.
 //
@@ -71,18 +76,27 @@ async function loadPreviousOutput() {
 // year is therefore wrong for somebody for months, and the failure is quiet —
 // every card falls back to its previous entry and shows a stale roster.
 //
-// So: aim at the current NFL season, and fall back to whatever the league was
-// last read from until the new season actually exists.
+// So: aim at the current NFL season, and only move a league there once that
+// season actually exists for it.
 //
-//   - Already on the target      -> use it, no probe. This is the common case
-//                                   and costs nothing all season long.
+//   - Settled on the target      -> use it, no probe. The common case, and it
+//                                   costs nothing all season long.
 //   - Pinned in config           -> use the pin, no probe. Manual override.
-//   - Otherwise                  -> ask the provider whether the target season
-//                                   exists yet; if not, stay where we were.
+//   - Target exists              -> move there.
+//   - Target definitively absent -> fall back: to the last known-good season if
+//                                   there is one, otherwise walk backwards
+//                                   until a season answers.
+//   - Couldn't tell              -> change nothing and try again next sync.
 //
-// Deliberately one-way. A league that has rolled over never goes back, so a
-// transient provider hiccup can't drag a league backwards into last season —
-// the worst a failed probe can do is leave things exactly as they already are.
+// "Settled" means the league is recorded against a season AND fetched cleanly
+// on it. A league carrying an error is exactly the one worth re-asking, because
+// sitting on a season that was never really there looks precisely like that —
+// which is also what stops a bad answer from becoming permanent, since the
+// recorded season alone would otherwise short-circuit the probe forever.
+//
+// Movement is one-way past a known-good season: the walk-back only runs when
+// there is nothing good to fall back to, so a rolled-over league can never be
+// dragged into a finished season.
 export async function resolveSeason(league, previous, target, probes) {
   // An explicit season in config/leagues.json pins the league and opts it out
   // of probing entirely, the same way rankingType opts out of the seasonal
@@ -90,7 +104,8 @@ export async function resolveSeason(league, previous, target, probes) {
   if (league.season) return { season: String(league.season), pinned: true };
 
   const last = previous?.season ? String(previous.season) : null;
-  if (last === String(target)) return { season: last, rolledOver: false };
+  const settled = Boolean(last) && !previous?.error;
+  if (settled && last === String(target)) return { season: last, rolledOver: false };
 
   // Strictly one-way. If a league is already ahead of the target it stays
   // there, without asking. Last season still exists at the provider and would
@@ -104,12 +119,30 @@ export async function resolveSeason(league, previous, target, probes) {
   // old id answers forever — so it simply follows whatever id is configured.
   if (league.provider === 'sleeper') return { season: String(target), rolledOver: false };
 
-  const exists = league.provider === 'espn'
-    ? await probes.espn(league, String(target))
-    : await probes.mfl(league, String(target));
+  const probe = league.provider === 'espn' ? probes.espn : probes.mfl;
 
-  if (exists) return { season: String(target), rolledOver: Boolean(last) };
-  return { season: last || String(target), waiting: true };
+  const exists = await probe(league, String(target));
+  if (exists === true) {
+    return { season: String(target), rolledOver: Boolean(last) && last !== String(target) };
+  }
+  // null, not false: the provider didn't answer, so nothing is known and
+  // nothing should move. Falling back here would act on a hiccup.
+  if (exists === null) return { season: last || String(target), probeFailed: true };
+
+  // Definitively absent. A known-good season is the best answer available.
+  if (settled) return { season: last, waiting: true };
+
+  // Nothing known-good to sit on — a league on its first sync, or one whose
+  // recorded season never actually worked. Walk backwards until one answers,
+  // which is how a league whose new site isn't up yet lands on the season it
+  // was really last played in rather than an empty one.
+  for (let season = Number(target) - 1; season >= Number(target) - SEASON_LOOKBACK; season--) {
+    const back = await probe(league, String(season));
+    if (back === true) return { season: String(season), fellBack: true };
+    // Stop on an unknown rather than reading it as another absence.
+    if (back === null) return { season: last || String(target), probeFailed: true };
+  }
+  return { season: String(target), unresolved: true };
 }
 
 async function main() {
@@ -147,6 +180,12 @@ async function main() {
         console.log(`${league.name}: rolled over to ${resolved.season}`);
       } else if (resolved.waiting) {
         console.log(`${league.name}: staying on ${resolved.season} — ${targetSeason} isn't available yet`);
+      } else if (resolved.fellBack) {
+        console.log(`${league.name}: ${targetSeason} isn't set up yet — falling back to ${resolved.season}`);
+      } else if (resolved.probeFailed) {
+        console.log(`${league.name}: couldn't check whether ${targetSeason} exists — leaving it on ${resolved.season}`);
+      } else if (resolved.unresolved) {
+        console.log(`${league.name}: no season found from ${targetSeason} back to ${targetSeason - SEASON_LOOKBACK} — using ${resolved.season}`);
       }
     } catch (err) {
       // Never fatal. A probe that throws leaves the league exactly where the
