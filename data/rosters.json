@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-07T19:18:46.542Z",
+  "generatedAt": "2026-08-07T19:45:43.322Z",
   "year": "2026",
   "leagues": [
     {
@@ -623,7 +623,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1 QB, 2-3 RB, 2-3 WR, 1-2 TE, 1 PK, 1 Def",
-      "updatedAt": "2026-08-07T19:17:26.754Z",
+      "updatedAt": "2026-08-07T19:43:48.002Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -734,8 +734,19 @@
       "standingsError": null,
       "scoring": null,
       "scoringError": "No live scoring available yet",
-      "starters": null,
-      "lineupError": "MFL request failed (429): /export?TYPE=weeklyResults&L=26696&W=1&JSON=1 (year 2026)",
+      "lineupWeek": "1",
+      "starters": [
+        "14783",
+        "13604",
+        "17044",
+        "14802",
+        "11675",
+        "16211",
+        "13299",
+        "16681",
+        "0518"
+      ],
+      "lineupError": null,
       "rankings": {
         "type": "DYNASTY",
         "scoring": "PPR",
@@ -1368,7 +1379,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1 QB, 2 RB, 3 WR, 1 TE, 1 PK, 1 Def",
-      "updatedAt": "2026-08-07T19:17:27.891Z",
+      "updatedAt": "2026-08-07T19:43:48.715Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -2080,7 +2091,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1 QB, 2 RB, 3 WR, 1 TE, 1 PK, 1 Def",
-      "updatedAt": "2026-08-07T19:17:29.246Z",
+      "updatedAt": "2026-08-07T19:43:49.350Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -2255,7 +2266,13 @@
           "contractYear": "",
           "injuryStatus": null,
           "pts": 0,
-          "priorYearPts": 201.28
+          "priorYearPts": 201.28,
+          "ecr": {
+            "rank": 135,
+            "posRank": "QB22",
+            "tier": 9,
+            "delta": null
+          }
         },
         {
           "id": "17032",
@@ -2268,7 +2285,13 @@
           "contractYear": "2",
           "injuryStatus": null,
           "pts": 0,
-          "priorYearPts": 227.18
+          "priorYearPts": 227.18,
+          "ecr": {
+            "rank": 92,
+            "posRank": "QB11",
+            "tier": 7,
+            "delta": null
+          }
         },
         {
           "id": "16581",
@@ -2281,7 +2304,13 @@
           "contractYear": "1",
           "injuryStatus": null,
           "pts": 0,
-          "priorYearPts": 115.28
+          "priorYearPts": 115.28,
+          "ecr": {
+            "rank": 50,
+            "posRank": "QB5",
+            "tier": 5,
+            "delta": null
+          }
         },
         {
           "id": "15708",
@@ -2294,7 +2323,13 @@
           "contractYear": "2",
           "injuryStatus": null,
           "pts": 0,
-          "priorYearPts": 212.66
+          "priorYearPts": 212.66,
+          "ecr": {
+            "rank": 41,
+            "posRank": "RB14",
+            "tier": 5,
+            "delta": null
+          }
         },
         {
           "id": "17060",
@@ -2307,7 +2342,13 @@
           "contractYear": "2",
           "injuryStatus": null,
           "pts": 0,
-          "priorYearPts": 6.6
+          "priorYearPts": 6.6,
+          "ecr": {
+            "rank": 266,
+            "posRank": "RB75",
+            "tier": 12,
+            "delta": null
+          }
         },
         {
           "id": "17474",
@@ -2320,7 +2361,13 @@
           "contractYear": "3",
           "injuryStatus": null,
           "pts": 0,
-          "priorYearPts": 0
+          "priorYearPts": 0,
+          "ecr": {
+            "rank": 186,
+            "posRank": "RB59",
+            "tier": 10,
+            "delta": null
+          }
         },
         {
           "id": "16178",
@@ -2333,7 +2380,13 @@
           "contractYear": "",
           "injuryStatus": null,
           "pts": 0,
-          "priorYearPts": 55.2
+          "priorYearPts": 55.2,
+          "ecr": {
+            "rank": 150,
+            "posRank": "RB51",
+            "tier": 9,
+            "delta": null
+          }
         },
         {
           "id": "15711",
@@ -2346,7 +2399,13 @@
           "contractYear": "2",
           "injuryStatus": null,
           "pts": 0,
-          "priorYearPts": 176.6
+          "priorYearPts": 176.6,
+          "ecr": {
+            "rank": 28,
+            "posRank": "RB11",
+            "tier": 4,
+            "delta": null
+          }
         },
         {
           "id": "15259",
@@ -2359,7 +2418,13 @@
           "contractYear": "1",
           "injuryStatus": null,
           "pts": 0,
-          "priorYearPts": 145.5
+          "priorYearPts": 145.5,
+          "ecr": {
+            "rank": 80,
+            "posRank": "RB28",
+            "tier": 7,
+            "delta": null
+          }
         },
         {
           "id": "14085",
@@ -2372,7 +2437,13 @@
           "contractYear": "1",
           "injuryStatus": null,
           "pts": 0,
-          "priorYearPts": 180.3
+          "priorYearPts": 180.3,
+          "ecr": {
+            "rank": 84,
+            "posRank": "RB29",
+            "tier": 7,
+            "delta": null
+          }
         },
         {
           "id": "17056",
@@ -2385,7 +2456,13 @@
           "contractYear": "2",
           "injuryStatus": null,
           "pts": 0,
-          "priorYearPts": 11.7
+          "priorYearPts": 11.7,
+          "ecr": {
+            "rank": 310,
+            "posRank": "RB93",
+            "tier": 12,
+            "delta": null
+          }
         },
         {
           "id": "15712",
@@ -2398,7 +2475,13 @@
           "contractYear": "",
           "injuryStatus": null,
           "pts": 0,
-          "priorYearPts": 121.1
+          "priorYearPts": 121.1,
+          "ecr": {
+            "rank": 134,
+            "posRank": "RB44",
+            "tier": 9,
+            "delta": null
+          }
         },
         {
           "id": "14104",
@@ -2411,7 +2494,13 @@
           "contractYear": "2",
           "injuryStatus": null,
           "pts": 0,
-          "priorYearPts": 224.3
+          "priorYearPts": 224.3,
+          "ecr": {
+            "rank": 12,
+            "posRank": "WR8",
+            "tier": 3,
+            "delta": null
+          }
         },
         {
           "id": "17506",
@@ -2424,7 +2513,13 @@
           "contractYear": "3",
           "injuryStatus": "O",
           "pts": 0,
-          "priorYearPts": 0
+          "priorYearPts": 0,
+          "ecr": {
+            "rank": 258,
+            "posRank": "WR92",
+            "tier": 12,
+            "delta": null
+          }
         },
         {
           "id": "13630",
@@ -2437,7 +2532,13 @@
           "contractYear": "1",
           "injuryStatus": null,
           "pts": 0,
-          "priorYearPts": 223.2
+          "priorYearPts": 223.2,
+          "ecr": {
+            "rank": 82,
+            "posRank": "WR37",
+            "tier": 7,
+            "delta": null
+          }
         },
         {
           "id": "17505",
@@ -2450,7 +2551,13 @@
           "contractYear": "3",
           "injuryStatus": null,
           "pts": 0,
-          "priorYearPts": 0
+          "priorYearPts": 0,
+          "ecr": {
+            "rank": 256,
+            "posRank": "WR90",
+            "tier": 12,
+            "delta": null
+          }
         },
         {
           "id": "17078",
@@ -2463,7 +2570,13 @@
           "contractYear": "2",
           "injuryStatus": null,
           "pts": 0,
-          "priorYearPts": 42.4
+          "priorYearPts": 42.4,
+          "ecr": {
+            "rank": 239,
+            "posRank": "WR86",
+            "tier": 11,
+            "delta": null
+          }
         },
         {
           "id": "16185",
@@ -2495,7 +2608,13 @@
           "contractYear": "",
           "injuryStatus": null,
           "pts": 0,
-          "priorYearPts": 68.7
+          "priorYearPts": 68.7,
+          "ecr": {
+            "rank": 202,
+            "posRank": "WR78",
+            "tier": 10,
+            "delta": null
+          }
         },
         {
           "id": "16194",
@@ -2508,7 +2627,13 @@
           "contractYear": "1",
           "injuryStatus": null,
           "pts": 0,
-          "priorYearPts": 151.1
+          "priorYearPts": 151.1,
+          "ecr": {
+            "rank": 19,
+            "posRank": "WR11",
+            "tier": 3,
+            "delta": null
+          }
         },
         {
           "id": "16619",
@@ -2521,7 +2646,13 @@
           "contractYear": "1",
           "injuryStatus": null,
           "pts": 0,
-          "priorYearPts": 179.1
+          "priorYearPts": 179.1,
+          "ecr": {
+            "rank": 185,
+            "posRank": "WR72",
+            "tier": 10,
+            "delta": null
+          }
         },
         {
           "id": "17104",
@@ -2534,7 +2665,13 @@
           "contractYear": "2",
           "injuryStatus": null,
           "pts": 0,
-          "priorYearPts": 143
+          "priorYearPts": 143,
+          "ecr": {
+            "rank": 36,
+            "posRank": "TE3",
+            "tier": 5,
+            "delta": null
+          }
         },
         {
           "id": "16649",
@@ -2547,7 +2684,13 @@
           "contractYear": "1",
           "injuryStatus": null,
           "pts": 0,
-          "priorYearPts": 129.8
+          "priorYearPts": 129.8,
+          "ecr": {
+            "rank": 275,
+            "posRank": "TE35",
+            "tier": 12,
+            "delta": null
+          }
         },
         {
           "id": "15794",
@@ -2560,13 +2703,19 @@
           "contractYear": "1",
           "injuryStatus": null,
           "pts": 0,
-          "priorYearPts": 303.4
+          "priorYearPts": 303.4,
+          "ecr": {
+            "rank": 16,
+            "posRank": "TE1",
+            "tier": 3,
+            "delta": null
+          }
         }
       ],
       "salaryCap": 550,
       "salaryAdjustments": 3.2699999999999996,
       "startingLineup": "1 QB, 2-3 RB, 3-4 WR, 1-2 TE",
-      "updatedAt": "2026-08-07T19:17:30.810Z",
+      "updatedAt": "2026-08-07T19:43:49.979Z",
       "error": null,
       "tags": [
         "Best Ball"
@@ -2698,14 +2847,14 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet",
+      "scoringError": "MFL request failed (429): /export?TYPE=league&L=35217&JSON=1 (year 2026)",
       "rankings": {
         "type": "DRAFT",
         "scoring": "PPR",
         "position": "ALL",
         "lastUpdated": "8/07",
-        "totalExperts": 88,
-        "matched": 1,
+        "totalExperts": 89,
+        "matched": 24,
         "total": 24
       },
       "rankingsError": null
@@ -2789,7 +2938,7 @@
           "pts": 0,
           "priorYearPts": 271.98,
           "ecr": {
-            "rank": 14,
+            "rank": 15,
             "posRank": "QB9",
             "tier": 3,
             "delta": null
@@ -2865,7 +3014,7 @@
           "pts": 0,
           "priorYearPts": 6.6,
           "ecr": {
-            "rank": 241,
+            "rank": 242,
             "posRank": "RB74",
             "tier": 12,
             "delta": null
@@ -2979,7 +3128,7 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 280,
+            "rank": 279,
             "posRank": "WR110",
             "tier": 13,
             "delta": null
@@ -3074,7 +3223,7 @@
           "pts": 0,
           "priorYearPts": 83.4,
           "ecr": {
-            "rank": 188,
+            "rank": 189,
             "posRank": "WR75",
             "tier": 11,
             "delta": null
@@ -3188,7 +3337,7 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 314,
+            "rank": 313,
             "posRank": "TE48",
             "tier": 13,
             "delta": null
@@ -3236,7 +3385,7 @@
       "salaryCap": 500,
       "salaryAdjustments": 4.68,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-07T19:17:32.379Z",
+      "updatedAt": "2026-08-07T19:43:50.606Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -3369,13 +3518,13 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet",
+      "scoringError": "MFL request failed (429): /export?TYPE=league&L=34850&JSON=1 (year 2026)",
       "rankings": {
         "type": "DRAFT",
         "scoring": "PPR",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 85,
+        "totalExperts": 86,
         "matched": 27,
         "total": 27
       },
@@ -3441,7 +3590,7 @@
           "pts": 0,
           "priorYearPts": 97.62,
           "ecr": {
-            "rank": 185,
+            "rank": 184,
             "posRank": "QB32",
             "tier": 11,
             "delta": null
@@ -3555,7 +3704,7 @@
           "pts": 0,
           "priorYearPts": 34.7,
           "ecr": {
-            "rank": 189,
+            "rank": 188,
             "posRank": "RB59",
             "tier": 11,
             "delta": null
@@ -3612,8 +3761,8 @@
           "pts": 0,
           "priorYearPts": 38.8,
           "ecr": {
-            "rank": 181,
-            "posRank": "WR71",
+            "rank": 182,
+            "posRank": "WR72",
             "tier": 11,
             "delta": null
           }
@@ -3707,8 +3856,8 @@
           "pts": 0,
           "priorYearPts": 55.6,
           "ecr": {
-            "rank": 182,
-            "posRank": "WR72",
+            "rank": 183,
+            "posRank": "WR73",
             "tier": 11,
             "delta": null
           }
@@ -3783,8 +3932,8 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 237,
-            "posRank": "WR96",
+            "rank": 236,
+            "posRank": "WR95",
             "tier": 12,
             "delta": -10
           }
@@ -3802,7 +3951,7 @@
           "pts": 0,
           "priorYearPts": 69.1,
           "ecr": {
-            "rank": 242,
+            "rank": 241,
             "posRank": "WR99",
             "tier": 12,
             "delta": null
@@ -3859,7 +4008,7 @@
           "pts": 0,
           "priorYearPts": 129.8,
           "ecr": {
-            "rank": 245,
+            "rank": 246,
             "posRank": "TE35",
             "tier": 12,
             "delta": null
@@ -3869,7 +4018,7 @@
       "salaryCap": 500,
       "salaryAdjustments": 10.09,
       "startingLineup": "1-2 QB, 2-4 RB, 2-4 WR, 1-3 TE",
-      "updatedAt": "2026-08-07T19:17:34.948Z",
+      "updatedAt": "2026-08-07T19:43:51.178Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -4008,7 +4157,7 @@
         "scoring": "PPR",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 85,
+        "totalExperts": 86,
         "matched": 25,
         "total": 25
       },
@@ -4036,7 +4185,7 @@
           "pts": 0,
           "priorYearPts": 1.56,
           "ecr": {
-            "rank": 354,
+            "rank": 356,
             "posRank": "QB40",
             "tier": 14,
             "delta": null
@@ -4157,7 +4306,7 @@
           "pts": 0,
           "priorYearPts": 6.6,
           "ecr": {
-            "rank": 241,
+            "rank": 242,
             "posRank": "RB74",
             "tier": 12,
             "delta": null
@@ -4176,7 +4325,7 @@
           "pts": 0,
           "priorYearPts": 13.8,
           "ecr": {
-            "rank": 229,
+            "rank": 228,
             "posRank": "RB71",
             "tier": 12,
             "delta": null
@@ -4290,8 +4439,8 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 236,
-            "posRank": "WR95",
+            "rank": 240,
+            "posRank": "WR98",
             "tier": 12,
             "delta": null
           }
@@ -4404,7 +4553,7 @@
           "pts": 0,
           "priorYearPts": 83.4,
           "ecr": {
-            "rank": 188,
+            "rank": 189,
             "posRank": "WR75",
             "tier": 11,
             "delta": null
@@ -4423,8 +4572,8 @@
           "pts": 0,
           "priorYearPts": 143.6,
           "ecr": {
-            "rank": 179,
-            "posRank": "WR70",
+            "rank": 180,
+            "posRank": "WR71",
             "tier": 11,
             "delta": null
           }
@@ -4461,8 +4610,8 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 438,
-            "posRank": "TE79",
+            "rank": 440,
+            "posRank": "TE80",
             "tier": 15,
             "delta": -11
           }
@@ -4480,8 +4629,8 @@
           "pts": 0,
           "priorYearPts": 138.9,
           "ecr": {
-            "rank": 363,
-            "posRank": "TE60",
+            "rank": 360,
+            "posRank": "TE59",
             "tier": 14,
             "delta": null
           }
@@ -4490,7 +4639,7 @@
       "salaryCap": 500,
       "salaryAdjustments": 58.24,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-07T19:17:36.870Z",
+      "updatedAt": "2026-08-07T19:43:52.471Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -4649,7 +4798,7 @@
         "scoring": "PPR",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 85,
+        "totalExperts": 86,
         "matched": 23,
         "total": 25
       },
@@ -4667,7 +4816,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-3 RB, 3-4 WR, 1-2 TE",
-      "updatedAt": "2026-08-07T19:17:38.110Z",
+      "updatedAt": "2026-08-07T19:43:52.696Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -4803,21 +4952,580 @@
       "id": "34203",
       "name": "Rug's Playground",
       "type": "draftonly",
-      "provider": null,
-      "tags": [],
-      "rulesUrl": null,
       "leagueName": "Rug's Playground",
       "franchiseId": "0006",
-      "teamName": "Rug's Playground",
-      "season": "2026",
-      "url": "https://www.myfantasyleague.com/2026/home/34203",
-      "players": [],
-      "updatedAt": null,
-      "error": "No roster data returned for this franchise",
-      "standings": [],
-      "standingsError": "No standings data returned for this league",
-      "scoring": null,
-      "scoringError": "No live scoring available yet"
+      "teamName": "Blue Steel",
+      "url": "https://www.myfantasyleague.com/2025/home/34203",
+      "players": [
+        {
+          "id": "16152",
+          "name": "Anthony Richardson",
+          "position": "QB",
+          "team": "IND",
+          "bye": "13",
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null,
+          "injuryStatus": null,
+          "pts": 2.26,
+          "priorYearPts": 163.46,
+          "ecr": {
+            "rank": 372,
+            "posRank": "QB41",
+            "tier": 14,
+            "delta": null
+          }
+        },
+        {
+          "id": "16580",
+          "name": "Drake Maye",
+          "position": "QB",
+          "team": "NEP",
+          "bye": "11",
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null,
+          "injuryStatus": null,
+          "pts": 336.22,
+          "priorYearPts": 177.14,
+          "ecr": {
+            "rank": 39,
+            "posRank": "QB3",
+            "tier": 5,
+            "delta": null
+          }
+        },
+        {
+          "id": "16584",
+          "name": "J.J. McCarthy",
+          "position": "QB",
+          "team": "MIN",
+          "bye": "6",
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null,
+          "injuryStatus": null,
+          "pts": 117.4,
+          "priorYearPts": 0,
+          "ecr": {
+            "rank": 334,
+            "posRank": "QB36",
+            "tier": 13,
+            "delta": null
+          }
+        },
+        {
+          "id": "13116",
+          "name": "Patrick Mahomes",
+          "position": "QB",
+          "team": "KCC",
+          "bye": "5",
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null,
+          "injuryStatus": "Q",
+          "pts": 286.68,
+          "priorYearPts": 283.02,
+          "ecr": {
+            "rank": 101,
+            "posRank": "QB14",
+            "tier": 8,
+            "delta": null
+          }
+        },
+        {
+          "id": "13132",
+          "name": "Alvin Kamara",
+          "position": "RB",
+          "team": "NOS",
+          "bye": "8",
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null,
+          "injuryStatus": null,
+          "pts": 100.7,
+          "priorYearPts": 265.3,
+          "ecr": {
+            "rank": 139,
+            "posRank": "RB47",
+            "tier": 9,
+            "delta": null
+          }
+        },
+        {
+          "id": "16596",
+          "name": "Braelon Allen",
+          "position": "RB",
+          "team": "NYJ",
+          "bye": "13",
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null,
+          "injuryStatus": null,
+          "pts": 15.3,
+          "priorYearPts": 80.9,
+          "ecr": {
+            "rank": 171,
+            "posRank": "RB55",
+            "tier": 10,
+            "delta": null
+          }
+        },
+        {
+          "id": "16598",
+          "name": "Bucky Irving",
+          "position": "RB",
+          "team": "TBB",
+          "bye": "10",
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null,
+          "injuryStatus": null,
+          "pts": 127.7,
+          "priorYearPts": 228.4,
+          "ecr": {
+            "rank": 59,
+            "posRank": "RB20",
+            "tier": 6,
+            "delta": null
+          }
+        },
+        {
+          "id": "15972",
+          "name": "Jordan Mason",
+          "position": "RB",
+          "team": "MIN",
+          "bye": "6",
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null,
+          "injuryStatus": null,
+          "pts": 119.5,
+          "priorYearPts": 115,
+          "ecr": {
+            "rank": 125,
+            "posRank": "RB41",
+            "tier": 8,
+            "delta": null
+          }
+        },
+        {
+          "id": "17043",
+          "name": "TreVeyon Henderson",
+          "position": "RB",
+          "team": "NEP",
+          "bye": "11",
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null,
+          "injuryStatus": null,
+          "pts": 188.9,
+          "priorYearPts": 0,
+          "ecr": {
+            "rank": 63,
+            "posRank": "RB24",
+            "tier": 6,
+            "delta": null
+          }
+        },
+        {
+          "id": "16191",
+          "name": "Cedric Tillman",
+          "position": "WR",
+          "team": "CLE",
+          "bye": "11",
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null,
+          "injuryStatus": null,
+          "pts": 56.7,
+          "priorYearPts": 80.9,
+          "ecr": {
+            "rank": 324,
+            "posRank": "WR113",
+            "tier": 13,
+            "delta": null
+          }
+        },
+        {
+          "id": "14832",
+          "name": "CeeDee Lamb",
+          "position": "WR",
+          "team": "DAL",
+          "bye": "14",
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null,
+          "injuryStatus": null,
+          "pts": 199.5,
+          "priorYearPts": 263.4,
+          "ecr": {
+            "rank": 8,
+            "posRank": "WR5",
+            "tier": 2,
+            "delta": null
+          }
+        },
+        {
+          "id": "13633",
+          "name": "Christian Kirk",
+          "position": "WR",
+          "team": "SFO",
+          "bye": "8",
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null,
+          "injuryStatus": "Q",
+          "pts": 57.2,
+          "priorYearPts": 71,
+          "ecr": {
+            "rank": 259,
+            "posRank": "WR93",
+            "tier": 12,
+            "delta": null
+          }
+        },
+        {
+          "id": "14127",
+          "name": "Jakobi Meyers",
+          "position": "WR",
+          "team": "JAC",
+          "bye": "7",
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null,
+          "injuryStatus": null,
+          "pts": 166.4,
+          "priorYearPts": 190.7,
+          "ecr": {
+            "rank": 96,
+            "posRank": "WR43",
+            "tier": 7,
+            "delta": null
+          }
+        },
+        {
+          "id": "14860",
+          "name": "Jauan Jennings",
+          "position": "WR",
+          "team": "MIN",
+          "bye": "6",
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null,
+          "injuryStatus": null,
+          "pts": 165.8,
+          "priorYearPts": 198.3,
+          "ecr": {
+            "rank": 149,
+            "posRank": "WR56",
+            "tier": 9,
+            "delta": null
+          }
+        },
+        {
+          "id": "16186",
+          "name": "Jordan Addison",
+          "position": "WR",
+          "team": "MIN",
+          "bye": "6",
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null,
+          "injuryStatus": "Q",
+          "pts": 133.3,
+          "priorYearPts": 211.5,
+          "ecr": {
+            "rank": 107,
+            "posRank": "WR46",
+            "tier": 8,
+            "delta": null
+          }
+        },
+        {
+          "id": "14836",
+          "name": "Justin Jefferson",
+          "position": "WR",
+          "team": "MIN",
+          "bye": "6",
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null,
+          "injuryStatus": null,
+          "pts": 183.1,
+          "priorYearPts": 309.08,
+          "ecr": {
+            "rank": 9,
+            "posRank": "WR6",
+            "tier": 2,
+            "delta": null
+          }
+        },
+        {
+          "id": "16190",
+          "name": "Zay Flowers",
+          "position": "WR",
+          "team": "BAL",
+          "bye": "13",
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null,
+          "injuryStatus": null,
+          "pts": 213.5,
+          "priorYearPts": 206.7,
+          "ecr": {
+            "rank": 27,
+            "posRank": "WR14",
+            "tier": 4,
+            "delta": null
+          }
+        },
+        {
+          "id": "17106",
+          "name": "Mason Taylor",
+          "position": "TE",
+          "team": "NYJ",
+          "bye": "13",
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null,
+          "injuryStatus": null,
+          "pts": 88.9,
+          "priorYearPts": 0,
+          "ecr": {
+            "rank": 268,
+            "posRank": "TE34",
+            "tier": 12,
+            "delta": null
+          }
+        },
+        {
+          "id": "14138",
+          "name": "T.J. Hockenson",
+          "position": "TE",
+          "team": "MIN",
+          "bye": "6",
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null,
+          "injuryStatus": null,
+          "pts": 112.8,
+          "priorYearPts": 83.6,
+          "ecr": {
+            "rank": 174,
+            "posRank": "TE22",
+            "tier": 10,
+            "delta": null
+          }
+        },
+        {
+          "id": "16222",
+          "name": "Tucker Kraft",
+          "position": "TE",
+          "team": "GBP",
+          "bye": "11",
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null,
+          "injuryStatus": "Q",
+          "pts": 117.2,
+          "priorYearPts": 155.7,
+          "ecr": {
+            "rank": 70,
+            "posRank": "TE6",
+            "tier": 6,
+            "delta": null
+          }
+        }
+      ],
+      "salaryCap": null,
+      "salaryAdjustments": null,
+      "startingLineup": "1-2 QB, 2-3 RB, 3-4 WR, 1-2 TE",
+      "updatedAt": "2026-08-07T19:43:54.430Z",
+      "error": null,
+      "tags": [],
+      "provider": null,
+      "rulesUrl": null,
+      "season": "2025",
+      "standings": [
+        {
+          "franchiseId": "0004",
+          "teamName": "Newbie's Team",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "2653.60",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0003",
+          "teamName": "My Team Has Hops",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "2442.44",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0002",
+          "teamName": "Championship Brewing Company",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "2391.60",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0005",
+          "teamName": "Michaelob Golden Draft",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "2358.58",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0009",
+          "teamName": "Mack Bayer",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "2347.84",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0001",
+          "teamName": "Bad News Beers",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "2322.76",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0010",
+          "teamName": "Bock Bowers",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "2306.52",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0007",
+          "teamName": "Pivo Power",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "2174.16",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0006",
+          "teamName": "Blue Steel",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "2140.34",
+          "pointsAgainst": "0.00",
+          "isMe": true
+        },
+        {
+          "franchiseId": "0008",
+          "teamName": "Beer Goggles!!!",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "2136.40",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        }
+      ],
+      "standingsError": null,
+      "scoring": {
+        "week": "17",
+        "teams": [
+          {
+            "franchiseId": "0001",
+            "teamName": "Bad News Beers",
+            "score": "172.08",
+            "isMe": false
+          },
+          {
+            "franchiseId": "0003",
+            "teamName": "My Team Has Hops",
+            "score": "159.78",
+            "isMe": false
+          },
+          {
+            "franchiseId": "0005",
+            "teamName": "Michaelob Golden Draft",
+            "score": "146.42",
+            "isMe": false
+          },
+          {
+            "franchiseId": "0002",
+            "teamName": "Championship Brewing Company",
+            "score": "132.20",
+            "isMe": false
+          },
+          {
+            "franchiseId": "0008",
+            "teamName": "Beer Goggles!!!",
+            "score": "123.94",
+            "isMe": false
+          },
+          {
+            "franchiseId": "0004",
+            "teamName": "Newbie's Team",
+            "score": "116.38",
+            "isMe": false
+          },
+          {
+            "franchiseId": "0010",
+            "teamName": "Bock Bowers",
+            "score": "110.10",
+            "isMe": false
+          },
+          {
+            "franchiseId": "0007",
+            "teamName": "Pivo Power",
+            "score": "101.90",
+            "isMe": false
+          },
+          {
+            "franchiseId": "0009",
+            "teamName": "Mack Bayer",
+            "score": "100.74",
+            "isMe": false
+          },
+          {
+            "franchiseId": "0006",
+            "teamName": "Blue Steel",
+            "score": "96.24",
+            "isMe": true
+          }
+        ]
+      },
+      "scoringError": null,
+      "rankings": {
+        "type": "DRAFT",
+        "scoring": "PPR",
+        "position": "ALL",
+        "lastUpdated": "8/07",
+        "totalExperts": 89,
+        "matched": 20,
+        "total": 20
+      },
+      "rankingsError": null
     },
     {
       "id": "72911",
@@ -4898,7 +5606,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 185,
+            "rank": 184,
             "posRank": "QB32",
             "tier": 11,
             "delta": null
@@ -5050,7 +5758,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 56,
+            "rank": 55,
             "posRank": "WR20",
             "tier": 6,
             "delta": null
@@ -5168,7 +5876,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-07T19:17:39.678Z",
+      "updatedAt": "2026-08-07T19:43:54.884Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -5286,7 +5994,7 @@
         "scoring": "PPR",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 85,
+        "totalExperts": 86,
         "matched": 17,
         "total": 18
       },
@@ -5352,7 +6060,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 185,
+            "rank": 184,
             "posRank": "QB32",
             "tier": 11,
             "delta": null
@@ -5409,7 +6117,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 189,
+            "rank": 188,
             "posRank": "RB59",
             "tier": 11,
             "delta": null
@@ -5504,8 +6212,8 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 236,
-            "posRank": "WR95",
+            "rank": 240,
+            "posRank": "WR98",
             "tier": 12,
             "delta": null
           }
@@ -5647,7 +6355,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-07T19:17:41.116Z",
+      "updatedAt": "2026-08-07T19:43:55.180Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -5779,13 +6487,13 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet",
+      "scoringError": "MFL request failed (429): /export?TYPE=league&L=54766&JSON=1 (year 2026)",
       "rankings": {
         "type": "DRAFT",
         "scoring": "PPR",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 85,
+        "totalExperts": 86,
         "matched": 18,
         "total": 18
       },
@@ -5927,7 +6635,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 91,
+            "rank": 92,
             "posRank": "RB27",
             "tier": 8,
             "delta": null
@@ -6003,7 +6711,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 62,
+            "rank": 64,
             "posRank": "RB16",
             "tier": 6,
             "delta": null
@@ -6098,8 +6806,8 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 236,
-            "posRank": "WR95",
+            "rank": 240,
+            "posRank": "WR98",
             "tier": 12,
             "delta": null
           }
@@ -6184,7 +6892,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "0-2 QB, 0-8 RB, 0-8 WR, 0-8 TE",
-      "updatedAt": "2026-08-07T19:17:42.101Z",
+      "updatedAt": "2026-08-07T19:43:55.517Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -6303,7 +7011,7 @@
         "scoring": "PPR",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 85,
+        "totalExperts": 86,
         "matched": 20,
         "total": 20
       },
@@ -6702,7 +7410,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "0-2 QB, 0-8 RB, 0-8 WR, 0-8 TE",
-      "updatedAt": "2026-08-07T19:17:43.224Z",
+      "updatedAt": "2026-08-07T19:43:55.822Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -6831,7 +7539,7 @@
         "scoring": "PPR",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 85,
+        "totalExperts": 86,
         "matched": 20,
         "total": 20
       },
@@ -7192,7 +7900,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-07T19:17:44.523Z",
+      "updatedAt": "2026-08-07T19:43:56.161Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -7320,7 +8028,7 @@
         "scoring": "PPR",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 85,
+        "totalExperts": 86,
         "matched": 18,
         "total": 18
       },
@@ -7358,7 +8066,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-07T19:17:45.614Z",
+      "updatedAt": "2026-08-07T19:43:56.585Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -7497,7 +8205,7 @@
         "scoring": "PPR",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 85,
+        "totalExperts": 86,
         "matched": 1,
         "total": 1
       },
@@ -7602,7 +8310,7 @@
           "status": "ROSTER",
           "injuryStatus": "Q",
           "ecr": {
-            "rank": 185,
+            "rank": 184,
             "posRank": "QB32",
             "tier": 11,
             "delta": null
@@ -7650,7 +8358,7 @@
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
-            "rank": 200,
+            "rank": 201,
             "posRank": "RB62",
             "tier": 11,
             "delta": null
@@ -7666,7 +8374,7 @@
           "status": "ROSTER",
           "injuryStatus": "Q",
           "ecr": {
-            "rank": 62,
+            "rank": 64,
             "posRank": "RB16",
             "tier": 6,
             "delta": null
@@ -7778,8 +8486,8 @@
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
-            "rank": 237,
-            "posRank": "WR96",
+            "rank": 236,
+            "posRank": "WR95",
             "tier": 12,
             "delta": -10
           }
@@ -7833,7 +8541,7 @@
           }
         }
       ],
-      "updatedAt": "2026-08-07T19:17:45.782Z",
+      "updatedAt": "2026-08-07T19:43:56.670Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -8062,7 +8770,7 @@
         "scoring": "PPR",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 85,
+        "totalExperts": 86,
         "matched": 20,
         "total": 20
       },
@@ -8077,7 +8785,7 @@
       "teamName": "Big Dart Energy",
       "url": "https://fantasy.espn.com/football/team?leagueId=1966972&teamId=10",
       "players": [],
-      "updatedAt": "2026-08-07T19:17:45.870Z",
+      "updatedAt": "2026-08-07T19:43:56.766Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -8262,7 +8970,7 @@
       "teamName": "Jeffer Justinson",
       "url": "https://fantasy.espn.com/football/team?leagueId=421871710&teamId=5",
       "players": [],
-      "updatedAt": "2026-08-07T19:17:45.934Z",
+      "updatedAt": "2026-08-07T19:43:56.868Z",
       "error": null,
       "tags": [],
       "provider": "espn",
