@@ -34,6 +34,7 @@ import {
   fetchSleeperScoring,
   mflLeagueExists,
   espnLeagueExists,
+  detectScoringFormat,
 } from './lib/providers.mjs';
 import { attachRankings, fantasyProsApiKey, nflSeasonPhase } from './lib/fantasypros.mjs';
 
@@ -217,6 +218,31 @@ async function main() {
     console.error(`Failed to fetch NFL injury report: ${err.message}`);
   }
 
+  // Which FantasyPros list the ECR column is drawn from, read from each league's
+  // own scoring settings rather than assumed. Detected once per league per
+  // season, not every sync: scoring rules don't change mid-year, and this is one
+  // more request per league on a run that already brushes MFL's rate limit.
+  // A league that errored last time is re-checked, same reasoning as the season.
+  for (const league of LEAGUES) {
+    const prev = previousById.get(league.id);
+    if (prev?.scoringDetected && String(prev.season) === String(league.season) && !prev.error) {
+      league.detectedScoring = prev.scoringDetected;
+      continue;
+    }
+    try {
+      const { format, points } = await detectScoringFormat(league, cookie);
+      league.detectedScoring = format;
+      console.log(format
+        ? `${league.name}: scoring ${format} (${points} per reception)`
+        : `${league.name}: ${points} per reception doesn't map onto PPR/HALF/STD — leaving scoring alone`);
+    } catch (err) {
+      // Never fatal, and never worse than before: without a detected format the
+      // ranking spec falls back exactly as it always did.
+      league.detectedScoring = prev?.scoringDetected || null;
+      console.error(`Failed to detect scoring for ${league.name}: ${err.message}`);
+    }
+  }
+
   const leagues = [];
   for (const league of LEAGUES) {
     if (!league.franchiseId) {
@@ -232,6 +258,7 @@ async function main() {
         franchiseId: null,
         teamName: league.name,
         season: league.season,
+        scoringDetected: league.detectedScoring || null,
         url: leagueUrl(league),
         players: [],
         updatedAt: null,
@@ -251,6 +278,7 @@ async function main() {
       // Recorded per league because it's what the next sync reads to decide
       // whether this league has already rolled over — see resolveSeason.
       result.season = league.season;
+      result.scoringDetected = league.detectedScoring || null;
       leagues.push(result);
       console.log(`Fetched ${league.name}: ${result.players.length} players`);
     } catch (err) {
@@ -267,6 +295,7 @@ async function main() {
         franchiseId: league.franchiseId,
         teamName: prev?.teamName || league.name,
         season: league.season,
+        scoringDetected: league.detectedScoring || null,
         url: prev?.url || leagueUrl(league),
         players: prev?.players || [],
         updatedAt: prev?.updatedAt || null,

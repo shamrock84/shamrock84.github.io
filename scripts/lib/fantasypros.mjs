@@ -207,7 +207,9 @@ export function rankingSpecForLeague(league, now = new Date()) {
   const isSuperflex = tags.some((t) => /superflex/i.test(String(t)));
   return {
     type: league.rankingType || automaticRankingType(league, now),
-    scoring: league.scoring || 'PPR',
+    // Explicit config wins; otherwise the format detected from the league's
+    // own settings; PPR only as a last resort when detection found nothing.
+    scoring: league.scoring || league.detectedScoring || 'PPR',
     positions: isSuperflex ? ['OP', 'ALL'] : ['ALL'],
   };
 }

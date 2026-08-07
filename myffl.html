@@ -2242,7 +2242,7 @@
 		}
 
 		const ADMIN_RANKINGS = [['', 'Automatic'], ['DYNASTY', 'Dynasty'], ['DRAFT', 'Draft'], ['ROS', 'Rest-of-season'], ['WEEKLY', 'Weekly'], ['ADP', 'ADP']];
-		const ADMIN_SCORING = [['', 'PPR'], ['HALF', 'Half PPR'], ['STD', 'Standard']];
+		const ADMIN_SCORING = [['', 'Automatic'], ['PPR', 'PPR'], ['HALF', 'Half PPR'], ['STD', 'Standard']];
 
 		// Unsaved edits, kept across re-renders (a lineup submission or a
 		// finished sync both call renderGrid) so typing isn't lost. Cleared on
@@ -2441,7 +2441,16 @@
 				// the two can't disagree about what a stored value is called.
 				const bits = [league.id ? `ID ${league.id}` : 'No league ID yet'];
 				if (league.franchiseId) bits.push(`Team ${league.franchiseId}`);
-				bits.push(adminLabelFor(ADMIN_SCORING, league.scoring === 'PPR' ? '' : league.scoring));
+				// Scoring reads from the league's own settings unless pinned, so the
+				// blurb shows what's actually in effect and where it came from —
+				// "Automatic" alone would say nothing about which list is in use.
+				if (league.scoring) {
+					bits.push(adminLabelFor(ADMIN_SCORING, league.scoring));
+				} else if (live?.scoringDetected) {
+					bits.push(`${adminLabelFor(ADMIN_SCORING, live.scoringDetected)} (auto)`);
+				} else {
+					bits.push('Scoring: automatic');
+				}
 				bits.push(`${adminLabelFor(ADMIN_RANKINGS, league.rankingType)} rankings`);
 				if (league.lineupPilot) bits.push('Lineup editor');
 				if (league.rulesUrl) bits.push('Rules link');
@@ -2467,9 +2476,10 @@
 					field('Site', adminSelect(ADMIN_PROVIDERS, league.provider, changed((v) => { league.provider = v || undefined; })));
 					field('Type', adminSelect(ADMIN_TYPES, league.type, changed((v) => { league.type = v; })));
 					field('Rankings', adminSelect(ADMIN_RANKINGS, league.rankingType, changed((v) => { league.rankingType = v || undefined; })));
-					// An explicit "PPR" and an omitted value mean the same thing, so
-					// normalise to blank rather than showing a redundant option.
-					field('Scoring', adminSelect(ADMIN_SCORING, league.scoring === 'PPR' ? '' : league.scoring, changed((v) => { league.scoring = v || undefined; })));
+					// No normalisation: blank means "read it from the league", which
+					// is not the same as pinning PPR. They used to be the same
+					// value and folding them together would now hide the setting.
+					field('Scoring', adminSelect(ADMIN_SCORING, league.scoring, changed((v) => { league.scoring = v || undefined; })));
 					// Free text rather than a dropdown: the useful values are
 					// "whatever this league has rolled over to" and, rarely, one
 					// specific year — not a list anyone can enumerate ahead of
@@ -2604,6 +2614,7 @@
 			for (const line of [
 				'Save goes live at once. New or changed leagues appear on the other tabs after the next sync.',
 				'Type Salary Cap is what adds the Salary and Yrs columns and the cap summary to a league\'s card.',
+				'Scoring on Automatic is read from the league\'s own settings — whatever a reception is worth there. It only picks which FantasyPros list the ECR column uses; it changes no points, standings or lineups.',
 				'Lineups puts a lineup editor on the Rosters tab — MFL submits from here, Sleeper is view-only.',
 				'Season follows each league\'s own rollover — leave it blank and the sync stays on the old season until the new one exists, which is why a league can show a season chip in the spring. Fill it in only to pin one.',
 				// The one setting on this screen that changes without being touched,
