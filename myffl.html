@@ -709,11 +709,32 @@
 			color: var(--muted);
 			margin-top: 0.5rem;
 		}
+		/* Every explanatory line in one block below the buttons: read once, then
+		   ignored, so it shouldn't sit between you and the thing you came to edit.
+		   Ruled off rather than merely spaced, since it follows the Save row and
+		   would otherwise read as a caption for it. */
 		.admin-legend {
 			font-size: 0.75rem;
 			color: var(--muted);
-			line-height: 1.5;
-			margin-top: 0.6rem;
+			line-height: 1.45;
+			margin-top: 1.1rem;
+			padding-top: 0.7rem;
+			border-top: 1px solid var(--border);
+		}
+		.admin-legend h3 {
+			margin: 0 0 0.35rem;
+			font-size: 0.7rem;
+			text-transform: uppercase;
+			letter-spacing: 0.04em;
+			font-weight: 600;
+			color: var(--accent);
+		}
+		.admin-legend ul {
+			margin: 0;
+			padding-left: 1.1rem;
+		}
+		.admin-legend li {
+			margin-bottom: 0.25rem;
 		}
 		/* One collapsible card per league, replacing a thirteen-column table
 		   that only fitted by scrolling sideways — which on a phone scrolled the
@@ -2493,23 +2514,6 @@
 
 			card.appendChild(list);
 
-			card.appendChild(el('div', {
-				class: 'admin-legend',
-				text: 'Type set to Salary Cap is what adds the Salary and Yrs columns and the cap summary to that league’s card. Lineups shows a lineup editor on the Rosters tab — MFL can be submitted from here, Sleeper is view-only. Rankings on Automatic follows the NFL calendar by itself: every league switches to rest-of-season rankings once the season kicks off, then back to dynasty rankings for dynasty leagues and draft rankings everywhere else once the Super Bowl is over. '
-					+ (nflInSeason()
-						? 'The season is underway, so Automatic currently means rest-of-season everywhere. '
-						: 'It is the offseason, so Automatic currently means dynasty or draft. ')
-					+ 'Picking anything else pins that league to that one set year-round.',
-			}));
-
-			// Kept with the legend rather than above the list: both are things you
-			// read once and then stop noticing, so they belong in the same corner of
-			// the card instead of bracketing it.
-			card.appendChild(el('div', {
-				class: 'admin-note',
-				text: 'Changes here go live on the site as soon as you press Save. New or changed leagues show up on the other tabs after the next sync.',
-			}));
-
 			const addBtn = el('button', { type: 'button', class: 'admin-add-btn', text: '+ Add a league' });
 			addBtn.addEventListener('click', () => {
 				// No name: it isn't editable here any more, and the sync fills in
@@ -2540,6 +2544,25 @@
 
 			const problemsEl = el('ul', { class: 'admin-problems hidden' });
 			card.appendChild(problemsEl);
+
+			// Last thing in the card, after the Save row and the validation errors
+			// that answer it. Only the non-obvious columns get a line — anything you
+			// work out by using the control once isn't worth a sentence here.
+			const legend = el('div', { class: 'admin-legend' });
+			legend.appendChild(el('h3', { text: 'Please Note' }));
+			const legendList = el('ul');
+			for (const line of [
+				'Save goes live at once. New or changed leagues appear on the other tabs after the next sync.',
+				'Type Salary Cap is what adds the Salary and Yrs columns and the cap summary to a league\'s card.',
+				'Lineups puts a lineup editor on the Rosters tab — MFL submits from here, Sleeper is view-only.',
+				// The one setting on this screen that changes without being touched,
+				// so it says what it resolves to today as well as what it does.
+				`Rankings on Automatic tracks the NFL calendar: rest-of-season in season, dynasty or draft otherwise (right now: ${nflInSeason() ? 'rest-of-season' : 'dynasty or draft'}). Any other choice pins that league year-round.`,
+			]) {
+				legendList.appendChild(el('li', { text: line }));
+			}
+			legend.appendChild(legendList);
+			card.appendChild(legend);
 
 			revertBtn.addEventListener('click', () => {
 				if (!window.confirm('Throw away every change you\'ve made since the last save?')) return;
