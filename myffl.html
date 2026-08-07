@@ -707,7 +707,7 @@
 		.admin-note {
 			font-size: 0.85rem;
 			color: var(--muted);
-			margin-bottom: 0.75rem;
+			margin-top: 0.5rem;
 		}
 		.admin-legend {
 			font-size: 0.75rem;
@@ -2307,11 +2307,6 @@
 			}
 			if (!adminDraft) adminDraft = JSON.parse(JSON.stringify(leagueConfig.leagues || []));
 
-			card.appendChild(el('div', {
-				class: 'admin-note',
-				text: 'Changes here go live on the site as soon as you press Save. New or changed leagues show up on the other tabs after the next sync.',
-			}));
-
 			// One card per league instead of one row of a thirteen-column table.
 			// Collapsed, a card is a one-line blurb of what the league is;
 			// expanded, its fields wrap into as many columns as there is room
@@ -2505,6 +2500,14 @@
 						? 'The season is underway, so Automatic currently means rest-of-season everywhere. '
 						: 'It is the offseason, so Automatic currently means dynasty or draft. ')
 					+ 'Picking anything else pins that league to that one set year-round.',
+			}));
+
+			// Kept with the legend rather than above the list: both are things you
+			// read once and then stop noticing, so they belong in the same corner of
+			// the card instead of bracketing it.
+			card.appendChild(el('div', {
+				class: 'admin-note',
+				text: 'Changes here go live on the site as soon as you press Save. New or changed leagues show up on the other tabs after the next sync.',
 			}));
 
 			const addBtn = el('button', { type: 'button', class: 'admin-add-btn', text: '+ Add a league' });
