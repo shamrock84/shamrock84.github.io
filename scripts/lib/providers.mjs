@@ -181,10 +181,16 @@ export async function mflGet(path, cookie, year = YEAR, attempt = 1) {
 // actually being asked about.
 //
 // Returns false rather than throwing: "not there yet" is the expected answer
-// for most of the year, not an error. MFL has been observed to signal a
-// missing league both as an HTTP error and as a 200 carrying an <error> body,
-// so both are treated as absence — see .github/workflows/probe-mfl-season.yml,
-// which exists to check that against the real API.
+// for most of the year, not an error.
+//
+// Verified against the real API via .github/workflows/probe-mfl-season.yml
+// (league 26696, seasons 2026 and 2028): a season the league is in returns
+// {encoding, league, version} with league.id and league.name populated; a
+// season it isn't in returns a clean HTTP 404. mflGet retries 429 and nothing
+// else, so that 404 throws immediately rather than burning three round trips —
+// a negative probe costs one fast request. The data.error check below never
+// fired, and is kept only because it costs nothing and fails in the safe
+// direction (a false negative just leaves a league where it already was).
 export async function mflLeagueExists(league, cookie, season) {
   try {
     const data = await mflGet(`/export?TYPE=league&L=${league.id}&JSON=1`, cookie, season);
