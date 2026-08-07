@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-07T21:58:44.265Z",
+  "generatedAt": "2026-08-07T22:19:57.272Z",
   "year": "2026",
   "leagues": [
     {
@@ -623,7 +623,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1 QB, 2-3 RB, 2-3 WR, 1-2 TE, 1 PK, 1 Def",
-      "updatedAt": "2026-08-07T21:58:19.930Z",
+      "updatedAt": "2026-08-07T22:18:50.447Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -1380,7 +1380,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1 QB, 2 RB, 3 WR, 1 TE, 1 PK, 1 Def",
-      "updatedAt": "2026-08-07T21:58:21.053Z",
+      "updatedAt": "2026-08-07T22:18:51.590Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -1492,19 +1492,8 @@
       "standingsError": null,
       "scoring": null,
       "scoringError": "No live scoring available yet",
-      "lineupWeek": "1",
-      "starters": [
-        "14783",
-        "13130",
-        "14802",
-        "13163",
-        "16615",
-        "15282",
-        "16641",
-        "16681",
-        "0518"
-      ],
-      "lineupError": null,
+      "starters": null,
+      "lineupError": "MFL request failed (429): /export?TYPE=weeklyResults&L=25608&W=1&JSON=1 (year 2026)",
       "rankings": {
         "type": "DYNASTY",
         "scoring": "PPR",
@@ -2093,7 +2082,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1 QB, 2 RB, 3 WR, 1 TE, 1 PK, 1 Def",
-      "updatedAt": "2026-08-07T21:58:22.109Z",
+      "updatedAt": "2026-08-07T22:18:53.232Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -2225,19 +2214,8 @@
       "standingsError": null,
       "scoring": null,
       "scoringError": "No live scoring available yet",
-      "lineupWeek": "1",
-      "starters": [
-        "14056",
-        "16167",
-        "13604",
-        "16809",
-        "16190",
-        "14842",
-        "15794",
-        "17222",
-        "0512"
-      ],
-      "lineupError": null,
+      "starters": null,
+      "lineupError": "MFL request failed (429): /export?TYPE=weeklyResults&L=23545&W=1&JSON=1 (year 2026)",
       "rankings": {
         "type": "DYNASTY",
         "scoring": "PPR",
@@ -2347,7 +2325,7 @@
           "pts": 0,
           "priorYearPts": 6.6,
           "ecr": {
-            "rank": 266,
+            "rank": 265,
             "posRank": "RB75",
             "tier": 12,
             "delta": null
@@ -2366,8 +2344,8 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 185,
-            "posRank": "RB59",
+            "rank": 182,
+            "posRank": "RB58",
             "tier": 10,
             "delta": null
           }
@@ -2423,7 +2401,7 @@
           "pts": 0,
           "priorYearPts": 145.5,
           "ecr": {
-            "rank": 81,
+            "rank": 82,
             "posRank": "RB28",
             "tier": 7,
             "delta": null
@@ -2613,7 +2591,7 @@
           "pts": 0,
           "priorYearPts": 68.7,
           "ecr": {
-            "rank": 201,
+            "rank": 199,
             "posRank": "WR77",
             "tier": 10,
             "delta": null
@@ -2632,7 +2610,7 @@
           "pts": 0,
           "priorYearPts": 151.1,
           "ecr": {
-            "rank": 20,
+            "rank": 19,
             "posRank": "WR11",
             "tier": 3,
             "delta": null
@@ -2651,7 +2629,7 @@
           "pts": 0,
           "priorYearPts": 179.1,
           "ecr": {
-            "rank": 188,
+            "rank": 187,
             "posRank": "WR72",
             "tier": 10,
             "delta": null
@@ -2670,9 +2648,9 @@
           "pts": 0,
           "priorYearPts": 143,
           "ecr": {
-            "rank": 37,
+            "rank": 36,
             "posRank": "TE3",
-            "tier": 5,
+            "tier": 4,
             "delta": null
           }
         },
@@ -2689,7 +2667,7 @@
           "pts": 0,
           "priorYearPts": 129.8,
           "ecr": {
-            "rank": 276,
+            "rank": 274,
             "posRank": "TE35",
             "tier": 12,
             "delta": null
@@ -2718,7 +2696,7 @@
       "salaryCap": 550,
       "salaryAdjustments": 3.2699999999999996,
       "startingLineup": "1 QB, 2-3 RB, 3-4 WR, 1-2 TE",
-      "updatedAt": "2026-08-07T21:58:22.977Z",
+      "updatedAt": "2026-08-07T22:18:54.527Z",
       "error": null,
       "tags": [
         "Best Ball"
@@ -3389,7 +3367,7 @@
       "salaryCap": 500,
       "salaryAdjustments": 4.68,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-07T21:58:23.930Z",
+      "updatedAt": "2026-08-07T22:18:56.226Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -4023,7 +4001,7 @@
       "salaryCap": 500,
       "salaryAdjustments": 10.09,
       "startingLineup": "1-2 QB, 2-4 RB, 2-4 WR, 1-3 TE",
-      "updatedAt": "2026-08-07T21:58:24.948Z",
+      "updatedAt": "2026-08-07T22:18:58.010Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -4651,7 +4629,7 @@
       "salaryCap": 500,
       "salaryAdjustments": 58.24,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-07T21:58:26.336Z",
+      "updatedAt": "2026-08-07T22:18:59.859Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -4829,7 +4807,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-3 RB, 3-4 WR, 1-2 TE",
-      "updatedAt": "2026-08-07T21:58:26.668Z",
+      "updatedAt": "2026-08-07T22:19:00.284Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -4984,7 +4962,7 @@
           "pts": 2.26,
           "priorYearPts": 163.46,
           "ecr": {
-            "rank": 374,
+            "rank": 376,
             "posRank": "QB41",
             "tier": 14,
             "delta": null
@@ -5003,7 +4981,7 @@
           "pts": 336.22,
           "priorYearPts": 177.14,
           "ecr": {
-            "rank": 40,
+            "rank": 39,
             "posRank": "QB3",
             "tier": 5,
             "delta": null
@@ -5041,7 +5019,7 @@
           "pts": 286.68,
           "priorYearPts": 283.02,
           "ecr": {
-            "rank": 101,
+            "rank": 100,
             "posRank": "QB14",
             "tier": 7,
             "delta": null
@@ -5326,7 +5304,7 @@
           "pts": 112.8,
           "priorYearPts": 83.6,
           "ecr": {
-            "rank": 174,
+            "rank": 172,
             "posRank": "TE22",
             "tier": 10,
             "delta": null
@@ -5355,7 +5333,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-3 RB, 3-4 WR, 1-2 TE",
-      "updatedAt": "2026-08-07T21:58:27.544Z",
+      "updatedAt": "2026-08-07T22:19:01.533Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -5891,13 +5869,13 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-07T21:58:28.276Z",
+      "updatedAt": "2026-08-07T22:19:02.610Z",
       "error": null,
       "tags": [
         "Superflex"
       ],
       "provider": null,
-      "rulesUrl": null,
+      "rulesUrl": "https://www45.myfantasyleague.com/2026/options?L=72911&O=09",
       "season": "2026",
       "scoringDetected": "HALF",
       "standings": [
@@ -6371,13 +6349,13 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-07T21:58:29.113Z",
+      "updatedAt": "2026-08-07T22:19:03.454Z",
       "error": null,
       "tags": [
         "Superflex"
       ],
       "provider": null,
-      "rulesUrl": null,
+      "rulesUrl": "https://www45.myfantasyleague.com/2026/options?L=54766&O=09",
       "season": "2026",
       "scoringDetected": "HALF",
       "standings": [
@@ -6909,7 +6887,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "0-2 QB, 0-8 RB, 0-8 WR, 0-8 TE",
-      "updatedAt": "2026-08-07T21:58:29.876Z",
+      "updatedAt": "2026-08-07T22:19:04.483Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -7428,7 +7406,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "0-2 QB, 0-8 RB, 0-8 WR, 0-8 TE",
-      "updatedAt": "2026-08-07T21:58:30.641Z",
+      "updatedAt": "2026-08-07T22:19:05.547Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -7563,6 +7541,148 @@
         "total": 20
       },
       "rankingsError": null
+    },
+    {
+      "id": "26222",
+      "type": "draftonly",
+      "provider": null,
+      "tags": [
+        "Superflex",
+        "Terminator"
+      ],
+      "rulesUrl": "https://www45.myfantasyleague.com/2026/options?L=26222&O=09",
+      "franchiseId": "003",
+      "season": "2026",
+      "scoringDetected": "HALF",
+      "url": "https://www.myfantasyleague.com/2026/home/26222",
+      "players": [],
+      "updatedAt": null,
+      "error": "No roster data returned for this franchise",
+      "standings": [
+        {
+          "franchiseId": "0001",
+          "teamName": "DeepSeek and Destroy",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0002",
+          "teamName": "Llama-inator",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0003",
+          "teamName": "AIQ to the MOON",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0004",
+          "teamName": "GPT-800",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0005",
+          "teamName": "Copilot Judgment Day",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0006",
+          "teamName": "Your Franchise Has Been Terminated",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0007",
+          "teamName": "Gemini T-1000",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0008",
+          "teamName": "Groot  ETF",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0009",
+          "teamName": "Hasta La Vista, GPT",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0010",
+          "teamName": "Nvidia's Nightmare",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0011",
+          "teamName": "Sam's Skynet",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        },
+        {
+          "franchiseId": "0012",
+          "teamName": "Mythos & Machines",
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": "0.00",
+          "pointsAgainst": "0.00",
+          "isMe": false
+        }
+      ],
+      "standingsError": null,
+      "scoring": null,
+      "scoringError": "No live scoring available yet"
     },
     {
       "id": "30196",
@@ -7919,13 +8039,13 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-07T21:58:31.324Z",
+      "updatedAt": "2026-08-07T22:19:07.005Z",
       "error": null,
       "tags": [
         "Superflex"
       ],
       "provider": null,
-      "rulesUrl": null,
+      "rulesUrl": "https://www45.myfantasyleague.com/2026/options?L=30196&O=09",
       "season": "2026",
       "scoringDetected": "HALF",
       "standings": [
@@ -8042,7 +8162,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet",
+      "scoringError": "MFL request failed (429): /export?TYPE=league&L=30196&JSON=1 (year 2026)",
       "rankings": {
         "type": "DRAFT",
         "scoring": "HALF",
@@ -8384,7 +8504,7 @@
           }
         }
       ],
-      "updatedAt": "2026-08-07T21:58:31.446Z",
+      "updatedAt": "2026-08-07T22:19:07.175Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -8629,7 +8749,7 @@
       "teamName": "Big Dart Energy",
       "url": "https://fantasy.espn.com/football/team?leagueId=1966972&teamId=10",
       "players": [],
-      "updatedAt": "2026-08-07T21:58:31.586Z",
+      "updatedAt": "2026-08-07T22:19:07.371Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -8815,7 +8935,7 @@
       "teamName": "Jeffer Justinson",
       "url": "https://fantasy.espn.com/football/team?leagueId=421871710&teamId=5",
       "players": [],
-      "updatedAt": "2026-08-07T21:58:31.677Z",
+      "updatedAt": "2026-08-07T22:19:07.451Z",
       "error": null,
       "tags": [],
       "provider": "espn",
