@@ -783,9 +783,16 @@
 			padding: 0.1rem 0;
 			cursor: pointer;
 		}
+		/* Sized up from 0.7rem, where next to a bold title it read as a bullet
+		   rather than a control you can press. Fixed width and centred because ▸
+		   and ▾ have different advance widths, which would otherwise shift the
+		   league name sideways every time a card opened. */
 		.admin-caret {
 			color: var(--accent);
-			font-size: 0.7rem;
+			font-size: 1.15rem;
+			line-height: 1;
+			width: 0.95rem;
+			text-align: center;
 			flex-shrink: 0;
 		}
 		.admin-league-name {
