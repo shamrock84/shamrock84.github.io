@@ -1,0 +1,58 @@
+name: Probe League Season (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here, the
+# same rule the other two manual workflows follow. This exists to answer one
+# question against the real APIs: what does a provider return for a league in a
+# season that doesn't exist yet?
+#
+# That answer is what resolveSeason (scripts/fetch-rosters.mjs) relies on to
+# decide whether a league has rolled over, and it can't be checked from a
+# sandbox — myfantasyleague.com, ESPN, and Sleeper are all unreachable there.
+# Read-only: TYPE=league and view=mSettings exports, nothing is written.
+#
+# Sleeper isn't covered because there's nothing to ask: its league endpoint has
+# no season in it at all, and the old league id keeps answering forever.
+#
+# The run fails (red) if the control season comes back false or an impossible
+# season comes back true, so a bad result can't hide in a green log.
+on:
+  workflow_dispatch:
+    inputs:
+      mfl_league_id:
+        description: 'MFL league ID to probe (blank to skip MFL)'
+        required: false
+        default: '26696'
+      espn_league_id:
+        description: 'ESPN league ID to probe (blank to skip ESPN)'
+        required: false
+        default: '1966972'
+      seasons:
+        description: 'Comma-separated. First is the control season the league IS in; the rest are seasons it cannot be.'
+        required: true
+        default: '2026,2028'
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Ask each provider about this league in each season
+        env:
+          MFL_USERNAME: ${{ secrets.MFL_USERNAME }}
+          MFL_PASSWORD: ${{ secrets.MFL_PASSWORD }}
+          # ESPN reads are cookie-authenticated. Without these every ESPN answer
+          # is false regardless of season, which the script calls out rather
+          # than letting it pass as a tidy set of negatives.
+          ESPN_S2: ${{ secrets.ESPN_S2 }}
+          ESPN_SWID: ${{ secrets.ESPN_SWID }}
+          PROBE_MFL_LEAGUE_ID: ${{ inputs.mfl_league_id }}
+          PROBE_ESPN_LEAGUE_ID: ${{ inputs.espn_league_id }}
+          PROBE_SEASONS: ${{ inputs.seasons }}
+        run: node scripts/probe-league-season.mjs
