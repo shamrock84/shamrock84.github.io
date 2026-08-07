@@ -324,7 +324,10 @@
 			letter-spacing: 0.03em;
 			white-space: nowrap;
 		}
-		.badge-provider {
+		/* Gold is for the two facts about a league that aren't about the league
+		   itself — where it's hosted and which season is being shown. Both sit
+		   ahead of the purple chips, which describe the league's own format. */
+		.badge-provider, .badge-season {
 			background: var(--gold-chip-bg);
 			color: var(--gold-chip-text);
 		}
@@ -1697,14 +1700,32 @@
 		// instead of blending in with Superflex/Best Ball/etc. `extraLabels`
 		// (type, Salary Cap, tags) is Rosters-only — Standings/Scoring just
 		// get the provider badge on its own.
+		// Which season this card is showing. Normally the same for every league,
+		// but through the spring they roll over one at a time, so a card can
+		// legitimately be a season behind the rest — and a stale roster renders
+		// exactly like a fresh one. Stating it outright on every card is what
+		// makes the odd one out obvious without having to know to look.
+		function seasonBadgeLabel(league) {
+			const season = league.season ?? pageData?.year;
+			return season == null ? null : String(season);
+		}
+
 		function buildCardHead(league, extraLabels = []) {
 			const cardHead = el('div', { class: 'card-head' });
 			cardHead.appendChild(buildLeagueHeading(league));
-			const labels = [providerBadgeLabel(league), ...extraLabels];
+			const season = seasonBadgeLabel(league);
+			// Gold leads: where it's hosted, then which season. The purple chips
+			// after them describe the league's own format.
+			const labels = [
+				{ text: providerBadgeLabel(league), gold: true },
+				...(season ? [{ text: season, gold: true, season: true }] : []),
+				...extraLabels.map((text) => ({ text })),
+			];
 			const badgesEl = el('div', { class: `badges${labels.length > 2 ? ' badges-wrap' : ''}` });
-			labels.forEach((label, i) => {
-				badgesEl.appendChild(el('span', { class: `badge${i === 0 ? ' badge-provider' : ''}`, text: label }));
-			});
+			for (const label of labels) {
+				const cls = label.season ? 'badge badge-season' : label.gold ? 'badge badge-provider' : 'badge';
+				badgesEl.appendChild(el('span', { class: cls, text: label.text }));
+			}
 			cardHead.appendChild(badgesEl);
 			return cardHead;
 		}
@@ -2380,18 +2401,24 @@
 				// Same chips as a Rosters card, built from the draft rather than
 				// from synced data so an unsaved change to Site or Type shows up
 				// here immediately.
-				const chips = [providerBadgeLabel(league), LEAGUE_TYPE_LABELS[league.type] || league.type || '?', ...(league.tags || [])];
-				// Leagues roll over to a new season on their own commissioner's
-				// schedule, so through the spring some sit a season behind the
-				// rest. That's expected and self-correcting, but it has to be
-				// visible — a stale roster renders exactly like a fresh one.
-				// Nothing shows once everything has caught up.
-				const onSeason = live?.season ? String(live.season) : null;
-				if (onSeason && pageData?.year && onSeason !== String(pageData.year)) {
-					chips.push(`${onSeason} season`);
-				}
+				// Same chips and the same order as a Rosters card: the two gold
+				// ones first, then the format. The season is the synced one, not
+				// the config pin — what the league is actually on, which through
+				// the spring can be a season behind the others. Shown always
+				// rather than only when it differs: eighteen cards reading 2027
+				// and one reading 2026 is more obvious than a chip that appears
+				// only if you knew to expect it.
+				const chips = [
+					{ text: providerBadgeLabel(league), gold: true },
+					...(live?.season ? [{ text: String(live.season), season: true }] : []),
+					{ text: LEAGUE_TYPE_LABELS[league.type] || league.type || '?' },
+					...(league.tags || []).map((text) => ({ text })),
+				];
 				const badges = el('div', { class: 'admin-badges' });
-				chips.forEach((text, n) => badges.appendChild(el('span', { class: `badge${n === 0 ? ' badge-provider' : ''}`, text })));
+				for (const chip of chips) {
+					const cls = chip.season ? 'badge badge-season' : chip.gold ? 'badge badge-provider' : 'badge';
+					badges.appendChild(el('span', { class: cls, text: chip.text }));
+				}
 				head.appendChild(badges);
 
 				// Touch devices don't fire HTML5 drag events at all, so these are
