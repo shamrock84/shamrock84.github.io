@@ -163,7 +163,11 @@ export async function mflGet(path, cookie, year = YEAR, attempt = 1) {
     return mflGet(path, cookie, year, attempt + 1);
   }
   if (!res.ok) {
-    throw new Error(`MFL request failed (${res.status}): ${path} (year ${year})`);
+    // The status rides on the error because one caller has to tell a definitive
+    // 404 apart from a transient failure: see mflLeagueExists.
+    const err = new Error(`MFL request failed (${res.status}): ${path} (year ${year})`);
+    err.status = res.status;
+    throw err;
   }
   return res.json();
 }
@@ -194,10 +198,19 @@ export async function mflGet(path, cookie, year = YEAR, attempt = 1) {
 export async function mflLeagueExists(league, cookie, season) {
   try {
     const data = await mflGet(`/export?TYPE=league&L=${league.id}&JSON=1`, cookie, season);
+    // A 200 is not the same as a league. Confirmed in the wild against a league
+    // whose new season hadn't been set up: the request answers fine and carries
+    // no usable league record, which is why this checks the body rather than
+    // trusting the status.
     if (data?.error) return false;
     return Boolean(data?.league?.id || data?.league?.name);
-  } catch {
-    return false;
+  } catch (err) {
+    // 404 is MFL's definitive "no such league-season". Anything else — a 429
+    // from the probe burst, a network blip — means we simply don't know, and
+    // null says so. That distinction matters because the caller acts on false
+    // by walking a league back a season; it must never do that on a hiccup.
+    if (err.status === 404) return false;
+    return null;
   }
 }
 
@@ -225,8 +238,13 @@ export async function espnLeagueExists(league, season) {
   try {
     const data = await espnGet({ ...league, season }, 'view=mSettings');
     return Boolean(data?.id || data?.settings);
-  } catch {
-    return false;
+  } catch (err) {
+    // Same tri-state as MFL, and it earns its keep here: a 401 from expired
+    // espn_s2/SWID now reads as "don't know" rather than "the season is gone",
+    // so stale cookies can't walk an ESPN league backwards. Missing cookies
+    // throw before any request and carry no status, which lands here too.
+    if (err.status === 404) return false;
+    return null;
   }
 }
 
@@ -651,7 +669,9 @@ export async function espnGet(league, viewParams) {
 
   const bodyText = await res.text();
   if (!res.ok) {
-    throw new Error(`ESPN request failed (${res.status}) at ${url}: ${bodyText.slice(0, 300)}`);
+    const err = new Error(`ESPN request failed (${res.status}) at ${url}: ${bodyText.slice(0, 300)}`);
+    err.status = res.status;
+    throw err;
   }
   try {
     return JSON.parse(bodyText);
