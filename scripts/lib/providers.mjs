@@ -273,32 +273,48 @@ export function receptionPointsToFormat(points) {
 const mflText = (v) => (v && typeof v === 'object' ? v.$t : v);
 const asArray = (v) => (Array.isArray(v) ? v : v == null ? [] : [v]);
 
+// The positions a reception rate has to describe. QB and PK can technically be
+// credited a catch and Def never is, so including them would let a rule that
+// covers nobody relevant outvote the one that covers everybody.
+const RECEIVING_POSITIONS = ['RB', 'WR', 'TE'];
+
 // TYPE=rules, verified against the real API (probe-league-scoring.yml):
 //   rules.positionRules[] = { positions: "QB|RB|WR|TE|PK", rule: [ ... ] }
 //   rule[]                = { event: {$t:"CC"}, points: {$t:"*1"}, range: {...} }
 // CC is the catch/reception event. The leading * on points means "per event",
 // which is exactly the per-reception rate wanted here.
 //
-// Rules are scoped to position groups, so a league with a TE premium has more
-// than one CC rule at different rates. The base rate is the one that describes
-// the league, so the most common value wins and ties go to the lowest — a
-// premium applied to one position shouldn't outvote what everyone else gets.
+// Rules are scoped to position groups, so a league with a TE premium carries two
+// CC rules at different rates — nine of these eighteen leagues do. The rate that
+// describes the league is the one most receiving positions actually get, so this
+// counts positions rather than rules: RB and WR on 0.5 with TE on 1.0 is a half-PPR
+// league with a TE premium, not a coin flip. Ties go to the lower rate, since a
+// premium is the thing added on top.
 export async function fetchMflReceptionPoints(league, cookie) {
   const data = await mflGet(`/export?TYPE=rules&L=${league.id}&JSON=1`, cookie, seasonOf(league));
-  const values = [];
+  // position -> rate, so each receiving position is counted exactly once even
+  // when it appears in more than one group.
+  const byPosition = new Map();
+  const detail = [];
   for (const group of asArray(data?.rules?.positionRules)) {
+    const positions = String(mflText(group?.positions) ?? '').split('|').map((x) => x.trim());
+    const covered = positions.filter((x) => RECEIVING_POSITIONS.includes(x));
     for (const rule of asArray(group?.rule)) {
       if (mflText(rule?.event) !== 'CC') continue;
       const n = Number(String(mflText(rule?.points) ?? '').replace(/^\*/, ''));
-      if (Number.isFinite(n)) values.push(n);
+      if (!Number.isFinite(n)) continue;
+      detail.push({ positions: positions.join('|'), points: n });
+      for (const pos of covered) byPosition.set(pos, n);
     }
   }
-  // No reception rule at all is a real answer, not a failure: that's standard.
-  if (values.length === 0) return { points: 0, values };
+  // No reception rule for any receiving position is a real answer, not a
+  // failure: that's standard scoring.
+  if (byPosition.size === 0) return { points: 0, values: detail.map((d) => d.points), detail };
+
   const counts = new Map();
-  for (const v of values) counts.set(v, (counts.get(v) || 0) + 1);
-  const best = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0][0];
-  return { points: best, values };
+  for (const rate of byPosition.values()) counts.set(rate, (counts.get(rate) || 0) + 1);
+  const points = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0][0];
+  return { points, values: [...byPosition.values()], detail, byPosition: Object.fromEntries(byPosition) };
 }
 
 // statId 53 is receptions. An absent item means the league scores none.

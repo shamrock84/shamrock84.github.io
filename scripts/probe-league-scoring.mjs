@@ -33,8 +33,8 @@ for (const league of leagues) {
   const provider = league.provider || 'mfl';
   const configured = league.scoring || null;
   try {
-    const { format, points, values } = await detectScoringFormat(league, cookie);
-    rows.push({ name: league.name || league.id, provider, configured, format, points, values });
+    const { format, points, values, byPosition } = await detectScoringFormat(league, cookie);
+    rows.push({ name: league.name || league.id, provider, configured, format, points, values, byPosition });
   } catch (err) {
     rows.push({ name: league.name || league.id, provider, configured, error: err.message });
   }
@@ -52,7 +52,9 @@ for (const r of rows) {
   // Distinct per-position rates mean a premium somewhere; the base rate is what
   // gets used, but it's worth seeing that it wasn't unanimous.
   const distinct = [...new Set(r.values)];
-  if (distinct.length > 1) notes.push(`per-position rates ${distinct.join('/')} — using the base`);
+  // Print the actual per-position breakdown, not just the distinct rates: which
+  // positions get which is the whole basis for picking the base rate.
+  if (distinct.length > 1) notes.push(`by position ${JSON.stringify(r.byPosition)} — base ${r.points}`);
   if (!r.format) notes.push("doesn't map onto PPR/HALF/STD — left alone");
   else if (r.format !== effective) notes.push(`CHANGE: currently scored as ${effective}`);
   console.log(`${pad(r.name, 34)}${pad(r.provider, 9)}${pad(r.points, 9)}${pad(r.format || '-', 10)}${pad(r.configured || '(unset)', 12)}${notes.join('; ')}`);
