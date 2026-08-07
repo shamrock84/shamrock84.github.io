@@ -1,0 +1,33 @@
+name: Probe League Scoring (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here, the
+# same rule the other manual workflows follow.
+#
+# Dumps every league's real scoring settings so the PPR/HALF/STD detection can
+# be written against what the providers actually return. MFL's TYPE=rules shape
+# in particular is undocumented and unreachable from a sandbox, which is the
+# whole reason this exists.
+#
+# Read-only: TYPE=rules, view=mSettings, and Sleeper's public league object.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Dump each league's scoring settings
+        env:
+          MFL_USERNAME: ${{ secrets.MFL_USERNAME }}
+          MFL_PASSWORD: ${{ secrets.MFL_PASSWORD }}
+          ESPN_S2: ${{ secrets.ESPN_S2 }}
+          ESPN_SWID: ${{ secrets.ESPN_SWID }}
+        run: node scripts/probe-league-scoring.mjs
