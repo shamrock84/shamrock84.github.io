@@ -1138,7 +1138,11 @@
 		// league, while this feature is still being verified).
 		const CONTRACT_EMAIL_DEFAULT = 'melbosffl@gmail.com';
 		const CONTRACT_EMAIL_OVERRIDES = {
-			// '35217': 'commissioner@example.com', // The Iron Bank
+			'35217': 'Salarycapdynasty@gmail.com', // The Iron Bank
+			'34850': 'Wiseguysfantasy@gmail.com',  // Wise Guys
+			'30641': 'supercapdynasty@gmail.com',  // Super Cap
+			// Game On (64470) has no address yet, so it falls through to the
+			// default above — which is a placeholder, not that league's commissioner.
 		};
 		function contractEmailFor(league) {
 			return CONTRACT_EMAIL_OVERRIDES[league.id] || CONTRACT_EMAIL_DEFAULT;
