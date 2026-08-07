@@ -24,7 +24,25 @@ import { fileURLToPath } from 'node:url';
 import { mflLogin, detectScoringFormat } from './lib/providers.mjs';
 
 const CONFIG_PATH = fileURLToPath(new URL('../config/leagues.json', import.meta.url));
+const ROSTERS_PATH = fileURLToPath(new URL('../data/rosters.json', import.meta.url));
 const { leagues } = JSON.parse(await readFile(CONFIG_PATH, 'utf8'));
+
+// Read each league against the season the sync actually resolved it to, not the
+// calendar year. Without this the probe silently disagrees with the sync for any
+// league mid-rollover: Rug's Playground reported STD from an unconfigured 2026
+// shell while the sync, correctly on 2025, read PPR. The audit tool has to ask
+// the same question the sync asks or it isn't auditing anything.
+let recordedSeasons = new Map();
+try {
+  const prev = JSON.parse(await readFile(ROSTERS_PATH, 'utf8'));
+  recordedSeasons = new Map((prev.leagues || []).map((l) => [l.id, l.season]));
+} catch {
+  console.log('No data/rosters.json to read seasons from — falling back to the calendar year.\n');
+}
+for (const league of leagues) {
+  const season = recordedSeasons.get(league.id);
+  if (season && !league.season) league.season = String(season);
+}
 
 const cookie = await mflLogin(process.env.MFL_USERNAME, process.env.MFL_PASSWORD);
 
@@ -34,17 +52,17 @@ for (const league of leagues) {
   const configured = league.scoring || null;
   try {
     const { format, points, values, byPosition } = await detectScoringFormat(league, cookie);
-    rows.push({ name: league.name || league.id, provider, configured, format, points, values, byPosition });
+    rows.push({ name: league.name || league.id, provider, configured, format, points, values, byPosition, season: league.season || '(year)' });
   } catch (err) {
     rows.push({ name: league.name || league.id, provider, configured, error: err.message });
   }
 }
 
 const pad = (v, n) => String(v ?? '').padEnd(n);
-console.log(`${pad('LEAGUE', 34)}${pad('SITE', 9)}${pad('PER REC', 9)}${pad('DETECTED', 10)}${pad('CONFIGURED', 12)}NOTE`);
+console.log(`${pad('LEAGUE', 34)}${pad('SITE', 9)}${pad('SEASON', 8)}${pad('PER REC', 9)}${pad('DETECTED', 10)}${pad('CONFIGURED', 12)}NOTE`);
 for (const r of rows) {
   if (r.error) {
-    console.log(`${pad(r.name, 34)}${pad(r.provider, 9)}${pad('-', 9)}${pad('-', 10)}${pad(r.configured || '(unset)', 12)}FAILED: ${r.error}`);
+    console.log(`${pad(r.name, 34)}${pad(r.provider, 9)}${pad('-', 8)}${pad('-', 9)}${pad('-', 10)}${pad(r.configured || '(unset)', 12)}FAILED: ${r.error}`);
     continue;
   }
   const effective = r.configured || 'PPR';
@@ -57,7 +75,7 @@ for (const r of rows) {
   if (distinct.length > 1) notes.push(`by position ${JSON.stringify(r.byPosition)} — base ${r.points}`);
   if (!r.format) notes.push("doesn't map onto PPR/HALF/STD — left alone");
   else if (r.format !== effective) notes.push(`CHANGE: currently scored as ${effective}`);
-  console.log(`${pad(r.name, 34)}${pad(r.provider, 9)}${pad(r.points, 9)}${pad(r.format || '-', 10)}${pad(r.configured || '(unset)', 12)}${notes.join('; ')}`);
+  console.log(`${pad(r.name, 34)}${pad(r.provider, 9)}${pad(r.season, 8)}${pad(r.points, 9)}${pad(r.format || '-', 10)}${pad(r.configured || '(unset)', 12)}${notes.join('; ')}`);
 }
 
 const changes = rows.filter((r) => r.format && r.format !== (r.configured || 'PPR'));
