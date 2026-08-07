@@ -1942,6 +1942,22 @@
 		// their own player ids — names are the one thing that lines up.
 		// `types` is an array so a group can span more than one league type
 		// (Dynasty and Salary Cap share an exposure card — see SUBTAB_GROUP).
+		// A player's ECR can legitimately differ between two leagues in the same
+		// group: a dynasty league and a salary-cap league sit side by side here and
+		// draw from different FantasyPros lists, and their scoring formats can differ
+		// too. The median is the representative one — robust to a single league
+		// ranking a player far from the rest, which a mean is not.
+		function medianRank(ranks) {
+			if (!ranks || ranks.length === 0) return null;
+			const sorted = [...ranks].sort((a, b) => a - b);
+			const mid = Math.floor(sorted.length / 2);
+			return sorted.length % 2 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
+		}
+
+		// A finite sentinel, not Infinity: Infinity - Infinity is NaN, and a NaN
+		// comparator silently corrupts the sort order rather than failing.
+		const rankOrLast = (v) => (v == null ? Number.MAX_SAFE_INTEGER : v);
+
 		function computePlayerExposure(leagues, types) {
 			const eligible = leagues.filter((l) => types.includes(l.type) && Array.isArray(l.players) && l.players.length > 0);
 			const byPlayer = new Map();
@@ -1953,9 +1969,11 @@
 					if (seen.has(p.name)) continue;
 					seen.add(p.name);
 					if (!byPlayer.has(p.name)) {
-						byPlayer.set(p.name, { position: p.position, leagues: [] });
+						byPlayer.set(p.name, { position: p.position, leagues: [], ranks: [] });
 					}
-					byPlayer.get(p.name).leagues.push(label);
+					const entry = byPlayer.get(p.name);
+					entry.leagues.push(label);
+					if (p.ecr && Number.isFinite(p.ecr.rank)) entry.ranks.push(p.ecr.rank);
 				}
 			}
 
@@ -1967,12 +1985,18 @@
 					leagues: info.leagues,
 					count: info.leagues.length,
 					exposure: total > 0 ? (info.leagues.length / total) * 100 : 0,
+					ecr: medianRank(info.ranks),
 				}))
 				.filter((r) => r.count > 1)
+				// Exposure first, then best player. Position was the old
+				// tiebreaker, but it only grouped the list — it said nothing about
+				// which of two players at the same exposure matters more, which is
+				// the actual question this card is asked. Unranked players sort
+				// last rather than first, hence the sentinel.
 				.sort((a, b) =>
 					b.exposure - a.exposure ||
 					b.count - a.count ||
-					positionRank(a.position) - positionRank(b.position) ||
+					rankOrLast(a.ecr) - rankOrLast(b.ecr) ||
 					a.name.localeCompare(b.name)
 				);
 
@@ -2023,7 +2047,15 @@
 			function renderPage() {
 				table.innerHTML = '';
 				const headRow = el('tr');
-				['Player', 'Pos', 'Owned In', 'Exposure'].forEach((h) => headRow.appendChild(el('th', { text: h })));
+				// ECR follows the roster cards: logged-out visitors don't get the
+				// column. The sort uses it either way — best-player-first is the
+				// right order whether or not the number is on screen.
+				const showEcr = isLoggedIn();
+				headRow.appendChild(el('th', { text: 'Player' }));
+				headRow.appendChild(el('th', { text: 'Pos' }));
+				if (showEcr) headRow.appendChild(el('th', { class: 'ecr-cell', text: 'ECR' }));
+				headRow.appendChild(el('th', { text: 'Owned In' }));
+				headRow.appendChild(el('th', { text: 'Exposure' }));
 				table.appendChild(headRow);
 
 				const start = page * ANALYTICS_PAGE_SIZE;
@@ -2034,6 +2066,15 @@
 					nameCell.appendChild(el('div', { class: 'exposure-leagues', text: r.leagues.join(', ') }));
 					row.appendChild(nameCell);
 					row.appendChild(el('td', { text: r.position || '-' }));
+					if (showEcr) {
+						// Overall rank, not positional: this table mixes positions, so
+						// the overall number is the one the ordering is actually by.
+						const elite = r.ecr != null && r.ecr <= 24;
+						row.appendChild(el('td', {
+							class: `ecr-cell${elite ? ' ecr-elite' : ''}`,
+							text: r.ecr == null ? '—' : String(r.ecr),
+						}));
+					}
 					row.appendChild(el('td', { text: `${r.count}/${total}` }));
 					row.appendChild(el('td', { text: `${Math.round(r.exposure)}%` }));
 					table.appendChild(row);
@@ -2053,6 +2094,15 @@
 				nextBtn.addEventListener('click', () => {
 					if (page < pageCount - 1) { page++; renderPage(); }
 				});
+			}
+
+			// Worth stating: unlike the ECR on a roster card, this one is combined
+			// across leagues that may not be using the same ranking list.
+			if (isLoggedIn() && rows.some((r) => r.ecr != null)) {
+				card.appendChild(el('div', {
+					class: 'rankings-note',
+					text: 'ECR is the median overall rank across the leagues here, which can draw from different FantasyPros lists. Ties on exposure are broken by it.',
+				}));
 			}
 
 			renderPage();
