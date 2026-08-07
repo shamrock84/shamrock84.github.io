@@ -80,6 +80,11 @@ jobs:
       - name: Test the per-league season rollover
         run: node scripts/test-season-rollover.mjs
 
+      # Which FantasyPros list the ECR column is drawn from. Silent when wrong:
+      # the column still fills with plausible ranks, just for a different game.
+      - name: Test scoring-format detection
+        run: node scripts/test-scoring-format.mjs
+
       - name: Validate config/leagues.json
         run: |
           node --input-type=module -e '
