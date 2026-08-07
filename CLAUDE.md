@@ -36,7 +36,11 @@ Both paths import the same fetch logic from **`scripts/lib/providers.mjs`** (~37
 
 ## `config/leagues.json` is the control plane
 
-Adding, removing, or reclassifying a league is a config edit, never a code edit. The file's own `_readme` array is the authoritative schema — **read it before touching anything league-shaped, and update it when you change the schema.** It documents `provider`, `type`/`format`, `lineupPilot`, `tags`, `rankingType`, `scoring`, and the non-obvious rules behind them (for instance: salary-cap leagues intentionally use DRAFT rankings rather than DYNASTY). Array order is display order across every tab.
+Adding, removing, or reclassifying a league is a config edit, never a code edit — and usually not even a repo edit: the **Admin tab** in `myffl.html`, visible once logged in, edits this file through `api/save-leagues.js` and commits it. Prefer pointing the user at that tab over hand-editing on their behalf.
+
+That endpoint is the only write path in the project that **bypasses pull requests entirely and commits straight to `main`**, so the syntax-check workflow never sees it. Its server-side validation is therefore the only guardrail, and `scripts/test-save-leagues.mjs` is what keeps that validation honest — extend the tests alongside any change to the schema. Two properties there are load-bearing and easy to break: `mergeLeague` passes through fields it doesn't recognise (without it, any field added to the config later would be silently erased the first time someone pressed Save), and `serialize` keeps one league per line (so an Admin-tab commit is reviewable as a one-line diff rather than a whole-file reshuffle).
+
+The file's own `_readme` array is the authoritative schema — **read it before touching anything league-shaped, and update it when you change the schema.** It documents `provider`, `type`/`format`, `lineupPilot`, `tags`, `rankingType`, `scoring`, and the non-obvious rules behind them (for instance: salary-cap leagues intentionally use DRAFT rankings rather than DYNASTY). Array order is display order across every tab.
 
 Three providers are supported: `mfl` (the default when `provider` is omitted), `espn`, and `sleeper`. Provider selection is a three-way ternary repeated at each stage of `fetch-rosters.mjs` (roster, standings, scoring, lineup), so adding a fourth means updating `providers.mjs` *and* each of those call sites.
 
@@ -45,6 +49,7 @@ Three providers are supported: `mfl` (the default when `provider` is omitted), `
 - **The sync degrades, it never fails.** `fetch-rosters.mjs` wraps every league in try/catch and falls back to the previous `data/rosters.json` entry (`previousById`), recording an `error` field the page renders. One dead league must never blank out the other seventeen. FantasyPros rankings are layered on last and are likewise never allowed to fail the run — with no `FANTASYPROS_API_KEY` the ECR column simply goes blank.
 - **`submit-lineup.js` uses an allowlist, not a denylist.** It accepts a league only if `lineupPilot` is set *and* the provider is MFL or unset. Sleeper leagues can carry `lineupPilot: true` (their starters render read-only, since Sleeper's public API has no write endpoint). The in-file comment explains the reasoning: a future read-only provider must fail closed by default. Do not invert this.
 - **Both test workflows are `workflow_dispatch`-only, deliberately.** `test-set-lineup.yml` exercises a write against a real MFL team; `test-login-endpoint.yml` probes the deployed login endpoint. Never add a `schedule` trigger to either.
+- **The header login control renders unconditionally.** It used to appear only when some league had a lineup editor. It must not go back to that: logging in is now also what reveals the Admin tab, so gating the control on league data would mean switching lineups off everywhere hides the login box, which hides the Admin tab, which is where you'd go to switch them back on.
 - **Auth is stateless and password-free after login.** `SITE_PASSWORD` gates `api/login.js`, which returns an HMAC-signed 30-day token (`api/lib/auth.mjs`) that the client replays as a Bearer token on writes. There is no database and no session store. MFL credentials live only on the server and are never sent to the browser.
 
 ## Verifying changes
@@ -59,6 +64,14 @@ python3 -m http.server 8000                   # then open /myffl.html
 ```
 
 Serve over HTTP rather than opening the file directly — `myffl.html` fetches `data/rosters.json` with a relative URL, which fails under `file://`. The committed `data/rosters.json` is real synced data, so the page renders fully offline; pure rendering changes can be checked this way without any provider access.
+
+To exercise the logged-in UI (the lineup editors and the whole Admin tab) without the site password or any network access, set the token the page looks for before loading it — `isLoggedIn()` only checks that one exists:
+
+```js
+localStorage.setItem('mflAuthToken', 'anything');
+```
+
+Everything renders and behaves normally; only the calls that actually reach Vercel will fail. This is the practical way to drive the Admin tab in a headless browser.
 
 ## Front-end conventions
 

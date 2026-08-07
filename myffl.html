@@ -698,6 +698,127 @@
 			color: var(--muted);
 		}
 		.hidden { display: none !important; }
+		/* Admin tab. The grid is a responsive multi-column layout, but this
+		   card is one wide table — let it span every column instead of being
+		   squeezed into one. */
+		.admin-card {
+			grid-column: 1 / -1;
+		}
+		.admin-note {
+			font-size: 0.85rem;
+			color: var(--muted);
+			margin-bottom: 0.75rem;
+		}
+		.admin-legend {
+			font-size: 0.75rem;
+			color: var(--muted);
+			line-height: 1.5;
+			margin-top: 0.6rem;
+		}
+		/* Thirteen columns don't fit a phone. Scroll the table rather than the
+		   page, so the rest of the card stays put. */
+		.admin-scroll {
+			overflow-x: auto;
+		}
+		.admin-table {
+			border-collapse: collapse;
+			width: 100%;
+			font-size: 0.82rem;
+		}
+		.admin-table th {
+			text-align: left;
+			font-size: 0.7rem;
+			text-transform: uppercase;
+			letter-spacing: 0.04em;
+			color: var(--muted);
+			font-weight: 600;
+			padding: 0 0.3rem 0.35rem;
+			white-space: nowrap;
+		}
+		.admin-table td {
+			padding: 0.2rem 0.3rem;
+			vertical-align: middle;
+		}
+		.admin-row:not(:last-child) td {
+			border-bottom: 1px solid var(--border);
+		}
+		.admin-input {
+			font: inherit;
+			font-size: 0.82rem;
+			color: var(--text);
+			background: var(--card-bg);
+			border: 1px solid var(--border);
+			border-radius: 4px;
+			padding: 0.25rem 0.35rem;
+			width: 100%;
+			min-width: 5.5rem;
+			box-sizing: border-box;
+		}
+		.admin-input:focus {
+			outline: 2px solid var(--accent);
+			outline-offset: -1px;
+		}
+		.admin-select {
+			background: var(--chip-bg);
+			color: var(--accent);
+			min-width: 7rem;
+		}
+		/* Wide enough for a 19-digit Sleeper league id to be mostly legible
+		   without pushing every other column off-screen. */
+		.admin-narrow { min-width: 6.5rem; }
+		.admin-wide { min-width: 9rem; }
+		.admin-move, .admin-remove, .admin-check {
+			white-space: nowrap;
+			text-align: center;
+		}
+		.admin-icon-btn {
+			font: inherit;
+			font-size: 0.8rem;
+			line-height: 1;
+			color: var(--accent);
+			background: var(--chip-bg);
+			border: 1px solid var(--border);
+			border-radius: 4px;
+			padding: 0.2rem 0.35rem;
+			cursor: pointer;
+		}
+		.admin-icon-btn:disabled {
+			opacity: 0.35;
+			cursor: default;
+		}
+		.admin-remove-btn {
+			color: var(--ir-text);
+			background: var(--ir-bg);
+		}
+		.admin-add-row {
+			margin-top: 0.7rem;
+		}
+		.admin-add-btn, .admin-revert-btn {
+			font: inherit;
+			font-size: 0.85rem;
+			color: var(--accent);
+			background: transparent;
+			border: 1px solid var(--accent);
+			border-radius: 999px;
+			padding: 0.35rem 0.9rem;
+			cursor: pointer;
+		}
+		.admin-revert-btn:disabled {
+			opacity: 0.5;
+			cursor: default;
+		}
+		/* Server-side validation failures, one per line — these are the only
+		   thing standing between a typo and a silently broken sync, so they get
+		   the error treatment rather than a muted note. */
+		.admin-problems {
+			margin: 0.6rem 0 0;
+			padding: 0.6rem 0.75rem 0.6rem 1.6rem;
+			background: var(--ir-bg);
+			color: var(--ir-text);
+			border-radius: 8px;
+			font-size: 0.82rem;
+			line-height: 1.5;
+		}
 		footer {
 			text-align: center;
 			color: var(--muted);
@@ -773,8 +894,11 @@
 			return node;
 		}
 
-		const VIEW_LABELS = { rosters: 'Rosters', standings: 'Standings', scoring: 'Scoring', analytics: 'Analytics' };
-		const VIEW_ORDER = ['rosters', 'scoring', 'standings', 'analytics'];
+		// 'admin' is only ever in this set when logged in — renderGrid simply
+		// doesn't build the card otherwise, and the tab list is derived from the
+		// cards that exist, so logging out removes the tab with no extra work.
+		const VIEW_LABELS = { rosters: 'Rosters', standings: 'Standings', scoring: 'Scoring', analytics: 'Analytics', admin: 'Admin' };
+		const VIEW_ORDER = ['rosters', 'scoring', 'standings', 'analytics', 'admin'];
 		// Per-league type — still what individual Rosters cards badge
 		// themselves with (a Salary Cap league's card says "Salary Cap", not
 		// "Dynasty/Salary Cap"), just no longer what any sub-tab is named
@@ -917,6 +1041,14 @@
 		const LOGIN_URL = 'https://shamrock84-github-io.vercel.app/api/login';
 		const SUBMIT_LINEUP_URL = 'https://shamrock84-github-io.vercel.app/api/submit-lineup';
 		const AUTH_TOKEN_KEY = 'mflAuthToken';
+
+		// Admin tab: reads the live league config straight off the site (it's a
+		// plain file in the repo, served by Pages like everything else) and
+		// writes it back through Vercel, which validates before committing.
+		const LEAGUES_CONFIG_URL = 'config/leagues.json';
+		const SAVE_LEAGUES_URL = 'https://shamrock84-github-io.vercel.app/api/save-leagues';
+		let leagueConfig = null;
+		let leagueConfigError = null;
 		let authToken = localStorage.getItem(AUTH_TOKEN_KEY) || null;
 
 		function isLoggedIn() {
@@ -938,6 +1070,9 @@
 		function doLogout() {
 			authToken = null;
 			localStorage.removeItem(AUTH_TOKEN_KEY);
+			// Unsaved Admin edits belong to the session that made them — leaving
+			// them in memory would hand them to whoever logs in next.
+			adminDraft = null;
 			renderGrid();
 		}
 
@@ -1337,9 +1472,12 @@
 			if (!container) return;
 			container.innerHTML = '';
 
-			const hasPilotLeague = (pageData?.leagues || []).some((l) => Array.isArray(l.starters));
-			if (!hasPilotLeague) return;
-
+			// Previously gated on there being at least one lineup-editable
+			// league, since login unlocked nothing else. Logging in now also
+			// reveals the Admin tab, and gating on league data would be a trap:
+			// switching lineups off for every league would hide the login
+			// control, which would hide the Admin tab, which is where you'd go
+			// to switch them back on.
 			if (isLoggedIn()) {
 				container.appendChild(el('span', { class: 'auth-status-text', text: 'Logged in for advanced features' }));
 				const logoutBtn = el('button', { type: 'button', class: 'auth-logout-btn', text: 'Log out' });
@@ -1906,6 +2044,270 @@
 			updateSearchVisibility();
 		}
 
+		// ---- Admin tab ---------------------------------------------------
+		// Edits config/leagues.json — the single file that drives the 4-hour
+		// sync, live scoring, and lineup submission. Saving commits straight to
+		// main with no pull request in between, so api/save-leagues.js
+		// re-validates everything server-side; nothing built here is trusted.
+		//
+		// Labels are deliberately plainer than the config's own key names
+		// ("My team ID", not franchiseId) since this is the one part of the page
+		// meant to be used without reading the file it edits.
+
+		// Blank means "leave the key out", which is not the same as an empty
+		// value — an omitted provider means MFL, an omitted rankingType means
+		// "pick automatically from the league type". The labels say so.
+		const ADMIN_PROVIDERS = [['', 'MFL'], ['espn', 'ESPN'], ['sleeper', 'Sleeper']];
+		const ADMIN_TYPES = [['dynasty', 'Dynasty'], ['salarycap', 'Salary Cap'], ['bestball', 'Best Ball'], ['redraft', 'Redraft']];
+		const ADMIN_FORMATS = [['', '—'], ['dynasty', 'Dynasty'], ['auction', 'Auction']];
+		const ADMIN_RANKINGS = [['', 'Automatic'], ['DYNASTY', 'Dynasty'], ['DRAFT', 'Draft'], ['ROS', 'Rest-of-season'], ['WEEKLY', 'Weekly'], ['ADP', 'ADP']];
+		const ADMIN_SCORING = [['', 'PPR'], ['HALF', 'Half PPR'], ['STD', 'Standard']];
+
+		// Unsaved edits, kept across re-renders (a lineup submission or a
+		// finished sync both call renderGrid) so typing isn't lost. Cleared on
+		// logout and after a successful save.
+		let adminDraft = null;
+		let adminConfigLoading = false;
+
+		function adminText(value, placeholder, onChange, extraClass = '') {
+			const input = el('input', { type: 'text', class: `admin-input ${extraClass}`.trim(), placeholder: placeholder || '' });
+			input.value = value == null ? '' : String(value);
+			input.addEventListener('input', () => onChange(input.value));
+			return input;
+		}
+
+		// A value the config carries but this list doesn't know about gets shown
+		// as an extra option rather than silently snapping to the first entry —
+		// otherwise editing an unrelated league could quietly rewrite it.
+		function adminSelect(options, value, onChange) {
+			const current = value == null ? '' : String(value);
+			const list = options.some(([v]) => v === current) ? options : [...options, [current, `${current} (unrecognized)`]];
+			const sel = el('select', { class: 'admin-input admin-select' });
+			for (const [val, label] of list) {
+				const opt = el('option', { value: val, text: label });
+				if (val === current) opt.selected = true;
+				sel.appendChild(opt);
+			}
+			sel.addEventListener('change', () => onChange(sel.value));
+			return sel;
+		}
+
+		function refreshAdminCard() {
+			const existing = document.querySelector('.card[data-view="admin"]');
+			if (!existing) return;
+			existing.replaceWith(renderAdminCard());
+			updateVisibility();
+		}
+
+		async function loadLeagueConfig() {
+			try {
+				// Cache-bust for the same reason data/rosters.json does: Pages'
+				// CDN will happily serve the pre-save copy otherwise.
+				const res = await fetch(`${LEAGUES_CONFIG_URL}?t=${Date.now()}`, { cache: 'no-store' });
+				if (!res.ok) throw new Error(`HTTP ${res.status}`);
+				leagueConfig = await res.json();
+				leagueConfigError = null;
+			} catch (err) {
+				leagueConfig = null;
+				leagueConfigError = err.message;
+			}
+		}
+
+		function renderAdminCard() {
+			const card = el('div', { class: 'card admin-card', 'data-view': 'admin', 'data-league-type': '' });
+			card.appendChild(el('h2', { text: 'Leagues' }));
+
+			if (leagueConfigError) {
+				card.appendChild(el('div', { class: 'error-box', text: `Couldn't load the league list: ${leagueConfigError}` }));
+				const retry = el('button', { type: 'button', class: 'lineup-save-btn', text: 'Try again' });
+				retry.addEventListener('click', async () => {
+					retry.disabled = true;
+					await loadLeagueConfig();
+					refreshAdminCard();
+				});
+				card.appendChild(el('div', { class: 'lineup-editor-actions' }, [retry]));
+				return card;
+			}
+			if (!leagueConfig) {
+				// Fetches itself on first render rather than being loaded up
+				// front, so this works identically whether the tab appeared
+				// because the page loaded already-logged-in or because someone
+				// just logged in. The flag keeps a re-render mid-fetch from
+				// firing a second request.
+				card.appendChild(el('div', { class: 'admin-note', text: 'Loading the league list…' }));
+				if (!adminConfigLoading) {
+					adminConfigLoading = true;
+					loadLeagueConfig().then(() => {
+						adminConfigLoading = false;
+						refreshAdminCard();
+					});
+				}
+				return card;
+			}
+			if (!adminDraft) adminDraft = JSON.parse(JSON.stringify(leagueConfig.leagues || []));
+
+			card.appendChild(el('div', {
+				class: 'admin-note',
+				text: 'Changes here go live on the site as soon as you press Save. New or changed leagues show up on the other tabs after the next sync.',
+			}));
+
+			const scroller = el('div', { class: 'admin-scroll' });
+			const table = el('table', { class: 'admin-table' });
+			const headRow = el('tr', { class: 'roster-head' });
+			for (const label of ['', 'Name', 'League ID', 'My team ID', 'Site', 'Type', 'Format', 'Tags', 'Lineups', 'Rankings', 'Scoring', 'Rules link', '']) {
+				headRow.appendChild(el('th', { text: label }));
+			}
+			table.appendChild(headRow);
+
+			adminDraft.forEach((league, i) => {
+				const row = el('tr', { class: 'admin-row' });
+
+				const moveCell = el('td', { class: 'admin-move' });
+				const up = el('button', { type: 'button', class: 'admin-icon-btn', title: 'Move up', text: '↑' });
+				const down = el('button', { type: 'button', class: 'admin-icon-btn', title: 'Move down', text: '↓' });
+				up.disabled = i === 0;
+				down.disabled = i === adminDraft.length - 1;
+				// Array order is display order on every other tab, so this is a
+				// real setting rather than cosmetic table sorting.
+				up.addEventListener('click', () => {
+					[adminDraft[i - 1], adminDraft[i]] = [adminDraft[i], adminDraft[i - 1]];
+					refreshAdminCard();
+				});
+				down.addEventListener('click', () => {
+					[adminDraft[i + 1], adminDraft[i]] = [adminDraft[i], adminDraft[i + 1]];
+					refreshAdminCard();
+				});
+				moveCell.appendChild(up);
+				moveCell.appendChild(down);
+				row.appendChild(moveCell);
+
+				row.appendChild(el('td', {}, [adminText(league.name, 'League name', (v) => { league.name = v; }, 'admin-wide')]));
+				row.appendChild(el('td', {}, [adminText(league.id, 'e.g. 26696', (v) => { league.id = v; }, 'admin-narrow')]));
+				row.appendChild(el('td', {}, [adminText(league.franchiseId, 'e.g. 0001', (v) => { league.franchiseId = v; }, 'admin-narrow')]));
+				row.appendChild(el('td', {}, [adminSelect(ADMIN_PROVIDERS, league.provider, (v) => { league.provider = v || undefined; })]));
+				row.appendChild(el('td', {}, [adminSelect(ADMIN_TYPES, league.type, (v) => { league.type = v; })]));
+				row.appendChild(el('td', {}, [adminSelect(ADMIN_FORMATS, league.format, (v) => { league.format = v || undefined; })]));
+				// Generic placeholder rather than a realistic example: greyed-out
+				// sample tags in the many untagged rows read as real values at a
+				// glance, which is exactly the wrong impression on an edit screen.
+				row.appendChild(el('td', {}, [adminText((league.tags || []).join(', '), 'comma, separated', (v) => {
+					const tags = v.split(',').map((t) => t.trim()).filter(Boolean);
+					league.tags = tags.length ? tags : undefined;
+				}, 'admin-wide')]));
+
+				const lineupCell = el('td', { class: 'admin-check' });
+				const lineupBox = el('input', { type: 'checkbox', title: 'Show a lineup editor for this league' });
+				lineupBox.checked = league.lineupPilot === true;
+				lineupBox.addEventListener('change', () => { league.lineupPilot = lineupBox.checked ? true : undefined; });
+				lineupCell.appendChild(lineupBox);
+				row.appendChild(lineupCell);
+
+				row.appendChild(el('td', {}, [adminSelect(ADMIN_RANKINGS, league.rankingType, (v) => { league.rankingType = v || undefined; })]));
+				// An explicit "PPR" and an omitted value mean the same thing, so
+				// normalise to blank rather than showing a redundant option.
+				row.appendChild(el('td', {}, [adminSelect(ADMIN_SCORING, league.scoring === 'PPR' ? '' : league.scoring, (v) => { league.scoring = v || undefined; })]));
+				row.appendChild(el('td', {}, [adminText(league.rulesUrl, 'https://…', (v) => { league.rulesUrl = v || undefined; }, 'admin-wide')]));
+
+				const removeCell = el('td', { class: 'admin-remove' });
+				const removeBtn = el('button', { type: 'button', class: 'admin-icon-btn admin-remove-btn', title: 'Remove this league', text: '✕' });
+				removeBtn.addEventListener('click', () => {
+					const label = league.name || league.id || 'this league';
+					if (!window.confirm(`Remove ${label} from the site?\n\nNothing is deleted at MFL, ESPN, or Sleeper — it just stops showing up here.`)) return;
+					adminDraft.splice(i, 1);
+					refreshAdminCard();
+				});
+				removeCell.appendChild(removeBtn);
+				row.appendChild(removeCell);
+
+				table.appendChild(row);
+			});
+
+			scroller.appendChild(table);
+			card.appendChild(scroller);
+
+			card.appendChild(el('div', {
+				class: 'admin-legend',
+				text: 'My team ID is your own team within that league (MFL uses 4 digits like 0001; ESPN and Sleeper use plain numbers). Lineups shows a lineup editor on the Rosters tab — MFL can be submitted from here, Sleeper is view-only. Rankings on Automatic uses dynasty rankings for dynasty leagues and draft rankings everywhere else.',
+			}));
+
+			const addBtn = el('button', { type: 'button', class: 'admin-add-btn', text: '+ Add a league' });
+			addBtn.addEventListener('click', () => {
+				adminDraft.push({ id: '', franchiseId: '', name: '', type: 'bestball' });
+				refreshAdminCard();
+				const rows = document.querySelectorAll('.admin-row');
+				const last = rows[rows.length - 1];
+				if (last) {
+					last.scrollIntoView({ block: 'nearest' });
+					last.querySelector('input')?.focus();
+				}
+			});
+			card.appendChild(el('div', { class: 'admin-add-row' }, [addBtn]));
+
+			const actions = el('div', { class: 'lineup-editor-actions' });
+			const saveBtn = el('button', { type: 'button', class: 'lineup-save-btn', text: 'Save changes' });
+			const revertBtn = el('button', { type: 'button', class: 'admin-revert-btn', text: 'Discard edits' });
+			const statusEl = el('span', { class: 'lineup-editor-status' });
+			actions.appendChild(saveBtn);
+			actions.appendChild(revertBtn);
+			actions.appendChild(statusEl);
+			card.appendChild(actions);
+
+			const problemsEl = el('ul', { class: 'admin-problems hidden' });
+			card.appendChild(problemsEl);
+
+			revertBtn.addEventListener('click', () => {
+				if (!window.confirm('Throw away every change you\'ve made since the last save?')) return;
+				adminDraft = null;
+				refreshAdminCard();
+			});
+
+			saveBtn.addEventListener('click', async () => {
+				saveBtn.disabled = true;
+				revertBtn.disabled = true;
+				statusEl.textContent = 'Saving…';
+				problemsEl.innerHTML = '';
+				problemsEl.classList.add('hidden');
+				try {
+					const res = await fetch(SAVE_LEAGUES_URL, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+						body: JSON.stringify({ leagues: adminDraft }),
+					});
+					const body = await res.json().catch(() => ({}));
+					if (res.status === 401) {
+						doLogout();
+						return;
+					}
+					if (!res.ok) {
+						// The server sends back one line per problem; showing them
+						// as a list beats collapsing them into a single sentence.
+						if (Array.isArray(body.details) && body.details.length) {
+							problemsEl.classList.remove('hidden');
+							for (const detail of body.details) problemsEl.appendChild(el('li', { text: detail }));
+						}
+						throw new Error(body.error || `HTTP ${res.status}`);
+					}
+					leagueConfig.leagues = JSON.parse(JSON.stringify(adminDraft));
+					adminDraft = null;
+					statusEl.textContent = `Saved ${body.count} leagues.`;
+					const syncNow = el('button', { type: 'button', class: 'admin-revert-btn', text: 'Sync now' });
+					syncNow.addEventListener('click', () => {
+						statusEl.textContent = 'Syncing — watch the header for progress.';
+						syncNow.disabled = true;
+						triggerManualSync();
+					});
+					actions.appendChild(syncNow);
+					revertBtn.remove();
+				} catch (err) {
+					statusEl.textContent = err.message;
+					saveBtn.disabled = false;
+					revertBtn.disabled = false;
+				}
+			});
+
+			return card;
+		}
+
 		// Safe to call more than once (e.g. after a manual sync completes) —
 		// clears the grid before repopulating instead of appending duplicates.
 		// Pure render from the already-loaded pageData — no network call.
@@ -1923,6 +2325,14 @@
 
 			if (!data.leagues || data.leagues.length === 0) {
 				statusEl.textContent = 'No leagues configured yet.';
+				// An empty config is precisely when the Admin tab is needed, so
+				// it still renders here — otherwise the one screen that could
+				// fix this state would be the one screen unreachable from it.
+				if (isLoggedIn()) {
+					gridEl.appendChild(renderAdminCard());
+					renderViewTabs(new Set(['admin']));
+					updateVisibility();
+				}
 				return;
 			}
 
@@ -1941,6 +2351,10 @@
 				if (!data.leagues.some((l) => types.includes(l.type))) continue;
 				gridEl.appendChild(renderAnalyticsCard(groupKey, types, data.leagues));
 			}
+
+			// Logged-out visitors never get this card, so 'admin' never makes it
+			// into presentViews below and the tab simply isn't offered.
+			if (isLoggedIn()) gridEl.appendChild(renderAdminCard());
 
 			const presentViews = new Set([...gridEl.querySelectorAll('.card')].map((c) => c.dataset.view).filter(Boolean));
 			renderViewTabs(presentViews);

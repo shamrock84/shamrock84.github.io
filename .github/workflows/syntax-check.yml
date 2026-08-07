@@ -63,6 +63,11 @@ jobs:
           done
           exit $fail
 
+      # Pure functions, no network and no secrets — the guardrails on the one
+      # write path that commits straight to main without a pull request.
+      - name: Test the Admin tab's save validation
+        run: node scripts/test-save-leagues.mjs
+
       - name: Validate config/leagues.json
         run: |
           node --input-type=module -e '
