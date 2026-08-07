@@ -36,7 +36,7 @@ check('the live config validates', validate(real.leagues).length === 0, JSON.str
 check('rejects a non-array', validate('nope').length === 1);
 check('rejects an empty list', validate([]).length === 1);
 check('rejects a missing id', validate(withField('id', '')).length > 0);
-check('rejects a missing name', validate(withField('name', '')).length > 0);
+check('rejects a non-text name', validate(withField('name', { oops: 1 })).length > 0);
 check('rejects an unknown type', validate(withField('type', 'keeper')).length > 0);
 check('rejects an unknown provider', validate(withField('provider', 'yahoo')).length > 0);
 check('rejects an unknown format', validate(withField('format', 'snake')).length > 0);
@@ -59,6 +59,14 @@ check('allows a blank team id', validate(withField('franchiseId', '')).length ==
   JSON.stringify(validate(withField('franchiseId', ''))));
 check('allows an omitted team id', validate([{ id: '1', name: 'x', type: 'redraft' }]).length === 0);
 check('allows omitted optional fields', validate([base()]).length === 0);
+// The Admin tab no longer sets a name — it shows the live one from the last
+// sync — so a league added there arrives with none until its first sync.
+check('allows a blank name', validate(withField('name', '')).length === 0,
+  JSON.stringify(validate(withField('name', ''))));
+check('allows an omitted name', validate([{ id: '1', type: 'redraft' }]).length === 0,
+  JSON.stringify(validate([{ id: '1', type: 'redraft' }])));
+check('error messages fall back to the row number when unnamed',
+  validate([{ id: '1', type: 'bogus' }])[0].includes('Row 1'));
 check('error messages name the league', validate([{ ...base(), type: 'bogus' }])[0].includes('Test'));
 
 // ---- mergeLeague ----
@@ -68,6 +76,12 @@ check('drops empty tags', !('tags' in merged));
 check('drops lineupPilot when off', !('lineupPilot' in merged));
 check('drops a blank rules link', !('rulesUrl' in merged));
 check('keeps the required fields', merged.id === '123' && merged.name === 'Test' && merged.type === 'bestball');
+check('drops a blank name', !('name' in mergeLeague({ id: '1', type: 'redraft', name: '' })));
+// Regression: String(undefined) is the string "undefined", which would have
+// written a league literally named undefined into the config.
+check('drops an omitted name rather than stringifying it',
+  !('name' in mergeLeague({ id: '1', type: 'redraft' })),
+  JSON.stringify(mergeLeague({ id: '1', type: 'redraft' })));
 check('trims whitespace', mergeLeague({ ...base(), name: '  Padded  ' }).name === 'Padded');
 check('keeps lineupPilot when on', mergeLeague({ ...base(), lineupPilot: true }).lineupPilot === true);
 check('key order is stable', Object.keys(mergeLeague(base())).join() === 'id,franchiseId,name,type');

@@ -67,7 +67,13 @@ function validate(leagues) {
     const label = isNonEmptyString(league.name) ? `${where} (${league.name.trim()})` : where;
 
     if (!isNonEmptyString(league.id)) errors.push(`${label}: league ID is required.`);
-    if (!isNonEmptyString(league.name)) errors.push(`${label}: name is required.`);
+    // Optional. The Admin tab stopped setting it once the name shown there
+    // came from the live sync instead, and it was only ever a fallback for
+    // when the provider can't be reached. Still has to be text if present,
+    // so a hand-edited config can't put an object here.
+    if (league.name != null && typeof league.name !== 'string') {
+      errors.push(`${label}: name must be text.`);
+    }
     if (!LEAGUE_TYPES.has(league.type)) {
       errors.push(`${label}: type must be one of ${[...LEAGUE_TYPES].join(', ')}.`);
     }
@@ -125,7 +131,7 @@ function mergeLeague(league) {
 
   put('id', String(league.id).trim());
   put('franchiseId', league.franchiseId == null ? '' : String(league.franchiseId).trim());
-  put('name', String(league.name).trim());
+  put('name', league.name == null ? '' : String(league.name).trim());
   put('type', league.type);
   put('format', league.format);
   put('provider', league.provider);

@@ -767,6 +767,14 @@
 		   without pushing every other column off-screen. */
 		.admin-narrow { min-width: 6.5rem; }
 		.admin-wide { min-width: 9rem; }
+		.admin-name {
+			white-space: nowrap;
+			padding-right: 0.6rem;
+		}
+		.admin-name-pending {
+			color: var(--muted);
+			font-style: italic;
+		}
 		.admin-move, .admin-remove, .admin-check {
 			white-space: nowrap;
 			text-align: center;
@@ -903,7 +911,11 @@
 		// themselves with (a Salary Cap league's card says "Salary Cap", not
 		// "Dynasty/Salary Cap"), just no longer what any sub-tab is named
 		// after. See SUBTAB_GROUP/SUBTAB_LABEL_OVERRIDES below for that.
-		const LEAGUE_TYPE_LABELS = { dynasty: 'Dynasty', salarycap: 'Salary Cap', bestball: 'Best Ball', redraft: 'Redraft' };
+		// 'bestball' reads "Draft Only" everywhere. Best Ball is a scoring
+		// system, not a league type — it's carried as a tag now (several
+		// salary-cap leagues use best-ball scoring), so using it as the type
+		// label too made the same words mean two different things.
+		const LEAGUE_TYPE_LABELS = { dynasty: 'Dynasty', salarycap: 'Salary Cap', bestball: 'Draft Only', redraft: 'Redraft' };
 		// FantasyPros' ranking-type codes, spelled out for the card footnote.
 		const ECR_TYPE_LABELS = { DYNASTY: 'Dynasty', DRAFT: 'Draft', ROS: 'Rest-of-season', WEEKLY: 'Weekly', ADP: 'ADP' };
 		// Which sub-tab a league's cards render under, in every view (Rosters,
@@ -915,13 +927,10 @@
 		const SUBTAB_ORDER = ['dynasty', 'redraft', 'bestball'];
 		// Only where a sub-tab's name needs to differ from LEAGUE_TYPE_LABELS —
 		// everything else falls through to that shared wording, so "Redraft"
-		// isn't repeated here. bestball's sub-tab reads "Draft Only" rather
-		// than "Best Ball" so it isn't mistaken for the Best Ball *scoring*
-		// badge, which shows up on cards outside this sub-tab too (e.g. a
-		// salary-cap league that happens to use best-ball scoring) — the type
-		// badge on individual cards still reads "Best Ball" via
-		// LEAGUE_TYPE_LABELS, unaffected.
-		const SUBTAB_LABEL_OVERRIDES = { dynasty: 'Dynasty/Salary Cap', bestball: 'Draft Only' };
+		// isn't repeated here. bestball used to be overridden to "Draft Only"
+		// for the sub-tab only; that wording is now the type label itself, so
+		// the override would be a no-op and is gone.
+		const SUBTAB_LABEL_OVERRIDES = { dynasty: 'Dynasty/Salary Cap' };
 
 		function subtabType(league) {
 			return SUBTAB_GROUP[league.type] || league.type;
@@ -2058,7 +2067,7 @@
 		// value — an omitted provider means MFL, an omitted rankingType means
 		// "pick automatically from the league type". The labels say so.
 		const ADMIN_PROVIDERS = [['', 'MFL'], ['espn', 'ESPN'], ['sleeper', 'Sleeper']];
-		const ADMIN_TYPES = [['dynasty', 'Dynasty'], ['salarycap', 'Salary Cap'], ['bestball', 'Best Ball'], ['redraft', 'Redraft']];
+		const ADMIN_TYPES = [['dynasty', 'Dynasty'], ['salarycap', 'Salary Cap'], ['bestball', 'Draft Only'], ['redraft', 'Redraft']];
 		const ADMIN_FORMATS = [['', '—'], ['dynasty', 'Dynasty'], ['auction', 'Auction']];
 		const ADMIN_RANKINGS = [['', 'Automatic'], ['DYNASTY', 'Dynasty'], ['DRAFT', 'Draft'], ['ROS', 'Rest-of-season'], ['WEEKLY', 'Weekly'], ['ADP', 'ADP']];
 		const ADMIN_SCORING = [['', 'PPR'], ['HALF', 'Half PPR'], ['STD', 'Standard']];
@@ -2181,7 +2190,20 @@
 				moveCell.appendChild(down);
 				row.appendChild(moveCell);
 
-				row.appendChild(el('td', {}, [adminText(league.name, 'League name', (v) => { league.name = v; }, 'admin-wide')]));
+				// Read-only, and showing the live name from the last sync rather
+				// than the config's own `name`. That field is only a fallback
+				// for when the provider can't be reached, so editing it changed
+				// nothing visible on any other tab — it was a control that
+				// looked like it did something and didn't. The column stays
+				// because without it the table is 18 rows of bare league IDs
+				// with no way to tell which one you're about to remove.
+				const live = (pageData?.leagues || []).find((l) => l.id === league.id);
+				const label = live?.leagueName || league.name || '';
+				row.appendChild(el('td', { class: 'admin-name' }, [
+					label
+						? el('span', { text: label })
+						: el('span', { class: 'admin-name-pending', text: 'Name appears after the next sync' }),
+				]));
 				row.appendChild(el('td', {}, [adminText(league.id, 'e.g. 26696', (v) => { league.id = v; }, 'admin-narrow')]));
 				row.appendChild(el('td', {}, [adminText(league.franchiseId, 'e.g. 0001', (v) => { league.franchiseId = v; }, 'admin-narrow')]));
 				row.appendChild(el('td', {}, [adminSelect(ADMIN_PROVIDERS, league.provider, (v) => { league.provider = v || undefined; })]));
@@ -2227,12 +2249,14 @@
 
 			card.appendChild(el('div', {
 				class: 'admin-legend',
-				text: 'My team ID is your own team within that league (MFL uses 4 digits like 0001; ESPN and Sleeper use plain numbers). Lineups shows a lineup editor on the Rosters tab — MFL can be submitted from here, Sleeper is view-only. Rankings on Automatic uses dynasty rankings for dynasty leagues and draft rankings everywhere else.',
+				text: 'Name is read-only — it comes from the league itself at each sync, so there is nothing here to edit. My team ID is your own team within that league (MFL uses 4 digits like 0001; ESPN and Sleeper use plain numbers). Format only does anything when set to Auction, which is what adds the Salary and Yrs columns and the cap summary to that league’s card; on any other setting it has no effect. Lineups shows a lineup editor on the Rosters tab — MFL can be submitted from here, Sleeper is view-only. Rankings on Automatic uses dynasty rankings for dynasty leagues and draft rankings everywhere else.',
 			}));
 
 			const addBtn = el('button', { type: 'button', class: 'admin-add-btn', text: '+ Add a league' });
 			addBtn.addEventListener('click', () => {
-				adminDraft.push({ id: '', franchiseId: '', name: '', type: 'bestball' });
+				// No name: it isn't editable here any more, and the sync fills in
+				// the real one from the provider on its next run.
+				adminDraft.push({ id: '', franchiseId: '', type: 'bestball' });
 				refreshAdminCard();
 				const rows = document.querySelectorAll('.admin-row');
 				const last = rows[rows.length - 1];
