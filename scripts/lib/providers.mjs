@@ -886,14 +886,16 @@ export async function fetchSleeperScoring(league) {
 // no write API access."), so myffl.html only ever renders this for
 // display, never with a Save/Submit control. Same week-resolution as
 // fetchSleeperScoring (display_week covers preseason, before state.week
-// ticks past 0). Pilot feature: only called for leagues flagged
-// lineupPilot in config/leagues.json.
+// ticks past 0) — falling back further to week 1 when even display_week
+// is still unset, same known-limitation tradeoff fetchMflLineup already
+// makes for MFL. Confirmed necessary in practice: SFB16 runs its own Week
+// 1 during the NFL preseason, ahead of Sleeper's global state ticking
+// over at all, so without this fallback its lineup never resolves even
+// once a manager has actually set one. Pilot feature: only called for
+// leagues flagged lineupPilot in config/leagues.json.
 export async function fetchSleeperLineup(league) {
   const state = await sleeperGet('/state/nfl');
-  const week = state.week > 0 ? state.week : state.display_week;
-  if (!week) {
-    throw new Error('No current week available yet');
-  }
+  const week = state.week > 0 ? state.week : (state.display_week || 1);
 
   const matchups = await sleeperGet(`/league/${league.id}/matchups/${week}`);
   const mine = (matchups || []).find((m) => String(m.roster_id) === String(league.franchiseId));
