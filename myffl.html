@@ -2071,9 +2071,30 @@
 
 		// Blank means "leave the key out", which is not the same as an empty
 		// value — an omitted provider means MFL, an omitted rankingType means
-		// "pick automatically from the league type". The labels say so.
+		// "pick automatically from the league type and the time of year". The
+		// labels, and the note above the table, say so.
 		const ADMIN_PROVIDERS = [['', 'MFL'], ['espn', 'ESPN'], ['sleeper', 'Sleeper']];
 		const ADMIN_TYPES = [['dynasty', 'Dynasty'], ['salarycap', 'Salary Cap'], ['draftonly', 'Draft Only'], ['redraft', 'Redraft']];
+		// Is the NFL regular season on? A deliberate second copy of the rule
+		// in nflSeasonPhase() in scripts/lib/fantasypros.mjs — this page has no
+		// build step and can't import from scripts/, so the alternative would be
+		// a fetch just to word one sentence of the legend under the Admin table.
+		// The sync is the side that actually picks the ranking set; this only
+		// describes it, so the two drifting apart would mislead rather than
+		// break anything. Keep them in step.
+		//
+		// Season runs from the Thursday after the first Monday in September
+		// (Labor Day) through the second Sunday in February (the Super Bowl).
+		function nflInSeason(now = new Date()) {
+			const nth = (year, month, weekday, n) => {
+				const firstDow = new Date(Date.UTC(year, month, 1)).getUTCDay();
+				return Date.UTC(year, month, 1 + ((weekday - firstDow + 7) % 7) + (n - 1) * 7);
+			};
+			const year = now.getUTCFullYear();
+			const day = 24 * 60 * 60 * 1000;
+			return now.getTime() >= nth(year, 8, 1, 1) + 3 * day || now.getTime() < nth(year, 1, 0, 2) + day;
+		}
+
 		const ADMIN_RANKINGS = [['', 'Automatic'], ['DYNASTY', 'Dynasty'], ['DRAFT', 'Draft'], ['ROS', 'Rest-of-season'], ['WEEKLY', 'Weekly'], ['ADP', 'ADP']];
 		const ADMIN_SCORING = [['', 'PPR'], ['HALF', 'Half PPR'], ['STD', 'Standard']];
 
@@ -2253,7 +2274,11 @@
 
 			card.appendChild(el('div', {
 				class: 'admin-legend',
-				text: 'Name is read-only — it comes from the league itself at each sync, so there is nothing here to edit. My team ID is your own team within that league (MFL uses 4 digits like 0001; ESPN and Sleeper use plain numbers). Type set to Salary Cap is what adds the Salary and Yrs columns and the cap summary to that league’s card. Lineups shows a lineup editor on the Rosters tab — MFL can be submitted from here, Sleeper is view-only. Rankings on Automatic uses dynasty rankings for dynasty leagues and draft rankings everywhere else.',
+				text: 'Name is read-only — it comes from the league itself at each sync, so there is nothing here to edit. My team ID is your own team within that league (MFL uses 4 digits like 0001; ESPN and Sleeper use plain numbers). Type set to Salary Cap is what adds the Salary and Yrs columns and the cap summary to that league’s card. Lineups shows a lineup editor on the Rosters tab — MFL can be submitted from here, Sleeper is view-only. Rankings on Automatic follows the NFL calendar by itself: every league switches to rest-of-season rankings once the season kicks off, then back to dynasty rankings for dynasty leagues and draft rankings everywhere else once the Super Bowl is over. '
+					+ (nflInSeason()
+						? 'The season is underway, so Automatic currently means rest-of-season everywhere. '
+						: 'It is the offseason, so Automatic currently means dynasty or draft. ')
+					+ 'Picking anything else pins that league to that one set year-round.',
 			}));
 
 			const addBtn = el('button', { type: 'button', class: 'admin-add-btn', text: '+ Add a league' });

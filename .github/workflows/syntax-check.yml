@@ -68,6 +68,12 @@ jobs:
       - name: Test the Admin tab's save validation
         run: node scripts/test-save-leagues.mjs
 
+      # Also pure functions with no network: the NFL-calendar rules that flip
+      # the automatic ranking set to rest-of-season at kickoff and back after
+      # the Super Bowl. Nobody is watching on the day either boundary fires.
+      - name: Test the automatic ranking-set calendar
+        run: node scripts/test-season-phase.mjs
+
       - name: Validate config/leagues.json
         run: |
           node --input-type=module -e '
