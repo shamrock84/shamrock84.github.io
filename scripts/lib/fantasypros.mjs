@@ -121,6 +121,51 @@ async function fpGet(path, apiKey) {
   }
 }
 
+// How deep a ranking list is kept in data/rosters.json for the Top Players
+// and Top Available cards. Fifteen pages at ten rows apiece is already far
+// past what anyone scrolls, and this file is fetched in full on every page
+// load — each pool costs roughly 25KB, so depth here is paid for by every
+// visitor on every visit, not once at sync time.
+//
+// It also bounds Top Available: a free agent is only findable if he is inside
+// the pool, so in a deep dynasty league — where the top 150 are all rostered
+// — that card correctly comes up nearly empty. That is the honest answer to
+// "who is available", not a truncation artefact worth spending 100KB to fix.
+export const RANKING_POOL_SIZE = 150;
+
+// How many available players are recorded per league. Four pages is plenty
+// for a waiver-wire glance, and a pre-draft redraft league — where literally
+// everyone is a free agent — would otherwise store the whole pool back again
+// once per league.
+export const AVAILABLE_LIMIT = 40;
+
+// Stored site-relative, since every one of these is a fantasypros.com URL and
+// the origin repeated 450 times is 25KB of nothing. Anything that isn't on
+// that origin is kept whole. The page reverses this with one rule; what it
+// must never do is build the URL from the player's name — see playerPageUrl.
+function compactPlayerUrl(url) {
+  if (!url) return null;
+  return url.startsWith(FP_SITE) ? url.slice(FP_SITE.length) : url;
+}
+
+// The ranking list itself, best first — the same response buildRankingIndex
+// turns into a name lookup, kept in list form so the page can show who the
+// best players are rather than only where our own players place among them.
+// Players with no rank are dropped: they cannot be placed in an ordered list,
+// and an unranked player is not a "top" anything.
+function buildRankingList(players) {
+  return (players || [])
+    .map((p) => ({
+      name: p.player_name,
+      position: canonicalPosition(p.player_position_id),
+      rank: toNumberOrNull(p.rank_ecr),
+      url: compactPlayerUrl(playerPageUrl(p)),
+    }))
+    .filter((p) => p.name && p.rank != null)
+    .sort((a, b) => a.rank - b.rank)
+    .slice(0, RANKING_POOL_SIZE);
+}
+
 function buildRankingIndex(players) {
   const byName = new Map();
   for (const p of players || []) {
@@ -255,6 +300,7 @@ export function createRankingsProvider(apiKey, season) {
         key,
         fpGet(`/nfl/${season}/consensus-rankings?${params}`, apiKey).then((data) => ({
           index: buildRankingIndex(data?.players),
+          list: buildRankingList(data?.players),
           lastUpdated: data?.last_updated ?? null,
           totalExperts: toNumberOrNull(data?.total_experts),
         }))
@@ -266,9 +312,21 @@ export function createRankingsProvider(apiKey, season) {
   return { getRankings };
 }
 
+// How a league finds the ranking list its ECR numbers came from. The three
+// parts are exactly what's already recorded on `league.rankings`, so nothing
+// extra has to be stored per league to make the join.
+export function rankingPoolKey({ type, scoring, position }) {
+  return `${type}|${scoring}|${position}`;
+}
+
 // Attaches an `ecr` object to every player on every league that has one, and
 // records the ranking set used on the league itself so the page can label
 // where the numbers came from. Mutates `leagues` in place.
+//
+// Returns `{ summary, pools }` — the pools being the top of each ranking list
+// actually used, keyed by rankingPoolKey, which the sync writes alongside the
+// leagues. Two Analytics cards need them: Top Players is the list itself, and
+// Top Available is the list minus everyone rostered in a given league.
 //
 // Failures are per-league and non-fatal: a league whose ranking set can't be
 // fetched keeps its roster and just carries a rankingsError, matching how
@@ -279,6 +337,7 @@ export async function attachRankings(leagues, leagueConfigs, { apiKey, season, n
   const provider = createRankingsProvider(apiKey, season);
   const configById = new Map(leagueConfigs.map((l) => [l.id, l]));
   const summary = [];
+  const pools = {};
 
   for (const league of leagues) {
     if (!league.players || league.players.length === 0) continue;
@@ -312,6 +371,11 @@ export async function attachRankings(leagues, leagueConfigs, { apiKey, season, n
       league.rankings = {
         type: spec.type,
         scoring: spec.scoring,
+        // The primary list only. A superflex league also draws on ALL for
+        // kickers, defenses and IDP, but those two lists number their ranks
+        // on different scales, so mixing them into one ordered pool would
+        // interleave two rankings that don't compare. The overall list is
+        // the one the analytics cards are ordered by.
         position: spec.positions[0],
         lastUpdated: sets[0]?.lastUpdated ?? null,
         totalExperts: sets[0]?.totalExperts ?? null,
@@ -319,6 +383,20 @@ export async function attachRankings(leagues, leagueConfigs, { apiKey, season, n
         total: league.players.length,
       };
       league.rankingsError = null;
+
+      const primary = sets[0];
+      const key = rankingPoolKey(league.rankings);
+      if (primary?.list?.length > 0 && !pools[key]) {
+        pools[key] = {
+          type: spec.type,
+          scoring: spec.scoring,
+          position: spec.positions[0],
+          lastUpdated: primary.lastUpdated ?? null,
+          players: primary.list,
+        };
+      }
+      league.available = availableFromPool(pools[key], league.rosteredNames);
+
       summary.push(`${league.name}: ${matched}/${league.players.length} ranked (${spec.type}/${spec.scoring})`);
     } catch (err) {
       league.rankings = null;
@@ -327,5 +405,30 @@ export async function attachRankings(leagues, leagueConfigs, { apiKey, season, n
     }
   }
 
-  return summary;
+  return { summary, pools };
+}
+
+// The best-ranked players in this league's pool that nobody in the league
+// rosters. Names only: the rank, position and profile link all live on the
+// pool entry the page looks the name back up in, and repeating them once per
+// league is the same bytes over again for eighteen leagues.
+//
+// `null` rather than `[]` when the league-wide roster couldn't be read, which
+// is a different statement: an empty array says "no good free agents", null
+// says "don't know", and only the second should keep a league out of the
+// card's denominator.
+export function availableFromPool(pool, rosteredNames) {
+  if (!pool || !Array.isArray(rosteredNames) || rosteredNames.length === 0) return null;
+
+  const rostered = new Set(rosteredNames.map(normalizePlayerName).filter(Boolean));
+  const seen = new Set();
+  const available = [];
+  for (const p of pool.players) {
+    const key = normalizePlayerName(p.name);
+    if (!key || rostered.has(key) || seen.has(key)) continue;
+    seen.add(key);
+    available.push(p.name);
+    if (available.length >= AVAILABLE_LIMIT) break;
+  }
+  return available;
 }

@@ -376,6 +376,7 @@ async function main() {
   // exactly as it did before this existed, and never allowed to fail the run
   // — every league keeps its roster whether or not rankings came through.
   const fpApiKey = fantasyProsApiKey();
+  let rankingPools = {};
   if (!fpApiKey) {
     console.log('Skipping FantasyPros rankings: FANTASYPROS_API_KEY not set');
   } else {
@@ -389,11 +390,31 @@ async function main() {
     const season = process.env.MFL_YEAR || String(targetSeason);
     console.log(`FantasyPros — ${season} season, ${phase.inSeason ? 'in season' : 'offseason'}`);
     try {
-      const summary = await attachRankings(leagues, LEAGUES, { apiKey: fpApiKey, season, now });
-      for (const line of summary) console.log(`FantasyPros — ${line}`);
+      const result = await attachRankings(leagues, LEAGUES, { apiKey: fpApiKey, season, now });
+      for (const line of result.summary) console.log(`FantasyPros — ${line}`);
+      rankingPools = result.pools;
+      for (const [key, pool] of Object.entries(rankingPools)) {
+        console.log(`FantasyPros — pool ${key}: ${pool.players.length} players`);
+      }
     } catch (err) {
       console.error(`Failed to attach FantasyPros rankings: ${err.message}`);
     }
+  }
+
+  // Degrade the same way everything else here does: a league that couldn't be
+  // read keeps the availability it last had, and a run with no rankings at all
+  // keeps the previous pools rather than emptying the two cards that need
+  // them. Both are stale, but stale beats blank for a list of free agents that
+  // barely moves between syncs.
+  for (const league of leagues) {
+    delete league.rosteredNames;
+    if (league.available == null) {
+      const prev = previousById.get(league.id);
+      league.available = prev?.available ?? null;
+    }
+  }
+  if (Object.keys(rankingPools).length === 0 && previous?.rankingPools) {
+    rankingPools = previous.rankingPools;
   }
 
   const output = {
@@ -401,6 +422,11 @@ async function main() {
     // The season being aimed at. Individual leagues can legitimately trail it
     // during the rollover window, so each carries its own `season` too.
     year: String(targetSeason),
+    // The ranking lists themselves, deep enough for the Top Players and Top
+    // Available cards. Shared across leagues rather than repeated on each,
+    // since a dozen leagues typically draw on the same two or three lists —
+    // see rankingPoolKey, which is how a league finds its own.
+    rankingPools,
     leagues,
   };
 
