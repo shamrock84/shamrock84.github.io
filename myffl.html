@@ -1415,10 +1415,14 @@
 			// and the gold left on screen is exactly the work outstanding.
 			// Re-synced on change rather than set once, so clearing a plan back
 			// to "—" returns both to gold.
+			// A plain ✓/⚠ rather than ✅/⚠️: the emoji forms carry their own
+			// colour and would ignore the gold/purple the rest of the cell is
+			// switching between.
 			const syncPlanState = () => {
 				const planned = !!select.value;
 				select.classList.toggle('years-select-unset', !planned);
 				warnIcon.classList.toggle('contract-warn-planned', planned);
+				warnIcon.textContent = planned ? '✓' : '⚠';
 				warnIcon.title = planned
 					? 'Contract length planned — not official until MFL sets one'
 					: 'Contract length not set yet — due early September';
@@ -1956,7 +1960,7 @@
 				// "0/9 need" contradicts itself, so the done state says what it
 				// actually is — and names who the ball is with.
 				contractBannerTextEl.textContent = unplanned === 0
-					? `⚠ All ${total} contract length${total === 1 ? '' : 's'} planned — waiting on MFL`
+					? `✓ All ${total} contract length${total === 1 ? '' : 's'} planned — waiting on MFL`
 					: `⚠ ${unplanned}/${total} players need contract length set`;
 				contractBannerEl.classList.toggle('contract-banner-planned', unplanned === 0);
 			};
