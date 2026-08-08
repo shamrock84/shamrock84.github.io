@@ -80,6 +80,28 @@ export function normalizePlayerName(raw) {
   return s;
 }
 
+// FantasyPros' own player-page URL, read off the rankings response rather than
+// built from the player's name. A slug guessed from a name is right until it
+// isn't: the site disambiguates two players who share one (josh-allen.php is
+// the quarterback, josh-allen-lb.php the linebacker), and normalizePlayerName
+// above deliberately drops the suffixes some slugs keep (michael-pittman-jr).
+// A link to the wrong player is worse than no link, so a response carrying
+// none of these fields yields null and the name simply isn't linked.
+//
+// Three shapes are accepted because the response has carried different ones:
+// an absolute URL, a site-relative path, or the bare slug.
+const FP_SITE = 'https://www.fantasypros.com';
+
+export function playerPageUrl(p) {
+  const raw = p?.player_page_url || p?.player_url || p?.player_filename || null;
+  const s = raw == null ? '' : String(raw).trim();
+  if (!s) return null;
+  if (/^https?:\/\//i.test(s)) return s;
+  if (s.startsWith('/')) return `${FP_SITE}${s}`;
+  const slug = s.replace(/\.php$/i, '');
+  return slug ? `${FP_SITE}/nfl/players/${slug}.php` : null;
+}
+
 function toNumberOrNull(value) {
   if (value === null || value === undefined || value === '') return null;
   const n = Number(value);
@@ -109,6 +131,7 @@ function buildRankingIndex(players) {
       posRank: p.pos_rank || null,
       tier: toNumberOrNull(p.tier),
       delta: toNumberOrNull(p.player_ecr_delta),
+      url: playerPageUrl(p),
       position: canonicalPosition(p.player_position_id),
       team: canonicalTeam(p.player_team_id),
     };
@@ -276,6 +299,10 @@ export async function attachRankings(leagues, leagueConfigs, { apiKey, season, n
             posRank: hit.posRank,
             tier: hit.tier,
             delta: hit.delta,
+            // Absent when the response carried no page field for this player
+            // — the page treats that as "don't link the name" rather than
+            // constructing a URL of its own. See playerPageUrl.
+            url: hit.url,
           };
           matched++;
           break;

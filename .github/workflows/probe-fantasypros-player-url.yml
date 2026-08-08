@@ -1,0 +1,30 @@
+name: Probe FantasyPros Player URL (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here, the
+# same rule the other manual workflows follow.
+#
+# Dumps what a consensus-rankings player actually carries, so linking a name to
+# a FantasyPros profile rests on a field in the response rather than on a slug
+# built from the name. api.fantasypros.com is unreachable from a sandbox and
+# the key is a secret, so a workflow run is the only place to ask.
+#
+# Read-only: one consensus-rankings GET.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Dump a ranked player's fields
+        env:
+          FANTASYPROS_API_KEY: ${{ secrets.FANTASYPROS_API_KEY }}
+        run: node scripts/probe-fantasypros-player-url.mjs
