@@ -1132,22 +1132,18 @@
 			localStorage.setItem(CONTRACT_PLAN_STORAGE_KEY, JSON.stringify(plans));
 		}
 
-		// Where each Salary Cap league's contract-length summary email should
-		// go — override per league by id here once the real address is known.
-		// Falls back to a single placeholder until then (currently every
-		// league, while this feature is still being verified).
+		// Where a Salary Cap league's contract-length summary is addressed. The
+		// real value is commishEmail in config/leagues.json, set per league from
+		// the Admin tab and carried through by the sync — this is only the
+		// fallback for a league that hasn't been given one.
+		//
+		// That fallback is a placeholder, not a working address: the mailto still
+		// opens and looks entirely normal, and reaches nobody. The Admin tab says
+		// so on any Salary Cap league missing an address, which is the only place
+		// the gap is visible before you've already sent it.
 		const CONTRACT_EMAIL_DEFAULT = 'melbosffl@gmail.com';
-		// Held here only until the first sync after commishEmail moved into
-		// config/leagues.json, where these three now live. The synced value wins;
-		// this stops the addresses from reverting to the placeholder during the
-		// window between the config edit and the next sync writing it out.
-		const CONTRACT_EMAIL_OVERRIDES = {
-			'35217': 'Salarycapdynasty@gmail.com', // The Iron Bank
-			'34850': 'Wiseguysfantasy@gmail.com',  // Wise Guys
-			'30641': 'supercapdynasty@gmail.com',  // Super Cap
-		};
 		function contractEmailFor(league) {
-			return league.commishEmail || CONTRACT_EMAIL_OVERRIDES[league.id] || CONTRACT_EMAIL_DEFAULT;
+			return league.commishEmail || CONTRACT_EMAIL_DEFAULT;
 		}
 
 		// Locally-planned salary ($1-200, whole dollars) for a Salary Cap
