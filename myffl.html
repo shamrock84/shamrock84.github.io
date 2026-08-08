@@ -1242,6 +1242,7 @@
 				plans[leagueId][playerId] = years;
 			}
 			localStorage.setItem(CONTRACT_PLAN_STORAGE_KEY, JSON.stringify(plans));
+			schedulePlanPush();
 		}
 
 
@@ -1273,6 +1274,97 @@
 				plans[leagueId][playerId] = salary;
 			}
 			localStorage.setItem(SALARY_PLAN_STORAGE_KEY, JSON.stringify(plans));
+			schedulePlanPush();
+		}
+
+		// --- Plan sync -------------------------------------------------------
+		//
+		// localStorage is per browser per device, so an iPad and a phone kept
+		// entirely separate sets of plans and neither knew about the other.
+		// api/plans.js is the shared copy; localStorage stays the working copy
+		// so the page still renders and still accepts edits with the network
+		// down, exactly as it did before any of this existed.
+		//
+		// Two directions, deliberately asymmetric:
+		//   load   — post the local document in `merge` mode. A device that has
+		//            never synced posts an empty one, and merge can't destroy
+		//            anything, so a first load on a new phone pulls the iPad's
+		//            plans down instead of overwriting them with nothing.
+		//   change — post the whole local document in `replace` mode, so
+		//            clearing a plan actually removes it rather than being
+		//            unioned straight back.
+		const PLAN_PUSH_DEBOUNCE_MS = 800;
+		let planPushTimer = null;
+		let planSyncDone = false;
+
+		function localPlansDocument() {
+			return { contractPlans: loadContractPlans(), salaryPlans: loadSalaryPlans() };
+		}
+
+		function writePlansLocal(doc) {
+			localStorage.setItem(CONTRACT_PLAN_STORAGE_KEY, JSON.stringify(doc.contractPlans || {}));
+			localStorage.setItem(SALARY_PLAN_STORAGE_KEY, JSON.stringify(doc.salaryPlans || {}));
+		}
+
+		async function postPlans(mode) {
+			const res = await fetch(PLANS_URL, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+				body: JSON.stringify({ plans: localPlansDocument(), mode }),
+			});
+			if (!res.ok) throw new Error(`HTTP ${res.status}`);
+			return (await res.json()).plans;
+		}
+
+		// Debounced: changing a dropdown fires per keystroke-equivalent, and
+		// each push carries the whole document anyway, so coalescing a burst
+		// into one request loses nothing.
+		function schedulePlanPush() {
+			if (!isLoggedIn()) return;
+			clearTimeout(planPushTimer);
+			planPushTimer = setTimeout(() => {
+				// Until this device has completed one successful merge it
+				// hasn't seen the shared document, so it pushes in merge mode:
+				// replacing the store with a copy that might be missing another
+				// device's plans is the exact wipe this endpoint exists to
+				// prevent. That also makes an edit self-healing — if the store
+				// was down at load, the next change re-attempts the merge
+				// rather than leaving the device unsynced until a reload.
+				const mode = planSyncDone ? 'replace' : 'merge';
+				// Fire-and-forget on purpose. The local write already happened
+				// and is what the page renders from; a failed push means this
+				// device is simply unsynced for now, which is strictly better
+				// than erroring at someone mid-edit.
+				postPlans(mode).then((merged) => {
+					if (!planSyncDone && merged) {
+						writePlansLocal(merged);
+						planSyncDone = true;
+					}
+				}).catch(() => {});
+			}, PLAN_PUSH_DEBOUNCE_MS);
+		}
+
+		// Runs after the first render rather than before it: the roster is
+		// already on screen from local data, and this only ever adds plans the
+		// device didn't have. Re-renders only when the merge actually changed
+		// something, so the common case (already in sync) doesn't rebuild the
+		// grid under someone.
+		async function syncPlans() {
+			if (!isLoggedIn()) return;
+			const before = JSON.stringify(localPlansDocument());
+			try {
+				const merged = await postPlans('merge');
+				if (!merged) return;
+				writePlansLocal(merged);
+				planSyncDone = true;
+				const after = JSON.stringify(localPlansDocument());
+				if (after !== before && pageData) renderGrid();
+			} catch {
+				// Offline, logged out server-side, or the store isn't
+				// configured yet — keep using the local copy silently. Plans
+				// are a convenience, not something worth an error banner over
+				// the whole roster.
+			}
 		}
 		let pageData = null;
 		let liveScoringTimer = null;
@@ -1300,6 +1392,9 @@
 		// writes it back through Vercel, which validates before committing.
 		const LEAGUES_CONFIG_URL = 'config/leagues.json';
 		const SAVE_LEAGUES_URL = 'https://shamrock84-github-io.vercel.app/api/save-leagues';
+		// Planned contract lengths and salaries, stored server-side so they
+		// follow the manager between devices — see api/plans.js.
+		const PLANS_URL = 'https://shamrock84-github-io.vercel.app/api/plans';
 		let leagueConfig = null;
 		let leagueConfigError = null;
 		let authToken = localStorage.getItem(AUTH_TOKEN_KEY) || null;
@@ -1318,11 +1413,19 @@
 			if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
 			authToken = body.token;
 			localStorage.setItem(AUTH_TOKEN_KEY, authToken);
+			// Logging in is the other moment plans become reachable — the page
+			// may have loaded logged out, when syncPlans() does nothing.
+			syncPlans();
 		}
 
 		function doLogout() {
 			authToken = null;
 			localStorage.removeItem(AUTH_TOKEN_KEY);
+			// The next login re-merges from scratch. Without this a device that
+			// logged out, had plans changed elsewhere, then logged back in
+			// would push its stale copy over the newer one in replace mode.
+			planSyncDone = false;
+			clearTimeout(planPushTimer);
 			// Unsaved Admin edits belong to the session that made them — leaving
 			// them in memory would hand them to whoever logs in next.
 			adminDraft = null;
@@ -3128,6 +3231,11 @@
 					: 'Not yet synced — run the "Sync MFL Rosters" GitHub Action.';
 
 				renderGrid();
+				// After the render, not before it: the roster is already on
+				// screen from the local copy, and this only pulls in plans made
+				// on another device. Not awaited — a slow or unreachable store
+				// must not hold up the page.
+				syncPlans();
 			} catch (err) {
 				statusEl.textContent = `Couldn't load roster data: ${err.message}`;
 				updatedEl.textContent = '';
