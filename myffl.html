@@ -1188,29 +1188,44 @@
 		const LEAGUE_TYPE_LABELS = { dynasty: 'Dynasty', salarycap: 'Salary Cap', draftonly: 'Draft Only', redraft: 'Redraft' };
 		// FantasyPros' ranking-type codes, spelled out for the card footnote.
 		const ECR_TYPE_LABELS = { DYNASTY: 'Dynasty', DRAFT: 'Draft', ROS: 'Rest-of-season', WEEKLY: 'Weekly', ADP: 'ADP' };
-		// Which sub-tab a league's cards render under, in every view (Rosters,
-		// Scoring, Standings, Analytics) — Dynasty and Salary Cap share one
-		// sub-tab everywhere, since a salary-cap roster is still a
-		// dynasty-style keeper roster; the other two are one-to-one with
-		// their league type.
+		// Which sub-tab a league's cards render under in the per-league views
+		// (Rosters, Scoring, Standings) — Dynasty and Salary Cap share one
+		// sub-tab, since a salary-cap roster is still a dynasty-style keeper
+		// roster; the other two are one-to-one with their league type. Analytics
+		// groups differently — see ANALYTICS_GROUP.
 		const SUBTAB_GROUP = { dynasty: 'dynasty', salarycap: 'dynasty', draftonly: 'draftonly', redraft: 'redraft' };
-		const SUBTAB_ORDER = ['dynasty', 'redraft', 'draftonly'];
+		// Display order for the sub-tab strip, across every view. 'active' only
+		// ever appears in Analytics, and the other three only ever outside it,
+		// so one ordered list covers both groupings without either view seeing a
+		// sub-tab the other invented.
+		const SUBTAB_ORDER = ['active', 'dynasty', 'redraft', 'draftonly'];
 		// Only where a sub-tab's name needs to differ from LEAGUE_TYPE_LABELS —
 		// everything else falls through to that shared wording, so "Redraft"
 		// isn't repeated here. bestball used to be overridden to "Draft Only"
 		// for the sub-tab only; that wording is now the type label itself, so
-		// the override would be a no-op and is gone.
-		const SUBTAB_LABEL_OVERRIDES = { dynasty: 'Dynasty/Salary Cap' };
+		// the override would be a no-op and is gone. 'active' has no league type
+		// behind it at all, so its name lives only here.
+		const SUBTAB_LABEL_OVERRIDES = { dynasty: 'Dynasty/Salary Cap', active: 'Active' };
 
 		function subtabType(league) {
 			return SUBTAB_GROUP[league.type] || league.type;
 		}
 
-		// Reverse of SUBTAB_GROUP: every underlying league.type that folds
-		// into a given sub-tab. Used by the Analytics exposure card to know
-		// which leagues to combine into one group.
-		function typesInSubtab(groupKey) {
-			return Object.keys(SUBTAB_GROUP).filter((t) => SUBTAB_GROUP[t] === groupKey);
+		// Analytics groups its leagues differently from every other view, and
+		// only Analytics. Exposure is a portfolio question — how much of what
+		// you own is this one player — and a redraft roster is as much a share
+		// of that portfolio as a dynasty one, so keeping them apart split the
+		// same question across two thin denominators. Draft-only leagues stay
+		// separate: those teams are drafted and then left alone, so folding them
+		// in would count rosters nobody is managing against exposure you can
+		// still act on.
+		const ANALYTICS_GROUP = { dynasty: 'active', salarycap: 'active', redraft: 'active', draftonly: 'draftonly' };
+		const ANALYTICS_GROUP_ORDER = ['active', 'draftonly'];
+
+		// Reverse of ANALYTICS_GROUP: every league type that folds into one of
+		// the Analytics groups, which is how each card knows what to combine.
+		function typesInAnalyticsGroup(groupKey) {
+			return Object.keys(ANALYTICS_GROUP).filter((t) => ANALYTICS_GROUP[t] === groupKey);
 		}
 		const POSITION_ORDER = ['QB', 'RB', 'WR', 'TE', 'PK', 'Def'];
 		function positionRank(pos) {
@@ -2431,13 +2446,14 @@
 			return card;
 		}
 
-		// Exposure: how many of your leagues (within this one group — dynasty
-		// exposure and draft-only exposure aren't the same question) roster a
-		// given player, as a share of every league in that group with usable
-		// roster data. Matched by player name since MFL/ESPN/Sleeper each use
-		// their own player ids — names are the one thing that lines up.
-		// `types` is an array so a group can span more than one league type
-		// (Dynasty and Salary Cap share an exposure card — see SUBTAB_GROUP).
+		// Exposure: how many of your leagues (within this one group — exposure
+		// across leagues you actively manage and exposure across draft-and-leave
+		// leagues aren't the same question) roster a given player, as a share of
+		// every league in that group with usable roster data. Matched by player
+		// name since MFL/ESPN/Sleeper each use their own player ids — names are
+		// the one thing that lines up. `types` is an array because a group spans
+		// several league types: dynasty, salary-cap and redraft all fold into
+		// Active — see ANALYTICS_GROUP.
 		// A player's ECR can legitimately differ between two leagues in the same
 		// group: a dynasty league and a salary-cap league sit side by side here and
 		// draw from different FantasyPros lists, and their scoring formats can differ
@@ -2744,8 +2760,12 @@
 			});
 		}
 
-		// Sub-tabs (Dynasty / Draft Only) are scoped to whichever top-level view is active,
-		// so they're recomputed every time the view changes rather than once up front.
+		// Sub-tabs are scoped to whichever top-level view is active, so they're
+		// recomputed every time the view changes rather than once up front. That
+		// is also what lets Analytics group leagues its own way: the strip is
+		// built from the data-league-type of the cards actually in this view, so
+		// its Active/Draft Only pair and the other views' Dynasty/Salary
+		// Cap/Redraft/Draft Only never have to know about each other.
 		function renderSubTabs() {
 			const subtabsEl = document.getElementById('subtabs');
 			subtabsEl.innerHTML = '';
@@ -3499,8 +3519,8 @@
 				}
 			}
 
-			for (const groupKey of SUBTAB_ORDER) {
-				const types = typesInSubtab(groupKey);
+			for (const groupKey of ANALYTICS_GROUP_ORDER) {
+				const types = typesInAnalyticsGroup(groupKey);
 				if (!data.leagues.some((l) => types.includes(l.type))) continue;
 				gridEl.appendChild(renderAnalyticsCard(groupKey, types, data.leagues));
 				const injuryCard = renderInjuryExposureCard(groupKey, types, data.leagues);
