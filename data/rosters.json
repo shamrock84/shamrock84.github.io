@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-08T22:53:13.976Z",
+  "generatedAt": "2026-08-08T23:00:55.116Z",
   "year": "2026",
   "rankingPools": {
     "DYNASTY|PPR|ALL": {
@@ -3381,7 +3381,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1 QB, 2-3 RB, 2-3 WR, 1-2 TE, 1 PK, 1 Def",
-      "updatedAt": "2026-08-08T22:50:47.097Z",
+      "updatedAt": "2026-08-08T22:58:10.417Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -3520,7 +3520,8 @@
       "available": [
         "Chig Okonkwo",
         "Kenny Gainwell"
-      ]
+      ],
+      "availableAt": "2026-08-08T22:58:07.707Z"
     },
     {
       "id": "25608",
@@ -4175,7 +4176,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1 QB, 2 RB, 3 WR, 1 TE, 1 PK, 1 Def",
-      "updatedAt": "2026-08-08T22:50:48.265Z",
+      "updatedAt": "2026-08-08T22:58:11.871Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -4314,7 +4315,8 @@
       "available": [
         "Chig Okonkwo",
         "Kenny Gainwell"
-      ]
+      ],
+      "availableAt": "2026-08-08T22:58:07.707Z"
     },
     {
       "id": "23545",
@@ -4922,7 +4924,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1 QB, 2 RB, 3 WR, 1 TE, 1 PK, 1 Def",
-      "updatedAt": "2026-08-08T22:50:49.258Z",
+      "updatedAt": "2026-08-08T22:58:13.340Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -5081,7 +5083,8 @@
       "available": [
         "Chig Okonkwo",
         "Kenny Gainwell"
-      ]
+      ],
+      "availableAt": "2026-08-08T22:58:07.707Z"
     },
     {
       "id": "35217",
@@ -5576,7 +5579,7 @@
       "salaryCap": 550,
       "salaryAdjustments": 3.2699999999999996,
       "startingLineup": "1 QB, 2-3 RB, 3-4 WR, 1-2 TE",
-      "updatedAt": "2026-08-08T22:50:50.579Z",
+      "updatedAt": "2026-08-08T22:58:14.850Z",
       "error": null,
       "tags": [
         "Best Ball"
@@ -5724,7 +5727,8 @@
       "available": [
         "Kenny Gainwell",
         "Chig Okonkwo"
-      ]
+      ],
+      "availableAt": null
     },
     {
       "id": "34850",
@@ -6279,7 +6283,7 @@
       "salaryCap": 500,
       "salaryAdjustments": 4.68,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-08T22:50:51.728Z",
+      "updatedAt": "2026-08-08T22:58:16.334Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -6414,7 +6418,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=34850&JSON=1 (year 2026)",
+      "scoringError": "No live scoring available yet",
       "rankings": {
         "type": "DRAFT",
         "scoring": "HALF",
@@ -6427,7 +6431,8 @@
       "rankingsError": null,
       "available": [
         "Kenny Gainwell"
-      ]
+      ],
+      "availableAt": "2026-08-08T22:58:07.707Z"
     },
     {
       "id": "30641",
@@ -6942,7 +6947,7 @@
       "salaryCap": 500,
       "salaryAdjustments": 10.09,
       "startingLineup": "1-2 QB, 2-4 RB, 2-4 WR, 1-3 TE",
-      "updatedAt": "2026-08-08T22:50:53.220Z",
+      "updatedAt": "2026-08-08T22:58:18.169Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -7090,7 +7095,8 @@
       "rankingsError": null,
       "available": [
         "Kenny Gainwell"
-      ]
+      ],
+      "availableAt": null
     },
     {
       "id": "64470",
@@ -7598,7 +7604,7 @@
       "salaryCap": 500,
       "salaryAdjustments": 58.24,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-08T22:50:54.556Z",
+      "updatedAt": "2026-08-08T22:58:20.159Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -7766,7 +7772,8 @@
       "rankingsError": null,
       "available": [
         "Kenny Gainwell"
-      ]
+      ],
+      "availableAt": "2026-08-08T22:58:07.707Z"
     },
     {
       "id": "56191",
@@ -7780,7 +7787,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-3 RB, 3-4 WR, 1-2 TE",
-      "updatedAt": "2026-08-08T22:50:55.194Z",
+      "updatedAt": "2026-08-08T22:58:20.625Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -7913,7 +7920,8 @@
       "standingsError": null,
       "scoring": null,
       "scoringError": "No live scoring available yet",
-      "available": null
+      "available": null,
+      "availableAt": null
     },
     {
       "id": "34203",
@@ -8328,7 +8336,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-3 RB, 3-4 WR, 1-2 TE",
-      "updatedAt": "2026-08-08T22:50:56.300Z",
+      "updatedAt": "2026-08-08T22:58:22.150Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -8536,7 +8544,8 @@
         "Juwan Johnson",
         "Chig Okonkwo",
         "Keaton Mitchell"
-      ]
+      ],
+      "availableAt": "2026-08-08T22:58:07.707Z"
     },
     {
       "id": "72911",
@@ -8904,7 +8913,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-08T22:50:56.927Z",
+      "updatedAt": "2026-08-08T22:58:23.772Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -9041,7 +9050,8 @@
         "KC Concepcion",
         "Tyjae Spears",
         "Dylan Sampson"
-      ]
+      ],
+      "availableAt": "2026-08-08T22:58:07.707Z"
     },
     {
       "id": "54766",
@@ -9416,7 +9426,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-08T22:50:57.468Z",
+      "updatedAt": "2026-08-08T22:58:24.949Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -9563,7 +9573,8 @@
       "rankingsError": null,
       "available": [
         "Kenny Gainwell"
-      ]
+      ],
+      "availableAt": "2026-08-08T22:58:07.707Z"
     },
     {
       "id": "54458",
@@ -9978,7 +9989,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "0-2 QB, 0-8 RB, 0-8 WR, 0-8 TE",
-      "updatedAt": "2026-08-08T22:50:58.182Z",
+      "updatedAt": "2026-08-08T22:58:25.839Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -10109,7 +10120,8 @@
         "Tyler Allgeier",
         "Tyjae Spears",
         "Dylan Sampson"
-      ]
+      ],
+      "availableAt": null
     },
     {
       "id": "61777",
@@ -10524,7 +10536,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "0-2 QB, 0-8 RB, 0-8 WR, 0-8 TE",
-      "updatedAt": "2026-08-08T22:50:58.865Z",
+      "updatedAt": "2026-08-08T22:58:26.996Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -10662,7 +10674,8 @@
       "rankingsError": null,
       "available": [
         "Kenny Gainwell"
-      ]
+      ],
+      "availableAt": null
     },
     {
       "id": "30196",
@@ -11037,7 +11050,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-08T22:50:59.416Z",
+      "updatedAt": "2026-08-08T22:58:28.083Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -11174,7 +11187,8 @@
       "rankingsError": null,
       "available": [
         "Kenny Gainwell"
-      ]
+      ],
+      "availableAt": null
     },
     {
       "id": "26222",
@@ -11288,7 +11302,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-08T22:51:00.056Z",
+      "updatedAt": "2026-08-08T22:58:29.197Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -11475,7 +11489,8 @@
         "Rico Dowdle",
         "Chris Godwin Jr.",
         "Jordyn Tyson"
-      ]
+      ],
+      "availableAt": "2026-08-08T22:58:07.707Z"
     },
     {
       "id": "1367867592919760896",
@@ -11827,7 +11842,7 @@
           }
         }
       ],
-      "updatedAt": "2026-08-08T22:51:00.155Z",
+      "updatedAt": "2026-08-08T22:58:29.363Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -12063,7 +12078,8 @@
         "total": 20
       },
       "rankingsError": null,
-      "available": []
+      "available": [],
+      "availableAt": "2026-08-08T22:58:07.707Z"
     },
     {
       "id": "1966972",
@@ -12074,7 +12090,7 @@
       "teamName": "Big Dart Energy",
       "url": "https://fantasy.espn.com/football/team?leagueId=1966972&teamId=10",
       "players": [],
-      "updatedAt": "2026-08-08T22:51:00.261Z",
+      "updatedAt": "2026-08-08T22:58:29.599Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -12251,7 +12267,8 @@
         ]
       },
       "scoringError": null,
-      "available": null
+      "available": null,
+      "availableAt": null
     },
     {
       "id": "421871710",
@@ -12262,7 +12279,7 @@
       "teamName": "Jeffer Justinson",
       "url": "https://fantasy.espn.com/football/team?leagueId=421871710&teamId=5",
       "players": [],
-      "updatedAt": "2026-08-08T22:51:00.324Z",
+      "updatedAt": "2026-08-08T22:58:29.659Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -12439,7 +12456,8 @@
         ]
       },
       "scoringError": null,
-      "available": null
+      "available": null,
+      "availableAt": null
     }
   ]
 }
