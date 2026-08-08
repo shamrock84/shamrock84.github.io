@@ -14,10 +14,18 @@
 // the repo the way config/leagues.json is — this repository is public, and
 // committing them would publish exactly what the logged-out gate hides.
 //
-// Needs KV_REST_API_URL and KV_REST_API_TOKEN as Vercel project environment
-// variables (Vercel KV / Upstash Redis). Spoken to over its REST API with
-// plain fetch rather than an SDK, to keep the project's no-dependency
-// property intact.
+// Needs an Upstash Redis store connected to the Vercel project (Storage ->
+// Marketplace -> Upstash -> Redis; Vercel's own first-party "KV" product is
+// retired and no longer offered in that dialog). Spoken to over its REST API
+// with plain fetch rather than an SDK, to keep the project's no-dependency
+// property intact — which is also why it has to be Upstash rather than the
+// marketplace's "Redis" entry: that one hands back a redis:// connection
+// string, and speaking that protocol would mean taking on a client library.
+//
+// The credentials are read under either name Vercel might inject them as,
+// since the integration has used both: KV_REST_API_URL/KV_REST_API_TOKEN and
+// UPSTASH_REDIS_REST_URL/UPSTASH_REDIS_REST_TOKEN. Accepting both removes a
+// setup step that otherwise fails with a 500 and no obvious cause.
 //
 // The site password gates a single account, so there is one plan document,
 // not one per user. PLANS_KEY is that document.
@@ -43,7 +51,25 @@ const PLAN_KINDS = ['contractPlans', 'salaryPlans'];
 
 // Exported for the unit test in scripts/test-plans.mjs. Vercel only ever
 // invokes the default export, so extra named exports cost nothing at runtime.
-export { validatePlans, mergePlans, emptyDocument };
+export { validatePlans, mergePlans, emptyDocument, resolveStore };
+
+// The Upstash integration has injected its REST credentials under two
+// different prefixes over time, and which one a project gets depends on when
+// and how the store was connected. Take either, preferring the KV_* pair
+// since a project carrying both got them from the Vercel-managed side.
+// Returns null when neither pair is fully present — a half-configured pair is
+// treated as absent rather than used, so the failure is the clear "not
+// configured" message instead of a fetch to `undefined/get/...`.
+function resolveStore(env) {
+	const pairs = [
+		[env.KV_REST_API_URL, env.KV_REST_API_TOKEN],
+		[env.UPSTASH_REDIS_REST_URL, env.UPSTASH_REDIS_REST_TOKEN],
+	];
+	for (const [url, token] of pairs) {
+		if (url && token) return { url: url.replace(/\/+$/, ''), token };
+	}
+	return null;
+}
 
 function emptyDocument() {
   return { contractPlans: {}, salaryPlans: {}, updatedAt: null };
@@ -198,14 +224,15 @@ export default async function handler(req, res) {
     return;
   }
 
-  const kvUrl = process.env.KV_REST_API_URL;
-  const kvToken = process.env.KV_REST_API_TOKEN;
-  if (!kvUrl || !kvToken) {
+  const store = resolveStore(process.env);
+  if (!store) {
     res.status(500).json({
-      error: 'KV_REST_API_URL / KV_REST_API_TOKEN are not configured on this deployment. Create a KV store in the Vercel project and redeploy.',
+      error: 'No plan store is configured on this deployment. Connect an Upstash Redis store to the Vercel project (Storage → Marketplace → Upstash → Redis) so that either KV_REST_API_URL/KV_REST_API_TOKEN or UPSTASH_REDIS_REST_URL/UPSTASH_REDIS_REST_TOKEN is set, then redeploy.',
     });
     return;
   }
+  const kvUrl = store.url;
+  const kvToken = store.token;
 
   try {
     if (req.method === 'GET') {

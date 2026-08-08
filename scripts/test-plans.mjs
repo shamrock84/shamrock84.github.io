@@ -4,7 +4,7 @@
 //
 // Run: node scripts/test-plans.mjs
 
-import { validatePlans, mergePlans, emptyDocument } from '../api/plans.js';
+import { validatePlans, mergePlans, emptyDocument, resolveStore } from '../api/plans.js';
 
 let failures = 0;
 function check(name, cond, detail) {
@@ -100,6 +100,21 @@ eq('merge does not mutate its inputs', (() => {
   mergePlans(stored, { contractPlans: { 30641: { 2: '2' } } });
   return stored.contractPlans;
 })(), { 30641: { 1: '1' } });
+
+console.log('resolveStore');
+eq('takes the KV_* pair', resolveStore({ KV_REST_API_URL: 'https://a', KV_REST_API_TOKEN: 't' }),
+  { url: 'https://a', token: 't' });
+eq('takes the UPSTASH_* pair', resolveStore({ UPSTASH_REDIS_REST_URL: 'https://b', UPSTASH_REDIS_REST_TOKEN: 'u' }),
+  { url: 'https://b', token: 'u' });
+eq('prefers KV_* when a project carries both',
+  resolveStore({ KV_REST_API_URL: 'https://a', KV_REST_API_TOKEN: 't', UPSTASH_REDIS_REST_URL: 'https://b', UPSTASH_REDIS_REST_TOKEN: 'u' }),
+  { url: 'https://a', token: 't' });
+eq('strips a trailing slash so the built path has exactly one',
+  resolveStore({ KV_REST_API_URL: 'https://a/', KV_REST_API_TOKEN: 't' }), { url: 'https://a', token: 't' });
+check('returns null when nothing is set', resolveStore({}) === null);
+check('a half-configured pair counts as absent', resolveStore({ KV_REST_API_URL: 'https://a' }) === null);
+check('falls through a half KV_* pair to a complete UPSTASH_* one',
+  resolveStore({ KV_REST_API_URL: 'https://a', UPSTASH_REDIS_REST_URL: 'https://b', UPSTASH_REDIS_REST_TOKEN: 'u' })?.token === 'u');
 
 console.log(failures === 0 ? '\nAll plan tests passed.' : `\n${failures} test(s) failed.`);
 process.exit(failures === 0 ? 0 : 1);
