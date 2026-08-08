@@ -1287,17 +1287,34 @@
 		// so the page still renders and still accepts edits with the network
 		// down, exactly as it did before any of this existed.
 		//
-		// Two directions, deliberately asymmetric:
-		//   load   — post the local document in `merge` mode. A device that has
-		//            never synced posts an empty one, and merge can't destroy
-		//            anything, so a first load on a new phone pulls the iPad's
-		//            plans down instead of overwriting them with nothing.
-		//   change — post the whole local document in `replace` mode, so
-		//            clearing a plan actually removes it rather than being
-		//            unioned straight back.
+		// Once a device has synced, the store is the truth and localStorage is
+		// its cache plus a log of edits not yet pushed:
+		//   first load ever — post the local document in `merge` mode. A device
+		//            that has never synced would otherwise post a document the
+		//            store has never seen, and a replace would wipe whatever the
+		//            other device put there. A union can't destroy anything.
+		//   every load after — GET the store and take it. This is the only read
+		//            that can carry a *deletion* between devices: a plan cleared
+		//            on the iPad is simply absent from the store, and a merge,
+		//            being a union of the store with whatever this phone still
+		//            happens to hold, would hand it straight back — and re-upload
+		//            it, undoing the clear for every device at once.
+		//   change  — post the whole local document in `replace` mode, the only
+		//            mode that can carry a deletion upstream.
 		const PLAN_PUSH_DEBOUNCE_MS = 800;
 		let planPushTimer = null;
-		let planSyncDone = false;
+		// Persisted, not per-session: the one-time merge above is protection for
+		// a device the store has never heard from, and that is a property of the
+		// device, not of this page load. Read back on every load so a returning
+		// device pushes in replace mode from the very first edit — before this
+		// was persisted, every load re-entered merge mode until its sync landed,
+		// and a clear made in that window was unioned straight back.
+		const PLAN_SYNCED_KEY = 'myfflPlanSynced';
+		let planSyncDone = !!localStorage.getItem(PLAN_SYNCED_KEY);
+		// Bumped on every successful push. A load answer is computed before the
+		// push that follows it, so if this moved while the load was in flight the
+		// answer is already stale and adopting it would undo the push.
+		let planPushGeneration = 0;
 
 		function localPlansDocument() {
 			return { contractPlans: loadContractPlans(), salaryPlans: loadSalaryPlans() };
@@ -1308,71 +1325,99 @@
 			localStorage.setItem(SALARY_PLAN_STORAGE_KEY, JSON.stringify(doc.salaryPlans || {}));
 		}
 
-		// Every plan this device has changed since the page loaded, keyed
-		// "kind\0leagueId\0playerId", with '' meaning cleared back to "—".
+		// Edits this device has made but not yet confirmed in the store, in the
+		// same leagueId -> playerId shape as the plans themselves, with '' as a
+		// tombstone meaning "cleared back to —".
 		//
-		// A merge is a union, so it can only ever add keys back — a deletion is
-		// simply not expressible in it, and the store wins ties. Without this
-		// record, a merge response landing after a clear resurrects the value
-		// and writes it straight back into localStorage, which reads exactly as
-		// "setting it back to none doesn't save" while setting a length works
-		// fine (a union keeps that). There are two windows where that happens
-		// and neither is rare: every page load until the first merge round-trip
-		// finishes (a cold Vercel function plus a cold store is seconds, and
-		// the roster is already on screen and editable throughout), and any
-		// session whose load-time sync failed, where the next change retries in
-		// merge mode.
+		// Persisted rather than kept in memory, because it is what makes an edit
+		// survive the trip: the page reads the store on load and would otherwise
+		// overwrite an edit made while offline, or one made while that read was
+		// still in flight (a cold Vercel function plus a cold store is seconds,
+		// and the roster is on screen and editable that whole time). Cleared only
+		// once a push has confirmed it, so a store outage can't swallow a change
+		// — the next load re-applies and re-pushes it.
 		//
-		// Kept for the whole session rather than cleared once pushed: re-applying
-		// an edit the store already agrees with is a no-op, and the only later
-		// merge is the retry after a failed sync, which is exactly when these
-		// edits still need re-applying.
-		const planEdits = new Map();
+		// The tombstone is the part that can't be dropped. The store answers with
+		// what it has, and only a record of "this was deliberately cleared here"
+		// can tell a plan another device deleted apart from one this device
+		// simply hasn't been told about yet.
+		const PLAN_PENDING_KEY = 'myfflPlanPending';
+		const PLAN_KINDS = ['contractPlans', 'salaryPlans'];
 
-		function recordPlanEdit(kind, leagueId, playerId, value) {
-			planEdits.set(`${kind}\u0000${leagueId}\u0000${playerId}`, value || '');
+		function emptyPlanEdits() {
+			return { contractPlans: {}, salaryPlans: {} };
 		}
 
-		// Re-apply this device's edits on top of a document the server merged.
+		function loadPendingPlanEdits() {
+			try {
+				return { ...emptyPlanEdits(), ...JSON.parse(localStorage.getItem(PLAN_PENDING_KEY) || '{}') };
+			} catch {
+				return emptyPlanEdits();
+			}
+		}
+
+		function hasPendingPlanEdits(pending) {
+			return PLAN_KINDS.some((kind) => Object.keys(pending[kind] || {}).length > 0);
+		}
+
+		function clearPendingPlanEdits() {
+			localStorage.removeItem(PLAN_PENDING_KEY);
+		}
+
+		function recordPlanEdit(kind, leagueId, playerId, value) {
+			const pending = loadPendingPlanEdits();
+			pending[kind][leagueId] = pending[kind][leagueId] || {};
+			pending[kind][leagueId][playerId] = value || '';
+			localStorage.setItem(PLAN_PENDING_KEY, JSON.stringify(pending));
+		}
+
+		// Lay this device's unpushed edits over a document from the store.
 		// Deliberately narrow — it touches only the exact keys changed here, so
-		// everything the merge pulled in from another device survives, and the
-		// wipe protection merge mode exists for is untouched.
-		function reconcileWithLocalEdits(doc) {
-			const out = { contractPlans: {}, salaryPlans: {} };
-			for (const kind of Object.keys(out)) {
+		// everything the store knows that this device doesn't survives untouched.
+		function applyPendingPlanEdits(doc, pending) {
+			const out = emptyPlanEdits();
+			for (const kind of PLAN_KINDS) {
 				for (const [leagueId, entries] of Object.entries((doc && doc[kind]) || {})) {
 					out[kind][leagueId] = { ...entries };
 				}
-			}
-			for (const [key, value] of planEdits) {
-				const [kind, leagueId, playerId] = key.split('\u0000');
-				if (!out[kind]) continue;
-				if (value) {
-					out[kind][leagueId] = out[kind][leagueId] || {};
-					out[kind][leagueId][playerId] = value;
-				} else if (out[kind][leagueId]) {
-					delete out[kind][leagueId][playerId];
-					// Same pruning the server does, so an emptied league can't
-					// make the comparison below report a difference that isn't one.
-					if (Object.keys(out[kind][leagueId]).length === 0) delete out[kind][leagueId];
+				for (const [leagueId, entries] of Object.entries(pending[kind] || {})) {
+					for (const [playerId, value] of Object.entries(entries)) {
+						if (value) {
+							out[kind][leagueId] = out[kind][leagueId] || {};
+							out[kind][leagueId][playerId] = value;
+						} else if (out[kind][leagueId]) {
+							delete out[kind][leagueId][playerId];
+							// Same pruning the server does, so an emptied league
+							// can't read as a difference that isn't one.
+							if (Object.keys(out[kind][leagueId]).length === 0) delete out[kind][leagueId];
+						}
+					}
 				}
 			}
 			return out;
 		}
 
-		// Adopt what the server merged, minus anything this device changed while
-		// the request was in flight. Returns whether the store is now behind the
-		// local copy — the signal to push again, in replace mode, which is the
-		// only mode that can carry a deletion.
-		function adoptMergedPlans(merged) {
-			const reconciled = reconcileWithLocalEdits(merged);
-			writePlansLocal(reconciled);
-			return JSON.stringify(reconciled) !== JSON.stringify({
-				contractPlans: (merged && merged.contractPlans) || {},
-				salaryPlans: (merged && merged.salaryPlans) || {},
-			});
+		// Take what the store answered with, with this device's unpushed edits
+		// laid back over it. Returns whether the store is behind the local copy —
+		// the signal to push, in replace mode, the only mode carrying a deletion.
+		function adoptRemotePlans(remote) {
+			const pending = loadPendingPlanEdits();
+			writePlansLocal(applyPendingPlanEdits(remote, pending));
+			return hasPendingPlanEdits(pending);
 		}
 
+		// The read half. GET rather than a merge POST because a merge is a union
+		// of the store with whatever this device still holds, and a union cannot
+		// express a deletion: a plan cleared on the iPad is absent from the store,
+		// so the phone's next merge hands it back *and re-uploads it*, undoing the
+		// clear everywhere. GET is the only read that carries a deletion across.
+		async function getPlans() {
+			const res = await fetch(PLANS_URL, {
+				headers: { Authorization: `Bearer ${authToken}` },
+			});
+			if (!res.ok) throw new Error(`HTTP ${res.status}`);
+			return (await res.json()).plans;
+		}
 		async function postPlans(mode) {
 			const res = await fetch(PLANS_URL, {
 				method: 'POST',
@@ -1387,34 +1432,38 @@
 			return (await res.json()).plans;
 		}
 
-		// Until this device has completed one successful merge it hasn't seen
-		// the shared document, so it pushes in merge mode: replacing the store
-		// with a copy that might be missing another device's plans is the exact
-		// wipe this endpoint exists to prevent. That also makes an edit
-		// self-healing — if the store was down at load, the next change
-		// re-attempts the merge rather than leaving the device unsynced until a
-		// reload.
+		// Until this device has completed one successful sync it hasn't seen the
+		// shared document, so it pushes in merge mode: replacing the store with a
+		// copy that might be missing another device's plans is the exact wipe
+		// this endpoint exists to prevent. After that it is always replace, which
+		// is what lets a cleared plan actually go away.
 		//
 		// Fire-and-forget on purpose. The local write already happened and is
 		// what the page renders from; a failed push means this device is simply
 		// unsynced for now, which is strictly better than erroring at someone
-		// mid-edit.
-		//
-		// The mode is captured before the request rather than read again in the
-		// handler: a load-time sync completing mid-flight would otherwise make a
-		// merge response look like a replace one and skip the reconcile below.
+		// mid-edit — and the pending log means the next load retries it.
 		function sendPlanPush() {
 			if (!isLoggedIn()) return;
 			const mode = planSyncDone ? 'replace' : 'merge';
-			postPlans(mode).then((merged) => {
-				if (mode !== 'merge' || !merged) return;
-				const storeBehind = adoptMergedPlans(merged);
-				planSyncDone = true;
-				// The merge just answered with the store's copy of whatever this
-				// device cleared. Pushing again — now in replace mode — is what
-				// actually removes it there.
-				if (storeBehind) schedulePlanPush();
+			// Snapshotted before the request so edits made while it was in flight
+			// stay pending rather than being cleared by an answer that predates
+			// them. Anything already in the store is re-applied as a no-op, so
+			// leaving an entry behind costs nothing; dropping one loses a change.
+			const pushed = localStorage.getItem(PLAN_PENDING_KEY);
+			postPlans(mode).then((stored) => {
+				planPushGeneration++;
+				if (localStorage.getItem(PLAN_PENDING_KEY) === pushed) clearPendingPlanEdits();
+				markPlanSyncDone();
+				// A merge answers with the union, which may hold a plan this
+				// device cleared. Adopting it re-applies the tombstone and asks
+				// for one more push — now in replace mode — to remove it there.
+				if (mode === 'merge' && stored && adoptRemotePlans(stored)) schedulePlanPush();
 			}).catch(() => {});
+		}
+
+		function markPlanSyncDone() {
+			planSyncDone = true;
+			localStorage.setItem(PLAN_SYNCED_KEY, '1');
 		}
 
 		// Debounced: changing a dropdown fires per keystroke-equivalent, and
@@ -1451,22 +1500,27 @@
 		window.addEventListener('pagehide', flushPlanPush);
 
 		// Runs after the first render rather than before it: the roster is
-		// already on screen from local data, and this only ever adds plans the
-		// device didn't have. Re-renders only when the merge actually changed
-		// something, so the common case (already in sync) doesn't rebuild the
-		// grid under someone.
+		// already on screen from local data. Re-renders only when the answer
+		// actually changed something, so the common case (already in sync)
+		// doesn't rebuild the grid under someone.
 		async function syncPlans() {
 			if (!isLoggedIn()) return;
 			const before = JSON.stringify(localPlansDocument());
+			const generation = planPushGeneration;
 			try {
-				const merged = await postPlans('merge');
-				if (!merged) return;
-				// Reconciled rather than adopted wholesale: the roster is on
-				// screen and editable for the whole round-trip, so a plan set or
-				// cleared while this was in flight would otherwise be overwritten
-				// by an answer computed before it happened.
-				const storeBehind = adoptMergedPlans(merged);
-				planSyncDone = true;
+				// GET once this device is known to the store, so a plan cleared
+				// on another device arrives as the absence it is. The merge POST
+				// is the one-time introduction for a device the store has never
+				// heard from, and only that first time — repeating it is what
+				// made a clear impossible to propagate, since every load re-sent
+				// this device's stale copy and the union put it back.
+				const remote = planSyncDone ? await getPlans() : await postPlans('merge');
+				if (!remote) return;
+				// A push landed while this was in flight, so this answer predates
+				// it. Adopting it would undo the very change that was just saved.
+				if (generation !== planPushGeneration) return;
+				const storeBehind = adoptRemotePlans(remote);
+				markPlanSyncDone();
 				if (storeBehind) schedulePlanPush();
 				const after = JSON.stringify(localPlansDocument());
 				if (after !== before && pageData) renderGrid();
@@ -1532,17 +1586,16 @@
 		function doLogout() {
 			authToken = null;
 			localStorage.removeItem(AUTH_TOKEN_KEY);
-			// The next login re-merges from scratch. Without this a device that
-			// logged out, had plans changed elsewhere, then logged back in
-			// would push its stale copy over the newer one in replace mode.
-			planSyncDone = false;
 			clearTimeout(planPushTimer);
 			planPushTimer = null;
-			// The edits belong to that session too. Re-applying them over the
-			// next login's merge would push this device's stale values back over
-			// whatever another device has changed in the meantime — the same
-			// staleness planSyncDone is being reset for.
-			planEdits.clear();
+			// Unpushed edits are dropped rather than carried across the logout:
+			// the next login reads the store, and re-applying edits made before
+			// it would push this device's stale values back over whatever another
+			// device changed in the meantime. planSyncDone deliberately survives
+			// — the store has met this device, and that doesn't stop being true.
+			// It is what sends the next login straight to a read (which carries a
+			// deletion) instead of back to a merge (which cannot).
+			clearPendingPlanEdits();
 			// Unsaved Admin edits belong to the session that made them — leaving
 			// them in memory would hand them to whoever logs in next.
 			adminDraft = null;
