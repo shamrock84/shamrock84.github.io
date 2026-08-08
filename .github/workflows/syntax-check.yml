@@ -20,6 +20,7 @@ on:
       - 'scripts/**'
       - 'config/leagues.json'
       - 'package.json'
+      - 'myffl.html'
       - '.github/workflows/syntax-check.yml'
   push:
     branches: [main]
@@ -28,6 +29,7 @@ on:
       - 'scripts/**'
       - 'config/leagues.json'
       - 'package.json'
+      - 'myffl.html'
       - '.github/workflows/syntax-check.yml'
 
 permissions:
@@ -84,6 +86,18 @@ jobs:
       # the column still fills with plausible ranks, just for a different game.
       - name: Test scoring-format detection
         run: node scripts/test-scoring-format.mjs
+
+      # The merge/replace rules the planning values round-trip through. Getting
+      # these wrong loses a plan silently — a wipe in one direction, a plan that
+      # refuses to clear in the other.
+      - name: Test the plan store's merge rules
+        run: node scripts/test-plans.mjs
+
+      # The client half of the same thing, run against myffl.html itself: what
+      # the page does with a merge answer. A union cannot express a deletion, so
+      # this is what keeps a cleared contract length from coming back.
+      - name: Test the page's plan reconciliation
+        run: node scripts/test-plan-sync.mjs
 
       - name: Validate config/leagues.json
         run: |
