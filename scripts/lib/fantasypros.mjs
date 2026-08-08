@@ -395,7 +395,13 @@ export async function attachRankings(leagues, leagueConfigs, { apiKey, season, n
           players: primary.list,
         };
       }
-      league.available = availableFromPool(pools[key], league.rosteredNames);
+      // Only when this run actually re-read the league's rosters. Most syncs
+      // skip that (see the once-a-day rule in fetch-rosters.mjs) and carry the
+      // previous list forward instead — assigning null over it here would
+      // empty the card on five runs out of six.
+      if (Array.isArray(league.rosteredNames)) {
+        league.available = availableFromPool(pools[key], league.rosteredNames);
+      }
 
       summary.push(`${league.name}: ${matched}/${league.players.length} ranked (${spec.type}/${spec.scoring})`);
     } catch (err) {

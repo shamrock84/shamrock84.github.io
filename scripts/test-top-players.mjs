@@ -30,6 +30,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { normalizePlayerName, availableFromPool, AVAILABLE_LIMIT } from './lib/fantasypros.mjs';
+import { availabilityIsFresh } from './fetch-rosters.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const html = fs.readFileSync(path.join(root, 'myffl.html'), 'utf8');
@@ -349,6 +350,42 @@ function league(name, type, playerNames, { rankings = 'DRAFT|PPR|ALL', available
 	const all = availableFromPool({ players }, ['Nobody Rostered']);
 	assert.equal(all.length, AVAILABLE_LIMIT);
 	assert.equal(all[0], 'Player 0', 'the best available, not an arbitrary slice');
+}
+
+// --- The once-a-day rule for re-reading league-wide rosters -------------------
+// Reading every franchise's roster is the most expensive thing the sync does —
+// sixteen heavy MFL exports, four of which came back 429 on the run that proved
+// it — and a free agent pool doesn't move in four hours. Getting this wrong is
+// quiet in both directions: too eager and the sync starves the fetches that
+// matter, too lazy and a league's wire silently freezes.
+{
+	const now = new Date('2026-08-09T12:00:00Z');
+	const hoursAgo = (h) => new Date(now.getTime() - h * 3600 * 1000).toISOString();
+	const read = (h) => ({ available: ['Somebody'], availableAt: hoursAgo(h) });
+
+	assert.equal(availabilityIsFresh(read(4), now), true, 'the sync four hours later keeps it');
+	assert.equal(availabilityIsFresh(read(19), now), true);
+	assert.equal(availabilityIsFresh(read(21), now), false, 'past the threshold it is re-read');
+
+	// Twenty hours, not twenty-four, and this is the case that says why: with a
+	// four-hourly sync, a 24h rule is missed by the run a day later and honoured
+	// by the one after, so the daily read walks four hours later every day.
+	assert.equal(availabilityIsFresh(read(23.9), now), false, 'a day-later sync is still due');
+
+	// Never read, and read-but-failed, are both due immediately rather than
+	// waiting out a day — a 429 during the daily pass must not strand a league.
+	assert.equal(availabilityIsFresh(undefined, now), false);
+	assert.equal(availabilityIsFresh({}, now), false);
+	assert.equal(availabilityIsFresh({ available: null, availableAt: hoursAgo(1) }, now), false, 'a failed read is retried next sync');
+	assert.equal(availabilityIsFresh({ available: ['X'] }, now), false, 'a list with no timestamp predates the rule');
+	assert.equal(availabilityIsFresh({ available: ['X'], availableAt: 'not a date' }, now), false);
+
+	// An empty list is a real answer — nothing in the pool is free — and keeps
+	// its place in the cache rather than being re-read every sync.
+	assert.equal(availabilityIsFresh({ available: [], availableAt: hoursAgo(2) }, now), true);
+
+	// The manual override ignores all of it.
+	assert.equal(availabilityIsFresh(read(1), now, true), false, 'refresh_availability forces a re-read');
 }
 
 console.log('test-top-players: all assertions passed');

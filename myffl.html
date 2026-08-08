@@ -2830,7 +2830,19 @@
 				}))
 				.sort((a, b) => rankOrLast(a.ecr) - rankOrLast(b.ecr) || a.name.localeCompare(b.name));
 
-			return { total, rows };
+			// The oldest read among the contributing leagues, which is what the
+			// card can honestly claim. Unlike everything else on the page this is
+			// not as of the last sync: reading every franchise's roster is
+			// expensive enough that the sync only does it once a day, so a card
+			// that said nothing would look four hours old while being twenty.
+			// Null when no league recorded one — a list carried over from before
+			// this was stamped, which is a state that lasts one day.
+			const readAt = eligible
+				.map((l) => l.availableAt)
+				.filter(Boolean)
+				.sort()[0] ?? null;
+
+			return { total, rows, readAt };
 		}
 
 		// Seven rather than ten: two of these cards now sit side by side, and a
@@ -3022,12 +3034,17 @@
 		}
 
 		function renderTopAvailableCard(groupKey, types, leagues, pools) {
-			const { total, rows } = computeTopAvailable(leagues, types, pools);
+			const { total, rows, readAt } = computeTopAvailable(leagues, types, pools);
 			if (total === 0) return null;
 
 			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
 			card.appendChild(el('h2', { text: 'Top Available' }));
-			card.appendChild(el('div', { class: 'team', text: `Free agents across ${total} leagues` }));
+			// The only card that dates itself, because it's the only one that
+			// isn't as fresh as the sync — see computeTopAvailable's readAt.
+			card.appendChild(el('div', {
+				class: 'team',
+				text: `Free agents across ${total} leagues${readAt ? ` · checked ${timeAgo(readAt)}` : ''}`,
+			}));
 
 			if (rows.length === 0) {
 				// Worth saying out loud rather than hiding the card: in a deep
