@@ -284,9 +284,17 @@
 		.card h2 {
 			margin: 0;
 			font-size: 1.15rem;
+			overflow-wrap: break-word;
+		}
+		/* Take the width the badge strip beside it doesn't need — but only in
+		   the head row. The card itself is a flex *column*, so applying this to
+		   every h2 made a heading that's a direct child of the card (the two
+		   analytics cards, Admin's "Leagues") absorb the card's leftover height
+		   whenever the grid stretched it to match a taller neighbour, leaving a
+		   gap under the title that grew with the neighbour. */
+		.card-head h2 {
 			min-width: 0;
 			flex: 1 1 auto;
-			overflow-wrap: break-word;
 		}
 		.card h2 a {
 			color: var(--text);
@@ -786,6 +794,13 @@
 			color: var(--muted);
 			font-size: 0.72rem;
 			margin-top: 0.1rem;
+		}
+		/* Injury Exposure's Status column. Same red as the badge beside a name
+		   on a roster card, since it's the same designation — here it's a column
+		   of its own rather than a badge, so no parentheses. */
+		.injury-status-cell {
+			color: var(--ir-text);
+			font-weight: 600;
 		}
 		.pager {
 			display: flex;
@@ -2439,8 +2454,16 @@
 		// comparator silently corrupts the sort order rather than failing.
 		const rankOrLast = (v) => (v == null ? Number.MAX_SAFE_INTEGER : v);
 
+		// The leagues an exposure card combines: everything in this sub-tab's
+		// group that actually came back with a roster. Shared by both analytics
+		// cards so the denominator — and therefore the percentage — means the
+		// same thing on each.
+		function exposureLeagues(leagues, types) {
+			return leagues.filter((l) => types.includes(l.type) && Array.isArray(l.players) && l.players.length > 0);
+		}
+
 		function computePlayerExposure(leagues, types) {
-			const eligible = leagues.filter((l) => types.includes(l.type) && Array.isArray(l.players) && l.players.length > 0);
+			const eligible = exposureLeagues(leagues, types);
 			const byPlayer = new Map();
 
 			for (const league of eligible) {
@@ -2484,27 +2507,90 @@
 			return { total, rows };
 		}
 
+		// Severity order, least to most, used to pick one designation when a
+		// player carries different ones in different leagues. That happens
+		// legitimately rather than being a bug to fix: each provider publishes
+		// its own injury feed on its own clock, so an MFL league can already say
+		// Out while an ESPN league still says Questionable. The worse of the two
+		// is the one worth showing. Anything unrecognised sorts below everything
+		// known — normalizeInjuryStatus passes short codes through unmapped, and
+		// inventing a rank for one would be guessing.
+		const INJURY_SEVERITY = ['P', 'DTD', 'Q', 'D', 'O', 'COVID', 'SUSP', 'NFI', 'PUP', 'IR'];
+
+		// The designation to treat a player as carrying. Normally the NFL injury
+		// report's, exactly as the roster cards badge it — but a player parked on
+		// a league's IR slot is injured whether or not the feed has caught up, so
+		// the roster slot stands in when there's no designation.
+		function injuryDesignation(p) {
+			if (p.injuryStatus) return p.injuryStatus;
+			return String(p.status || '').toUpperCase() === 'INJURED_RESERVE' ? 'IR' : null;
+		}
+
+		// Injury exposure: the same question as player exposure, asked only of
+		// the players currently carrying an injury designation. The denominator
+		// is deliberately the same set of leagues, so "3/9" means the same thing
+		// on both cards and the two can be read side by side.
+		//
+		// Two differences from the player card, both deliberate. A player flagged
+		// in one league but not another still counts in every league that rosters
+		// him: the exposure is to the player, and it's the same body whichever
+		// provider's feed noticed first. And singletons are kept rather than
+		// filtered to count > 1, because an injury on your only share of a player
+		// is still an injury you own — the > 1 filter exists on the player card to
+		// answer "where am I concentrated", which isn't the question here.
+		function computeInjuryExposure(leagues, types) {
+			const eligible = exposureLeagues(leagues, types);
+			const byPlayer = new Map();
+
+			for (const league of eligible) {
+				const label = league.leagueName || league.name;
+				const seen = new Set();
+				for (const p of league.players || []) {
+					if (seen.has(p.name)) continue;
+					seen.add(p.name);
+					if (!byPlayer.has(p.name)) {
+						byPlayer.set(p.name, { position: p.position, leagues: [], ranks: [], statuses: [] });
+					}
+					const entry = byPlayer.get(p.name);
+					entry.leagues.push(label);
+					if (p.ecr && Number.isFinite(p.ecr.rank)) entry.ranks.push(p.ecr.rank);
+					const status = injuryDesignation(p);
+					if (status) entry.statuses.push(status);
+				}
+			}
+
+			const total = eligible.length;
+			const rows = [...byPlayer.entries()]
+				.filter(([, info]) => info.statuses.length > 0)
+				.map(([name, info]) => ({
+					name,
+					position: info.position,
+					leagues: info.leagues,
+					count: info.leagues.length,
+					exposure: total > 0 ? (info.leagues.length / total) * 100 : 0,
+					ecr: medianRank(info.ranks),
+					status: info.statuses.reduce((worst, s) =>
+						INJURY_SEVERITY.indexOf(s) > INJURY_SEVERITY.indexOf(worst) ? s : worst
+					),
+				}))
+				// Same ordering as the player card: exposure first, then the best
+				// player among equal exposures.
+				.sort((a, b) =>
+					b.exposure - a.exposure ||
+					b.count - a.count ||
+					rankOrLast(a.ecr) - rankOrLast(b.ecr) ||
+					a.name.localeCompare(b.name)
+				);
+
+			return { total, rows };
+		}
+
 		const ANALYTICS_PAGE_SIZE = 10;
 
-		function renderAnalyticsCard(groupKey, types, leagues) {
-			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
-			const heading = el('h2', { text: 'Player Exposure' });
-			card.appendChild(heading);
-
-			const { total, rows } = computePlayerExposure(leagues, types);
-
-			if (total < 2) {
-				card.appendChild(el('div', { class: 'error-box', text: 'Need at least 2 leagues in this group with roster data to show exposure.' }));
-				return card;
-			}
-
-			card.appendChild(el('div', { class: 'team', text: `Across ${total} leagues` }));
-
-			if (rows.length === 0) {
-				card.appendChild(el('div', { class: 'error-box', text: 'No players owned in more than one league yet.' }));
-				return card;
-			}
-
+		// The table half of both analytics cards, pager and all. They differ only
+		// in whether a Status column is present, so this is one implementation
+		// with a flag rather than two near-identical copies free to drift apart.
+		function appendExposureTable(card, rows, total, { showStatus = false } = {}) {
 			const table = el('table', { class: 'standings' });
 			card.appendChild(table);
 
@@ -2534,6 +2620,7 @@
 				const showEcr = isLoggedIn();
 				headRow.appendChild(el('th', { text: 'Player' }));
 				headRow.appendChild(el('th', { text: 'Pos' }));
+				if (showStatus) headRow.appendChild(el('th', { text: 'Status' }));
 				if (showEcr) headRow.appendChild(el('th', { class: 'ecr-cell', text: 'ECR' }));
 				headRow.appendChild(el('th', { text: 'Owned In' }));
 				headRow.appendChild(el('th', { text: 'Exposure' }));
@@ -2547,6 +2634,7 @@
 					nameCell.appendChild(el('div', { class: 'exposure-leagues', text: r.leagues.join(', ') }));
 					row.appendChild(nameCell);
 					row.appendChild(el('td', { text: r.position || '-' }));
+					if (showStatus) row.appendChild(el('td', { class: 'injury-status-cell', text: r.status || '—' }));
 					if (showEcr) {
 						// Overall rank, not positional: this table mixes positions, so
 						// the overall number is the one the ordering is actually by.
@@ -2577,16 +2665,65 @@
 				});
 			}
 
-			// Worth stating: unlike the ECR on a roster card, this one is combined
-			// across leagues that may not be using the same ranking list.
-			if (isLoggedIn() && rows.some((r) => r.ecr != null)) {
-				card.appendChild(el('div', {
-					class: 'rankings-note',
-					text: 'ECR is the median overall rank across the leagues here, which can draw from different FantasyPros lists. Ties on exposure are broken by it.',
-				}));
+			renderPage();
+		}
+
+		// Worth stating on both cards: unlike the ECR on a roster card, this one
+		// is combined across leagues that may not be using the same ranking list.
+		function appendEcrNote(card, rows) {
+			if (!isLoggedIn() || !rows.some((r) => r.ecr != null)) return;
+			card.appendChild(el('div', {
+				class: 'rankings-note',
+				text: 'ECR is the median overall rank across the leagues here, which can draw from different FantasyPros lists. Ties on exposure are broken by it.',
+			}));
+		}
+
+		function renderAnalyticsCard(groupKey, types, leagues) {
+			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
+			card.appendChild(el('h2', { text: 'Player Exposure' }));
+
+			const { total, rows } = computePlayerExposure(leagues, types);
+
+			if (total < 2) {
+				card.appendChild(el('div', { class: 'error-box', text: 'Need at least 2 leagues in this group with roster data to show exposure.' }));
+				return card;
 			}
 
-			renderPage();
+			card.appendChild(el('div', { class: 'team', text: `Across ${total} leagues` }));
+
+			if (rows.length === 0) {
+				card.appendChild(el('div', { class: 'error-box', text: 'No players owned in more than one league yet.' }));
+				return card;
+			}
+
+			appendExposureTable(card, rows, total);
+			appendEcrNote(card, rows);
+			return card;
+		}
+
+		// Returns null rather than a card carrying the "need at least 2 leagues"
+		// message: the Player Exposure card sitting beside it already says that,
+		// and saying it twice about the same group of leagues reads as two
+		// separate problems.
+		function renderInjuryExposureCard(groupKey, types, leagues) {
+			const { total, rows } = computeInjuryExposure(leagues, types);
+			if (total < 2) return null;
+
+			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
+			card.appendChild(el('h2', { text: 'Injury Exposure' }));
+			card.appendChild(el('div', { class: 'team', text: `Across ${total} leagues` }));
+
+			if (rows.length === 0) {
+				card.appendChild(el('div', { class: 'error-box', text: 'Nobody on these rosters is carrying an injury designation right now.' }));
+				return card;
+			}
+
+			appendExposureTable(card, rows, total, { showStatus: true });
+			card.appendChild(el('div', {
+				class: 'rankings-note',
+				text: 'Designations are whatever each provider’s injury feed said at the last sync, so the same player can differ between leagues — the worst one is shown. A player on an IR slot with no designation counts as IR.',
+			}));
+			appendEcrNote(card, rows);
 			return card;
 		}
 
@@ -3371,6 +3508,8 @@
 				const types = typesInSubtab(groupKey);
 				if (!data.leagues.some((l) => types.includes(l.type))) continue;
 				gridEl.appendChild(renderAnalyticsCard(groupKey, types, data.leagues));
+				const injuryCard = renderInjuryExposureCard(groupKey, types, data.leagues);
+				if (injuryCard) gridEl.appendChild(injuryCard);
 			}
 
 			// Logged-out visitors never get this card, so 'admin' never makes it
