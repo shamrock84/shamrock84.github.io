@@ -2548,13 +2548,6 @@
 				// the sync's own error for that league was sitting in data/rosters.json
 				// unread — which is exactly the answer when a team ID is wrong.
 				const notices = [];
-				// Stated rather than warned about: clearing the address is a
-				// legitimate way to switch the email link off for a league whose
-				// commissioner wants to be reached some other way. It's here so an
-				// address you meant to set but didn't is still visible.
-				if (league.type === 'salarycap' && !league.commishEmail) {
-					notices.push({ text: 'No commissioner email — the Send via Email link is hidden for this league.' });
-				}
 				if (!live) {
 					if (league.id) notices.push({ text: 'Not synced yet — this league appears on the other tabs after the next sync.' });
 				} else {
