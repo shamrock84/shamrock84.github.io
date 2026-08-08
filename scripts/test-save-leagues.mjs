@@ -53,6 +53,18 @@ check('allows a blank season (follow the rollover)', validate(withField('season'
 check('rejects a non-boolean lineup flag', validate(withField('lineupPilot', 'yes')).length > 0);
 check('rejects tags that are not a list', validate(withField('tags', 'Superflex')).length > 0);
 check('rejects a rules link with no scheme', validate(withField('rulesUrl', 'docs.google.com/x')).length > 0);
+// The contract-length summary is addressed with this, and a malformed one fails
+// silently: the mailto still opens, it just reaches nobody.
+check('rejects a commissioner email with no @', validate(withField('commishEmail', 'not-an-email')).length > 0);
+check('rejects a commissioner email with no domain dot', validate(withField('commishEmail', 'a@b')).length > 0);
+check('rejects a commissioner email with a space', validate(withField('commishEmail', 'a b@c.com')).length > 0);
+check('allows a normal commissioner email', validate(withField('commishEmail', 'commish@example.com')).length === 0,
+  JSON.stringify(validate(withField('commishEmail', 'commish@example.com'))));
+check('allows a blank commissioner email', validate(withField('commishEmail', '')).length === 0);
+// Deliberately not tied to type: switching a league away from Salary Cap and
+// back must not silently discard the address.
+check('allows a commissioner email on a non-salarycap league',
+  validate([{ ...base(), type: 'redraft', commishEmail: 'c@example.com' }]).length === 0);
 check('rejects a non-object row', validate([null]).length > 0);
 
 // The whole reason the endpoint checks this: every lookup in the codebase is
@@ -83,6 +95,8 @@ check('drops a blank team id', !('franchiseId' in merged), JSON.stringify(merged
 check('drops empty tags', !('tags' in merged));
 check('drops lineupPilot when off', !('lineupPilot' in merged));
 check('drops a blank rules link', !('rulesUrl' in merged));
+check('drops a blank commissioner email', !('commishEmail' in mergeLeague({ ...base(), commishEmail: '' })));
+check('trims a commissioner email', mergeLeague({ ...base(), commishEmail: '  c@e.com ' }).commishEmail === 'c@e.com');
 check('drops a blank season', !('season' in mergeLeague({ ...base(), season: '' })));
 check('keeps a season pin as a string', mergeLeague({ ...base(), season: 2027 }).season === '2027');
 check('keeps the required fields', merged.id === '123' && merged.name === 'Test' && merged.type === 'draftonly');
