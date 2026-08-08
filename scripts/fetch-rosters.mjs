@@ -35,6 +35,8 @@ import {
   mflLeagueExists,
   espnLeagueExists,
   detectScoringFormat,
+  fetchMflRosteredNames,
+  fetchEspnRosteredNames,
 } from './lib/providers.mjs';
 import { attachRankings, fantasyProsApiKey, nflSeasonPhase } from './lib/fantasypros.mjs';
 
@@ -62,6 +64,38 @@ async function loadPreviousOutput() {
     return null;
   }
 }
+
+// How stale a league's free agent list may get before the next sync re-reads
+// the whole league's rosters. Twenty hours rather than twenty-four, and that
+// is the whole point of the number: the sync runs every four hours, so an
+// exactly-24h rule would be missed by seconds by the run that lands a day
+// later and satisfied by the one after it, walking the daily read four hours
+// further into the day every day until it wrapped. Anything comfortably under
+// 24 pins it to one read per calendar day at a stable hour.
+const AVAILABILITY_MAX_AGE_MS = 20 * 60 * 60 * 1000;
+
+// Whether a league's recorded free agent list is still current enough to keep
+// instead of re-reading every franchise's roster.
+//
+// Three ways to be due, and the second two matter as much as the first: a
+// league that has never been read has nothing to keep, and a league whose last
+// read *failed* carries `available: null` and so is retried on the very next
+// sync rather than waiting out a day — the same reasoning as the season
+// resolver re-probing a league that errored. That is what keeps a 429 during
+// the daily pass from stranding one league's list for a full day, and it
+// self-heals without anything having to notice.
+export function availabilityIsFresh(previous, now, force = false) {
+  if (force) return false;
+  if (!Array.isArray(previous?.available)) return false;
+  const readAt = Date.parse(previous.availableAt ?? '');
+  if (!Number.isFinite(readAt)) return false;
+  return now.getTime() - readAt < AVAILABILITY_MAX_AGE_MS;
+}
+
+// The manual override, wired to the workflow's refresh_availability input, for
+// when you want today's free agents now rather than at the next daily read.
+// Absent on a scheduled run, which is how the daily rule stays the default.
+const forceAvailability = /^(true|1)$/i.test(process.env.REFRESH_AVAILABILITY || '');
 
 // How far back to look when a league has no known-good season to fall back on.
 // Two seasons covers a league whose new site isn't up yet, and one that missed a
@@ -371,11 +405,61 @@ async function main() {
     }
   }
 
+  // Who is rostered by anyone in each league — the input to each league's
+  // `available` list, and so to the Top Available card.
+  //
+  // Deliberately the last thing fetched, and deliberately per-league
+  // best-effort. The league-wide MFL export is a much heavier response than
+  // the FRANCHISE-scoped one, and the first sync that folded it into the
+  // roster pass spent enough of the rate limit that three scoring fetches and
+  // a lineup fetch behind it came back 429. Nothing was lost — they fell back
+  // to the previous sync — but the ordering was backwards: this is the least
+  // important thing here, so it goes after everything that matters more and
+  // it is the thing that gives way under a rate limit.
+  //
+  // Sleeper is skipped because fetchSleeperLeagueRoster already collected it
+  // from rosters it had in hand, at no extra request — which is also why
+  // Sleeper isn't subject to the once-a-day rule below. Free is free.
+  //
+  // Once a day, not once a sync. Even last, the pass is expensive: sixteen
+  // heavy MFL exports, four of which came back 429 on the run that proved it.
+  // The sync runs every four hours, and a free agent pool does not move
+  // meaningfully in four hours — a waiver claim you'd want to know about is
+  // still there tomorrow — so five runs in six now skip this entirely and go
+  // back to costing what the sync cost before any of it existed.
+  let refreshed = 0;
+  let carried = 0;
+  for (const league of LEAGUES) {
+    const target = leagues.find((l) => l.id === league.id);
+    if (!target || !league.franchiseId || target.error) continue;
+    if (league.provider === 'sleeper' || target.rosteredNames) continue;
+
+    const prev = previousById.get(league.id);
+    if (availabilityIsFresh(prev, now, forceAvailability)) {
+      target.available = prev.available;
+      target.availableAt = prev.availableAt;
+      carried++;
+      continue;
+    }
+
+    try {
+      target.rosteredNames = league.provider === 'espn'
+        ? await fetchEspnRosteredNames(league)
+        : await fetchMflRosteredNames(league, cookie, playerMap);
+      refreshed++;
+    } catch (err) {
+      console.error(`Failed to fetch league-wide rosters for ${league.name}: ${err.message}`);
+      target.rosteredNames = null;
+    }
+  }
+  console.log(`Free agents: re-read ${refreshed} league(s), kept ${carried} from the last daily read`);
+
   // FantasyPros consensus rankings, layered over whatever rosters we managed
   // to fetch above. Skipped entirely without an API key so the sync behaves
   // exactly as it did before this existed, and never allowed to fail the run
   // — every league keeps its roster whether or not rankings came through.
   const fpApiKey = fantasyProsApiKey();
+  let rankingPools = {};
   if (!fpApiKey) {
     console.log('Skipping FantasyPros rankings: FANTASYPROS_API_KEY not set');
   } else {
@@ -389,11 +473,49 @@ async function main() {
     const season = process.env.MFL_YEAR || String(targetSeason);
     console.log(`FantasyPros — ${season} season, ${phase.inSeason ? 'in season' : 'offseason'}`);
     try {
-      const summary = await attachRankings(leagues, LEAGUES, { apiKey: fpApiKey, season, now });
-      for (const line of summary) console.log(`FantasyPros — ${line}`);
+      const result = await attachRankings(leagues, LEAGUES, { apiKey: fpApiKey, season, now });
+      for (const line of result.summary) console.log(`FantasyPros — ${line}`);
+      rankingPools = result.pools;
+      for (const [key, pool] of Object.entries(rankingPools)) {
+        console.log(`FantasyPros — pool ${key}: ${pool.players.length} players`);
+      }
     } catch (err) {
       console.error(`Failed to attach FantasyPros rankings: ${err.message}`);
     }
+  }
+
+  // Degrade the same way everything else here does: a league that couldn't be
+  // read keeps the availability it last had, and a run with no rankings at all
+  // keeps the previous pools rather than emptying the two cards that need
+  // them. Both are stale, but stale beats blank for a list of free agents that
+  // barely moves between syncs.
+  //
+  // `availableAt` is stamped only on a list actually rebuilt this run, since
+  // it is what the once-a-day rule reads next time — carrying a list forward
+  // must never look like a fresh read of it, or the daily read would never
+  // come due again.
+  //
+  // One consequence of carrying the names forward rather than the rosters they
+  // were derived from: they were filtered against yesterday's ranking pool,
+  // and today's differs a little. A carried-forward name that has since fallen
+  // out of the pool simply doesn't render (computeTopAvailable looks each one
+  // back up), and a player who newly entered it won't appear as available
+  // until the next daily read. Both are a one-day lag on a slow-moving list,
+  // and the alternative — persisting every league's full rostered-name list so
+  // it could be re-filtered — is the ~150KB this design exists to avoid.
+  for (const league of leagues) {
+    const readThisRun = Array.isArray(league.rosteredNames);
+    delete league.rosteredNames;
+    const prev = previousById.get(league.id);
+    if (readThisRun && league.available != null) {
+      league.availableAt = now.toISOString();
+    } else if (league.available == null) {
+      league.available = prev?.available ?? null;
+      league.availableAt = prev?.availableAt ?? null;
+    }
+  }
+  if (Object.keys(rankingPools).length === 0 && previous?.rankingPools) {
+    rankingPools = previous.rankingPools;
   }
 
   const output = {
@@ -401,6 +523,11 @@ async function main() {
     // The season being aimed at. Individual leagues can legitimately trail it
     // during the rollover window, so each carries its own `season` too.
     year: String(targetSeason),
+    // The ranking lists themselves, deep enough for the Top Players and Top
+    // Available cards. Shared across leagues rather than repeated on each,
+    // since a dozen leagues typically draw on the same two or three lists —
+    // see rankingPoolKey, which is how a league finds its own.
+    rankingPools,
     leagues,
   };
 

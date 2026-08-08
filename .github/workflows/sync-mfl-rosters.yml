@@ -4,7 +4,12 @@ on:
   schedule:
     # Every 4 hours
     - cron: '0 */4 * * *'
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      refresh_availability:
+        description: 'Re-read every league''s full rosters now (free agents), instead of waiting for the daily read'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -29,6 +34,9 @@ jobs:
           ESPN_SWID: ${{ secrets.ESPN_SWID }}
           # Optional — without it the sync just skips the ECR columns.
           FANTASYPROS_API_KEY: ${{ secrets.FANTASYPROS_API_KEY }}
+          # Empty on a scheduled run, which is what leaves the free agent
+          # re-read on its once-a-day rule by default.
+          REFRESH_AVAILABILITY: ${{ inputs.refresh_availability }}
         run: node scripts/fetch-rosters.mjs
 
       - name: Commit and push if changed

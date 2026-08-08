@@ -806,6 +806,12 @@
 			font-size: 0.72rem;
 			margin-top: 0.1rem;
 		}
+		/* Top Players lists everyone, owned or not, so the ones you actually
+		   hold have to be findable at a glance — the league sub-line underneath
+		   says which, but only after you've spotted the row. */
+		.player-owned {
+			font-weight: 700;
+		}
 		/* Injury Exposure's Status column. Same red as the badge beside a name
 		   on a roster card, since it's the same designation — here it's a column
 		   of its own rather than a badge, so no parentheses. */
@@ -1199,44 +1205,42 @@
 		const LEAGUE_TYPE_LABELS = { dynasty: 'Dynasty', salarycap: 'Salary Cap', draftonly: 'Draft Only', redraft: 'Redraft' };
 		// FantasyPros' ranking-type codes, spelled out for the card footnote.
 		const ECR_TYPE_LABELS = { DYNASTY: 'Dynasty', DRAFT: 'Draft', ROS: 'Rest-of-season', WEEKLY: 'Weekly', ADP: 'ADP' };
-		// Which sub-tab a league's cards render under in the per-league views
-		// (Rosters, Scoring, Standings) — Dynasty and Salary Cap share one
-		// sub-tab, since a salary-cap roster is still a dynasty-style keeper
-		// roster; the other two are one-to-one with their league type. Analytics
-		// groups differently — see ANALYTICS_GROUP.
+		// Which sub-tab a league's cards render under — Dynasty and Salary Cap
+		// share one, since a salary-cap roster is still a dynasty-style keeper
+		// roster; the other two are one-to-one with their league type.
+		//
+		// Analytics used to group differently, folding dynasty, salary-cap and
+		// redraft into a single "Active" sub-tab on the grounds that exposure is
+		// a portfolio question and a redraft roster is as much a share of the
+		// portfolio as a dynasty one. That reasoning still holds for the two
+		// exposure cards. It stopped holding when Top Players and Top Available
+		// arrived, because those are ordered by consensus rank, and a group
+		// spanning both kinds of league is also spanning two FantasyPros lists
+		// that disagree hard about the same player — a dynasty list is a bet on
+		// the next five years, a redraft list on the next five months, and the
+		// median across them describes neither. Worse, the median weights by
+		// league count, so a portfolio that happens to hold more redraft leagues
+		// silently ranks its dynasty leagues' players on redraft logic. One
+		// grouping again.
 		const SUBTAB_GROUP = { dynasty: 'dynasty', salarycap: 'dynasty', draftonly: 'draftonly', redraft: 'redraft' };
-		// Display order for the sub-tab strip, across every view. 'active' only
-		// ever appears in Analytics, and the other three only ever outside it,
-		// so one ordered list covers both groupings without either view seeing a
-		// sub-tab the other invented.
-		const SUBTAB_ORDER = ['active', 'dynasty', 'redraft', 'draftonly'];
+		// Display order for the sub-tab strip, across every view.
+		const SUBTAB_ORDER = ['dynasty', 'redraft', 'draftonly'];
 		// Only where a sub-tab's name needs to differ from LEAGUE_TYPE_LABELS —
 		// everything else falls through to that shared wording, so "Redraft"
 		// isn't repeated here. bestball used to be overridden to "Draft Only"
 		// for the sub-tab only; that wording is now the type label itself, so
-		// the override would be a no-op and is gone. 'active' has no league type
-		// behind it at all, so its name lives only here.
-		const SUBTAB_LABEL_OVERRIDES = { dynasty: 'Dynasty/Salary Cap', active: 'Active' };
+		// the override would be a no-op and is gone.
+		const SUBTAB_LABEL_OVERRIDES = { dynasty: 'Dynasty/Salary Cap' };
 
 		function subtabType(league) {
 			return SUBTAB_GROUP[league.type] || league.type;
 		}
 
-		// Analytics groups its leagues differently from every other view, and
-		// only Analytics. Exposure is a portfolio question — how much of what
-		// you own is this one player — and a redraft roster is as much a share
-		// of that portfolio as a dynasty one, so keeping them apart split the
-		// same question across two thin denominators. Draft-only leagues stay
-		// separate: those teams are drafted and then left alone, so folding them
-		// in would count rosters nobody is managing against exposure you can
-		// still act on.
-		const ANALYTICS_GROUP = { dynasty: 'active', salarycap: 'active', redraft: 'active', draftonly: 'draftonly' };
-		const ANALYTICS_GROUP_ORDER = ['active', 'draftonly'];
-
-		// Reverse of ANALYTICS_GROUP: every league type that folds into one of
-		// the Analytics groups, which is how each card knows what to combine.
-		function typesInAnalyticsGroup(groupKey) {
-			return Object.keys(ANALYTICS_GROUP).filter((t) => ANALYTICS_GROUP[t] === groupKey);
+		// Every league type that folds into one sub-tab, which is how an
+		// analytics card knows what to combine. The per-league views don't need
+		// it — they place one card at a time, by its own type.
+		function typesInSubtabGroup(groupKey) {
+			return Object.keys(SUBTAB_GROUP).filter((t) => SUBTAB_GROUP[t] === groupKey);
 		}
 		const POSITION_ORDER = ['QB', 'RB', 'WR', 'TE', 'PK', 'Def'];
 		function positionRank(pos) {
@@ -2494,8 +2498,8 @@
 		// every league in that group with usable roster data. Matched by player
 		// name since MFL/ESPN/Sleeper each use their own player ids — names are
 		// the one thing that lines up. `types` is an array because a group spans
-		// several league types: dynasty, salary-cap and redraft all fold into
-		// Active — see ANALYTICS_GROUP.
+		// several league types: dynasty and salary-cap share one sub-tab — see
+		// SUBTAB_GROUP.
 		// A player's ECR can legitimately differ between two leagues in the same
 		// group: a dynasty league and a salary-cap league sit side by side here and
 		// draw from different FantasyPros lists, and their scoring formats can differ
@@ -2650,20 +2654,238 @@
 			return { total, rows };
 		}
 
+		// ---- Ranking cards: Top Players and Top Available ----
+		//
+		// Both are driven by `rankingPools` in data/rosters.json — the top of each
+		// FantasyPros list the sync actually used, kept whole rather than only as
+		// the ECR numbers stamped onto our own players. Where the exposure cards
+		// look at rosters and ask what's on them, these two look at the rankings
+		// and ask where our rosters sit against them.
+		//
+		// Both cards degrade to nothing at all: a rosters.json synced before the
+		// pools existed simply has no `rankingPools`, and the cards don't render.
+
+		// Must agree with normalizePlayerName in scripts/lib/fantasypros.mjs —
+		// this is the join between a pool entry and a rostered player, and the two
+		// halves live on opposite sides of the sync boundary. Deliberately a
+		// second copy rather than a shared module: the page has no build step and
+		// no imports, so the only alternative would be shipping the name of every
+		// player twice in data/rosters.json. scripts/test-top-players.mjs runs
+		// both implementations over the same corpus so they can't drift apart
+		// unnoticed — a drift here doesn't break anything visibly, it just quietly
+		// stops recognising a player you own.
+		const NAME_SUFFIX = /\s+(jr|sr|ii|iii|iv|v)$/;
+
+		function normalizeName(raw) {
+			if (!raw) return '';
+			let s = String(raw)
+				.normalize('NFD')
+				.replace(/[\u0300-\u036f]/g, '') // strip accents: Ekelér -> Ekeler
+				.toLowerCase()
+				.replace(/[.'’`]/g, '')
+				.replace(/[^a-z0-9]+/g, ' ')
+				.replace(/\s+/g, ' ')
+				.trim();
+			while (NAME_SUFFIX.test(s)) s = s.replace(NAME_SUFFIX, '');
+			return s;
+		}
+
+		// Pool entry URLs are stored site-relative to keep data/rosters.json from
+		// carrying the same origin a few hundred times. Reversing that is a string
+		// prefix and nothing more — in particular it is never reconstructed from
+		// the player's name, which would link Josh Allen the linebacker to Josh
+		// Allen the quarterback. See playerPageUrl in lib/fantasypros.mjs.
+		const FANTASYPROS_SITE = 'https://www.fantasypros.com';
+
+		function poolPlayerUrl(url) {
+			if (!url) return null;
+			return url.startsWith('/') ? `${FANTASYPROS_SITE}${url}` : url;
+		}
+
+		// The ranking list a league's ECR column was drawn from. The three parts of
+		// the key are exactly what the sync recorded on `league.rankings`, so a
+		// league whose rankings failed has nothing to look up and contributes
+		// nothing — see rankingPoolKey in lib/fantasypros.mjs.
+		function rankingPoolFor(league, pools) {
+			const r = league.rankings;
+			if (!r || !pools) return null;
+			const pool = pools[`${r.type}|${r.scoring}|${r.position}`];
+			return pool && Array.isArray(pool.players) && pool.players.length > 0 ? pool : null;
+		}
+
+		// Top Players: the best players in the game by consensus rank, whether or
+		// not we own them, with the ones we do own called out.
+		//
+		// A group can still span two ranking lists even after the sub-tab split:
+		// within Dynasty/Salary Cap, the dynasty leagues read the DYNASTY list
+		// and the salary-cap ones read DRAFT, deliberately — see
+		// automaticRankingType, which explains why a cap league is ranked on
+		// redraft logic. So a player carries one rank per league and the median
+		// across them is the representative one, for the same reason it is on the
+		// exposure cards. That weights by league count on purpose: four leagues
+		// on one list should pull the order more than three on another.
+		//
+		// What the split removed was the *wide* version of that spread. Dynasty
+		// and redraft lists disagree about the same player by a hundred places —
+		// one is a bet on five years, the other on five months — and medianing
+		// across them described neither. Two lists that at least share a horizon
+		// are a reasonable thing to average; two that don't aren't.
+		function computeTopPlayers(leagues, types, pools) {
+			const eligible = exposureLeagues(leagues, types);
+			const byPlayer = new Map();
+
+			for (const league of eligible) {
+				const pool = rankingPoolFor(league, pools);
+				if (!pool) continue;
+				const seen = new Set();
+				for (const p of pool.players) {
+					const key = normalizeName(p.name);
+					if (!key || seen.has(key)) continue;
+					seen.add(key);
+					if (!byPlayer.has(key)) {
+						byPlayer.set(key, { name: p.name, position: p.position, url: poolPlayerUrl(p.url), ranks: [], leagues: [] });
+					}
+					byPlayer.get(key).ranks.push(p.rank);
+				}
+			}
+
+			// Ownership is counted across every eligible league, including ones
+			// that contributed no pool — a league whose rankings failed still
+			// rosters the player, and leaving it out would understate the count
+			// against a denominator that still includes it.
+			for (const league of eligible) {
+				const label = league.leagueName || league.name;
+				const seen = new Set();
+				for (const p of league.players || []) {
+					const key = normalizeName(p.name);
+					const entry = byPlayer.get(key);
+					if (!entry || seen.has(key)) continue;
+					seen.add(key);
+					entry.leagues.push(label);
+				}
+			}
+
+			const total = eligible.length;
+			const rows = [...byPlayer.values()]
+				.map((info) => ({
+					name: info.name,
+					position: info.position,
+					leagues: info.leagues,
+					count: info.leagues.length,
+					exposure: total > 0 ? (info.leagues.length / total) * 100 : 0,
+					ecr: medianRank(info.ranks),
+					url: info.url,
+				}))
+				.sort((a, b) => rankOrLast(a.ecr) - rankOrLast(b.ecr) || a.name.localeCompare(b.name));
+
+			return { total, rows };
+		}
+
+		// Top Available: the same lists, filtered to players nobody in the league
+		// rosters. The sync works out who that is — it's the one side that can see
+		// every franchise's roster — and records the names per league; all that's
+		// left here is to look each one back up in the pool for its rank and link,
+		// and to collect which leagues a player is free in.
+		//
+		// The denominator is the leagues that could actually answer the question,
+		// not every eligible league: ESPN's league-wide roster read is best-effort
+		// and a league whose rankings failed has no pool to filter, so counting
+		// those in would make "1/9" mean something different here than on the
+		// cards beside it. The ranks are likewise medianed over the leagues he's
+		// available in rather than all of them, since that's the set the row is
+		// actually about.
+		function computeTopAvailable(leagues, types, pools) {
+			const eligible = exposureLeagues(leagues, types)
+				.filter((l) => Array.isArray(l.available) && rankingPoolFor(l, pools));
+			const byPlayer = new Map();
+
+			for (const league of eligible) {
+				const pool = rankingPoolFor(league, pools);
+				const poolByName = new Map();
+				for (const p of pool.players) {
+					const key = normalizeName(p.name);
+					if (key && !poolByName.has(key)) poolByName.set(key, p);
+				}
+
+				const label = league.leagueName || league.name;
+				const seen = new Set();
+				for (const name of league.available) {
+					const key = normalizeName(name);
+					const p = poolByName.get(key);
+					if (!p || seen.has(key)) continue;
+					seen.add(key);
+					if (!byPlayer.has(key)) {
+						byPlayer.set(key, { name: p.name, position: p.position, url: poolPlayerUrl(p.url), ranks: [], leagues: [] });
+					}
+					const entry = byPlayer.get(key);
+					entry.ranks.push(p.rank);
+					entry.leagues.push(label);
+				}
+			}
+
+			const total = eligible.length;
+			const rows = [...byPlayer.values()]
+				.map((info) => ({
+					name: info.name,
+					position: info.position,
+					leagues: info.leagues,
+					count: info.leagues.length,
+					exposure: total > 0 ? (info.leagues.length / total) * 100 : 0,
+					ecr: medianRank(info.ranks),
+					url: info.url,
+				}))
+				.sort((a, b) => rankOrLast(a.ecr) - rankOrLast(b.ecr) || a.name.localeCompare(b.name));
+
+			// The oldest read among the contributing leagues, which is what the
+			// card can honestly claim. Unlike everything else on the page this is
+			// not as of the last sync: reading every franchise's roster is
+			// expensive enough that the sync only does it once a day, so a card
+			// that said nothing would look four hours old while being twenty.
+			// Null when no league recorded one — a list carried over from before
+			// this was stamped, which is a state that lasts one day.
+			const readAt = eligible
+				.map((l) => l.availableAt)
+				.filter(Boolean)
+				.sort()[0] ?? null;
+
+			return { total, rows, readAt };
+		}
+
 		// Seven rather than ten: two of these cards now sit side by side, and a
 		// ten-row table pushed the pager below the fold on a phone — you had to
 		// scroll to reach the control that saves you scrolling. Seven still
 		// clears that bar and shows more of the list per page than five did.
 		const ANALYTICS_PAGE_SIZE = 7;
 
-		// The table half of both analytics cards, pager and all. They differ only
-		// in whether a Status column is present, so this is one implementation
-		// with a flag rather than two near-identical copies free to drift apart.
-		function appendExposureTable(card, rows, total, { showStatus = false } = {}) {
+		// The ranking cards page deeper. They're a list you read down rather than
+		// a summary you glance at — the exposure cards' whole content is their
+		// first page, while "who are the best players" and "who's on the wire"
+		// are questions you answer by scrolling — so the pager being one screen
+		// down is the normal case there rather than the annoyance it is above.
+		const RANKING_PAGE_SIZE = 10;
+
+		// The table half of all four analytics cards, pager and all. They differ
+		// only in which columns are present and how the sub-line reads, so this is
+		// one implementation with flags rather than four near-identical copies
+		// free to drift apart.
+		//
+		//   showStatus     — Injury Exposure's designation column
+		//   showExposure   — the percentage column; the ranking cards count
+		//                    leagues but a percentage of them means nothing
+		//   countHeader    — what the n/total column is counting
+		//   emphasizeOwned — bold the name when the player appears in any league,
+		//                    for a table that lists players you don't own too
+		function appendAnalyticsTable(card, rows, total, {
+			showStatus = false,
+			showExposure = true,
+			countHeader = 'Owned In',
+			emphasizeOwned = false,
+			pageSize = ANALYTICS_PAGE_SIZE,
+		} = {}) {
 			const table = el('table', { class: 'standings' });
 			card.appendChild(table);
 
-			const pageCount = Math.ceil(rows.length / ANALYTICS_PAGE_SIZE);
+			const pageCount = Math.ceil(rows.length / pageSize);
 			let page = 0;
 			let pager = null;
 			let prevBtn = null;
@@ -2691,19 +2913,23 @@
 				headRow.appendChild(el('th', { text: 'Pos' }));
 				if (showStatus) headRow.appendChild(el('th', { text: 'Status' }));
 				if (showEcr) headRow.appendChild(el('th', { class: 'ecr-cell', text: 'ECR' }));
-				headRow.appendChild(el('th', { text: 'Owned In' }));
-				headRow.appendChild(el('th', { text: 'Exposure' }));
+				headRow.appendChild(el('th', { text: countHeader }));
+				if (showExposure) headRow.appendChild(el('th', { text: 'Exposure' }));
 				table.appendChild(headRow);
 
-				const start = page * ANALYTICS_PAGE_SIZE;
-				for (const r of rows.slice(start, start + ANALYTICS_PAGE_SIZE)) {
+				const start = page * pageSize;
+				for (const r of rows.slice(start, start + pageSize)) {
 					const row = el('tr');
 					const nameCell = el('td');
 					// Same link as the roster cards, from the same captured URL —
 					// see playerNameNode, which this mirrors on a row that has no
 					// player object behind it, only the aggregate.
-					nameCell.appendChild(el('div', {}, [playerNameNode({ name: r.name, ecr: { url: r.url } })]));
-					nameCell.appendChild(el('div', { class: 'exposure-leagues', text: r.leagues.join(', ') }));
+					nameCell.appendChild(el('div', {
+						class: emphasizeOwned && r.leagues.length > 0 ? 'player-owned' : '',
+					}, [playerNameNode({ name: r.name, ecr: { url: r.url } })]));
+					if (r.leagues.length > 0) {
+						nameCell.appendChild(el('div', { class: 'exposure-leagues', text: r.leagues.join(', ') }));
+					}
 					row.appendChild(nameCell);
 					row.appendChild(el('td', { text: r.position || '-' }));
 					if (showStatus) row.appendChild(el('td', { class: 'injury-status-cell', text: r.status || '—' }));
@@ -2717,7 +2943,7 @@
 						}));
 					}
 					row.appendChild(el('td', { text: `${r.count}/${total}` }));
-					row.appendChild(el('td', { text: `${Math.round(r.exposure)}%` }));
+					if (showExposure) row.appendChild(el('td', { text: `${Math.round(r.exposure)}%` }));
 					table.appendChild(row);
 				}
 
@@ -2740,6 +2966,14 @@
 			renderPage();
 		}
 
+		// "1 leagues" was unreachable while Analytics folded dynasty, salary-cap
+		// and redraft into one tab — a group that small couldn't happen. Splitting
+		// Redraft back out made it an ordinary state: a redraft group holds one
+		// drafted league all preseason while the others wait on their drafts.
+		function leagueCount(n) {
+			return `${n} league${n === 1 ? '' : 's'}`;
+		}
+
 		// Neither analytics card carries a footnote. Both used to explain their own
 		// workings under the table — the median ECR being drawn from leagues that
 		// can rank off different FantasyPros lists, and where an injury designation
@@ -2754,18 +2988,28 @@
 			const { total, rows } = computePlayerExposure(leagues, types);
 
 			if (total < 2) {
-				card.appendChild(el('div', { class: 'error-box', text: 'Need at least 2 leagues in this group with roster data to show exposure.' }));
+				// Not a fault, and it reads like one if worded as a requirement:
+				// a redraft group holds a single drafted league for most of the
+				// preseason while the rest wait on their drafts. Exposure needs
+				// two rosters to be a ratio of anything, so the card says what it
+				// is waiting for rather than what is missing.
+				card.appendChild(el('div', {
+					class: 'error-box',
+					text: total === 1
+						? 'Only one league here has rosters so far — exposure needs at least two to compare.'
+						: 'No leagues here have roster data yet.',
+				}));
 				return card;
 			}
 
-			card.appendChild(el('div', { class: 'team', text: `Across ${total} leagues` }));
+			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(total)}` }));
 
 			if (rows.length === 0) {
 				card.appendChild(el('div', { class: 'error-box', text: 'No players owned in more than one league yet.' }));
 				return card;
 			}
 
-			appendExposureTable(card, rows, total);
+			appendAnalyticsTable(card, rows, total);
 			return card;
 		}
 
@@ -2779,14 +3023,66 @@
 
 			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
 			card.appendChild(el('h2', { text: 'Injury Exposure' }));
-			card.appendChild(el('div', { class: 'team', text: `Across ${total} leagues` }));
+			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(total)}` }));
 
 			if (rows.length === 0) {
 				card.appendChild(el('div', { class: 'error-box', text: 'Nobody on these rosters is carrying an injury designation right now.' }));
 				return card;
 			}
 
-			appendExposureTable(card, rows, total, { showStatus: true });
+			appendAnalyticsTable(card, rows, total, { showStatus: true });
+			return card;
+		}
+
+		// Like the Injury Exposure card, both ranking cards return null rather
+		// than an explanatory box when there's nothing to show. There is one
+		// specific reason to expect nothing: a data/rosters.json written before
+		// rankingPools existed, or by a sync with no FantasyPros key. Neither is
+		// a state the reader can act on, and "no ranking data" printed twice
+		// under two headings reads as two faults.
+		function renderTopPlayersCard(groupKey, types, leagues, pools) {
+			const { total, rows } = computeTopPlayers(leagues, types, pools);
+			if (rows.length === 0) return null;
+
+			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
+			card.appendChild(el('h2', { text: 'Top Players' }));
+			card.appendChild(el('div', { class: 'team', text: `Consensus rankings across ${leagueCount(total)}` }));
+
+			appendAnalyticsTable(card, rows, total, {
+				showExposure: false,
+				countHeader: 'Owned In',
+				emphasizeOwned: true,
+				pageSize: RANKING_PAGE_SIZE,
+			});
+			return card;
+		}
+
+		function renderTopAvailableCard(groupKey, types, leagues, pools) {
+			const { total, rows, readAt } = computeTopAvailable(leagues, types, pools);
+			if (total === 0) return null;
+
+			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
+			card.appendChild(el('h2', { text: 'Top Available' }));
+			// The only card that dates itself, because it's the only one that
+			// isn't as fresh as the sync — see computeTopAvailable's readAt.
+			card.appendChild(el('div', {
+				class: 'team',
+				text: `Free agents across ${leagueCount(total)}${readAt ? ` · checked ${timeAgo(readAt)}` : ''}`,
+			}));
+
+			if (rows.length === 0) {
+				// Worth saying out loud rather than hiding the card: in a deep
+				// dynasty group this is the expected answer, and an absent card
+				// looks like missing data instead of a picked-over wire.
+				card.appendChild(el('div', { class: 'error-box', text: 'Everybody in the top of the rankings is already rostered here.' }));
+				return card;
+			}
+
+			appendAnalyticsTable(card, rows, total, {
+				showExposure: false,
+				countHeader: 'Free In',
+				pageSize: RANKING_PAGE_SIZE,
+			});
 			return card;
 		}
 
@@ -3571,12 +3867,16 @@
 				}
 			}
 
-			for (const groupKey of ANALYTICS_GROUP_ORDER) {
-				const types = typesInAnalyticsGroup(groupKey);
+			for (const groupKey of SUBTAB_ORDER) {
+				const types = typesInSubtabGroup(groupKey);
 				if (!data.leagues.some((l) => types.includes(l.type))) continue;
 				gridEl.appendChild(renderAnalyticsCard(groupKey, types, data.leagues));
 				const injuryCard = renderInjuryExposureCard(groupKey, types, data.leagues);
 				if (injuryCard) gridEl.appendChild(injuryCard);
+				const topCard = renderTopPlayersCard(groupKey, types, data.leagues, data.rankingPools);
+				if (topCard) gridEl.appendChild(topCard);
+				const availableCard = renderTopAvailableCard(groupKey, types, data.leagues, data.rankingPools);
+				if (availableCard) gridEl.appendChild(availableCard);
 			}
 
 			// Logged-out visitors never get this card, so 'admin' never makes it

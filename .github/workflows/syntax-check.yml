@@ -99,6 +99,16 @@ jobs:
       - name: Test the page's plan reconciliation
         run: node scripts/test-plan-sync.mjs
 
+      # The Analytics tab's judgement calls, run against myffl.html itself.
+      # Every one of them is invisible when wrong — a denominator that quietly
+      # counts a league it shouldn't, or a player you own not being recognised
+      # as owned — so nothing on screen says the card is lying.
+      - name: Test the Injury Exposure card
+        run: node scripts/test-injury-exposure.mjs
+
+      - name: Test the Top Players and Top Available cards
+        run: node scripts/test-top-players.mjs
+
       - name: Validate config/leagues.json
         run: |
           node --input-type=module -e '
