@@ -1707,9 +1707,28 @@
 		// heading plus a badge strip. The provider badge (MFL/ESPN/Sleeper)
 		// always leads the strip and is styled gold instead of the usual
 		// purple, so which site actually hosts a league reads at a glance
-		// instead of blending in with Superflex/Best Ball/etc. `extraLabels`
-		// (type, Salary Cap, tags) is Rosters-only — Standings/Scoring just
-		// get the provider badge on its own.
+		// instead of blending in with Superflex/Best Ball/etc.
+		//
+		// All three card types pass the same `extraLabels`. Standings and Scoring
+		// used to get the provider badge alone, on the reasoning that format is a
+		// Rosters concern — but several tags name a scoring system outright (Best
+		// Ball) or change how points arrive (Superflex), which is exactly the
+		// context you want when reading a scoring table or a standings column.
+		// The purple chips: what kind of league this is and how it's scored.
+		// Type is derived from data we already have; anything else (Superflex,
+		// Best Ball, ...) is the manual `tags` array in config/leagues.json, since
+		// no provider exposes it in a reliable form.
+		//
+		// The type label already reads "Salary Cap" for exactly the leagues that
+		// used to get a second badge from the auction check, so no separate
+		// salary-cap badge is needed.
+		function formatBadgeLabels(league) {
+			const labels = [];
+			if (LEAGUE_TYPE_LABELS[league.type]) labels.push(LEAGUE_TYPE_LABELS[league.type]);
+			if (Array.isArray(league.tags)) labels.push(...league.tags);
+			return labels;
+		}
+
 		// Which season this card is showing. Normally the same for every league,
 		// but through the spring they roll over one at a time, so a card can
 		// legitimately be a season behind the rest — and a stale roster renders
@@ -1767,17 +1786,7 @@
 				}
 			}
 
-			// Badges: league type + salary cap are derived from data we already
-			// have; anything else (Superflex, etc.) is a manual "tags" array in
-			// config/leagues.json since MFL doesn't expose it in a reliable form.
-			const badgeLabels = [];
-			// The type label already reads "Salary Cap" for exactly the leagues
-			// that used to get a second badge from the auction check, so no
-			// separate salary-cap badge is needed any more.
-			if (LEAGUE_TYPE_LABELS[league.type]) badgeLabels.push(LEAGUE_TYPE_LABELS[league.type]);
-			if (Array.isArray(league.tags)) badgeLabels.push(...league.tags);
-
-			card.appendChild(buildCardHead(league, badgeLabels));
+			card.appendChild(buildCardHead(league, formatBadgeLabels(league)));
 			card.appendChild(el('div', { class: 'team', text: league.teamName || '' }));
 
 			if (league.error && (!league.players || league.players.length === 0)) {
@@ -1854,7 +1863,7 @@
 
 		function renderStandingsCard(league) {
 			const card = el('div', { class: 'card', 'data-view': 'standings', 'data-league-type': subtabType(league) || '' });
-			card.appendChild(buildCardHead(league));
+			card.appendChild(buildCardHead(league, formatBadgeLabels(league)));
 
 			if (league.standingsError && (!league.standings || league.standings.length === 0)) {
 				card.appendChild(el('div', { class: 'error-box', text: `Couldn't load standings: ${league.standingsError}` }));
@@ -1891,7 +1900,7 @@
 
 		function renderScoringCard(league) {
 			const card = el('div', { class: 'card', 'data-view': 'scoring', 'data-league-type': subtabType(league) || '' });
-			card.appendChild(buildCardHead(league));
+			card.appendChild(buildCardHead(league, formatBadgeLabels(league)));
 
 			const teams = league.scoring?.teams || [];
 
