@@ -1,6 +1,2732 @@
 {
-  "generatedAt": "2026-08-08T22:02:56.902Z",
+  "generatedAt": "2026-08-08T22:44:49.731Z",
   "year": "2026",
+  "rankingPools": {
+    "DYNASTY|PPR|ALL": {
+      "type": "DYNASTY",
+      "scoring": "PPR",
+      "position": "ALL",
+      "lastUpdated": "8/08",
+      "players": [
+        {
+          "name": "Ja'Marr Chase",
+          "position": "WR",
+          "rank": 1,
+          "url": "/nfl/players/jamarr-chase.php"
+        },
+        {
+          "name": "Jaxon Smith-Njigba",
+          "position": "WR",
+          "rank": 2,
+          "url": "/nfl/players/jaxon-smith-njigba.php"
+        },
+        {
+          "name": "Bijan Robinson",
+          "position": "RB",
+          "rank": 3,
+          "url": "/nfl/players/bijan-robinson.php"
+        },
+        {
+          "name": "Puka Nacua",
+          "position": "WR",
+          "rank": 4,
+          "url": "/nfl/players/puka-nacua.php"
+        },
+        {
+          "name": "Jahmyr Gibbs",
+          "position": "RB",
+          "rank": 5,
+          "url": "/nfl/players/jahmyr-gibbs.php"
+        },
+        {
+          "name": "Amon-Ra St. Brown",
+          "position": "WR",
+          "rank": 6,
+          "url": "/nfl/players/amonra-stbrown.php"
+        },
+        {
+          "name": "Justin Jefferson",
+          "position": "WR",
+          "rank": 7,
+          "url": "/nfl/players/justin-jefferson.php"
+        },
+        {
+          "name": "Ashton Jeanty",
+          "position": "RB",
+          "rank": 8,
+          "url": "/nfl/players/ashton-jeanty.php"
+        },
+        {
+          "name": "CeeDee Lamb",
+          "position": "WR",
+          "rank": 9,
+          "url": "/nfl/players/ceedee-lamb.php"
+        },
+        {
+          "name": "Malik Nabers",
+          "position": "WR",
+          "rank": 10,
+          "url": "/nfl/players/malik-nabers.php"
+        },
+        {
+          "name": "Drake London",
+          "position": "WR",
+          "rank": 11,
+          "url": "/nfl/players/drake-london.php"
+        },
+        {
+          "name": "Jeremiyah Love",
+          "position": "RB",
+          "rank": 12,
+          "url": "/nfl/players/jeremiyah-love.php"
+        },
+        {
+          "name": "De'Von Achane",
+          "position": "RB",
+          "rank": 13,
+          "url": "/nfl/players/devon-achane.php"
+        },
+        {
+          "name": "Brock Bowers",
+          "position": "TE",
+          "rank": 14,
+          "url": "/nfl/players/brock-bowers.php"
+        },
+        {
+          "name": "Omarion Hampton",
+          "position": "RB",
+          "rank": 15,
+          "url": "/nfl/players/omarion-hampton.php"
+        },
+        {
+          "name": "Tetairoa McMillan",
+          "position": "WR",
+          "rank": 16,
+          "url": "/nfl/players/tetairoa-mcmillan.php"
+        },
+        {
+          "name": "James Cook III",
+          "position": "RB",
+          "rank": 17,
+          "url": "/nfl/players/james-cook.php"
+        },
+        {
+          "name": "Nico Collins",
+          "position": "WR",
+          "rank": 18,
+          "url": "/nfl/players/nico-collins.php"
+        },
+        {
+          "name": "Jonathan Taylor",
+          "position": "RB",
+          "rank": 19,
+          "url": "/nfl/players/jonathan-taylor.php"
+        },
+        {
+          "name": "Josh Allen",
+          "position": "QB",
+          "rank": 20,
+          "url": "/nfl/players/josh-allen-qb.php"
+        },
+        {
+          "name": "George Pickens",
+          "position": "WR",
+          "rank": 21,
+          "url": "/nfl/players/george-pickens.php"
+        },
+        {
+          "name": "Emeka Egbuka",
+          "position": "WR",
+          "rank": 22,
+          "url": "/nfl/players/emeka-egbuka.php"
+        },
+        {
+          "name": "Trey McBride",
+          "position": "TE",
+          "rank": 23,
+          "url": "/nfl/players/trey-mcbride.php"
+        },
+        {
+          "name": "Drake Maye",
+          "position": "QB",
+          "rank": 24,
+          "url": "/nfl/players/drake-maye.php"
+        },
+        {
+          "name": "Chris Olave",
+          "position": "WR",
+          "rank": 25,
+          "url": "/nfl/players/chris-olave.php"
+        },
+        {
+          "name": "Kenneth Walker III",
+          "position": "RB",
+          "rank": 26,
+          "url": "/nfl/players/kenneth-walker-rb.php"
+        },
+        {
+          "name": "Garrett Wilson",
+          "position": "WR",
+          "rank": 27,
+          "url": "/nfl/players/garrett-wilson.php"
+        },
+        {
+          "name": "Carnell Tate",
+          "position": "WR",
+          "rank": 28,
+          "url": "/nfl/players/carnell-tate.php"
+        },
+        {
+          "name": "Ladd McConkey",
+          "position": "WR",
+          "rank": 29,
+          "url": "/nfl/players/ladd-mcconkey.php"
+        },
+        {
+          "name": "Jayden Daniels",
+          "position": "QB",
+          "rank": 30,
+          "url": "/nfl/players/jayden-daniels.php"
+        },
+        {
+          "name": "DeVonta Smith",
+          "position": "WR",
+          "rank": 31,
+          "url": "/nfl/players/devonta-smith.php"
+        },
+        {
+          "name": "Zay Flowers",
+          "position": "WR",
+          "rank": 32,
+          "url": "/nfl/players/zay-flowers.php"
+        },
+        {
+          "name": "A.J. Brown",
+          "position": "WR",
+          "rank": 33,
+          "url": "/nfl/players/aj-brown.php"
+        },
+        {
+          "name": "Luther Burden III",
+          "position": "WR",
+          "rank": 34,
+          "url": "/nfl/players/luther-burden-iii.php"
+        },
+        {
+          "name": "Breece Hall",
+          "position": "RB",
+          "rank": 35,
+          "url": "/nfl/players/breece-hall.php"
+        },
+        {
+          "name": "Lamar Jackson",
+          "position": "QB",
+          "rank": 36,
+          "url": "/nfl/players/lamar-jackson.php"
+        },
+        {
+          "name": "Colston Loveland",
+          "position": "TE",
+          "rank": 37,
+          "url": "/nfl/players/colston-loveland.php"
+        },
+        {
+          "name": "Jordyn Tyson",
+          "position": "WR",
+          "rank": 38,
+          "url": "/nfl/players/jordyn-tyson.php"
+        },
+        {
+          "name": "Chase Brown",
+          "position": "RB",
+          "rank": 39,
+          "url": "/nfl/players/chase-brown.php"
+        },
+        {
+          "name": "Tee Higgins",
+          "position": "WR",
+          "rank": 40,
+          "url": "/nfl/players/tee-higgins.php"
+        },
+        {
+          "name": "Rashee Rice",
+          "position": "WR",
+          "rank": 41,
+          "url": "/nfl/players/rashee-rice.php"
+        },
+        {
+          "name": "Makai Lemon",
+          "position": "WR",
+          "rank": 42,
+          "url": "/nfl/players/makai-lemon.php"
+        },
+        {
+          "name": "Joe Burrow",
+          "position": "QB",
+          "rank": 43,
+          "url": "/nfl/players/joe-burrow.php"
+        },
+        {
+          "name": "Jaylen Waddle",
+          "position": "WR",
+          "rank": 44,
+          "url": "/nfl/players/jaylen-waddle.php"
+        },
+        {
+          "name": "Tyler Warren",
+          "position": "TE",
+          "rank": 45,
+          "url": "/nfl/players/tyler-warren.php"
+        },
+        {
+          "name": "Rome Odunze",
+          "position": "WR",
+          "rank": 46,
+          "url": "/nfl/players/rome-odunze.php"
+        },
+        {
+          "name": "Caleb Williams",
+          "position": "QB",
+          "rank": 47,
+          "url": "/nfl/players/caleb-williams.php"
+        },
+        {
+          "name": "TreVeyon Henderson",
+          "position": "RB",
+          "rank": 48,
+          "url": "/nfl/players/treveyon-henderson.php"
+        },
+        {
+          "name": "Justin Herbert",
+          "position": "QB",
+          "rank": 49,
+          "url": "/nfl/players/justin-herbert.php"
+        },
+        {
+          "name": "Saquon Barkley",
+          "position": "RB",
+          "rank": 50,
+          "url": "/nfl/players/saquon-barkley.php"
+        },
+        {
+          "name": "Patrick Mahomes II",
+          "position": "QB",
+          "rank": 51,
+          "url": "/nfl/players/patrick-mahomes.php"
+        },
+        {
+          "name": "Tucker Kraft",
+          "position": "TE",
+          "rank": 52,
+          "url": "/nfl/players/tucker-kraft.php"
+        },
+        {
+          "name": "Christian McCaffrey",
+          "position": "RB",
+          "rank": 53,
+          "url": "/nfl/players/christian-mccaffrey.php"
+        },
+        {
+          "name": "Jameson Williams",
+          "position": "WR",
+          "rank": 54,
+          "url": "/nfl/players/jameson-williams.php"
+        },
+        {
+          "name": "Quinshon Judkins",
+          "position": "RB",
+          "rank": 55,
+          "url": "/nfl/players/quinshon-judkins.php"
+        },
+        {
+          "name": "Marvin Harrison Jr.",
+          "position": "WR",
+          "rank": 56,
+          "url": "/nfl/players/marvin-harrison-jr.php"
+        },
+        {
+          "name": "Jalen Hurts",
+          "position": "QB",
+          "rank": 57,
+          "url": "/nfl/players/jalen-hurts.php"
+        },
+        {
+          "name": "Harold Fannin Jr.",
+          "position": "TE",
+          "rank": 58,
+          "url": "/nfl/players/harold-fannin-jr.php"
+        },
+        {
+          "name": "Kyren Williams",
+          "position": "RB",
+          "rank": 59,
+          "url": "/nfl/players/kyren-williams.php"
+        },
+        {
+          "name": "Trevor Lawrence",
+          "position": "QB",
+          "rank": 60,
+          "url": "/nfl/players/trevor-lawrence.php"
+        },
+        {
+          "name": "Brian Thomas Jr.",
+          "position": "WR",
+          "rank": 61,
+          "url": "/nfl/players/brian-thomas-jr.php"
+        },
+        {
+          "name": "Sam LaPorta",
+          "position": "TE",
+          "rank": 62,
+          "url": "/nfl/players/sam-laporta.php"
+        },
+        {
+          "name": "Travis Etienne Jr.",
+          "position": "RB",
+          "rank": 63,
+          "url": "/nfl/players/travis-etienne.php"
+        },
+        {
+          "name": "Christian Watson",
+          "position": "WR",
+          "rank": 64,
+          "url": "/nfl/players/christian-watson.php"
+        },
+        {
+          "name": "Kyle Pitts Sr.",
+          "position": "TE",
+          "rank": 65,
+          "url": "/nfl/players/kyle-pitts.php"
+        },
+        {
+          "name": "Cam Skattebo",
+          "position": "RB",
+          "rank": 66,
+          "url": "/nfl/players/cam-skattebo.php"
+        },
+        {
+          "name": "Bucky Irving",
+          "position": "RB",
+          "rank": 67,
+          "url": "/nfl/players/bucky-irving.php"
+        },
+        {
+          "name": "Javonte Williams",
+          "position": "RB",
+          "rank": 68,
+          "url": "/nfl/players/javonte-williams.php"
+        },
+        {
+          "name": "Jadarian Price",
+          "position": "RB",
+          "rank": 69,
+          "url": "/nfl/players/jadarian-price.php"
+        },
+        {
+          "name": "Brock Purdy",
+          "position": "QB",
+          "rank": 70,
+          "url": "/nfl/players/brock-purdy.php"
+        },
+        {
+          "name": "KC Concepcion",
+          "position": "WR",
+          "rank": 71,
+          "url": "/nfl/players/kevin-concepcion.php"
+        },
+        {
+          "name": "Jaxson Dart",
+          "position": "QB",
+          "rank": 72,
+          "url": "/nfl/players/jaxson-dart.php"
+        },
+        {
+          "name": "Alec Pierce",
+          "position": "WR",
+          "rank": 73,
+          "url": "/nfl/players/alec-pierce.php"
+        },
+        {
+          "name": "Terry McLaurin",
+          "position": "WR",
+          "rank": 74,
+          "url": "/nfl/players/terry-mclaurin.php"
+        },
+        {
+          "name": "DJ Moore",
+          "position": "WR",
+          "rank": 75,
+          "url": "/nfl/players/dj-moore-wr.php"
+        },
+        {
+          "name": "Bo Nix",
+          "position": "QB",
+          "rank": 76,
+          "url": "/nfl/players/bo-nix.php"
+        },
+        {
+          "name": "Kenyon Sadiq",
+          "position": "TE",
+          "rank": 77,
+          "url": "/nfl/players/kenyon-sadiq.php"
+        },
+        {
+          "name": "Derrick Henry",
+          "position": "RB",
+          "rank": 78,
+          "url": "/nfl/players/derrick-henry.php"
+        },
+        {
+          "name": "Jordan Addison",
+          "position": "WR",
+          "rank": 79,
+          "url": "/nfl/players/jordan-addison.php"
+        },
+        {
+          "name": "Bhayshul Tuten",
+          "position": "RB",
+          "rank": 80,
+          "url": "/nfl/players/bhayshul-tuten.php"
+        },
+        {
+          "name": "Parker Washington",
+          "position": "WR",
+          "rank": 81,
+          "url": "/nfl/players/parker-washington.php"
+        },
+        {
+          "name": "Josh Jacobs",
+          "position": "RB",
+          "rank": 82,
+          "url": "/nfl/players/josh-jacobs.php"
+        },
+        {
+          "name": "DK Metcalf",
+          "position": "WR",
+          "rank": 83,
+          "url": "/nfl/players/dk-metcalf.php"
+        },
+        {
+          "name": "Dak Prescott",
+          "position": "QB",
+          "rank": 84,
+          "url": "/nfl/players/dak-prescott.php"
+        },
+        {
+          "name": "Michael Wilson",
+          "position": "WR",
+          "rank": 85,
+          "url": "/nfl/players/michael-wilson.php"
+        },
+        {
+          "name": "Omar Cooper Jr.",
+          "position": "WR",
+          "rank": 86,
+          "url": "/nfl/players/omar-cooper-jr.php"
+        },
+        {
+          "name": "Eli Stowers",
+          "position": "TE",
+          "rank": 87,
+          "url": "/nfl/players/eli-stowers.php"
+        },
+        {
+          "name": "D'Andre Swift",
+          "position": "RB",
+          "rank": 88,
+          "url": "/nfl/players/dandre-swift.php"
+        },
+        {
+          "name": "Jordan Love",
+          "position": "QB",
+          "rank": 89,
+          "url": "/nfl/players/jordan-love.php"
+        },
+        {
+          "name": "Wan'Dale Robinson",
+          "position": "WR",
+          "rank": 90,
+          "url": "/nfl/players/wandale-robinson.php"
+        },
+        {
+          "name": "David Montgomery",
+          "position": "RB",
+          "rank": 91,
+          "url": "/nfl/players/david-montgomery.php"
+        },
+        {
+          "name": "Jayden Higgins",
+          "position": "WR",
+          "rank": 92,
+          "url": "/nfl/players/jayden-higgins.php"
+        },
+        {
+          "name": "Dalton Kincaid",
+          "position": "TE",
+          "rank": 93,
+          "url": "/nfl/players/dalton-kincaid.php"
+        },
+        {
+          "name": "Oronde Gadsden II",
+          "position": "TE",
+          "rank": 94,
+          "url": "/nfl/players/oronde-gadsden-ii.php"
+        },
+        {
+          "name": "Davante Adams",
+          "position": "WR",
+          "rank": 95,
+          "url": "/nfl/players/davante-adams.php"
+        },
+        {
+          "name": "Denzel Boston",
+          "position": "WR",
+          "rank": 96,
+          "url": "/nfl/players/denzel-boston.php"
+        },
+        {
+          "name": "Josh Downs",
+          "position": "WR",
+          "rank": 97,
+          "url": "/nfl/players/josh-downs.php"
+        },
+        {
+          "name": "Isaiah Likely",
+          "position": "TE",
+          "rank": 98,
+          "url": "/nfl/players/isaiah-likely.php"
+        },
+        {
+          "name": "Mike Evans",
+          "position": "WR",
+          "rank": 99,
+          "url": "/nfl/players/mike-evans.php"
+        },
+        {
+          "name": "Courtland Sutton",
+          "position": "WR",
+          "rank": 100,
+          "url": "/nfl/players/courtland-sutton.php"
+        },
+        {
+          "name": "Michael Pittman Jr.",
+          "position": "WR",
+          "rank": 101,
+          "url": "/nfl/players/michael-pittman.php"
+        },
+        {
+          "name": "Xavier Worthy",
+          "position": "WR",
+          "rank": 102,
+          "url": "/nfl/players/xavier-worthy.php"
+        },
+        {
+          "name": "Quentin Johnston",
+          "position": "WR",
+          "rank": 103,
+          "url": "/nfl/players/quentin-johnston.php"
+        },
+        {
+          "name": "George Kittle",
+          "position": "TE",
+          "rank": 104,
+          "url": "/nfl/players/george-kittle.php"
+        },
+        {
+          "name": "Jayden Reed",
+          "position": "WR",
+          "rank": 105,
+          "url": "/nfl/players/jayden-reed.php"
+        },
+        {
+          "name": "Matthew Golden",
+          "position": "WR",
+          "rank": 106,
+          "url": "/nfl/players/matthew-golden.php"
+        },
+        {
+          "name": "Jared Goff",
+          "position": "QB",
+          "rank": 107,
+          "url": "/nfl/players/jared-goff.php"
+        },
+        {
+          "name": "RJ Harvey",
+          "position": "RB",
+          "rank": 108,
+          "url": "/nfl/players/rj-harvey.php"
+        },
+        {
+          "name": "Jakobi Meyers",
+          "position": "WR",
+          "rank": 109,
+          "url": "/nfl/players/jakobi-meyers.php"
+        },
+        {
+          "name": "Jaylen Warren",
+          "position": "RB",
+          "rank": 110,
+          "url": "/nfl/players/jaylen-warren.php"
+        },
+        {
+          "name": "Jake Ferguson",
+          "position": "TE",
+          "rank": 111,
+          "url": "/nfl/players/jake-ferguson.php"
+        },
+        {
+          "name": "Chris Godwin Jr.",
+          "position": "WR",
+          "rank": 112,
+          "url": "/nfl/players/chris-godwin.php"
+        },
+        {
+          "name": "Ricky Pearsall",
+          "position": "WR",
+          "rank": 113,
+          "url": "/nfl/players/ricky-pearsall.php"
+        },
+        {
+          "name": "Fernando Mendoza",
+          "position": "QB",
+          "rank": 114,
+          "url": "/nfl/players/fernando-mendoza.php"
+        },
+        {
+          "name": "Brenton Strange",
+          "position": "TE",
+          "rank": 115,
+          "url": "/nfl/players/brenton-strange.php"
+        },
+        {
+          "name": "Baker Mayfield",
+          "position": "QB",
+          "rank": 116,
+          "url": "/nfl/players/baker-mayfield.php"
+        },
+        {
+          "name": "Kyle Monangai",
+          "position": "RB",
+          "rank": 117,
+          "url": "/nfl/players/kyle-monangai.php"
+        },
+        {
+          "name": "Blake Corum",
+          "position": "RB",
+          "rank": 118,
+          "url": "/nfl/players/blake-corum.php"
+        },
+        {
+          "name": "Romeo Doubs",
+          "position": "WR",
+          "rank": 119,
+          "url": "/nfl/players/romeo-doubs.php"
+        },
+        {
+          "name": "Zach Charbonnet",
+          "position": "RB",
+          "rank": 120,
+          "url": "/nfl/players/zach-charbonnet.php"
+        },
+        {
+          "name": "Antonio Williams",
+          "position": "WR",
+          "rank": 121,
+          "url": "/nfl/players/antonio-williams-wr.php"
+        },
+        {
+          "name": "Tyler Shough",
+          "position": "QB",
+          "rank": 122,
+          "url": "/nfl/players/tyler-shough.php"
+        },
+        {
+          "name": "Jalen Coker",
+          "position": "WR",
+          "rank": 123,
+          "url": "/nfl/players/jalen-coker.php"
+        },
+        {
+          "name": "C.J. Stroud",
+          "position": "QB",
+          "rank": 124,
+          "url": "/nfl/players/cj-stroud.php"
+        },
+        {
+          "name": "Jonathon Brooks",
+          "position": "RB",
+          "rank": 125,
+          "url": "/nfl/players/jonathon-brooks.php"
+        },
+        {
+          "name": "Rhamondre Stevenson",
+          "position": "RB",
+          "rank": 126,
+          "url": "/nfl/players/rhamondre-stevenson.php"
+        },
+        {
+          "name": "Chuba Hubbard",
+          "position": "RB",
+          "rank": 127,
+          "url": "/nfl/players/chuba-hubbard.php"
+        },
+        {
+          "name": "Khalil Shakir",
+          "position": "WR",
+          "rank": 128,
+          "url": "/nfl/players/khalil-shakir.php"
+        },
+        {
+          "name": "Travis Hunter",
+          "position": "WR",
+          "rank": 129,
+          "url": "/nfl/players/travis-hunter.php"
+        },
+        {
+          "name": "Kyler Murray",
+          "position": "QB",
+          "rank": 130,
+          "url": "/nfl/players/kyler-murray.php"
+        },
+        {
+          "name": "Chig Okonkwo",
+          "position": "TE",
+          "rank": 131,
+          "url": "/nfl/players/chigoziem-okonkwo.php"
+        },
+        {
+          "name": "Rico Dowdle",
+          "position": "RB",
+          "rank": 132,
+          "url": "/nfl/players/rico-dowdle.php"
+        },
+        {
+          "name": "Mark Andrews",
+          "position": "TE",
+          "rank": 133,
+          "url": "/nfl/players/mark-andrews.php"
+        },
+        {
+          "name": "Sam Darnold",
+          "position": "QB",
+          "rank": 134,
+          "url": "/nfl/players/sam-darnold.php"
+        },
+        {
+          "name": "Cam Ward",
+          "position": "QB",
+          "rank": 135,
+          "url": "/nfl/players/cam-ward.php"
+        },
+        {
+          "name": "Tony Pollard",
+          "position": "RB",
+          "rank": 136,
+          "url": "/nfl/players/tony-pollard.php"
+        },
+        {
+          "name": "Dallas Goedert",
+          "position": "TE",
+          "rank": 137,
+          "url": "/nfl/players/dallas-goedert.php"
+        },
+        {
+          "name": "Matthew Stafford",
+          "position": "QB",
+          "rank": 138,
+          "url": "/nfl/players/matthew-stafford.php"
+        },
+        {
+          "name": "Jonah Coleman",
+          "position": "RB",
+          "rank": 139,
+          "url": "/nfl/players/jonah-coleman.php"
+        },
+        {
+          "name": "Tre' Harris",
+          "position": "WR",
+          "rank": 140,
+          "url": "/nfl/players/tre-harris.php"
+        },
+        {
+          "name": "De'Zhaun Stribling",
+          "position": "WR",
+          "rank": 141,
+          "url": "/nfl/players/dezhaun-stribling.php"
+        },
+        {
+          "name": "Kenny Gainwell",
+          "position": "RB",
+          "rank": 142,
+          "url": "/nfl/players/kenneth-gainwell.php"
+        },
+        {
+          "name": "Daniel Jones",
+          "position": "QB",
+          "rank": 143,
+          "url": "/nfl/players/daniel-jones.php"
+        },
+        {
+          "name": "Jalen McMillan",
+          "position": "WR",
+          "rank": 144,
+          "url": "/nfl/players/jalen-mcmillan.php"
+        },
+        {
+          "name": "Bryce Young",
+          "position": "QB",
+          "rank": 145,
+          "url": "/nfl/players/bryce-young.php"
+        },
+        {
+          "name": "AJ Barner",
+          "position": "TE",
+          "rank": 146,
+          "url": "/nfl/players/aj-barner.php"
+        },
+        {
+          "name": "Rachaad White",
+          "position": "RB",
+          "rank": 147,
+          "url": "/nfl/players/rachaad-white.php"
+        },
+        {
+          "name": "Malik Willis",
+          "position": "QB",
+          "rank": 148,
+          "url": "/nfl/players/malik-willis.php"
+        },
+        {
+          "name": "J.K. Dobbins",
+          "position": "RB",
+          "rank": 149,
+          "url": "/nfl/players/jk-dobbins.php"
+        },
+        {
+          "name": "Travis Kelce",
+          "position": "TE",
+          "rank": 150,
+          "url": "/nfl/players/travis-kelce.php"
+        }
+      ]
+    },
+    "DRAFT|PPR|ALL": {
+      "type": "DRAFT",
+      "scoring": "PPR",
+      "position": "ALL",
+      "lastUpdated": "8/08",
+      "players": [
+        {
+          "name": "Ja'Marr Chase",
+          "position": "WR",
+          "rank": 1,
+          "url": "/nfl/players/jamarr-chase.php"
+        },
+        {
+          "name": "Puka Nacua",
+          "position": "WR",
+          "rank": 2,
+          "url": "/nfl/players/puka-nacua.php"
+        },
+        {
+          "name": "Jahmyr Gibbs",
+          "position": "RB",
+          "rank": 3,
+          "url": "/nfl/players/jahmyr-gibbs.php"
+        },
+        {
+          "name": "Bijan Robinson",
+          "position": "RB",
+          "rank": 4,
+          "url": "/nfl/players/bijan-robinson.php"
+        },
+        {
+          "name": "Jaxon Smith-Njigba",
+          "position": "WR",
+          "rank": 5,
+          "url": "/nfl/players/jaxon-smith-njigba.php"
+        },
+        {
+          "name": "Amon-Ra St. Brown",
+          "position": "WR",
+          "rank": 6,
+          "url": "/nfl/players/amonra-stbrown.php"
+        },
+        {
+          "name": "Christian McCaffrey",
+          "position": "RB",
+          "rank": 7,
+          "url": "/nfl/players/christian-mccaffrey.php"
+        },
+        {
+          "name": "CeeDee Lamb",
+          "position": "WR",
+          "rank": 8,
+          "url": "/nfl/players/ceedee-lamb.php"
+        },
+        {
+          "name": "Justin Jefferson",
+          "position": "WR",
+          "rank": 9,
+          "url": "/nfl/players/justin-jefferson.php"
+        },
+        {
+          "name": "Jonathan Taylor",
+          "position": "RB",
+          "rank": 10,
+          "url": "/nfl/players/jonathan-taylor.php"
+        },
+        {
+          "name": "Drake London",
+          "position": "WR",
+          "rank": 11,
+          "url": "/nfl/players/drake-london.php"
+        },
+        {
+          "name": "A.J. Brown",
+          "position": "WR",
+          "rank": 12,
+          "url": "/nfl/players/aj-brown.php"
+        },
+        {
+          "name": "Nico Collins",
+          "position": "WR",
+          "rank": 13,
+          "url": "/nfl/players/nico-collins.php"
+        },
+        {
+          "name": "Ashton Jeanty",
+          "position": "RB",
+          "rank": 14,
+          "url": "/nfl/players/ashton-jeanty.php"
+        },
+        {
+          "name": "Chase Brown",
+          "position": "RB",
+          "rank": 15,
+          "url": "/nfl/players/chase-brown.php"
+        },
+        {
+          "name": "James Cook III",
+          "position": "RB",
+          "rank": 16,
+          "url": "/nfl/players/james-cook.php"
+        },
+        {
+          "name": "Trey McBride",
+          "position": "TE",
+          "rank": 17,
+          "url": "/nfl/players/trey-mcbride.php"
+        },
+        {
+          "name": "George Pickens",
+          "position": "WR",
+          "rank": 18,
+          "url": "/nfl/players/george-pickens.php"
+        },
+        {
+          "name": "Brock Bowers",
+          "position": "TE",
+          "rank": 19,
+          "url": "/nfl/players/brock-bowers.php"
+        },
+        {
+          "name": "Rashee Rice",
+          "position": "WR",
+          "rank": 20,
+          "url": "/nfl/players/rashee-rice.php"
+        },
+        {
+          "name": "De'Von Achane",
+          "position": "RB",
+          "rank": 21,
+          "url": "/nfl/players/devon-achane.php"
+        },
+        {
+          "name": "Chris Olave",
+          "position": "WR",
+          "rank": 22,
+          "url": "/nfl/players/chris-olave.php"
+        },
+        {
+          "name": "DeVonta Smith",
+          "position": "WR",
+          "rank": 23,
+          "url": "/nfl/players/devonta-smith.php"
+        },
+        {
+          "name": "Omarion Hampton",
+          "position": "RB",
+          "rank": 24,
+          "url": "/nfl/players/omarion-hampton.php"
+        },
+        {
+          "name": "Saquon Barkley",
+          "position": "RB",
+          "rank": 25,
+          "url": "/nfl/players/saquon-barkley.php"
+        },
+        {
+          "name": "Josh Allen",
+          "position": "QB",
+          "rank": 26,
+          "url": "/nfl/players/josh-allen-qb.php"
+        },
+        {
+          "name": "Zay Flowers",
+          "position": "WR",
+          "rank": 27,
+          "url": "/nfl/players/zay-flowers.php"
+        },
+        {
+          "name": "Kenneth Walker III",
+          "position": "RB",
+          "rank": 28,
+          "url": "/nfl/players/kenneth-walker-rb.php"
+        },
+        {
+          "name": "Garrett Wilson",
+          "position": "WR",
+          "rank": 29,
+          "url": "/nfl/players/garrett-wilson.php"
+        },
+        {
+          "name": "Malik Nabers",
+          "position": "WR",
+          "rank": 30,
+          "url": "/nfl/players/malik-nabers.php"
+        },
+        {
+          "name": "Lamar Jackson",
+          "position": "QB",
+          "rank": 31,
+          "url": "/nfl/players/lamar-jackson.php"
+        },
+        {
+          "name": "Tetairoa McMillan",
+          "position": "WR",
+          "rank": 32,
+          "url": "/nfl/players/tetairoa-mcmillan.php"
+        },
+        {
+          "name": "Tee Higgins",
+          "position": "WR",
+          "rank": 33,
+          "url": "/nfl/players/tee-higgins.php"
+        },
+        {
+          "name": "Ladd McConkey",
+          "position": "WR",
+          "rank": 34,
+          "url": "/nfl/players/ladd-mcconkey.php"
+        },
+        {
+          "name": "Colston Loveland",
+          "position": "TE",
+          "rank": 35,
+          "url": "/nfl/players/colston-loveland.php"
+        },
+        {
+          "name": "Emeka Egbuka",
+          "position": "WR",
+          "rank": 36,
+          "url": "/nfl/players/emeka-egbuka.php"
+        },
+        {
+          "name": "Derrick Henry",
+          "position": "RB",
+          "rank": 37,
+          "url": "/nfl/players/derrick-henry.php"
+        },
+        {
+          "name": "Jaylen Waddle",
+          "position": "WR",
+          "rank": 38,
+          "url": "/nfl/players/jaylen-waddle.php"
+        },
+        {
+          "name": "Jeremiyah Love",
+          "position": "RB",
+          "rank": 39,
+          "url": "/nfl/players/jeremiyah-love.php"
+        },
+        {
+          "name": "Drake Maye",
+          "position": "QB",
+          "rank": 40,
+          "url": "/nfl/players/drake-maye.php"
+        },
+        {
+          "name": "Breece Hall",
+          "position": "RB",
+          "rank": 41,
+          "url": "/nfl/players/breece-hall.php"
+        },
+        {
+          "name": "Kyren Williams",
+          "position": "RB",
+          "rank": 42,
+          "url": "/nfl/players/kyren-williams.php"
+        },
+        {
+          "name": "Terry McLaurin",
+          "position": "WR",
+          "rank": 43,
+          "url": "/nfl/players/terry-mclaurin.php"
+        },
+        {
+          "name": "Josh Jacobs",
+          "position": "RB",
+          "rank": 44,
+          "url": "/nfl/players/josh-jacobs.php"
+        },
+        {
+          "name": "Luther Burden III",
+          "position": "WR",
+          "rank": 45,
+          "url": "/nfl/players/luther-burden-iii.php"
+        },
+        {
+          "name": "Javonte Williams",
+          "position": "RB",
+          "rank": 46,
+          "url": "/nfl/players/javonte-williams.php"
+        },
+        {
+          "name": "Joe Burrow",
+          "position": "QB",
+          "rank": 47,
+          "url": "/nfl/players/joe-burrow.php"
+        },
+        {
+          "name": "Davante Adams",
+          "position": "WR",
+          "rank": 48,
+          "url": "/nfl/players/davante-adams.php"
+        },
+        {
+          "name": "Travis Etienne Jr.",
+          "position": "RB",
+          "rank": 49,
+          "url": "/nfl/players/travis-etienne.php"
+        },
+        {
+          "name": "Jayden Daniels",
+          "position": "QB",
+          "rank": 50,
+          "url": "/nfl/players/jayden-daniels.php"
+        },
+        {
+          "name": "Mike Evans",
+          "position": "WR",
+          "rank": 51,
+          "url": "/nfl/players/mike-evans.php"
+        },
+        {
+          "name": "DJ Moore",
+          "position": "WR",
+          "rank": 52,
+          "url": "/nfl/players/dj-moore-wr.php"
+        },
+        {
+          "name": "Cam Skattebo",
+          "position": "RB",
+          "rank": 53,
+          "url": "/nfl/players/cam-skattebo.php"
+        },
+        {
+          "name": "Tyler Warren",
+          "position": "TE",
+          "rank": 54,
+          "url": "/nfl/players/tyler-warren.php"
+        },
+        {
+          "name": "Jameson Williams",
+          "position": "WR",
+          "rank": 55,
+          "url": "/nfl/players/jameson-williams.php"
+        },
+        {
+          "name": "Jalen Hurts",
+          "position": "QB",
+          "rank": 56,
+          "url": "/nfl/players/jalen-hurts.php"
+        },
+        {
+          "name": "Christian Watson",
+          "position": "WR",
+          "rank": 57,
+          "url": "/nfl/players/christian-watson.php"
+        },
+        {
+          "name": "Rome Odunze",
+          "position": "WR",
+          "rank": 58,
+          "url": "/nfl/players/rome-odunze.php"
+        },
+        {
+          "name": "Bucky Irving",
+          "position": "RB",
+          "rank": 59,
+          "url": "/nfl/players/bucky-irving.php"
+        },
+        {
+          "name": "D'Andre Swift",
+          "position": "RB",
+          "rank": 60,
+          "url": "/nfl/players/dandre-swift.php"
+        },
+        {
+          "name": "Quinshon Judkins",
+          "position": "RB",
+          "rank": 61,
+          "url": "/nfl/players/quinshon-judkins.php"
+        },
+        {
+          "name": "David Montgomery",
+          "position": "RB",
+          "rank": 62,
+          "url": "/nfl/players/david-montgomery.php"
+        },
+        {
+          "name": "TreVeyon Henderson",
+          "position": "RB",
+          "rank": 63,
+          "url": "/nfl/players/treveyon-henderson.php"
+        },
+        {
+          "name": "Carnell Tate",
+          "position": "WR",
+          "rank": 64,
+          "url": "/nfl/players/carnell-tate.php"
+        },
+        {
+          "name": "Caleb Williams",
+          "position": "QB",
+          "rank": 65,
+          "url": "/nfl/players/caleb-williams.php"
+        },
+        {
+          "name": "Bhayshul Tuten",
+          "position": "RB",
+          "rank": 66,
+          "url": "/nfl/players/bhayshul-tuten.php"
+        },
+        {
+          "name": "Justin Herbert",
+          "position": "QB",
+          "rank": 67,
+          "url": "/nfl/players/justin-herbert.php"
+        },
+        {
+          "name": "Marvin Harrison Jr.",
+          "position": "WR",
+          "rank": 68,
+          "url": "/nfl/players/marvin-harrison-jr.php"
+        },
+        {
+          "name": "Harold Fannin Jr.",
+          "position": "TE",
+          "rank": 69,
+          "url": "/nfl/players/harold-fannin-jr.php"
+        },
+        {
+          "name": "Tucker Kraft",
+          "position": "TE",
+          "rank": 70,
+          "url": "/nfl/players/tucker-kraft.php"
+        },
+        {
+          "name": "Jaylen Warren",
+          "position": "RB",
+          "rank": 71,
+          "url": "/nfl/players/jaylen-warren.php"
+        },
+        {
+          "name": "Jadarian Price",
+          "position": "RB",
+          "rank": 72,
+          "url": "/nfl/players/jadarian-price.php"
+        },
+        {
+          "name": "Brian Thomas Jr.",
+          "position": "WR",
+          "rank": 73,
+          "url": "/nfl/players/brian-thomas-jr.php"
+        },
+        {
+          "name": "Parker Washington",
+          "position": "WR",
+          "rank": 74,
+          "url": "/nfl/players/parker-washington.php"
+        },
+        {
+          "name": "DK Metcalf",
+          "position": "WR",
+          "rank": 75,
+          "url": "/nfl/players/dk-metcalf.php"
+        },
+        {
+          "name": "Trevor Lawrence",
+          "position": "QB",
+          "rank": 76,
+          "url": "/nfl/players/trevor-lawrence.php"
+        },
+        {
+          "name": "Dak Prescott",
+          "position": "QB",
+          "rank": 77,
+          "url": "/nfl/players/dak-prescott.php"
+        },
+        {
+          "name": "Chris Godwin Jr.",
+          "position": "WR",
+          "rank": 78,
+          "url": "/nfl/players/chris-godwin.php"
+        },
+        {
+          "name": "Kyle Pitts Sr.",
+          "position": "TE",
+          "rank": 79,
+          "url": "/nfl/players/kyle-pitts.php"
+        },
+        {
+          "name": "Rhamondre Stevenson",
+          "position": "RB",
+          "rank": 80,
+          "url": "/nfl/players/rhamondre-stevenson.php"
+        },
+        {
+          "name": "Michael Pittman Jr.",
+          "position": "WR",
+          "rank": 81,
+          "url": "/nfl/players/michael-pittman.php"
+        },
+        {
+          "name": "Alec Pierce",
+          "position": "WR",
+          "rank": 82,
+          "url": "/nfl/players/alec-pierce.php"
+        },
+        {
+          "name": "Tony Pollard",
+          "position": "RB",
+          "rank": 83,
+          "url": "/nfl/players/tony-pollard.php"
+        },
+        {
+          "name": "Courtland Sutton",
+          "position": "WR",
+          "rank": 84,
+          "url": "/nfl/players/courtland-sutton.php"
+        },
+        {
+          "name": "Sam LaPorta",
+          "position": "TE",
+          "rank": 85,
+          "url": "/nfl/players/sam-laporta.php"
+        },
+        {
+          "name": "Chuba Hubbard",
+          "position": "RB",
+          "rank": 86,
+          "url": "/nfl/players/chuba-hubbard.php"
+        },
+        {
+          "name": "Josh Downs",
+          "position": "WR",
+          "rank": 87,
+          "url": "/nfl/players/josh-downs.php"
+        },
+        {
+          "name": "Wan'Dale Robinson",
+          "position": "WR",
+          "rank": 88,
+          "url": "/nfl/players/wandale-robinson.php"
+        },
+        {
+          "name": "Jordyn Tyson",
+          "position": "WR",
+          "rank": 89,
+          "url": "/nfl/players/jordyn-tyson.php"
+        },
+        {
+          "name": "Rico Dowdle",
+          "position": "RB",
+          "rank": 90,
+          "url": "/nfl/players/rico-dowdle.php"
+        },
+        {
+          "name": "Michael Wilson",
+          "position": "WR",
+          "rank": 91,
+          "url": "/nfl/players/michael-wilson.php"
+        },
+        {
+          "name": "Jaxson Dart",
+          "position": "QB",
+          "rank": 92,
+          "url": "/nfl/players/jaxson-dart.php"
+        },
+        {
+          "name": "RJ Harvey",
+          "position": "RB",
+          "rank": 93,
+          "url": "/nfl/players/rj-harvey.php"
+        },
+        {
+          "name": "Brock Purdy",
+          "position": "QB",
+          "rank": 94,
+          "url": "/nfl/players/brock-purdy.php"
+        },
+        {
+          "name": "Travis Kelce",
+          "position": "TE",
+          "rank": 95,
+          "url": "/nfl/players/travis-kelce.php"
+        },
+        {
+          "name": "Quentin Johnston",
+          "position": "WR",
+          "rank": 96,
+          "url": "/nfl/players/quentin-johnston.php"
+        },
+        {
+          "name": "Kenny Gainwell",
+          "position": "RB",
+          "rank": 97,
+          "url": "/nfl/players/kenneth-gainwell.php"
+        },
+        {
+          "name": "Jakobi Meyers",
+          "position": "WR",
+          "rank": 98,
+          "url": "/nfl/players/jakobi-meyers.php"
+        },
+        {
+          "name": "Makai Lemon",
+          "position": "WR",
+          "rank": 99,
+          "url": "/nfl/players/makai-lemon.php"
+        },
+        {
+          "name": "Bo Nix",
+          "position": "QB",
+          "rank": 100,
+          "url": "/nfl/players/bo-nix.php"
+        },
+        {
+          "name": "Patrick Mahomes II",
+          "position": "QB",
+          "rank": 101,
+          "url": "/nfl/players/patrick-mahomes.php"
+        },
+        {
+          "name": "J.K. Dobbins",
+          "position": "RB",
+          "rank": 102,
+          "url": "/nfl/players/jk-dobbins.php"
+        },
+        {
+          "name": "Matthew Stafford",
+          "position": "QB",
+          "rank": 103,
+          "url": "/nfl/players/matthew-stafford.php"
+        },
+        {
+          "name": "Kyle Monangai",
+          "position": "RB",
+          "rank": 104,
+          "url": "/nfl/players/kyle-monangai.php"
+        },
+        {
+          "name": "George Kittle",
+          "position": "TE",
+          "rank": 105,
+          "url": "/nfl/players/george-kittle.php"
+        },
+        {
+          "name": "Rachaad White",
+          "position": "RB",
+          "rank": 106,
+          "url": "/nfl/players/rachaad-white.php"
+        },
+        {
+          "name": "Jordan Addison",
+          "position": "WR",
+          "rank": 107,
+          "url": "/nfl/players/jordan-addison.php"
+        },
+        {
+          "name": "Jared Goff",
+          "position": "QB",
+          "rank": 108,
+          "url": "/nfl/players/jared-goff.php"
+        },
+        {
+          "name": "Jayden Reed",
+          "position": "WR",
+          "rank": 109,
+          "url": "/nfl/players/jayden-reed.php"
+        },
+        {
+          "name": "Blake Corum",
+          "position": "RB",
+          "rank": 110,
+          "url": "/nfl/players/blake-corum.php"
+        },
+        {
+          "name": "Jake Ferguson",
+          "position": "TE",
+          "rank": 111,
+          "url": "/nfl/players/jake-ferguson.php"
+        },
+        {
+          "name": "Aaron Jones Sr.",
+          "position": "RB",
+          "rank": 112,
+          "url": "/nfl/players/aaron-jones.php"
+        },
+        {
+          "name": "Kyler Murray",
+          "position": "QB",
+          "rank": 113,
+          "url": "/nfl/players/kyler-murray.php"
+        },
+        {
+          "name": "Dalton Kincaid",
+          "position": "TE",
+          "rank": 114,
+          "url": "/nfl/players/dalton-kincaid.php"
+        },
+        {
+          "name": "Jonathon Brooks",
+          "position": "RB",
+          "rank": 115,
+          "url": "/nfl/players/jonathon-brooks.php"
+        },
+        {
+          "name": "Baker Mayfield",
+          "position": "QB",
+          "rank": 116,
+          "url": "/nfl/players/baker-mayfield.php"
+        },
+        {
+          "name": "Jordan Love",
+          "position": "QB",
+          "rank": 117,
+          "url": "/nfl/players/jordan-love.php"
+        },
+        {
+          "name": "Jayden Higgins",
+          "position": "WR",
+          "rank": 118,
+          "url": "/nfl/players/jayden-higgins.php"
+        },
+        {
+          "name": "Isaiah Likely",
+          "position": "TE",
+          "rank": 119,
+          "url": "/nfl/players/isaiah-likely.php"
+        },
+        {
+          "name": "Khalil Shakir",
+          "position": "WR",
+          "rank": 120,
+          "url": "/nfl/players/khalil-shakir.php"
+        },
+        {
+          "name": "Jacory Croskey-Merritt",
+          "position": "RB",
+          "rank": 121,
+          "url": "/nfl/players/jacory-croskeymerritt.php"
+        },
+        {
+          "name": "Tyler Shough",
+          "position": "QB",
+          "rank": 122,
+          "url": "/nfl/players/tyler-shough.php"
+        },
+        {
+          "name": "Xavier Worthy",
+          "position": "WR",
+          "rank": 123,
+          "url": "/nfl/players/xavier-worthy.php"
+        },
+        {
+          "name": "Dallas Goedert",
+          "position": "TE",
+          "rank": 124,
+          "url": "/nfl/players/dallas-goedert.php"
+        },
+        {
+          "name": "Jordan Mason",
+          "position": "RB",
+          "rank": 125,
+          "url": "/nfl/players/jordan-mason.php"
+        },
+        {
+          "name": "Mark Andrews",
+          "position": "TE",
+          "rank": 126,
+          "url": "/nfl/players/mark-andrews.php"
+        },
+        {
+          "name": "Romeo Doubs",
+          "position": "WR",
+          "rank": 127,
+          "url": "/nfl/players/romeo-doubs.php"
+        },
+        {
+          "name": "Jalen Coker",
+          "position": "WR",
+          "rank": 128,
+          "url": "/nfl/players/jalen-coker.php"
+        },
+        {
+          "name": "Malik Willis",
+          "position": "QB",
+          "rank": 129,
+          "url": "/nfl/players/malik-willis.php"
+        },
+        {
+          "name": "Tyrone Tracy Jr.",
+          "position": "RB",
+          "rank": 130,
+          "url": "/nfl/players/tyrone-tracy-jr.php"
+        },
+        {
+          "name": "KC Concepcion",
+          "position": "WR",
+          "rank": 131,
+          "url": "/nfl/players/kevin-concepcion.php"
+        },
+        {
+          "name": "Matthew Golden",
+          "position": "WR",
+          "rank": 132,
+          "url": "/nfl/players/matthew-golden.php"
+        },
+        {
+          "name": "Woody Marks",
+          "position": "RB",
+          "rank": 133,
+          "url": "/nfl/players/woody-marks.php"
+        },
+        {
+          "name": "Tyler Allgeier",
+          "position": "RB",
+          "rank": 134,
+          "url": "/nfl/players/tyler-allgeier.php"
+        },
+        {
+          "name": "Sam Darnold",
+          "position": "QB",
+          "rank": 135,
+          "url": "/nfl/players/sam-darnold.php"
+        },
+        {
+          "name": "C.J. Stroud",
+          "position": "QB",
+          "rank": 136,
+          "url": "/nfl/players/cj-stroud.php"
+        },
+        {
+          "name": "Tyjae Spears",
+          "position": "RB",
+          "rank": 137,
+          "url": "/nfl/players/tyjae-spears.php"
+        },
+        {
+          "name": "Chris Rodriguez Jr.",
+          "position": "RB",
+          "rank": 138,
+          "url": "/nfl/players/chris-rodriguez-jr.php"
+        },
+        {
+          "name": "Rashid Shaheed",
+          "position": "WR",
+          "rank": 139,
+          "url": "/nfl/players/rashid-shaheed.php"
+        },
+        {
+          "name": "Alvin Kamara",
+          "position": "RB",
+          "rank": 140,
+          "url": "/nfl/players/alvin-kamara.php"
+        },
+        {
+          "name": "Juwan Johnson",
+          "position": "TE",
+          "rank": 141,
+          "url": "/nfl/players/juwan-johnson.php"
+        },
+        {
+          "name": "Zach Charbonnet",
+          "position": "RB",
+          "rank": 142,
+          "url": "/nfl/players/zach-charbonnet.php"
+        },
+        {
+          "name": "Dylan Sampson",
+          "position": "RB",
+          "rank": 143,
+          "url": "/nfl/players/dylan-sampson.php"
+        },
+        {
+          "name": "Chig Okonkwo",
+          "position": "TE",
+          "rank": 144,
+          "url": "/nfl/players/chigoziem-okonkwo.php"
+        },
+        {
+          "name": "Daniel Jones",
+          "position": "QB",
+          "rank": 145,
+          "url": "/nfl/players/daniel-jones.php"
+        },
+        {
+          "name": "Isiah Pacheco",
+          "position": "RB",
+          "rank": 146,
+          "url": "/nfl/players/isiah-pacheco.php"
+        },
+        {
+          "name": "Cam Ward",
+          "position": "QB",
+          "rank": 147,
+          "url": "/nfl/players/cam-ward.php"
+        },
+        {
+          "name": "Brenton Strange",
+          "position": "TE",
+          "rank": 148,
+          "url": "/nfl/players/brenton-strange.php"
+        },
+        {
+          "name": "Jauan Jennings",
+          "position": "WR",
+          "rank": 149,
+          "url": "/nfl/players/jauan-jennings.php"
+        },
+        {
+          "name": "Keaton Mitchell",
+          "position": "RB",
+          "rank": 150,
+          "url": "/nfl/players/keaton-mitchell.php"
+        }
+      ]
+    },
+    "DRAFT|HALF|OP": {
+      "type": "DRAFT",
+      "scoring": "HALF",
+      "position": "OP",
+      "lastUpdated": "8/08",
+      "players": [
+        {
+          "name": "Josh Allen",
+          "position": "QB",
+          "rank": 1,
+          "url": "/nfl/players/josh-allen-qb.php"
+        },
+        {
+          "name": "Lamar Jackson",
+          "position": "QB",
+          "rank": 2,
+          "url": "/nfl/players/lamar-jackson.php"
+        },
+        {
+          "name": "Drake Maye",
+          "position": "QB",
+          "rank": 3,
+          "url": "/nfl/players/drake-maye.php"
+        },
+        {
+          "name": "Joe Burrow",
+          "position": "QB",
+          "rank": 4,
+          "url": "/nfl/players/joe-burrow.php"
+        },
+        {
+          "name": "Jayden Daniels",
+          "position": "QB",
+          "rank": 5,
+          "url": "/nfl/players/jayden-daniels.php"
+        },
+        {
+          "name": "Jalen Hurts",
+          "position": "QB",
+          "rank": 6,
+          "url": "/nfl/players/jalen-hurts.php"
+        },
+        {
+          "name": "Jahmyr Gibbs",
+          "position": "RB",
+          "rank": 7,
+          "url": "/nfl/players/jahmyr-gibbs.php"
+        },
+        {
+          "name": "Bijan Robinson",
+          "position": "RB",
+          "rank": 8,
+          "url": "/nfl/players/bijan-robinson.php"
+        },
+        {
+          "name": "Ja'Marr Chase",
+          "position": "WR",
+          "rank": 9,
+          "url": "/nfl/players/jamarr-chase.php"
+        },
+        {
+          "name": "Puka Nacua",
+          "position": "WR",
+          "rank": 10,
+          "url": "/nfl/players/puka-nacua.php"
+        },
+        {
+          "name": "Caleb Williams",
+          "position": "QB",
+          "rank": 11,
+          "url": "/nfl/players/caleb-williams.php"
+        },
+        {
+          "name": "Justin Herbert",
+          "position": "QB",
+          "rank": 12,
+          "url": "/nfl/players/justin-herbert.php"
+        },
+        {
+          "name": "Jaxon Smith-Njigba",
+          "position": "WR",
+          "rank": 13,
+          "url": "/nfl/players/jaxon-smith-njigba.php"
+        },
+        {
+          "name": "Amon-Ra St. Brown",
+          "position": "WR",
+          "rank": 14,
+          "url": "/nfl/players/amonra-stbrown.php"
+        },
+        {
+          "name": "Trevor Lawrence",
+          "position": "QB",
+          "rank": 15,
+          "url": "/nfl/players/trevor-lawrence.php"
+        },
+        {
+          "name": "Dak Prescott",
+          "position": "QB",
+          "rank": 16,
+          "url": "/nfl/players/dak-prescott.php"
+        },
+        {
+          "name": "Christian McCaffrey",
+          "position": "RB",
+          "rank": 17,
+          "url": "/nfl/players/christian-mccaffrey.php"
+        },
+        {
+          "name": "Jonathan Taylor",
+          "position": "RB",
+          "rank": 18,
+          "url": "/nfl/players/jonathan-taylor.php"
+        },
+        {
+          "name": "CeeDee Lamb",
+          "position": "WR",
+          "rank": 19,
+          "url": "/nfl/players/ceedee-lamb.php"
+        },
+        {
+          "name": "Jaxson Dart",
+          "position": "QB",
+          "rank": 20,
+          "url": "/nfl/players/jaxson-dart.php"
+        },
+        {
+          "name": "Justin Jefferson",
+          "position": "WR",
+          "rank": 21,
+          "url": "/nfl/players/justin-jefferson.php"
+        },
+        {
+          "name": "Brock Purdy",
+          "position": "QB",
+          "rank": 22,
+          "url": "/nfl/players/brock-purdy.php"
+        },
+        {
+          "name": "James Cook III",
+          "position": "RB",
+          "rank": 23,
+          "url": "/nfl/players/james-cook.php"
+        },
+        {
+          "name": "Ashton Jeanty",
+          "position": "RB",
+          "rank": 24,
+          "url": "/nfl/players/ashton-jeanty.php"
+        },
+        {
+          "name": "Bo Nix",
+          "position": "QB",
+          "rank": 25,
+          "url": "/nfl/players/bo-nix.php"
+        },
+        {
+          "name": "Patrick Mahomes II",
+          "position": "QB",
+          "rank": 26,
+          "url": "/nfl/players/patrick-mahomes.php"
+        },
+        {
+          "name": "Drake London",
+          "position": "WR",
+          "rank": 27,
+          "url": "/nfl/players/drake-london.php"
+        },
+        {
+          "name": "Matthew Stafford",
+          "position": "QB",
+          "rank": 28,
+          "url": "/nfl/players/matthew-stafford.php"
+        },
+        {
+          "name": "A.J. Brown",
+          "position": "WR",
+          "rank": 29,
+          "url": "/nfl/players/aj-brown.php"
+        },
+        {
+          "name": "Chase Brown",
+          "position": "RB",
+          "rank": 30,
+          "url": "/nfl/players/chase-brown.php"
+        },
+        {
+          "name": "Saquon Barkley",
+          "position": "RB",
+          "rank": 31,
+          "url": "/nfl/players/saquon-barkley.php"
+        },
+        {
+          "name": "Brock Bowers",
+          "position": "TE",
+          "rank": 32,
+          "url": "/nfl/players/brock-bowers.php"
+        },
+        {
+          "name": "De'Von Achane",
+          "position": "RB",
+          "rank": 33,
+          "url": "/nfl/players/devon-achane.php"
+        },
+        {
+          "name": "Jared Goff",
+          "position": "QB",
+          "rank": 34,
+          "url": "/nfl/players/jared-goff.php"
+        },
+        {
+          "name": "Nico Collins",
+          "position": "WR",
+          "rank": 35,
+          "url": "/nfl/players/nico-collins.php"
+        },
+        {
+          "name": "Omarion Hampton",
+          "position": "RB",
+          "rank": 36,
+          "url": "/nfl/players/omarion-hampton.php"
+        },
+        {
+          "name": "Derrick Henry",
+          "position": "RB",
+          "rank": 37,
+          "url": "/nfl/players/derrick-henry.php"
+        },
+        {
+          "name": "George Pickens",
+          "position": "WR",
+          "rank": 38,
+          "url": "/nfl/players/george-pickens.php"
+        },
+        {
+          "name": "Kenneth Walker III",
+          "position": "RB",
+          "rank": 39,
+          "url": "/nfl/players/kenneth-walker-rb.php"
+        },
+        {
+          "name": "Trey McBride",
+          "position": "TE",
+          "rank": 40,
+          "url": "/nfl/players/trey-mcbride.php"
+        },
+        {
+          "name": "Kyler Murray",
+          "position": "QB",
+          "rank": 41,
+          "url": "/nfl/players/kyler-murray.php"
+        },
+        {
+          "name": "Rashee Rice",
+          "position": "WR",
+          "rank": 42,
+          "url": "/nfl/players/rashee-rice.php"
+        },
+        {
+          "name": "Chris Olave",
+          "position": "WR",
+          "rank": 43,
+          "url": "/nfl/players/chris-olave.php"
+        },
+        {
+          "name": "Baker Mayfield",
+          "position": "QB",
+          "rank": 44,
+          "url": "/nfl/players/baker-mayfield.php"
+        },
+        {
+          "name": "DeVonta Smith",
+          "position": "WR",
+          "rank": 45,
+          "url": "/nfl/players/devonta-smith.php"
+        },
+        {
+          "name": "Jordan Love",
+          "position": "QB",
+          "rank": 46,
+          "url": "/nfl/players/jordan-love.php"
+        },
+        {
+          "name": "Tyler Shough",
+          "position": "QB",
+          "rank": 47,
+          "url": "/nfl/players/tyler-shough.php"
+        },
+        {
+          "name": "Zay Flowers",
+          "position": "WR",
+          "rank": 48,
+          "url": "/nfl/players/zay-flowers.php"
+        },
+        {
+          "name": "Malik Nabers",
+          "position": "WR",
+          "rank": 49,
+          "url": "/nfl/players/malik-nabers.php"
+        },
+        {
+          "name": "Kyren Williams",
+          "position": "RB",
+          "rank": 50,
+          "url": "/nfl/players/kyren-williams.php"
+        },
+        {
+          "name": "Tee Higgins",
+          "position": "WR",
+          "rank": 51,
+          "url": "/nfl/players/tee-higgins.php"
+        },
+        {
+          "name": "Jeremiyah Love",
+          "position": "RB",
+          "rank": 52,
+          "url": "/nfl/players/jeremiyah-love.php"
+        },
+        {
+          "name": "Tetairoa McMillan",
+          "position": "WR",
+          "rank": 53,
+          "url": "/nfl/players/tetairoa-mcmillan.php"
+        },
+        {
+          "name": "Emeka Egbuka",
+          "position": "WR",
+          "rank": 54,
+          "url": "/nfl/players/emeka-egbuka.php"
+        },
+        {
+          "name": "Josh Jacobs",
+          "position": "RB",
+          "rank": 55,
+          "url": "/nfl/players/josh-jacobs.php"
+        },
+        {
+          "name": "Malik Willis",
+          "position": "QB",
+          "rank": 56,
+          "url": "/nfl/players/malik-willis.php"
+        },
+        {
+          "name": "Breece Hall",
+          "position": "RB",
+          "rank": 57,
+          "url": "/nfl/players/breece-hall.php"
+        },
+        {
+          "name": "Garrett Wilson",
+          "position": "WR",
+          "rank": 58,
+          "url": "/nfl/players/garrett-wilson.php"
+        },
+        {
+          "name": "Colston Loveland",
+          "position": "TE",
+          "rank": 59,
+          "url": "/nfl/players/colston-loveland.php"
+        },
+        {
+          "name": "Ladd McConkey",
+          "position": "WR",
+          "rank": 60,
+          "url": "/nfl/players/ladd-mcconkey.php"
+        },
+        {
+          "name": "Javonte Williams",
+          "position": "RB",
+          "rank": 61,
+          "url": "/nfl/players/javonte-williams.php"
+        },
+        {
+          "name": "Jaylen Waddle",
+          "position": "WR",
+          "rank": 62,
+          "url": "/nfl/players/jaylen-waddle.php"
+        },
+        {
+          "name": "Terry McLaurin",
+          "position": "WR",
+          "rank": 63,
+          "url": "/nfl/players/terry-mclaurin.php"
+        },
+        {
+          "name": "Travis Etienne Jr.",
+          "position": "RB",
+          "rank": 64,
+          "url": "/nfl/players/travis-etienne.php"
+        },
+        {
+          "name": "Davante Adams",
+          "position": "WR",
+          "rank": 65,
+          "url": "/nfl/players/davante-adams.php"
+        },
+        {
+          "name": "Luther Burden III",
+          "position": "WR",
+          "rank": 66,
+          "url": "/nfl/players/luther-burden-iii.php"
+        },
+        {
+          "name": "Cam Skattebo",
+          "position": "RB",
+          "rank": 67,
+          "url": "/nfl/players/cam-skattebo.php"
+        },
+        {
+          "name": "C.J. Stroud",
+          "position": "QB",
+          "rank": 68,
+          "url": "/nfl/players/cj-stroud.php"
+        },
+        {
+          "name": "Jameson Williams",
+          "position": "WR",
+          "rank": 69,
+          "url": "/nfl/players/jameson-williams.php"
+        },
+        {
+          "name": "Mike Evans",
+          "position": "WR",
+          "rank": 70,
+          "url": "/nfl/players/mike-evans.php"
+        },
+        {
+          "name": "Quinshon Judkins",
+          "position": "RB",
+          "rank": 71,
+          "url": "/nfl/players/quinshon-judkins.php"
+        },
+        {
+          "name": "D'Andre Swift",
+          "position": "RB",
+          "rank": 72,
+          "url": "/nfl/players/dandre-swift.php"
+        },
+        {
+          "name": "Tyler Warren",
+          "position": "TE",
+          "rank": 73,
+          "url": "/nfl/players/tyler-warren.php"
+        },
+        {
+          "name": "Bucky Irving",
+          "position": "RB",
+          "rank": 74,
+          "url": "/nfl/players/bucky-irving.php"
+        },
+        {
+          "name": "Christian Watson",
+          "position": "WR",
+          "rank": 75,
+          "url": "/nfl/players/christian-watson.php"
+        },
+        {
+          "name": "David Montgomery",
+          "position": "RB",
+          "rank": 76,
+          "url": "/nfl/players/david-montgomery.php"
+        },
+        {
+          "name": "DJ Moore",
+          "position": "WR",
+          "rank": 77,
+          "url": "/nfl/players/dj-moore-wr.php"
+        },
+        {
+          "name": "Cam Ward",
+          "position": "QB",
+          "rank": 78,
+          "url": "/nfl/players/cam-ward.php"
+        },
+        {
+          "name": "Sam Darnold",
+          "position": "QB",
+          "rank": 79,
+          "url": "/nfl/players/sam-darnold.php"
+        },
+        {
+          "name": "TreVeyon Henderson",
+          "position": "RB",
+          "rank": 80,
+          "url": "/nfl/players/treveyon-henderson.php"
+        },
+        {
+          "name": "Rome Odunze",
+          "position": "WR",
+          "rank": 81,
+          "url": "/nfl/players/rome-odunze.php"
+        },
+        {
+          "name": "Bhayshul Tuten",
+          "position": "RB",
+          "rank": 82,
+          "url": "/nfl/players/bhayshul-tuten.php"
+        },
+        {
+          "name": "Daniel Jones",
+          "position": "QB",
+          "rank": 83,
+          "url": "/nfl/players/daniel-jones.php"
+        },
+        {
+          "name": "Jadarian Price",
+          "position": "RB",
+          "rank": 84,
+          "url": "/nfl/players/jadarian-price.php"
+        },
+        {
+          "name": "Tucker Kraft",
+          "position": "TE",
+          "rank": 85,
+          "url": "/nfl/players/tucker-kraft.php"
+        },
+        {
+          "name": "Carnell Tate",
+          "position": "WR",
+          "rank": 86,
+          "url": "/nfl/players/carnell-tate.php"
+        },
+        {
+          "name": "Bryce Young",
+          "position": "QB",
+          "rank": 87,
+          "url": "/nfl/players/bryce-young.php"
+        },
+        {
+          "name": "Jaylen Warren",
+          "position": "RB",
+          "rank": 88,
+          "url": "/nfl/players/jaylen-warren.php"
+        },
+        {
+          "name": "Marvin Harrison Jr.",
+          "position": "WR",
+          "rank": 89,
+          "url": "/nfl/players/marvin-harrison-jr.php"
+        },
+        {
+          "name": "Brian Thomas Jr.",
+          "position": "WR",
+          "rank": 90,
+          "url": "/nfl/players/brian-thomas-jr.php"
+        },
+        {
+          "name": "Tony Pollard",
+          "position": "RB",
+          "rank": 91,
+          "url": "/nfl/players/tony-pollard.php"
+        },
+        {
+          "name": "Harold Fannin Jr.",
+          "position": "TE",
+          "rank": 92,
+          "url": "/nfl/players/harold-fannin-jr.php"
+        },
+        {
+          "name": "DK Metcalf",
+          "position": "WR",
+          "rank": 93,
+          "url": "/nfl/players/dk-metcalf.php"
+        },
+        {
+          "name": "Parker Washington",
+          "position": "WR",
+          "rank": 94,
+          "url": "/nfl/players/parker-washington.php"
+        },
+        {
+          "name": "Rhamondre Stevenson",
+          "position": "RB",
+          "rank": 95,
+          "url": "/nfl/players/rhamondre-stevenson.php"
+        },
+        {
+          "name": "Alec Pierce",
+          "position": "WR",
+          "rank": 96,
+          "url": "/nfl/players/alec-pierce.php"
+        },
+        {
+          "name": "Jacoby Brissett",
+          "position": "QB",
+          "rank": 97,
+          "url": "/nfl/players/jacoby-brissett.php"
+        },
+        {
+          "name": "Sam LaPorta",
+          "position": "TE",
+          "rank": 98,
+          "url": "/nfl/players/sam-laporta.php"
+        },
+        {
+          "name": "Chuba Hubbard",
+          "position": "RB",
+          "rank": 99,
+          "url": "/nfl/players/chuba-hubbard.php"
+        },
+        {
+          "name": "Kyle Pitts Sr.",
+          "position": "TE",
+          "rank": 100,
+          "url": "/nfl/players/kyle-pitts.php"
+        },
+        {
+          "name": "Courtland Sutton",
+          "position": "WR",
+          "rank": 101,
+          "url": "/nfl/players/courtland-sutton.php"
+        },
+        {
+          "name": "Rico Dowdle",
+          "position": "RB",
+          "rank": 102,
+          "url": "/nfl/players/rico-dowdle.php"
+        },
+        {
+          "name": "Chris Godwin Jr.",
+          "position": "WR",
+          "rank": 103,
+          "url": "/nfl/players/chris-godwin.php"
+        },
+        {
+          "name": "Jordyn Tyson",
+          "position": "WR",
+          "rank": 104,
+          "url": "/nfl/players/jordyn-tyson.php"
+        },
+        {
+          "name": "J.K. Dobbins",
+          "position": "RB",
+          "rank": 105,
+          "url": "/nfl/players/jk-dobbins.php"
+        },
+        {
+          "name": "Michael Pittman Jr.",
+          "position": "WR",
+          "rank": 106,
+          "url": "/nfl/players/michael-pittman.php"
+        },
+        {
+          "name": "Michael Wilson",
+          "position": "WR",
+          "rank": 107,
+          "url": "/nfl/players/michael-wilson.php"
+        },
+        {
+          "name": "Quentin Johnston",
+          "position": "WR",
+          "rank": 108,
+          "url": "/nfl/players/quentin-johnston.php"
+        },
+        {
+          "name": "RJ Harvey",
+          "position": "RB",
+          "rank": 109,
+          "url": "/nfl/players/rj-harvey.php"
+        },
+        {
+          "name": "Blake Corum",
+          "position": "RB",
+          "rank": 110,
+          "url": "/nfl/players/blake-corum.php"
+        },
+        {
+          "name": "Kyle Monangai",
+          "position": "RB",
+          "rank": 111,
+          "url": "/nfl/players/kyle-monangai.php"
+        },
+        {
+          "name": "Josh Downs",
+          "position": "WR",
+          "rank": 112,
+          "url": "/nfl/players/josh-downs.php"
+        },
+        {
+          "name": "Travis Kelce",
+          "position": "TE",
+          "rank": 113,
+          "url": "/nfl/players/travis-kelce.php"
+        },
+        {
+          "name": "Wan'Dale Robinson",
+          "position": "WR",
+          "rank": 114,
+          "url": "/nfl/players/wandale-robinson.php"
+        },
+        {
+          "name": "Makai Lemon",
+          "position": "WR",
+          "rank": 115,
+          "url": "/nfl/players/makai-lemon.php"
+        },
+        {
+          "name": "Kenny Gainwell",
+          "position": "RB",
+          "rank": 116,
+          "url": "/nfl/players/kenneth-gainwell.php"
+        },
+        {
+          "name": "Jordan Addison",
+          "position": "WR",
+          "rank": 117,
+          "url": "/nfl/players/jordan-addison.php"
+        },
+        {
+          "name": "George Kittle",
+          "position": "TE",
+          "rank": 118,
+          "url": "/nfl/players/george-kittle.php"
+        },
+        {
+          "name": "Jakobi Meyers",
+          "position": "WR",
+          "rank": 119,
+          "url": "/nfl/players/jakobi-meyers.php"
+        },
+        {
+          "name": "Rachaad White",
+          "position": "RB",
+          "rank": 120,
+          "url": "/nfl/players/rachaad-white.php"
+        },
+        {
+          "name": "Geno Smith",
+          "position": "QB",
+          "rank": 121,
+          "url": "/nfl/players/geno-smith.php"
+        },
+        {
+          "name": "Jayden Reed",
+          "position": "WR",
+          "rank": 122,
+          "url": "/nfl/players/jayden-reed.php"
+        },
+        {
+          "name": "Jonathon Brooks",
+          "position": "RB",
+          "rank": 123,
+          "url": "/nfl/players/jonathon-brooks.php"
+        },
+        {
+          "name": "Aaron Jones Sr.",
+          "position": "RB",
+          "rank": 124,
+          "url": "/nfl/players/aaron-jones.php"
+        },
+        {
+          "name": "Jacory Croskey-Merritt",
+          "position": "RB",
+          "rank": 125,
+          "url": "/nfl/players/jacory-croskeymerritt.php"
+        },
+        {
+          "name": "Dalton Kincaid",
+          "position": "TE",
+          "rank": 126,
+          "url": "/nfl/players/dalton-kincaid.php"
+        },
+        {
+          "name": "Jordan Mason",
+          "position": "RB",
+          "rank": 127,
+          "url": "/nfl/players/jordan-mason.php"
+        },
+        {
+          "name": "Jake Ferguson",
+          "position": "TE",
+          "rank": 128,
+          "url": "/nfl/players/jake-ferguson.php"
+        },
+        {
+          "name": "Dallas Goedert",
+          "position": "TE",
+          "rank": 129,
+          "url": "/nfl/players/dallas-goedert.php"
+        },
+        {
+          "name": "Xavier Worthy",
+          "position": "WR",
+          "rank": 130,
+          "url": "/nfl/players/xavier-worthy.php"
+        },
+        {
+          "name": "Mark Andrews",
+          "position": "TE",
+          "rank": 131,
+          "url": "/nfl/players/mark-andrews.php"
+        },
+        {
+          "name": "Jayden Higgins",
+          "position": "WR",
+          "rank": 132,
+          "url": "/nfl/players/jayden-higgins.php"
+        },
+        {
+          "name": "Isaiah Likely",
+          "position": "TE",
+          "rank": 133,
+          "url": "/nfl/players/isaiah-likely.php"
+        },
+        {
+          "name": "Tyrone Tracy Jr.",
+          "position": "RB",
+          "rank": 134,
+          "url": "/nfl/players/tyrone-tracy-jr.php"
+        },
+        {
+          "name": "Romeo Doubs",
+          "position": "WR",
+          "rank": 135,
+          "url": "/nfl/players/romeo-doubs.php"
+        },
+        {
+          "name": "Chris Rodriguez Jr.",
+          "position": "RB",
+          "rank": 136,
+          "url": "/nfl/players/chris-rodriguez-jr.php"
+        },
+        {
+          "name": "Khalil Shakir",
+          "position": "WR",
+          "rank": 137,
+          "url": "/nfl/players/khalil-shakir.php"
+        },
+        {
+          "name": "Woody Marks",
+          "position": "RB",
+          "rank": 138,
+          "url": "/nfl/players/woody-marks.php"
+        },
+        {
+          "name": "Jalen Coker",
+          "position": "WR",
+          "rank": 139,
+          "url": "/nfl/players/jalen-coker.php"
+        },
+        {
+          "name": "Tyler Allgeier",
+          "position": "RB",
+          "rank": 140,
+          "url": "/nfl/players/tyler-allgeier.php"
+        },
+        {
+          "name": "KC Concepcion",
+          "position": "WR",
+          "rank": 141,
+          "url": "/nfl/players/kevin-concepcion.php"
+        },
+        {
+          "name": "Matthew Golden",
+          "position": "WR",
+          "rank": 142,
+          "url": "/nfl/players/matthew-golden.php"
+        },
+        {
+          "name": "Aaron Rodgers",
+          "position": "QB",
+          "rank": 143,
+          "url": "/nfl/players/aaron-rodgers.php"
+        },
+        {
+          "name": "Tyjae Spears",
+          "position": "RB",
+          "rank": 144,
+          "url": "/nfl/players/tyjae-spears.php"
+        },
+        {
+          "name": "Alvin Kamara",
+          "position": "RB",
+          "rank": 145,
+          "url": "/nfl/players/alvin-kamara.php"
+        },
+        {
+          "name": "Rashid Shaheed",
+          "position": "WR",
+          "rank": 146,
+          "url": "/nfl/players/rashid-shaheed.php"
+        },
+        {
+          "name": "Juwan Johnson",
+          "position": "TE",
+          "rank": 147,
+          "url": "/nfl/players/juwan-johnson.php"
+        },
+        {
+          "name": "Dylan Sampson",
+          "position": "RB",
+          "rank": 148,
+          "url": "/nfl/players/dylan-sampson.php"
+        },
+        {
+          "name": "Zach Charbonnet",
+          "position": "RB",
+          "rank": 149,
+          "url": "/nfl/players/zach-charbonnet.php"
+        },
+        {
+          "name": "Brenton Strange",
+          "position": "TE",
+          "rank": 150,
+          "url": "/nfl/players/brenton-strange.php"
+        }
+      ]
+    }
+  },
   "leagues": [
     {
       "id": "26696",
@@ -655,7 +3381,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1 QB, 2-3 RB, 2-3 WR, 1-2 TE, 1 PK, 1 Def",
-      "updatedAt": "2026-08-08T22:02:23.345Z",
+      "updatedAt": "2026-08-08T22:43:25.771Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -768,19 +3494,8 @@
       "standingsError": null,
       "scoring": null,
       "scoringError": "No live scoring available yet",
-      "lineupWeek": "1",
-      "starters": [
-        "14783",
-        "13604",
-        "17044",
-        "14802",
-        "11675",
-        "16211",
-        "13299",
-        "16681",
-        "0518"
-      ],
-      "lineupError": null,
+      "starters": null,
+      "lineupError": "MFL request failed (429): /export?TYPE=weeklyResults&L=26696&W=1&JSON=1 (year 2026)",
       "rankings": {
         "type": "DYNASTY",
         "scoring": "PPR",
@@ -790,7 +3505,11 @@
         "matched": 32,
         "total": 32
       },
-      "rankingsError": null
+      "rankingsError": null,
+      "available": [
+        "Chig Okonkwo",
+        "Kenny Gainwell"
+      ]
     },
     {
       "id": "25608",
@@ -1445,7 +4164,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1 QB, 2 RB, 3 WR, 1 TE, 1 PK, 1 Def",
-      "updatedAt": "2026-08-08T22:02:24.673Z",
+      "updatedAt": "2026-08-08T22:43:26.760Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -1580,7 +4299,11 @@
         "matched": 32,
         "total": 32
       },
-      "rankingsError": null
+      "rankingsError": null,
+      "available": [
+        "Chig Okonkwo",
+        "Kenny Gainwell"
+      ]
     },
     {
       "id": "23545",
@@ -2188,7 +4911,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1 QB, 2 RB, 3 WR, 1 TE, 1 PK, 1 Def",
-      "updatedAt": "2026-08-08T22:02:26.007Z",
+      "updatedAt": "2026-08-08T22:43:27.514Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -2343,7 +5066,11 @@
         "matched": 29,
         "total": 30
       },
-      "rankingsError": null
+      "rankingsError": null,
+      "available": [
+        "Chig Okonkwo",
+        "Kenny Gainwell"
+      ]
     },
     {
       "id": "35217",
@@ -2838,7 +5565,7 @@
       "salaryCap": 550,
       "salaryAdjustments": 3.2699999999999996,
       "startingLineup": "1 QB, 2-3 RB, 3-4 WR, 1-2 TE",
-      "updatedAt": "2026-08-08T22:02:27.323Z",
+      "updatedAt": "2026-08-08T22:43:28.147Z",
       "error": null,
       "tags": [
         "Best Ball"
@@ -2982,7 +5709,11 @@
         "matched": 24,
         "total": 24
       },
-      "rankingsError": null
+      "rankingsError": null,
+      "available": [
+        "Kenny Gainwell",
+        "Chig Okonkwo"
+      ]
     },
     {
       "id": "34850",
@@ -3537,7 +6268,7 @@
       "salaryCap": 500,
       "salaryAdjustments": 4.68,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-08T22:02:29.107Z",
+      "updatedAt": "2026-08-08T22:43:28.801Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -3682,7 +6413,10 @@
         "matched": 27,
         "total": 27
       },
-      "rankingsError": null
+      "rankingsError": null,
+      "available": [
+        "Kenny Gainwell"
+      ]
     },
     {
       "id": "30641",
@@ -4197,7 +6931,7 @@
       "salaryCap": 500,
       "salaryAdjustments": 10.09,
       "startingLineup": "1-2 QB, 2-4 RB, 2-4 WR, 1-3 TE",
-      "updatedAt": "2026-08-08T22:02:30.392Z",
+      "updatedAt": "2026-08-08T22:43:29.293Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -4342,7 +7076,10 @@
         "matched": 25,
         "total": 25
       },
-      "rankingsError": null
+      "rankingsError": null,
+      "available": [
+        "Kenny Gainwell"
+      ]
     },
     {
       "id": "64470",
@@ -4850,7 +7587,7 @@
       "salaryCap": 500,
       "salaryAdjustments": 58.24,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-08T22:02:32.548Z",
+      "updatedAt": "2026-08-08T22:43:29.984Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -5015,7 +7752,10 @@
         "matched": 24,
         "total": 25
       },
-      "rankingsError": null
+      "rankingsError": null,
+      "available": [
+        "Kenny Gainwell"
+      ]
     },
     {
       "id": "56191",
@@ -5029,7 +7769,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-3 RB, 3-4 WR, 1-2 TE",
-      "updatedAt": "2026-08-08T22:02:32.975Z",
+      "updatedAt": "2026-08-08T22:43:30.140Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -5161,7 +7901,8 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet"
+      "scoringError": "No live scoring available yet",
+      "available": null
     },
     {
       "id": "34203",
@@ -5576,7 +8317,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-3 RB, 3-4 WR, 1-2 TE",
-      "updatedAt": "2026-08-08T22:02:34.278Z",
+      "updatedAt": "2026-08-08T22:43:30.574Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -5762,7 +8503,29 @@
         "matched": 20,
         "total": 20
       },
-      "rankingsError": null
+      "rankingsError": null,
+      "available": [
+        "Jeremiyah Love",
+        "Luther Burden III",
+        "Christian Watson",
+        "Carnell Tate",
+        "Jadarian Price",
+        "Parker Washington",
+        "Jordyn Tyson",
+        "Jaxson Dart",
+        "Kenny Gainwell",
+        "Makai Lemon",
+        "Kyle Monangai",
+        "Blake Corum",
+        "Jonathon Brooks",
+        "Tyler Shough",
+        "Jalen Coker",
+        "Malik Willis",
+        "KC Concepcion",
+        "Juwan Johnson",
+        "Chig Okonkwo",
+        "Keaton Mitchell"
+      ]
     },
     {
       "id": "72911",
@@ -6130,7 +8893,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-08T22:02:35.326Z",
+      "updatedAt": "2026-08-08T22:43:30.954Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -6254,7 +9017,20 @@
         "matched": 17,
         "total": 18
       },
-      "rankingsError": null
+      "rankingsError": null,
+      "available": [
+        "Jeremiyah Love",
+        "Jadarian Price",
+        "Carnell Tate",
+        "Jordyn Tyson",
+        "Makai Lemon",
+        "Kenny Gainwell",
+        "Rachaad White",
+        "Jonathon Brooks",
+        "KC Concepcion",
+        "Tyjae Spears",
+        "Dylan Sampson"
+      ]
     },
     {
       "id": "54766",
@@ -6629,7 +9405,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-08T22:02:36.407Z",
+      "updatedAt": "2026-08-08T22:43:31.249Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -6773,7 +9549,10 @@
         "matched": 18,
         "total": 18
       },
-      "rankingsError": null
+      "rankingsError": null,
+      "available": [
+        "Kenny Gainwell"
+      ]
     },
     {
       "id": "54458",
@@ -7188,7 +9967,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "0-2 QB, 0-8 RB, 0-8 WR, 0-8 TE",
-      "updatedAt": "2026-08-08T22:02:37.270Z",
+      "updatedAt": "2026-08-08T22:43:31.607Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -7313,7 +10092,13 @@
         "matched": 20,
         "total": 20
       },
-      "rankingsError": null
+      "rankingsError": null,
+      "available": [
+        "Kenny Gainwell",
+        "Tyler Allgeier",
+        "Tyjae Spears",
+        "Dylan Sampson"
+      ]
     },
     {
       "id": "61777",
@@ -7728,7 +10513,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "0-2 QB, 0-8 RB, 0-8 WR, 0-8 TE",
-      "updatedAt": "2026-08-08T22:02:38.136Z",
+      "updatedAt": "2026-08-08T22:43:31.975Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -7853,7 +10638,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet",
+      "scoringError": "MFL request failed (429): /export?TYPE=league&L=61777&JSON=1 (year 2026)",
       "rankings": {
         "type": "DRAFT",
         "scoring": "HALF",
@@ -7863,7 +10648,10 @@
         "matched": 20,
         "total": 20
       },
-      "rankingsError": null
+      "rankingsError": null,
+      "available": [
+        "Kenny Gainwell"
+      ]
     },
     {
       "id": "30196",
@@ -8238,7 +11026,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-08T22:02:39.197Z",
+      "updatedAt": "2026-08-08T22:43:32.341Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -8362,7 +11150,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet",
+      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=30196&JSON=1 (year 2026)",
       "rankings": {
         "type": "DRAFT",
         "scoring": "HALF",
@@ -8372,7 +11160,10 @@
         "matched": 18,
         "total": 18
       },
-      "rankingsError": null
+      "rankingsError": null,
+      "available": [
+        "Kenny Gainwell"
+      ]
     },
     {
       "id": "26222",
@@ -8486,7 +11277,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-08T22:02:40.255Z",
+      "updatedAt": "2026-08-08T22:43:32.700Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -8621,7 +11412,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet",
+      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=26222&JSON=1 (year 2026)",
       "rankings": {
         "type": "DRAFT",
         "scoring": "HALF",
@@ -8631,7 +11422,49 @@
         "matched": 5,
         "total": 5
       },
-      "rankingsError": null
+      "rankingsError": null,
+      "available": [
+        "Brock Purdy",
+        "Kyler Murray",
+        "Jordan Love",
+        "Tyler Shough",
+        "Tetairoa McMillan",
+        "Emeka Egbuka",
+        "Malik Willis",
+        "Garrett Wilson",
+        "Ladd McConkey",
+        "Terry McLaurin",
+        "Davante Adams",
+        "Luther Burden III",
+        "C.J. Stroud",
+        "Jameson Williams",
+        "Mike Evans",
+        "Christian Watson",
+        "David Montgomery",
+        "DJ Moore",
+        "Cam Ward",
+        "Sam Darnold",
+        "Rome Odunze",
+        "Daniel Jones",
+        "Jadarian Price",
+        "Carnell Tate",
+        "Bryce Young",
+        "Jaylen Warren",
+        "Marvin Harrison Jr.",
+        "Brian Thomas Jr.",
+        "Tony Pollard",
+        "Harold Fannin Jr.",
+        "DK Metcalf",
+        "Parker Washington",
+        "Rhamondre Stevenson",
+        "Alec Pierce",
+        "Jacoby Brissett",
+        "Chuba Hubbard",
+        "Courtland Sutton",
+        "Rico Dowdle",
+        "Chris Godwin Jr.",
+        "Jordyn Tyson"
+      ]
     },
     {
       "id": "1367867592919760896",
@@ -8983,7 +11816,7 @@
           }
         }
       ],
-      "updatedAt": "2026-08-08T22:02:40.378Z",
+      "updatedAt": "2026-08-08T22:43:32.762Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -9218,7 +12051,8 @@
         "matched": 20,
         "total": 20
       },
-      "rankingsError": null
+      "rankingsError": null,
+      "available": []
     },
     {
       "id": "1966972",
@@ -9229,7 +12063,7 @@
       "teamName": "Big Dart Energy",
       "url": "https://fantasy.espn.com/football/team?leagueId=1966972&teamId=10",
       "players": [],
-      "updatedAt": "2026-08-08T22:02:40.480Z",
+      "updatedAt": "2026-08-08T22:43:33.019Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -9405,7 +12239,8 @@
           }
         ]
       },
-      "scoringError": null
+      "scoringError": null,
+      "available": null
     },
     {
       "id": "421871710",
@@ -9416,7 +12251,7 @@
       "teamName": "Jeffer Justinson",
       "url": "https://fantasy.espn.com/football/team?leagueId=421871710&teamId=5",
       "players": [],
-      "updatedAt": "2026-08-08T22:02:40.544Z",
+      "updatedAt": "2026-08-08T22:43:33.171Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -9592,7 +12427,8 @@
           }
         ]
       },
-      "scoringError": null
+      "scoringError": null,
+      "available": null
     }
   ]
 }
