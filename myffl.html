@@ -2263,9 +2263,11 @@
 				if (!contractBannerTextEl) return;
 				const { total, unplanned } = contractCounts();
 				// "0/9 need" contradicts itself, so the done state says what it
-				// actually is — and names who the ball is with.
+				// actually is — and names the next move, which is yours: the
+				// commissioner has no way of knowing these lengths until you send
+				// them, which is what the mail link below the text is for.
 				contractBannerTextEl.textContent = unplanned === 0
-					? `✓ All ${total} contract length${total === 1 ? '' : 's'} planned — waiting on MFL`
+					? `✓ ${total}/${total} contract${total === 1 ? '' : 's'} set — remember to notify commish`
 					: `⚠ ${unplanned}/${total} players need contract length set`;
 				contractBannerEl.classList.toggle('contract-banner-planned', unplanned === 0);
 				// Rebuilt, not built once: the link doesn't exist at all until
