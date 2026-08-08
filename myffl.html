@@ -349,6 +349,19 @@
 			font-size: 0.85rem;
 			margin: 0.15rem 0 0.75rem;
 		}
+		/* Roster cards get their breathing room for free — the team-name line
+		   sits between the title/badges and the table. Standings and scoring
+		   cards have no such line and run straight from the badges into a dense
+		   table, which reads as cramped, so give their heads the gap directly. */
+		.card[data-view="standings"] .card-head,
+		.card[data-view="scoring"] .card-head {
+			margin-bottom: 0.9rem;
+		}
+		/* The scoring card's week line is the one thing that does follow the
+		   head; drop its own top margin so it doesn't stack on top of the gap. */
+		.card[data-view="scoring"] .card-head + .team {
+			margin-top: 0;
+		}
 		.error-box {
 			background: var(--ir-bg);
 			color: var(--ir-text);
