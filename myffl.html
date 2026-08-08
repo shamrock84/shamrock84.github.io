@@ -1132,19 +1132,6 @@
 			localStorage.setItem(CONTRACT_PLAN_STORAGE_KEY, JSON.stringify(plans));
 		}
 
-		// Where a Salary Cap league's contract-length summary is addressed. The
-		// real value is commishEmail in config/leagues.json, set per league from
-		// the Admin tab and carried through by the sync — this is only the
-		// fallback for a league that hasn't been given one.
-		//
-		// That fallback is a placeholder, not a working address: the mailto still
-		// opens and looks entirely normal, and reaches nobody. The Admin tab says
-		// so on any Salary Cap league missing an address, which is the only place
-		// the gap is visible before you've already sent it.
-		const CONTRACT_EMAIL_DEFAULT = 'melbosffl@gmail.com';
-		function contractEmailFor(league) {
-			return league.commishEmail || CONTRACT_EMAIL_DEFAULT;
-		}
 
 		// Locally-planned salary ($1-200, whole dollars) for a Salary Cap
 		// roster spot that doesn't have a real one from MFL yet. Same shape
@@ -1654,6 +1641,12 @@
 		// email summarizing them needs the same gate.
 		function buildContractEmailLink(league) {
 			if (!isLoggedIn()) return null;
+			// No address, no link — deliberately, and not only as a safety net.
+			// Clearing commishEmail is how you switch this off for a league whose
+			// commissioner wants to be contacted some other way. It also removes
+			// the failure this used to have: a mailto to a placeholder opens
+			// looking entirely normal and reaches nobody.
+			if (!league.commishEmail) return null;
 			const plans = (league.players || [])
 				.filter((p) => !(Number(p.contractYear) > 0))
 				.map((p) => ({ name: p.name, years: getContractPlan(league.id, p.id) }))
@@ -1670,10 +1663,9 @@
 			const teamName = (league.teamName || league.name).trim();
 			const subject = `${year} ${leagueName} Contract Lengths for ${teamName}`;
 			const body = plans.map((p) => `${p.name}: ${p.years} year${p.years === '1' ? '' : 's'}`).join('\n');
-			const email = contractEmailFor(league);
 
 			return el('a', {
-				href: `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,
+				href: `mailto:${encodeURIComponent(league.commishEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,
 				class: 'contract-email-link',
 				text: '✉ Send via Email',
 			});
@@ -2556,11 +2548,12 @@
 				// the sync's own error for that league was sitting in data/rosters.json
 				// unread — which is exactly the answer when a team ID is wrong.
 				const notices = [];
-				// A Salary Cap league with no commissioner email still produces a
-				// Send via Email link — addressed to a placeholder. It opens looking
-				// perfectly normal and goes nowhere useful, so say so here.
+				// Stated rather than warned about: clearing the address is a
+				// legitimate way to switch the email link off for a league whose
+				// commissioner wants to be reached some other way. It's here so an
+				// address you meant to set but didn't is still visible.
 				if (league.type === 'salarycap' && !league.commishEmail) {
-					notices.push({ text: 'No commissioner email — the contract-length summary would be addressed to a placeholder.' });
+					notices.push({ text: 'No commissioner email — the Send via Email link is hidden for this league.' });
 				}
 				if (!live) {
 					if (league.id) notices.push({ text: 'Not synced yet — this league appears on the other tabs after the next sync.' });
