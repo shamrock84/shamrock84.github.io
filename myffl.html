@@ -587,27 +587,43 @@
 			font-size: 0.78em;
 			white-space: nowrap;
 		}
-		/* Phone widths, salary-cap tables only. Eight columns don't fit a phone
-		   at full size no matter how the width is divided — folding Team into
-		   the name buys 37px of the ~93px gap, and this closes the rest. Scoped
-		   to the auction tables so nothing else on the page changes size, and to
-		   phone widths so iPad and desktop keep the normal type. */
+		/* Phone widths, salary-cap tables only — two steps, because how much has
+		   to give depends on how much width there is.
+
+		   Step one: tighter cell padding, type untouched. With Team folded into
+		   the name (see appendTeamSuffix) that alone brings the table to 340px,
+		   which fits every large iPhone — Pro Max, Plus — at full size. Those
+		   phones were only ever a pixel or two short, so shrinking their type
+		   would be spending readability on nothing. */
 		@media (max-width: 480px) {
+			table.roster-auction tr.player-row td {
+				padding: 0.3rem 0.1rem;
+			}
+			table.roster-auction tr.roster-head th {
+				padding: 0 0.1rem 0.3rem;
+			}
+		}
+		/* Step two: below ~410px there is no longer room for full-size type —
+		   a 393px iPhone is 38px short and no amount of padding closes that —
+		   so shrink here and only here. The cutoff is where step one stops
+		   fitting: 340px of table needs about 409px of viewport. */
+		@media (max-width: 409px) {
 			table.roster-auction {
 				font-size: 0.7rem;
 			}
-			table.roster-auction .salary-cell,
-			table.roster-auction .years-cell,
-			table.roster-auction .bye-cell,
-			table.roster-auction .ecr-cell,
-			table.roster-auction .pts-cell {
+			/* td, not the bare class: those classes sit on the header cells too,
+			   and 0.66rem is fractionally larger than the 0.65rem headers
+			   already use — so an unscoped rule would grow the headers at the
+			   exact width where everything else shrinks. */
+			table.roster-auction td.salary-cell,
+			table.roster-auction td.years-cell,
+			table.roster-auction td.bye-cell,
+			table.roster-auction td.ecr-cell,
+			table.roster-auction td.pts-cell {
 				font-size: 0.66rem;
 			}
 			table.roster-auction tr.player-row td {
 				padding: 0.26rem 0.1rem;
-			}
-			table.roster-auction tr.roster-head th {
-				padding: 0 0.1rem 0.3rem;
 			}
 			table.roster-auction select {
 				font-size: 0.66rem;
