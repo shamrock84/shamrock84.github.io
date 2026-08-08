@@ -2585,7 +2585,10 @@
 			return { total, rows };
 		}
 
-		const ANALYTICS_PAGE_SIZE = 10;
+		// Five rather than ten: two of these cards now sit side by side, and a
+		// ten-row table pushed the pager below the fold on a phone — you had to
+		// scroll to reach the control that saves you scrolling.
+		const ANALYTICS_PAGE_SIZE = 5;
 
 		// The table half of both analytics cards, pager and all. They differ only
 		// in whether a Status column is present, so this is one implementation
@@ -2668,16 +2671,13 @@
 			renderPage();
 		}
 
-		// Worth stating on both cards: unlike the ECR on a roster card, this one
-		// is combined across leagues that may not be using the same ranking list.
-		function appendEcrNote(card, rows) {
-			if (!isLoggedIn() || !rows.some((r) => r.ecr != null)) return;
-			card.appendChild(el('div', {
-				class: 'rankings-note',
-				text: 'ECR is the median overall rank across the leagues here, which can draw from different FantasyPros lists. Ties on exposure are broken by it.',
-			}));
-		}
-
+		// Neither analytics card carries a footnote. Both used to explain their own
+		// workings under the table — the median ECR being drawn from leagues that
+		// can rank off different FantasyPros lists, and where an injury designation
+		// comes from — but side by side that was three grey paragraphs of small
+		// print under two short tables, and the numbers stand up without them. The
+		// reasoning still lives in the comments above computePlayerExposure and
+		// computeInjuryExposure, which is where anyone changing them will be.
 		function renderAnalyticsCard(groupKey, types, leagues) {
 			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
 			card.appendChild(el('h2', { text: 'Player Exposure' }));
@@ -2697,7 +2697,6 @@
 			}
 
 			appendExposureTable(card, rows, total);
-			appendEcrNote(card, rows);
 			return card;
 		}
 
@@ -2719,11 +2718,6 @@
 			}
 
 			appendExposureTable(card, rows, total, { showStatus: true });
-			card.appendChild(el('div', {
-				class: 'rankings-note',
-				text: 'Designations are whatever each provider’s injury feed said at the last sync, so the same player can differ between leagues — the worst one is shown. A player on an IR slot with no designation counts as IR.',
-			}));
-			appendEcrNote(card, rows);
 			return card;
 		}
 
