@@ -717,6 +717,12 @@
 			margin-right: 0.25rem;
 			cursor: help;
 		}
+		/* Follows the dropdown beside it (see .years-select-unset): once a
+		   length is planned the whole cell reads purple, so the gold still on
+		   screen is exactly what's left to do. */
+		.contract-warn-icon.contract-warn-planned {
+			color: var(--accent);
+		}
 		.needs-contract-banner {
 			display: flex;
 			align-items: center;
@@ -1371,7 +1377,7 @@
 		// contract length is exactly the kind of strategy that shouldn't leak
 		// to them; logged out, an unset value renders as a plain "—", the
 		// same thing the API itself actually returned.
-		function buildYearsCell(p, leagueId) {
+		function buildYearsCell(p, leagueId, onContractChange) {
 			if (Number(p.contractYear) > 0) {
 				return el('td', { class: 'years-cell', text: String(p.contractYear) });
 			}
@@ -1393,13 +1399,24 @@
 			}
 			select.value = getContractPlan(leagueId, p.id);
 			// Gold while the length is still unplanned, purple once it's set —
-			// see .years-select-unset. Re-synced on change rather than set once,
-			// so clearing a plan back to "—" returns it to gold too.
-			const syncPlanState = () => select.classList.toggle('years-select-unset', !select.value);
+			// see .years-select-unset. The icon tracks the control rather than
+			// keeping its own colour, so a planned row goes purple as a whole
+			// and the gold left on screen is exactly the work outstanding.
+			// Re-synced on change rather than set once, so clearing a plan back
+			// to "—" returns both to gold.
+			const syncPlanState = () => {
+				const planned = !!select.value;
+				select.classList.toggle('years-select-unset', !planned);
+				warnIcon.classList.toggle('contract-warn-planned', planned);
+				warnIcon.title = planned
+					? 'Contract length planned — not official until MFL sets one'
+					: 'Contract length not set yet — due early September';
+			};
 			syncPlanState();
 			select.addEventListener('change', () => {
 				setContractPlan(leagueId, p.id, select.value);
 				syncPlanState();
+				if (onContractChange) onContractChange();
 			});
 			td.appendChild(select);
 			return td;
@@ -1451,7 +1468,7 @@
 			nameCell.appendChild(el('span', { class: 'team-suffix', text: team || 'FA' }));
 		}
 
-		function buildRosterTable(players, isAuction, statusKey, leagueId, onSalaryChange) {
+		function buildRosterTable(players, isAuction, statusKey, leagueId, onSalaryChange, onContractChange) {
 			// roster-auction is about width, not about the team suffix: only the
 			// salary-cap tables carry Salary/Yrs, and only they need the phone
 			// type shrink that class drives.
@@ -1488,7 +1505,7 @@
 				row.appendChild(el('td', ptsAttrs));
 				if (isAuction) {
 					row.appendChild(buildSalaryCell(p, leagueId, onSalaryChange));
-					row.appendChild(buildYearsCell(p, leagueId));
+					row.appendChild(buildYearsCell(p, leagueId, onContractChange));
 				}
 				table.appendChild(row);
 			}
@@ -1900,17 +1917,42 @@
 			// badges, so it's the first thing seen without scrolling into the
 			// roster to spot individual flagged players (see the icon in
 			// buildYearsCell).
-			if (isAuction) {
-				const needsContractCount = (league.players || []).filter((p) => !(Number(p.contractYear) > 0)).length;
-				if (needsContractCount > 0) {
-					const banner = el('div', { class: 'needs-contract-banner' });
-					banner.appendChild(el('span', {
-						text: `⚠ ${needsContractCount} player${needsContractCount === 1 ? '' : 's'} need${needsContractCount === 1 ? 's' : ''} a contract length set`,
-					}));
-					const emailLink = buildContractEmailLink(league);
-					if (emailLink) banner.appendChild(emailLink);
-					card.appendChild(banner);
-				}
+			//
+			// Two numbers, because they move for different reasons and only one
+			// of them is the manager's job: the denominator is everyone MFL
+			// hasn't returned a contract for, which only the commissioner can
+			// change, and the numerator is how many of those still need a
+			// planned length here. So the fraction counts down as work gets
+			// done while the total holds steady.
+			const contractsMissing = () => (league.players || []).filter((p) => !(Number(p.contractYear) > 0));
+			const contractBannerText = () => {
+				const total = contractsMissing().length;
+				// Logged out, the planning dropdowns aren't rendered at all —
+				// a plan is strategy, same gate as plannedSalary — so plans
+				// aren't counted either. Reporting progress against controls
+				// that aren't on screen would just look broken.
+				const unplanned = isLoggedIn()
+					? contractsMissing().filter((p) => !getContractPlan(league.id, p.id)).length
+					: total;
+				return unplanned === 0
+					? `⚠ All ${total} contract length${total === 1 ? '' : 's'} planned — waiting on MFL`
+					: `⚠ ${unplanned}/${total} players need contract length set`;
+			};
+			let contractBannerTextEl = null;
+			// Setting a length has to move the count immediately — the banner
+			// sits above the table, so a stale number is visible at the same
+			// time as the row that just changed.
+			const refreshContractBanner = () => {
+				if (contractBannerTextEl) contractBannerTextEl.textContent = contractBannerText();
+			};
+
+			if (isAuction && contractsMissing().length > 0) {
+				const banner = el('div', { class: 'needs-contract-banner' });
+				contractBannerTextEl = el('span', { text: contractBannerText() });
+				banner.appendChild(contractBannerTextEl);
+				const emailLink = buildContractEmailLink(league);
+				if (emailLink) banner.appendChild(emailLink);
+				card.appendChild(banner);
 			}
 
 			card.appendChild(buildCardHead(league, formatBadgeLabels(league)));
@@ -1960,7 +2002,7 @@
 							summaryEl = fresh;
 						}
 						: undefined;
-					card.appendChild(buildRosterTable(players, isAuction, group.key.toLowerCase(), league.id, onSalaryChange));
+					card.appendChild(buildRosterTable(players, isAuction, group.key.toLowerCase(), league.id, onSalaryChange, refreshContractBanner));
 				}
 
 				if (summaryEl) card.appendChild(summaryEl);
