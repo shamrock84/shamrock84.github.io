@@ -1242,6 +1242,7 @@
 				plans[leagueId][playerId] = years;
 			}
 			localStorage.setItem(CONTRACT_PLAN_STORAGE_KEY, JSON.stringify(plans));
+			recordPlanEdit('contractPlans', leagueId, playerId, years);
 			schedulePlanPush();
 		}
 
@@ -1274,6 +1275,7 @@
 				plans[leagueId][playerId] = salary;
 			}
 			localStorage.setItem(SALARY_PLAN_STORAGE_KEY, JSON.stringify(plans));
+			recordPlanEdit('salaryPlans', leagueId, playerId, salary);
 			schedulePlanPush();
 		}
 
@@ -1306,6 +1308,71 @@
 			localStorage.setItem(SALARY_PLAN_STORAGE_KEY, JSON.stringify(doc.salaryPlans || {}));
 		}
 
+		// Every plan this device has changed since the page loaded, keyed
+		// "kind\0leagueId\0playerId", with '' meaning cleared back to "—".
+		//
+		// A merge is a union, so it can only ever add keys back — a deletion is
+		// simply not expressible in it, and the store wins ties. Without this
+		// record, a merge response landing after a clear resurrects the value
+		// and writes it straight back into localStorage, which reads exactly as
+		// "setting it back to none doesn't save" while setting a length works
+		// fine (a union keeps that). There are two windows where that happens
+		// and neither is rare: every page load until the first merge round-trip
+		// finishes (a cold Vercel function plus a cold store is seconds, and
+		// the roster is already on screen and editable throughout), and any
+		// session whose load-time sync failed, where the next change retries in
+		// merge mode.
+		//
+		// Kept for the whole session rather than cleared once pushed: re-applying
+		// an edit the store already agrees with is a no-op, and the only later
+		// merge is the retry after a failed sync, which is exactly when these
+		// edits still need re-applying.
+		const planEdits = new Map();
+
+		function recordPlanEdit(kind, leagueId, playerId, value) {
+			planEdits.set(`${kind}\u0000${leagueId}\u0000${playerId}`, value || '');
+		}
+
+		// Re-apply this device's edits on top of a document the server merged.
+		// Deliberately narrow — it touches only the exact keys changed here, so
+		// everything the merge pulled in from another device survives, and the
+		// wipe protection merge mode exists for is untouched.
+		function reconcileWithLocalEdits(doc) {
+			const out = { contractPlans: {}, salaryPlans: {} };
+			for (const kind of Object.keys(out)) {
+				for (const [leagueId, entries] of Object.entries((doc && doc[kind]) || {})) {
+					out[kind][leagueId] = { ...entries };
+				}
+			}
+			for (const [key, value] of planEdits) {
+				const [kind, leagueId, playerId] = key.split('\u0000');
+				if (!out[kind]) continue;
+				if (value) {
+					out[kind][leagueId] = out[kind][leagueId] || {};
+					out[kind][leagueId][playerId] = value;
+				} else if (out[kind][leagueId]) {
+					delete out[kind][leagueId][playerId];
+					// Same pruning the server does, so an emptied league can't
+					// make the comparison below report a difference that isn't one.
+					if (Object.keys(out[kind][leagueId]).length === 0) delete out[kind][leagueId];
+				}
+			}
+			return out;
+		}
+
+		// Adopt what the server merged, minus anything this device changed while
+		// the request was in flight. Returns whether the store is now behind the
+		// local copy — the signal to push again, in replace mode, which is the
+		// only mode that can carry a deletion.
+		function adoptMergedPlans(merged) {
+			const reconciled = reconcileWithLocalEdits(merged);
+			writePlansLocal(reconciled);
+			return JSON.stringify(reconciled) !== JSON.stringify({
+				contractPlans: (merged && merged.contractPlans) || {},
+				salaryPlans: (merged && merged.salaryPlans) || {},
+			});
+		}
+
 		async function postPlans(mode) {
 			const res = await fetch(PLANS_URL, {
 				method: 'POST',
@@ -1332,13 +1399,21 @@
 		// what the page renders from; a failed push means this device is simply
 		// unsynced for now, which is strictly better than erroring at someone
 		// mid-edit.
+		//
+		// The mode is captured before the request rather than read again in the
+		// handler: a load-time sync completing mid-flight would otherwise make a
+		// merge response look like a replace one and skip the reconcile below.
 		function sendPlanPush() {
 			if (!isLoggedIn()) return;
-			postPlans(planSyncDone ? 'replace' : 'merge').then((merged) => {
-				if (!planSyncDone && merged) {
-					writePlansLocal(merged);
-					planSyncDone = true;
-				}
+			const mode = planSyncDone ? 'replace' : 'merge';
+			postPlans(mode).then((merged) => {
+				if (mode !== 'merge' || !merged) return;
+				const storeBehind = adoptMergedPlans(merged);
+				planSyncDone = true;
+				// The merge just answered with the store's copy of whatever this
+				// device cleared. Pushing again — now in replace mode — is what
+				// actually removes it there.
+				if (storeBehind) schedulePlanPush();
 			}).catch(() => {});
 		}
 
@@ -1386,8 +1461,13 @@
 			try {
 				const merged = await postPlans('merge');
 				if (!merged) return;
-				writePlansLocal(merged);
+				// Reconciled rather than adopted wholesale: the roster is on
+				// screen and editable for the whole round-trip, so a plan set or
+				// cleared while this was in flight would otherwise be overwritten
+				// by an answer computed before it happened.
+				const storeBehind = adoptMergedPlans(merged);
 				planSyncDone = true;
+				if (storeBehind) schedulePlanPush();
 				const after = JSON.stringify(localPlansDocument());
 				if (after !== before && pageData) renderGrid();
 			} catch {
@@ -1457,6 +1537,12 @@
 			// would push its stale copy over the newer one in replace mode.
 			planSyncDone = false;
 			clearTimeout(planPushTimer);
+			planPushTimer = null;
+			// The edits belong to that session too. Re-applying them over the
+			// next login's merge would push this device's stale values back over
+			// whatever another device has changed in the meantime — the same
+			// staleness planSyncDone is being reset for.
+			planEdits.clear();
 			// Unsaved Admin edits belong to the session that made them — leaving
 			// them in memory would hand them to whoever logs in next.
 			adminDraft = null;
