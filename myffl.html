@@ -2585,10 +2585,11 @@
 			return { total, rows };
 		}
 
-		// Five rather than ten: two of these cards now sit side by side, and a
+		// Seven rather than ten: two of these cards now sit side by side, and a
 		// ten-row table pushed the pager below the fold on a phone — you had to
-		// scroll to reach the control that saves you scrolling.
-		const ANALYTICS_PAGE_SIZE = 5;
+		// scroll to reach the control that saves you scrolling. Seven still
+		// clears that bar and shows more of the list per page than five did.
+		const ANALYTICS_PAGE_SIZE = 7;
 
 		// The table half of both analytics cards, pager and all. They differ only
 		// in whether a Status column is present, so this is one implementation
