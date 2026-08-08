@@ -744,14 +744,16 @@
 			background: var(--chip-bg);
 			color: var(--accent);
 		}
+		/* Stays gold even when the banner around it goes purple. Planning a
+		   length here and emailing the commissioner are different acts, and
+		   nothing on this page can tell whether the mail was ever sent — so
+		   the link keeps calling for action rather than joining a done state
+		   it has no evidence for. */
 		.contract-email-link {
 			flex-shrink: 0;
 			color: var(--gold-chip-text);
 			text-decoration: underline;
 			white-space: nowrap;
-		}
-		.contract-banner-planned .contract-email-link {
-			color: var(--accent);
 		}
 		table.standings {
 			width: 100%;
