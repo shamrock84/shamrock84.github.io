@@ -671,6 +671,17 @@
 			padding: 0.05rem 0.15rem;
 			text-align: right;
 		}
+		/* No length planned yet: carry the same gold as the card's
+		   contract-due banner and the ⚠ icon beside it, so every part of that
+		   one outstanding task reads as the same colour. Picking a length
+		   switches it back to the purple chip above — the treatment every
+		   other editable value on the row uses — which is what makes the
+		   remaining gold ones scannable. */
+		.years-select.years-select-unset {
+			color: var(--gold-chip-text);
+			background: var(--gold-chip-bg);
+			border-color: color-mix(in srgb, var(--gold-chip-text) 35%, var(--border));
+		}
 		/* Salary cell's own not-yet-official planning dropdown — visually the
 		   same treatment as .years-select but kept as a separate rule so the
 		   two can diverge independently later. */
@@ -1381,8 +1392,14 @@
 				select.appendChild(el('option', { value, text: value || '—' }));
 			}
 			select.value = getContractPlan(leagueId, p.id);
+			// Gold while the length is still unplanned, purple once it's set —
+			// see .years-select-unset. Re-synced on change rather than set once,
+			// so clearing a plan back to "—" returns it to gold too.
+			const syncPlanState = () => select.classList.toggle('years-select-unset', !select.value);
+			syncPlanState();
 			select.addEventListener('change', () => {
 				setContractPlan(leagueId, p.id, select.value);
+				syncPlanState();
 			});
 			td.appendChild(select);
 			return td;
