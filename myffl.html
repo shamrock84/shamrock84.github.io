@@ -575,6 +575,17 @@
 		.player-name {
 			font-weight: 500;
 		}
+		/* A name that links to FantasyPros still has to read as a name first —
+		   a roster of blue underlines would be unreadable — so it takes the
+		   surrounding colour and only underlines on hover, the same treatment
+		   the league-name link in a card head gets. */
+		.player-link {
+			color: inherit;
+			text-decoration: none;
+		}
+		.player-link:hover {
+			text-decoration: underline;
+		}
 		.injury-badge {
 			color: var(--ir-text);
 			font-weight: 600;
@@ -1788,6 +1799,30 @@
 			nameCell.appendChild(el('span', { class: 'team-suffix', text: team || 'FA' }));
 		}
 
+		// A player's name, linked to their FantasyPros profile when the sync
+		// captured a URL for them, plain text when it didn't.
+		//
+		// The URL is FantasyPros' own, carried through data/rosters.json from the
+		// rankings response — never built here from the name. See playerPageUrl
+		// in scripts/lib/fantasypros.mjs for why: two players can share a name,
+		// and a link to the wrong one looks exactly like a link to the right one.
+		// So the link is an extra that appears where it can be trusted. Anyone
+		// FantasyPros doesn't rank, or the name match didn't resolve, keeps a
+		// perfectly readable plain name — as does every roster synced before this
+		// shipped, until the next sync fills the field in.
+		function playerNameNode(p) {
+			const url = p.ecr?.url;
+			if (!url) return document.createTextNode(p.name);
+			return el('a', {
+				href: url,
+				target: '_blank',
+				rel: 'noopener',
+				class: 'player-link',
+				title: `${p.name} on FantasyPros`,
+				text: p.name,
+			});
+		}
+
 		function buildRosterTable(players, isAuction, statusKey, leagueId, onSalaryChange, onContractChange) {
 			// roster-auction is about width, not about the team suffix: only the
 			// salary-cap tables carry Salary/Yrs, and only they need the phone
@@ -1811,7 +1846,7 @@
 				const rowClass = `player-row status-${statusKey}${posBoundary ? ' pos-boundary' : ''}`;
 				const row = el('tr', { class: rowClass, 'data-name': p.name.toLowerCase() });
 				row.appendChild(el('td', {}, [el('span', { class: 'pos-chip', text: p.position || '-' })]));
-				const nameCell = el('td', { class: 'player-name', text: p.name });
+				const nameCell = el('td', { class: 'player-name' }, [playerNameNode(p)]);
 				appendTeamSuffix(nameCell, p.team);
 				const injuryBadge = buildInjuryBadge(p);
 				if (injuryBadge) nameCell.appendChild(injuryBadge);
@@ -1994,7 +2029,7 @@
 				}
 
 				row.appendChild(el('td', {}, [el('span', { class: 'pos-chip', text: p.position || '-' })]));
-				const nameCell = el('td', { class: 'player-name', text: p.name });
+				const nameCell = el('td', { class: 'player-name' }, [playerNameNode(p)]);
 				appendTeamSuffix(nameCell, p.team);
 				const injuryBadge = buildInjuryBadge(p);
 				if (injuryBadge) nameCell.appendChild(injuryBadge);
@@ -2496,11 +2531,15 @@
 					if (seen.has(p.name)) continue;
 					seen.add(p.name);
 					if (!byPlayer.has(p.name)) {
-						byPlayer.set(p.name, { position: p.position, leagues: [], ranks: [] });
+						byPlayer.set(p.name, { position: p.position, leagues: [], ranks: [], url: null });
 					}
 					const entry = byPlayer.get(p.name);
 					entry.leagues.push(label);
 					if (p.ecr && Number.isFinite(p.ecr.rank)) entry.ranks.push(p.ecr.rank);
+					// One profile per player, so the first league to carry a URL
+					// settles it — a league whose rankings failed, or which didn't
+					// match this player, simply doesn't get a say.
+					if (!entry.url && p.ecr?.url) entry.url = p.ecr.url;
 				}
 			}
 
@@ -2513,6 +2552,7 @@
 					count: info.leagues.length,
 					exposure: total > 0 ? (info.leagues.length / total) * 100 : 0,
 					ecr: medianRank(info.ranks),
+					url: info.url,
 				}))
 				.filter((r) => r.count > 1)
 				// Exposure first, then best player. Position was the old
@@ -2572,11 +2612,12 @@
 					if (seen.has(p.name)) continue;
 					seen.add(p.name);
 					if (!byPlayer.has(p.name)) {
-						byPlayer.set(p.name, { position: p.position, leagues: [], ranks: [], statuses: [] });
+						byPlayer.set(p.name, { position: p.position, leagues: [], ranks: [], statuses: [], url: null });
 					}
 					const entry = byPlayer.get(p.name);
 					entry.leagues.push(label);
 					if (p.ecr && Number.isFinite(p.ecr.rank)) entry.ranks.push(p.ecr.rank);
+					if (!entry.url && p.ecr?.url) entry.url = p.ecr.url;
 					const status = injuryDesignation(p);
 					if (status) entry.statuses.push(status);
 				}
@@ -2592,6 +2633,7 @@
 					count: info.leagues.length,
 					exposure: total > 0 ? (info.leagues.length / total) * 100 : 0,
 					ecr: medianRank(info.ranks),
+					url: info.url,
 					status: info.statuses.reduce((worst, s) =>
 						INJURY_SEVERITY.indexOf(s) > INJURY_SEVERITY.indexOf(worst) ? s : worst
 					),
@@ -2657,7 +2699,10 @@
 				for (const r of rows.slice(start, start + ANALYTICS_PAGE_SIZE)) {
 					const row = el('tr');
 					const nameCell = el('td');
-					nameCell.appendChild(el('div', { text: r.name }));
+					// Same link as the roster cards, from the same captured URL —
+					// see playerNameNode, which this mirrors on a row that has no
+					// player object behind it, only the aggregate.
+					nameCell.appendChild(el('div', {}, [playerNameNode({ name: r.name, ecr: { url: r.url } })]));
 					nameCell.appendChild(el('div', { class: 'exposure-leagues', text: r.leagues.join(', ') }));
 					row.appendChild(nameCell);
 					row.appendChild(el('td', { text: r.position || '-' }));
