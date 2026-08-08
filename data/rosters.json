@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-08T22:44:49.731Z",
+  "generatedAt": "2026-08-08T22:53:13.976Z",
   "year": "2026",
   "rankingPools": {
     "DYNASTY|PPR|ALL": {
@@ -3381,7 +3381,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1 QB, 2-3 RB, 2-3 WR, 1-2 TE, 1 PK, 1 Def",
-      "updatedAt": "2026-08-08T22:43:25.771Z",
+      "updatedAt": "2026-08-08T22:50:47.097Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -3494,8 +3494,19 @@
       "standingsError": null,
       "scoring": null,
       "scoringError": "No live scoring available yet",
-      "starters": null,
-      "lineupError": "MFL request failed (429): /export?TYPE=weeklyResults&L=26696&W=1&JSON=1 (year 2026)",
+      "lineupWeek": "1",
+      "starters": [
+        "14783",
+        "13604",
+        "17044",
+        "14802",
+        "11675",
+        "16211",
+        "13299",
+        "16681",
+        "0518"
+      ],
+      "lineupError": null,
       "rankings": {
         "type": "DYNASTY",
         "scoring": "PPR",
@@ -4164,7 +4175,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1 QB, 2 RB, 3 WR, 1 TE, 1 PK, 1 Def",
-      "updatedAt": "2026-08-08T22:43:26.760Z",
+      "updatedAt": "2026-08-08T22:50:48.265Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -4911,7 +4922,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1 QB, 2 RB, 3 WR, 1 TE, 1 PK, 1 Def",
-      "updatedAt": "2026-08-08T22:43:27.514Z",
+      "updatedAt": "2026-08-08T22:50:49.258Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -5565,7 +5576,7 @@
       "salaryCap": 550,
       "salaryAdjustments": 3.2699999999999996,
       "startingLineup": "1 QB, 2-3 RB, 3-4 WR, 1-2 TE",
-      "updatedAt": "2026-08-08T22:43:28.147Z",
+      "updatedAt": "2026-08-08T22:50:50.579Z",
       "error": null,
       "tags": [
         "Best Ball"
@@ -6268,7 +6279,7 @@
       "salaryCap": 500,
       "salaryAdjustments": 4.68,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-08T22:43:28.801Z",
+      "updatedAt": "2026-08-08T22:50:51.728Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -6403,7 +6414,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet",
+      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=34850&JSON=1 (year 2026)",
       "rankings": {
         "type": "DRAFT",
         "scoring": "HALF",
@@ -6931,7 +6942,7 @@
       "salaryCap": 500,
       "salaryAdjustments": 10.09,
       "startingLineup": "1-2 QB, 2-4 RB, 2-4 WR, 1-3 TE",
-      "updatedAt": "2026-08-08T22:43:29.293Z",
+      "updatedAt": "2026-08-08T22:50:53.220Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -7587,7 +7598,7 @@
       "salaryCap": 500,
       "salaryAdjustments": 58.24,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-08T22:43:29.984Z",
+      "updatedAt": "2026-08-08T22:50:54.556Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -7769,7 +7780,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-3 RB, 3-4 WR, 1-2 TE",
-      "updatedAt": "2026-08-08T22:43:30.140Z",
+      "updatedAt": "2026-08-08T22:50:55.194Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -8317,7 +8328,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-3 RB, 3-4 WR, 1-2 TE",
-      "updatedAt": "2026-08-08T22:43:30.574Z",
+      "updatedAt": "2026-08-08T22:50:56.300Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -8893,7 +8904,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-08T22:43:30.954Z",
+      "updatedAt": "2026-08-08T22:50:56.927Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -9405,7 +9416,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-08T22:43:31.249Z",
+      "updatedAt": "2026-08-08T22:50:57.468Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -9539,7 +9550,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet",
+      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=54766&JSON=1 (year 2026)",
       "rankings": {
         "type": "DRAFT",
         "scoring": "HALF",
@@ -9967,7 +9978,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "0-2 QB, 0-8 RB, 0-8 WR, 0-8 TE",
-      "updatedAt": "2026-08-08T22:43:31.607Z",
+      "updatedAt": "2026-08-08T22:50:58.182Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -10082,7 +10093,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet",
+      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=54458&JSON=1 (year 2026)",
       "rankings": {
         "type": "DRAFT",
         "scoring": "HALF",
@@ -10513,7 +10524,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "0-2 QB, 0-8 RB, 0-8 WR, 0-8 TE",
-      "updatedAt": "2026-08-08T22:43:31.975Z",
+      "updatedAt": "2026-08-08T22:50:58.865Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -10638,7 +10649,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=league&L=61777&JSON=1 (year 2026)",
+      "scoringError": "No live scoring available yet",
       "rankings": {
         "type": "DRAFT",
         "scoring": "HALF",
@@ -11026,7 +11037,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-08T22:43:32.341Z",
+      "updatedAt": "2026-08-08T22:50:59.416Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -11150,7 +11161,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=30196&JSON=1 (year 2026)",
+      "scoringError": "No live scoring available yet",
       "rankings": {
         "type": "DRAFT",
         "scoring": "HALF",
@@ -11277,7 +11288,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-08T22:43:32.700Z",
+      "updatedAt": "2026-08-08T22:51:00.056Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -11412,7 +11423,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=26222&JSON=1 (year 2026)",
+      "scoringError": "No live scoring available yet",
       "rankings": {
         "type": "DRAFT",
         "scoring": "HALF",
@@ -11816,7 +11827,7 @@
           }
         }
       ],
-      "updatedAt": "2026-08-08T22:43:32.762Z",
+      "updatedAt": "2026-08-08T22:51:00.155Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -12063,7 +12074,7 @@
       "teamName": "Big Dart Energy",
       "url": "https://fantasy.espn.com/football/team?leagueId=1966972&teamId=10",
       "players": [],
-      "updatedAt": "2026-08-08T22:43:33.019Z",
+      "updatedAt": "2026-08-08T22:51:00.261Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -12251,7 +12262,7 @@
       "teamName": "Jeffer Justinson",
       "url": "https://fantasy.espn.com/football/team?leagueId=421871710&teamId=5",
       "players": [],
-      "updatedAt": "2026-08-08T22:43:33.171Z",
+      "updatedAt": "2026-08-08T22:51:00.324Z",
       "error": null,
       "tags": [],
       "provider": "espn",
