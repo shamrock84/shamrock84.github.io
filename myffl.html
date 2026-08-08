@@ -254,9 +254,16 @@
 		#status:not(:empty) {
 			padding: 2rem 0;
 		}
+		/* 440 rather than 400 because of the salary-cap cards: they carry two
+		   extra columns (Salary, Yrs) plus ECR when logged in, and their table
+		   bottoms out around 437px of content. Below that the Yrs dropdown gets
+		   sliced off the right edge and player names start wrapping. A 400px
+		   floor let iPad landscape (1366) fit a 3rd column at 434px, landing
+		   squarely in that dead zone; 440 drops it to 2 columns instead. Costs
+		   nothing at 1440/1920, which still fit 3. */
 		.grid {
 			display: grid;
-			grid-template-columns: repeat(auto-fill, minmax(min(400px, 100%), 1fr));
+			grid-template-columns: repeat(auto-fill, minmax(min(440px, 100%), 1fr));
 			gap: 1rem;
 		}
 		.card {
@@ -487,6 +494,16 @@
 			width: 100%;
 			border-collapse: collapse;
 			font-size: 0.9rem;
+		}
+		/* Salary-cap tables only (see buildRosterTable). A table can't lay out
+		   narrower than its own min-content, so on a card too narrow for eight
+		   columns it simply overflowed and the Yrs dropdown was cut off with no
+		   way to reach it. Scrolling the overflow is the only honest option at
+		   that width. No min-width: any fixed number here would force a scroll
+		   on cards that fit fine, which is exactly what the table's intrinsic
+		   minimum already expresses. */
+		.roster-scroll {
+			overflow-x: auto;
 		}
 		table.roster tr.player-row td {
 			padding: 0.3rem 0.2rem;
@@ -1391,6 +1408,17 @@
 					row.appendChild(buildYearsCell(p, leagueId));
 				}
 				table.appendChild(row);
+			}
+			// A phone is narrower than the salary-cap table's own minimum, so
+			// there is no width for the grid to hand it — the Yrs dropdown just
+			// gets clipped off the right edge. Let it scroll sideways there
+			// instead. Only the auction tables need this; the six-column ones
+			// fit everywhere, and wrapping the rest would add a scroll container
+			// that can never scroll.
+			if (isAuction) {
+				const scroller = el('div', { class: 'roster-scroll' });
+				scroller.appendChild(table);
+				return scroller;
 			}
 			return table;
 		}
