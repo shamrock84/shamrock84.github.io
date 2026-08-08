@@ -35,6 +35,8 @@ import {
   mflLeagueExists,
   espnLeagueExists,
   detectScoringFormat,
+  fetchMflRosteredNames,
+  fetchEspnRosteredNames,
 } from './lib/providers.mjs';
 import { attachRankings, fantasyProsApiKey, nflSeasonPhase } from './lib/fantasypros.mjs';
 
@@ -368,6 +370,34 @@ async function main() {
       console.error(`Failed to fetch lineup for ${league.name}: ${err.message}`);
       target.starters = null;
       target.lineupError = err.message;
+    }
+  }
+
+  // Who is rostered by anyone in each league — the input to each league's
+  // `available` list, and so to the Top Available card.
+  //
+  // Deliberately the last thing fetched, and deliberately per-league
+  // best-effort. The league-wide MFL export is a much heavier response than
+  // the FRANCHISE-scoped one, and the first sync that folded it into the
+  // roster pass spent enough of the rate limit that three scoring fetches and
+  // a lineup fetch behind it came back 429. Nothing was lost — they fell back
+  // to the previous sync — but the ordering was backwards: this is the least
+  // important thing here, so it goes after everything that matters more and
+  // it is the thing that gives way under a rate limit.
+  //
+  // Sleeper is skipped because fetchSleeperLeagueRoster already collected it
+  // from rosters it had in hand, at no extra request.
+  for (const league of LEAGUES) {
+    const target = leagues.find((l) => l.id === league.id);
+    if (!target || !league.franchiseId || target.error) continue;
+    if (league.provider === 'sleeper' || target.rosteredNames) continue;
+    try {
+      target.rosteredNames = league.provider === 'espn'
+        ? await fetchEspnRosteredNames(league)
+        : await fetchMflRosteredNames(league, cookie, playerMap);
+    } catch (err) {
+      console.error(`Failed to fetch league-wide rosters for ${league.name}: ${err.message}`);
+      target.rosteredNames = null;
     }
   }
 

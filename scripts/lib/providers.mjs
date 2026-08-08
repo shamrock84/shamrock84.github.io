@@ -509,17 +509,42 @@ function mflRosterPlayers(franchise) {
   return Array.isArray(raw) ? raw : [raw];
 }
 
+// Every player held by any franchise in the league — the complement of the
+// free agent pool, which is what the Top Available card is derived from: a
+// player is available only if *nobody* in the league has him, and our own
+// roster cannot answer that. Names rather than ids because that is what the
+// ranking lists join on; see normalizePlayerName in lib/fantasypros.mjs.
+//
+// This is its own request, made in its own late pass by fetch-rosters.mjs,
+// rather than a widening of the FRANCHISE-scoped export in fetchLeagueRoster.
+// Widening that one looked free — same endpoint, same request count — but the
+// league-wide export is a much heavier response, and the first sync to try it
+// spent enough of MFL's rate limit that three scoring fetches and a lineup
+// fetch behind it came back 429. Availability is the least important thing
+// this sync collects, so it goes last and it is the thing that degrades.
+export async function fetchMflRosteredNames(league, cookie, playerMap) {
+  const data = await mflGet(`/export?TYPE=rosters&L=${league.id}&JSON=1`, cookie, seasonOf(league));
+
+  const franchises = Array.isArray(data?.rosters?.franchise)
+    ? data.rosters.franchise
+    : data?.rosters?.franchise
+    ? [data.rosters.franchise]
+    : [];
+
+  const names = [];
+  for (const f of franchises) {
+    for (const p of mflRosterPlayers(f)) {
+      const name = playerMap.get(p.id)?.name;
+      if (name) names.push(name);
+    }
+  }
+  return names.length > 0 ? names : null;
+}
+
 export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, injuries) {
-  // TYPE=rosters is fetched for the whole league rather than scoped to our
-  // own franchise with FRANCHISE=. Same endpoint, same one request, and the
-  // extra franchises are what the Top Available analytics card is derived
-  // from — a player is a free agent only if *nobody* in the league has him,
-  // which our own roster alone cannot answer. The scoped form is still the
-  // fallback below, so a league that answers the league-wide export oddly
-  // keeps its roster card rather than erroring out.
   const [leagueData, rostersData] = await Promise.all([
     mflGet(`/export?TYPE=league&L=${league.id}&JSON=1`, cookie, seasonOf(league)),
-    mflGet(`/export?TYPE=rosters&L=${league.id}&JSON=1`, cookie, seasonOf(league)),
+    mflGet(`/export?TYPE=rosters&L=${league.id}&FRANCHISE=${league.franchiseId}&JSON=1`, cookie, seasonOf(league)),
   ]);
 
   const franchises = leagueData?.league?.franchises?.franchise ?? [];
@@ -527,34 +552,9 @@ export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, inj
     ? franchises.find((f) => f.id === league.franchiseId)
     : franchises;
 
-  const rosterFranchises = Array.isArray(rostersData?.rosters?.franchise)
-    ? rostersData.rosters.franchise
-    : rostersData?.rosters?.franchise
-    ? [rostersData.rosters.franchise]
-    : [];
-
-  // Every player held by any franchise in the league — the complement of the
-  // free agent pool. Names rather than ids because that is what the ranking
-  // lists join on; see normalizePlayerName in lib/fantasypros.mjs.
-  const rosteredNames = [];
-  for (const f of rosterFranchises) {
-    for (const p of mflRosterPlayers(f)) {
-      const name = playerMap.get(p.id)?.name;
-      if (name) rosteredNames.push(name);
-    }
-  }
-
-  let rosterFranchise = rosterFranchises.find((f) => String(f.id) === String(league.franchiseId));
-  if (!rosterFranchise) {
-    const scoped = await mflGet(
-      `/export?TYPE=rosters&L=${league.id}&FRANCHISE=${league.franchiseId}&JSON=1`,
-      cookie,
-      seasonOf(league)
-    );
-    rosterFranchise = Array.isArray(scoped?.rosters?.franchise)
-      ? scoped.rosters.franchise[0]
-      : scoped?.rosters?.franchise;
-  }
+  const rosterFranchise = Array.isArray(rostersData?.rosters?.franchise)
+    ? rostersData.rosters.franchise[0]
+    : rostersData?.rosters?.franchise;
 
   if (!rosterFranchise) {
     throw new Error('No roster data returned for this franchise');
@@ -637,7 +637,6 @@ export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, inj
     teamName: franchiseInfo?.name || league.name,
     url: leagueUrl(league),
     players,
-    rosteredNames,
     salaryCap,
     salaryAdjustments,
     startingLineup,
@@ -876,38 +875,28 @@ export async function fetchEspnLeagueRoster(league) {
     teamName: espnTeamName(team),
     url: leagueUrl(league),
     players,
-    rosteredNames: await fetchEspnRosteredNames(league),
     updatedAt: new Date().toISOString(),
     error: null,
   };
 }
 
-// Every player rostered by any team in an ESPN league — what's left over is
-// the free agent pool the Top Available card is built from.
-//
-// This is a second request rather than a widening of the roster fetch above,
-// because that one pins rosterForTeamId to get its entries populated at all
-// and dropping it is exactly the sort of change that can't be verified from
-// here (see the comment on fetchEspnLeagueRoster). So: ask separately, and
-// treat anything unexpected — an error, or the empty roster.entries that the
-// unscoped view is suspected of returning — as "don't know". A null here
-// simply leaves the league out of the availability card; it must never take
-// down a roster fetch that otherwise succeeded.
-async function fetchEspnRosteredNames(league) {
-  try {
-    const data = await espnGet(league, 'view=mRoster&scoringPeriodId=1');
-    const names = [];
-    for (const team of data.teams || []) {
-      for (const entry of team.roster?.entries || []) {
-        const name = entry.playerPoolEntry?.player?.fullName;
-        if (name) names.push(name);
-      }
+// The ESPN half of fetchMflRosteredNames, and a second request for the same
+// reason it is on MFL — plus one of its own: the roster fetch above pins
+// rosterForTeamId to get its entries populated at all, and dropping that is
+// exactly the sort of change that can't be verified from here (see the
+// comment on fetchEspnLeagueRoster). An empty answer is "don't know" rather
+// than "nobody is rostered", since the unscoped view is suspected of
+// returning empty entries.
+export async function fetchEspnRosteredNames(league) {
+  const data = await espnGet(league, 'view=mRoster&scoringPeriodId=1');
+  const names = [];
+  for (const team of data.teams || []) {
+    for (const entry of team.roster?.entries || []) {
+      const name = entry.playerPoolEntry?.player?.fullName;
+      if (name) names.push(name);
     }
-    return names.length > 0 ? names : null;
-  } catch (err) {
-    console.error(`Failed to fetch league-wide ESPN rosters for ${league.name}: ${err.message}`);
-    return null;
   }
+  return names.length > 0 ? names : null;
 }
 
 export async function fetchEspnStandings(league) {
