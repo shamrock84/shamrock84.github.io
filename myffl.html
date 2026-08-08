@@ -1311,9 +1311,35 @@
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
 				body: JSON.stringify({ plans: localPlansDocument(), mode }),
+				// The document is a few hundred bytes at most, well inside the
+				// 64KB keepalive budget, and this is what lets a flush on the
+				// way out actually complete after the page is gone.
+				keepalive: true,
 			});
 			if (!res.ok) throw new Error(`HTTP ${res.status}`);
 			return (await res.json()).plans;
+		}
+
+		// Until this device has completed one successful merge it hasn't seen
+		// the shared document, so it pushes in merge mode: replacing the store
+		// with a copy that might be missing another device's plans is the exact
+		// wipe this endpoint exists to prevent. That also makes an edit
+		// self-healing — if the store was down at load, the next change
+		// re-attempts the merge rather than leaving the device unsynced until a
+		// reload.
+		//
+		// Fire-and-forget on purpose. The local write already happened and is
+		// what the page renders from; a failed push means this device is simply
+		// unsynced for now, which is strictly better than erroring at someone
+		// mid-edit.
+		function sendPlanPush() {
+			if (!isLoggedIn()) return;
+			postPlans(planSyncDone ? 'replace' : 'merge').then((merged) => {
+				if (!planSyncDone && merged) {
+					writePlansLocal(merged);
+					planSyncDone = true;
+				}
+			}).catch(() => {});
 		}
 
 		// Debounced: changing a dropdown fires per keystroke-equivalent, and
@@ -1323,26 +1349,31 @@
 			if (!isLoggedIn()) return;
 			clearTimeout(planPushTimer);
 			planPushTimer = setTimeout(() => {
-				// Until this device has completed one successful merge it
-				// hasn't seen the shared document, so it pushes in merge mode:
-				// replacing the store with a copy that might be missing another
-				// device's plans is the exact wipe this endpoint exists to
-				// prevent. That also makes an edit self-healing — if the store
-				// was down at load, the next change re-attempts the merge
-				// rather than leaving the device unsynced until a reload.
-				const mode = planSyncDone ? 'replace' : 'merge';
-				// Fire-and-forget on purpose. The local write already happened
-				// and is what the page renders from; a failed push means this
-				// device is simply unsynced for now, which is strictly better
-				// than erroring at someone mid-edit.
-				postPlans(mode).then((merged) => {
-					if (!planSyncDone && merged) {
-						writePlansLocal(merged);
-						planSyncDone = true;
-					}
-				}).catch(() => {});
+				planPushTimer = null;
+				sendPlanPush();
 			}, PLAN_PUSH_DEBOUNCE_MS);
 		}
+
+		// The debounce is the one place a plan can be lost, and on iOS it's not
+		// a rare case: Safari suspends timers the moment a tab is backgrounded
+		// or the device is locked, so setting a length and immediately swiping
+		// away leaves the push sitting in a timer that never fires. The change
+		// is safe in localStorage either way, but it would never reach the
+		// other device — which looks exactly like the sync not working.
+		//
+		// pagehide covers the bfcache path Safari actually uses; visibilitychange
+		// covers app-switching and locking. Both are best-effort, hence keepalive
+		// on the request itself.
+		function flushPlanPush() {
+			if (!planPushTimer) return;
+			clearTimeout(planPushTimer);
+			planPushTimer = null;
+			sendPlanPush();
+		}
+		document.addEventListener('visibilitychange', () => {
+			if (document.visibilityState === 'hidden') flushPlanPush();
+		});
+		window.addEventListener('pagehide', flushPlanPush);
 
 		// Runs after the first render rather than before it: the roster is
 		// already on screen from local data, and this only ever adds plans the
