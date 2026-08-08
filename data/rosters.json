@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-07T23:02:04.763Z",
+  "generatedAt": "2026-08-08T00:06:51.354Z",
   "year": "2026",
   "leagues": [
     {
@@ -623,11 +623,12 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1 QB, 2-3 RB, 2-3 WR, 1-2 TE, 1 PK, 1 Def",
-      "updatedAt": "2026-08-07T23:01:02.451Z",
+      "updatedAt": "2026-08-08T00:06:15.483Z",
       "error": null,
       "tags": [],
       "provider": null,
       "rulesUrl": null,
+      "commishEmail": null,
       "season": "2026",
       "scoringDetected": "PPR",
       "standings": [
@@ -1380,11 +1381,12 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1 QB, 2 RB, 3 WR, 1 TE, 1 PK, 1 Def",
-      "updatedAt": "2026-08-07T23:01:03.139Z",
+      "updatedAt": "2026-08-08T00:06:16.447Z",
       "error": null,
       "tags": [],
       "provider": null,
       "rulesUrl": null,
+      "commishEmail": null,
       "season": "2026",
       "scoringDetected": "PPR",
       "standings": [
@@ -2093,11 +2095,12 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1 QB, 2 RB, 3 WR, 1 TE, 1 PK, 1 Def",
-      "updatedAt": "2026-08-07T23:01:04.848Z",
+      "updatedAt": "2026-08-08T00:06:17.382Z",
       "error": null,
       "tags": [],
       "provider": null,
       "rulesUrl": "https://docs.google.com/document/d/1rrv_5DLogDurYtknvrdzJn3GyaiS0AmkF__vsCJDwaQ/edit?usp=drivesdk",
+      "commishEmail": null,
       "season": "2026",
       "scoringDetected": "PPR",
       "standings": [
@@ -2366,7 +2369,7 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 190,
+            "rank": 187,
             "posRank": "RB60",
             "tier": 10,
             "delta": null
@@ -2423,7 +2426,7 @@
           "pts": 0,
           "priorYearPts": 145.5,
           "ecr": {
-            "rank": 81,
+            "rank": 80,
             "posRank": "RB28",
             "tier": 7,
             "delta": null
@@ -2442,7 +2445,7 @@
           "pts": 0,
           "priorYearPts": 180.3,
           "ecr": {
-            "rank": 84,
+            "rank": 83,
             "posRank": "RB29",
             "tier": 7,
             "delta": null
@@ -2463,7 +2466,7 @@
           "ecr": {
             "rank": 311,
             "posRank": "RB93",
-            "tier": 12,
+            "tier": 13,
             "delta": null
           }
         },
@@ -2518,9 +2521,9 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 256,
-            "posRank": "WR90",
-            "tier": 11,
+            "rank": 257,
+            "posRank": "WR91",
+            "tier": 12,
             "delta": null
           }
         },
@@ -2537,7 +2540,7 @@
           "pts": 0,
           "priorYearPts": 223.2,
           "ecr": {
-            "rank": 83,
+            "rank": 84,
             "posRank": "WR38",
             "tier": 7,
             "delta": null
@@ -2556,9 +2559,9 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 257,
-            "posRank": "WR91",
-            "tier": 11,
+            "rank": 255,
+            "posRank": "WR90",
+            "tier": 12,
             "delta": null
           }
         },
@@ -2575,7 +2578,7 @@
           "pts": 0,
           "priorYearPts": 42.4,
           "ecr": {
-            "rank": 240,
+            "rank": 241,
             "posRank": "WR86",
             "tier": 11,
             "delta": null
@@ -2614,7 +2617,7 @@
           "priorYearPts": 68.7,
           "ecr": {
             "rank": 199,
-            "posRank": "WR77",
+            "posRank": "WR76",
             "tier": 10,
             "delta": null
           }
@@ -2670,9 +2673,9 @@
           "pts": 0,
           "priorYearPts": 143,
           "ecr": {
-            "rank": 38,
+            "rank": 35,
             "posRank": "TE3",
-            "tier": 4,
+            "tier": 5,
             "delta": null
           }
         },
@@ -2718,13 +2721,14 @@
       "salaryCap": 550,
       "salaryAdjustments": 3.2699999999999996,
       "startingLineup": "1 QB, 2-3 RB, 3-4 WR, 1-2 TE",
-      "updatedAt": "2026-08-07T23:01:07.003Z",
+      "updatedAt": "2026-08-08T00:06:18.820Z",
       "error": null,
       "tags": [
         "Best Ball"
       ],
       "provider": null,
       "rulesUrl": "https://docs.google.com/document/d/1RjWuKjAcLoiTESH_Yh2U9dfq7anm7W9souiEnjuN-Z0/edit?usp=drivesdk",
+      "commishEmail": "Salarycapdynasty@gmail.com",
       "season": "2026",
       "scoringDetected": "PPR",
       "standings": [
@@ -2857,7 +2861,7 @@
         "scoring": "PPR",
         "position": "ALL",
         "lastUpdated": "8/07",
-        "totalExperts": 93,
+        "totalExperts": 92,
         "matched": 24,
         "total": 24
       },
@@ -2885,7 +2889,7 @@
           "pts": 0,
           "priorYearPts": 175.19,
           "ecr": {
-            "rank": 144,
+            "rank": 146,
             "posRank": "QB29",
             "tier": 8,
             "delta": null
@@ -2923,7 +2927,7 @@
           "pts": 0,
           "priorYearPts": 67.13,
           "ecr": {
-            "rank": 239,
+            "rank": 237,
             "posRank": "QB35",
             "tier": 9,
             "delta": null
@@ -2961,7 +2965,7 @@
           "pts": 0,
           "priorYearPts": 14.3,
           "ecr": {
-            "rank": 176,
+            "rank": 178,
             "posRank": "RB56",
             "tier": 8,
             "delta": null
@@ -2980,7 +2984,7 @@
           "pts": 0,
           "priorYearPts": 194.61,
           "ecr": {
-            "rank": 57,
+            "rank": 56,
             "posRank": "RB16",
             "tier": 5,
             "delta": null
@@ -3056,7 +3060,7 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 123,
+            "rank": 122,
             "posRank": "RB38",
             "tier": 7,
             "delta": null
@@ -3113,7 +3117,7 @@
           "pts": 0,
           "priorYearPts": 129.5,
           "ecr": {
-            "rank": 94,
+            "rank": 95,
             "posRank": "RB29",
             "tier": 6,
             "delta": null
@@ -3132,7 +3136,7 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 280,
+            "rank": 281,
             "posRank": "WR109",
             "tier": 10,
             "delta": null
@@ -3151,8 +3155,8 @@
           "pts": 0,
           "priorYearPts": 43.7,
           "ecr": {
-            "rank": 232,
-            "posRank": "WR91",
+            "rank": 233,
+            "posRank": "WR92",
             "tier": 9,
             "delta": null
           }
@@ -3170,8 +3174,8 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 168,
-            "posRank": "WR63",
+            "rank": 169,
+            "posRank": "WR64",
             "tier": 8,
             "delta": null
           }
@@ -3227,7 +3231,7 @@
           "pts": 0,
           "priorYearPts": 83.4,
           "ecr": {
-            "rank": 186,
+            "rank": 187,
             "posRank": "WR72",
             "tier": 9,
             "delta": null
@@ -3341,7 +3345,7 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 307,
+            "rank": 308,
             "posRank": "TE48",
             "tier": 11,
             "delta": null
@@ -3360,7 +3364,7 @@
           "pts": 0,
           "priorYearPts": 56.5,
           "ecr": {
-            "rank": 134,
+            "rank": 133,
             "posRank": "TE15",
             "tier": 7,
             "delta": 2
@@ -3389,7 +3393,7 @@
       "salaryCap": 500,
       "salaryAdjustments": 4.68,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-07T23:01:08.533Z",
+      "updatedAt": "2026-08-08T00:06:20.660Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -3397,6 +3401,7 @@
       ],
       "provider": null,
       "rulesUrl": "https://docs.google.com/document/d/19qYWLsJ3VincokvAn5NrgP4f7cBxz8A-mE91ryo2LsA/edit?usp=drivesdk",
+      "commishEmail": "Wiseguysfantasy@gmail.com",
       "season": "2026",
       "scoringDetected": "HALF",
       "standings": [
@@ -3529,7 +3534,7 @@
         "scoring": "HALF",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 91,
+        "totalExperts": 90,
         "matched": 27,
         "total": 27
       },
@@ -3557,7 +3562,7 @@
           "pts": 0,
           "priorYearPts": 169.14,
           "ecr": {
-            "rank": 87,
+            "rank": 88,
             "posRank": "QB26",
             "tier": 6,
             "delta": null
@@ -3595,7 +3600,7 @@
           "pts": 0,
           "priorYearPts": 97.62,
           "ecr": {
-            "rank": 215,
+            "rank": 216,
             "posRank": "QB32",
             "tier": 9,
             "delta": null
@@ -3709,7 +3714,7 @@
           "pts": 0,
           "priorYearPts": 34.7,
           "ecr": {
-            "rank": 179,
+            "rank": 180,
             "posRank": "RB57",
             "tier": 8,
             "delta": null
@@ -3747,8 +3752,8 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 309,
-            "posRank": "WR124",
+            "rank": 307,
+            "posRank": "WR123",
             "tier": 11,
             "delta": null
           }
@@ -3766,7 +3771,7 @@
           "pts": 0,
           "priorYearPts": 38.8,
           "ecr": {
-            "rank": 185,
+            "rank": 186,
             "posRank": "WR71",
             "tier": 9,
             "delta": null
@@ -3956,7 +3961,7 @@
           "pts": 0,
           "priorYearPts": 69.1,
           "ecr": {
-            "rank": 245,
+            "rank": 246,
             "posRank": "WR96",
             "tier": 10,
             "delta": null
@@ -4023,7 +4028,7 @@
       "salaryCap": 500,
       "salaryAdjustments": 10.09,
       "startingLineup": "1-2 QB, 2-4 RB, 2-4 WR, 1-3 TE",
-      "updatedAt": "2026-08-07T23:01:09.860Z",
+      "updatedAt": "2026-08-08T00:06:21.724Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -4031,6 +4036,7 @@
       ],
       "provider": null,
       "rulesUrl": "https://docs.google.com/document/d/1QV4fal0Be3-jbiHsDMm_SHe4DwoPAFNFJe44qWbRKes/edit?usp=drivesdk",
+      "commishEmail": "supercapdynasty@gmail.com",
       "season": "2026",
       "scoringDetected": "HALF",
       "standings": [
@@ -4163,7 +4169,7 @@
         "scoring": "HALF",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 91,
+        "totalExperts": 90,
         "matched": 25,
         "total": 25
       },
@@ -4191,8 +4197,8 @@
           "pts": 0,
           "priorYearPts": 1.56,
           "ecr": {
-            "rank": 362,
-            "posRank": "QB38",
+            "rank": 370,
+            "posRank": "QB40",
             "tier": 12,
             "delta": null
           }
@@ -4210,7 +4216,7 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 360,
+            "rank": 359,
             "posRank": "QB37",
             "tier": 12,
             "delta": null
@@ -4242,9 +4248,9 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 590,
+            "rank": 579,
             "posRank": "QB61",
-            "tier": 14,
+            "tier": 13,
             "delta": null
           }
         },
@@ -4261,7 +4267,7 @@
           "pts": 0,
           "priorYearPts": 140.3,
           "ecr": {
-            "rank": 122,
+            "rank": 123,
             "posRank": "QB28",
             "tier": 7,
             "delta": null
@@ -4280,7 +4286,7 @@
           "pts": 0,
           "priorYearPts": 129.32,
           "ecr": {
-            "rank": 181,
+            "rank": 182,
             "posRank": "QB31",
             "tier": 8,
             "delta": null
@@ -4337,7 +4343,7 @@
           "pts": 0,
           "priorYearPts": 13.8,
           "ecr": {
-            "rank": 217,
+            "rank": 215,
             "posRank": "RB69",
             "tier": 9,
             "delta": null
@@ -4451,7 +4457,7 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 259,
+            "rank": 258,
             "posRank": "WR102",
             "tier": 10,
             "delta": null
@@ -4470,8 +4476,8 @@
           "pts": 0,
           "priorYearPts": 72.9,
           "ecr": {
-            "rank": 240,
-            "posRank": "WR93",
+            "rank": 241,
+            "posRank": "WR94",
             "tier": 9,
             "delta": null
           }
@@ -4546,7 +4552,7 @@
           "pts": 0,
           "priorYearPts": 48.7,
           "ecr": {
-            "rank": 265,
+            "rank": 263,
             "posRank": "WR104",
             "tier": 10,
             "delta": null
@@ -4565,7 +4571,7 @@
           "pts": 0,
           "priorYearPts": 83.4,
           "ecr": {
-            "rank": 186,
+            "rank": 187,
             "posRank": "WR72",
             "tier": 9,
             "delta": null
@@ -4622,8 +4628,8 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 453,
-            "posRank": "TE86",
+            "rank": 445,
+            "posRank": "TE85",
             "tier": 13,
             "delta": -12
           }
@@ -4641,8 +4647,8 @@
           "pts": 0,
           "priorYearPts": 138.9,
           "ecr": {
-            "rank": 355,
-            "posRank": "TE60",
+            "rank": 350,
+            "posRank": "TE59",
             "tier": 12,
             "delta": null
           }
@@ -4651,7 +4657,7 @@
       "salaryCap": 500,
       "salaryAdjustments": 58.24,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-07T23:01:11.573Z",
+      "updatedAt": "2026-08-08T00:06:24.721Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -4659,6 +4665,7 @@
       ],
       "provider": null,
       "rulesUrl": "https://docs.google.com/document/d/1jeE5Mr80nhnUK53DmbwYOHLbHZxSXsVjEcH4LufBvIE/edit?usp=drivesdk",
+      "commishEmail": null,
       "season": "2026",
       "scoringDetected": "HALF",
       "standings": [
@@ -4811,7 +4818,7 @@
         "scoring": "HALF",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 91,
+        "totalExperts": 90,
         "matched": 24,
         "total": 25
       },
@@ -4829,11 +4836,12 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-3 RB, 3-4 WR, 1-2 TE",
-      "updatedAt": "2026-08-07T23:01:12.120Z",
+      "updatedAt": "2026-08-08T00:06:25.498Z",
       "error": null,
       "tags": [],
       "provider": null,
       "rulesUrl": null,
+      "commishEmail": null,
       "season": "2026",
       "scoringDetected": "PPR",
       "standings": [
@@ -4984,7 +4992,7 @@
           "pts": 2.26,
           "priorYearPts": 163.46,
           "ecr": {
-            "rank": 375,
+            "rank": 374,
             "posRank": "QB41",
             "tier": 14,
             "delta": null
@@ -5005,7 +5013,7 @@
           "ecr": {
             "rank": 39,
             "posRank": "QB3",
-            "tier": 4,
+            "tier": 5,
             "delta": null
           }
         },
@@ -5022,7 +5030,7 @@
           "pts": 117.4,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 333,
+            "rank": 334,
             "posRank": "QB36",
             "tier": 13,
             "delta": null
@@ -5041,9 +5049,9 @@
           "pts": 286.68,
           "priorYearPts": 283.02,
           "ecr": {
-            "rank": 101,
+            "rank": 102,
             "posRank": "QB14",
-            "tier": 7,
+            "tier": 8,
             "delta": null
           }
         },
@@ -5060,7 +5068,7 @@
           "pts": 100.7,
           "priorYearPts": 265.3,
           "ecr": {
-            "rank": 139,
+            "rank": 140,
             "posRank": "RB47",
             "tier": 9,
             "delta": null
@@ -5155,8 +5163,8 @@
           "pts": 56.7,
           "priorYearPts": 80.9,
           "ecr": {
-            "rank": 324,
-            "posRank": "WR113",
+            "rank": 322,
+            "posRank": "WR112",
             "tier": 13,
             "delta": null
           }
@@ -5193,7 +5201,7 @@
           "pts": 57.2,
           "priorYearPts": 71,
           "ecr": {
-            "rank": 259,
+            "rank": 260,
             "posRank": "WR93",
             "tier": 12,
             "delta": null
@@ -5214,7 +5222,7 @@
           "ecr": {
             "rank": 98,
             "posRank": "WR44",
-            "tier": 7,
+            "tier": 8,
             "delta": null
           }
         },
@@ -5307,7 +5315,7 @@
           "pts": 88.9,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 269,
+            "rank": 270,
             "posRank": "TE34",
             "tier": 12,
             "delta": null
@@ -5355,11 +5363,12 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-3 RB, 3-4 WR, 1-2 TE",
-      "updatedAt": "2026-08-07T23:01:12.943Z",
+      "updatedAt": "2026-08-08T00:06:27.384Z",
       "error": null,
       "tags": [],
       "provider": null,
       "rulesUrl": null,
+      "commishEmail": null,
       "season": "2025",
       "scoringDetected": "PPR",
       "standings": [
@@ -5536,7 +5545,7 @@
         "scoring": "PPR",
         "position": "ALL",
         "lastUpdated": "8/07",
-        "totalExperts": 93,
+        "totalExperts": 92,
         "matched": 20,
         "total": 20
       },
@@ -5602,7 +5611,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 56,
+            "rank": 57,
             "posRank": "QB21",
             "tier": 5,
             "delta": null
@@ -5621,7 +5630,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 215,
+            "rank": 216,
             "posRank": "QB32",
             "tier": 9,
             "delta": null
@@ -5640,7 +5649,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 239,
+            "rank": 237,
             "posRank": "QB35",
             "tier": 9,
             "delta": null
@@ -5678,7 +5687,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 99,
+            "rank": 100,
             "posRank": "RB30",
             "tier": 6,
             "delta": null
@@ -5862,7 +5871,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 134,
+            "rank": 133,
             "posRank": "TE15",
             "tier": 7,
             "delta": 2
@@ -5891,13 +5900,14 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-07T23:01:13.769Z",
+      "updatedAt": "2026-08-08T00:06:28.266Z",
       "error": null,
       "tags": [
         "Superflex"
       ],
       "provider": null,
       "rulesUrl": "https://www45.myfantasyleague.com/2026/options?L=72911&O=09",
+      "commishEmail": null,
       "season": "2026",
       "scoringDetected": "HALF",
       "standings": [
@@ -6010,7 +6020,7 @@
         "scoring": "HALF",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 91,
+        "totalExperts": 90,
         "matched": 17,
         "total": 18
       },
@@ -6076,7 +6086,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 215,
+            "rank": 216,
             "posRank": "QB32",
             "tier": 9,
             "delta": null
@@ -6133,7 +6143,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 179,
+            "rank": 180,
             "posRank": "RB57",
             "tier": 8,
             "delta": null
@@ -6190,7 +6200,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 133,
+            "rank": 134,
             "posRank": "RB42",
             "tier": 7,
             "delta": null
@@ -6209,8 +6219,8 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 95,
-            "posRank": "WR34",
+            "rank": 96,
+            "posRank": "WR35",
             "tier": 6,
             "delta": null
           }
@@ -6228,7 +6238,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 259,
+            "rank": 258,
             "posRank": "WR102",
             "tier": 10,
             "delta": null
@@ -6371,13 +6381,14 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-07T23:01:14.637Z",
+      "updatedAt": "2026-08-08T00:06:28.668Z",
       "error": null,
       "tags": [
         "Superflex"
       ],
       "provider": null,
       "rulesUrl": "https://www45.myfantasyleague.com/2026/options?L=54766&O=09",
+      "commishEmail": null,
       "season": "2026",
       "scoringDetected": "HALF",
       "standings": [
@@ -6510,7 +6521,7 @@
         "scoring": "HALF",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 91,
+        "totalExperts": 90,
         "matched": 18,
         "total": 18
       },
@@ -6538,7 +6549,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 122,
+            "rank": 123,
             "posRank": "QB28",
             "tier": 7,
             "delta": null
@@ -6576,7 +6587,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 56,
+            "rank": 57,
             "posRank": "QB21",
             "tier": 5,
             "delta": null
@@ -6671,7 +6682,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 22,
+            "rank": 23,
             "posRank": "RB5",
             "tier": 3,
             "delta": null
@@ -6804,7 +6815,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 133,
+            "rank": 134,
             "posRank": "RB42",
             "tier": 7,
             "delta": null
@@ -6823,7 +6834,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 259,
+            "rank": 258,
             "posRank": "WR102",
             "tier": 10,
             "delta": null
@@ -6909,7 +6920,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "0-2 QB, 0-8 RB, 0-8 WR, 0-8 TE",
-      "updatedAt": "2026-08-07T23:01:16.637Z",
+      "updatedAt": "2026-08-08T00:06:29.404Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -6917,6 +6928,7 @@
       ],
       "provider": null,
       "rulesUrl": "https://scottfishbowl.com/rules2026.php",
+      "commishEmail": null,
       "season": "2026",
       "scoringDetected": "HALF",
       "standings": [
@@ -7023,13 +7035,13 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=54458&JSON=1 (year 2026)",
+      "scoringError": "No live scoring available yet",
       "rankings": {
         "type": "DRAFT",
         "scoring": "HALF",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 91,
+        "totalExperts": 90,
         "matched": 20,
         "total": 20
       },
@@ -7095,7 +7107,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 56,
+            "rank": 57,
             "posRank": "QB21",
             "tier": 5,
             "delta": null
@@ -7114,7 +7126,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 181,
+            "rank": 182,
             "posRank": "QB31",
             "tier": 8,
             "delta": null
@@ -7171,7 +7183,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 57,
+            "rank": 56,
             "posRank": "RB16",
             "tier": 5,
             "delta": null
@@ -7228,7 +7240,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 88,
+            "rank": 87,
             "posRank": "RB27",
             "tier": 6,
             "delta": null
@@ -7266,7 +7278,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 133,
+            "rank": 134,
             "posRank": "RB42",
             "tier": 7,
             "delta": null
@@ -7304,8 +7316,8 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 168,
-            "posRank": "WR63",
+            "rank": 169,
+            "posRank": "WR64",
             "tier": 8,
             "delta": null
           }
@@ -7342,8 +7354,8 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 175,
-            "posRank": "WR67",
+            "rank": 176,
+            "posRank": "WR68",
             "tier": 8,
             "delta": null
           }
@@ -7380,7 +7392,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 60,
+            "rank": 59,
             "posRank": "TE3",
             "tier": 5,
             "delta": null
@@ -7399,7 +7411,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 134,
+            "rank": 133,
             "posRank": "TE15",
             "tier": 7,
             "delta": 2
@@ -7428,7 +7440,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "0-2 QB, 0-8 RB, 0-8 WR, 0-8 TE",
-      "updatedAt": "2026-08-07T23:01:17.527Z",
+      "updatedAt": "2026-08-08T00:06:30.146Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -7436,6 +7448,7 @@
       ],
       "provider": null,
       "rulesUrl": "https://scottfishbowl.com/rules2026.php",
+      "commishEmail": null,
       "season": "2026",
       "scoringDetected": "HALF",
       "standings": [
@@ -7558,7 +7571,7 @@
         "scoring": "HALF",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 91,
+        "totalExperts": 90,
         "matched": 20,
         "total": 20
       },
@@ -7605,7 +7618,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 56,
+            "rank": 57,
             "posRank": "QB21",
             "tier": 5,
             "delta": null
@@ -7662,7 +7675,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 99,
+            "rank": 100,
             "posRank": "RB30",
             "tier": 6,
             "delta": null
@@ -7814,7 +7827,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 116,
+            "rank": 117,
             "posRank": "WR45",
             "tier": 7,
             "delta": null
@@ -7871,7 +7884,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 146,
+            "rank": 145,
             "posRank": "WR55",
             "tier": 8,
             "delta": null
@@ -7919,13 +7932,14 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-07T23:01:18.224Z",
+      "updatedAt": "2026-08-08T00:06:30.850Z",
       "error": null,
       "tags": [
         "Superflex"
       ],
       "provider": null,
       "rulesUrl": "https://www45.myfantasyleague.com/2026/options?L=30196&O=09",
+      "commishEmail": null,
       "season": "2026",
       "scoringDetected": "HALF",
       "standings": [
@@ -8042,13 +8056,13 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=league&L=30196&JSON=1 (year 2026)",
+      "scoringError": "No live scoring available yet",
       "rankings": {
         "type": "DRAFT",
         "scoring": "HALF",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 91,
+        "totalExperts": 90,
         "matched": 18,
         "total": 18
       },
@@ -8104,7 +8118,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-07T23:01:19.124Z",
+      "updatedAt": "2026-08-08T00:06:31.785Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -8112,6 +8126,7 @@
       ],
       "provider": null,
       "rulesUrl": "https://www45.myfantasyleague.com/2026/options?L=26222&O=09",
+      "commishEmail": null,
       "season": "2026",
       "scoringDetected": "HALF",
       "standings": [
@@ -8244,7 +8259,7 @@
         "scoring": "HALF",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 91,
+        "totalExperts": 90,
         "matched": 2,
         "total": 2
       },
@@ -8285,7 +8300,7 @@
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
-            "rank": 321,
+            "rank": 320,
             "posRank": "QB36",
             "tier": 11,
             "delta": null
@@ -8333,7 +8348,7 @@
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
-            "rank": 56,
+            "rank": 57,
             "posRank": "QB21",
             "tier": 5,
             "delta": null
@@ -8349,7 +8364,7 @@
           "status": "ROSTER",
           "injuryStatus": "Q",
           "ecr": {
-            "rank": 215,
+            "rank": 216,
             "posRank": "QB32",
             "tier": 9,
             "delta": null
@@ -8461,7 +8476,7 @@
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
-            "rank": 133,
+            "rank": 134,
             "posRank": "RB42",
             "tier": 7,
             "delta": null
@@ -8477,7 +8492,7 @@
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
-            "rank": 139,
+            "rank": 138,
             "posRank": "RB44",
             "tier": 7,
             "delta": null
@@ -8580,7 +8595,7 @@
           }
         }
       ],
-      "updatedAt": "2026-08-07T23:01:19.239Z",
+      "updatedAt": "2026-08-08T00:06:32.032Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -8588,6 +8603,7 @@
       ],
       "provider": "sleeper",
       "rulesUrl": "https://scottfishbowl.com/rules2026.php",
+      "commishEmail": null,
       "season": "2026",
       "scoringDetected": "HALF",
       "standings": [
@@ -8810,7 +8826,7 @@
         "scoring": "HALF",
         "position": "OP",
         "lastUpdated": "8/07",
-        "totalExperts": 91,
+        "totalExperts": 90,
         "matched": 20,
         "total": 20
       },
@@ -8825,11 +8841,12 @@
       "teamName": "Big Dart Energy",
       "url": "https://fantasy.espn.com/football/team?leagueId=1966972&teamId=10",
       "players": [],
-      "updatedAt": "2026-08-07T23:01:19.468Z",
+      "updatedAt": "2026-08-08T00:06:32.192Z",
       "error": null,
       "tags": [],
       "provider": "espn",
       "rulesUrl": "https://fantasy.espn.com/football/league/settings?leagueId=1966972",
+      "commishEmail": null,
       "season": "2026",
       "scoringDetected": "HALF",
       "standings": [
@@ -9011,11 +9028,12 @@
       "teamName": "Jeffer Justinson",
       "url": "https://fantasy.espn.com/football/team?leagueId=421871710&teamId=5",
       "players": [],
-      "updatedAt": "2026-08-07T23:01:19.560Z",
+      "updatedAt": "2026-08-08T00:06:32.275Z",
       "error": null,
       "tags": [],
       "provider": "espn",
       "rulesUrl": "https://fantasy.espn.com/football/league/settings?leagueId=421871710",
+      "commishEmail": null,
       "season": "2026",
       "scoringDetected": "PPR",
       "standings": [
