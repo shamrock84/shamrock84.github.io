@@ -806,11 +806,15 @@
 			font-size: 0.72rem;
 			margin-top: 0.1rem;
 		}
-		/* Top Players lists everyone, owned or not, so the ones you actually
-		   hold have to be findable at a glance — the league sub-line underneath
-		   says which, but only after you've spotted the row. */
-		.player-owned {
-			font-weight: 700;
+		/* Top Available carries two sub-lines — the leagues a free agent is
+		   free in, and the ones you already hold him in — so each needs naming.
+		   Dimmer than the names it introduces, since it's the smaller half of
+		   the line. */
+		.exposure-leagues-label {
+			opacity: 0.7;
+			text-transform: uppercase;
+			font-size: 0.62rem;
+			letter-spacing: 0.03em;
 		}
 		/* Injury Exposure's Status column. Same red as the badge beside a name
 		   on a roster card, since it's the same designation — here it's a column
@@ -2713,91 +2717,53 @@
 			return pool && Array.isArray(pool.players) && pool.players.length > 0 ? pool : null;
 		}
 
-		// Top Players: the best players in the game by consensus rank, whether or
-		// not we own them, with the ones we do own called out.
+		// Top Available: the ranking lists filtered to players nobody in the
+		// league rosters. The sync works out who that is — it's the one side that
+		// can see every franchise's roster — and records the names per league; all
+		// that's left here is to look each one back up in the pool for its rank and
+		// link, and to collect where the player stands in each league.
 		//
-		// A group can still span two ranking lists even after the sub-tab split:
-		// within Dynasty/Salary Cap, the dynasty leagues read the DYNASTY list
-		// and the salary-cap ones read DRAFT, deliberately — see
-		// automaticRankingType, which explains why a cap league is ranked on
-		// redraft logic. So a player carries one rank per league and the median
-		// across them is the representative one, for the same reason it is on the
-		// exposure cards. That weights by league count on purpose: four leagues
-		// on one list should pull the order more than three on another.
+		// Each row answers two questions, because on a wire the second one changes
+		// what you do about the first: he's free in these leagues, and you already
+		// hold him in those. A player free in three leagues you don't own him in is
+		// a different proposition from one you're already three-deep on.
 		//
-		// What the split removed was the *wide* version of that spread. Dynasty
-		// and redraft lists disagree about the same player by a hundred places —
-		// one is a bet on five years, the other on five months — and medianing
-		// across them described neither. Two lists that at least share a horizon
-		// are a reasonable thing to average; two that don't aren't.
-		function computeTopPlayers(leagues, types, pools) {
-			const eligible = exposureLeagues(leagues, types);
-			const byPlayer = new Map();
-
-			for (const league of eligible) {
-				const pool = rankingPoolFor(league, pools);
-				if (!pool) continue;
-				const seen = new Set();
-				for (const p of pool.players) {
-					const key = normalizeName(p.name);
-					if (!key || seen.has(key)) continue;
-					seen.add(key);
-					if (!byPlayer.has(key)) {
-						byPlayer.set(key, { name: p.name, position: p.position, url: poolPlayerUrl(p.url), ranks: [], leagues: [] });
-					}
-					byPlayer.get(key).ranks.push(p.rank);
-				}
-			}
-
-			// Ownership is counted across every eligible league, including ones
-			// that contributed no pool — a league whose rankings failed still
-			// rosters the player, and leaving it out would understate the count
-			// against a denominator that still includes it.
-			for (const league of eligible) {
-				const label = league.leagueName || league.name;
-				const seen = new Set();
-				for (const p of league.players || []) {
-					const key = normalizeName(p.name);
-					const entry = byPlayer.get(key);
-					if (!entry || seen.has(key)) continue;
-					seen.add(key);
-					entry.leagues.push(label);
-				}
-			}
-
-			const total = eligible.length;
-			const rows = [...byPlayer.values()]
-				.map((info) => ({
-					name: info.name,
-					position: info.position,
-					leagues: info.leagues,
-					count: info.leagues.length,
-					exposure: total > 0 ? (info.leagues.length / total) * 100 : 0,
-					ecr: medianRank(info.ranks),
-					url: info.url,
-				}))
-				.sort((a, b) => rankOrLast(a.ecr) - rankOrLast(b.ecr) || a.name.localeCompare(b.name));
-
-			return { total, rows };
-		}
-
-		// Top Available: the same lists, filtered to players nobody in the league
-		// rosters. The sync works out who that is — it's the one side that can see
-		// every franchise's roster — and records the names per league; all that's
-		// left here is to look each one back up in the pool for its rank and link,
-		// and to collect which leagues a player is free in.
+		// Both counts share one denominator — the leagues that could answer the
+		// availability question at all. That is what makes the pair readable: of
+		// the N leagues we could check, he is free in X and yours in Y, and the
+		// remainder is somebody else's. Counting ownership over a wider set would
+		// be more complete and would print two fractions with different bottoms on
+		// one line, which reads as an error even when both are right.
 		//
-		// The denominator is the leagues that could actually answer the question,
-		// not every eligible league: ESPN's league-wide roster read is best-effort
-		// and a league whose rankings failed has no pool to filter, so counting
-		// those in would make "1/9" mean something different here than on the
-		// cards beside it. The ranks are likewise medianed over the leagues he's
-		// available in rather than all of them, since that's the set the row is
-		// actually about.
+		// The set is narrower than the exposure cards' for a reason: ESPN's
+		// league-wide roster read is best-effort, and a league whose rankings
+		// failed has no pool to filter, so counting those in would report a free
+		// agent as available in 1 of 2 leagues when the second was never asked.
+		//
+		// Ranks are medianed over the leagues he's free in rather than all of them,
+		// since that's the set the row is actually about. A group can span two
+		// ranking lists even inside one sub-tab — Dynasty/Salary Cap holds dynasty
+		// leagues reading DYNASTY beside cap leagues reading DRAFT, deliberately;
+		// see automaticRankingType — so the median is the representative rank for
+		// the same reason it is on the exposure cards.
 		function computeTopAvailable(leagues, types, pools) {
 			const eligible = exposureLeagues(leagues, types)
 				.filter((l) => Array.isArray(l.available) && rankingPoolFor(l, pools));
 			const byPlayer = new Map();
+
+			function entryFor(key, poolPlayer) {
+				if (!byPlayer.has(key)) {
+					byPlayer.set(key, {
+						name: poolPlayer.name,
+						position: poolPlayer.position,
+						url: poolPlayerUrl(poolPlayer.url),
+						ranks: [],
+						leagues: [],
+						ownedLeagues: [],
+					});
+				}
+				return byPlayer.get(key);
+			}
 
 			for (const league of eligible) {
 				const pool = rankingPoolFor(league, pools);
@@ -2808,18 +2774,31 @@
 				}
 
 				const label = league.leagueName || league.name;
-				const seen = new Set();
+
+				const seenFree = new Set();
 				for (const name of league.available) {
 					const key = normalizeName(name);
 					const p = poolByName.get(key);
-					if (!p || seen.has(key)) continue;
-					seen.add(key);
-					if (!byPlayer.has(key)) {
-						byPlayer.set(key, { name: p.name, position: p.position, url: poolPlayerUrl(p.url), ranks: [], leagues: [] });
-					}
-					const entry = byPlayer.get(key);
+					if (!p || seenFree.has(key)) continue;
+					seenFree.add(key);
+					const entry = entryFor(key, p);
 					entry.ranks.push(p.rank);
 					entry.leagues.push(label);
+				}
+
+				// Our own roster, against the same pool. Only players already in
+				// byPlayer get an owned line: this card lists free agents, so a
+				// player nobody has left unrostered anywhere isn't a row here no
+				// matter how many of our teams he's on — that's the exposure card's
+				// question. A player can never be both free and owned in the *same*
+				// league, since the sync built `available` by removing every
+				// rostered name.
+				const seenOwned = new Set();
+				for (const p of league.players || []) {
+					const key = normalizeName(p.name);
+					if (!key || seenOwned.has(key) || !byPlayer.has(key)) continue;
+					seenOwned.add(key);
+					byPlayer.get(key).ownedLeagues.push(label);
 				}
 			}
 
@@ -2830,7 +2809,8 @@
 					position: info.position,
 					leagues: info.leagues,
 					count: info.leagues.length,
-					exposure: total > 0 ? (info.leagues.length / total) * 100 : 0,
+					ownedLeagues: info.ownedLeagues,
+					ownedCount: info.ownedLeagues.length,
 					ecr: medianRank(info.ranks),
 					url: info.url,
 				}))
@@ -2857,29 +2837,31 @@
 		// clears that bar and shows more of the list per page than five did.
 		const ANALYTICS_PAGE_SIZE = 7;
 
-		// The ranking cards page deeper. They're a list you read down rather than
-		// a summary you glance at — the exposure cards' whole content is their
-		// first page, while "who are the best players" and "who's on the wire"
-		// are questions you answer by scrolling — so the pager being one screen
-		// down is the normal case there rather than the annoyance it is above.
+		// Top Available pages deeper. It's a list you read down rather than a
+		// summary you glance at — the exposure cards' whole content is their
+		// first page, while "who's on the wire" is a question you answer by
+		// scrolling — so the pager being one screen down is the normal case
+		// there rather than the annoyance it is above.
 		const RANKING_PAGE_SIZE = 10;
 
-		// The table half of all four analytics cards, pager and all. They differ
-		// only in which columns are present and how the sub-line reads, so this is
-		// one implementation with flags rather than four near-identical copies
+		// The table half of all three analytics cards, pager and all. They differ
+		// only in which columns are present and how the sub-lines read, so this is
+		// one implementation with flags rather than three near-identical copies
 		// free to drift apart.
 		//
-		//   showStatus     — Injury Exposure's designation column
-		//   showExposure   — the percentage column; the ranking cards count
-		//                    leagues but a percentage of them means nothing
-		//   countHeader    — what the n/total column is counting
-		//   emphasizeOwned — bold the name when the player appears in any league,
-		//                    for a table that lists players you don't own too
+		//   showStatus   — Injury Exposure's designation column
+		//   showExposure — the percentage column; Top Available counts leagues,
+		//                  but a percentage of them means nothing
+		//   countHeader  — what the n/total column is counting
+		//   showOwned    — Top Available's second count and second sub-line: the
+		//                  leagues you already hold this free agent in. Both
+		//                  sub-lines get a label once there are two of them,
+		//                  since two identical grey lines would be a guess.
 		function appendAnalyticsTable(card, rows, total, {
 			showStatus = false,
 			showExposure = true,
 			countHeader = 'Owned In',
-			emphasizeOwned = false,
+			showOwned = false,
 			pageSize = ANALYTICS_PAGE_SIZE,
 		} = {}) {
 			const table = el('table', { class: 'standings' });
@@ -2914,8 +2896,20 @@
 				if (showStatus) headRow.appendChild(el('th', { text: 'Status' }));
 				if (showEcr) headRow.appendChild(el('th', { class: 'ecr-cell', text: 'ECR' }));
 				headRow.appendChild(el('th', { text: countHeader }));
+				if (showOwned) headRow.appendChild(el('th', { text: 'Own In' }));
 				if (showExposure) headRow.appendChild(el('th', { text: 'Exposure' }));
 				table.appendChild(headRow);
+
+				// One grey line of league names needs no label. Two do, and the
+				// labels have to survive the line wrapping onto a phone, so they
+				// live inside the line rather than in a column of their own.
+				function leagueLine(label, names) {
+					if (!names || names.length === 0) return null;
+					const line = el('div', { class: 'exposure-leagues' });
+					if (label) line.appendChild(el('span', { class: 'exposure-leagues-label', text: `${label} ` }));
+					line.appendChild(document.createTextNode(names.join(', ')));
+					return line;
+				}
 
 				const start = page * pageSize;
 				for (const r of rows.slice(start, start + pageSize)) {
@@ -2924,11 +2918,12 @@
 					// Same link as the roster cards, from the same captured URL —
 					// see playerNameNode, which this mirrors on a row that has no
 					// player object behind it, only the aggregate.
-					nameCell.appendChild(el('div', {
-						class: emphasizeOwned && r.leagues.length > 0 ? 'player-owned' : '',
-					}, [playerNameNode({ name: r.name, ecr: { url: r.url } })]));
-					if (r.leagues.length > 0) {
-						nameCell.appendChild(el('div', { class: 'exposure-leagues', text: r.leagues.join(', ') }));
+					nameCell.appendChild(el('div', {}, [playerNameNode({ name: r.name, ecr: { url: r.url } })]));
+					const freeLine = leagueLine(showOwned ? 'Free in' : null, r.leagues);
+					if (freeLine) nameCell.appendChild(freeLine);
+					if (showOwned) {
+						const ownedLine = leagueLine('Own in', r.ownedLeagues);
+						if (ownedLine) nameCell.appendChild(ownedLine);
 					}
 					row.appendChild(nameCell);
 					row.appendChild(el('td', { text: r.position || '-' }));
@@ -2943,6 +2938,7 @@
 						}));
 					}
 					row.appendChild(el('td', { text: `${r.count}/${total}` }));
+					if (showOwned) row.appendChild(el('td', { text: `${r.ownedCount}/${total}` }));
 					if (showExposure) row.appendChild(el('td', { text: `${Math.round(r.exposure)}%` }));
 					table.appendChild(row);
 				}
@@ -3034,29 +3030,18 @@
 			return card;
 		}
 
-		// Like the Injury Exposure card, both ranking cards return null rather
-		// than an explanatory box when there's nothing to show. There is one
-		// specific reason to expect nothing: a data/rosters.json written before
-		// rankingPools existed, or by a sync with no FantasyPros key. Neither is
-		// a state the reader can act on, and "no ranking data" printed twice
-		// under two headings reads as two faults.
-		function renderTopPlayersCard(groupKey, types, leagues, pools) {
-			const { total, rows } = computeTopPlayers(leagues, types, pools);
-			if (rows.length === 0) return null;
-
-			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
-			card.appendChild(el('h2', { text: 'Top Players' }));
-			card.appendChild(el('div', { class: 'team', text: `Consensus rankings across ${leagueCount(total)}` }));
-
-			appendAnalyticsTable(card, rows, total, {
-				showExposure: false,
-				countHeader: 'Owned In',
-				emphasizeOwned: true,
-				pageSize: RANKING_PAGE_SIZE,
-			});
-			return card;
-		}
-
+		// Like the Injury Exposure card, this one returns null rather than an
+		// explanatory box when it has nothing to work from — a data/rosters.json
+		// written before rankingPools existed, or by a sync with no FantasyPros
+		// key. That isn't a state the reader can act on. An empty *wire*, on the
+		// other hand, is an answer, and gets said out loud below.
+		//
+		// There was a Top Players card here too, listing the pool itself with
+		// the players we own called out. It's gone: knowing who the best players
+		// in football are is what the rankings are for, and a card that mostly
+		// says "0/7" next to names you can't do anything about isn't worth the
+		// room beside a wire you can act on. The pool it needed is still fetched
+		// — Top Available filters the same list.
 		function renderTopAvailableCard(groupKey, types, leagues, pools) {
 			const { total, rows, readAt } = computeTopAvailable(leagues, types, pools);
 			if (total === 0) return null;
@@ -3081,6 +3066,7 @@
 			appendAnalyticsTable(card, rows, total, {
 				showExposure: false,
 				countHeader: 'Free In',
+				showOwned: true,
 				pageSize: RANKING_PAGE_SIZE,
 			});
 			return card;
@@ -3873,8 +3859,6 @@
 				gridEl.appendChild(renderAnalyticsCard(groupKey, types, data.leagues));
 				const injuryCard = renderInjuryExposureCard(groupKey, types, data.leagues);
 				if (injuryCard) gridEl.appendChild(injuryCard);
-				const topCard = renderTopPlayersCard(groupKey, types, data.leagues, data.rankingPools);
-				if (topCard) gridEl.appendChild(topCard);
 				const availableCard = renderTopAvailableCard(groupKey, types, data.leagues, data.rankingPools);
 				if (availableCard) gridEl.appendChild(availableCard);
 			}

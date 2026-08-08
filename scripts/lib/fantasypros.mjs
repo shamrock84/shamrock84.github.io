@@ -121,17 +121,21 @@ async function fpGet(path, apiKey) {
   }
 }
 
-// How deep a ranking list is kept in data/rosters.json for the Top Players
-// and Top Available cards. Fifteen pages at ten rows apiece is already far
-// past what anyone scrolls, and this file is fetched in full on every page
-// load — each pool costs roughly 25KB, so depth here is paid for by every
-// visitor on every visit, not once at sync time.
+// How deep a ranking list is kept in data/rosters.json for the Top Available
+// card. This is the card's reach and nothing else: a free agent is findable
+// only if he is inside the pool, so the number is chosen against how deep the
+// leagues are rather than against how far anyone scrolls.
 //
-// It also bounds Top Available: a free agent is only findable if he is inside
-// the pool, so in a deep dynasty league — where the top 150 are all rostered
-// — that card correctly comes up nearly empty. That is the honest answer to
-// "who is available", not a truncation artefact worth spending 100KB to fix.
-export const RANKING_POOL_SIZE = 150;
+// It started at 150, which was too shallow for the leagues that need the card
+// most. A twelve-team dynasty roster runs 25-30 deep, so 300-plus players are
+// spoken for and the top 150 are all gone — that group's wire read as empty
+// when what it really was, was unexamined. 250 reaches past the rostered band
+// in every league here.
+//
+// The cost is real and is paid by every visitor on every page load, not once
+// at sync time: each pool is roughly 40KB of the file at this depth, and there
+// are typically three of them. That is the ceiling on going deeper still.
+export const RANKING_POOL_SIZE = 250;
 
 // How many available players are recorded per league. Four pages is plenty
 // for a waiver-wire glance, and a pre-draft redraft league — where literally
