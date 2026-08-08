@@ -736,11 +736,22 @@
 			font-size: 0.8rem;
 			font-weight: 600;
 		}
+		/* Every length planned: the banner stops being a task and becomes a
+		   status line, so it takes the purple chip the planned rows already
+		   wear. Gold anywhere on the card then means work outstanding, with no
+		   exceptions to read past. */
+		.needs-contract-banner.contract-banner-planned {
+			background: var(--chip-bg);
+			color: var(--accent);
+		}
 		.contract-email-link {
 			flex-shrink: 0;
 			color: var(--gold-chip-text);
 			text-decoration: underline;
 			white-space: nowrap;
+		}
+		.contract-banner-planned .contract-email-link {
+			color: var(--accent);
 		}
 		table.standings {
 			width: 100%;
@@ -1925,34 +1936,47 @@
 			// planned length here. So the fraction counts down as work gets
 			// done while the total holds steady.
 			const contractsMissing = () => (league.players || []).filter((p) => !(Number(p.contractYear) > 0));
-			const contractBannerText = () => {
-				const total = contractsMissing().length;
-				// Logged out, the planning dropdowns aren't rendered at all —
-				// a plan is strategy, same gate as plannedSalary — so plans
-				// aren't counted either. Reporting progress against controls
-				// that aren't on screen would just look broken.
-				const unplanned = isLoggedIn()
-					? contractsMissing().filter((p) => !getContractPlan(league.id, p.id)).length
-					: total;
-				return unplanned === 0
-					? `⚠ All ${total} contract length${total === 1 ? '' : 's'} planned — waiting on MFL`
-					: `⚠ ${unplanned}/${total} players need contract length set`;
+			const contractCounts = () => {
+				const missing = contractsMissing();
+				return {
+					total: missing.length,
+					unplanned: missing.filter((p) => !getContractPlan(league.id, p.id)).length,
+				};
 			};
+			let contractBannerEl = null;
 			let contractBannerTextEl = null;
 			// Setting a length has to move the count immediately — the banner
 			// sits above the table, so a stale number is visible at the same
-			// time as the row that just changed.
+			// time as the row that just changed. The colour moves with it, for
+			// the same reason the icon and dropdown do: gold is work left, and
+			// once nothing is left the banner is a status line, not a task.
 			const refreshContractBanner = () => {
-				if (contractBannerTextEl) contractBannerTextEl.textContent = contractBannerText();
+				if (!contractBannerTextEl) return;
+				const { total, unplanned } = contractCounts();
+				// "0/9 need" contradicts itself, so the done state says what it
+				// actually is — and names who the ball is with.
+				contractBannerTextEl.textContent = unplanned === 0
+					? `⚠ All ${total} contract length${total === 1 ? '' : 's'} planned — waiting on MFL`
+					: `⚠ ${unplanned}/${total} players need contract length set`;
+				contractBannerEl.classList.toggle('contract-banner-planned', unplanned === 0);
 			};
 
-			if (isAuction && contractsMissing().length > 0) {
+			// Logged out this is hidden outright rather than shown with plans
+			// uncounted: the planning dropdowns aren't rendered either (a plan
+			// is strategy — same gate as plannedSalary), so the banner would be
+			// a to-do list with no way to act on it, counting work a viewer
+			// can't see and can't do.
+			if (isAuction && isLoggedIn() && contractsMissing().length > 0) {
 				const banner = el('div', { class: 'needs-contract-banner' });
-				contractBannerTextEl = el('span', { text: contractBannerText() });
+				contractBannerEl = banner;
+				contractBannerTextEl = el('span', {});
 				banner.appendChild(contractBannerTextEl);
 				const emailLink = buildContractEmailLink(league);
 				if (emailLink) banner.appendChild(emailLink);
 				card.appendChild(banner);
+				// Initial text and colour come from the same path as every later
+				// update, so the two can't drift apart.
+				refreshContractBanner();
 			}
 
 			card.appendChild(buildCardHead(league, formatBadgeLabels(league)));
