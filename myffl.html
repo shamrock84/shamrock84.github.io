@@ -564,10 +564,6 @@
 			font-size: 0.72rem;
 			font-weight: 600;
 		}
-		.nfl-team {
-			color: var(--muted);
-			font-size: 0.78rem;
-		}
 		.player-name {
 			font-weight: 500;
 		}
@@ -1426,24 +1422,26 @@
 			return td;
 		}
 
-		// Salary-cap tables carry two columns nobody else does (Salary, Yrs), so
-		// the 3-letter NFL team is folded into the name cell rather than holding
-		// a column of its own — it reads fine as a suffix and buys back the
-		// column's full width. The leading space is load-bearing: without a
-		// break opportunity the name's last word and the code fuse into one
-		// unbreakable token, and the column's minimum width goes *up* instead of
-		// down (measured: 12px saved with no space, 37px with one).
+		// The 3-letter NFL team rides on the name cell rather than holding a
+		// column of its own — it reads fine as a suffix, and giving the width
+		// back to the name is what stops long names wrapping. The leading space
+		// is load-bearing: without a break opportunity the name's last word and
+		// the code fuse into one unbreakable token, and the column's minimum
+		// width goes *up* instead of down (measured: 12px saved with no space,
+		// 37px with one).
 		function appendTeamSuffix(nameCell, team) {
 			nameCell.appendChild(document.createTextNode(' '));
 			nameCell.appendChild(el('span', { class: 'team-suffix', text: team || 'FA' }));
 		}
 
 		function buildRosterTable(players, isAuction, statusKey, leagueId, onSalaryChange) {
+			// roster-auction is about width, not about the team suffix: only the
+			// salary-cap tables carry Salary/Yrs, and only they need the phone
+			// type shrink that class drives.
 			const table = el('table', { class: `roster${isAuction ? ' roster-auction' : ''}` });
 			const headRow = el('tr', { class: 'roster-head' });
 			headRow.appendChild(el('th', {}));
 			headRow.appendChild(el('th', { text: 'Player' }));
-			if (!isAuction) headRow.appendChild(el('th', { text: 'Team' }));
 			headRow.appendChild(el('th', { class: 'bye-cell', text: 'Bye' }));
 			if (isLoggedIn()) headRow.appendChild(el('th', { class: 'ecr-cell', text: 'ECR' }));
 			headRow.appendChild(el('th', { class: 'pts-cell', text: 'Pts' }));
@@ -1460,11 +1458,10 @@
 				const row = el('tr', { class: rowClass, 'data-name': p.name.toLowerCase() });
 				row.appendChild(el('td', {}, [el('span', { class: 'pos-chip', text: p.position || '-' })]));
 				const nameCell = el('td', { class: 'player-name', text: p.name });
-				if (isAuction) appendTeamSuffix(nameCell, p.team);
+				appendTeamSuffix(nameCell, p.team);
 				const injuryBadge = buildInjuryBadge(p);
 				if (injuryBadge) nameCell.appendChild(injuryBadge);
 				row.appendChild(nameCell);
-				if (!isAuction) row.appendChild(el('td', { class: 'nfl-team', text: p.team || 'FA' }));
 				row.appendChild(el('td', { class: 'bye-cell', text: p.bye ? String(p.bye) : '—' }));
 				if (isLoggedIn()) row.appendChild(buildEcrCell(p));
 				const usingPriorYear = !(p.pts > 0) && p.priorYearPts > 0;
@@ -1611,10 +1608,9 @@
 		function buildLineupEditor(league, players, starterIdSet) {
 			const visible = isLoggedIn();
 			const writable = visible && (!league.provider || league.provider === 'mfl');
-			// This table has no Salary/Yrs of its own, so it isn't the one that
-			// runs out of room — but it sits on the same card as the tables that
-			// do, and a Team column here beside a team suffix there would read as
-			// two different layouts in one card.
+			// This table has no Salary/Yrs of its own, so it never runs out of
+			// room — but it shares a card with the tables that do, and the phone
+			// shrink is keyed off the same class for that reason.
 			const isAuction = league.type === 'salarycap';
 			const wrap = el('div', { class: 'lineup-editor' });
 			const table = el('table', { class: `roster lineup-editor-table${isAuction ? ' roster-auction' : ''}${visible ? '' : ' read-only'}` });
@@ -1622,7 +1618,6 @@
 			if (visible) headRow.appendChild(el('th', {}));
 			headRow.appendChild(el('th', {}));
 			headRow.appendChild(el('th', { text: 'Player' }));
-			if (!isAuction) headRow.appendChild(el('th', { text: 'Team' }));
 			headRow.appendChild(el('th', { class: 'bye-cell', text: 'Bye' }));
 			if (visible) headRow.appendChild(el('th', { class: 'ecr-cell', text: 'ECR' }));
 			headRow.appendChild(el('th', { class: 'pts-cell', text: 'Pts' }));
@@ -1646,11 +1641,10 @@
 
 				row.appendChild(el('td', {}, [el('span', { class: 'pos-chip', text: p.position || '-' })]));
 				const nameCell = el('td', { class: 'player-name', text: p.name });
-				if (isAuction) appendTeamSuffix(nameCell, p.team);
+				appendTeamSuffix(nameCell, p.team);
 				const injuryBadge = buildInjuryBadge(p);
 				if (injuryBadge) nameCell.appendChild(injuryBadge);
 				row.appendChild(nameCell);
-				if (!isAuction) row.appendChild(el('td', { class: 'nfl-team', text: p.team || 'FA' }));
 				row.appendChild(el('td', { class: 'bye-cell', text: p.bye ? String(p.bye) : '—' }));
 				if (visible) row.appendChild(buildEcrCell(p));
 				const usingPriorYear = !(p.pts > 0) && p.priorYearPts > 0;
