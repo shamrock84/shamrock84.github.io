@@ -46,7 +46,7 @@ const SCORING_FORMATS = new Set(['PPR', 'HALF', 'STD']);
 // appended after — see mergeLeague below for why that matters.
 const KEY_ORDER = [
   'id', 'franchiseId', 'name', 'type', 'provider',
-  'tags', 'lineupPilot', 'rankingType', 'scoring', 'season', 'rulesUrl',
+  'tags', 'lineupPilot', 'rankingType', 'scoring', 'season', 'rulesUrl', 'commishEmail',
 ];
 
 function isNonEmptyString(v) {
@@ -118,6 +118,15 @@ function validate(leagues) {
         errors.push(`${label}: tags must be a list of words.`);
       }
     }
+    // Only salary-cap leagues use this (it's who the contract-length summary is
+    // mailed to), but the check is on shape rather than on type: a league that
+    // changes type shouldn't have its address silently discarded, and the
+    // Admin tab already hides the field where it doesn't apply.
+    if (league.commishEmail != null && league.commishEmail !== '') {
+      if (!isNonEmptyString(league.commishEmail) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(league.commishEmail.trim())) {
+        errors.push(`${label}: commissioner email doesn't look like an email address.`);
+      }
+    }
     if (league.rulesUrl != null && league.rulesUrl !== '') {
       if (!isNonEmptyString(league.rulesUrl) || !/^https?:\/\//i.test(league.rulesUrl)) {
         errors.push(`${label}: rules link must start with http:// or https://.`);
@@ -153,6 +162,7 @@ function mergeLeague(league) {
   put('scoring', league.scoring);
   put('season', league.season == null ? '' : String(league.season).trim());
   put('rulesUrl', league.rulesUrl);
+  put('commishEmail', league.commishEmail == null ? '' : String(league.commishEmail).trim());
 
   for (const [k, v] of Object.entries(league)) {
     if (!KEY_ORDER.includes(k) && !RETIRED_KEYS.has(k) && v !== undefined) out[k] = v;

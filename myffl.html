@@ -1137,15 +1137,17 @@
 		// Falls back to a single placeholder until then (currently every
 		// league, while this feature is still being verified).
 		const CONTRACT_EMAIL_DEFAULT = 'melbosffl@gmail.com';
+		// Held here only until the first sync after commishEmail moved into
+		// config/leagues.json, where these three now live. The synced value wins;
+		// this stops the addresses from reverting to the placeholder during the
+		// window between the config edit and the next sync writing it out.
 		const CONTRACT_EMAIL_OVERRIDES = {
 			'35217': 'Salarycapdynasty@gmail.com', // The Iron Bank
 			'34850': 'Wiseguysfantasy@gmail.com',  // Wise Guys
 			'30641': 'supercapdynasty@gmail.com',  // Super Cap
-			// Game On (64470) has no address yet, so it falls through to the
-			// default above — which is a placeholder, not that league's commissioner.
 		};
 		function contractEmailFor(league) {
-			return CONTRACT_EMAIL_OVERRIDES[league.id] || CONTRACT_EMAIL_DEFAULT;
+			return league.commishEmail || CONTRACT_EMAIL_OVERRIDES[league.id] || CONTRACT_EMAIL_DEFAULT;
 		}
 
 		// Locally-planned salary ($1-200, whole dollars) for a Salary Cap
@@ -2558,6 +2560,12 @@
 				// the sync's own error for that league was sitting in data/rosters.json
 				// unread — which is exactly the answer when a team ID is wrong.
 				const notices = [];
+				// A Salary Cap league with no commissioner email still produces a
+				// Send via Email link — addressed to a placeholder. It opens looking
+				// perfectly normal and goes nowhere useful, so say so here.
+				if (league.type === 'salarycap' && !league.commishEmail) {
+					notices.push({ text: 'No commissioner email — the contract-length summary would be addressed to a placeholder.' });
+				}
 				if (!live) {
 					if (league.id) notices.push({ text: 'Not synced yet — this league appears on the other tabs after the next sync.' });
 				} else {
@@ -2636,6 +2644,12 @@
 						const tags = v.split(',').map((t) => t.trim()).filter(Boolean);
 						league.tags = tags.length ? tags : undefined;
 					}), true);
+					// Salary Cap only: this is who the contract-length summary is
+					// mailed to, and no other league type produces one. Changing Type
+					// re-renders the card, so it appears and disappears as you switch.
+					if (league.type === 'salarycap') {
+						field('Commissioner email', adminText(league.commishEmail, 'name@example.com', (v) => { league.commishEmail = v || undefined; }), true);
+					}
 					field('Rules link', adminText(league.rulesUrl, 'https://…', (v) => { league.rulesUrl = v || undefined; }), true);
 					node.appendChild(fields);
 
