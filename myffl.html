@@ -1205,44 +1205,42 @@
 		const LEAGUE_TYPE_LABELS = { dynasty: 'Dynasty', salarycap: 'Salary Cap', draftonly: 'Draft Only', redraft: 'Redraft' };
 		// FantasyPros' ranking-type codes, spelled out for the card footnote.
 		const ECR_TYPE_LABELS = { DYNASTY: 'Dynasty', DRAFT: 'Draft', ROS: 'Rest-of-season', WEEKLY: 'Weekly', ADP: 'ADP' };
-		// Which sub-tab a league's cards render under in the per-league views
-		// (Rosters, Scoring, Standings) — Dynasty and Salary Cap share one
-		// sub-tab, since a salary-cap roster is still a dynasty-style keeper
-		// roster; the other two are one-to-one with their league type. Analytics
-		// groups differently — see ANALYTICS_GROUP.
+		// Which sub-tab a league's cards render under — Dynasty and Salary Cap
+		// share one, since a salary-cap roster is still a dynasty-style keeper
+		// roster; the other two are one-to-one with their league type.
+		//
+		// Analytics used to group differently, folding dynasty, salary-cap and
+		// redraft into a single "Active" sub-tab on the grounds that exposure is
+		// a portfolio question and a redraft roster is as much a share of the
+		// portfolio as a dynasty one. That reasoning still holds for the two
+		// exposure cards. It stopped holding when Top Players and Top Available
+		// arrived, because those are ordered by consensus rank, and a group
+		// spanning both kinds of league is also spanning two FantasyPros lists
+		// that disagree hard about the same player — a dynasty list is a bet on
+		// the next five years, a redraft list on the next five months, and the
+		// median across them describes neither. Worse, the median weights by
+		// league count, so a portfolio that happens to hold more redraft leagues
+		// silently ranks its dynasty leagues' players on redraft logic. One
+		// grouping again.
 		const SUBTAB_GROUP = { dynasty: 'dynasty', salarycap: 'dynasty', draftonly: 'draftonly', redraft: 'redraft' };
-		// Display order for the sub-tab strip, across every view. 'active' only
-		// ever appears in Analytics, and the other three only ever outside it,
-		// so one ordered list covers both groupings without either view seeing a
-		// sub-tab the other invented.
-		const SUBTAB_ORDER = ['active', 'dynasty', 'redraft', 'draftonly'];
+		// Display order for the sub-tab strip, across every view.
+		const SUBTAB_ORDER = ['dynasty', 'redraft', 'draftonly'];
 		// Only where a sub-tab's name needs to differ from LEAGUE_TYPE_LABELS —
 		// everything else falls through to that shared wording, so "Redraft"
 		// isn't repeated here. bestball used to be overridden to "Draft Only"
 		// for the sub-tab only; that wording is now the type label itself, so
-		// the override would be a no-op and is gone. 'active' has no league type
-		// behind it at all, so its name lives only here.
-		const SUBTAB_LABEL_OVERRIDES = { dynasty: 'Dynasty/Salary Cap', active: 'Active' };
+		// the override would be a no-op and is gone.
+		const SUBTAB_LABEL_OVERRIDES = { dynasty: 'Dynasty/Salary Cap' };
 
 		function subtabType(league) {
 			return SUBTAB_GROUP[league.type] || league.type;
 		}
 
-		// Analytics groups its leagues differently from every other view, and
-		// only Analytics. Exposure is a portfolio question — how much of what
-		// you own is this one player — and a redraft roster is as much a share
-		// of that portfolio as a dynasty one, so keeping them apart split the
-		// same question across two thin denominators. Draft-only leagues stay
-		// separate: those teams are drafted and then left alone, so folding them
-		// in would count rosters nobody is managing against exposure you can
-		// still act on.
-		const ANALYTICS_GROUP = { dynasty: 'active', salarycap: 'active', redraft: 'active', draftonly: 'draftonly' };
-		const ANALYTICS_GROUP_ORDER = ['active', 'draftonly'];
-
-		// Reverse of ANALYTICS_GROUP: every league type that folds into one of
-		// the Analytics groups, which is how each card knows what to combine.
-		function typesInAnalyticsGroup(groupKey) {
-			return Object.keys(ANALYTICS_GROUP).filter((t) => ANALYTICS_GROUP[t] === groupKey);
+		// Every league type that folds into one sub-tab, which is how an
+		// analytics card knows what to combine. The per-league views don't need
+		// it — they place one card at a time, by its own type.
+		function typesInSubtabGroup(groupKey) {
+			return Object.keys(SUBTAB_GROUP).filter((t) => SUBTAB_GROUP[t] === groupKey);
 		}
 		const POSITION_ORDER = ['QB', 'RB', 'WR', 'TE', 'PK', 'Def'];
 		function positionRank(pos) {
@@ -2500,8 +2498,8 @@
 		// every league in that group with usable roster data. Matched by player
 		// name since MFL/ESPN/Sleeper each use their own player ids — names are
 		// the one thing that lines up. `types` is an array because a group spans
-		// several league types: dynasty, salary-cap and redraft all fold into
-		// Active — see ANALYTICS_GROUP.
+		// several league types: dynasty and salary-cap share one sub-tab — see
+		// SUBTAB_GROUP.
 		// A player's ECR can legitimately differ between two leagues in the same
 		// group: a dynasty league and a salary-cap league sit side by side here and
 		// draw from different FantasyPros lists, and their scoring formats can differ
@@ -2718,12 +2716,20 @@
 		// Top Players: the best players in the game by consensus rank, whether or
 		// not we own them, with the ones we do own called out.
 		//
-		// A group can span two ranking lists — dynasty leagues read the DYNASTY
-		// list while the salary-cap and redraft leagues beside them read DRAFT —
-		// so a player carries one rank per league, and the median across them is
-		// the representative one for the same reason it is on the exposure cards.
-		// That weights by league count on purpose: ten leagues on one list should
-		// pull the order towards that list more than three on another.
+		// A group can still span two ranking lists even after the sub-tab split:
+		// within Dynasty/Salary Cap, the dynasty leagues read the DYNASTY list
+		// and the salary-cap ones read DRAFT, deliberately — see
+		// automaticRankingType, which explains why a cap league is ranked on
+		// redraft logic. So a player carries one rank per league and the median
+		// across them is the representative one, for the same reason it is on the
+		// exposure cards. That weights by league count on purpose: four leagues
+		// on one list should pull the order more than three on another.
+		//
+		// What the split removed was the *wide* version of that spread. Dynasty
+		// and redraft lists disagree about the same player by a hundred places —
+		// one is a bet on five years, the other on five months — and medianing
+		// across them described neither. Two lists that at least share a horizon
+		// are a reasonable thing to average; two that don't aren't.
 		function computeTopPlayers(leagues, types, pools) {
 			const eligible = exposureLeagues(leagues, types);
 			const byPlayer = new Map();
@@ -2960,6 +2966,14 @@
 			renderPage();
 		}
 
+		// "1 leagues" was unreachable while Analytics folded dynasty, salary-cap
+		// and redraft into one tab — a group that small couldn't happen. Splitting
+		// Redraft back out made it an ordinary state: a redraft group holds one
+		// drafted league all preseason while the others wait on their drafts.
+		function leagueCount(n) {
+			return `${n} league${n === 1 ? '' : 's'}`;
+		}
+
 		// Neither analytics card carries a footnote. Both used to explain their own
 		// workings under the table — the median ECR being drawn from leagues that
 		// can rank off different FantasyPros lists, and where an injury designation
@@ -2974,11 +2988,21 @@
 			const { total, rows } = computePlayerExposure(leagues, types);
 
 			if (total < 2) {
-				card.appendChild(el('div', { class: 'error-box', text: 'Need at least 2 leagues in this group with roster data to show exposure.' }));
+				// Not a fault, and it reads like one if worded as a requirement:
+				// a redraft group holds a single drafted league for most of the
+				// preseason while the rest wait on their drafts. Exposure needs
+				// two rosters to be a ratio of anything, so the card says what it
+				// is waiting for rather than what is missing.
+				card.appendChild(el('div', {
+					class: 'error-box',
+					text: total === 1
+						? 'Only one league here has rosters so far — exposure needs at least two to compare.'
+						: 'No leagues here have roster data yet.',
+				}));
 				return card;
 			}
 
-			card.appendChild(el('div', { class: 'team', text: `Across ${total} leagues` }));
+			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(total)}` }));
 
 			if (rows.length === 0) {
 				card.appendChild(el('div', { class: 'error-box', text: 'No players owned in more than one league yet.' }));
@@ -2999,7 +3023,7 @@
 
 			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
 			card.appendChild(el('h2', { text: 'Injury Exposure' }));
-			card.appendChild(el('div', { class: 'team', text: `Across ${total} leagues` }));
+			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(total)}` }));
 
 			if (rows.length === 0) {
 				card.appendChild(el('div', { class: 'error-box', text: 'Nobody on these rosters is carrying an injury designation right now.' }));
@@ -3022,7 +3046,7 @@
 
 			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
 			card.appendChild(el('h2', { text: 'Top Players' }));
-			card.appendChild(el('div', { class: 'team', text: `Consensus rankings across ${total} leagues` }));
+			card.appendChild(el('div', { class: 'team', text: `Consensus rankings across ${leagueCount(total)}` }));
 
 			appendAnalyticsTable(card, rows, total, {
 				showExposure: false,
@@ -3043,14 +3067,14 @@
 			// isn't as fresh as the sync — see computeTopAvailable's readAt.
 			card.appendChild(el('div', {
 				class: 'team',
-				text: `Free agents across ${total} leagues${readAt ? ` · checked ${timeAgo(readAt)}` : ''}`,
+				text: `Free agents across ${leagueCount(total)}${readAt ? ` · checked ${timeAgo(readAt)}` : ''}`,
 			}));
 
 			if (rows.length === 0) {
 				// Worth saying out loud rather than hiding the card: in a deep
 				// dynasty group this is the expected answer, and an absent card
 				// looks like missing data instead of a picked-over wire.
-				card.appendChild(el('div', { class: 'error-box', text: 'Nobody in the top of the rankings is unowned in these leagues.' }));
+				card.appendChild(el('div', { class: 'error-box', text: 'Everybody in the top of the rankings is already rostered here.' }));
 				return card;
 			}
 
@@ -3843,8 +3867,8 @@
 				}
 			}
 
-			for (const groupKey of ANALYTICS_GROUP_ORDER) {
-				const types = typesInAnalyticsGroup(groupKey);
+			for (const groupKey of SUBTAB_ORDER) {
+				const types = typesInSubtabGroup(groupKey);
 				if (!data.leagues.some((l) => types.includes(l.type))) continue;
 				gridEl.appendChild(renderAnalyticsCard(groupKey, types, data.leagues));
 				const injuryCard = renderInjuryExposureCard(groupKey, types, data.leagues);

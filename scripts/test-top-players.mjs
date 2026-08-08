@@ -68,7 +68,11 @@ vm.runInContext(scriptSource, context);
 
 const { computeTopPlayers, computeTopAvailable, normalizeName, poolPlayerUrl } = context;
 
-const ACTIVE = ['dynasty', 'salarycap', 'redraft'];
+// The Dynasty/Salary Cap sub-tab. Redraft is its own group now — see
+// SUBTAB_GROUP — but these functions take their types as an argument, so what
+// is being pinned here is the behaviour of a group spanning several types,
+// whichever types those are.
+const ACTIVE = ['dynasty', 'salarycap'];
 const rowFor = (rows, name) => rows.find((r) => r.name === name);
 
 // A ranking pool entry, as the sync writes it: rank, position, and a
@@ -147,9 +151,9 @@ function league(name, type, playerNames, { rankings = 'DRAFT|PPR|ALL', available
 		league('B', 'salarycap', ['Best Guy', 'Second Guy']),
 		// In the group but no roster data — excluded from the denominator, the
 		// same way the exposure cards exclude it.
-		league('C', 'redraft', []),
+		league('C', 'salarycap', []),
 		// A different sub-tab entirely.
-		league('D', 'draftonly', ['Nobody Owns Him']),
+		league('D', 'redraft', ['Nobody Owns Him']),
 	];
 
 	const { total, rows } = computeTopPlayers(leagues, ACTIVE, pools);
@@ -219,7 +223,7 @@ function league(name, type, playerNames, { rankings = 'DRAFT|PPR|ALL', available
 	const leagues = [
 		league('A', 'salarycap', ['Filler']),
 		league('B', 'salarycap', ['Filler']),
-		league('C', 'redraft', ['Filler']),
+		league('C', 'salarycap', ['Filler']),
 		league('D', 'dynasty', ['Filler'], { rankings: 'DYNASTY|PPR|ALL' }),
 	];
 	const { rows } = computeTopPlayers(leagues, ACTIVE, pools);
