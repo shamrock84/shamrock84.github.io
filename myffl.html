@@ -1965,6 +1965,14 @@
 					? `✓ All ${total} contract length${total === 1 ? '' : 's'} planned — waiting on MFL`
 					: `⚠ ${unplanned}/${total} players need contract length set`;
 				contractBannerEl.classList.toggle('contract-banner-planned', unplanned === 0);
+				// Rebuilt, not built once: the link doesn't exist at all until
+				// some length is planned, and its mail body is a snapshot of the
+				// plans at the moment it was made. Built at render it would be
+				// missing for the whole session the plans were made in, and once
+				// present would keep mailing the plans as they stood on load.
+				contractBannerEl.querySelector('.contract-email-link')?.remove();
+				const emailLink = buildContractEmailLink(league);
+				if (emailLink) contractBannerEl.appendChild(emailLink);
 			};
 
 			// Logged out this is hidden outright rather than shown with plans
@@ -1977,11 +1985,9 @@
 				contractBannerEl = banner;
 				contractBannerTextEl = el('span', {});
 				banner.appendChild(contractBannerTextEl);
-				const emailLink = buildContractEmailLink(league);
-				if (emailLink) banner.appendChild(emailLink);
 				card.appendChild(banner);
-				// Initial text and colour come from the same path as every later
-				// update, so the two can't drift apart.
+				// Text, colour and the mail link all come from the same path as
+				// every later update, so the first render can't drift from them.
 				refreshContractBanner();
 			}
 
