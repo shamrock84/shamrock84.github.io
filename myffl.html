@@ -2241,9 +2241,12 @@
 			// Two numbers, because they move for different reasons and only one
 			// of them is the manager's job: the denominator is everyone MFL
 			// hasn't returned a contract for, which only the commissioner can
-			// change, and the numerator is how many of those still need a
-			// planned length here. So the fraction counts down as work gets
-			// done while the total holds steady.
+			// change, and the numerator is how many of those you've set a length
+			// for. So the fraction counts *up* to a full house while the total
+			// holds steady. It used to count down — the numerator was the work
+			// remaining — which made the same sentence mean opposite things at
+			// the two ends: "5/5" was everything left to do, and now it's
+			// everything done.
 			const contractsMissing = () => (league.players || []).filter((p) => !(Number(p.contractYear) > 0));
 			const contractCounts = () => {
 				const missing = contractsMissing();
@@ -2262,13 +2265,15 @@
 			const refreshContractBanner = () => {
 				if (!contractBannerTextEl) return;
 				const { total, unplanned } = contractCounts();
-				// "0/9 need" contradicts itself, so the done state says what it
-				// actually is — and names the next move, which is yours: the
-				// commissioner has no way of knowing these lengths until you send
-				// them, which is what the mail link below the text is for.
+				const set = total - unplanned;
+				// One sentence in both states, so the number is the only thing
+				// that moves as you work down the roster. The done state adds the
+				// next move, which is yours: the commissioner has no way of
+				// knowing these lengths until you send them, which is what the
+				// mail link below the text is for.
 				contractBannerTextEl.textContent = unplanned === 0
-					? `✓ ${total}/${total} contract${total === 1 ? '' : 's'} set — remember to notify commish`
-					: `⚠ ${unplanned}/${total} players need contract length set`;
+					? `✓ ${set}/${total} contract${total === 1 ? '' : 's'} set — remember to notify commish`
+					: `⚠ ${set}/${total} contract${total === 1 ? '' : 's'} set`;
 				contractBannerEl.classList.toggle('contract-banner-planned', unplanned === 0);
 				// Rebuilt, not built once: the link doesn't exist at all until
 				// some length is planned, and its mail body is a snapshot of the
