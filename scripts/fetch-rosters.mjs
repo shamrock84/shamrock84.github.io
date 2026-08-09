@@ -507,6 +507,23 @@ async function main() {
           if (status) target.draftInProgress = false;
         } catch (err) {
           console.error(`Failed to read draft status for ${league.name}: ${err.message}`);
+          // Degrade the way everything else here does: keep what the last sync
+          // concluded rather than dropping to "don't know". A 429 on this
+          // request would otherwise strip a drafting league of its flag, and
+          // the card would go on excluding it — its `available` is null — while
+          // no longer being able to say a draft is why. Which is precisely what
+          // happened on the first run of this ordering.
+          //
+          // Safe in all three directions: a carried-forward `false` was already
+          // true and stays true (a finished draft never unfinishes), `true`
+          // keeps the league both flagged and unsettled so the next sync asks
+          // again, and an absent value stays absent and is asked again too.
+          target.draftInProgress = prev?.draftInProgress;
+          if (target.draftInProgress === true) {
+            drafting++;
+            console.log(`${league.name}: draft status unavailable, still assumed drafting — skipping free agents`);
+            continue;
+          }
         }
       }
     }
