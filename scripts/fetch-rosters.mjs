@@ -93,6 +93,32 @@ export function availabilityIsFresh(previous, now, force = false) {
   return now.getTime() - readAt < AVAILABILITY_MAX_AGE_MS;
 }
 
+// Whether a league's draft is already known to have finished, in which case
+// this sync needn't ask again.
+//
+// The invariant that makes this safe: a finished draft never unfinishes. Once
+// MFL has reported every pick made for a league in a season, that answer holds
+// for the rest of the season, so the check can run on *every* sync while
+// costing a request only for leagues that haven't finished yet — in the
+// steady state, none of them.
+//
+// Which is what closes the gap the once-a-day version had. The draft check
+// used to sit behind the availability freshness rule, so a league that started
+// drafting just after its daily read kept serving a stale pre-draft wire for
+// up to twenty hours. Checking first would have meant sixteen requests every
+// sync instead of sixteen a day; checking first *and* skipping settled leagues
+// means roughly zero, and the answer is never more than four hours old.
+//
+// Keyed to the season for the same reason `scoringDetected` is: a league that
+// has rolled over has a new draft to run, and last season's answer says
+// nothing about it. Anything other than a definite `false` — never checked, a
+// failed check, or a draft in progress — is asked again.
+export function draftIsSettled(previous, season, force = false) {
+  if (force) return false;
+  if (previous?.draftInProgress !== false) return false;
+  return String(previous.season ?? '') === String(season ?? '');
+}
+
 // The manual override, wired to the workflow's refresh_availability input, for
 // when you want today's free agents now rather than at the next daily read.
 // Absent on a scheduled run, which is how the daily rule stays the default.
@@ -422,15 +448,27 @@ async function main() {
   // from rosters it had in hand, at no extra request — which is also why
   // Sleeper isn't subject to the once-a-day rule below. Free is free.
   //
-  // Once a day, not once a sync. Even last, the pass is expensive: sixteen
-  // heavy MFL exports, four of which came back 429 on the run that proved it.
-  // The sync runs every four hours, and a free agent pool does not move
-  // meaningfully in four hours — a waiver claim you'd want to know about is
-  // still there tomorrow — so five runs in six now skip this entirely and go
-  // back to costing what the sync cost before any of it existed.
+  // Two separate cadences here, and the order between them is the point.
+  //
+  // The *wire* is re-read once a day. Even last, that read is expensive —
+  // sixteen heavy MFL exports, four of which came back 429 on the run that
+  // proved it — and a free agent pool doesn't move meaningfully in four hours,
+  // so five runs in six skip it and cost what the sync cost before any of this
+  // existed.
+  //
+  // The *draft check* runs every sync, ahead of that rule. It used to sit
+  // behind it, which left a real hole: a league that started drafting just
+  // after its daily read went on serving a stale pre-draft wire for up to
+  // twenty hours, and the only reason it ever got noticed was a manual
+  // refresh. Moving it in front closes that to four hours — and costs nothing
+  // in the steady state, because a finished draft never unfinishes, so
+  // draftIsSettled skips every league already seen complete this season. In
+  // August that's one request a sync for the league actually drafting; by
+  // October it's none at all.
   let refreshed = 0;
   let carried = 0;
   let drafting = 0;
+  let settled = 0;
   for (const league of LEAGUES) {
     const target = leagues.find((l) => l.id === league.id);
     if (!target || !league.franchiseId || target.error) continue;
@@ -439,18 +477,7 @@ async function main() {
     if (league.provider === 'sleeper' || target.rosteredNames) continue;
 
     const prev = previousById.get(league.id);
-    if (availabilityIsFresh(prev, now, forceAvailability)) {
-      target.available = prev.available;
-      target.availableAt = prev.availableAt;
-      carried++;
-      continue;
-    }
 
-    // Draft status before the roster read, not after, because the cheap
-    // outcome is the useful one: a league whose draft hasn't finished has no
-    // wire worth reading, so finding that out first *saves* the heavy
-    // league-wide export rather than adding to it.
-    //
     // Mid-draft, every unpicked player reads as a free agent — true at the
     // instant it was read and useless, since they aren't claimable off a
     // wire, they're about to be drafted by somebody. Before a draft it's the
@@ -460,20 +487,39 @@ async function main() {
     // ESPN is exempt: its own draft state is unverified from here, and its
     // leagues have no rosters to read anyway.
     if (league.provider !== 'espn') {
-      try {
-        const status = await fetchMflDraftStatus(league, cookie);
-        // Only a definite "not finished" hides a league. A league with no
-        // draft data at all keeps its wire rather than vanishing on a guess.
-        if (status && !status.complete) {
-          target.draftInProgress = true;
-          drafting++;
-          console.log(`${league.name}: draft in progress (${status.made} of ${status.made + status.unmade} picks made) — skipping free agents`);
-          continue;
-        }
+      if (draftIsSettled(prev, target.season, forceAvailability)) {
+        // Sticky, so the answer survives into the next sync's `prev` and this
+        // league stays free to check forever after.
         target.draftInProgress = false;
-      } catch (err) {
-        console.error(`Failed to read draft status for ${league.name}: ${err.message}`);
+        settled++;
+      } else {
+        try {
+          const status = await fetchMflDraftStatus(league, cookie);
+          // Only a definite "not finished" hides a league. A league with no
+          // draft data at all keeps its wire rather than vanishing on a guess,
+          // and stays unsettled so the next sync asks again.
+          if (status && !status.complete) {
+            target.draftInProgress = true;
+            drafting++;
+            console.log(`${league.name}: draft in progress (${status.made} of ${status.made + status.unmade} picks made) — skipping free agents`);
+            continue;
+          }
+          if (status) target.draftInProgress = false;
+        } catch (err) {
+          console.error(`Failed to read draft status for ${league.name}: ${err.message}`);
+        }
       }
+    }
+
+    // Only now the daily rule for the wire itself. A league whose draft just
+    // finished lands here with `available: null` — cleared while it was
+    // drafting — so it is never "fresh" and gets re-read on this very sync
+    // rather than waiting for the next daily one.
+    if (availabilityIsFresh(prev, now, forceAvailability)) {
+      target.available = prev.available;
+      target.availableAt = prev.availableAt;
+      carried++;
+      continue;
     }
 
     try {
@@ -487,6 +533,7 @@ async function main() {
     }
   }
   console.log(`Free agents: re-read ${refreshed} league(s), kept ${carried} from the last daily read, skipped ${drafting} mid-draft`);
+  console.log(`Draft status: asked about ${LEAGUES.length - settled} league(s), ${settled} already settled this season`);
 
   // FantasyPros consensus rankings, layered over whatever rosters we managed
   // to fetch above. Skipped entirely without an API key so the sync behaves
