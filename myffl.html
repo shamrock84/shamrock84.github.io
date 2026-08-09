@@ -28,6 +28,9 @@
 			--gold-text: #5c4300;
 			--gold-chip-bg: #fff3d1;
 			--gold-chip-text: #7a5c00;
+			--stale-chip-bg: #000000;
+			--stale-chip-text: #ffffff;
+			--stale-chip-ring: transparent;
 		}
 		@media (prefers-color-scheme: dark) {
 			:root {
@@ -46,6 +49,13 @@
 				--gold-text: #3d2e00;
 				--gold-chip-bg: #3d2e05;
 				--gold-chip-text: #f0c33e;
+				/* Inverted against light: a black chip on a #1e1730 card reads as
+				   a hole rather than a mark, so the season a league is stuck on
+				   is the one white thing on a dark page. The ring keeps its
+				   bottom edge from dissolving into the card. */
+				--stale-chip-bg: #ffffff;
+				--stale-chip-text: #000000;
+				--stale-chip-ring: #000000;
 			}
 		}
 		body::before {
@@ -348,12 +358,18 @@
 		}
 		/* A league still sitting on last season — its new league year isn't up
 		   at the provider yet, so the whole card is a season behind the rest.
-		   Gold-on-gold made that chip read as just another one of eighteen; black
-		   is the only colour on the page not already spoken for, so the odd one
-		   out is visible without having to compare four digits card by card. */
+		   Gold-on-gold made that chip read as just another one of eighteen;
+		   black-and-white is the only pairing on the page not already spoken
+		   for, so the odd one out is visible without having to compare four
+		   digits card by card. Which way round it runs is per theme, above.
+		   The ring is an inset shadow rather than a border on purpose: .badges is
+		   a flex row that stretches its chips to the tallest, so a real 1px
+		   border would grow this chip and top-align the text in every chip
+		   beside it. */
 		.badge-season-stale {
-			background: #000;
-			color: #fff;
+			background: var(--stale-chip-bg);
+			color: var(--stale-chip-text);
+			box-shadow: inset 0 0 0 1px var(--stale-chip-ring);
 		}
 		/* Badges always stay to the right of the title (card-head is nowrap,
 		   never drops badges to their own row) — the title just shrinks and
