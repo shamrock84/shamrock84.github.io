@@ -2626,15 +2626,35 @@
 			return { total, rows };
 		}
 
-		// Severity order, least to most, used to pick one designation when a
-		// player carries different ones in different leagues. That happens
-		// legitimately rather than being a bug to fix: each provider publishes
-		// its own injury feed on its own clock, so an MFL league can already say
-		// Out while an ESPN league still says Questionable. The worse of the two
-		// is the one worth showing. Anything unrecognised sorts below everything
-		// known — normalizeInjuryStatus passes short codes through unmapped, and
-		// inventing a rank for one would be guessing.
-		const INJURY_SEVERITY = ['P', 'DTD', 'Q', 'D', 'O', 'COVID', 'SUSP', 'NFI', 'PUP', 'IR'];
+		// Severity order, least to most. Two jobs, and it is worth knowing it does
+		// both, because a change here moves rows *and* changes which designation a
+		// player is shown as carrying.
+		//
+		// First: picking one designation when a player carries different ones in
+		// different leagues. That happens legitimately rather than being a bug to
+		// fix — each provider publishes its own injury feed on its own clock, so
+		// an MFL league can already say Out while an ESPN league still says
+		// Questionable. The worse of the two is the one worth showing.
+		//
+		// Second: ordering the Injury Exposure card, worst first. See the sort in
+		// computeInjuryExposure for why that outranks exposure there.
+		//
+		// HOL is a holdout — a contract dispute, not an injury. It arrives from
+		// MFL as an unmapped passthrough (normalizeInjuryStatus keeps short codes
+		// it doesn't recognise) rather than through INJURY_STATUS_MAP, so it is
+		// ranked here by hand. Above Out because a holdout is open-ended where Out
+		// is one week, below a suspension because a suspension has a known end
+		// date and a holdout ends whenever somebody signs.
+		//
+		// Anything still unrecognised ranks below everything known: indexOf gives
+		// it -1, one under 'P'. That is deliberate in both directions — a code we
+		// can't read must never mask a real IR when picking the worst, and must
+		// never lead the card when sorting. The cost is that a genuinely serious
+		// new code sits at the bottom until it is added here, which is the trade
+		// against inventing a rank for a string nobody has looked at.
+		const INJURY_SEVERITY = ['P', 'DTD', 'Q', 'D', 'O', 'COVID', 'HOL', 'SUSP', 'NFI', 'PUP', 'IR'];
+
+		const injurySeverityRank = (status) => INJURY_SEVERITY.indexOf(status);
 
 		// The designation to treat a player as carrying. Normally the NFL injury
 		// report's, exactly as the roster cards badge it — but a player parked on
@@ -2692,14 +2712,32 @@
 					ecr: medianRank(info.ranks),
 					url: info.url,
 					status: info.statuses.reduce((worst, s) =>
-						INJURY_SEVERITY.indexOf(s) > INJURY_SEVERITY.indexOf(worst) ? s : worst
+						injurySeverityRank(s) > injurySeverityRank(worst) ? s : worst
 					),
 				}))
-				// Same ordering as the player card: exposure first, then the best
-				// player among equal exposures.
+				// Worst news first — the one place this card deliberately parts
+				// company with the player card beside it, which leads on exposure.
+				//
+				// The two answer different questions. "Where am I concentrated" is
+				// a portfolio question and exposure is the whole of it. "What is
+				// broken" is triage, and an IR outranks a Questionable however many
+				// leagues the Questionable spans: the Q resolves itself by Sunday
+				// and the IR is a roster slot you have to do something about.
+				// Exposure stays as the second key, so within a tier the widest
+				// problem still leads.
+				//
+				// The cost, and it is real: a 1-league IR on a fringe player now
+				// tops a 3-league Q on a good one. That is the right call for a
+				// card headed "Injury Exposure" and it is why severity is first
+				// rather than a tiebreak — but it does mean the top row is the
+				// worst *designation*, not always the biggest problem.
+				//
+				// `count` used to sit between exposure and ECR. It could never
+				// break a tie: exposure is count/total and total is fixed for the
+				// whole card, so equal exposure is equal count by construction.
 				.sort((a, b) =>
+					injurySeverityRank(b.status) - injurySeverityRank(a.status) ||
 					b.exposure - a.exposure ||
-					b.count - a.count ||
 					rankOrLast(a.ecr) - rankOrLast(b.ecr) ||
 					a.name.localeCompare(b.name)
 				);
