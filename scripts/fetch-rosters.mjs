@@ -37,6 +37,7 @@ import {
   detectScoringFormat,
   fetchMflRosteredNames,
   fetchEspnRosteredNames,
+  fetchMflDraftStatus,
 } from './lib/providers.mjs';
 import { attachRankings, fantasyProsApiKey, nflSeasonPhase } from './lib/fantasypros.mjs';
 
@@ -429,9 +430,12 @@ async function main() {
   // back to costing what the sync cost before any of it existed.
   let refreshed = 0;
   let carried = 0;
+  let drafting = 0;
   for (const league of LEAGUES) {
     const target = leagues.find((l) => l.id === league.id);
     if (!target || !league.franchiseId || target.error) continue;
+    // Sleeper arrives with both its rostered names and its draft status
+    // already attached, at no extra request.
     if (league.provider === 'sleeper' || target.rosteredNames) continue;
 
     const prev = previousById.get(league.id);
@@ -440,6 +444,36 @@ async function main() {
       target.availableAt = prev.availableAt;
       carried++;
       continue;
+    }
+
+    // Draft status before the roster read, not after, because the cheap
+    // outcome is the useful one: a league whose draft hasn't finished has no
+    // wire worth reading, so finding that out first *saves* the heavy
+    // league-wide export rather than adding to it.
+    //
+    // Mid-draft, every unpicked player reads as a free agent — true at the
+    // instant it was read and useless, since they aren't claimable off a
+    // wire, they're about to be drafted by somebody. Before a draft it's the
+    // same picture with nothing picked yet: a draft board, not a wire. So any
+    // unfinished draft takes the league out until it's done.
+    //
+    // ESPN is exempt: its own draft state is unverified from here, and its
+    // leagues have no rosters to read anyway.
+    if (league.provider !== 'espn') {
+      try {
+        const status = await fetchMflDraftStatus(league, cookie);
+        // Only a definite "not finished" hides a league. A league with no
+        // draft data at all keeps its wire rather than vanishing on a guess.
+        if (status && !status.complete) {
+          target.draftInProgress = true;
+          drafting++;
+          console.log(`${league.name}: draft in progress (${status.made} of ${status.made + status.unmade} picks made) — skipping free agents`);
+          continue;
+        }
+        target.draftInProgress = false;
+      } catch (err) {
+        console.error(`Failed to read draft status for ${league.name}: ${err.message}`);
+      }
     }
 
     try {
@@ -452,7 +486,7 @@ async function main() {
       target.rosteredNames = null;
     }
   }
-  console.log(`Free agents: re-read ${refreshed} league(s), kept ${carried} from the last daily read`);
+  console.log(`Free agents: re-read ${refreshed} league(s), kept ${carried} from the last daily read, skipped ${drafting} mid-draft`);
 
   // FantasyPros consensus rankings, layered over whatever rosters we managed
   // to fetch above. Skipped entirely without an API key so the sync behaves
@@ -507,7 +541,18 @@ async function main() {
     const readThisRun = Array.isArray(league.rosteredNames);
     delete league.rosteredNames;
     const prev = previousById.get(league.id);
-    if (readThisRun && league.available != null) {
+    if (league.draftInProgress) {
+      // Explicitly cleared, not merely left unset: the carry-forward below
+      // would otherwise restore the wire this league had *before* its draft
+      // started, which is the most misleading version of all — a list of
+      // players who are being taken as you read it.
+      //
+      // Nulling it also puts the league back on the every-sync retry path
+      // (availabilityIsFresh needs an array), so a finished draft is picked
+      // up within four hours rather than at the next daily read.
+      league.available = null;
+      league.availableAt = null;
+    } else if (readThisRun && league.available != null) {
       league.availableAt = now.toISOString();
     } else if (league.available == null) {
       league.available = prev?.available ?? null;

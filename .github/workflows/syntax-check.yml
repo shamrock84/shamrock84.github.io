@@ -109,6 +109,12 @@ jobs:
       - name: Test the Top Available card
         run: node scripts/test-top-available.mjs
 
+      # Whether a league's draft has finished, which decides if its wire is
+      # shown at all. The fixtures are copied from what the real MFL API
+      # returned, since the shape is undocumented and unreachable from CI.
+      - name: Test draft detection
+        run: node scripts/test-draft-status.mjs
+
       - name: Validate config/leagues.json
         run: |
           node --input-type=module -e '

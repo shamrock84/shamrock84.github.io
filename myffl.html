@@ -2747,7 +2747,14 @@
 		// see automaticRankingType — so the median is the representative rank for
 		// the same reason it is on the exposure cards.
 		function computeTopAvailable(leagues, types, pools) {
-			const eligible = exposureLeagues(leagues, types)
+			const inGroup = exposureLeagues(leagues, types);
+			// Counted separately so the card can say a league is missing on
+			// purpose. A league mid-draft has its `available` cleared by the
+			// sync, so it drops out of `eligible` on its own — but dropping out
+			// silently is what makes a denominator quietly wrong, and "6 leagues"
+			// with no explanation is exactly the kind of thing nobody notices.
+			const drafting = inGroup.filter((l) => l.draftInProgress === true).length;
+			const eligible = inGroup
 				.filter((l) => Array.isArray(l.available) && rankingPoolFor(l, pools));
 			const byPlayer = new Map();
 
@@ -2828,7 +2835,7 @@
 				.filter(Boolean)
 				.sort()[0] ?? null;
 
-			return { total, rows, readAt };
+			return { total, rows, readAt, drafting };
 		}
 
 		// Seven rather than ten: two of these cards now sit side by side, and a
@@ -3043,8 +3050,11 @@
 		// room beside a wire you can act on. The pool it needed is still fetched
 		// — Top Available filters the same list.
 		function renderTopAvailableCard(groupKey, types, leagues, pools) {
-			const { total, rows, readAt } = computeTopAvailable(leagues, types, pools);
-			if (total === 0) return null;
+			const { total, rows, readAt, drafting } = computeTopAvailable(leagues, types, pools);
+			// A group whose only leagues are mid-draft still gets a card, saying
+			// so. Returning null there would read as "no data" when the truth is
+			// "ask again when the draft is over".
+			if (total === 0 && drafting === 0) return null;
 
 			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
 			card.appendChild(el('h2', { text: 'Top Available' }));
@@ -3054,6 +3064,17 @@
 				class: 'team',
 				text: `Free agents across ${leagueCount(total)}${readAt ? ` · checked ${timeAgo(readAt)}` : ''}`,
 			}));
+			if (drafting > 0) {
+				card.appendChild(el('div', {
+					class: 'team',
+					text: `${leagueCount(drafting)} drafting — excluded until the draft finishes`,
+				}));
+			}
+
+			if (total === 0) {
+				card.appendChild(el('div', { class: 'error-box', text: 'Every league here is mid-draft.' }));
+				return card;
+			}
 
 			if (rows.length === 0) {
 				// Worth saying out loud rather than hiding the card: in a deep
