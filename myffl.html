@@ -2867,7 +2867,7 @@
 		function appendAnalyticsTable(card, rows, total, {
 			showStatus = false,
 			showExposure = true,
-			countHeader = 'Owned In',
+			countHeader = 'Own In',
 			showOwned = false,
 			pageSize = ANALYTICS_PAGE_SIZE,
 		} = {}) {
@@ -2904,7 +2904,7 @@
 				if (showEcr) headRow.appendChild(el('th', { class: 'ecr-cell', text: 'ECR' }));
 				headRow.appendChild(el('th', { text: countHeader }));
 				if (showOwned) headRow.appendChild(el('th', { text: 'Own In' }));
-				if (showExposure) headRow.appendChild(el('th', { text: 'Exposure' }));
+				if (showExposure) headRow.appendChild(el('th', { text: 'Pct' }));
 				table.appendChild(headRow);
 
 				// One grey line of league names needs no label. Two do, and the
