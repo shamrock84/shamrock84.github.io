@@ -1,0 +1,33 @@
+name: Probe Draft Status (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here, the
+# same rule the other manual workflows follow.
+#
+# Asks MFL whether it will tell us that a league's draft is currently running.
+# The Top Available card lists elite players as free agents during a live draft,
+# which is true at the instant it was read and useless — they aren't claimable,
+# they're about to be drafted. Roster size hints at it but can't distinguish a
+# half-finished draft from a small roster, so this dumps the endpoints that
+# might carry a real signal for a drafting league and settled ones side by side.
+#
+# Read-only: TYPE=league and TYPE=draftResults.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Dump what MFL says about draft state
+        env:
+          MFL_USERNAME: ${{ secrets.MFL_USERNAME }}
+          MFL_PASSWORD: ${{ secrets.MFL_PASSWORD }}
+        run: node scripts/probe-draft-status.mjs
