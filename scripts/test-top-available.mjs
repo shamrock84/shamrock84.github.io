@@ -19,8 +19,11 @@
 //     are different, and only the second is a real answer;
 //   - the free agent list is re-read once a day, not once a sync, and a league
 //     whose read failed is retried immediately rather than waiting a day;
+//   - a league still on last season is excluded if it redrafts and kept if its
+//     rosters carry over, and either way the exclusion is counted rather than
+//     quietly shrinking the denominator;
 //   - a pool entry's site-relative URL is expanded, never rebuilt from the
-//     player's name.
+//     player's name, and its NFL team is carried through rather than guessed.
 //
 // (There was a Top Players card sharing this machinery. It's gone; what it
 // pinned that still matters — the name join, the pool URL rule — is covered
@@ -81,10 +84,10 @@ const { computeTopAvailable, normalizeName, poolPlayerUrl } = context;
 const ACTIVE = ['dynasty', 'salarycap'];
 const rowFor = (rows, name) => rows.find((r) => r.name === name);
 
-// A ranking pool entry, as the sync writes it: rank, position, and a
+// A ranking pool entry, as the sync writes it: rank, position, NFL team, and a
 // site-relative profile path.
-function ranked(name, rank, position = 'RB') {
-	return { name, position, rank, url: `/nfl/players/${rank}.php` };
+function ranked(name, rank, position = 'RB', team = 'BUF') {
+	return { name, position, team, rank, url: `/nfl/players/${rank}.php` };
 }
 
 function pool(key, players, { type = 'DRAFT', scoring = 'PPR', position = 'ALL' } = {}) {
@@ -93,7 +96,7 @@ function pool(key, players, { type = 'DRAFT', scoring = 'PPR', position = 'ALL' 
 
 // A league as data/rosters.json carries it. `rankings` is only the join key
 // into the pools, so only the three parts of that key matter here.
-function league(name, type, playerNames, { rankings = 'DRAFT|PPR|ALL', available = undefined } = {}) {
+function league(name, type, playerNames, { rankings = 'DRAFT|PPR|ALL', available = undefined, season = undefined } = {}) {
 	const [rType, rScoring, rPosition] = rankings ? rankings.split('|') : [];
 	return {
 		name,
@@ -102,8 +105,12 @@ function league(name, type, playerNames, { rankings = 'DRAFT|PPR|ALL', available
 		players: playerNames.map((n) => ({ name: n, position: 'RB' })),
 		rankings: rankings ? { type: rType, scoring: rScoring, position: rPosition } : null,
 		...(available === undefined ? {} : { available }),
+		...(season === undefined ? {} : { season }),
 	};
 }
+
+// The season the sync was aiming at, as data/rosters.json's top-level `year`.
+const YEAR = '2026';
 
 // --- The page's normalizer matches the sync's --------------------------------
 // This is the join between a pool entry and a rostered player. A drift here is
@@ -310,6 +317,102 @@ function league(name, type, playerNames, { rankings = 'DRAFT|PPR|ALL', available
 	const { total, drafting } = computeTopAvailable(leagues, ACTIVE, pools);
 	assert.equal(total, 1);
 	assert.equal(drafting, 0);
+}
+
+// --- Top Available: a league that hasn't rolled over is excluded, and said so --
+// A redraft-style league still sitting on last season is showing a roster that
+// is about to be wiped, so the handful of names left unrostered at the end of
+// that season are not this season's wire — this season's wire is everybody,
+// until the draft runs. Same failure the mid-draft exclusion guards against,
+// reached from the other direction, so it drops out of the denominator the same
+// way and gets its own count so the card can explain the missing league.
+{
+	const pools = Object.fromEntries([pool('DRAFT|PPR|ALL', [ranked('Wire Gem', 5), ranked('Last Years Leftover', 9)])]);
+	const leagues = [
+		league('Rolled Over', 'draftonly', ['Filler'], { available: ['Wire Gem'], season: YEAR }),
+		league('Also Rolled Over', 'draftonly', ['Filler'], { available: ['Wire Gem'], season: YEAR }),
+		// Its 2026 league doesn't exist at the provider yet, so resolveSeason
+		// left it on 2025 and everything it carries is last season's.
+		league('Still On Last Season', 'draftonly', ['Filler'], { available: ['Last Years Leftover'], season: '2025' }),
+	];
+	const { total, rows, awaiting } = computeTopAvailable(leagues, ['draftonly'], pools, YEAR);
+	assert.equal(total, 2, 'the league awaiting rollover is out of the denominator');
+	assert.equal(awaiting, 1, 'and is counted so the card can explain itself');
+	assert.equal(rowFor(rows, 'Wire Gem').count, 2);
+	assert.equal(rowFor(rows, 'Last Years Leftover'), undefined, "last season's leftovers are not this season's wire");
+}
+{
+	// Dynasty and salary-cap leagues are deliberately exempt: their rosters carry
+	// across the offseason, so a league trailing during the rollover window —
+	// MFL leagues reopen anywhere from February to April — is stale, not wrong.
+	// Excluding those would empty the card for weeks every spring.
+	const pools = Object.fromEntries([pool('DRAFT|PPR|ALL', [ranked('Wire Gem', 5)])]);
+	const leagues = [
+		league('Dynasty Behind', 'dynasty', ['Filler'], { available: ['Wire Gem'], season: '2025' }),
+		league('Cap Behind', 'salarycap', ['Filler'], { available: ['Wire Gem'], season: '2025' }),
+	];
+	const { total, awaiting } = computeTopAvailable(leagues, ACTIVE, pools, YEAR);
+	assert.equal(total, 2);
+	assert.equal(awaiting, 0);
+}
+{
+	// Both halves of the comparison have to be there to mean anything. A
+	// rosters.json written before leagues carried their own `season`, or a caller
+	// with no target year, must not silently drop every redraft league.
+	const pools = Object.fromEntries([pool('DRAFT|PPR|ALL', [ranked('Wire Gem', 5)])]);
+	const noSeason = [
+		league('A', 'draftonly', ['Filler'], { available: ['Wire Gem'] }),
+		league('B', 'draftonly', ['Filler'], { available: [] }),
+	];
+	assert.equal(computeTopAvailable(noSeason, ['draftonly'], pools, YEAR).total, 2, 'no season recorded means no answer, not exclusion');
+	assert.equal(computeTopAvailable(noSeason, ['draftonly'], pools, YEAR).awaiting, 0);
+
+	const withSeason = [
+		league('A', 'draftonly', ['Filler'], { available: ['Wire Gem'], season: '2025' }),
+		league('B', 'draftonly', ['Filler'], { available: [], season: '2025' }),
+	];
+	assert.equal(computeTopAvailable(withSeason, ['draftonly'], pools, undefined).total, 2, 'no target year means no answer either');
+	assert.equal(computeTopAvailable(withSeason, ['draftonly'], pools, undefined).awaiting, 0);
+
+	// And a league level with the target, or somehow ahead of it, is ordinary.
+	const current = [
+		league('A', 'draftonly', ['Filler'], { available: ['Wire Gem'], season: YEAR }),
+		league('B', 'draftonly', ['Filler'], { available: [], season: '2027' }),
+	];
+	assert.equal(computeTopAvailable(current, ['draftonly'], pools, YEAR).awaiting, 0);
+}
+{
+	// The two excluded states partition the group rather than double-counting a
+	// league that is in both. Rollover wins, because a draft flag on a league
+	// that hasn't rolled over describes last season's draft.
+	const pools = Object.fromEntries([pool('DRAFT|PPR|ALL', [ranked('Wire Gem', 5)])]);
+	const leagues = [
+		league('Fine', 'draftonly', ['Filler'], { available: ['Wire Gem'], season: YEAR }),
+		{ ...league('Both', 'draftonly', ['Filler'], { available: null, season: '2025' }), draftInProgress: true },
+	];
+	const { total, drafting, awaiting } = computeTopAvailable(leagues, ['draftonly'], pools, YEAR);
+	assert.equal(total, 1);
+	assert.equal(awaiting, 1);
+	assert.equal(drafting, 0, 'counted once, under the reason that actually applies');
+}
+
+// --- Top Available: the NFL team rides through from the pool ------------------
+// A row here is a player no roster of ours holds, so there is no roster copy to
+// read a team off — it has to come from the pool entry the sync wrote. Absent
+// rather than 'FA' when the pool predates the field, which is what lets the
+// renderer tell "no NFL team" from "don't know" and print nothing for the
+// second.
+{
+	const pools = Object.fromEntries([
+		pool('DRAFT|PPR|ALL', [ranked('Wire Gem', 5, 'WR', 'KC'), { name: 'Old Pool Entry', position: 'RB', rank: 6, url: '/x.php' }]),
+	]);
+	const leagues = [
+		league('A', 'draftonly', ['Filler'], { available: ['Wire Gem', 'Old Pool Entry'], season: YEAR }),
+		league('B', 'draftonly', ['Filler'], { available: [], season: YEAR }),
+	];
+	const { rows } = computeTopAvailable(leagues, ['draftonly'], pools, YEAR);
+	assert.equal(rowFor(rows, 'Wire Gem').team, 'KC');
+	assert.equal(rowFor(rows, 'Old Pool Entry').team, undefined, 'a pool synced before the field carries no claim');
 }
 
 // --- Top Available: ranks come from the leagues he's free in ------------------

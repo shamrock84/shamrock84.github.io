@@ -85,6 +85,25 @@ const fpPlayer = (name, rank, pos) => ({
 	assert.ok(!only.url.startsWith('http'), 'never the absolute form');
 }
 
+// --- Every entry carries an NFL team, canonicalised, never blank ---------------
+// The page prints this beside the name the way the roster tables do, and it has
+// to come off the pool entry because a row on that card is by definition a
+// player no roster of ours holds. 'FA' rather than '' when FantasyPros has no
+// team for someone: the page reads an *absent* team as "synced before this
+// existed, say nothing" and a present one as a fact, so an empty string would
+// land a player with no NFL team in the wrong bucket. Codes are canonicalised
+// for the same reason they are in buildRankingIndex.
+{
+	const list = buildRankingList([
+		fpPlayer('Buffalo Guy', 1, 'WR'),
+		{ ...fpPlayer('Raider', 2, 'RB'), player_team_id: 'LVR' },
+		{ ...fpPlayer('Unsigned', 3, 'RB'), player_team_id: '' },
+		{ ...fpPlayer('No Field At All', 4, 'TE'), player_team_id: undefined },
+	]);
+	assert.deepEqual(list.map((p) => p.team), ['BUF', 'LV', 'FA', 'FA']);
+	assert.ok(list.every((p) => typeof p.team === 'string' && p.team.length > 0), 'never blank, never absent');
+}
+
 // --- Empty and missing input ---------------------------------------------------
 {
 	assert.deepEqual(buildRankingList([]), []);
