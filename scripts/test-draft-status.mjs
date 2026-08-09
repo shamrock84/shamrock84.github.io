@@ -20,6 +20,7 @@
 
 import assert from 'node:assert/strict';
 import { draftStatusFromResults, sleeperDraftInProgress } from './lib/providers.mjs';
+import { draftIsSettled } from './fetch-rosters.mjs';
 
 // MFL's XML-derived JSON: a pick is made when `player` is a non-empty id.
 const madePick = (round, pick, player) => ({ round, pick, player, franchise: '0001', comments: '', timestamp: '1786110151' });
@@ -114,6 +115,33 @@ const results = (picks, extra = {}) => ({
 	assert.equal(sleeperDraftInProgress(null), null);
 	assert.equal(sleeperDraftInProgress(undefined), null);
 	assert.equal(sleeperDraftInProgress(''), null);
+}
+
+// --- Not asking twice about a draft that has already finished ------------------
+// The draft check runs on every sync so a league that starts drafting is
+// noticed within four hours rather than twenty. What keeps that affordable is
+// that a finished draft never unfinishes, so a league already seen complete
+// this season is never asked again — in the steady state that's every league,
+// and the check costs nothing at all.
+{
+	const settled = { draftInProgress: false, season: '2026' };
+	assert.equal(draftIsSettled(settled, '2026'), true, 'asked and answered');
+
+	// Anything short of a definite "finished" is asked again.
+	assert.equal(draftIsSettled({ draftInProgress: true, season: '2026' }, '2026'), false, 'still drafting');
+	assert.equal(draftIsSettled({ season: '2026' }, '2026'), false, 'never checked');
+	assert.equal(draftIsSettled({ draftInProgress: null, season: '2026' }, '2026'), false, 'check failed');
+	assert.equal(draftIsSettled(undefined, '2026'), false, 'no previous entry at all');
+
+	// A rolled-over league has a new draft to run, and last season's answer
+	// says nothing about it — the same reasoning that keys scoringDetected to
+	// the season. Getting this wrong would hide a live draft for a whole year.
+	assert.equal(draftIsSettled(settled, '2027'), false, 'new season, new draft');
+	assert.equal(draftIsSettled({ draftInProgress: false, season: 2026 }, '2026'), true, 'numeric seasons compare equal');
+	assert.equal(draftIsSettled({ draftInProgress: false }, '2026'), false, 'no recorded season is not a match');
+
+	// The manual override re-asks everything.
+	assert.equal(draftIsSettled(settled, '2026', true), false, 'refresh_availability forces the check');
 }
 
 console.log('test-draft-status: all assertions passed');
