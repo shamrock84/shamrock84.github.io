@@ -2892,19 +2892,15 @@
 				}))
 				.sort((a, b) => rankOrLast(a.ecr) - rankOrLast(b.ecr) || a.name.localeCompare(b.name));
 
-			// The oldest read among the contributing leagues, which is what the
-			// card can honestly claim. Unlike everything else on the page this is
-			// not as of the last sync: reading every franchise's roster is
-			// expensive enough that the sync only does it once a day, so a card
-			// that said nothing would look four hours old while being twenty.
-			// Null when no league recorded one — a list carried over from before
-			// this was stamped, which is a state that lasts one day.
-			const readAt = eligible
-				.map((l) => l.availableAt)
-				.filter(Boolean)
-				.sort()[0] ?? null;
-
-			return { total, rows, readAt, drafting, awaiting };
+			// The card used to date itself here, off the oldest `availableAt`
+			// among the contributing leagues — it is the one card that isn't as
+			// fresh as the sync, since the free agent read runs once a day rather
+			// than once a sync. That subtitle is gone by request: the lag is a
+			// property of the data whether or not it's printed, and a line of
+			// small print explaining it every visit costs more room than it
+			// bought. `availableAt` is still written and still drives the
+			// once-a-day rule in fetch-rosters.mjs; nothing on screen reads it.
+			return { total, rows, drafting, awaiting };
 		}
 
 		// Six rather than ten: two of these cards now sit side by side, and a
@@ -3128,7 +3124,7 @@
 		// room beside a wire you can act on. The pool it needed is still fetched
 		// — Top Available filters the same list.
 		function renderTopAvailableCard(groupKey, types, leagues, pools, year) {
-			const { total, rows, readAt, drafting, awaiting } = computeTopAvailable(leagues, types, pools, year);
+			const { total, rows, drafting, awaiting } = computeTopAvailable(leagues, types, pools, year);
 			// A group whose only leagues are mid-draft or waiting on next season
 			// still gets a card, saying so. Returning null there would read as "no
 			// data" when the truth is "ask again once they've drafted".
@@ -3136,24 +3132,16 @@
 
 			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
 			card.appendChild(el('h2', { text: 'Top Available' }));
-			// The only card that dates itself, because it's the only one that
-			// isn't as fresh as the sync — see computeTopAvailable's readAt.
-			card.appendChild(el('div', {
-				class: 'team',
-				text: `Free agents across ${leagueCount(total)}${readAt ? ` · checked ${timeAgo(readAt)}` : ''}`,
-			}));
-			if (drafting > 0) {
-				card.appendChild(el('div', {
-					class: 'team',
-					text: `${leagueCount(drafting)} drafting — excluded until the draft finishes`,
-				}));
-			}
-			if (awaiting > 0) {
-				card.appendChild(el('div', {
-					class: 'team',
-					text: `${leagueCount(awaiting)} still on last season — excluded until ${year ?? 'the new season'} opens`,
-				}));
-			}
+			// Word for word what the two exposure cards say, so the three read as
+			// one set rather than three dialects. This card's denominator is the
+			// narrower one — it counts only leagues that could answer the
+			// availability question, so it can sit below theirs — and it used to
+			// carry a line per excluded league explaining the gap, plus the date
+			// of the underlying read. All of it is gone by request. The exclusions
+			// still happen; they are simply not narrated, so a group whose count
+			// looks short is explained by the comments on computeTopAvailable
+			// rather than on screen.
+			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(total)}` }));
 
 			if (total === 0) {
 				// Built from the reasons that actually apply, so a group held up by
