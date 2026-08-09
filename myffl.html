@@ -346,6 +346,15 @@
 			background: var(--gold-chip-bg);
 			color: var(--gold-chip-text);
 		}
+		/* A league still sitting on last season — its new league year isn't up
+		   at the provider yet, so the whole card is a season behind the rest.
+		   Gold-on-gold made that chip read as just another one of eighteen; black
+		   is the only colour on the page not already spoken for, so the odd one
+		   out is visible without having to compare four digits card by card. */
+		.badge-season-stale {
+			background: #000;
+			color: #fff;
+		}
 		/* Badges always stay to the right of the title (card-head is nowrap,
 		   never drops badges to their own row) — the title just shrinks and
 		   wraps onto more lines to make room, via min-width:0 +
@@ -2252,6 +2261,19 @@
 			return season == null ? null : String(season);
 		}
 
+		// Whether that season is behind the one the file as a whole is on, i.e.
+		// the league's new year isn't up at the provider yet and `resolveSeason`
+		// left it where it was. Not type-gated the way `awaitingRollover` is:
+		// that one decides whether a league's free-agent list is *wrong*, which
+		// only applies to leagues that redraft, whereas this is only saying the
+		// card is a season behind — equally true, and equally worth seeing, for a
+		// dynasty league that hasn't rolled over. Both halves have to be numbers:
+		// a rosters.json written before leagues carried their own `season` yields
+		// NaN < year, which is false, so nothing is marked on missing data.
+		function seasonIsBehind(season) {
+			return Number(season) < Number(pageData?.year);
+		}
+
 		function buildCardHead(league, extraLabels = []) {
 			const cardHead = el('div', { class: 'card-head' });
 			cardHead.appendChild(buildLeagueHeading(league));
@@ -2260,12 +2282,12 @@
 			// after them describe the league's own format.
 			const labels = [
 				{ text: providerBadgeLabel(league), gold: true },
-				...(season ? [{ text: season, gold: true, season: true }] : []),
+				...(season ? [{ text: season, gold: true, season: true, stale: seasonIsBehind(season) }] : []),
 				...extraLabels.map((text) => ({ text })),
 			];
 			const badgesEl = el('div', { class: `badges${labels.length > 2 ? ' badges-wrap' : ''}` });
 			for (const label of labels) {
-				const cls = label.season ? 'badge badge-season' : label.gold ? 'badge badge-provider' : 'badge';
+				const cls = label.season ? `badge badge-season${label.stale ? ' badge-season-stale' : ''}` : label.gold ? 'badge badge-provider' : 'badge';
 				badgesEl.appendChild(el('span', { class: cls, text: label.text }));
 			}
 			cardHead.appendChild(badgesEl);
@@ -3607,13 +3629,13 @@
 				// only if you knew to expect it.
 				const chips = [
 					{ text: providerBadgeLabel(league), gold: true },
-					...(live?.season ? [{ text: String(live.season), season: true }] : []),
+					...(live?.season ? [{ text: String(live.season), season: true, stale: seasonIsBehind(live.season) }] : []),
 					{ text: LEAGUE_TYPE_LABELS[league.type] || league.type || '?' },
 					...(league.tags || []).map((text) => ({ text })),
 				];
 				const badges = el('div', { class: 'admin-badges' });
 				for (const chip of chips) {
-					const cls = chip.season ? 'badge badge-season' : chip.gold ? 'badge badge-provider' : 'badge';
+					const cls = chip.season ? `badge badge-season${chip.stale ? ' badge-season-stale' : ''}` : chip.gold ? 'badge badge-provider' : 'badge';
 					badges.appendChild(el('span', { class: cls, text: chip.text }));
 				}
 				head.appendChild(badges);
