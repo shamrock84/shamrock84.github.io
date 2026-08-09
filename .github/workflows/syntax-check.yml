@@ -106,8 +106,8 @@ jobs:
       - name: Test the Injury Exposure card
         run: node scripts/test-injury-exposure.mjs
 
-      - name: Test the Top Players and Top Available cards
-        run: node scripts/test-top-players.mjs
+      - name: Test the Top Available card
+        run: node scripts/test-top-available.mjs
 
       - name: Validate config/leagues.json
         run: |

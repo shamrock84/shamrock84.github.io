@@ -1,24 +1,30 @@
-// Unit test for the Analytics tab's two ranking cards — computeTopPlayers and
-// computeTopAvailable in myffl.html, plus availableFromPool in
-// scripts/lib/fantasypros.mjs, which is the sync half of the same feature.
+// Unit test for the Analytics tab's Top Available card — computeTopAvailable
+// in myffl.html, plus availableFromPool and the once-a-day re-read rule in the
+// sync, which are the other half of the same feature.
 //
-// These cards span the sync boundary in a way the exposure cards don't: the
+// This card spans the sync boundary in a way the exposure cards don't: the
 // sync decides who is a free agent (it's the only side that can see every
 // franchise's roster) and the page decides how to show them, and the two
 // halves join on a normalized player name that exists twice in the codebase.
 // The decisions pinned here are the ones that are invisible when wrong:
 //
-//   - the two name normalizers agree, so a player you own is recognised as
-//     owned rather than quietly listed as if you didn't;
-//   - a group spanning two ranking lists medians the ranks, the same way the
-//     exposure cards do, rather than letting one list win;
-//   - Top Available's denominator counts only leagues that could answer the
-//     question — a league with no pool, or whose league-wide roster read
-//     failed, is left out rather than counted as "not available there";
+//   - the two name normalizers agree, so a player you hold is recognised as
+//     held rather than quietly shown as one you don't have;
+//   - the free-in and own-in counts share one denominator, so the pair reads
+//     as a partition of the same leagues;
+//   - that denominator counts only leagues that could answer the question — a
+//     league with no pool, or whose league-wide roster read failed, is left
+//     out of both counts rather than counted as "not available there";
 //   - `available: null` (couldn't tell) and `available: []` (nothing free)
 //     are different, and only the second is a real answer;
+//   - the free agent list is re-read once a day, not once a sync, and a league
+//     whose read failed is retried immediately rather than waiting a day;
 //   - a pool entry's site-relative URL is expanded, never rebuilt from the
 //     player's name.
+//
+// (There was a Top Players card sharing this machinery. It's gone; what it
+// pinned that still matters — the name join, the pool URL rule — is covered
+// here, since Top Available leans on both just as hard.)
 //
 // As in test-injury-exposure.mjs there is no DOM here: the page's script block
 // is evaluated in a vm with the handful of browser globals it touches stubbed,
@@ -66,7 +72,7 @@ const context = {
 vm.createContext(context);
 vm.runInContext(scriptSource, context);
 
-const { computeTopPlayers, computeTopAvailable, normalizeName, poolPlayerUrl } = context;
+const { computeTopAvailable, normalizeName, poolPlayerUrl } = context;
 
 // The Dynasty/Salary Cap sub-tab. Redraft is its own group now — see
 // SUBTAB_GROUP — but these functions take their types as an argument, so what
@@ -141,117 +147,71 @@ function league(name, type, playerNames, { rankings = 'DRAFT|PPR|ALL', available
 	assert.equal(poolPlayerUrl(''), null, 'no URL means no link, never a guessed one');
 }
 
-// --- Top Players: ownership, bolding input, and the group denominator ---------
+// --- Top Available: free-in and own-in, against one shared denominator --------
+// The two counts are the point of the card: a player free in three leagues you
+// don't hold him in is a different proposition from one you're already
+// three-deep on. Both are counted over the leagues that could answer the
+// availability question, so "free in 2/3, own in 1/3" reads as a partition of
+// the same three leagues rather than two unrelated fractions.
 {
 	const pools = Object.fromEntries([
-		pool('DRAFT|PPR|ALL', [ranked('Best Guy', 1), ranked('Second Guy', 2), ranked('Nobody Owns Him', 3)]),
+		pool('DRAFT|PPR|ALL', [ranked('Wire Gem', 5), ranked('Half Mine', 20), ranked('Rostered Everywhere', 1)]),
 	]);
 	const leagues = [
-		league('A', 'dynasty', ['Best Guy']),
-		league('B', 'salarycap', ['Best Guy', 'Second Guy']),
-		// In the group but no roster data — excluded from the denominator, the
-		// same way the exposure cards exclude it.
-		league('C', 'salarycap', []),
-		// A different sub-tab entirely.
-		league('D', 'redraft', ['Nobody Owns Him']),
+		league('A', 'dynasty', ['Rostered Everywhere'], { available: ['Wire Gem', 'Half Mine'] }),
+		league('B', 'salarycap', ['Rostered Everywhere', 'Half Mine'], { available: ['Wire Gem'] }),
+		league('C', 'dynasty', ['Rostered Everywhere', 'Half Mine'], { available: ['Wire Gem'] }),
 	];
+	const { total, rows } = computeTopAvailable(leagues, ACTIVE, pools);
+	assert.equal(total, 3);
 
-	const { total, rows } = computeTopPlayers(leagues, ACTIVE, pools);
-	assert.equal(total, 2, 'only leagues in the group with rosters count');
-	assert.deepEqual([...rows].map((r) => r.name), ['Best Guy', 'Second Guy', 'Nobody Owns Him'], 'ordered by rank');
-	assert.deepEqual([...rowFor(rows, 'Best Guy').leagues], ['A', 'B']);
-	assert.equal(rowFor(rows, 'Best Guy').count, 2);
-	assert.deepEqual([...rowFor(rows, 'Second Guy').leagues], ['B']);
-	assert.deepEqual(
-		[...rowFor(rows, 'Nobody Owns Him').leagues],
-		[],
-		'a player owned only outside the group is listed, unowned — the sub-line is per group'
-	);
-	assert.equal(
-		rowFor(rows, 'Best Guy').url,
-		'https://www.fantasypros.com/nfl/players/1.php',
-		'the pool URL is expanded for the link'
-	);
+	const gem = rowFor(rows, 'Wire Gem');
+	assert.equal(gem.count, 3, 'free everywhere');
+	assert.equal(gem.ownedCount, 0, 'and owned nowhere');
+	assert.deepEqual([...gem.ownedLeagues], []);
+
+	const half = rowFor(rows, 'Half Mine');
+	assert.equal(half.count, 1);
+	assert.deepEqual([...half.leagues], ['A'], 'free only where nobody has him');
+	assert.equal(half.ownedCount, 2);
+	assert.deepEqual([...half.ownedLeagues], ['B', 'C'], 'and ours in the two that do');
+	assert.equal(half.count + half.ownedCount, 3, 'the two counts partition the same leagues');
+
+	// A player nobody has left unrostered anywhere is not a row here however
+	// many of our teams he is on — that is the exposure card's question.
+	assert.equal(rowFor(rows, 'Rostered Everywhere'), undefined);
 }
 
-// --- Top Players: a roster name that differs in spelling still matches --------
+// --- Top Available: a player owned under a different spelling still counts ----
+// Same join as everywhere else, and the same silent failure if it drifts: the
+// row would claim you don't hold a player you do.
 {
 	const pools = Object.fromEntries([pool('DRAFT|PPR|ALL', [ranked('Marvin Harrison Jr.', 1)])]);
 	const leagues = [
-		league('A', 'dynasty', ['Marvin Harrison']),
-		league('B', 'dynasty', ['MARVIN HARRISON JR']),
+		league('A', 'dynasty', ['Filler'], { available: ['Marvin Harrison Jr.'] }),
+		league('B', 'dynasty', ['MARVIN HARRISON'], { available: [] }),
 	];
-	const { rows } = computeTopPlayers(leagues, ACTIVE, pools);
+	const { rows } = computeTopAvailable(leagues, ACTIVE, pools);
 	assert.equal(rows.length, 1);
-	assert.deepEqual([...rows[0].leagues], ['A', 'B'], 'suffix and case differences still count as owned');
-	assert.equal(rows[0].name, 'Marvin Harrison Jr.', 'the ranking list spells the name');
+	assert.deepEqual([...rows[0].leagues], ['A']);
+	assert.deepEqual([...rows[0].ownedLeagues], ['B'], 'suffix and case differences still count as owned');
 }
 
-// --- Top Players: two ranking lists in one group are medianed -----------------
-// Dynasty leagues read the DYNASTY list while the salary-cap leagues beside
-// them read DRAFT. Taking either list alone would order the card by how one
-// half of the portfolio is run.
+// --- Top Available: ownership is only counted where availability was read -----
+// A league left out of the denominator must be left out of both counts, or the
+// row prints two fractions over different bottoms.
 {
-	const pools = Object.fromEntries([
-		pool('DYNASTY|PPR|ALL', [ranked('Young Guy', 1), ranked('Old Guy', 30)], { type: 'DYNASTY' }),
-		pool('DRAFT|PPR|ALL', [ranked('Old Guy', 2), ranked('Young Guy', 20)]),
-	]);
+	const pools = Object.fromEntries([pool('DRAFT|PPR|ALL', [ranked('Wire Gem', 5)])]);
 	const leagues = [
-		league('A', 'dynasty', [], { rankings: 'DYNASTY|PPR|ALL' }),
-		league('B', 'salarycap', [], { rankings: 'DRAFT|PPR|ALL' }),
+		league('A', 'dynasty', ['Filler'], { available: ['Wire Gem'] }),
+		// Owns him, but its league-wide roster read failed, so it can say
+		// nothing about who is free.
+		league('B', 'dynasty', ['Wire Gem'], { available: null }),
 	];
-	// Both leagues have empty rosters, so nothing is eligible and neither pool
-	// is read — the cards follow the rosters, not the config.
-	assert.equal(computeTopPlayers(leagues, ACTIVE, pools).rows.length, 0);
-
-	const stocked = [
-		league('A', 'dynasty', ['Filler'], { rankings: 'DYNASTY|PPR|ALL' }),
-		league('B', 'salarycap', ['Filler'], { rankings: 'DRAFT|PPR|ALL' }),
-	];
-	const { rows } = computeTopPlayers(stocked, ACTIVE, pools);
-	assert.equal(rowFor(rows, 'Young Guy').ecr, 11, 'median of 1 and 20');
-	assert.equal(rowFor(rows, 'Old Guy').ecr, 16, 'median of 30 and 2');
-	assert.deepEqual([...rows].map((r) => r.name), ['Young Guy', 'Old Guy']);
-}
-{
-	// Weighting is by league, not by list: three leagues on one list should pull
-	// the order towards it against one league on another.
-	const pools = Object.fromEntries([
-		pool('DYNASTY|PPR|ALL', [ranked('Rookie', 1), ranked('Veteran', 50)], { type: 'DYNASTY' }),
-		pool('DRAFT|PPR|ALL', [ranked('Veteran', 2), ranked('Rookie', 60)]),
-	]);
-	const leagues = [
-		league('A', 'salarycap', ['Filler']),
-		league('B', 'salarycap', ['Filler']),
-		league('C', 'salarycap', ['Filler']),
-		league('D', 'dynasty', ['Filler'], { rankings: 'DYNASTY|PPR|ALL' }),
-	];
-	const { rows } = computeTopPlayers(leagues, ACTIVE, pools);
-	assert.deepEqual([...rows].map((r) => r.name), ['Veteran', 'Rookie'], 'the three DRAFT leagues carry the order');
-}
-
-// --- Top Players: a league whose rankings failed still counts as owning -------
-// It has no pool to contribute, but it is still in the denominator, so leaving
-// its roster out would print "1/2" for a player owned in both.
-{
-	const pools = Object.fromEntries([pool('DRAFT|PPR|ALL', [ranked('Shared', 1)])]);
-	const leagues = [
-		league('A', 'dynasty', ['Shared']),
-		{ ...league('B', 'dynasty', ['Shared']), rankings: null, rankingsError: 'boom' },
-	];
-	const { total, rows } = computeTopPlayers(leagues, ACTIVE, pools);
-	assert.equal(total, 2);
-	assert.equal(rows[0].count, 2);
-	assert.deepEqual([...rows[0].leagues], ['A', 'B']);
-}
-
-// --- Top Players: no pools at all means no card -------------------------------
-// A data/rosters.json synced before rankingPools existed, or by a run with no
-// FantasyPros key. The card renders nothing rather than an empty table.
-{
-	const leagues = [league('A', 'dynasty', ['Somebody'])];
-	assert.equal(computeTopPlayers(leagues, ACTIVE, {}).rows.length, 0);
-	assert.equal(computeTopPlayers(leagues, ACTIVE, undefined).rows.length, 0);
+	const { total, rows } = computeTopAvailable(leagues, ACTIVE, pools);
+	assert.equal(total, 1);
+	assert.equal(rows[0].count, 1);
+	assert.equal(rows[0].ownedCount, 0, 'a league that could not be checked contributes to neither count');
 }
 
 // --- Top Available: which leagues a free agent is free in ---------------------
@@ -392,4 +352,4 @@ function league(name, type, playerNames, { rankings = 'DRAFT|PPR|ALL', available
 	assert.equal(availabilityIsFresh(read(1), now, true), false, 'refresh_availability forces a re-read');
 }
 
-console.log('test-top-players: all assertions passed');
+console.log('test-top-available: all assertions passed');
