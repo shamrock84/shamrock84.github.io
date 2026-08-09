@@ -2,7 +2,7 @@
 // computeInjuryExposure in myffl.html, which is where every decision that card
 // makes actually lives.
 //
-// Four of those decisions are choices rather than consequences, and each one is
+// Six of those decisions are choices rather than consequences, and each one is
 // invisible on a healthy week or a single league, which is why they're pinned
 // here rather than left to be noticed on screen:
 //
@@ -11,7 +11,11 @@
 //   - a player flagged in one league counts in every league that rosters him,
 //     because the provider feeds disagree routinely and it's the same body;
 //   - singletons are kept, unlike the player card's count > 1 filter;
-//   - the worst designation wins when the feeds disagree.
+//   - the worst designation wins when the feeds disagree;
+//   - rows are ordered by severity *before* exposure — the one place this card
+//     deliberately differs from the player card beside it;
+//   - a designation the vocabulary doesn't recognise ranks below every one it
+//     does, so it can neither mask a real IR nor lead the card.
 //
 // As in test-plan-sync.mjs there is no DOM here: the page's script block is
 // evaluated in a vm with the handful of browser globals it touches stubbed, so
@@ -155,10 +159,36 @@ const rowFor = (rows, name) => rows.find((r) => r.name === name);
 	// A code with no place in the severity list still shows rather than being
 	// swallowed — normalizeInjuryStatus passes short codes through unmapped.
 	const leagues = [
-		league('A', 'dynasty', [player('Odd Code', { injury: 'HOL' })]),
-		league('B', 'dynasty', [player('Odd Code', { injury: 'HOL' })]),
+		league('A', 'dynasty', [player('Odd Code', { injury: 'ZZZ' })]),
+		league('B', 'dynasty', [player('Odd Code', { injury: 'ZZZ' })]),
 	];
-	assert.equal(computeInjuryExposure(leagues, DYNASTY).rows[0].status, 'HOL');
+	assert.equal(computeInjuryExposure(leagues, DYNASTY).rows[0].status, 'ZZZ');
+}
+{
+	// ...but it must never win the reduce against a code we can read. An
+	// unrecognised string ranks -1, so a real IR still decides what shows.
+	const leagues = [
+		league('A', 'dynasty', [player('Mixed', { injury: 'ZZZ' })]),
+		league('B', 'dynasty', [player('Mixed', { injury: 'IR' })]),
+	];
+	assert.equal(computeInjuryExposure(leagues, DYNASTY).rows[0].status, 'IR');
+}
+{
+	// HOL is a holdout, reaching the page from MFL as an unmapped passthrough
+	// and ranked by hand: above Out, below a suspension. It is the one entry in
+	// INJURY_SEVERITY that isn't an injury, so it is the one most likely to be
+	// dropped by someone tidying the list.
+	const leagues = [
+		league('A', 'dynasty', [player('Holding Out', { injury: 'HOL' })]),
+		league('B', 'dynasty', [player('Holding Out', { injury: 'O' })]),
+	];
+	assert.equal(computeInjuryExposure(leagues, DYNASTY).rows[0].status, 'HOL', 'a holdout outranks Out');
+
+	const vsSuspension = [
+		league('A', 'dynasty', [player('Also Banned', { injury: 'HOL' })]),
+		league('B', 'dynasty', [player('Also Banned', { injury: 'SUSP' })]),
+	];
+	assert.equal(computeInjuryExposure(vsSuspension, DYNASTY).rows[0].status, 'SUSP', 'and a suspension outranks a holdout');
 }
 
 // --- An IR slot with no designation still counts ------------------------------
@@ -177,8 +207,39 @@ const rowFor = (rows, name) => rows.find((r) => r.name === name);
 	assert.equal(computeInjuryExposure([...leagues, league('B', 'dynasty', [player('X')])], DYNASTY).rows[0].status, 'Q');
 }
 
-// --- Ordering: exposure, then the better player -------------------------------
+// --- Ordering: severity first, then exposure, then the better player ----------
+// This is where the card parts company with Player Exposure beside it, which
+// leads on exposure alone. Severity first makes it a triage list: an IR outranks
+// a Questionable however many leagues the Questionable spans.
 {
+	const leagues = [
+		league('A', 'dynasty', [
+			player('Wide Q', { injury: 'Q', ecr: 5 }),
+			player('Lone IR', { injury: 'IR', ecr: 250 }),
+		]),
+		league('B', 'dynasty', [player('Wide Q', { injury: 'Q', ecr: 5 })]),
+		league('C', 'dynasty', [player('Wide Q', { injury: 'Q', ecr: 5 })]),
+	];
+	const { rows } = computeInjuryExposure(leagues, DYNASTY);
+	assert.deepEqual([...rows].map((r) => r.name), ['Lone IR', 'Wide Q'],
+		'one league of IR leads three leagues of Questionable, fringe player and all');
+}
+{
+	// The full ladder, worst first, one league each so only severity can be
+	// ordering them. An unrecognised code ranks below everything known and so
+	// sorts last — deliberate, since a string nobody has read must not lead a
+	// card whose whole job is showing the worst thing first.
+	const ladder = ['IR', 'PUP', 'NFI', 'SUSP', 'HOL', 'COVID', 'O', 'D', 'Q', 'DTD', 'P', 'ZZZ'];
+	const leagues = [
+		league('A', 'dynasty', ladder.map((s, i) => player(`P${i}`, { injury: s }))),
+		league('B', 'dynasty', [player('Filler')]),
+	];
+	const { rows } = computeInjuryExposure(leagues, DYNASTY);
+	assert.deepEqual([...rows].map((r) => r.status), ladder);
+}
+{
+	// Within one severity tier the old ordering still applies: exposure, then
+	// the better player.
 	const leagues = [
 		league('A', 'dynasty', [player('Wide', { injury: 'Q', ecr: 40 }), player('Narrow Good', { injury: 'Q', ecr: 5 }), player('Narrow Bad', { injury: 'Q', ecr: 90 })]),
 		league('B', 'dynasty', [player('Wide', { injury: 'Q', ecr: 44 })]),
