@@ -541,6 +541,61 @@ export async function fetchMflRosteredNames(league, cookie, playerMap) {
   return names.length > 0 ? names : null;
 }
 
+// Whether a league's draft has finished, read from MFL's TYPE=draftResults.
+//
+// The signal, verified against the real API by probe-draft-status.yml: MFL
+// returns *every* pick in the draft, and an unmade one comes back with an
+// empty `player` and an empty `timestamp`. So one unmade pick means the draft
+// is not done. August Judgment Day returned 216 picks — 65 made, 151 unmade —
+// while four settled leagues returned every pick filled (216/0, 180/0, 41/0,
+// 41/0). No timestamps or roster-size guessing needed.
+//
+// `null` means "couldn't tell", which is its own answer and must not be
+// confused with "not finished": a league with no draft scheduled returns zero
+// picks (Worlds Collide does), and so does one whose draft MFL simply doesn't
+// carry. Those keep their wire rather than being hidden on a guess.
+//
+// Split from the fetch so the parsing can be pinned by a test — the shapes
+// here are undocumented and unreachable from a sandbox, so the fixtures in
+// scripts/test-draft-status.mjs are copied from what the probe actually
+// printed.
+export function draftStatusFromResults(data) {
+  const unit = data?.draftResults?.draftUnit;
+  // A league can run more than one draft unit (a per-division draft, say).
+  // Every one of them has to be finished for the league to be finished.
+  const units = Array.isArray(unit) ? unit : unit ? [unit] : [];
+
+  let made = 0;
+  let unmade = 0;
+  for (const u of units) {
+    const raw = u?.draftPick;
+    const picks = Array.isArray(raw) ? raw : raw ? [raw] : [];
+    for (const pick of picks) {
+      if (pick?.player) made++;
+      else unmade++;
+    }
+  }
+
+  if (made + unmade === 0) return null;
+  return { made, unmade, complete: unmade === 0 };
+}
+
+export async function fetchMflDraftStatus(league, cookie) {
+  const data = await mflGet(`/export?TYPE=draftResults&L=${league.id}&JSON=1`, cookie, seasonOf(league));
+  return draftStatusFromResults(data);
+}
+
+// Sleeper says so directly on the league object the roster fetch already has
+// in hand, so this costs nothing. Its lifecycle runs pre_draft -> drafting ->
+// in_season -> complete; the first two are the ones with an unfinished draft.
+// An unrecognised or missing status is "couldn't tell", same as MFL's.
+const SLEEPER_UNDRAFTED = new Set(['pre_draft', 'drafting']);
+
+export function sleeperDraftInProgress(status) {
+  if (!status) return null;
+  return SLEEPER_UNDRAFTED.has(String(status));
+}
+
 export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, injuries) {
   const [leagueData, rostersData] = await Promise.all([
     mflGet(`/export?TYPE=league&L=${league.id}&JSON=1`, cookie, seasonOf(league)),
@@ -1087,6 +1142,9 @@ export async function fetchSleeperLeagueRoster(league, playerMap, byeWeeks) {
     rosteredNames: rosters.flatMap((r) =>
       (r.players || []).map((id) => playerMap.get(String(id))?.name).filter(Boolean)
     ),
+    // Also free: it's a field on the league object fetched above. MFL needs
+    // its own request for the same answer.
+    draftInProgress: sleeperDraftInProgress(leagueData.status),
     updatedAt: new Date().toISOString(),
     error: null,
   };

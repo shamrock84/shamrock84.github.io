@@ -268,6 +268,50 @@ function league(name, type, playerNames, { rankings = 'DRAFT|PPR|ALL', available
 	assert.equal(computeTopAvailable(leagues, ACTIVE, {}).total, 0);
 }
 
+// --- Top Available: a league mid-draft is excluded, and said so ---------------
+// The sync clears `available` for a drafting league, so it drops out of the
+// denominator on its own. What's pinned here is that it drops out *visibly* —
+// a card that quietly says "2 leagues" when you have three is the same class of
+// silent wrongness as a bad denominator.
+{
+	const pools = Object.fromEntries([pool('DRAFT|PPR|ALL', [ranked('Wire Gem', 5)])]);
+	const leagues = [
+		league('A', 'dynasty', ['Filler'], { available: ['Wire Gem'] }),
+		league('B', 'dynasty', ['Filler'], { available: [] }),
+		// Mid-draft: the sync nulled its list and flagged it.
+		{ ...league('C', 'dynasty', ['Filler'], { available: null }), draftInProgress: true },
+	];
+	const { total, rows, drafting } = computeTopAvailable(leagues, ACTIVE, pools);
+	assert.equal(total, 2, 'the drafting league is out of the denominator');
+	assert.equal(drafting, 1, 'and is counted so the card can explain itself');
+	assert.equal(rows[0].count, 1);
+	assert.equal(rows[0].ownedCount, 0);
+}
+{
+	// draftInProgress false or absent is an ordinary league, not a drafting one.
+	const pools = Object.fromEntries([pool('DRAFT|PPR|ALL', [ranked('Wire Gem', 5)])]);
+	const leagues = [
+		{ ...league('A', 'dynasty', ['Filler'], { available: ['Wire Gem'] }), draftInProgress: false },
+		league('B', 'dynasty', ['Filler'], { available: [] }),
+	];
+	const { total, drafting } = computeTopAvailable(leagues, ACTIVE, pools);
+	assert.equal(total, 2);
+	assert.equal(drafting, 0);
+}
+{
+	// A league whose availability read merely failed is NOT reported as
+	// drafting — same missing data, entirely different reason, and telling the
+	// reader a draft is running when one isn't is its own kind of wrong.
+	const pools = Object.fromEntries([pool('DRAFT|PPR|ALL', [ranked('Wire Gem', 5)])]);
+	const leagues = [
+		league('A', 'dynasty', ['Filler'], { available: ['Wire Gem'] }),
+		league('B', 'dynasty', ['Filler'], { available: null }),
+	];
+	const { total, drafting } = computeTopAvailable(leagues, ACTIVE, pools);
+	assert.equal(total, 1);
+	assert.equal(drafting, 0);
+}
+
 // --- Top Available: ranks come from the leagues he's free in ------------------
 {
 	const pools = Object.fromEntries([
