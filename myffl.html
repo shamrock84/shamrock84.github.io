@@ -592,10 +592,11 @@
 			margin-left: 0.35rem;
 			font-size: 0.78rem;
 		}
-		/* The NFL team where a salary-cap table has no column for it (see
-		   appendTeamSuffix). Muted and lighter than the name so the eye still
-		   reads the name first. nowrap keeps the 3 letters together; the space
-		   before it, in the DOM, is what lets the line break there. */
+		/* The NFL team, on every table that names a player — rosters, lineups and
+		   all three analytics cards (see appendTeamSuffix). None of them spend a
+		   column on it. Muted and lighter than the name so the eye still reads
+		   the name first. nowrap keeps the code together; the space before it, in
+		   the DOM, is what lets the line break there. */
 		.team-suffix {
 			color: var(--muted);
 			font-weight: 400;
@@ -1795,13 +1796,18 @@
 			return td;
 		}
 
-		// The 3-letter NFL team rides on the name cell rather than holding a
-		// column of its own — it reads fine as a suffix, and giving the width
-		// back to the name is what stops long names wrapping. The leading space
-		// is load-bearing: without a break opportunity the name's last word and
-		// the code fuse into one unbreakable token, and the column's minimum
-		// width goes *up* instead of down (measured: 12px saved with no space,
-		// 37px with one).
+		// The NFL team rides on the name cell rather than holding a column of its
+		// own — it reads fine as a suffix, and giving the width back to the name
+		// is what stops long names wrapping. Every table that names a player uses
+		// this, so a name reads the same on the Rosters, lineup and Analytics
+		// tabs; the analytics caller is the only one that can be handed an
+		// unknown, and it checks for that itself rather than making this print
+		// 'FA' over a missing field.
+		//
+		// The leading space is load-bearing: without a break opportunity the
+		// name's last word and the code fuse into one unbreakable token, and the
+		// column's minimum width goes *up* instead of down (measured: 12px saved
+		// with no space, 37px with one).
 		function appendTeamSuffix(nameCell, team) {
 			nameCell.appendChild(document.createTextNode(' '));
 			nameCell.appendChild(el('span', { class: 'team-suffix', text: team || 'FA' }));
@@ -2528,6 +2534,41 @@
 			return leagues.filter((l) => types.includes(l.type) && Array.isArray(l.players) && l.players.length > 0);
 		}
 
+		// The league types whose rosters do not survive the offseason. Everyone is
+		// released and redrafted, so a roster carried over from last season says
+		// nothing about who will be on it this one.
+		//
+		// 'salarycap' is deliberately not here even though those leagues re-auction
+		// annually: contracts and taxi squads do carry players across, so a cap
+		// league sitting on last season is showing something partly true rather
+		// than something wiped.
+		const REDRAFTING_TYPES = ['redraft', 'draftonly'];
+
+		// A league still on a season earlier than the one the sync is aiming at —
+		// its new season doesn't exist at the provider yet, so resolveSeason left
+		// it where it was rather than moving it to an empty league (see
+		// fetch-rosters.mjs). Everything it carries is last season's.
+		//
+		// For a dynasty or salary-cap league that is merely stale: rosters carry
+		// over, so last season's answer is approximately this season's, and during
+		// the rollover window — MFL leagues reopen anywhere from February to April
+		// — excluding them would empty the card for weeks over nothing.
+		//
+		// For a league that redrafts it is wrong rather than stale, and wrong in
+		// the same direction the mid-draft exclusion guards against: the handful of
+		// names left unrostered at the end of last season are not this season's
+		// wire, because this season's wire is *everybody* until the draft runs.
+		// Showing those few as "free in 1 league" states a true fact about a league
+		// year that has ended and reads as a claim about the one ahead.
+		//
+		// Both halves of the comparison have to be present to mean anything: a
+		// rosters.json written before leagues carried their own `season` has no
+		// answer here, and NaN < year is false, so those leagues stay included.
+		function awaitingRollover(league, year) {
+			if (!REDRAFTING_TYPES.includes(league.type)) return false;
+			return Number(league.season) < Number(year);
+		}
+
 		function computePlayerExposure(leagues, types) {
 			const eligible = exposureLeagues(leagues, types);
 			const byPlayer = new Map();
@@ -2539,7 +2580,13 @@
 					if (seen.has(p.name)) continue;
 					seen.add(p.name);
 					if (!byPlayer.has(p.name)) {
-						byPlayer.set(p.name, { position: p.position, leagues: [], ranks: [], url: null });
+						// Team settles with the first league to carry the player,
+						// exactly as position does. The providers spell a few of
+						// them differently (MFL says LVR where ESPN says LV), so
+						// which league got there first can change the code shown —
+						// the same way it already can on the Rosters tab, where the
+						// two leagues sit in different cards.
+						byPlayer.set(p.name, { position: p.position, team: p.team, leagues: [], ranks: [], url: null });
 					}
 					const entry = byPlayer.get(p.name);
 					entry.leagues.push(label);
@@ -2556,6 +2603,7 @@
 				.map(([name, info]) => ({
 					name,
 					position: info.position,
+					team: info.team,
 					leagues: info.leagues,
 					count: info.leagues.length,
 					exposure: total > 0 ? (info.leagues.length / total) * 100 : 0,
@@ -2620,7 +2668,7 @@
 					if (seen.has(p.name)) continue;
 					seen.add(p.name);
 					if (!byPlayer.has(p.name)) {
-						byPlayer.set(p.name, { position: p.position, leagues: [], ranks: [], statuses: [], url: null });
+						byPlayer.set(p.name, { position: p.position, team: p.team, leagues: [], ranks: [], statuses: [], url: null });
 					}
 					const entry = byPlayer.get(p.name);
 					entry.leagues.push(label);
@@ -2637,6 +2685,7 @@
 				.map(([name, info]) => ({
 					name,
 					position: info.position,
+					team: info.team,
 					leagues: info.leagues,
 					count: info.leagues.length,
 					exposure: total > 0 ? (info.leagues.length / total) * 100 : 0,
@@ -2746,16 +2795,29 @@
 		// leagues reading DYNASTY beside cap leagues reading DRAFT, deliberately;
 		// see automaticRankingType — so the median is the representative rank for
 		// the same reason it is on the exposure cards.
-		function computeTopAvailable(leagues, types, pools) {
+		function computeTopAvailable(leagues, types, pools, year) {
 			const inGroup = exposureLeagues(leagues, types);
 			// Counted separately so the card can say a league is missing on
 			// purpose. A league mid-draft has its `available` cleared by the
 			// sync, so it drops out of `eligible` on its own — but dropping out
 			// silently is what makes a denominator quietly wrong, and "6 leagues"
 			// with no explanation is exactly the kind of thing nobody notices.
-			const drafting = inGroup.filter((l) => l.draftInProgress === true).length;
+			//
+			// A league that hasn't rolled over yet is left out too, and needs its
+			// own check: unlike a drafting league its `available` is a perfectly
+			// real list, just an answer about a season that is already over — see
+			// awaitingRollover. The two are counted separately because the reader
+			// can act on the difference. A draft finishes within days; a rollover
+			// waits on a commissioner who hasn't opened next season yet.
+			const awaitingSet = new Set(inGroup.filter((l) => awaitingRollover(l, year)));
+			const awaiting = awaitingSet.size;
+			// Mutually exclusive with the count above, so the two notes partition
+			// the excluded leagues rather than double-counting one. Rollover wins:
+			// a draft flag on a league that hasn't rolled over describes last
+			// season's draft, which says nothing about the one still to come.
+			const drafting = inGroup.filter((l) => l.draftInProgress === true && !awaitingSet.has(l)).length;
 			const eligible = inGroup
-				.filter((l) => Array.isArray(l.available) && rankingPoolFor(l, pools));
+				.filter((l) => !awaitingSet.has(l) && Array.isArray(l.available) && rankingPoolFor(l, pools));
 			const byPlayer = new Map();
 
 			function entryFor(key, poolPlayer) {
@@ -2763,6 +2825,12 @@
 					byPlayer.set(key, {
 						name: poolPlayer.name,
 						position: poolPlayer.position,
+						// Off the pool entry, never off a roster: a row here is a
+						// player nobody holds, so in the general case there is no
+						// roster copy to read. Absent — not 'FA' — on a
+						// rosters.json synced before buildRankingList carried it,
+						// which is the one state the renderer treats as unknown.
+						team: poolPlayer.team,
 						url: poolPlayerUrl(poolPlayer.url),
 						ranks: [],
 						leagues: [],
@@ -2814,6 +2882,7 @@
 				.map((info) => ({
 					name: info.name,
 					position: info.position,
+					team: info.team,
 					leagues: info.leagues,
 					count: info.leagues.length,
 					ownedLeagues: info.ownedLeagues,
@@ -2835,7 +2904,7 @@
 				.filter(Boolean)
 				.sort()[0] ?? null;
 
-			return { total, rows, readAt, drafting };
+			return { total, rows, readAt, drafting, awaiting };
 		}
 
 		// Six rather than ten: two of these cards now sit side by side, and a
@@ -2925,7 +2994,16 @@
 					// Same link as the roster cards, from the same captured URL —
 					// see playerNameNode, which this mirrors on a row that has no
 					// player object behind it, only the aggregate.
-					nameCell.appendChild(el('div', {}, [playerNameNode({ name: r.name, ecr: { url: r.url } })]));
+					const nameLine = el('div', {}, [playerNameNode({ name: r.name, ecr: { url: r.url } })]);
+					// The same NFL-team suffix the roster and lineup tables carry,
+					// so a name reads identically wherever it appears. `undefined`
+					// is the one value that prints nothing: every provider and the
+					// ranking pool both normalise "no NFL team" to 'FA', so the
+					// field is only missing on a rosters.json synced before this
+					// shipped — and 'FA' against an unknown would be a claim, not a
+					// blank. Same rule the FantasyPros link already follows.
+					if (r.team !== undefined) appendTeamSuffix(nameLine, r.team);
+					nameCell.appendChild(nameLine);
 					const freeLine = leagueLine(showOwned ? 'Free in' : null, r.leagues);
 					if (freeLine) nameCell.appendChild(freeLine);
 					if (showOwned) {
@@ -3049,12 +3127,12 @@
 		// says "0/7" next to names you can't do anything about isn't worth the
 		// room beside a wire you can act on. The pool it needed is still fetched
 		// — Top Available filters the same list.
-		function renderTopAvailableCard(groupKey, types, leagues, pools) {
-			const { total, rows, readAt, drafting } = computeTopAvailable(leagues, types, pools);
-			// A group whose only leagues are mid-draft still gets a card, saying
-			// so. Returning null there would read as "no data" when the truth is
-			// "ask again when the draft is over".
-			if (total === 0 && drafting === 0) return null;
+		function renderTopAvailableCard(groupKey, types, leagues, pools, year) {
+			const { total, rows, readAt, drafting, awaiting } = computeTopAvailable(leagues, types, pools, year);
+			// A group whose only leagues are mid-draft or waiting on next season
+			// still gets a card, saying so. Returning null there would read as "no
+			// data" when the truth is "ask again once they've drafted".
+			if (total === 0 && drafting === 0 && awaiting === 0) return null;
 
 			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
 			card.appendChild(el('h2', { text: 'Top Available' }));
@@ -3070,9 +3148,21 @@
 					text: `${leagueCount(drafting)} drafting — excluded until the draft finishes`,
 				}));
 			}
+			if (awaiting > 0) {
+				card.appendChild(el('div', {
+					class: 'team',
+					text: `${leagueCount(awaiting)} still on last season — excluded until ${year ?? 'the new season'} opens`,
+				}));
+			}
 
 			if (total === 0) {
-				card.appendChild(el('div', { class: 'error-box', text: 'Every league here is mid-draft.' }));
+				// Built from the reasons that actually apply, so a group held up by
+				// both says both. Saying only "mid-draft" about a league that has no
+				// draft scheduled yet sends you looking at the wrong thing.
+				const held = [];
+				if (drafting > 0) held.push('mid-draft');
+				if (awaiting > 0) held.push('waiting on next season');
+				card.appendChild(el('div', { class: 'error-box', text: `Every league here is ${held.join(' or ')}.` }));
 				return card;
 			}
 
@@ -3880,7 +3970,7 @@
 				gridEl.appendChild(renderAnalyticsCard(groupKey, types, data.leagues));
 				const injuryCard = renderInjuryExposureCard(groupKey, types, data.leagues);
 				if (injuryCard) gridEl.appendChild(injuryCard);
-				const availableCard = renderTopAvailableCard(groupKey, types, data.leagues, data.rankingPools);
+				const availableCard = renderTopAvailableCard(groupKey, types, data.leagues, data.rankingPools, data.year);
 				if (availableCard) gridEl.appendChild(availableCard);
 			}
 

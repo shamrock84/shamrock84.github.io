@@ -189,11 +189,26 @@ const WIRE_EXCLUDED_POSITIONS = new Set(['K', 'DST']);
 // The position filter runs before the truncation, so RANKING_POOL_SIZE buys
 // 250 players you might claim rather than 250 minus whatever kickers happened
 // to rank inside it.
+//
+// `team` is here so the Top Available card can print the NFL team beside the
+// name the way every roster row does. It has to come off the pool entry rather
+// than off a roster: the whole point of a row there is that nobody holds the
+// player, so there is no roster copy to read a team from. This is the one
+// field on a pool entry the page cannot derive, and at three bytes a player it
+// is about 3KB across the three pools — the cost worth watching here is depth
+// (see RANKING_POOL_SIZE), not width.
 export function buildRankingList(players) {
   return (players || [])
     .map((p) => ({
       name: p.player_name,
       position: canonicalPosition(p.player_position_id),
+      // 'FA' rather than '' when FantasyPros carries no team, matching what
+      // every provider in lib/providers.mjs already writes onto a rostered
+      // player — so the page has one convention to render and "no NFL team"
+      // never has to be told apart from "field absent" (which is what a
+      // rosters.json synced before this existed has, and is the only case the
+      // page treats as unknown).
+      team: canonicalTeam(p.player_team_id) || 'FA',
       rank: toNumberOrNull(p.rank_ecr),
       url: compactPlayerUrl(playerPageUrl(p)),
     }))

@@ -62,10 +62,11 @@ const { computeInjuryExposure, computePlayerExposure } = context;
 
 // Shorthand for a rostered player. `injury` is the NFL designation as
 // normalizeInjuryStatus leaves it; `slot` is the roster status.
-function player(name, { pos = 'RB', injury = null, ecr = null, slot = 'ROSTER' } = {}) {
+function player(name, { pos = 'RB', team = 'BUF', injury = null, ecr = null, slot = 'ROSTER' } = {}) {
 	return {
 		name,
 		position: pos,
+		team,
 		status: slot,
 		injuryStatus: injury,
 		ecr: ecr == null ? null : { rank: ecr },
@@ -205,6 +206,22 @@ const rowFor = (rows, name) => rows.find((r) => r.name === name);
 	];
 	const { rows } = computeInjuryExposure(leagues, DYNASTY);
 	assert.equal(rows[0].count, 2, 'two entries in one league are still one league of exposure');
+}
+
+// --- The NFL team rides through to both cards ---------------------------------
+// Both analytics tables print it beside the name the way the roster tables do,
+// which means it has to survive the per-player aggregation. It settles with the
+// first league to carry the player, exactly as position does — the providers
+// spell a few teams differently (MFL says LVR where Sleeper says LV), so this
+// pins that a row gets one of them rather than nothing.
+{
+	const leagues = [
+		league('A', 'dynasty', [player('Shared', { team: 'LVR', injury: 'Q' }), player('Solo', { team: 'KCC', injury: 'O' })]),
+		league('B', 'salarycap', [player('Shared', { team: 'LV', injury: 'Q' })]),
+	];
+	assert.equal(rowFor(computeInjuryExposure(leagues, DYNASTY).rows, 'Shared').team, 'LVR', 'first league to carry him settles it');
+	assert.equal(rowFor(computeInjuryExposure(leagues, DYNASTY).rows, 'Solo').team, 'KCC');
+	assert.equal(rowFor(computePlayerExposure(leagues, DYNASTY).rows, 'Shared').team, 'LVR', 'and the player card agrees');
 }
 
 console.log('injury exposure: all assertions passed');
