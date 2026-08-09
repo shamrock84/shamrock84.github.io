@@ -124,7 +124,9 @@ async function fpGet(path, apiKey) {
 // How deep a ranking list is kept in data/rosters.json for the Top Available
 // card. This is the card's reach and nothing else: a free agent is findable
 // only if he is inside the pool, so the number is chosen against how deep the
-// leagues are rather than against how far anyone scrolls.
+// leagues are rather than against how far anyone scrolls. Counted *after*
+// kickers and defenses are dropped — see WIRE_EXCLUDED_POSITIONS — so all 250
+// are players somebody might actually claim.
 //
 // It started at 150, which was too shallow for the leagues that need the card
 // most. A twelve-team dynasty roster runs 25-30 deep, so 300-plus players are
@@ -152,12 +154,42 @@ function compactPlayerUrl(url) {
   return url.startsWith(FP_SITE) ? url.slice(FP_SITE.length) : url;
 }
 
+// Kickers and defenses are left out of the pool entirely, and so out of the
+// Top Available card built from it.
+//
+// Nobody rosters them in a keeper league, so they are *structurally* always
+// free — which meant that deepening the pool to 250 dragged in a block of
+// players who are permanently on every wire and permanently uninteresting.
+// They were 38% of the Dynasty/Salary Cap card, six of the first page's ten
+// rows, crowding out the players you might actually claim.
+//
+// The obvious objection — that this hides the best available defense in a
+// league that starts one — turns out not to bite, and the numbers are worth
+// recording because they're the whole reason this is safe to do globally:
+//
+//   DRAFT|PPR|ALL    16 DST + 15 K, and neither of its two leagues starts one
+//   DYNASTY|PPR|ALL   2 DST +  0 K, and all three of its leagues start 1 Def
+//   DRAFT|HALF|OP     none — the superflex OP list is offense-only
+//
+// So the pool full of them serves leagues that don't use them, and the
+// leagues that do use them draw on a list that barely ranks them (FantasyPros
+// gives defenses almost no dynasty value, correctly). The cost is two
+// defenses those three leagues could never have found a use for.
+//
+// This filters the *pool* only, never buildRankingIndex — a kicker on your own
+// roster still gets his ECR number on the roster card, exactly as before.
+const WIRE_EXCLUDED_POSITIONS = new Set(['K', 'DST']);
+
 // The ranking list itself, best first — the same response buildRankingIndex
-// turns into a name lookup, kept in list form so the page can show who the
-// best players are rather than only where our own players place among them.
+// turns into a name lookup, kept in list form so the page can show who is
+// unrostered rather than only where our own players place among them.
 // Players with no rank are dropped: they cannot be placed in an ordered list,
 // and an unranked player is not a "top" anything.
-function buildRankingList(players) {
+//
+// The position filter runs before the truncation, so RANKING_POOL_SIZE buys
+// 250 players you might claim rather than 250 minus whatever kickers happened
+// to rank inside it.
+export function buildRankingList(players) {
   return (players || [])
     .map((p) => ({
       name: p.player_name,
@@ -165,12 +197,12 @@ function buildRankingList(players) {
       rank: toNumberOrNull(p.rank_ecr),
       url: compactPlayerUrl(playerPageUrl(p)),
     }))
-    .filter((p) => p.name && p.rank != null)
+    .filter((p) => p.name && p.rank != null && !WIRE_EXCLUDED_POSITIONS.has(p.position))
     .sort((a, b) => a.rank - b.rank)
     .slice(0, RANKING_POOL_SIZE);
 }
 
-function buildRankingIndex(players) {
+export function buildRankingIndex(players) {
   const byName = new Map();
   for (const p of players || []) {
     const key = normalizePlayerName(p.player_name);
