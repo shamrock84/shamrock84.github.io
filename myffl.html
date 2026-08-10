@@ -2618,6 +2618,34 @@
 			return Number(league.season) < Number(year);
 		}
 
+		// Both exposure cards key a player by his *normalized* name, not the one
+		// the provider spelled. The providers disagree about suffixes and
+		// punctuation routinely — MFL's "Michael Penix Jr." is Sleeper's "Michael
+		// Penix" — and keying on the raw string made him two rows at half the
+		// exposure each, on a pair of cards whose entire job is counting how many
+		// leagues hold one player. Nothing on screen said so: two plausible rows,
+		// each carrying a correct-looking fraction.
+		//
+		// It is the same `normalizeName` Top Available already uses to decide
+		// whether a pool player is one of ours, which is why the two agree about
+		// who is who.
+		//
+		// The cost is the mirror image, and it is worth stating plainly: two
+		// *different* players whose names normalize alike would merge into one row,
+		// claiming exposure to somebody you don't hold. That is the hazard
+		// `playerPageUrl` exists to avoid on the sync side, where josh-allen.php is
+		// the quarterback and josh-allen-lb.php the linebacker. It cannot happen
+		// with these leagues: the collision needs two same-named players on *our
+		// own* rosters, and nothing in config/leagues.json rosters IDP — every
+		// position across every provider is QB/RB/WR/TE/PK/Def. Adding an IDP
+		// league is what would bring the linebacker back, and this is the comment
+		// to revisit when one appears.
+		//
+		// Position is deliberately not part of the key. It would guard that
+		// collision, but it would reintroduce the exact failure this fixes: MFL
+		// spells a kicker PK where Sleeper spells him K, so a kicker held in both
+		// would split the way Penix did. Team is worse still — the providers
+		// disagree there too, LVR against LV.
 		function computePlayerExposure(leagues, types) {
 			const eligible = exposureLeagues(leagues, types);
 			const byPlayer = new Map();
@@ -2626,18 +2654,23 @@
 				const label = league.leagueName || league.name;
 				const seen = new Set();
 				for (const p of league.players || []) {
-					if (seen.has(p.name)) continue;
-					seen.add(p.name);
-					if (!byPlayer.has(p.name)) {
-						// Team settles with the first league to carry the player,
-						// exactly as position does. The providers spell a few of
+					const key = normalizeName(p.name);
+					if (seen.has(key)) continue;
+					seen.add(key);
+					if (!byPlayer.has(key)) {
+						// The display name settles with the first league to carry
+						// him, the same way team and position do below — one of the
+						// spellings has to win, and none of them is more correct
+						// than another.
+						//
+						// Team settles the same way. The providers spell a few of
 						// them differently (MFL says LVR where ESPN says LV), so
 						// which league got there first can change the code shown —
 						// the same way it already can on the Rosters tab, where the
 						// two leagues sit in different cards.
-						byPlayer.set(p.name, { position: p.position, team: p.team, leagues: [], ranks: [], url: null });
+						byPlayer.set(key, { name: p.name, position: p.position, team: p.team, leagues: [], ranks: [], url: null });
 					}
-					const entry = byPlayer.get(p.name);
+					const entry = byPlayer.get(key);
 					entry.leagues.push(label);
 					if (p.ecr && Number.isFinite(p.ecr.rank)) entry.ranks.push(p.ecr.rank);
 					// One profile per player, so the first league to carry a URL
@@ -2648,9 +2681,9 @@
 			}
 
 			const total = eligible.length;
-			const rows = [...byPlayer.entries()]
-				.map(([name, info]) => ({
-					name,
+			const rows = [...byPlayer.values()]
+				.map((info) => ({
+					name: info.name,
 					position: info.position,
 					team: info.team,
 					leagues: info.leagues,
@@ -2767,12 +2800,13 @@
 				const label = league.leagueName || league.name;
 				const seen = new Set();
 				for (const p of league.players || []) {
-					if (seen.has(p.name)) continue;
-					seen.add(p.name);
-					if (!byPlayer.has(p.name)) {
-						byPlayer.set(p.name, { position: p.position, team: p.team, leagues: [], ranks: [], statuses: [], url: null, detail: null });
+					const key = normalizeName(p.name);
+					if (seen.has(key)) continue;
+					seen.add(key);
+					if (!byPlayer.has(key)) {
+						byPlayer.set(key, { name: p.name, position: p.position, team: p.team, leagues: [], ranks: [], statuses: [], url: null, detail: null });
 					}
-					const entry = byPlayer.get(p.name);
+					const entry = byPlayer.get(key);
 					entry.leagues.push(label);
 					if (p.ecr && Number.isFinite(p.ecr.rank)) entry.ranks.push(p.ecr.rank);
 					if (!entry.url && p.ecr?.url) entry.url = p.ecr.url;
@@ -2788,10 +2822,10 @@
 			}
 
 			const total = eligible.length;
-			const rows = [...byPlayer.entries()]
-				.filter(([, info]) => info.statuses.length > 0)
-				.map(([name, info]) => ({
-					name,
+			const rows = [...byPlayer.values()]
+				.filter((info) => info.statuses.length > 0)
+				.map((info) => ({
+					name: info.name,
 					position: info.position,
 					team: info.team,
 					leagues: info.leagues,
