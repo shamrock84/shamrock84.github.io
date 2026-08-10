@@ -287,6 +287,68 @@ const rowFor = (rows, name) => rows.find((r) => r.name === name);
 	assert.equal(rowFor(computePlayerExposure(leagues, DYNASTY).rows, 'Shared').team, 'LVR', 'and the player card agrees');
 }
 
+// --- One player, two spellings, one row ---------------------------------------
+// The live case this exists for: MFL calls him "Michael Penix Jr.", Sleeper
+// calls him "Michael Penix". Keyed on the raw string he was two rows at half
+// the exposure each, and both rows looked right. Both cards key on
+// normalizeName now, so the suffix, the punctuation and the accent are all the
+// same player.
+{
+	const leagues = [
+		league('A', 'dynasty', [player('Michael Penix Jr.', { injury: 'Q' })]),
+		league('B', 'dynasty', [player('Michael Penix', { injury: 'Q' })]),
+		league('C', 'dynasty', [player('michael penix', { injury: 'Q' })]),
+	];
+	const { total, rows } = computeInjuryExposure(leagues, DYNASTY);
+	assert.equal(rows.length, 1, 'three spellings are one player');
+	assert.equal(rows[0].count, 3);
+	assert.equal(Math.round(rows[0].exposure), 100);
+	assert.equal(rows[0].name, 'Michael Penix Jr.', 'the first league to carry him spells him');
+	assert.equal(total, 3);
+
+	// The player card has to agree, or the two cards would disagree about who is
+	// who while sharing a denominator.
+	const exposure = computePlayerExposure(leagues, DYNASTY);
+	assert.equal(exposure.rows.length, 1);
+	assert.equal(exposure.rows[0].count, 3);
+}
+{
+	// Punctuation and accents, the other half of what normalizeName folds.
+	const leagues = [
+		league('A', 'dynasty', [player("Ja'Marr Chase", { injury: 'Q' })]),
+		league('B', 'dynasty', [player('JaMarr Chase', { injury: 'Q' })]),
+	];
+	assert.equal(computeInjuryExposure(leagues, DYNASTY).rows.length, 1);
+
+	const accented = [
+		league('A', 'dynasty', [player('Austin Ekelér', { injury: 'Q' })]),
+		league('B', 'dynasty', [player('Austin Ekeler', { injury: 'Q' })]),
+	];
+	assert.equal(computeInjuryExposure(accented, DYNASTY).rows.length, 1);
+}
+{
+	// Two spellings inside one league are still one league of exposure — the
+	// per-league `seen` set has to normalise too, or the fix would turn a
+	// duplicate into a double count.
+	const leagues = [
+		league('A', 'dynasty', [player('Michael Penix Jr.', { injury: 'O' }), player('Michael Penix', { injury: 'O' })]),
+		league('B', 'dynasty', [player('Michael Penix', { injury: 'O' })]),
+	];
+	const { rows } = computeInjuryExposure(leagues, DYNASTY);
+	assert.equal(rows.length, 1);
+	assert.equal(rows[0].count, 2, 'two entries in one league are one league, whatever they are called');
+}
+{
+	// Different players stay different. The names have to actually normalise
+	// alike to merge — this is the reassurance that the key is not simply a
+	// surname.
+	const leagues = [
+		league('A', 'dynasty', [player('Michael Penix', { injury: 'Q' }), player('Michael Pittman', { injury: 'Q' })]),
+		league('B', 'dynasty', [player('Filler')]),
+	];
+	assert.equal(computeInjuryExposure(leagues, DYNASTY).rows.length, 2);
+}
+
 // --- The injury detail rides through the aggregation --------------------------
 // It reaches the roster two different ways — by MFL player id for MFL leagues,
 // by name for ESPN and Sleeper ones — so a player can easily carry it in one
