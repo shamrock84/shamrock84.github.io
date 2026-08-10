@@ -847,9 +847,16 @@
 		   seventh of variable-length prose is the first thing to break on a
 		   phone — and this is the same call the NFL team makes when it rides as
 		   a suffix instead of a column. Sits between the name and the league
-		   line, both of which are about the player rather than the injury. */
+		   line, both of which are about the player rather than the injury.
+
+		   Red rather than the grey the league line below it uses, and the same
+		   --ir-text the Status column and the roster IR badge already carry, so
+		   the injury reads as one thing across the row instead of a red code
+		   beside a grey explanation of it. That variable is defined in both the
+		   light and dark blocks (#991b1b against #fca5a5) — a literal here would
+		   be unreadable in one of them. */
 		.injury-detail {
-			color: var(--muted);
+			color: var(--ir-text);
 			font-size: 0.72rem;
 			margin-top: 0.1rem;
 		}
