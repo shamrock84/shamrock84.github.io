@@ -106,6 +106,13 @@ jobs:
       - name: Test the Injury Exposure card
         run: node scripts/test-injury-exposure.mjs
 
+      # The sync half of the same card: which designations MFL publishes and
+      # what survives off a row of its injury report. A mis-normalised code
+      # renders as a plausible badge and sorts wrong, which is the quietest way
+      # this can break.
+      - name: Test injury detail and designation parsing
+        run: node scripts/test-injury-detail.mjs
+
       - name: Test the Top Available card
         run: node scripts/test-top-available.mjs
 
