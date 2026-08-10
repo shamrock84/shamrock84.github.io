@@ -62,17 +62,19 @@ const context = {
 vm.createContext(context);
 vm.runInContext(scriptSource, context);
 
-const { computeInjuryExposure, computePlayerExposure } = context;
+const { computeInjuryExposure, computePlayerExposure, injuryDetailLine } = context;
 
 // Shorthand for a rostered player. `injury` is the NFL designation as
-// normalizeInjuryStatus leaves it; `slot` is the roster status.
-function player(name, { pos = 'RB', team = 'BUF', injury = null, ecr = null, slot = 'ROSTER' } = {}) {
+// normalizeInjuryStatus leaves it; `slot` is the roster status; `detail` is
+// what MFL's injury report says about it, as injuryEntryFromRow leaves it.
+function player(name, { pos = 'RB', team = 'BUF', injury = null, ecr = null, slot = 'ROSTER', detail = null } = {}) {
 	return {
 		name,
 		position: pos,
 		team,
 		status: slot,
 		injuryStatus: injury,
+		injuryDetail: detail,
 		ecr: ecr == null ? null : { rank: ecr },
 	};
 }
@@ -283,6 +285,66 @@ const rowFor = (rows, name) => rows.find((r) => r.name === name);
 	assert.equal(rowFor(computeInjuryExposure(leagues, DYNASTY).rows, 'Shared').team, 'LVR', 'first league to carry him settles it');
 	assert.equal(rowFor(computeInjuryExposure(leagues, DYNASTY).rows, 'Solo').team, 'KCC');
 	assert.equal(rowFor(computePlayerExposure(leagues, DYNASTY).rows, 'Shared').team, 'LVR', 'and the player card agrees');
+}
+
+// --- The injury detail rides through the aggregation --------------------------
+// It reaches the roster two different ways — by MFL player id for MFL leagues,
+// by name for ESPN and Sleeper ones — so a player can easily carry it in one
+// league and not another. Both copies come from the same global MFL report, so
+// unlike the designation there is nothing to reconcile: the first one found is
+// the answer, and a league without it must not blank it.
+{
+	const detail = { part: 'Hamstring', until: null };
+	const leagues = [
+		league('A', 'dynasty', [player('Matched Late', { injury: 'Q' })]),
+		league('B', 'dynasty', [player('Matched Late', { injury: 'Q', detail })]),
+	];
+	assert.deepEqual(rowFor(computeInjuryExposure(leagues, DYNASTY).rows, 'Matched Late').detail, detail);
+
+	// ...and a player nobody has detail for still renders, with none.
+	const bare = [
+		league('A', 'dynasty', [player('No Detail', { injury: 'O' })]),
+		league('B', 'dynasty', [player('Filler')]),
+	];
+	assert.equal(computeInjuryExposure(bare, DYNASTY).rows[0].detail, null);
+}
+
+// --- What actually gets printed under the name --------------------------------
+// A fixed `now` rather than the clock: every assertion below is about a date's
+// distance from today, so a real clock would make this pass in August and fail
+// in October.
+{
+	const now = new Date('2026-08-10T12:00:00Z').getTime();
+
+	assert.equal(injuryDetailLine({ part: 'Hamstring', until: null }, now), 'Hamstring');
+	assert.equal(injuryDetailLine({ part: 'Hamstring', until: 'Aug 15, 2026' }, now), 'Hamstring · back Aug 15',
+		'the year is noise inside the window and is the widest part of the string');
+	assert.equal(injuryDetailLine({ part: null, until: 'Sep 13, 2026' }, now), 'back Sep 13',
+		'a return date stands on its own when the body part is Undisclosed');
+
+	// The sentinel. MFL fills exp_return on every row, and the far dates are a
+	// season-end placeholder for retired and season-ending cases rather than a
+	// forecast — 17 distinct dates covered 325 rows. Printing "back Feb 15" in
+	// August claims a precision the feed does not have.
+	assert.equal(injuryDetailLine({ part: 'Personal', until: 'Feb 15, 2027' }, now), 'Personal',
+		'a date past the horizon is dropped, the body part is not');
+	assert.equal(injuryDetailLine({ part: null, until: 'Feb 15, 2027' }, now), null,
+		'and with nothing else to say, there is no line at all');
+
+	// A date already gone is the feed lagging, not news.
+	assert.equal(injuryDetailLine({ part: 'Knee', until: 'Aug 1, 2026' }, now), 'Knee');
+	// Today still counts — the horizon is the far edge, not both.
+	assert.equal(injuryDetailLine({ part: null, until: 'Aug 10, 2026' }, now), 'back Aug 10');
+
+	// A format nobody has looked at must not reach the card as "back Invalid
+	// Date" or "back NaN".
+	assert.equal(injuryDetailLine({ part: 'Ankle', until: 'sometime soon' }, now), 'Ankle');
+	assert.equal(injuryDetailLine({ part: null, until: 'sometime soon' }, now), null);
+
+	// Absent means "synced before this shipped", which renders as nothing at
+	// all rather than as a claim that nothing is wrong.
+	assert.equal(injuryDetailLine(null, now), null);
+	assert.equal(injuryDetailLine({ part: null, until: null }, now), null);
 }
 
 console.log('injury exposure: all assertions passed');

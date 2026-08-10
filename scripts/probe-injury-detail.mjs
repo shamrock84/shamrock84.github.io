@@ -2,13 +2,17 @@
 // Asks MFL and Sleeper what they will tell us about an injury beyond its
 // designation.
 //
-// The Injury Exposure card shows a one-or-two-letter status and nothing else.
-// The question is whether a line of detail — body part, expected return —
-// exists in responses the sync already makes, or whether it would need a new
-// source. fetchMflInjuries currently keeps only `status` and throws the rest
-// of each row away, and loadSleeperPlayerMap keeps only `injury_status` out of
-// a player dump that is understood to carry more; neither is evidence that
-// there is more, which is what this run is for.
+// The question it was written to settle: whether a line of detail — body part,
+// expected return — exists in responses the sync already makes, or whether it
+// would need a new source. It does. `details` and `exp_return` came back filled
+// on 325 of 325 rows, and the sync now keeps both (injuryEntryFromRow), which is
+// what the Injury Exposure card prints under a name.
+//
+// Still worth re-running whenever that line looks wrong or empty: it is the only
+// way to see what the feed is actually publishing, and it re-reads the status
+// vocabulary INJURY_SEVERITY has to cover — which is how the mangled IR-PUP
+// mapping surfaced the first time, having sorted a season-long reserve
+// designation below a Questionable for as long as it had existed.
 //
 // Deliberately shape-finding rather than field-checking: it does not look for
 // a key called `details`, it prints every key that isn't `id`/`status` and

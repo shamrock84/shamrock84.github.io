@@ -39,7 +39,7 @@ import {
   fetchEspnRosteredNames,
   fetchMflDraftStatus,
 } from './lib/providers.mjs';
-import { attachRankings, fantasyProsApiKey, nflSeasonPhase } from './lib/fantasypros.mjs';
+import { attachRankings, fantasyProsApiKey, nflSeasonPhase, normalizePlayerName } from './lib/fantasypros.mjs';
 
 const USERNAME = process.env.MFL_USERNAME;
 const PASSWORD = process.env.MFL_PASSWORD;
@@ -64,6 +64,52 @@ async function loadPreviousOutput() {
   } catch {
     return null;
   }
+}
+
+// Carries MFL's injury detail (body part, expected return) onto the rosters
+// that can't reach it by MFL player id — every ESPN and Sleeper league.
+//
+// MFL's TYPE=injuries is a plain NFL fact rather than a league one: it takes no
+// league parameter and covers the whole league-eligible player pool, which is
+// why one global report can serve rosters held on other sites at all. The join
+// has to be by name, and this is the only place both halves exist — the id-to-
+// name map is MFL's, `normalizePlayerName` is fantasypros.mjs's, and
+// providers.mjs deliberately imports neither (api/ imports providers.mjs, and
+// vercel.json's ignoreCommand doesn't list fantasypros.mjs, so a dependency
+// added there would silently skip Vercel deploys that need to ship).
+//
+// Two properties are load-bearing:
+//
+// It only ever *fills in* a detail, never replaces one. An MFL-rostered player
+// already carries the exact by-id answer from fetchLeagueRoster, and a name is
+// the weaker key — two players who share one collide here the same way they
+// would in a FantasyPros slug (josh-allen the quarterback, josh-allen-lb the
+// linebacker), so where an id has already spoken, the name is not consulted.
+//
+// It attaches nothing to a player the page doesn't already consider injured.
+// The detail is an annotation on a designation, not a designation of its own:
+// MFL carrying a stale row about somebody ESPN says is healthy must not put him
+// on the Injury Exposure card, which reads `injuryStatus`/the IR slot alone.
+export function attachInjuryDetail(leagues, injuries, playerMap) {
+  if (!injuries?.size || !playerMap?.size) return 0;
+  const byName = new Map();
+  for (const [id, entry] of injuries) {
+    if (!entry?.detail) continue;
+    const key = normalizePlayerName(playerMap.get(id)?.name);
+    if (key && !byName.has(key)) byName.set(key, entry.detail);
+  }
+
+  let filled = 0;
+  for (const league of leagues) {
+    for (const player of league.players || []) {
+      if (player.injuryDetail || !player.injuryStatus) continue;
+      const detail = byName.get(normalizePlayerName(player.name));
+      if (!detail) continue;
+      player.injuryDetail = detail;
+      filled++;
+    }
+  }
+  return filled;
 }
 
 // How stale a league's free agent list may get before the next sync re-reads
@@ -367,6 +413,11 @@ async function main() {
       });
     }
   }
+
+  // In memory, no requests: the report was fetched once above and the MFL
+  // player map was already loaded for the roster pass.
+  const detailed = attachInjuryDetail(leagues, injuries, playerMap);
+  if (detailed) console.log(`Matched injury detail by name for ${detailed} non-MFL roster entries`);
 
   for (const league of LEAGUES) {
     const target = leagues.find((l) => l.id === league.id);

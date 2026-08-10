@@ -61,6 +61,23 @@ const INJURY_STATUS_MAP = {
   'PHYSICALLY UNABLE TO PERFORM': 'PUP',
   NFI: 'NFI',
   'NON FOOTBALL INJURY': 'NFI',
+  // MFL's own spelling of the two reserve lists, verified against the real
+  // injury report by probe-injury-detail.yml (2 IR-PUP and 1 IR-NFI in a
+  // 325-row August report). The hyphen is already a space by the time this
+  // map is consulted, and without these two entries the length fallback below
+  // sliced "IR PUP" to "IR " — a trailing-space string that renders as a
+  // convincing "IR" and ranks -1 in INJURY_SEVERITY, so a season-long reserve
+  // designation sorted *below* a Questionable and lost every disagreement to
+  // it. PUP and NFI were already in that list waiting for these.
+  'IR PUP': 'PUP',
+  'IR NFI': 'NFI',
+  // Not an injury, and reaches the page as its own designation for the same
+  // reason HOL does. Spelled out here rather than left to the slice, which
+  // produced the same 'RET' by accident. It is deliberately *not* in
+  // INJURY_SEVERITY: a retired player is a roster problem but not a triage
+  // one, and ranking him above IR would put him at the top of a card whose
+  // first row should be the thing you can still do something about.
+  RETIRED: 'RET',
   SUSPENDED: 'SUSP',
   SUS: 'SUSP',
   SUSPENSION: 'SUSP',
@@ -378,6 +395,32 @@ export async function fetchNflByeWeeks(cookie) {
   return map;
 }
 
+// What MFL carries about an injury beyond the designation itself: a body part
+// and an expected return date, both of which probe-injury-detail.yml found
+// filled on 325 of 325 rows. Pure, and separate from the fetch, so the parsing
+// rules below are testable without reaching MFL (scripts/test-injury-detail.mjs).
+//
+// Two of those rules are judgement rather than transcription:
+//
+// `details` reads "Undisclosed" for a large share of the report, which is the
+// feed saying it doesn't know. Printing that word under a player's name spends
+// a line to say nothing, so it becomes no detail at all — the same distinction
+// the page draws everywhere else between "nothing to report" and "not asked".
+//
+// `exp_return` is kept verbatim as a string rather than parsed into a date.
+// The page decides whether a return date is worth showing at all (it carries a
+// season-end sentinel for retired and season-ending cases), and a date that
+// crossed the sync as a Date would arrive there as an ISO timestamp claiming a
+// precision the feed doesn't have.
+export function injuryEntryFromRow(row) {
+  const status = normalizeInjuryStatus(row?.status);
+  if (!status) return null;
+  const rawPart = String(row?.details ?? '').trim();
+  const part = rawPart && rawPart.toLowerCase() !== 'undisclosed' ? rawPart : null;
+  const until = String(row?.exp_return ?? '').trim() || null;
+  return { status, detail: part || until ? { part, until } : null };
+}
+
 // NFL injury report, keyed by MFL player id — like fetchNflByeWeeks, a
 // plain NFL-schedule-adjacent fact rather than anything league-specific, so
 // one global call per sync instead of once per league. MFL's TYPE=injuries
@@ -388,8 +431,8 @@ export async function fetchMflInjuries(cookie) {
   const rows = Array.isArray(rawRows) ? rawRows : rawRows ? [rawRows] : [];
   const map = new Map();
   for (const r of rows) {
-    const status = normalizeInjuryStatus(r.status);
-    if (status) map.set(r.id, status);
+    const entry = injuryEntryFromRow(r);
+    if (entry) map.set(r.id, entry);
   }
   return map;
 }
@@ -630,7 +673,13 @@ export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, inj
       // the roster export directly for leagues with a salary cap enabled.
       salary: p.salary ?? null,
       contractYear: p.contractYear ?? null,
-      injuryStatus: injuries?.get(p.id) ?? null,
+      injuryStatus: injuries?.get(p.id)?.status ?? null,
+      // Exact, by MFL player id. Every other provider's rosters have to reach
+      // this same report by name instead — see attachInjuryDetail in
+      // fetch-rosters.mjs, which is where the two sides can be joined without
+      // providers.mjs taking a dependency on fantasypros.mjs (api/ imports
+      // this file, and vercel.json's ignoreCommand doesn't cover that one).
+      injuryDetail: injuries?.get(p.id)?.detail ?? null,
     };
   });
 

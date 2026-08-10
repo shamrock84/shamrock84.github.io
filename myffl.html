@@ -842,6 +842,17 @@
 			font-size: 0.62rem;
 			letter-spacing: 0.03em;
 		}
+		/* What the injury actually is, under the name rather than in a column of
+		   its own. The table already carries six columns on Top Available and a
+		   seventh of variable-length prose is the first thing to break on a
+		   phone — and this is the same call the NFL team makes when it rides as
+		   a suffix instead of a column. Sits between the name and the league
+		   line, both of which are about the player rather than the injury. */
+		.injury-detail {
+			color: var(--muted);
+			font-size: 0.72rem;
+			margin-top: 0.1rem;
+		}
 		/* Injury Exposure's Status column. Same red as the badge beside a name
 		   on a roster card, since it's the same designation — here it's a column
 		   of its own rather than a badge, so no parentheses. */
@@ -2703,6 +2714,39 @@
 			return String(p.status || '').toUpperCase() === 'INJURED_RESERVE' ? 'IR' : null;
 		}
 
+		// How far out an expected return date is still worth printing. MFL fills
+		// exp_return on every row of its injury report, but only 17 distinct dates
+		// covered 325 rows when probe-injury-detail.yml looked: the far ones are a
+		// season-end sentinel doing duty for retired and season-ending cases, not a
+		// forecast. "Back Feb 15" under a name in August claims a precision the
+		// feed doesn't have, and it isn't triage information either — the
+		// designation beside it already says IR. So a date only shows if it lands
+		// inside the window where knowing the day changes what you do this week.
+		const INJURY_RETURN_HORIZON_DAYS = 45;
+
+		// The one-line description of an injury: body part, expected return, or
+		// both. Returns null when there is nothing worth a line, which is what a
+		// roster synced before this shipped renders — the same rule the ECR link
+		// and the team suffix follow, where absent means "not asked" rather than
+		// "nothing wrong".
+		function injuryDetailLine(detail, now = Date.now()) {
+			if (!detail) return null;
+			const parts = [];
+			if (detail.part) parts.push(detail.part);
+			if (detail.until) {
+				const when = new Date(detail.until);
+				const days = (when.getTime() - now) / 86400000;
+				// A date already past is the feed lagging rather than news, and NaN
+				// is a format nobody has looked at — neither belongs on the card.
+				if (Number.isFinite(days) && days > -1 && days <= INJURY_RETURN_HORIZON_DAYS) {
+					// "Aug 15, 2026" -> "Aug 15": the year is noise inside a
+					// 45-day window, and it is the widest part of the string.
+					parts.push(`back ${detail.until.replace(/,\s*\d{4}\s*$/, '')}`);
+				}
+			}
+			return parts.length ? parts.join(' · ') : null;
+		}
+
 		// Injury exposure: the same question as player exposure, asked only of
 		// the players currently carrying an injury designation. The denominator
 		// is deliberately the same set of leagues, so "3/9" means the same thing
@@ -2726,12 +2770,18 @@
 					if (seen.has(p.name)) continue;
 					seen.add(p.name);
 					if (!byPlayer.has(p.name)) {
-						byPlayer.set(p.name, { position: p.position, team: p.team, leagues: [], ranks: [], statuses: [], url: null });
+						byPlayer.set(p.name, { position: p.position, team: p.team, leagues: [], ranks: [], statuses: [], url: null, detail: null });
 					}
 					const entry = byPlayer.get(p.name);
 					entry.leagues.push(label);
 					if (p.ecr && Number.isFinite(p.ecr.rank)) entry.ranks.push(p.ecr.rank);
 					if (!entry.url && p.ecr?.url) entry.url = p.ecr.url;
+					// First league to carry one settles it, the same way team and
+					// position do. Unlike the designation there is nothing to
+					// reconcile: every copy of this came from one global MFL report,
+					// whether by player id or by name, so the leagues cannot disagree
+					// about the body part the way they routinely do about severity.
+					if (!entry.detail && p.injuryDetail) entry.detail = p.injuryDetail;
 					const status = injuryDesignation(p);
 					if (status) entry.statuses.push(status);
 				}
@@ -2749,6 +2799,7 @@
 					exposure: total > 0 ? (info.leagues.length / total) * 100 : 0,
 					ecr: medianRank(info.ranks),
 					url: info.url,
+					detail: info.detail,
 					status: info.statuses.reduce((worst, s) =>
 						injurySeverityRank(s) > injurySeverityRank(worst) ? s : worst
 					),
@@ -3076,6 +3127,12 @@
 					// blank. Same rule the FantasyPros link already follows.
 					if (r.team !== undefined) appendTeamSuffix(nameLine, r.team);
 					nameCell.appendChild(nameLine);
+					// Injury Exposure only — the other two cards never set `detail`,
+					// so this needs no flag of its own. Above the league line: what
+					// is wrong with him is the reason to read the row, and where you
+					// hold him is the consequence.
+					const detailText = injuryDetailLine(r.detail);
+					if (detailText) nameCell.appendChild(el('div', { class: 'injury-detail', text: detailText }));
 					const freeLine = leagueLine(showOwned ? 'Free in' : null, r.leagues);
 					if (freeLine) nameCell.appendChild(freeLine);
 					if (showOwned) {
