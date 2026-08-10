@@ -1,0 +1,39 @@
+name: Probe Injury Detail (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here, the
+# same rule the other manual workflows follow.
+#
+# Asks MFL and Sleeper what they carry about an injury beyond its designation,
+# before anything is built on the assumption that they carry something. The
+# Injury Exposure card shows a one-or-two-letter status; whether it can show a
+# body part or an expected return depends on fields the sync currently throws
+# away, and both APIs are unreachable from a sandbox, so a workflow run is the
+# only place to ask.
+#
+# It also answers the design question the card actually turns on: whether MFL's
+# global injury report reaches players we roster on Sleeper and ESPN, which is
+# what decides between one shared map and a per-provider field that would be
+# blank for whichever leagues MFL doesn't serve.
+#
+# Read-only: MFL TYPE=injuries and TYPE=players, plus Sleeper's public player
+# dump. Every one of them is a call the 4-hourly sync already makes.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Dump what the injury feeds carry beyond a designation
+        env:
+          MFL_USERNAME: ${{ secrets.MFL_USERNAME }}
+          MFL_PASSWORD: ${{ secrets.MFL_PASSWORD }}
+        run: node scripts/probe-injury-detail.mjs
