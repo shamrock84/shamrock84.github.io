@@ -3075,7 +3075,19 @@
 		// ten-row table pushed the pager below the fold on a phone — you had to
 		// scroll to reach the control that saves you scrolling. Six keeps the
 		// pager reachable without scrolling on the shortest phone screens.
+		//
+		// This is Injury Exposure's size, and the default for anything added
+		// later. Player Exposure overrides it below.
 		const ANALYTICS_PAGE_SIZE = 6;
+
+		// Player Exposure shows eight. Deliberately not a change to the constant
+		// above: the two cards sit side by side, so this makes them uneven and
+		// puts this one's pager a little lower on a short screen — the exact
+		// trade the six was protecting, taken here and not on the card beside it.
+		// Injury Exposure is triage, where the top rows are the whole point and a
+		// shorter table is no loss; Player Exposure is a list you actually read
+		// down, and eight of it fits before the pager.
+		const PLAYER_EXPOSURE_PAGE_SIZE = 8;
 
 		// Top Available pages deeper. It's a list you read down rather than a
 		// summary you glance at — the exposure cards' whole content is their
@@ -3260,7 +3272,7 @@
 				return card;
 			}
 
-			appendAnalyticsTable(card, rows, total);
+			appendAnalyticsTable(card, rows, total, { pageSize: PLAYER_EXPOSURE_PAGE_SIZE });
 			return card;
 		}
 
