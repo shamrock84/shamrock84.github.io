@@ -3080,13 +3080,21 @@
 		// later. Player Exposure overrides it below.
 		const ANALYTICS_PAGE_SIZE = 6;
 
-		// Player Exposure shows eight. Deliberately not a change to the constant
-		// above: the two cards sit side by side, so this makes them uneven and
-		// puts this one's pager a little lower on a short screen — the exact
-		// trade the six was protecting, taken here and not on the card beside it.
-		// Injury Exposure is triage, where the top rows are the whole point and a
-		// shorter table is no loss; Player Exposure is a list you actually read
-		// down, and eight of it fits before the pager.
+		// Player Exposure shows eight, and the difference from the six above is
+		// the point rather than an inconsistency to tidy away.
+		//
+		// The two cards sit side by side on desktop, and their rows are not the
+		// same height. An Injury Exposure row carries three lines — the name, the
+		// injury under it, then the leagues — where a Player Exposure row carries
+		// two, having no injury to describe. So six of the taller rows stand about
+		// as tall as eight of the shorter ones (18 lines against 16), and the two
+		// cards come out roughly level instead of one trailing a third of a table
+		// below the other.
+		//
+		// That makes these two numbers a pair. Anything that changes how many
+		// lines a row of either card takes — dropping the injury detail line,
+		// adding a sub-line to the player card — has to move them together, or
+		// the alignment they exist for quietly goes away.
 		const PLAYER_EXPOSURE_PAGE_SIZE = 8;
 
 		// Top Available pages deeper. It's a list you read down rather than a
