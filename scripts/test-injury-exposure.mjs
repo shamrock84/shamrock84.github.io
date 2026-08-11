@@ -209,10 +209,11 @@ const rowFor = (rows, name) => rows.find((r) => r.name === name);
 	assert.equal(computeInjuryExposure([...leagues, league('B', 'dynasty', [player('X')])], DYNASTY).rows[0].status, 'Q');
 }
 
-// --- Ordering: severity first, then exposure, then the better player ----------
-// This is where the card parts company with Player Exposure beside it, which
-// leads on exposure alone. Severity first makes it a triage list: an IR outranks
-// a Questionable however many leagues the Questionable spans.
+// --- Ordering: still developing first, settled below --------------------------
+// The card's first key is whether a designation is still a question, not how bad
+// it is. Severity alone used to lead, and it made the card go stale: an IR is
+// triage the week it lands and a standing fact every week after, but it held the
+// top row all season either way. A sort nothing can displace has stopped sorting.
 {
 	const leagues = [
 		league('A', 'dynasty', [
@@ -223,21 +224,48 @@ const rowFor = (rows, name) => rows.find((r) => r.name === name);
 		league('C', 'dynasty', [player('Wide Q', { injury: 'Q', ecr: 5 })]),
 	];
 	const { rows } = computeInjuryExposure(leagues, DYNASTY);
-	assert.deepEqual([...rows].map((r) => r.name), ['Lone IR', 'Wide Q'],
-		'one league of IR leads three leagues of Questionable, fringe player and all');
+	assert.deepEqual([...rows].map((r) => r.name), ['Wide Q', 'Lone IR'],
+		'three leagues of Questionable is this week\'s problem; the IR is already handled');
 }
 {
-	// The full ladder, worst first, one league each so only severity can be
-	// ordering them. An unrecognised code ranks below everything known and so
-	// sorts last — deliberate, since a string nobody has read must not lead a
-	// card whose whole job is showing the worst thing first.
-	const ladder = ['IR', 'PUP', 'NFI', 'SUSP', 'HOL', 'COVID', 'O', 'D', 'Q', 'DTD', 'P', 'ZZZ'];
+	// Settled rows are demoted, never dropped. A newly placed IR is real news,
+	// and a card that hid them would never show it.
 	const leagues = [
-		league('A', 'dynasty', ladder.map((s, i) => player(`P${i}`, { injury: s }))),
+		league('A', 'dynasty', [player('Parked', { injury: 'IR' })]),
 		league('B', 'dynasty', [player('Filler')]),
 	];
 	const { rows } = computeInjuryExposure(leagues, DYNASTY);
-	assert.deepEqual([...rows].map((r) => r.status), ladder);
+	assert.equal(rows.length, 1);
+	assert.equal(rows[0].status, 'IR');
+}
+{
+	// The full ladder: the live half worst-first, then the settled half
+	// worst-first. One league each, so only the sort can be ordering them.
+	//
+	// ZZZ is unrecognised — it ranks -1 and is absent from INJURY_SETTLED, which
+	// puts it at the bottom of the *live* half. It neither leads the card nor
+	// gets filed as season-ending on the strength of a string nobody has read.
+	// RET is the mirror case: settled by name, unranked by severity, so it sits
+	// at the bottom of the settled half.
+	const live = ['COVID', 'O', 'D', 'Q', 'DTD', 'P', 'ZZZ'];
+	const settled = ['IR', 'PUP', 'NFI', 'SUSP', 'HOL', 'RET'];
+	const leagues = [
+		league('A', 'dynasty', [...live, ...settled].map((s, i) => player(`P${i}`, { injury: s }))),
+		league('B', 'dynasty', [player('Filler')]),
+	];
+	const { rows } = computeInjuryExposure(leagues, DYNASTY);
+	assert.deepEqual([...rows].map((r) => r.status), [...live, ...settled]);
+}
+{
+	// Severity still decides which designation a player is shown as carrying
+	// when two providers disagree. That is the other job INJURY_SEVERITY does,
+	// and tiering the sort must not touch it — a real IR still beats a
+	// Questionable there, even though it now sorts below one.
+	const leagues = [
+		league('A', 'dynasty', [player('Disputed', { injury: 'Q' })]),
+		league('B', 'dynasty', [player('Disputed', { injury: 'IR' })]),
+	];
+	assert.equal(computeInjuryExposure(leagues, DYNASTY).rows[0].status, 'IR');
 }
 {
 	// Within one severity tier the old ordering still applies: exposure, then

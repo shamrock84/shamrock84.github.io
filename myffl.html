@@ -2745,6 +2745,32 @@
 
 		const injurySeverityRank = (status) => INJURY_SEVERITY.indexOf(status);
 
+		// Designations that are settled rather than developing: they are decided
+		// for months, and once you have absorbed one there is nothing to do about
+		// it again until it ends. Severity says how bad a designation is; this
+		// says whether it is still a question.
+		//
+		// It exists because severity alone made the card go stale. A one-league IR
+		// on a fringe player outranked everything by construction, so it took the
+		// top row in August and would have held it into February — Chris Brazzell
+		// II, IR, ECR 287, leading a card above three leagues' worth of
+		// Questionable on players who actually start. Two of the six rows on the
+		// Dynasty card's first page were that, before a game had been played, and
+		// IR designations only pile up once the season starts.
+		//
+		// Deliberately *not* a re-ranking of INJURY_SEVERITY, which still has to
+		// mean severity: it is the other half of picking which designation to show
+		// when two providers disagree, and there a real IR must still beat a
+		// Questionable. Two questions, two lists.
+		//
+		// An unrecognised code is deliberately absent, which lands it in the live
+		// tier ranked -1 — the bottom of the half that is still developing. It
+		// neither leads the card nor gets quietly filed as season-ending on the
+		// strength of a string nobody has read.
+		const INJURY_SETTLED = ['IR', 'PUP', 'NFI', 'SUSP', 'HOL', 'RET'];
+
+		const injurySettledRank = (status) => (INJURY_SETTLED.includes(status) ? 1 : 0);
+
 		// The designation to treat a player as carrying. Normally the NFL injury
 		// report's, exactly as the roster cards badge it — but a player parked on
 		// a league's IR slot is injured whether or not the feed has caught up, so
@@ -2845,27 +2871,41 @@
 						injurySeverityRank(s) > injurySeverityRank(worst) ? s : worst
 					),
 				}))
-				// Worst news first — the one place this card deliberately parts
-				// company with the player card beside it, which leads on exposure.
+				// Still developing first, settled below — then worst news first
+				// inside each half. Both keys matter, and the order between them
+				// is the whole design of this card.
 				//
-				// The two answer different questions. "Where am I concentrated" is
-				// a portfolio question and exposure is the whole of it. "What is
-				// broken" is triage, and an IR outranks a Questionable however many
-				// leagues the Questionable spans: the Q resolves itself by Sunday
-				// and the IR is a roster slot you have to do something about.
-				// Exposure stays as the second key, so within a tier the widest
-				// problem still leads.
+				// Severity alone used to lead, on the reasoning that a card headed
+				// "Injury Exposure" is triage and an IR outranks a Questionable
+				// however many leagues the Q spans. That reasoning has a hole in
+				// it, and a season of watching found it: an IR is triage *once*.
+				// The week it lands you drop somebody and move on, and every week
+				// after that it is a fact about a roster slot you already settled,
+				// still holding the top row. In August the Dynasty card opened
+				// with a one-league IR on a fringe player and a holdout — two of
+				// six rows spoken for before a game was played, and it would have
+				// been the same two in February. A sort nothing can displace has
+				// stopped sorting.
 				//
-				// The cost, and it is real: a 1-league IR on a fringe player now
-				// tops a 3-league Q on a good one. That is the right call for a
-				// card headed "Injury Exposure" and it is why severity is first
-				// rather than a tiebreak — but it does mean the top row is the
-				// worst *designation*, not always the biggest problem.
+				// So the first key is whether the designation is still a question
+				// (see INJURY_SETTLED). A Questionable on three rosters is what
+				// you act on this week; the IR is a standing note, and it keeps
+				// its place at the bottom rather than being hidden — a *newly*
+				// placed IR is real news, and dropping settled rows entirely would
+				// mean it never appeared at all.
+				//
+				// Within each half the old ordering is untouched: severity, then
+				// exposure, then the better player. Which means the cost of the
+				// old design survives in miniature and is worth knowing — inside
+				// the settled half a one-league IR still tops a five-league
+				// suspension, on the same reasoning that was wrong at the top of
+				// the card and is harmless at the bottom of it.
 				//
 				// `count` used to sit between exposure and ECR. It could never
 				// break a tie: exposure is count/total and total is fixed for the
 				// whole card, so equal exposure is equal count by construction.
 				.sort((a, b) =>
+					injurySettledRank(a.status) - injurySettledRank(b.status) ||
 					injurySeverityRank(b.status) - injurySeverityRank(a.status) ||
 					b.exposure - a.exposure ||
 					rankOrLast(a.ecr) - rankOrLast(b.ecr) ||
