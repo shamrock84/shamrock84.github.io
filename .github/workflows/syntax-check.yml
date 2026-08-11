@@ -116,6 +116,12 @@ jobs:
       - name: Test the Top Available card
         run: node scripts/test-top-available.mjs
 
+      # Click-to-sort on the shared analytics table. The sort state lives in a
+      # closure rather than a pure function, so this one drives a DOM stub — and
+      # every way it can break still renders a plausible-looking table.
+      - name: Test the analytics column sorting
+        run: node scripts/test-analytics-sort.mjs
+
       # Whether a league's draft has finished, which decides if its wire is
       # shown at all. The fixtures are copied from what the real MFL API
       # returned, since the shape is undocumented and unreachable from CI.

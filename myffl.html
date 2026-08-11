@@ -822,6 +822,23 @@
 		table.standings td:not(:first-child) {
 			text-align: right;
 		}
+		/* Sortable analytics headers. The arrow is the only affordance a header
+		   gets until you hover, since three of these tables sit on one tab and a
+		   permanent marker on every sortable column is more noise than signal —
+		   the columns that sort are the short numeric ones, which is learnable in
+		   one click. */
+		th.sortable {
+			cursor: pointer;
+			user-select: none;
+			-webkit-user-select: none;
+		}
+		th.sortable:hover {
+			color: var(--text);
+		}
+		.sort-arrow {
+			font-size: 0.85em;
+			opacity: 0.85;
+		}
 		tr.me-row td {
 			font-weight: 700;
 			background: var(--gold);
@@ -3167,6 +3184,81 @@
 			const table = el('table', { class: 'standings' });
 			card.appendChild(table);
 
+			// Click-to-sort on the three short numeric columns. The card's own
+			// order is a fourth state rather than something you lose on the first
+			// click: each header cycles through its natural direction, the
+			// reverse, and then back to the default. That matters most on Injury
+			// Exposure, whose default order encodes the live/settled split — a
+			// two-state toggle would strand you in a sort with no way back except
+			// reloading the page.
+			//
+			// Sorting is per card and per visit: no localStorage, since the
+			// default order is the considered one and a sort you set last Tuesday
+			// silently overriding it is worse than clicking again.
+			//
+			// Ties fall back to the card's own order rather than to nothing, which
+			// is what keeps a Pos sort from scrambling players within a position —
+			// under it they stay in exposure order, or wire order, or whatever
+			// that card sorted by.
+			const defaultIndex = new Map(rows.map((r, i) => [r, i]));
+			const SORTS = {
+				// Fantasy order (QB, RB, WR, TE, PK, Def), not alphabetical, which
+				// would open with Def and bury the quarterbacks in the middle.
+				pos: { dir: 1, value: (r) => positionRank(r.position) },
+				// Ascending: rank 1 is the best player, so the natural first click
+				// is best-first. `missingLast` is what keeps an unranked player at
+				// the bottom in *both* directions — the obvious `rankOrLast`
+				// treatment ranks him worse than everybody, which reads correctly
+				// ascending and then hands him the top row on the reverse click.
+				// No ECR means the rankings didn't have him, not that he is the
+				// worst player in the league.
+				ecr: { dir: 1, value: (r) => r.ecr, missingLast: true },
+				// Descending: most exposed first is what anybody clicking a column
+				// called Pct is asking for.
+				pct: { dir: -1, value: (r) => r.exposure },
+			};
+			let sortKey = null;
+			let sortDir = 0;
+
+			function sortedRows() {
+				if (!sortKey) return rows;
+				const { value, missingLast } = SORTS[sortKey];
+				const byDefault = (a, b) => defaultIndex.get(a) - defaultIndex.get(b);
+				return [...rows].sort((a, b) => {
+					const av = value(a);
+					const bv = value(b);
+					if (missingLast && (av == null || bv == null)) {
+						if (av == null && bv == null) return byDefault(a, b);
+						return av == null ? 1 : -1;
+					}
+					return (av === bv ? 0 : av < bv ? -1 : 1) * sortDir || byDefault(a, b);
+				});
+			}
+
+			// Natural direction, then its reverse, then back to the card's order.
+			function cycleSort(key) {
+				if (sortKey !== key) {
+					sortKey = key;
+					sortDir = SORTS[key].dir;
+				} else if (sortDir === SORTS[key].dir) {
+					sortDir = -sortDir;
+				} else {
+					sortKey = null;
+					sortDir = 0;
+				}
+				page = 0;
+				renderPage();
+			}
+
+			function sortableHeader(label, key, attrs = {}) {
+				const th = el('th', { ...attrs, class: `${attrs.class || ''} sortable`.trim(), text: label });
+				if (sortKey === key) {
+					th.appendChild(el('span', { class: 'sort-arrow', text: sortDir === 1 ? ' ▲' : ' ▼' }));
+				}
+				th.addEventListener('click', () => cycleSort(key));
+				return th;
+			}
+
 			const pageCount = Math.ceil(rows.length / pageSize);
 			let page = 0;
 			let pager = null;
@@ -3192,12 +3284,17 @@
 				// right order whether or not the number is on screen.
 				const showEcr = isLoggedIn();
 				headRow.appendChild(el('th', { text: 'Player' }));
-				headRow.appendChild(el('th', { text: 'Pos' }));
+				headRow.appendChild(sortableHeader('Pos', 'pos'));
 				if (showStatus) headRow.appendChild(el('th', { text: 'Status' }));
-				if (showEcr) headRow.appendChild(el('th', { class: 'ecr-cell', text: 'ECR' }));
+				// Only sortable where it is on screen. A logged-out visitor has no
+				// ECR column to click, though the default order still uses the
+				// number underneath it.
+				if (showEcr) headRow.appendChild(sortableHeader('ECR', 'ecr', { class: 'ecr-cell' }));
 				headRow.appendChild(el('th', { text: countHeader }));
 				if (showOwned) headRow.appendChild(el('th', { text: 'Own In' }));
-				if (showExposure) headRow.appendChild(el('th', { text: 'Pct' }));
+				// Top Available has no Pct column — a percentage of leagues means
+				// nothing there — so it gets Pos and ECR only.
+				if (showExposure) headRow.appendChild(sortableHeader('Pct', 'pct'));
 				table.appendChild(headRow);
 
 				// One grey line of league names needs no label. Two do, and the
@@ -3212,7 +3309,7 @@
 				}
 
 				const start = page * pageSize;
-				for (const r of rows.slice(start, start + pageSize)) {
+				for (const r of sortedRows().slice(start, start + pageSize)) {
 					const row = el('tr');
 					const nameCell = el('td');
 					// Same link as the roster cards, from the same captured URL —
