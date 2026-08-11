@@ -3184,7 +3184,7 @@
 			const table = el('table', { class: 'standings' });
 			card.appendChild(table);
 
-			// Click-to-sort on the three short numeric columns. The card's own
+			// Click-to-sort on every column but the player's name. The card's own
 			// order is a fourth state rather than something you lose on the first
 			// click: each header cycles through its natural direction, the
 			// reverse, and then back to the default. That matters most on Injury
@@ -3216,6 +3216,16 @@
 				// Descending: most exposed first is what anybody clicking a column
 				// called Pct is asking for.
 				pct: { dir: -1, value: (r) => r.exposure },
+				// The n/total columns, descending for the same reason. On the two
+				// exposure cards this is the same ordering as Pct — exposure is
+				// count/total and total is fixed for the whole card — and it is
+				// still worth having, because the reader clicking the number they
+				// can see shouldn't have to know that. On Top Available it is the
+				// only way to sort by reach, since that card has no Pct column.
+				count: { dir: -1, value: (r) => r.count },
+				// Top Available's second count, and the one place the two differ:
+				// how many leagues you already hold a free agent in.
+				owned: { dir: -1, value: (r) => r.ownedCount },
 			};
 			let sortKey = null;
 			let sortDir = 0;
@@ -3290,8 +3300,8 @@
 				// ECR column to click, though the default order still uses the
 				// number underneath it.
 				if (showEcr) headRow.appendChild(sortableHeader('ECR', 'ecr', { class: 'ecr-cell' }));
-				headRow.appendChild(el('th', { text: countHeader }));
-				if (showOwned) headRow.appendChild(el('th', { text: 'Own In' }));
+				headRow.appendChild(sortableHeader(countHeader, 'count'));
+				if (showOwned) headRow.appendChild(sortableHeader('Own In', 'owned'));
 				// Top Available has no Pct column — a percentage of leagues means
 				// nothing there — so it gets Pos and ECR only.
 				if (showExposure) headRow.appendChild(sortableHeader('Pct', 'pct'));

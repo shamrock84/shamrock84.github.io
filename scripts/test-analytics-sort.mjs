@@ -202,18 +202,62 @@ function tableOf(rows, opts = {}, context = ctx) {
 // --- Only the columns on screen are sortable -----------------------------------
 {
 	// Top Available has no Pct column — a percentage of leagues means nothing
-	// there — so it offers Pos and ECR only.
+	// there — so its two counts are the only way to sort by reach.
 	const card = tableOf([player('Free Agent')], { showExposure: false, countHeader: 'Free In', showOwned: true });
 	const labels = headers(card).filter((h) => h.cls.includes('sortable')).map((h) => h._text);
-	assert.deepEqual(labels, ['Pos', 'ECR']);
+	assert.deepEqual(labels, ['Pos', 'ECR', 'Free In', 'Own In']);
 
 	// Logged out, the ECR column isn't rendered at all, so there is nothing to
 	// click — even though the card's default order still uses the number.
 	const out = makeContext({ loggedIn: false });
 	const outCard = tableOf([player('Somebody')], {}, out);
 	const outLabels = headers(outCard).filter((h) => h.cls.includes('sortable')).map((h) => h._text);
-	assert.deepEqual(outLabels, ['Pos', 'Pct']);
+	assert.deepEqual(outLabels, ['Pos', 'Own In', 'Pct']);
 	assert.equal(headerNamed(outCard, 'ECR'), undefined);
+
+	// Every column but the player's name. Sorting a table by the column it is
+	// already keyed on says nothing, and the name cell carries the sub-lines
+	// too, so there is no single value to sort it by.
+	assert.equal(headerNamed(card, 'Player').cls.includes('sortable'), false);
+}
+
+// --- The count columns sort by reach --------------------------------------------
+{
+	// Top Available's shape: the two counts differ, and each sorts on its own
+	// number rather than both falling through to the first one.
+	const rows = [
+		{ ...player('Narrow'), count: 1, ownedCount: 5 },
+		{ ...player('Wide'), count: 4, ownedCount: 1 },
+		{ ...player('Middle'), count: 2, ownedCount: 3 },
+	];
+	const card = tableOf(rows, { showExposure: false, countHeader: 'Free In', showOwned: true });
+	clickHeader(card, 'Free In');
+	assert.deepEqual(names(card), ['Wide', 'Middle', 'Narrow'], 'free in most leagues first');
+	clickHeader(card, 'Free In');
+	assert.deepEqual(names(card), ['Narrow', 'Middle', 'Wide'], 'and reversed');
+	clickHeader(card, 'Own In');
+	assert.deepEqual(names(card), ['Narrow', 'Middle', 'Wide'], 'the other count sorts on its own number');
+	clickHeader(card, 'Own In');
+	assert.deepEqual(names(card), ['Wide', 'Middle', 'Narrow']);
+	clickHeader(card, 'Own In');
+	assert.deepEqual(names(card), ['Narrow', 'Wide', 'Middle'], 'third click restores the card order');
+}
+{
+	// On the exposure cards the count column and Pct are the same ordering, since
+	// exposure is count/total and total is fixed for the whole card. Sortable
+	// anyway: the reader clicking the number in front of them shouldn't have to
+	// know that.
+	const rows = [
+		player('Narrow', { leagues: ['A'] }),
+		player('Wide', { leagues: ['A', 'B', 'C'] }),
+		player('Middle', { leagues: ['A', 'B'] }),
+	];
+	const byCount = tableOf(rows);
+	clickHeader(byCount, 'Own In');
+	const byPct = tableOf(rows);
+	clickHeader(byPct, 'Pct');
+	assert.deepEqual(names(byCount), ['Wide', 'Middle', 'Narrow']);
+	assert.deepEqual(names(byCount), names(byPct));
 }
 
 // --- The Pct column sorts most-exposed first ------------------------------------
