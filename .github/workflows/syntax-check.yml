@@ -116,6 +116,13 @@ jobs:
       - name: Test the Top Available card
         run: node scripts/test-top-available.mjs
 
+      # The cross-league problems digest, run against myffl.html itself. Its
+      # failure mode is noise rather than error: one wrong inclusion rule and
+      # the strip opens on fourteen benign preseason rows, which trains the
+      # eye to skip the one row that matters.
+      - name: Test the problems digest
+        run: node scripts/test-problems-digest.mjs
+
       # Click-to-sort on the shared analytics table. The sort state lives in a
       # closure rather than a pure function, so this one drives a DOM stub — and
       # every way it can break still renders a plausible-looking table.

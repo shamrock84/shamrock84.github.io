@@ -409,6 +409,58 @@
 			padding: 0.6rem 0.75rem;
 			font-size: 0.85rem;
 		}
+		/* Cross-league problems digest — the strip above the grid collecting
+		   everything that needs attention, so eighteen leagues don't have to
+		   be walked one by one to find the card that's on fire. Absent
+		   entirely when there's nothing to say: an all-clear banner would
+		   train the eye to skip the one spot where real problems appear. */
+		.problems-digest {
+			background: var(--card-bg);
+			border: 1px solid var(--border);
+			border-left: 4px solid var(--gold);
+			border-radius: 12px;
+			padding: 0.65rem 0.9rem;
+			margin-bottom: 1rem;
+		}
+		.digest-head {
+			font-size: 0.78rem;
+			font-weight: 700;
+			text-transform: uppercase;
+			letter-spacing: 0.04em;
+			color: var(--gold-chip-text);
+			margin-bottom: 0.3rem;
+		}
+		.digest-row {
+			display: flex;
+			align-items: baseline;
+			gap: 0.5rem;
+			width: 100%;
+			background: none;
+			border: none;
+			text-align: left;
+			padding: 0.22rem 0;
+			font-size: 0.85rem;
+			font-family: inherit;
+			color: var(--text);
+			cursor: pointer;
+		}
+		.digest-row:hover .digest-label { text-decoration: underline; }
+		.digest-dot {
+			flex: none;
+			width: 8px;
+			height: 8px;
+			border-radius: 50%;
+			background: var(--gold);
+			position: relative;
+			top: -1px;
+		}
+		.digest-alert .digest-dot { background: var(--ir-text); }
+		.digest-league {
+			flex: none;
+			font-weight: 600;
+			color: var(--accent);
+		}
+		.digest-player { font-weight: 600; }
 		.group-label {
 			font-size: 0.72rem;
 			font-weight: 700;
@@ -1214,6 +1266,7 @@
 		</div>
 	</div>
 	<main>
+		<div id="digest" class="problems-digest hidden"></div>
 		<div id="status"></div>
 		<div id="grid" class="grid"></div>
 	</main>
@@ -2346,7 +2399,8 @@
 		}
 
 		function renderCard(league) {
-			const card = el('div', { class: 'card', 'data-view': 'rosters', 'data-league-type': subtabType(league) || '' });
+			// data-league-id is how a problems-digest row scrolls to this card.
+			const card = el('div', { class: 'card', 'data-view': 'rosters', 'data-league-type': subtabType(league) || '', 'data-league-id': league.id });
 
 			// Salary-cap leagues are the auction leagues — the two were tracked
 			// separately via a `format` field that always agreed with `type`, so
@@ -2828,6 +2882,198 @@
 				}
 			}
 			return parts.length ? parts.join(' · ') : null;
+		}
+
+		// ---- Cross-league problems digest --------------------------------
+		// The strip above the grid: everything across every league that needs
+		// a human, so finding the one card that's on fire doesn't mean walking
+		// eighteen of them. Computed here on the page from data the snapshot
+		// already carries — the sync ships nothing new for this.
+		//
+		// The bar for a row is "would change what you do", which is why most
+		// of the fields that *look* like problems are deliberately excluded:
+		//   - scoringError/standingsError are almost always benign — "No live
+		//     scoring available yet" is the normal preseason state on nearly
+		//     every league, and MFL 429s are transient and healed by the next
+		//     sync. Each already renders on its own card; a digest that opens
+		//     with fourteen rows of that noise buries the row that matters.
+		//   - lineupError is the same shape: transient, retried in 4 hours,
+		//     and shown on the card it belongs to.
+		//   - Questionable starters are excluded on the same reasoning — a Q
+		//     is normal fantasy life, and seven Q rows would drown the one O.
+		//     The floor is DIGEST_INJURY_FLOOR (Doubtful), plus everything in
+		//     INJURY_SETTLED (which catches RET, absent from the severity
+		//     list on purpose — see its comment). An unrecognised designation
+		//     ranks -1 and lands under the floor, so a string nobody has read
+		//     can't put a healthy-in-truth player on the strip.
+		// The roster-level `error` *is* included: it means the league's whole
+		// card is stale fallback data, which is the one sync failure that
+		// misrenders as health — and it's also how a dead ESPN cookie, whose
+		// every read fails quietly, finally surfaces somewhere visible.
+		const DIGEST_INJURY_FLOOR = 'D';
+
+		// Roster statuses a starter may legally carry. Anything else in the
+		// lineup — taxi squad, practice squad, a league IR slot — is flagged
+		// whether or not the player is hurt: it's the slot that's the problem.
+		const DIGEST_STARTABLE_STATUSES = ['ROSTER'];
+
+		// Minimum starters implied by MFL's requirement string ("1 QB, 2-3 RB,
+		// 2-3 WR, 1-2 TE, 1 PK, 1 Def" → 8): the sum of each slot's lower
+		// bound. An underestimate whenever flex slots exist — that lineup
+		// actually starts 9 — and deliberately used only as a floor, so the
+		// check can miss a one-short lineup but can't cry wolf about a legal
+		// one. Best-ball strings like "0-2 QB, 0-8 RB, ..." sum to 0 and so
+		// never fire, which is correct: there's no lineup to set. Returns
+		// null (no check at all) when the string is missing or unparseable.
+		function parseLineupMinimums(requirement) {
+			if (!requirement) return null;
+			let total = 0;
+			let matched = false;
+			for (const m of String(requirement).matchAll(/(\d+)(?:\s*-\s*\d+)?\s+[A-Za-z]/g)) {
+				total += Number(m[1]);
+				matched = true;
+			}
+			return matched ? total : null;
+		}
+
+		// One league's problems, as { kind, player, label } rows — player is
+		// null for league-level rows, and the label deliberately excludes the
+		// player's name so the renderer can lead with it and hang the team
+		// suffix off it, same as every table on the page.
+		//
+		// Lineup checks run only where lineup data exists (starters is an
+		// array AND lineupWeek is set — for every other league the absence of
+		// data must read as "not asked", never as an empty lineup), and are
+		// suppressed for two states where a true answer would still be noise:
+		// a league mid-draft (its week-1 lineup is nonsense until the roster
+		// exists) and a league still on last season (its lineup is for a week
+		// that has already been played — same season comparison as
+		// awaitingRollover, but not type-gated: a stale lineup is stale
+		// whatever the league type does with rosters). Both halves of that
+		// comparison must be present to mean anything; NaN < year is false,
+		// so a pre-`season` snapshot keeps its checks.
+		//
+		// Each starter gets at most one row, worst problem first: an IR-slot
+		// player who is also on the injury report is one problem (the slot),
+		// not two, and an Out player on bye is the injury row alone. A
+		// starter id that doesn't resolve to a rostered player is skipped
+		// silently — a same-sync race between the two MFL exports, and there
+		// is nothing useful to say about a player we can't name.
+		function computeLeagueProblems(league, year) {
+			const problems = [];
+			if (league.error) {
+				problems.push({ kind: 'sync', player: null, label: `Roster sync failing — showing older data (${league.error})` });
+			}
+			if (!Array.isArray(league.starters) || league.lineupWeek == null) return problems;
+			if (league.draftInProgress === true) return problems;
+			if (Number(league.season) < Number(year)) return problems;
+
+			const wk = league.lineupWeek;
+			const byId = new Map((league.players || []).map((p) => [String(p.id), p]));
+			for (const id of league.starters) {
+				const p = byId.get(String(id));
+				if (!p) continue;
+				if (p.status && !DIGEST_STARTABLE_STATUSES.includes(p.status)) {
+					const slot = (STATUS_GROUPS.find((g) => g.key === p.status) || {}).label || p.status;
+					problems.push({ kind: 'ineligible', player: p, label: `in the week ${wk} lineup but on the ${slot}` });
+					continue;
+				}
+				const inj = p.injuryStatus;
+				if (inj && (INJURY_SETTLED.includes(inj) || injurySeverityRank(inj) >= injurySeverityRank(DIGEST_INJURY_FLOOR))) {
+					const part = p.injuryDetail && p.injuryDetail.part ? ` — ${p.injuryDetail.part}` : '';
+					problems.push({ kind: 'injury', player: p, label: `in the week ${wk} lineup but listed ${inj}${part}` });
+					continue;
+				}
+				if (Number(p.bye) > 0 && Number(p.bye) === Number(wk)) {
+					problems.push({ kind: 'bye', player: p, label: `in the week ${wk} lineup but on bye` });
+				}
+			}
+
+			if (league.starters.length === 0) {
+				problems.push({ kind: 'empty', player: null, label: `No starters set for week ${wk}` });
+			} else {
+				const min = parseLineupMinimums(league.startingLineup);
+				if (min != null && league.starters.length < min) {
+					problems.push({ kind: 'short', player: null, label: `Only ${league.starters.length} of at least ${min} starters set for week ${wk}` });
+				}
+			}
+			return problems;
+		}
+
+		// Every league's problems, in config order — the same display order as
+		// every tab, so the digest reads in the order the cards sit below it.
+		// Leagues with nothing wrong simply don't appear.
+		function computeProblemsDigest(leagues, year) {
+			const entries = [];
+			for (const league of leagues || []) {
+				const problems = computeLeagueProblems(league, year);
+				if (problems.length > 0) entries.push({ league, problems });
+			}
+			return entries;
+		}
+
+		// Red dot: the lineup or the data is broken. Gold dot: a player needs
+		// a decision. The distinction is what to fix versus what to weigh.
+		const DIGEST_ALERT_KINDS = ['sync', 'ineligible', 'empty', 'short'];
+
+		function renderProblemsDigest() {
+			const digestEl = document.getElementById('digest');
+			if (!digestEl) return;
+			digestEl.innerHTML = '';
+			const entries = pageData ? computeProblemsDigest(pageData.leagues, pageData.year) : [];
+			const count = entries.reduce((n, e) => n + e.problems.length, 0);
+			if (count === 0) {
+				digestEl.classList.add('hidden');
+				return;
+			}
+			digestEl.classList.remove('hidden');
+			const leagueCount = entries.length;
+			digestEl.appendChild(el('div', {
+				class: 'digest-head',
+				text: `⚠ ${count} thing${count === 1 ? '' : 's'} need${count === 1 ? 's' : ''} attention across ${leagueCount} league${leagueCount === 1 ? '' : 's'}`,
+			}));
+			for (const { league, problems } of entries) {
+				for (const problem of problems) {
+					const row = el('button', {
+						type: 'button',
+						class: `digest-row${DIGEST_ALERT_KINDS.includes(problem.kind) ? ' digest-alert' : ''}`,
+						title: 'Go to this league',
+					});
+					row.appendChild(el('span', { class: 'digest-dot' }));
+					row.appendChild(el('span', { class: 'digest-league', text: league.name || league.leagueName || league.id }));
+					const labelEl = el('span', { class: 'digest-label' });
+					if (problem.player) {
+						const nameEl = el('span', { class: 'digest-player', text: problem.player.name });
+						if (problem.player.team) appendTeamSuffix(nameEl, problem.player.team);
+						labelEl.appendChild(nameEl);
+						labelEl.appendChild(document.createTextNode(` ${problem.label}`));
+					} else {
+						labelEl.textContent = problem.label;
+					}
+					row.appendChild(labelEl);
+					row.addEventListener('click', () => jumpToLeagueCard(league));
+					digestEl.appendChild(row);
+				}
+			}
+		}
+
+		// A digest row lands on the league's Rosters card: that card carries
+		// the lineup editor, which is where every lineup-shaped problem is
+		// actually fixed. Re-rendering the grid (rather than poking classes)
+		// is what keeps the tab strips' active states honest, and it's the
+		// same full rebuild login/logout already does.
+		function jumpToLeagueCard(league) {
+			if (currentView === 'scoring') stopLiveScoringPolling();
+			currentView = 'rosters';
+			localStorage.setItem(VIEW_STORAGE_KEY, currentView);
+			const group = subtabType(league);
+			if (group) {
+				currentLeagueType = group;
+				localStorage.setItem(LEAGUE_TYPE_STORAGE_KEY, currentLeagueType);
+			}
+			renderGrid();
+			const card = document.querySelector(`.card[data-view="rosters"][data-league-id="${league.id}"]`);
+			if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
 		}
 
 		// Injury exposure: the same question as player exposure, asked only of
@@ -4267,6 +4513,7 @@
 			if (!data) return;
 
 			renderAuthControl();
+			renderProblemsDigest();
 			statusEl.textContent = '';
 			gridEl.innerHTML = '';
 
