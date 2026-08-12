@@ -30,10 +30,7 @@
 //     number — half a league on an older power object must not be ranked
 //     against the other half's real values;
 //   - the page's Power Rankings card shows one row per league we hold a
-//     team in, ordered by overall rank; ties share a rank; a redraft
-//     league still on last season is excluded (same awaitingRollover gate
-//     as Top Available) while a trailing dynasty league is not; a league
-//     without power data contributes no row rather than a row of dashes;
+//     team in, ordered by overall rank, with ties sharing a rank;
 //   - and the two fail-loud guards, which exist because the quiet version
 //     of each is a card nobody would question: a league where no franchise
 //     seated anybody computes to null (every team would otherwise tie at
@@ -58,7 +55,12 @@
 //     that couldn't be computed renders as TBD rather than dropping the
 //     league, since "not valued yet" and "not here" are different claims;
 //   - a league with no ranks at all still gets a row, of TBDs, since a
-//     league vanishing from the card silently is the failure that avoids —
+//     league vanishing from the card silently is the failure that avoids,
+//     and that includes a redraft league still on last season, whose ranks
+//     are *suppressed* rather than missing — they are a correct answer
+//     about a season that has ended, and rendering them would state last
+//     year's standings as this year's outlook, while a trailing dynasty
+//     league keeps its real ranks because its roster carried over —
 //     but the card as a whole returns null when *nothing* could be ranked,
 //     so an absent card and a TBD row keep distinct meanings; and the
 //     missing-basis note tests "ranked on one but not the other", never
@@ -593,8 +595,17 @@ const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, pow
 			power: both([1, 1, 1, 1], [2, 2, 2, 2]) },
 	];
 	const rows = computeMyPowerRows(leagues, ['dynasty', 'redraft'], 2026);
-	assert.deepEqual([...rows].map((r) => r.label), ['League C', 'League A', 'League E', 'League D'],
-		'ranked leagues by mean rank, then the unranked one; the trailing redraft league is gone, the trailing dynasty league is not');
+	assert.deepEqual([...rows].map((r) => r.label), ['League C', 'League A', 'League E', 'League B', 'League D'],
+		'ranked leagues by mean rank, then the unranked ones in config order');
+
+	// League B is a redraft league still on last season. It HAS power data —
+	// good ranks, even — and they are suppressed rather than shown, because
+	// they describe a season that has ended. The league still appears.
+	const b = rows.find((r) => r.label === 'League B');
+	assert.equal(b.proj, null, "a trailing redraft league's ranks are suppressed, not rendered");
+	assert.equal(b.ecr, null);
+	assert.equal(b.size, null);
+	assert.match(b.reason, /Still on last season/);
 
 	// League D has no power data at all: a row of TBDs rather than a silent
 	// disappearance, carrying its own explanation and no league size to print.
@@ -634,6 +645,27 @@ const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, pow
 	// is the state that resolves on its own, and the one that explains why
 	// there is nothing to rank.
 	assert.match(reasonFor({ draftInProgress: true, error: 'boom' }), /Draft in progress/);
+
+	// A trailing redraft league leads every other reason: its ranks were
+	// suppressed on purpose rather than missing, and the season it is waiting
+	// on is what explains the draft it hasn't run either.
+	const trailingRow = computeMyPowerRows(
+		[{ id: 'T', name: 'League T', type: 'redraft', season: '2025', franchiseId: '1', draftInProgress: true, error: 'boom' }],
+		['redraft'], 2026
+	)[0];
+	assert.match(trailingRow.reason, /Still on last season/);
+
+	// A trailing *dynasty* league is not trailing for this purpose — rosters
+	// carry over, so its real ranks still describe something and are kept.
+	const dynastyTrailing = computeMyPowerRows(
+		[{ id: 'Y', name: 'League Y', type: 'dynasty', season: '2025', franchiseId: '1',
+			power: { projections: { source: { basis: 'projections' }, teams: [
+				{ franchiseId: '1', score: 100, depth: 10 }, { franchiseId: '2', score: 50, depth: 5 },
+			] }, ecr: null } }],
+		['dynasty'], 2026
+	)[0];
+	assert.equal(dynastyTrailing.proj.overall, 1, 'a trailing dynasty league keeps its ranks');
+	assert.equal(dynastyTrailing.reason, null);
 }
 
 {
