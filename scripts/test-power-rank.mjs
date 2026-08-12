@@ -2,7 +2,7 @@
 // scripts/lib/fantasypros.mjs (buildProjectionIndex / computePowerScore /
 // computeLeaguePower), the provider slot parsing in scripts/lib/providers.mjs
 // (startingSlotCounts / slotsFromSleeperRosterPositions), and the page-side
-// join in myffl.html (powerRanksForLeague).
+// card logic in myffl.html (leaguePowerRanks / computeMyPowerRows).
 //
 // Every decision pinned here fails silently: a wrong join or a wrong slot
 // shape still renders a plausible column of small numbers, and nothing on
@@ -25,9 +25,15 @@
 //     minimums, eligible only to skill positions whose range has headroom —
 //     and with no count the minimums stand alone (an undercount, but the
 //     same undercount for every franchise, which is all an ordinal needs);
-//   - the page joins power to standings by franchiseId, ties share a rank,
-//     and a league without power data yields null so the column is absent
-//     rather than a row of dashes.
+//   - depth is the projected points the lineup could not seat, ranked
+//     separately, and only when every team in the league carries the
+//     number — half a league on an older power object must not be ranked
+//     against the other half's real values;
+//   - the page's Power Rankings card shows one row per league we hold a
+//     team in, ordered by overall rank; ties share a rank; a redraft
+//     league still on last season is excluded (same awaitingRollover gate
+//     as Top Available) while a trailing dynasty league is not; a league
+//     without power data contributes no row rather than a row of dashes.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -88,8 +94,9 @@ function projPlayer(name, mflid, { ppr = 100, half = 90, std = 80 } = {}) {
     { position: 'WR', points: 180 },
     { position: 'WR', points: 150 },
   ];
-  const { score, filled, slotCount } = computePowerScore(players, slots);
+  const { score, depth, filled, slotCount } = computePowerScore(players, slots);
   assert.equal(score, 200 + 180 + 150, 'dedicated before flex, flex from best remaining');
+  assert.equal(depth, 0, 'everyone seated, nothing on the bench');
   assert.equal(filled, 3);
   assert.equal(slotCount, 3);
 }
@@ -114,11 +121,12 @@ function projPlayer(name, mflid, { ppr = 100, half = 90, std = 80 } = {}) {
 {
   // A slot nobody can fill is a shortfall, not a crash — and it shows in
   // filled vs slotCount, which is what the page's tooltip surfaces.
-  const { score, filled, slotCount } = computePowerScore(
-    [{ position: 'RB', points: 120 }],
+  const { score, depth, filled, slotCount } = computePowerScore(
+    [{ position: 'RB', points: 120 }, { position: 'WR', points: 95 }],
     [{ positions: ['RB'], count: 2 }, { positions: ['TE'], count: 1 }]
   );
   assert.equal(score, 120);
+  assert.equal(depth, 95, 'a player no slot can seat is depth, not loss');
   assert.equal(filled, 1);
   assert.equal(slotCount, 3);
 }
@@ -228,7 +236,7 @@ function mflStarters(positions, count) {
 
   // MFL: ids are mflids, so even the tombstoned name resolves — by id.
   const mfl = computeLeaguePower({
-    franchises: [{ franchiseId: '0001', players: [{ id: '13589', name: 'Josh Allen' }, { id: '7777', name: 'Solo Back' }] }],
+    franchises: [{ franchiseId: '0001', players: [{ id: '13589', name: 'Josh Allen' }, { id: '7777', name: 'Solo Back' }, { id: '55555', name: 'Josh Allen' }] }],
     slots,
     projections,
     scoring: 'HALF',
@@ -236,6 +244,7 @@ function mflStarters(positions, count) {
     computedAt: '2026-08-12T00:00:00Z',
   });
   assert.equal(mfl.teams[0].score, 372 + 200, 'id join works and HALF picks points_half');
+  assert.equal(mfl.teams[0].depth, 40, 'the unseated RB Josh Allen is bench value, joined by id despite the tombstoned name');
   assert.equal(mfl.scoring, 'HALF');
 
   // Sleeper: id '4034' is a *Sleeper* id that merely looks like an mflid.
@@ -310,28 +319,78 @@ const context = {
 vm.createContext(context);
 vm.runInContext(scriptSource, context);
 
-const { powerRanksForLeague } = context;
+const { leaguePowerRanks, computeMyPowerRows } = context;
 
 {
-	assert.equal(powerRanksForLeague({}), null, 'no power data, no column');
-	assert.equal(powerRanksForLeague({ power: { teams: [] } }), null);
+	assert.equal(leaguePowerRanks({}), null, 'no power data, no ranks');
+	assert.equal(leaguePowerRanks({ power: { teams: [] } }), null);
 
-	const ranks = powerRanksForLeague({
+	const ranks = leaguePowerRanks({
 		power: {
-			computedAt: '2026-08-12T00:00:00Z',
-			scoring: 'PPR',
 			teams: [
-				{ franchiseId: '0003', score: 900 },
-				{ franchiseId: '0001', score: 1200 },
-				{ franchiseId: '0002', score: 1200 },
-				{ franchiseId: '0004', score: 800 },
+				{ franchiseId: '0001', score: 100, depth: 50 },
+				{ franchiseId: '0002', score: 120, depth: 10 },
+				{ franchiseId: '0003', score: 90, depth: 70 },
 			],
 		},
 	});
-	assert.equal(ranks.get('0001').rank, 1);
-	assert.equal(ranks.get('0002').rank, 1, 'equal scores share a rank');
-	assert.equal(ranks.get('0003').rank, 3, 'the rank after a tie skips, standard competition style');
-	assert.equal(ranks.get('0004').rank, 4);
+	assert.equal(ranks.size, 3);
+	assert.deepEqual({ ...ranks.byFranchise.get('0003') }, { overall: 1, starters: 3, depth: 1 }, 'a farm system: best roster, worst lineup');
+	assert.deepEqual({ ...ranks.byFranchise.get('0002') }, { overall: 3, starters: 1, depth: 3 }, 'a contender with no bench');
+	assert.deepEqual({ ...ranks.byFranchise.get('0001') }, { overall: 2, starters: 2, depth: 2 });
+
+	// One team without depth poisons the depth ranking for the whole league
+	// — overall falls back to the starters ordering rather than ranking real
+	// numbers against a missing one.
+	const partial = leaguePowerRanks({
+		power: {
+			teams: [
+				{ franchiseId: '0001', score: 100, depth: 50 },
+				{ franchiseId: '0002', score: 120 },
+			],
+		},
+	});
+	assert.equal(partial.byFranchise.get('0001').depth, null);
+	assert.equal(partial.byFranchise.get('0002').overall, 1, 'overall degrades to starters when depth is unrankable');
+
+	// Ties share a rank, and the next rank skips.
+	const tied = leaguePowerRanks({
+		power: {
+			teams: [
+				{ franchiseId: 'a', score: 100, depth: 0 },
+				{ franchiseId: 'b', score: 100, depth: 0 },
+				{ franchiseId: 'c', score: 90, depth: 0 },
+			],
+		},
+	});
+	assert.equal(tied.byFranchise.get('a').overall, 1);
+	assert.equal(tied.byFranchise.get('b').overall, 1);
+	assert.equal(tied.byFranchise.get('c').overall, 3);
+}
+
+{
+	const power = (myScore, myDepth, otherScore, otherDepth) => ({
+		teams: [
+			{ franchiseId: '1', score: myScore, depth: myDepth },
+			{ franchiseId: '2', score: otherScore, depth: otherDepth },
+		],
+	});
+	const leagues = [
+		// Mid-pack dynasty league, current season.
+		{ id: 'A', name: 'League A', type: 'dynasty', season: '2026', franchiseId: '1', power: power(100, 10, 120, 40) },
+		// Redraft league still on last season: excluded however good the rank.
+		{ id: 'B', name: 'League B', type: 'redraft', season: '2025', franchiseId: '1', power: power(500, 500, 10, 10) },
+		// Dynasty league still on last season: rosters carry over, so it stays.
+		{ id: 'C', name: 'League C', type: 'dynasty', season: '2025', franchiseId: '1', power: power(200, 200, 10, 10) },
+		// No power data at all: no row, not a row of dashes.
+		{ id: 'D', name: 'League D', type: 'dynasty', season: '2026', franchiseId: '1' },
+		// Wrong group: filtered by types before anything else.
+		{ id: 'E', name: 'League E', type: 'draftonly', season: '2026', franchiseId: '1', power: power(1, 1, 2, 2) },
+	];
+	const rows = computeMyPowerRows(leagues, ['dynasty', 'redraft'], 2026);
+	assert.deepEqual([...rows].map((r) => r.label), ['League C', 'League A'], 'best overall rank first; the trailing redraft league is gone, the trailing dynasty league is not');
+	assert.deepEqual({ ...rows[0] }, { label: 'League C', size: 2, overall: 1, starters: 1, depth: 1 });
+	assert.deepEqual({ ...rows[1] }, { label: 'League A', size: 2, overall: 2, starters: 2, depth: 2 });
 }
 
 console.log('test-power-rank: all assertions passed');

@@ -2552,38 +2552,91 @@
 			return card;
 		}
 
-		// Power ranks for one league's franchises: rank by the sync-computed
-		// power score (each franchise's best legal starting lineup, valued by
-		// FantasyPros season projections — see computeLeaguePower in
-		// scripts/lib/fantasypros.mjs). Returns a Map keyed by franchiseId —
-		// the same key the standings rows carry, which is the whole join — or
-		// null when the snapshot has no power data for this league (synced
-		// before this shipped, mid-draft, or the daily roster read failed),
-		// which is what makes the column absent rather than a row of dashes.
+		// Power ranks for one league, from the sync-computed power scores (each
+		// franchise's best legal starting lineup valued by FantasyPros season
+		// projections, plus the projected points of everyone the lineup could
+		// not seat — see computeLeaguePower in scripts/lib/fantasypros.mjs).
+		// Three separate orderings of the same teams: starters (the lineup
+		// value), depth (the bench value), and overall (their sum — the whole
+		// roster). Returns null when the snapshot carries no power data for
+		// this league — synced before this shipped, mid-draft, or the daily
+		// roster read failed — which is what keeps the league off the Power
+		// Rankings card rather than on it with dashes.
 		//
 		// Ties share a rank (standard competition ranking: two teams at 1, the
 		// next at 3) because inventing an order between equal scores would
-		// print a distinction the data doesn't contain.
+		// print a distinction the data doesn't contain. Depth is ranked only
+		// when every team carries the number, so half a league on an older
+		// power object can't be ranked against the other half's real values.
 		//
-		// The score itself stays in a tooltip and never becomes a column:
-		// points are only comparable *within* a league — different slots,
-		// different scoring — and a visible number invites reading it across
-		// cards, which the rank ordinal doesn't.
-		function powerRanksForLeague(league) {
-			const teams = league.power && Array.isArray(league.power.teams) ? league.power.teams : [];
-			if (teams.length === 0) return null;
-			const sorted = [...teams].sort((a, b) => b.score - a.score);
+		// Deliberately rendered on the Analytics tab and NOT as a column on
+		// the Standings cards, where this first shipped: standings are a
+		// record of what happened, and a projection column there reads as the
+		// site second-guessing the season. The scores themselves never render
+		// anywhere — points compare only within a league, and the rank ordinal
+		// is the part that survives being read across cards.
+		function competitionRanks(entries) {
+			const sorted = [...entries].sort((a, b) => b.value - a.value);
 			const ranks = new Map();
 			let rank = 0;
-			let prevScore = null;
-			sorted.forEach((t, i) => {
-				if (t.score !== prevScore) {
+			let prev = null;
+			sorted.forEach((e, i) => {
+				if (e.value !== prev) {
 					rank = i + 1;
-					prevScore = t.score;
+					prev = e.value;
 				}
-				ranks.set(String(t.franchiseId), { rank, score: t.score, filled: t.filled, slotCount: t.slotCount });
+				ranks.set(e.key, rank);
 			});
 			return ranks;
+		}
+
+		function leaguePowerRanks(league) {
+			const teams = league.power && Array.isArray(league.power.teams) ? league.power.teams : [];
+			if (teams.length === 0) return null;
+			const keyed = teams.map((t) => ({ key: String(t.franchiseId), score: Number(t.score) || 0, depth: t.depth == null ? null : Number(t.depth) }));
+			const hasDepth = keyed.every((t) => t.depth != null && Number.isFinite(t.depth));
+			const starters = competitionRanks(keyed.map((t) => ({ key: t.key, value: t.score })));
+			const depth = hasDepth ? competitionRanks(keyed.map((t) => ({ key: t.key, value: t.depth }))) : null;
+			const overall = hasDepth
+				? competitionRanks(keyed.map((t) => ({ key: t.key, value: t.score + t.depth })))
+				: starters;
+			const byFranchise = new Map();
+			for (const t of keyed) {
+				byFranchise.set(t.key, {
+					overall: overall.get(t.key),
+					starters: starters.get(t.key),
+					depth: depth ? depth.get(t.key) : null,
+				});
+			}
+			return { size: keyed.length, byFranchise };
+		}
+
+		// One row per league we hold a team in, ranked inside that league. The
+		// same awaitingRollover gate Top Available applies: a redraft league
+		// still on last season would rank a roster that no longer exists.
+		// Mid-draft leagues never reach here — the sync clears their power the
+		// way it clears their wire. Rows come back in reading order: best
+		// overall rank first, starters rank breaking ties, config order
+		// breaking what's left (Array.prototype.sort is stable).
+		function computeMyPowerRows(leagues, types, year) {
+			const rows = [];
+			for (const league of leagues || []) {
+				if (!types.includes(league.type)) continue;
+				if (awaitingRollover(league, year)) continue;
+				const ranks = leaguePowerRanks(league);
+				if (!ranks) continue;
+				const mine = ranks.byFranchise.get(String(league.franchiseId));
+				if (!mine) continue;
+				rows.push({
+					label: league.name || league.leagueName,
+					size: ranks.size,
+					overall: mine.overall,
+					starters: mine.starters,
+					depth: mine.depth,
+				});
+			}
+			rows.sort((a, b) => a.overall - b.overall || a.starters - b.starters);
+			return rows;
 		}
 
 		function renderStandingsCard(league) {
@@ -2605,13 +2658,9 @@
 				return card;
 			}
 
-			const powerRanks = powerRanksForLeague(league);
-
 			const table = el('table', { class: 'standings' });
 			const headRow = el('tr');
-			const headers = ['#', 'Team', 'W-L-T', 'PF', 'PA'];
-			if (powerRanks) headers.push('Pwr');
-			headers.forEach((h) => headRow.appendChild(el('th', { text: h })));
+			['#', 'Team', 'W-L-T', 'PF', 'PA'].forEach((h) => headRow.appendChild(el('th', { text: h })));
 			table.appendChild(headRow);
 
 			rows.forEach((r, i) => {
@@ -2621,20 +2670,6 @@
 				row.appendChild(el('td', { text: `${r.wins}-${r.losses}${r.ties ? '-' + r.ties : ''}` }));
 				row.appendChild(el('td', { text: r.pointsFor }));
 				row.appendChild(el('td', { text: r.pointsAgainst }));
-				if (powerRanks) {
-					const entry = powerRanks.get(String(r.franchiseId));
-					// A standings row with no power entry (a franchise added
-					// since the daily roster read, say) prints the same dash
-					// every other missing value on the page does.
-					const attrs = { class: 'power-cell', text: entry ? String(entry.rank) : '—' };
-					if (entry) {
-						attrs.title = `Projected starters: ${entry.score} pts`
-							+ (entry.filled != null && entry.slotCount != null && entry.filled < entry.slotCount
-								? ` (${entry.filled}/${entry.slotCount} slots filled)`
-								: '');
-					}
-					row.appendChild(el('td', attrs));
-				}
 				table.appendChild(row);
 			});
 			card.appendChild(table);
@@ -3762,6 +3797,50 @@
 		// says "0/7" next to names you can't do anything about isn't worth the
 		// room beside a wire you can act on. The pool it needed is still fetched
 		// — Top Available filters the same list.
+		// One row per team we hold in this group, best roster first — the
+		// portfolio question the exposure cards ask, pointed at whole teams.
+		// Power is the overall rank (starters plus bench, the full roster's
+		// projected value); Starters and Depth are the same teams ranked on
+		// each half alone, which is what tells a 3rd-overall roster whether it
+		// is a contender with no bench or a farm system with no lineup.
+		//
+		// Returns null rather than an explanation when nothing here has power
+		// data — a snapshot from before the feature, or a group entirely
+		// mid-draft — the same rule the Injury Exposure card follows: not a
+		// state the reader can act on.
+		//
+		// The ranks are per-league ordinals ("3/12"), never scores, so the
+		// dynasty and salary-cap leagues sharing this sub-tab compare fine
+		// even though their scores are computed under different slot shapes
+		// and scoring formats — the cross-list hazard that keeps Analytics on
+		// one grouping (see SUBTAB_GROUP) doesn't reach an ordinal.
+		function renderPowerRankCard(groupKey, types, leagues, year) {
+			const rows = computeMyPowerRows(leagues, types, year);
+			if (rows.length === 0) return null;
+
+			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
+			card.appendChild(el('h2', { text: 'Power Rankings' }));
+			// Word for word what the other three cards say, same reasoning.
+			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(rows.length)}` }));
+
+			const table = el('table', { class: 'standings' });
+			const headRow = el('tr');
+			['League', 'Power', 'Starters', 'Depth'].forEach((h) => headRow.appendChild(el('th', { text: h })));
+			table.appendChild(headRow);
+			for (const r of rows) {
+				const row = el('tr');
+				row.appendChild(el('td', { text: r.label }));
+				// The league size prints once, on the rank that orders the
+				// card; repeating "/12" across all three columns is noise.
+				row.appendChild(el('td', { text: `${r.overall}/${r.size}` }));
+				row.appendChild(el('td', { text: String(r.starters) }));
+				row.appendChild(el('td', { text: r.depth == null ? '—' : String(r.depth) }));
+				table.appendChild(row);
+			}
+			card.appendChild(table);
+			return card;
+		}
+
 		function renderTopAvailableCard(groupKey, types, leagues, pools, year) {
 			const { total, rows, drafting, awaiting } = computeTopAvailable(leagues, types, pools, year);
 			// A group whose only leagues are mid-draft or waiting on next season
@@ -4595,6 +4674,8 @@
 			for (const groupKey of SUBTAB_ORDER) {
 				const types = typesInSubtabGroup(groupKey);
 				if (!data.leagues.some((l) => types.includes(l.type))) continue;
+				const powerCard = renderPowerRankCard(groupKey, types, data.leagues, data.year);
+				if (powerCard) gridEl.appendChild(powerCard);
 				gridEl.appendChild(renderAnalyticsCard(groupKey, types, data.leagues));
 				const injuryCard = renderInjuryExposureCard(groupKey, types, data.leagues);
 				if (injuryCard) gridEl.appendChild(injuryCard);

@@ -589,6 +589,15 @@ export async function fetchProjections({ apiKey, season }) {
 // product. A slot nobody can fill scores zero and is counted in `filled`'s
 // shortfall rather than erroring — a mid-rebuild roster is a low score, not
 // a crash.
+//
+// `depth` is everything the lineup could not seat: the summed projected
+// points of the players left over once the slots are filled. Bench value is
+// a real part of a team's strength — it is what the starters score ignores
+// on purpose — so it travels as its own number rather than being folded in,
+// and the page ranks the two separately. A raw sum rewards a big roster,
+// which is fine for the ordinal's purposes: roster limits are uniform
+// within a league, and within a league is the only place these numbers
+// compare.
 export function computePowerScore(players, slots) {
   const byPosition = new Map();
   for (const p of players || []) {
@@ -621,7 +630,8 @@ export function computePowerScore(players, slots) {
       filled++;
     }
   }
-  return { score, filled, slotCount };
+  const totalPoints = (players || []).reduce((sum, p) => sum + p.points, 0);
+  return { score, depth: totalPoints - score, filled, slotCount };
 }
 
 // Every franchise in one league, scored and sorted. `joinById` is true only
@@ -646,10 +656,11 @@ export function computeLeaguePower({ franchises, slots, projections, scoring, jo
       if (!(points > 0)) continue;
       players.push({ position: entry.position, points });
     }
-    const { score, filled, slotCount } = computePowerScore(players, slots);
+    const { score, depth, filled, slotCount } = computePowerScore(players, slots);
     return {
       franchiseId: String(f.franchiseId),
       score: Math.round(score * 10) / 10,
+      depth: Math.round(depth * 10) / 10,
       filled,
       slotCount,
     };
