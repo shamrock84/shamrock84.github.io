@@ -39,7 +39,18 @@ import {
   fetchEspnRosteredNames,
   fetchMflDraftStatus,
 } from './lib/providers.mjs';
-import { attachRankings, fantasyProsApiKey, nflSeasonPhase, normalizePlayerName } from './lib/fantasypros.mjs';
+import {
+  attachRankings,
+  fantasyProsApiKey,
+  nflSeasonPhase,
+  normalizePlayerName,
+  fetchProjections,
+  buildEcrIndex,
+  computeLeaguePower,
+  rankingSpecForLeague,
+  rankingPoolKey,
+  DEFAULT_POWER_SLOTS,
+} from './lib/fantasypros.mjs';
 
 const USERNAME = process.env.MFL_USERNAME;
 const PASSWORD = process.env.MFL_PASSWORD;
@@ -591,13 +602,20 @@ async function main() {
     }
 
     try {
-      target.rosteredNames = league.provider === 'espn'
+      const read = league.provider === 'espn'
         ? await fetchEspnRosteredNames(league)
         : await fetchMflRosteredNames(league, cookie, playerMap);
+      // One response, two consumers: the flat names feed availability, the
+      // per-franchise grouping feeds the power score. Splitting them here
+      // rather than returning two shapes keeps the call sites honest about
+      // it being a single read.
+      target.rosteredNames = read?.names ?? null;
+      target.rosterFranchises = read?.franchises ?? null;
       refreshed++;
     } catch (err) {
       console.error(`Failed to fetch league-wide rosters for ${league.name}: ${err.message}`);
       target.rosteredNames = null;
+      target.rosterFranchises = null;
     }
   }
   console.log(`Free agents: re-read ${refreshed} league(s), kept ${carried} from the last daily read, skipped ${drafting} mid-draft`);
@@ -631,6 +649,121 @@ async function main() {
     } catch (err) {
       console.error(`Failed to attach FantasyPros rankings: ${err.message}`);
     }
+
+    // Power ranks: every franchise in a league graded by its best legal
+    // starting lineup under FantasyPros' season projections — homegrown,
+    // because probe-fantasypros-power-rank.yml established the partner API
+    // has nothing team-shaped to ask for. Computed only for leagues whose
+    // league-wide rosters were read *this run*, so it rides the same
+    // once-a-day cadence (and the same mid-draft skip) as availability:
+    // Sleeper refreshes every sync because its rosters arrive free, MFL and
+    // ESPN once a day. Everyone else carries forward in the cleanup loop
+    // below, exactly like `available`. Four projection GETs a sync, shared
+    // across all eighteen leagues, and never allowed to fail the run.
+    try {
+      // phase.inSeason rides along so a power object can say whether it was
+      // built from preseason projections during the season — see the meta
+      // comment in fetchProjections. The sync is the side that decides this,
+      // the page only describes it, same division as the ranking calendar.
+      //
+      // Projections are the preferred basis and are not always there:
+      // FantasyPros publishes them per season, so from the Super Bowl until
+      // the next season's list goes up there is nothing to ask for and every
+      // position comes back empty. That is an ordinary state of the year
+      // rather than a failure, so it falls back to the ranking pools this
+      // sync already fetched (see buildEcrIndex) instead of leaving the card
+      // to carry January's ranks through to July.
+      let projections = null;
+      try {
+        projections = await fetchProjections({ apiKey: fpApiKey, season, inSeason: phase.inSeason });
+      } catch (err) {
+        console.log(`FantasyPros — projections unavailable (${err.message}); power ranks fall back to consensus rankings`);
+      }
+
+      // One ECR index per distinct ranking pool rather than per league, the
+      // same sharing rankingPoolKey already buys the pools themselves — a
+      // dozen leagues typically draw on two or three lists.
+      const ecrIndexByPool = new Map();
+      const ecrIndexFor = (league) => {
+        if (!league.rankings) return null;
+        const key = rankingPoolKey(league.rankings);
+        if (!ecrIndexByPool.has(key)) {
+          ecrIndexByPool.set(key, buildEcrIndex(rankingPools[key], { season, inSeason: phase.inSeason }));
+        }
+        return ecrIndexByPool.get(key);
+      };
+
+      const configById = new Map(LEAGUES.map((l) => [l.id, l]));
+      let powered = 0;
+      let skipped = 0;
+      const byBasis = { projections: 0, ecr: 0 };
+      for (const league of leagues) {
+        if (league.draftInProgress) continue; // cleared below, like available
+        if (!Array.isArray(league.rosterFranchises) || league.rosterFranchises.length === 0) continue;
+        const config = configById.get(league.id);
+        if (!config) continue;
+        // ESPN's real slot counts are unprobed; the platform-default shape
+        // is uniform across the league's franchises, which is the property
+        // the ordinal needs. MFL/Sleeper leagues that yielded no parseable
+        // slots are skipped rather than guessed at.
+        const slots = league.lineupSlots
+          || (config.provider === 'espn' ? DEFAULT_POWER_SLOTS : null);
+        if (!slots) continue;
+        // Both bases, every run, because they answer different questions and
+        // the card shows them side by side. Projections value a roster by the
+        // points it should score; rankings value it by where consensus places
+        // its players, which in a dynasty league is a bet on the next several
+        // years rather than this one. A team can lead one and trail the other,
+        // and that gap is the contender-versus-rebuilder signal the pair
+        // exists to show.
+        //
+        // Computing both costs nothing extra at the provider: the projections
+        // were fetched once for the whole sync, the pools were already fetched
+        // for Top Available, and what remains is arithmetic over a few dozen
+        // names. Either may come back null on its own — see the guard in
+        // computeLeaguePower — and the page renders that side as TBD rather
+        // than dropping the league.
+        const common = {
+          franchises: league.rosterFranchises,
+          slots,
+          // The same resolution the ECR column uses: explicit config wins,
+          // then the detected format, PPR as the last resort.
+          scoring: rankingSpecForLeague(config, now).scoring,
+          joinById: (config.provider || 'mfl') === 'mfl',
+          computedAt: now.toISOString(),
+        };
+        const projPower = projections ? computeLeaguePower({ ...common, values: projections }) : null;
+        const ecrValues = ecrIndexFor(league);
+        const ecrPower = ecrValues ? computeLeaguePower({ ...common, values: ecrValues }) : null;
+
+        // Only when *neither* basis produced anything is there nothing to
+        // say. Skipping leaves the previous sync's ranks in place via the
+        // carry-forward below, and says so out loud.
+        if (!projPower && !ecrPower) {
+          console.error(`${league.name}: power ranks skipped — no franchise seated a player on either basis (join or slot shape broken?)`);
+          skipped++;
+          continue;
+        }
+        league.power = {
+          computedAt: now.toISOString(),
+          scoring: common.scoring,
+          // Per basis rather than merged: each carries its own provenance, and
+          // each ranks the same franchises independently.
+          projections: projPower ? { source: projPower.source, teams: projPower.teams } : null,
+          ecr: ecrPower ? { source: ecrPower.source, teams: ecrPower.teams } : null,
+        };
+        powered++;
+        if (projPower) byBasis.projections++;
+        if (ecrPower) byBasis.ecr++;
+      }
+      console.log(
+        `FantasyPros — power ranks computed for ${powered} league(s) `
+        + `(${byBasis.projections} with projections, ${byBasis.ecr} with consensus rankings)`
+        + `${skipped > 0 ? `, skipped ${skipped} with no usable join` : ''}`
+      );
+    } catch (err) {
+      console.error(`Failed to compute power ranks: ${err.message}`);
+    }
   }
 
   // Degrade the same way everything else here does: a league that couldn't be
@@ -655,6 +788,12 @@ async function main() {
   for (const league of leagues) {
     const readThisRun = Array.isArray(league.rosteredNames);
     delete league.rosteredNames;
+    // Working fields for the power score, spent in the same run: the
+    // per-franchise rosters and slot shapes never reach data/rosters.json —
+    // only the computed `power` object does, a few hundred bytes per league
+    // against the ~150KB the raw rosters would cost.
+    delete league.rosterFranchises;
+    delete league.lineupSlots;
     const prev = previousById.get(league.id);
     if (league.draftInProgress) {
       // Explicitly cleared, not merely left unset: the carry-forward below
@@ -667,11 +806,20 @@ async function main() {
       // up within four hours rather than at the next daily read.
       league.available = null;
       league.availableAt = null;
+      // A half-drafted league's power rank is a ranking of who drafted
+      // earliest, so it goes the way the wire does.
+      league.power = null;
     } else if (readThisRun && league.available != null) {
       league.availableAt = now.toISOString();
     } else if (league.available == null) {
       league.available = prev?.available ?? null;
       league.availableAt = prev?.availableAt ?? null;
+    }
+    // Carried forward on the runs that skip the daily roster read, exactly
+    // like `available` — a power object computed this run was assigned above
+    // and stays.
+    if (!league.draftInProgress && league.power == null) {
+      league.power = prev?.power ?? null;
     }
   }
   if (Object.keys(rankingPools).length === 0 && previous?.rankingPools) {

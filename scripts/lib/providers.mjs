@@ -502,6 +502,101 @@ async function fetchSalaryAdjustments(league, cookie) {
 // their already-established minimums (a flex slot is optional on top of
 // the dedicated ones, not a second guaranteed starter at every position it
 // could fill).
+// The same starters node, parsed for arithmetic instead of display: the
+// generic slot shape the power score fills ([{ positions, count }], see
+// computePowerScore in lib/fantasypros.mjs — the shape lives as plain data
+// precisely so this file never has to import that one; api/ imports this
+// file and vercel.json's ignoreCommand doesn't list fantasypros.mjs).
+//
+// Dedicated slots contribute their *minimum* — the guaranteed starters — and
+// two kinds of flex sit on top: slots whose name joins positions with "+"
+// (a literal flex spot, counted at its max), and the gap between
+// `starters.count` (the true lineup size, when MFL provides it) and
+// everything already accounted for, eligible to any skill position whose
+// own range has headroom (max > min). That gap is how "1 QB, 2-3 RB, 2-3
+// WR, 1-2 TE, 1 PK, 1 Def / count 9" becomes one flex slot rather than
+// being lost to the min-sum. Without a count the mins stand alone — an
+// undercount, but the same undercount for every franchise in the league,
+// which is the only property the ordinal needs.
+//
+// Kicker/defense/IDP slots never become entries (see POWER_POSITIONS for
+// why), but their minimums still count against `starters.count`, or the gap
+// would hand their slots to flex.
+const POWER_SKILL_POSITIONS = new Set(['QB', 'RB', 'WR', 'TE']);
+
+export function startingSlotCounts(leagueData) {
+  const rawSlots = leagueData?.league?.starters?.position;
+  const slots = Array.isArray(rawSlots) ? rawSlots : rawSlots ? [rawSlots] : [];
+  if (slots.length === 0) return null;
+
+  const dedicated = new Map(); // position -> { min, max }
+  const flexSlots = [];
+  for (const slot of slots) {
+    const positions = String(slot.name || '').split('+').map((s) => s.trim()).filter(Boolean);
+    if (positions.length === 0) continue;
+    const [minStr, maxStr] = String(slot.limit ?? '').split('-');
+    const min = Number(minStr) || 0;
+    const max = maxStr !== undefined ? (Number(maxStr) || min) : min;
+    if (min === 0 && max === 0) continue;
+    if (positions.length === 1) {
+      const existing = dedicated.get(positions[0]) || { min: 0, max: 0 };
+      dedicated.set(positions[0], { min: existing.min + min, max: existing.max + max });
+    } else {
+      flexSlots.push({ positions, count: max });
+    }
+  }
+
+  const entries = [];
+  let accounted = 0;
+  for (const [pos, { min }] of dedicated) {
+    accounted += min;
+    if (POWER_SKILL_POSITIONS.has(pos) && min > 0) entries.push({ positions: [pos], count: min });
+  }
+  for (const f of flexSlots) {
+    accounted += f.count;
+    const skill = f.positions.filter((p) => POWER_SKILL_POSITIONS.has(p));
+    if (skill.length > 0 && f.count > 0) entries.push({ positions: skill, count: f.count });
+  }
+
+  const total = Number(leagueData?.league?.starters?.count);
+  if (Number.isFinite(total) && total > accounted) {
+    const eligible = [...dedicated]
+      .filter(([pos, { min, max }]) => POWER_SKILL_POSITIONS.has(pos) && max > min)
+      .map(([pos]) => pos);
+    if (eligible.length > 0) entries.push({ positions: eligible, count: total - accounted });
+  }
+
+  return entries.length > 0 ? entries : null;
+}
+
+// Sleeper spells the whole lineup out as a flat array on the league object
+// the roster fetch already has — ["QB","RB","RB","WR","WR","TE","FLEX",
+// "SUPER_FLEX",...] — so this is a vocabulary mapping, not a request.
+// Bench/reserve/taxi rows and kicker/defense/IDP slots are dropped for the
+// same reasons as everywhere else in the power score.
+const SLEEPER_FLEX_POSITIONS = {
+  FLEX: ['RB', 'WR', 'TE'],
+  SUPER_FLEX: ['QB', 'RB', 'WR', 'TE'],
+  WRRB_FLEX: ['WR', 'RB'],
+  REC_FLEX: ['WR', 'TE'],
+};
+
+export function slotsFromSleeperRosterPositions(rosterPositions) {
+  if (!Array.isArray(rosterPositions) || rosterPositions.length === 0) return null;
+  const counts = new Map();
+  for (const raw of rosterPositions) {
+    const slot = String(raw || '').toUpperCase();
+    const positions = POWER_SKILL_POSITIONS.has(slot) ? [slot] : SLEEPER_FLEX_POSITIONS[slot];
+    if (!positions) continue;
+    const key = positions.join('+');
+    const existing = counts.get(key) || { positions, count: 0 };
+    existing.count++;
+    counts.set(key, existing);
+  }
+  const entries = [...counts.values()];
+  return entries.length > 0 ? entries : null;
+}
+
 export function formatStartingLineupRequirement(leagueData) {
   const rawSlots = leagueData?.league?.starters?.position;
   const slots = Array.isArray(rawSlots) ? rawSlots : rawSlots ? [rawSlots] : [];
@@ -565,23 +660,34 @@ function mflRosterPlayers(franchise) {
 // spent enough of MFL's rate limit that three scoring fetches and a lineup
 // fetch behind it came back 429. Availability is the least important thing
 // this sync collects, so it goes last and it is the thing that degrades.
+// Returns `{ names, franchises }` — the flat name list availability joins on,
+// and the same players grouped per franchise, which is what the power score
+// grades. One response, parsed one level deeper; the second consumer is why
+// this stopped returning a bare array. Franchise player ids here are MFL's
+// own, the same id space the projections' `mflid` lives in — the join the
+// power score leans on.
 export async function fetchMflRosteredNames(league, cookie, playerMap) {
   const data = await mflGet(`/export?TYPE=rosters&L=${league.id}&JSON=1`, cookie, seasonOf(league));
 
-  const franchises = Array.isArray(data?.rosters?.franchise)
+  const rawFranchises = Array.isArray(data?.rosters?.franchise)
     ? data.rosters.franchise
     : data?.rosters?.franchise
     ? [data.rosters.franchise]
     : [];
 
   const names = [];
-  for (const f of franchises) {
+  const franchises = [];
+  for (const f of rawFranchises) {
+    const players = [];
     for (const p of mflRosterPlayers(f)) {
       const name = playerMap.get(p.id)?.name;
-      if (name) names.push(name);
+      if (!name) continue;
+      names.push(name);
+      players.push({ id: String(p.id), name });
     }
+    franchises.push({ franchiseId: String(f.id), players });
   }
-  return names.length > 0 ? names : null;
+  return names.length > 0 ? { names, franchises } : null;
 }
 
 // Whether a league's draft has finished, read from MFL's TYPE=draftResults.
@@ -726,8 +832,13 @@ export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, inj
   }
 
   let startingLineup = null;
+  let lineupSlots = null;
   try {
     startingLineup = formatStartingLineupRequirement(leagueData);
+    // The arithmetic version of the same node, for the power score. Never
+    // written to data/rosters.json — fetch-rosters.mjs consumes it in the
+    // same run and deletes it before the file is written.
+    lineupSlots = startingSlotCounts(leagueData);
   } catch (err) {
     console.error(`Failed to parse starting lineup requirements for ${league.name}: ${err.message}`);
   }
@@ -744,6 +855,7 @@ export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, inj
     salaryCap,
     salaryAdjustments,
     startingLineup,
+    lineupSlots,
     updatedAt: new Date().toISOString(),
     error: null,
   };
@@ -991,16 +1103,24 @@ export async function fetchEspnLeagueRoster(league) {
 // comment on fetchEspnLeagueRoster). An empty answer is "don't know" rather
 // than "nobody is rostered", since the unscoped view is suspected of
 // returning empty entries.
+// Shaped like fetchMflRosteredNames' answer for the same two consumers. ESPN
+// player ids are ESPN's own, useless against the projections — the power
+// score joins these by name.
 export async function fetchEspnRosteredNames(league) {
   const data = await espnGet(league, 'view=mRoster&scoringPeriodId=1');
   const names = [];
+  const franchises = [];
   for (const team of data.teams || []) {
+    const players = [];
     for (const entry of team.roster?.entries || []) {
       const name = entry.playerPoolEntry?.player?.fullName;
-      if (name) names.push(name);
+      if (!name) continue;
+      names.push(name);
+      players.push({ id: String(entry.playerId ?? ''), name });
     }
+    franchises.push({ franchiseId: String(team.id), players });
   }
-  return names.length > 0 ? names : null;
+  return names.length > 0 ? { names, franchises } : null;
 }
 
 export async function fetchEspnStandings(league) {
@@ -1191,6 +1311,20 @@ export async function fetchSleeperLeagueRoster(league, playerMap, byeWeeks) {
     rosteredNames: rosters.flatMap((r) =>
       (r.players || []).map((id) => playerMap.get(String(id))?.name).filter(Boolean)
     ),
+    // The per-franchise view of the same rosters, for the power score — which
+    // is why Sleeper's power refreshes every sync while MFL/ESPN's follow the
+    // once-a-day roster read. Ids here are Sleeper's, which look exactly like
+    // MFL ids (small numeric strings) and must never be joined as them; the
+    // power score joins these by name (see computeLeaguePower's joinById).
+    rosterFranchises: rosters.map((r) => ({
+      franchiseId: String(r.roster_id),
+      players: (r.players || [])
+        .map((id) => ({ id: String(id), name: playerMap.get(String(id))?.name }))
+        .filter((p) => p.name),
+    })),
+    // Sleeper also spells out the lineup slots on the league object — again
+    // free, and consumed/deleted by fetch-rosters.mjs like lineupSlots on MFL.
+    lineupSlots: slotsFromSleeperRosterPositions(leagueData.roster_positions),
     // Also free: it's a field on the league object fetched above. MFL needs
     // its own request for the same answer.
     draftInProgress: sleeperDraftInProgress(leagueData.status),

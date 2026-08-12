@@ -489,3 +489,332 @@ export function availableFromPool(pool, rosteredNames) {
   }
   return available;
 }
+
+// ---- Power ranks --------------------------------------------------------
+// A power rank grades every franchise in a league by the projected points of
+// its best legal starting lineup — homegrown, because the probe
+// (probe-fantasypros-power-rank.yml) established that nothing team-shaped
+// exists behind the partner API: every candidate endpoint 403d
+// ("Missing Authentication Token" is API Gateway for "no such route") while
+// the consensus-rankings control answered 200 with the same key. What the
+// key *can* reach is season projections, whose rows carry points under all
+// three scoring variants at once and — the find that shapes everything below
+// — an `mflid`, so the fifteen MFL leagues join by player id and never
+// touch the name-matching machinery at all.
+//
+// The score is a floor, not a valuation of the whole roster: each league's
+// starting slots are filled greedily from the franchise's best projected
+// players and the bench contributes nothing. That underrates depth on
+// purpose — a power rank is an ordinal *within* one league, and the only
+// property it needs is that every franchise in that league is valued by the
+// same rule. Cross-league comparison of scores is meaningless twice over
+// (different slots, different scoring) and the page must never do it.
+
+// The positions a power score counts. Kickers and defenses are excluded for
+// the wire's reasons plus one of their own: their projections are nearly
+// flat, and the name-join for a defense ("Ravens D/ST" vs "Baltimore
+// Ravens") fails in a different way per provider. Their slots are dropped
+// from the valuation entirely, which biases every franchise in a league
+// equally and so moves no one's rank.
+export const POWER_POSITIONS = ['QB', 'RB', 'WR', 'TE'];
+
+// What ESPN leagues are valued against: the platform's default lineup. ESPN's
+// real slot counts live in an mSettings view this project has never probed,
+// and a guessed-but-uniform shape keeps the ordinal fair — every franchise in
+// the league is valued against the same slots, which is the property that
+// matters. Reaching for the real counts starts with a probe, not here.
+export const DEFAULT_POWER_SLOTS = [
+  { positions: ['QB'], count: 1 },
+  { positions: ['RB'], count: 2 },
+  { positions: ['WR'], count: 2 },
+  { positions: ['TE'], count: 1 },
+  { positions: ['RB', 'WR', 'TE'], count: 1 },
+];
+
+// One projections index per sync, shared by every league the way the
+// rankings provider is. Entries carry all three scoring variants because the
+// response does — one fetch per position serves PPR, half and standard
+// leagues alike.
+//
+// byName mirrors buildRankingIndex's collision rule: two projected players
+// whose names normalize alike tombstone the key to null rather than letting
+// the first one win, because crediting a franchise with the wrong Josh Allen
+// is worse than crediting it with neither. byMflId has no such hazard — ids
+// are unique — which is why the MFL join never consults byName at all.
+export function buildProjectionIndex(playersByPosition) {
+  const byMflId = new Map();
+  const byName = new Map();
+  for (const [position, players] of Object.entries(playersByPosition || {})) {
+    for (const p of players || []) {
+      const stats = p?.stats || {};
+      const entry = {
+        name: p?.name ?? '',
+        position,
+        points: {
+          PPR: toNumberOrNull(stats.points_ppr),
+          HALF: toNumberOrNull(stats.points_half),
+          STD: toNumberOrNull(stats.points),
+        },
+      };
+      if (p?.mflid != null && String(p.mflid) !== '0') {
+        byMflId.set(String(p.mflid), entry);
+      }
+      const key = normalizePlayerName(p?.name);
+      if (!key) continue;
+      byName.set(key, byName.has(key) ? null : entry);
+    }
+  }
+  return { byMflId, byName };
+}
+
+// week=0 is FantasyPros' preseason slot, same as draft/dynasty rankings
+// use, and is what the probe actually asked.
+//
+// WHAT HAPPENS IN-SEASON IS NOT YET KNOWN, and it is the open question
+// hanging over this whole feature. Three answers are possible once games
+// are played: week=0 keeps serving frozen August numbers (stale, and
+// silently — the card goes on rendering plausible ranks off projections
+// that predate every injury and breakout of the season), it starts
+// serving rest-of-season numbers (ideal), or it empties out.
+// probe-fantasypros-power-rank.yml asks the questions that distinguish
+// these and is meant to be re-run after kickoff; `week` is a parameter
+// here rather than a literal so the answer costs a call-site change
+// rather than a rewrite.
+//
+// The guard below is what makes the third case loud rather than quiet. An
+// empty position means the endpoint stopped answering the way it did when
+// the probe looked, and computing on it would hand every franchise a zero
+// score, every zero would tie, and the card would show every team ranked
+// first — plausible enough to read past. Throwing instead lands in
+// fetch-rosters.mjs's catch, which logs it and leaves the previous sync's
+// power object in place: stale-but-real beats confidently-wrong, the same
+// trade every other fallback here makes.
+export async function fetchProjections({ apiKey, season, week = 0, inSeason = false }) {
+  const playersByPosition = {};
+  for (const position of POWER_POSITIONS) {
+    const data = await fpGet(`/nfl/${season}/projections?position=${position}&week=${week}`, apiKey);
+    const players = data?.players || [];
+    if (players.length === 0) {
+      throw new Error(`projections returned no ${position}s for ${season} week ${week}`);
+    }
+    playersByPosition[position] = players;
+  }
+  return {
+    ...buildProjectionIndex(playersByPosition),
+    // Provenance, carried onto every power object so the page can say when
+    // the ranks rest on preseason numbers during the season itself.
+    //
+    // This is phase-and-week rather than a date on purpose, and the probe is
+    // why: unlike consensus-rankings, the *projections* endpoint carries no
+    // `last_updated` at all (it came back absent for every week asked), so a
+    // freshness check built on one would never fire and would look like a
+    // working guard. The deterministic question is just as good and needs no
+    // metadata: were we in season, and did we ask for the preseason slot?
+    // That is exactly the dangerous combination, it is knowable here, and it
+    // stops being true the moment the week argument changes — which is the
+    // change the post-kickoff probe is meant to inform.
+    meta: { basis: 'projections', season: String(season), week: String(week), inSeason: !!inSeason },
+  };
+}
+
+// Fills a league's starting slots greedily from a franchise's best projected
+// players: dedicated slots first, then flex slots from whoever remains, most
+// constrained slot first so a flex never steals the last RB from an RB slot.
+// Greedy is not provably optimal against adversarial slot shapes, but every
+// franchise in a league is scored by the same greed, and the ordinal is the
+// product. A slot nobody can fill scores zero and is counted in `filled`'s
+// shortfall rather than erroring — a mid-rebuild roster is a low score, not
+// a crash.
+//
+// `depth` is everything the lineup could not seat: the summed projected
+// points of the players left over once the slots are filled. Bench value is
+// a real part of a team's strength — it is what the starters score ignores
+// on purpose — so it travels as its own number rather than being folded in,
+// and the page ranks the two separately. A raw sum rewards a big roster,
+// which is fine for the ordinal's purposes: roster limits are uniform
+// within a league, and within a league is the only place these numbers
+// compare.
+export function computePowerScore(players, slots) {
+  const byPosition = new Map();
+  for (const p of players || []) {
+    if (!byPosition.has(p.position)) byPosition.set(p.position, []);
+    byPosition.get(p.position).push(p.points);
+  }
+  for (const list of byPosition.values()) list.sort((a, b) => b - a);
+  const cursor = new Map([...byPosition.keys()].map((pos) => [pos, 0]));
+
+  const ordered = [...(slots || [])].sort((a, b) => a.positions.length - b.positions.length);
+  let score = 0;
+  let filled = 0;
+  let slotCount = 0;
+  for (const slot of ordered) {
+    for (let i = 0; i < slot.count; i++) {
+      slotCount++;
+      let bestPos = null;
+      let bestPoints = -Infinity;
+      for (const pos of slot.positions) {
+        const list = byPosition.get(pos);
+        const at = cursor.get(pos) ?? 0;
+        if (list && at < list.length && list[at] > bestPoints) {
+          bestPoints = list[at];
+          bestPos = pos;
+        }
+      }
+      if (bestPos === null) continue;
+      cursor.set(bestPos, (cursor.get(bestPos) ?? 0) + 1);
+      score += bestPoints;
+      filled++;
+    }
+  }
+  const totalPoints = (players || []).reduce((sum, p) => sum + p.points, 0);
+  return { score, depth: totalPoints - score, filled, slotCount };
+}
+
+// ---- The ECR fallback ---------------------------------------------------
+// What the power score runs on when projections aren't available, which is
+// not an edge case but a season: FantasyPros publishes projections for a
+// season, and between the Super Bowl and whenever the next season's list
+// goes up (`nflSeasonPhase` has already rolled the target year over by
+// February) there is nothing to ask for. Every position comes back empty,
+// fetchProjections throws, and without this the card would carry January's
+// ranks forward through the entire offseason — against rosters that have
+// since traded and drafted — with nothing on screen to say so, because a
+// carried-forward power object still reports the phase and slot it was
+// *originally* computed under.
+//
+// Rankings, unlike projections, exist year-round: that is the whole point of
+// automaticRankingType, which serves DYNASTY/DRAFT in the offseason and ROS
+// in season. The pools the sync already stores for the Top Available card
+// are therefore a live valuation of every player, keyed by name, in exactly
+// the window where projections are dark.
+//
+// The cost is that a rank is an ordinal, and ordinals cannot be summed —
+// which is precisely why projections won the primary job. Converting one to
+// a value needs a curve, and this is the honest version of that: consensus
+// value falls off steeply at the top of a list and flattens through the
+// middle, which a logarithm captures with no tuned constants, and it reaches
+// exactly zero at the edge of the pool so a player who barely ranks
+// contributes nothing rather than a floor. Only the *ordering* this produces
+// is ever shown, so the curve has to be monotone and roughly the right
+// shape rather than calibrated against real scoring.
+//
+// Two consequences worth stating rather than discovering. This curve is
+// steeper than raw projected points (which carry a large baseline every
+// startable player earns), so the two bases weight stars differently and can
+// order the same teams differently — which is why the card says which basis
+// it used, so a rank that moves in February is explainable. And the pool is
+// RANKING_POOL_SIZE deep where projections cover every ranked player, so
+// depth on this basis counts only pool players and is the shallower measure;
+// every franchise in a league is measured the same way, so the ordinal
+// holds, but a bench of unranked stashes reads as empty rather than thin.
+export function ecrValue(rank, poolSize) {
+  const r = Number(rank);
+  const size = Number(poolSize);
+  if (!(r > 0) || !(size > 0) || r > size) return 0;
+  return Math.log(size / r);
+}
+
+// A ranking pool turned into the same shape fetchProjections returns, so
+// computeLeaguePower consumes either without knowing which it has. byMflId
+// is deliberately empty: pool entries carry no MFL id (they are the
+// FantasyPros list, joined to rosters by name everywhere else too), and
+// computeLeaguePower already falls through to the name index when the id
+// lookup misses, so an MFL league joins by name here without a special case.
+//
+// The same tombstone rule as buildProjectionIndex, for the same reason: two
+// pool players whose names normalize alike resolve to nobody.
+export function buildEcrIndex(pool, { season, inSeason } = {}) {
+  const players = pool?.players || [];
+  if (players.length === 0) return null;
+  // The pool's own depth rather than RANKING_POOL_SIZE: a pool that came
+  // back short is still internally consistent, and the constant would hand
+  // its last players a negative value. Measured as the deepest rank present
+  // rather than the entry count, which are the same number for a pool as
+  // stored (a contiguous top-N with the unranked already dropped) but come
+  // apart the moment anything filters it — and the count is the one that
+  // silently zeroes every player past it.
+  const deepest = players.reduce((max, p) => Math.max(max, Number(p.rank) || 0), 0);
+  const size = Math.max(players.length, deepest);
+  const byName = new Map();
+  for (const p of players) {
+    if (!POWER_POSITIONS.includes(p.position)) continue;
+    const key = normalizePlayerName(p.name);
+    if (!key) continue;
+    const value = ecrValue(p.rank, size);
+    const entry = {
+      name: p.name,
+      position: p.position,
+      // A pool is already scoring-specific — the scoring is part of its key
+      // — so the three variants are one number here rather than three.
+      points: { PPR: value, HALF: value, STD: value },
+    };
+    byName.set(key, byName.has(key) ? null : entry);
+  }
+  if (byName.size === 0) return null;
+  return {
+    byMflId: new Map(),
+    byName,
+    meta: {
+      basis: 'ecr',
+      season: String(season ?? ''),
+      rankingType: pool?.type ?? null,
+      scoring: pool?.scoring ?? null,
+      inSeason: !!inSeason,
+    },
+  };
+}
+
+// Every franchise in one league, scored and sorted. `joinById` is true only
+// for MFL, whose roster player ids are the same ids the projections carry —
+// Sleeper's ids live in a different id space that happens to look identical
+// (small numeric strings), so letting a Sleeper league near byMflId would
+// quietly credit franchises with the wrong players. Everyone else joins by
+// normalized name and inherits that join's known property: a collision
+// resolves to nobody rather than to the wrong body.
+// `values` is whichever player valuation this run has — fetchProjections'
+// index, or buildEcrIndex's when projections are dark. They share a shape on
+// purpose, so which one is in hand is the caller's problem and not this
+// function's; the choice travels to the page in `source`.
+export function computeLeaguePower({ franchises, slots, values, scoring, joinById, computedAt }) {
+  const effectiveScoring = scoring || 'PPR';
+  const teams = (franchises || []).map((f) => {
+    const players = [];
+    for (const p of f.players || []) {
+      let entry = joinById ? values.byMflId.get(String(p.id)) : null;
+      if (!entry) {
+        const key = normalizePlayerName(p.name);
+        entry = key ? values.byName.get(key) : null;
+      }
+      if (!entry) continue;
+      const points = entry.points[effectiveScoring] ?? entry.points.PPR;
+      if (!(points > 0)) continue;
+      players.push({ position: entry.position, points });
+    }
+    const { score, depth, filled, slotCount } = computePowerScore(players, slots);
+    return {
+      franchiseId: String(f.franchiseId),
+      score: Math.round(score * 10) / 10,
+      depth: Math.round(depth * 10) / 10,
+      filled,
+      slotCount,
+    };
+  });
+  teams.sort((a, b) => b.score - a.score);
+  // Loud rather than quiet, the per-league half of fetchProjections' guard.
+  // Not one franchise in the league seating a single player means the join
+  // failed for this league — a slot shape that parsed to nothing usable, or
+  // an id space that stopped lining up — and the output of that is a card
+  // where every team ties at zero and so every team ranks first. Returning
+  // null makes the caller skip the league, which leaves its previous power
+  // object standing rather than overwriting it with a uniform lie.
+  if (!teams.some((t) => t.filled > 0)) return null;
+  return {
+    computedAt: computedAt ?? null,
+    scoring: effectiveScoring,
+    // What these numbers were computed from — the projections slot and phase,
+    // or the ranking list the ECR fallback used. Named for the question it
+    // answers rather than for either basis, since it carries both.
+    source: values?.meta ?? null,
+    teams,
+  };
+}
