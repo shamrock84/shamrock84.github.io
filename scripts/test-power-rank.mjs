@@ -57,6 +57,13 @@
 //     contender-versus-rebuilder signal the pair exists to show. A basis
 //     that couldn't be computed renders as TBD rather than dropping the
 //     league, since "not valued yet" and "not here" are different claims;
+//   - a league with no ranks at all still gets a row, of TBDs, since a
+//     league vanishing from the card silently is the failure that avoids —
+//     but the card as a whole returns null when *nothing* could be ranked,
+//     so an absent card and a TBD row keep distinct meanings; and the
+//     missing-basis note tests "ranked on one but not the other", never
+//     "missing this one", or a single mid-draft league would announce that
+//     projections aren't published during a season when they are;
 //   - and the card's order is the *mean* of the two ranks, so neither basis
 //     is privileged: ordering by projections and using rankings only to
 //     break ties would bury a roster consensus rates highly. A row with one
@@ -586,8 +593,16 @@ const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, pow
 			power: both([1, 1, 1, 1], [2, 2, 2, 2]) },
 	];
 	const rows = computeMyPowerRows(leagues, ['dynasty', 'redraft'], 2026);
-	assert.deepEqual([...rows].map((r) => r.label), ['League C', 'League A', 'League E'],
-		'ordered by projections; the trailing redraft league is gone, the trailing dynasty league is not');
+	assert.deepEqual([...rows].map((r) => r.label), ['League C', 'League A', 'League E', 'League D'],
+		'ranked leagues by mean rank, then the unranked one; the trailing redraft league is gone, the trailing dynasty league is not');
+
+	// League D has no power data at all: a row of TBDs rather than a silent
+	// disappearance, carrying its own explanation and no league size to print.
+	const d = rows.find((r) => r.label === 'League D');
+	assert.equal(d.proj, null);
+	assert.equal(d.ecr, null);
+	assert.equal(d.size, null);
+	assert.match(d.reason, /No power data/);
 
 	// A league keeps both bases, and they can disagree — that gap is the point.
 	const a = rows.find((r) => r.label === 'League A');
@@ -603,6 +618,22 @@ const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, pow
 	assert.notEqual(e.proj, null);
 	assert.equal(e.ecr, null);
 	assert.equal(e.ecrSource, null);
+}
+
+{
+	// Why a league is unranked decides what its tooltip says, and the three
+	// states want different responses from a reader.
+	const unranked = (extra) => ({
+		id: 'X', name: 'League X', type: 'dynasty', season: '2026', franchiseId: '1', ...extra,
+	});
+	const reasonFor = (extra) => computeMyPowerRows([unranked(extra)], ['dynasty'], 2026)[0].reason;
+	assert.match(reasonFor({ draftInProgress: true }), /Draft in progress/);
+	assert.match(reasonFor({ error: 'MFL request failed (429)' }), /sync is failing/);
+	assert.match(reasonFor({}), /No power data/);
+	// A drafting league that also carries an error leads with the draft: it
+	// is the state that resolves on its own, and the one that explains why
+	// there is nothing to rank.
+	assert.match(reasonFor({ draftInProgress: true, error: 'boom' }), /Draft in progress/);
 }
 
 {
@@ -674,6 +705,15 @@ const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, pow
 	assert.deepEqual({ ...powerMissingBasis([projRow({ week: '0', inSeason: false })]) }, { projections: false, ecr: true });
 	assert.deepEqual({ ...powerMissingBasis([bothRow]) }, { projections: false, ecr: false }, 'nothing to explain');
 	assert.deepEqual({ ...powerMissingBasis([]) }, { projections: false, ecr: false });
+
+	// The trap this shape avoids: a league with NO ranks is missing both
+	// bases, and must not announce that projections aren't published for the
+	// season — every other league on the card is using them.
+	const unrankedRow = { proj: null, projSource: null, ecr: null, ecrSource: null, reason: 'Draft in progress' };
+	assert.deepEqual({ ...powerMissingBasis([bothRow, unrankedRow]) }, { projections: false, ecr: false },
+		'an unranked league explains itself; it does not speak for the season');
+	assert.deepEqual({ ...powerMissingBasis([ecrRow(), unrankedRow]) }, { projections: true, ecr: false },
+		'while a genuinely projection-less card still says so');
 
 	// Starters and Depth follow projections when the card has any, and the
 	// rankings otherwise — card-wide, so two rows never describe different

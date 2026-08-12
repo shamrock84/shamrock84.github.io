@@ -2630,11 +2630,29 @@
 		// way it clears their wire. Rows come back in reading order: best
 		// overall rank first, starters rank breaking ties, config order
 		// breaking what's left (Array.prototype.sort is stable).
-		// One row per league we hold a team in, carrying both bases. A league
-		// contributes a row if *either* basis ranked it; the missing one shows
-		// as TBD rather than dropping the league, since "we couldn't value
-		// this yet" and "this league isn't here" are different statements and
-		// only the first is true in an offseason.
+		// Why a league has no ranks at all, for the tooltip on its TBD cells.
+		// A row of TBDs with no explanation reads as a bug; these are the three
+		// states that actually produce one, and they want different responses
+		// — wait, look at the league, or wait for the next sync.
+		function powerUnrankedReason(league) {
+			if (league.draftInProgress === true) return 'Draft in progress — ranks resume once it finishes';
+			if (league.error) return 'Roster sync is failing for this league';
+			return 'No power data from the last sync yet';
+		}
+
+		// One row per league we hold a team in, carrying both bases — including
+		// leagues with neither, which render as a row of TBDs rather than
+		// vanishing. A league dropping off the card silently is the failure
+		// this avoids: "we couldn't value this yet" and "this league isn't
+		// here" are different statements, and only the first is ever true of a
+		// league in the config.
+		//
+		// The one exclusion that remains is awaitingRollover, and it is a
+		// different claim: a redraft league still on last season has not
+		// started the season this card describes, so it is not unranked, it is
+		// absent — the same reasoning Top Available uses, and type-gated the
+		// same way, so a dynasty league trailing through the rollover window
+		// still appears.
 		//
 		// Rows are ordered by the mean of the two ranks where both bases
 		// answered, and by whichever one did where only one has. Averaging is
@@ -2669,14 +2687,17 @@
 				const ecrRanks = leaguePowerRanks(league, 'ecr');
 				const proj = projRanks ? projRanks.byFranchise.get(key) || null : null;
 				const ecr = ecrRanks ? ecrRanks.byFranchise.get(key) || null : null;
-				if (!proj && !ecr) continue;
 				rows.push({
 					label: league.name || league.leagueName,
 					// Identical across bases (both rank the same franchises),
-					// so whichever answered is the league's size.
-					size: (projRanks || ecrRanks).size,
+					// so whichever answered is the league's size; null when
+					// neither did, which is also when nothing prints it.
+					size: projRanks ? projRanks.size : ecrRanks ? ecrRanks.size : null,
 					proj,
 					ecr,
+					// Set only on a row with no ranks at all — the two bases
+					// have their own explanations when just one is missing.
+					reason: proj || ecr ? null : powerUnrankedReason(league),
 					// What each side was computed from — the projections slot
 					// and phase, or the ranking list. Which is in play is the
 					// difference between a rank moving because a roster
@@ -2723,15 +2744,22 @@
 			);
 		}
 
-		// Whether any league is missing a basis entirely — the state the TBD
-		// cells report. Worth one line under the table because a column of
-		// TBDs otherwise reads as a bug rather than as a season of the year:
-		// FantasyPros publishes projections per season, so every offseason
-		// spends months with none to ask for.
+		// Whether a *basis* is missing, as opposed to a league being unranked.
+		// Worth one line under the table because a column of TBDs otherwise
+		// reads as a bug rather than as a season of the year: FantasyPros
+		// publishes projections per season, so every offseason spends months
+		// with none to ask for.
+		//
+		// The test is deliberately "ranked on one basis but not the other",
+		// not "missing this basis". A league with no ranks at all is missing
+		// both, and counting it here would announce that projections aren't
+		// published on the strength of a single mid-draft league — during a
+		// season when they are published and every other league is using them.
+		// That row explains itself through its own tooltip instead.
 		function powerMissingBasis(rows) {
 			return {
-				projections: (rows || []).some((r) => !r.proj),
-				ecr: (rows || []).some((r) => !r.ecr),
+				projections: (rows || []).some((r) => r.ecr && !r.proj),
+				ecr: (rows || []).some((r) => r.proj && !r.ecr),
 			};
 		}
 
@@ -3926,7 +3954,14 @@
 		// one grouping (see SUBTAB_GROUP) doesn't reach an ordinal.
 		function renderPowerRankCard(groupKey, types, leagues, year) {
 			const rows = computeMyPowerRows(leagues, types, year);
-			if (rows.length === 0) return null;
+			// A card where nothing at all could be ranked is not a card. The
+			// distinction it preserves is worth the extra condition: an absent
+			// card means the sync has produced no power data for this group,
+			// while a TBD row means this league in particular couldn't be
+			// ranked — which is only legible when something beside it was.
+			// Without this, a snapshot from before power ranks existed would
+			// render a full card of TBDs saying nothing.
+			if (!rows.some((r) => r.proj || r.ecr)) return null;
 
 			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
 			card.appendChild(el('h2', { text: 'Power Rankings' }));
@@ -3982,8 +4017,12 @@
 				// "the column the card is ordered by": the order is now the
 				// mean of both, which belongs to neither column alone.
 				const leadIsProj = !!r.proj;
-				row.appendChild(rankCell(r.proj, leadIsProj, r.size, 'No projections published for this season yet'));
-				row.appendChild(rankCell(r.ecr, !leadIsProj, r.size, 'No consensus rankings available for this league'));
+				// A league with no ranks at all explains itself once, in its
+				// own terms — "draft in progress" rather than two separate
+				// notes about projections and rankings, neither of which is
+				// the actual reason.
+				row.appendChild(rankCell(r.proj, leadIsProj, r.size, r.reason || 'No projections published for this season yet'));
+				row.appendChild(rankCell(r.ecr, !leadIsProj, r.size, r.reason || 'No consensus rankings available for this league'));
 				const detail = detailBasis === 'projections' ? r.proj : r.ecr;
 				row.appendChild(el('td', detail ? { text: String(detail.starters) } : { class: 'power-tbd', text: 'TBD' }));
 				row.appendChild(
