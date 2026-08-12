@@ -123,6 +123,13 @@ jobs:
       - name: Test the problems digest
         run: node scripts/test-problems-digest.mjs
 
+      # The power ranks: projection joins, slot parsing, the greedy lineup
+      # valuation, and the page's standings join. Every failure here renders
+      # as a plausible column of small numbers — nothing on screen says a
+      # franchise was credited with the wrong Josh Allen.
+      - name: Test the power ranks
+        run: node scripts/test-power-rank.mjs
+
       # Click-to-sort on the shared analytics table. The sort state lives in a
       # closure rather than a pure function, so this one drives a DOM stub — and
       # every way it can break still renders a plausible-looking table.

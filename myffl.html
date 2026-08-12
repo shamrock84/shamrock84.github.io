@@ -2552,6 +2552,40 @@
 			return card;
 		}
 
+		// Power ranks for one league's franchises: rank by the sync-computed
+		// power score (each franchise's best legal starting lineup, valued by
+		// FantasyPros season projections — see computeLeaguePower in
+		// scripts/lib/fantasypros.mjs). Returns a Map keyed by franchiseId —
+		// the same key the standings rows carry, which is the whole join — or
+		// null when the snapshot has no power data for this league (synced
+		// before this shipped, mid-draft, or the daily roster read failed),
+		// which is what makes the column absent rather than a row of dashes.
+		//
+		// Ties share a rank (standard competition ranking: two teams at 1, the
+		// next at 3) because inventing an order between equal scores would
+		// print a distinction the data doesn't contain.
+		//
+		// The score itself stays in a tooltip and never becomes a column:
+		// points are only comparable *within* a league — different slots,
+		// different scoring — and a visible number invites reading it across
+		// cards, which the rank ordinal doesn't.
+		function powerRanksForLeague(league) {
+			const teams = league.power && Array.isArray(league.power.teams) ? league.power.teams : [];
+			if (teams.length === 0) return null;
+			const sorted = [...teams].sort((a, b) => b.score - a.score);
+			const ranks = new Map();
+			let rank = 0;
+			let prevScore = null;
+			sorted.forEach((t, i) => {
+				if (t.score !== prevScore) {
+					rank = i + 1;
+					prevScore = t.score;
+				}
+				ranks.set(String(t.franchiseId), { rank, score: t.score, filled: t.filled, slotCount: t.slotCount });
+			});
+			return ranks;
+		}
+
 		function renderStandingsCard(league) {
 			const card = el('div', { class: 'card', 'data-view': 'standings', 'data-league-type': subtabType(league) || '' });
 			card.appendChild(buildCardHead(league, formatBadgeLabels(league)));
@@ -2571,9 +2605,13 @@
 				return card;
 			}
 
+			const powerRanks = powerRanksForLeague(league);
+
 			const table = el('table', { class: 'standings' });
 			const headRow = el('tr');
-			['#', 'Team', 'W-L-T', 'PF', 'PA'].forEach((h) => headRow.appendChild(el('th', { text: h })));
+			const headers = ['#', 'Team', 'W-L-T', 'PF', 'PA'];
+			if (powerRanks) headers.push('Pwr');
+			headers.forEach((h) => headRow.appendChild(el('th', { text: h })));
 			table.appendChild(headRow);
 
 			rows.forEach((r, i) => {
@@ -2583,6 +2621,20 @@
 				row.appendChild(el('td', { text: `${r.wins}-${r.losses}${r.ties ? '-' + r.ties : ''}` }));
 				row.appendChild(el('td', { text: r.pointsFor }));
 				row.appendChild(el('td', { text: r.pointsAgainst }));
+				if (powerRanks) {
+					const entry = powerRanks.get(String(r.franchiseId));
+					// A standings row with no power entry (a franchise added
+					// since the daily roster read, say) prints the same dash
+					// every other missing value on the page does.
+					const attrs = { class: 'power-cell', text: entry ? String(entry.rank) : '—' };
+					if (entry) {
+						attrs.title = `Projected starters: ${entry.score} pts`
+							+ (entry.filled != null && entry.slotCount != null && entry.filled < entry.slotCount
+								? ` (${entry.filled}/${entry.slotCount} slots filled)`
+								: '');
+					}
+					row.appendChild(el('td', attrs));
+				}
 				table.appendChild(row);
 			});
 			card.appendChild(table);

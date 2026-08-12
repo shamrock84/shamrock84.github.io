@@ -489,3 +489,171 @@ export function availableFromPool(pool, rosteredNames) {
   }
   return available;
 }
+
+// ---- Power ranks --------------------------------------------------------
+// A power rank grades every franchise in a league by the projected points of
+// its best legal starting lineup — homegrown, because the probe
+// (probe-fantasypros-power-rank.yml) established that nothing team-shaped
+// exists behind the partner API: every candidate endpoint 403d
+// ("Missing Authentication Token" is API Gateway for "no such route") while
+// the consensus-rankings control answered 200 with the same key. What the
+// key *can* reach is season projections, whose rows carry points under all
+// three scoring variants at once and — the find that shapes everything below
+// — an `mflid`, so the fifteen MFL leagues join by player id and never
+// touch the name-matching machinery at all.
+//
+// The score is a floor, not a valuation of the whole roster: each league's
+// starting slots are filled greedily from the franchise's best projected
+// players and the bench contributes nothing. That underrates depth on
+// purpose — a power rank is an ordinal *within* one league, and the only
+// property it needs is that every franchise in that league is valued by the
+// same rule. Cross-league comparison of scores is meaningless twice over
+// (different slots, different scoring) and the page must never do it.
+
+// The positions a power score counts. Kickers and defenses are excluded for
+// the wire's reasons plus one of their own: their projections are nearly
+// flat, and the name-join for a defense ("Ravens D/ST" vs "Baltimore
+// Ravens") fails in a different way per provider. Their slots are dropped
+// from the valuation entirely, which biases every franchise in a league
+// equally and so moves no one's rank.
+export const POWER_POSITIONS = ['QB', 'RB', 'WR', 'TE'];
+
+// What ESPN leagues are valued against: the platform's default lineup. ESPN's
+// real slot counts live in an mSettings view this project has never probed,
+// and a guessed-but-uniform shape keeps the ordinal fair — every franchise in
+// the league is valued against the same slots, which is the property that
+// matters. Reaching for the real counts starts with a probe, not here.
+export const DEFAULT_POWER_SLOTS = [
+  { positions: ['QB'], count: 1 },
+  { positions: ['RB'], count: 2 },
+  { positions: ['WR'], count: 2 },
+  { positions: ['TE'], count: 1 },
+  { positions: ['RB', 'WR', 'TE'], count: 1 },
+];
+
+// One projections index per sync, shared by every league the way the
+// rankings provider is. Entries carry all three scoring variants because the
+// response does — one fetch per position serves PPR, half and standard
+// leagues alike.
+//
+// byName mirrors buildRankingIndex's collision rule: two projected players
+// whose names normalize alike tombstone the key to null rather than letting
+// the first one win, because crediting a franchise with the wrong Josh Allen
+// is worse than crediting it with neither. byMflId has no such hazard — ids
+// are unique — which is why the MFL join never consults byName at all.
+export function buildProjectionIndex(playersByPosition) {
+  const byMflId = new Map();
+  const byName = new Map();
+  for (const [position, players] of Object.entries(playersByPosition || {})) {
+    for (const p of players || []) {
+      const stats = p?.stats || {};
+      const entry = {
+        name: p?.name ?? '',
+        position,
+        points: {
+          PPR: toNumberOrNull(stats.points_ppr),
+          HALF: toNumberOrNull(stats.points_half),
+          STD: toNumberOrNull(stats.points),
+        },
+      };
+      if (p?.mflid != null && String(p.mflid) !== '0') {
+        byMflId.set(String(p.mflid), entry);
+      }
+      const key = normalizePlayerName(p?.name);
+      if (!key) continue;
+      byName.set(key, byName.has(key) ? null : entry);
+    }
+  }
+  return { byMflId, byName };
+}
+
+// week=0 was what the probe actually asked and is FantasyPros' preseason
+// slot, same as draft/dynasty rankings use. In-season it presumably keeps
+// answering with season-long numbers; if power ranks ever look stale
+// mid-season, the probe is where to check what week=N returns before
+// changing this.
+export async function fetchProjections({ apiKey, season }) {
+  const playersByPosition = {};
+  for (const position of POWER_POSITIONS) {
+    const data = await fpGet(`/nfl/${season}/projections?position=${position}&week=0`, apiKey);
+    playersByPosition[position] = data?.players || [];
+  }
+  return buildProjectionIndex(playersByPosition);
+}
+
+// Fills a league's starting slots greedily from a franchise's best projected
+// players: dedicated slots first, then flex slots from whoever remains, most
+// constrained slot first so a flex never steals the last RB from an RB slot.
+// Greedy is not provably optimal against adversarial slot shapes, but every
+// franchise in a league is scored by the same greed, and the ordinal is the
+// product. A slot nobody can fill scores zero and is counted in `filled`'s
+// shortfall rather than erroring — a mid-rebuild roster is a low score, not
+// a crash.
+export function computePowerScore(players, slots) {
+  const byPosition = new Map();
+  for (const p of players || []) {
+    if (!byPosition.has(p.position)) byPosition.set(p.position, []);
+    byPosition.get(p.position).push(p.points);
+  }
+  for (const list of byPosition.values()) list.sort((a, b) => b - a);
+  const cursor = new Map([...byPosition.keys()].map((pos) => [pos, 0]));
+
+  const ordered = [...(slots || [])].sort((a, b) => a.positions.length - b.positions.length);
+  let score = 0;
+  let filled = 0;
+  let slotCount = 0;
+  for (const slot of ordered) {
+    for (let i = 0; i < slot.count; i++) {
+      slotCount++;
+      let bestPos = null;
+      let bestPoints = -Infinity;
+      for (const pos of slot.positions) {
+        const list = byPosition.get(pos);
+        const at = cursor.get(pos) ?? 0;
+        if (list && at < list.length && list[at] > bestPoints) {
+          bestPoints = list[at];
+          bestPos = pos;
+        }
+      }
+      if (bestPos === null) continue;
+      cursor.set(bestPos, (cursor.get(bestPos) ?? 0) + 1);
+      score += bestPoints;
+      filled++;
+    }
+  }
+  return { score, filled, slotCount };
+}
+
+// Every franchise in one league, scored and sorted. `joinById` is true only
+// for MFL, whose roster player ids are the same ids the projections carry —
+// Sleeper's ids live in a different id space that happens to look identical
+// (small numeric strings), so letting a Sleeper league near byMflId would
+// quietly credit franchises with the wrong players. Everyone else joins by
+// normalized name and inherits that join's known property: a collision
+// resolves to nobody rather than to the wrong body.
+export function computeLeaguePower({ franchises, slots, projections, scoring, joinById, computedAt }) {
+  const effectiveScoring = scoring || 'PPR';
+  const teams = (franchises || []).map((f) => {
+    const players = [];
+    for (const p of f.players || []) {
+      let entry = joinById ? projections.byMflId.get(String(p.id)) : null;
+      if (!entry) {
+        const key = normalizePlayerName(p.name);
+        entry = key ? projections.byName.get(key) : null;
+      }
+      if (!entry) continue;
+      const points = entry.points[effectiveScoring] ?? entry.points.PPR;
+      if (!(points > 0)) continue;
+      players.push({ position: entry.position, points });
+    }
+    const { score, filled, slotCount } = computePowerScore(players, slots);
+    return {
+      franchiseId: String(f.franchiseId),
+      score: Math.round(score * 10) / 10,
+      filled,
+      slotCount,
+    };
+  });
+  teams.sort((a, b) => b.score - a.score);
+  return { computedAt: computedAt ?? null, scoring: effectiveScoring, teams };
+}
