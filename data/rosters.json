@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-12T05:37:41.715Z",
+  "generatedAt": "2026-08-12T09:10:50.255Z",
   "year": "2026",
   "rankingPools": {
     "DYNASTY|PPR|ALL": {
@@ -5496,7 +5496,7 @@
             "rank": 15,
             "posRank": "RB6",
             "tier": 3,
-            "delta": -1,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/omarion-hampton.php"
           }
         },
@@ -5823,7 +5823,7 @@
             "rank": 190,
             "posRank": "WR77",
             "tier": 10,
-            "delta": -14,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/ted-hurst.php"
           }
         },
@@ -5931,7 +5931,7 @@
             "rank": 278,
             "posRank": "K4",
             "tier": 12,
-            "delta": -3,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/will-reichard.php"
           }
         },
@@ -5981,7 +5981,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1 QB, 2-3 RB, 2-3 WR, 1-2 TE, 1 PK, 1 Def",
-      "updatedAt": "2026-08-12T05:36:37.857Z",
+      "updatedAt": "2026-08-12T09:10:17.604Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -6167,7 +6167,7 @@
             "rank": 71,
             "posRank": "QB12",
             "tier": 6,
-            "delta": -2,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/brock-purdy.php"
           }
         },
@@ -6251,7 +6251,7 @@
             "rank": 66,
             "posRank": "RB18",
             "tier": 6,
-            "delta": 2,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/bucky-irving.php"
           }
         },
@@ -6794,7 +6794,7 @@
             "rank": 278,
             "posRank": "K4",
             "tier": 12,
-            "delta": -3,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/will-reichard.php"
           }
         },
@@ -6844,7 +6844,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1 QB, 2 RB, 3 WR, 1 TE, 1 PK, 1 Def",
-      "updatedAt": "2026-08-12T05:36:38.801Z",
+      "updatedAt": "2026-08-12T09:10:18.390Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -7615,7 +7615,7 @@
             "rank": 281,
             "posRank": "DST9",
             "tier": 12,
-            "delta": -3,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/kansas-city-defense.php"
           }
         },
@@ -7644,7 +7644,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1 QB, 2 RB, 3 WR, 1 TE, 1 PK, 1 Def",
-      "updatedAt": "2026-08-12T05:36:40.578Z",
+      "updatedAt": "2026-08-12T09:10:20.132Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -8333,7 +8333,7 @@
       "salaryCap": 550,
       "salaryAdjustments": 3.2699999999999996,
       "startingLineup": "1 QB, 2-3 RB, 3-4 WR, 1-2 TE",
-      "updatedAt": "2026-08-12T05:36:42.451Z",
+      "updatedAt": "2026-08-12T09:10:20.677Z",
       "error": null,
       "tags": [
         "Best Ball"
@@ -8469,6 +8469,16 @@
       "scoring": null,
       "scoringError": "No live scoring available yet",
       "draftInProgress": false,
+      "rankings": {
+        "type": "DRAFT",
+        "scoring": "PPR",
+        "position": "ALL",
+        "lastUpdated": "8/12",
+        "totalExperts": 82,
+        "matched": 24,
+        "total": 24
+      },
+      "rankingsError": null,
       "available": [
         "Kenny Gainwell",
         "Chig Okonkwo",
@@ -8481,27 +8491,16 @@
         "Chimere Dike",
         "Justice Hill",
         "Isaiah Davis",
-        "Tory Horton",
         "George Holani",
-        "Christian Kirk",
+        "Tory Horton",
         "Tua Tagovailoa",
+        "Christian Kirk",
         "Jordan James",
         "Samaje Perine",
         "LeQuint Allen Jr.",
-        "Malik Davis",
-        "Hollywood Brown"
+        "Malik Davis"
       ],
-      "availableAt": "2026-08-11T13:01:46.280Z",
-      "rankings": {
-        "type": "DRAFT",
-        "scoring": "PPR",
-        "position": "ALL",
-        "lastUpdated": "8/12",
-        "totalExperts": 82,
-        "matched": 24,
-        "total": 24
-      },
-      "rankingsError": null
+      "availableAt": "2026-08-12T09:10:16.403Z"
     },
     {
       "id": "34850",
@@ -8811,7 +8810,7 @@
             "rank": 297,
             "posRank": "WR119",
             "tier": 11,
-            "delta": -12,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/chris-brazzell-ii.php"
           }
         },
@@ -9101,7 +9100,7 @@
       "salaryCap": 500,
       "salaryAdjustments": 4.68,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-12T05:36:43.751Z",
+      "updatedAt": "2026-08-12T09:10:21.154Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -9721,7 +9720,7 @@
             "rank": 249,
             "posRank": "WR99",
             "tier": 10,
-            "delta": -15,
+            "delta": -13,
             "url": "https://www.fantasypros.com/nfl/players/ted-hurst.php"
           }
         },
@@ -9813,7 +9812,7 @@
       "salaryCap": 500,
       "salaryAdjustments": 10.09,
       "startingLineup": "1-2 QB, 2-4 RB, 2-4 WR, 1-3 TE",
-      "updatedAt": "2026-08-12T05:36:44.864Z",
+      "updatedAt": "2026-08-12T09:10:21.746Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -10485,7 +10484,7 @@
             "rank": 130,
             "posRank": "TE14",
             "tier": 7,
-            "delta": -2,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/jake-ferguson.php"
           }
         },
@@ -10535,7 +10534,7 @@
       "salaryCap": 500,
       "salaryAdjustments": 58.24,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-12T05:36:46.365Z",
+      "updatedAt": "2026-08-12T09:10:22.379Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -10723,7 +10722,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-3 RB, 3-4 WR, 1-2 TE",
-      "updatedAt": "2026-08-12T05:36:46.869Z",
+      "updatedAt": "2026-08-12T09:10:22.536Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -10872,7 +10871,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-3 RB, 3-4 WR, 1-2 TE",
-      "updatedAt": "2026-08-12T05:36:47.228Z",
+      "updatedAt": "2026-08-12T09:10:22.688Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -11492,7 +11491,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-12T05:36:48.311Z",
+      "updatedAt": "2026-08-12T09:10:23.057Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -12068,7 +12067,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-12T05:36:49.030Z",
+      "updatedAt": "2026-08-12T09:10:23.455Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -12703,7 +12702,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "0-2 QB, 0-8 RB, 0-8 WR, 0-8 TE",
-      "updatedAt": "2026-08-12T05:36:49.920Z",
+      "updatedAt": "2026-08-12T09:10:23.737Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -12820,16 +12819,6 @@
       "scoring": null,
       "scoringError": "No live scoring available yet",
       "draftInProgress": false,
-      "rankings": {
-        "type": "DRAFT",
-        "scoring": "HALF",
-        "position": "OP",
-        "lastUpdated": "8/12",
-        "totalExperts": 77,
-        "matched": 20,
-        "total": 20
-      },
-      "rankingsError": null,
       "available": [
         "Kenny Gainwell",
         "Stefon Diggs",
@@ -12872,7 +12861,17 @@
         "Chimere Dike",
         "Tory Horton"
       ],
-      "availableAt": "2026-08-12T05:36:35.845Z"
+      "availableAt": "2026-08-12T05:36:35.845Z",
+      "rankings": {
+        "type": "DRAFT",
+        "scoring": "HALF",
+        "position": "OP",
+        "lastUpdated": "8/12",
+        "totalExperts": 77,
+        "matched": 20,
+        "total": 20
+      },
+      "rankingsError": null
     },
     {
       "id": "61777",
@@ -13313,7 +13312,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "0-2 QB, 0-8 RB, 0-8 WR, 0-8 TE",
-      "updatedAt": "2026-08-12T05:36:50.833Z",
+      "updatedAt": "2026-08-12T09:10:24.108Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -13897,7 +13896,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-12T05:36:51.870Z",
+      "updatedAt": "2026-08-12T09:10:24.487Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -14371,7 +14370,7 @@
       "salaryCap": null,
       "salaryAdjustments": null,
       "startingLineup": "1-2 QB, 2-4 RB, 3-5 WR, 1-3 TE",
-      "updatedAt": "2026-08-12T05:36:54.433Z",
+      "updatedAt": "2026-08-12T09:10:24.889Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -14823,7 +14822,7 @@
             "rank": 249,
             "posRank": "WR99",
             "tier": 10,
-            "delta": -15,
+            "delta": -13,
             "url": "https://www.fantasypros.com/nfl/players/ted-hurst.php"
           }
         },
@@ -14884,7 +14883,7 @@
         }
       ],
       "draftInProgress": false,
-      "updatedAt": "2026-08-12T05:36:54.621Z",
+      "updatedAt": "2026-08-12T09:10:24.960Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -15147,7 +15146,7 @@
         "Xavier Legette",
         "Malik Davis"
       ],
-      "availableAt": "2026-08-12T05:36:35.845Z"
+      "availableAt": "2026-08-12T09:10:16.403Z"
     },
     {
       "id": "1966972",
@@ -15158,7 +15157,7 @@
       "teamName": "Big Dart Energy",
       "url": "https://fantasy.espn.com/football/team?leagueId=1966972&teamId=10",
       "players": [],
-      "updatedAt": "2026-08-12T05:36:54.722Z",
+      "updatedAt": "2026-08-12T09:10:25.052Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -15347,7 +15346,7 @@
       "teamName": "Jeffer Justinson",
       "url": "https://fantasy.espn.com/football/team?leagueId=421871710&teamId=5",
       "players": [],
-      "updatedAt": "2026-08-12T05:36:54.788Z",
+      "updatedAt": "2026-08-12T09:10:25.104Z",
       "error": null,
       "tags": [],
       "provider": "espn",
