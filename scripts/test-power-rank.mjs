@@ -33,7 +33,13 @@
 //     team in, ordered by overall rank; ties share a rank; a redraft
 //     league still on last season is excluded (same awaitingRollover gate
 //     as Top Available) while a trailing dynasty league is not; a league
-//     without power data contributes no row rather than a row of dashes.
+//     without power data contributes no row rather than a row of dashes;
+//   - and the two fail-loud guards, which exist because the quiet version
+//     of each is a card nobody would question: a league where no franchise
+//     seated anybody computes to null (every team would otherwise tie at
+//     zero and so rank first), and a projection stamp older than the
+//     staleness horizon puts a warning on the card — the only visible
+//     symptom the frozen-preseason-projections case would ever produce.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -282,6 +288,51 @@ function mflStarters(positions, count) {
   assert.deepEqual(DEFAULT_POWER_SLOTS.find((s) => s.positions.length > 1).positions, ['RB', 'WR', 'TE']);
 }
 
+// ---- The fail-loud guards ---------------------------------------------------
+
+{
+  const projections = buildProjectionIndex({
+    QB: [projPlayer('Real Guy', 1111, { ppr: 300, half: 300, std: 300 })],
+  });
+  projections.meta = { season: '2026', week: '0', lastUpdated: '2026-08-11 06:00:00' };
+  const slots = [{ positions: ['QB'], count: 1 }];
+
+  // Nobody in the league joins to a projection — an id space that stopped
+  // lining up, or a slot shape that parsed to nothing usable. The quiet
+  // version of this is every franchise scoring zero, every zero tying, and
+  // the card ranking all twelve teams first.
+  const broken = computeLeaguePower({
+    franchises: [
+      { franchiseId: '0001', players: [{ id: '9999', name: 'Nobody At All' }] },
+      { franchiseId: '0002', players: [{ id: '8888', name: 'Also Nobody' }] },
+    ],
+    slots,
+    projections,
+    scoring: 'PPR',
+    joinById: true,
+    computedAt: '2026-08-12T00:00:00Z',
+  });
+  assert.equal(broken, null, 'no franchise seated anybody: null, so the caller keeps the previous ranks');
+
+  // One franchise seating one player is enough to be real data — the other
+  // team is genuinely empty, which is a low score rather than a broken join.
+  const partial = computeLeaguePower({
+    franchises: [
+      { franchiseId: '0001', players: [{ id: '1111', name: 'Real Guy' }] },
+      { franchiseId: '0002', players: [] },
+    ],
+    slots,
+    projections,
+    scoring: 'PPR',
+    joinById: true,
+    computedAt: '2026-08-12T00:00:00Z',
+  });
+  assert.notEqual(partial, null);
+  assert.deepEqual({ ...partial.projections }, { season: '2026', week: '0', lastUpdated: '2026-08-11 06:00:00' },
+    'provenance rides along so the page can see when the numbers stopped moving');
+  assert.equal(partial.teams.length, 2);
+}
+
 // ---- The page's half of the join --------------------------------------------
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
@@ -319,7 +370,13 @@ const context = {
 vm.createContext(context);
 vm.runInContext(scriptSource, context);
 
-const { leaguePowerRanks, computeMyPowerRows } = context;
+const { leaguePowerRanks, computeMyPowerRows, powerProjectionAge } = context;
+
+// A top-level `const` in the page's script block doesn't land on the vm
+// context's global the way a function declaration does, so the horizon is
+// read out of the source instead of imported — which keeps this pinned to
+// the real value rather than a copy that could drift from it.
+const STALE_DAYS = Number(scriptSource.match(/POWER_PROJECTION_STALE_DAYS = (\d+)/)[1]);
 
 {
 	assert.equal(leaguePowerRanks({}), null, 'no power data, no ranks');
@@ -370,6 +427,7 @@ const { leaguePowerRanks, computeMyPowerRows } = context;
 
 {
 	const power = (myScore, myDepth, otherScore, otherDepth) => ({
+		projections: { season: '2026', week: '0', lastUpdated: '2026-08-11 06:00:00' },
 		teams: [
 			{ franchiseId: '1', score: myScore, depth: myDepth },
 			{ franchiseId: '2', score: otherScore, depth: otherDepth },
@@ -389,8 +447,33 @@ const { leaguePowerRanks, computeMyPowerRows } = context;
 	];
 	const rows = computeMyPowerRows(leagues, ['dynasty', 'redraft'], 2026);
 	assert.deepEqual([...rows].map((r) => r.label), ['League C', 'League A'], 'best overall rank first; the trailing redraft league is gone, the trailing dynasty league is not');
-	assert.deepEqual({ ...rows[0] }, { label: 'League C', size: 2, overall: 1, starters: 1, depth: 1 });
-	assert.deepEqual({ ...rows[1] }, { label: 'League A', size: 2, overall: 2, starters: 2, depth: 2 });
+	assert.deepEqual({ ...rows[0] }, { label: 'League C', size: 2, overall: 1, starters: 1, depth: 1, projectionsUpdated: '2026-08-11 06:00:00' });
+	assert.deepEqual({ ...rows[1] }, { label: 'League A', size: 2, overall: 2, starters: 2, depth: 2, projectionsUpdated: '2026-08-11 06:00:00' });
+}
+
+// ---- The staleness horizon ---------------------------------------------------
+
+{
+	const day = 86400000;
+	const now = new Date('2026-11-01T00:00:00Z').getTime();
+	const row = (stamp) => ({ projectionsUpdated: stamp });
+
+	assert.equal(powerProjectionAge([], now), null, 'nothing to judge');
+	assert.equal(powerProjectionAge([row(null)], now), null, 'a power object from before provenance was recorded says nothing');
+	assert.equal(powerProjectionAge([row('not a date')], now), null, 'an unparseable stamp is not a false alarm');
+
+	// The frozen-preseason case this whole guard exists for: ranks computed
+	// in November off projections FantasyPros last touched in August.
+	const frozen = powerProjectionAge([row('2026-08-11 06:00:00')], now);
+	assert.ok(frozen > 80 && frozen < 84, `August projections read in November are ~82 days old, got ${frozen}`);
+	assert.ok(frozen > STALE_DAYS, 'and so past the horizon that puts the warning on the card');
+
+	// The oldest stamp wins, so one lagging league is enough to flag.
+	const mixed = powerProjectionAge([row('2026-10-30 06:00:00'), row('2026-08-11 06:00:00')], now);
+	assert.equal(Math.round(mixed), Math.round(frozen));
+
+	// A healthy in-season sync is well inside the horizon and says nothing.
+	assert.ok(powerProjectionAge([row(new Date(now - 2 * day).toISOString())], now) < STALE_DAYS);
 }
 
 console.log('test-power-rank: all assertions passed');

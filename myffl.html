@@ -2633,10 +2633,45 @@
 					overall: mine.overall,
 					starters: mine.starters,
 					depth: mine.depth,
+					// When FantasyPros last republished the projections this
+					// rank was computed from — see powerProjectionAge, which
+					// is the only way the frozen-projections failure becomes
+					// visible on screen. Absent on power objects written
+					// before the sync recorded it.
+					projectionsUpdated: league.power.projections ? league.power.projections.lastUpdated : null,
 				});
 			}
 			rows.sort((a, b) => a.overall - b.overall || a.starters - b.starters);
 			return rows;
+		}
+
+		// How old FantasyPros' projections may get before the card says so.
+		//
+		// The power score is only ever as current as its inputs, and the way
+		// it can go wrong is specifically quiet: if the sync goes on asking
+		// for the preseason projection slot after games start, the numbers
+		// freeze in August while the card keeps rendering perfectly plausible
+		// ranks — no error, no blank, nothing to notice. FantasyPros
+		// republishes far more often than a fortnight in both halves of the
+		// year, so this many days without an update means the feed stopped
+		// rather than that nothing changed.
+		const POWER_PROJECTION_STALE_DAYS = 14;
+
+		// The age in days of the oldest projection stamp behind these rows, or
+		// null when there is nothing to judge — a power object from before the
+		// sync recorded provenance, or a stamp that doesn't parse. Both print
+		// nothing rather than a false alarm, the same rule the ECR link and the
+		// injury return date follow: absent means "not asked", never "wrong".
+		function powerProjectionAge(rows, now = Date.now()) {
+			let oldest = null;
+			for (const r of rows || []) {
+				if (!r.projectionsUpdated) continue;
+				const when = new Date(r.projectionsUpdated).getTime();
+				if (!Number.isFinite(when)) continue;
+				const days = (now - when) / 86400000;
+				if (oldest == null || days > oldest) oldest = days;
+			}
+			return oldest;
 		}
 
 		function renderStandingsCard(league) {
@@ -3822,6 +3857,20 @@
 			card.appendChild(el('h2', { text: 'Power Rankings' }));
 			// Word for word what the other three cards say, same reasoning.
 			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(rows.length)}` }));
+
+			// Conditional, and deliberately so: the four Analytics cards carry
+			// one identical subtitle and nothing else, because a standing
+			// explanation costs room on every visit. This is not an
+			// explanation — it appears only when the numbers under the card
+			// have actually stopped moving, which is the single symptom the
+			// frozen-projections failure produces.
+			const age = powerProjectionAge(rows);
+			if (age != null && age > POWER_PROJECTION_STALE_DAYS) {
+				card.appendChild(el('div', {
+					class: 'error-box',
+					text: `Projections last updated ${Math.round(age)} days ago — these ranks may be stale.`,
+				}));
+			}
 
 			const table = el('table', { class: 'standings' });
 			const headRow = el('tr');

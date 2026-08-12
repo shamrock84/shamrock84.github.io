@@ -567,18 +567,47 @@ export function buildProjectionIndex(playersByPosition) {
   return { byMflId, byName };
 }
 
-// week=0 was what the probe actually asked and is FantasyPros' preseason
-// slot, same as draft/dynasty rankings use. In-season it presumably keeps
-// answering with season-long numbers; if power ranks ever look stale
-// mid-season, the probe is where to check what week=N returns before
-// changing this.
-export async function fetchProjections({ apiKey, season }) {
+// week=0 is FantasyPros' preseason slot, same as draft/dynasty rankings
+// use, and is what the probe actually asked.
+//
+// WHAT HAPPENS IN-SEASON IS NOT YET KNOWN, and it is the open question
+// hanging over this whole feature. Three answers are possible once games
+// are played: week=0 keeps serving frozen August numbers (stale, and
+// silently — the card goes on rendering plausible ranks off projections
+// that predate every injury and breakout of the season), it starts
+// serving rest-of-season numbers (ideal), or it empties out.
+// probe-fantasypros-power-rank.yml asks the questions that distinguish
+// these and is meant to be re-run after kickoff; `week` is a parameter
+// here rather than a literal so the answer costs a call-site change
+// rather than a rewrite.
+//
+// The guard below is what makes the third case loud rather than quiet. An
+// empty position means the endpoint stopped answering the way it did when
+// the probe looked, and computing on it would hand every franchise a zero
+// score, every zero would tie, and the card would show every team ranked
+// first — plausible enough to read past. Throwing instead lands in
+// fetch-rosters.mjs's catch, which logs it and leaves the previous sync's
+// power object in place: stale-but-real beats confidently-wrong, the same
+// trade every other fallback here makes.
+export async function fetchProjections({ apiKey, season, week = 0 }) {
   const playersByPosition = {};
+  let lastUpdated = null;
   for (const position of POWER_POSITIONS) {
-    const data = await fpGet(`/nfl/${season}/projections?position=${position}&week=0`, apiKey);
-    playersByPosition[position] = data?.players || [];
+    const data = await fpGet(`/nfl/${season}/projections?position=${position}&week=${week}`, apiKey);
+    const players = data?.players || [];
+    if (players.length === 0) {
+      throw new Error(`projections returned no ${position}s for ${season} week ${week}`);
+    }
+    playersByPosition[position] = players;
+    if (data?.last_updated) lastUpdated = data.last_updated;
   }
-  return buildProjectionIndex(playersByPosition);
+  return {
+    ...buildProjectionIndex(playersByPosition),
+    // Provenance, carried onto every power object so the page can say when
+    // the numbers underneath it stopped moving — the one visible symptom
+    // the frozen-week=0 case would otherwise never produce.
+    meta: { season: String(season), week: String(week), lastUpdated },
+  };
 }
 
 // Fills a league's starting slots greedily from a franchise's best projected
@@ -666,5 +695,18 @@ export function computeLeaguePower({ franchises, slots, projections, scoring, jo
     };
   });
   teams.sort((a, b) => b.score - a.score);
-  return { computedAt: computedAt ?? null, scoring: effectiveScoring, teams };
+  // Loud rather than quiet, the per-league half of fetchProjections' guard.
+  // Not one franchise in the league seating a single player means the join
+  // failed for this league — a slot shape that parsed to nothing usable, or
+  // an id space that stopped lining up — and the output of that is a card
+  // where every team ties at zero and so every team ranks first. Returning
+  // null makes the caller skip the league, which leaves its previous power
+  // object standing rather than overwriting it with a uniform lie.
+  if (!teams.some((t) => t.filled > 0)) return null;
+  return {
+    computedAt: computedAt ?? null,
+    scoring: effectiveScoring,
+    projections: projections?.meta ?? null,
+    teams,
+  };
 }

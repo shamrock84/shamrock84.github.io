@@ -662,6 +662,7 @@ async function main() {
       const projections = await fetchProjections({ apiKey: fpApiKey, season });
       const configById = new Map(LEAGUES.map((l) => [l.id, l]));
       let powered = 0;
+      let skipped = 0;
       for (const league of leagues) {
         if (league.draftInProgress) continue; // cleared below, like available
         if (!Array.isArray(league.rosterFranchises) || league.rosterFranchises.length === 0) continue;
@@ -674,7 +675,7 @@ async function main() {
         const slots = league.lineupSlots
           || (config.provider === 'espn' ? DEFAULT_POWER_SLOTS : null);
         if (!slots) continue;
-        league.power = computeLeaguePower({
+        const power = computeLeaguePower({
           franchises: league.rosterFranchises,
           slots,
           projections,
@@ -684,9 +685,19 @@ async function main() {
           joinById: (config.provider || 'mfl') === 'mfl',
           computedAt: now.toISOString(),
         });
+        // null means no franchise in the league seated anybody — see the
+        // guard in computeLeaguePower. Skipping leaves the previous sync's
+        // ranks in place via the carry-forward below, and says so out loud;
+        // assigning it would replace them with a league-wide tie at zero.
+        if (!power) {
+          console.error(`${league.name}: power ranks skipped — no franchise seated a projected player (join or slot shape broken?)`);
+          skipped++;
+          continue;
+        }
+        league.power = power;
         powered++;
       }
-      console.log(`FantasyPros — power ranks computed for ${powered} league(s)`);
+      console.log(`FantasyPros — power ranks computed for ${powered} league(s)${skipped > 0 ? `, skipped ${skipped} with no usable join` : ''}`);
     } catch (err) {
       console.error(`Failed to compute power ranks: ${err.message}`);
     }
