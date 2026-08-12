@@ -89,6 +89,75 @@ const projections = await probe(
   `${FP_BASE}/nfl/${season}/projections?position=QB&week=0&scoring=PPR`
 );
 
+// --- What week-scoping means on this endpoint ---
+//
+// The power score asks for week=0, FantasyPros' preseason slot. What that
+// returns once games are played is the open question, and it is the one
+// that decides whether this whole feature quietly rots in September:
+// frozen preseason numbers (stale, and silently so — the card goes on
+// rendering plausible ranks), rest-of-season numbers (ideal, nothing to
+// do), or nothing at all.
+//
+// That question cannot be answered before kickoff. The *shape* can be
+// learned now, and it is most of the answer: if week=1 comes back at
+// roughly a seventeenth of week=0 for the same player, weeks are
+// single-week slices, and summing the remaining ones is the
+// rest-of-season path. If week=1 mirrors week=0, the parameter is
+// decorative and something else has to carry in-season freshness.
+//
+// RE-RUN THIS AFTER KICKOFF. The numbers to compare are `last_updated`
+// (does the week=0 list still get republished once games count?) and
+// whether week=0's total drops as weeks are played (rest-of-season) or
+// holds at its August value (frozen).
+async function projectionSample(week) {
+  const url = `${FP_BASE}/nfl/${season}/projections?position=QB&week=${week}`;
+  try {
+    const res = await fetch(url, { headers: { 'x-api-key': apiKey } });
+    const body = await res.text();
+    if (!res.ok) return { week, status: res.status, count: 0 };
+    const data = JSON.parse(body);
+    const players = data?.players || [];
+    // The top projected QB rather than a named one: the point is comparing
+    // the same player across weeks, and who leads is not the question.
+    const top = [...players].sort(
+      (a, b) => (Number(b?.stats?.points_ppr) || 0) - (Number(a?.stats?.points_ppr) || 0)
+    )[0];
+    return {
+      week,
+      status: res.status,
+      echoedWeek: data?.week ?? '—',
+      lastUpdated: data?.last_updated ?? '—',
+      count: players.length,
+      topName: top?.name ?? '—',
+      topPoints: Number(top?.stats?.points_ppr) || 0,
+    };
+  } catch (err) {
+    return { week, status: null, count: 0, error: err.message };
+  }
+}
+
+console.log('\n--- projections by week (QB) ---');
+const samples = [];
+for (const week of ['0', '1', '2']) {
+  const s = await projectionSample(week);
+  samples.push(s);
+  console.log(
+    `  week=${s.week}: HTTP ${s.status}  echoed_week=${s.echoedWeek ?? '—'}  players=${s.count}  ` +
+    `last_updated=${s.lastUpdated ?? '—'}  top=${s.topName ?? '—'} ${s.topPoints ?? 0} pts`
+  );
+}
+
+const season0 = samples.find((s) => s.week === '0');
+const week1 = samples.find((s) => s.week === '1');
+let weekShape = 'inconclusive';
+if (season0?.count > 0 && week1?.count > 0 && season0.topPoints > 0 && week1.topPoints > 0) {
+  const ratio = week1.topPoints / season0.topPoints;
+  console.log(`\n  week=1 is ${(ratio * 100).toFixed(1)}% of week=0 for the top QB`);
+  // A seventeenth is ~5.9%; anything under a fifth is unambiguously a
+  // single-week slice rather than a season total.
+  weekShape = ratio < 0.2 ? 'single-week slices' : ratio > 0.8 ? 'week param appears decorative' : 'inconclusive';
+}
+
 console.log('\n=== verdict ===');
 console.log(anyHit
   ? 'At least one team-level candidate answered 200 — read its body above before building anything.'
@@ -96,3 +165,9 @@ console.log(anyHit
 console.log(projections.status === 200
   ? 'Projections ARE reachable with this key — the homegrown score can weight by projected points rather than rank ordinal.'
   : `Projections are NOT reachable (HTTP ${projections.status}) — the homegrown score weights by ECR rank.`);
+console.log(`Week scoping: ${weekShape}.`);
+console.log(
+  weekShape === 'single-week slices'
+    ? 'In-season, rest-of-season value can be summed from the remaining weeks if week=0 turns out to be frozen.'
+    : 'If week=0 freezes in-season and weeks are not slices, in-season freshness needs another source — check the ROS rankings path.'
+);
