@@ -586,7 +586,8 @@ const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, pow
 		{ id: 'C', name: 'League C', type: 'dynasty', season: '2025', franchiseId: '1',
 			power: both([300, 30, 30, 30], [1, 1, 1, 1]) },
 		// No power data at all: no row.
-		{ id: 'D', name: 'League D', type: 'dynasty', season: '2026', franchiseId: '1' },
+		{ id: 'D', name: 'League D', type: 'dynasty', season: '2026', franchiseId: '1',
+			players: [{ id: 'p1', name: 'Someone' }] },
 		// Projections only — the in-season shape if rankings ever fail.
 		{ id: 'E', name: 'League E', type: 'dynasty', season: '2026', franchiseId: '1',
 			power: { projections: basis([{ franchiseId: '1', score: 50, depth: 5 }, { franchiseId: '2', score: 60, depth: 6 }], projSource), ecr: null } },
@@ -607,8 +608,10 @@ const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, pow
 	assert.equal(b.size, null);
 	assert.match(b.reason, /Still on last season/);
 
-	// League D has no power data at all: a row of TBDs rather than a silent
-	// disappearance, carrying its own explanation and no league size to print.
+	// League D has a roster but no power object: a row of TBDs rather than a
+	// silent disappearance, carrying its own explanation and no league size to
+	// print. Distinct from a league that simply hasn't drafted — see the
+	// reason tests below.
 	const d = rows.find((r) => r.label === 'League D');
 	assert.equal(d.proj, null);
 	assert.equal(d.ecr, null);
@@ -640,7 +643,23 @@ const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, pow
 	const reasonFor = (extra) => computeMyPowerRows([unranked(extra)], ['dynasty'], 2026)[0].reason;
 	assert.match(reasonFor({ draftInProgress: true }), /Draft in progress/);
 	assert.match(reasonFor({ error: 'MFL request failed (429)' }), /sync is failing/);
-	assert.match(reasonFor({}), /No power data/);
+	// The commonest case, and the one that used to read as a sync fault: a
+	// league nobody has drafted yet holds nobody. It does NOT arrive through
+	// the mid-draft branch, because a draft that hasn't started is not a
+	// draft in progress — MFL reports zero picks for a league with no draft
+	// scheduled (draftStatusFromResults calls that "couldn't tell"), and ESPN
+	// is exempt from the draft check entirely. Verified against real synced
+	// data: Worlds Collide, Rug's Playground and both ESPN leagues all came
+	// back with 0 players and no draft flag.
+	assert.match(reasonFor({ players: [] }), /No rosters yet/);
+	assert.match(reasonFor({}), /No rosters yet/, 'a league carrying no players array at all is the same statement');
+	// An errored league can fall back to a previous entry that is itself
+	// empty, so the error has to win or it would be reported as "hasn't
+	// drafted" — which is both wrong and not actionable.
+	assert.match(reasonFor({ error: 'boom', players: [] }), /sync is failing/);
+	// And a league that genuinely has players but no power object still gets
+	// the generic message, which is now a narrow last resort.
+	assert.match(reasonFor({ players: [{ id: '1', name: 'Someone' }] }), /No power data/);
 	// A drafting league that also carries an error leads with the draft: it
 	// is the state that resolves on its own, and the one that explains why
 	// there is nothing to rank.
