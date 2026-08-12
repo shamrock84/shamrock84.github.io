@@ -51,8 +51,12 @@
 //     safe-looking combination). Rank is converted to value by a log curve
 //     that reaches zero at the pool edge; the index it builds is the same
 //     shape as the projections one, so computeLeaguePower consumes either;
-//     and the basis travels to the page, because the two measures can order
-//     the same teams differently.
+//     and both bases are computed every run and shown side by side, because
+//     the two measures can order the same teams differently — a roster can
+//     lead on projected points and trail on consensus rank, which is the
+//     contender-versus-rebuilder signal the pair exists to show. A basis
+//     that couldn't be computed renders as TBD rather than dropping the
+//     league, since "not valued yet" and "not here" are different claims.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -469,118 +473,166 @@ const context = {
 vm.createContext(context);
 vm.runInContext(scriptSource, context);
 
-const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, powerUsesRankings } = context;
+const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, powerMissingBasis, powerDetailBasis } = context;
 
 
 {
-	assert.equal(leaguePowerRanks({}), null, 'no power data, no ranks');
-	assert.equal(leaguePowerRanks({ power: { teams: [] } }), null);
-
-	const ranks = leaguePowerRanks({
+	const twoBasis = {
 		power: {
-			teams: [
-				{ franchiseId: '0001', score: 100, depth: 50 },
-				{ franchiseId: '0002', score: 120, depth: 10 },
-				{ franchiseId: '0003', score: 90, depth: 70 },
-			],
+			projections: {
+				source: { basis: 'projections', season: '2026', week: '0', inSeason: false },
+				teams: [
+					{ franchiseId: '0001', score: 100, depth: 50 },
+					{ franchiseId: '0002', score: 120, depth: 10 },
+					{ franchiseId: '0003', score: 90, depth: 70 },
+				],
+			},
+			ecr: {
+				source: { basis: 'ecr', season: '2026', rankingType: 'DYNASTY', scoring: 'PPR', inSeason: false },
+				teams: [
+					// Deliberately a different ordering from projections: the
+					// win-now roster (0002) is the worst dynasty asset base.
+					{ franchiseId: '0001', score: 10, depth: 5 },
+					{ franchiseId: '0002', score: 4, depth: 1 },
+					{ franchiseId: '0003', score: 12, depth: 9 },
+				],
+			},
 		},
-	});
-	assert.equal(ranks.size, 3);
-	assert.deepEqual({ ...ranks.byFranchise.get('0003') }, { overall: 1, starters: 3, depth: 1 }, 'a farm system: best roster, worst lineup');
-	assert.deepEqual({ ...ranks.byFranchise.get('0002') }, { overall: 3, starters: 1, depth: 3 }, 'a contender with no bench');
-	assert.deepEqual({ ...ranks.byFranchise.get('0001') }, { overall: 2, starters: 2, depth: 2 });
+	};
 
-	// One team without depth poisons the depth ranking for the whole league
-	// — overall falls back to the starters ordering rather than ranking real
+	assert.equal(leaguePowerRanks({}, 'projections'), null, 'no power data, no ranks');
+	assert.equal(leaguePowerRanks({ power: {} }, 'projections'), null);
+	assert.equal(leaguePowerRanks({ power: { projections: { teams: [] } } }, 'projections'), null);
+
+	const proj = leaguePowerRanks(twoBasis, 'projections');
+	assert.equal(proj.size, 3);
+	assert.deepEqual({ ...proj.byFranchise.get('0003') }, { overall: 1, starters: 3, depth: 1 }, 'a farm system: best roster, worst lineup');
+	assert.deepEqual({ ...proj.byFranchise.get('0002') }, { overall: 3, starters: 1, depth: 3 }, 'a contender with no bench');
+	assert.equal(proj.source.basis, 'projections');
+
+	// The same franchises ranked independently on the other basis — the whole
+	// reason both are shown.
+	const ecr = leaguePowerRanks(twoBasis, 'ecr');
+	assert.equal(ecr.byFranchise.get('0002').overall, 3);
+	assert.equal(ecr.byFranchise.get('0003').overall, 1);
+	assert.equal(ecr.source.basis, 'ecr');
+
+	// One basis missing entirely is not the league missing.
+	const projOnly = { power: { projections: twoBasis.power.projections, ecr: null } };
+	assert.notEqual(leaguePowerRanks(projOnly, 'projections'), null);
+	assert.equal(leaguePowerRanks(projOnly, 'ecr'), null);
+
+	// One team without depth poisons the depth ranking for that basis only —
+	// overall falls back to the starters ordering rather than ranking real
 	// numbers against a missing one.
 	const partial = leaguePowerRanks({
-		power: {
-			teams: [
-				{ franchiseId: '0001', score: 100, depth: 50 },
-				{ franchiseId: '0002', score: 120 },
-			],
-		},
-	});
+		power: { projections: { teams: [
+			{ franchiseId: '0001', score: 100, depth: 50 },
+			{ franchiseId: '0002', score: 120 },
+		] } },
+	}, 'projections');
 	assert.equal(partial.byFranchise.get('0001').depth, null);
 	assert.equal(partial.byFranchise.get('0002').overall, 1, 'overall degrades to starters when depth is unrankable');
 
 	// Ties share a rank, and the next rank skips.
 	const tied = leaguePowerRanks({
-		power: {
-			teams: [
-				{ franchiseId: 'a', score: 100, depth: 0 },
-				{ franchiseId: 'b', score: 100, depth: 0 },
-				{ franchiseId: 'c', score: 90, depth: 0 },
-			],
-		},
-	});
+		power: { projections: { teams: [
+			{ franchiseId: 'a', score: 100, depth: 0 },
+			{ franchiseId: 'b', score: 100, depth: 0 },
+			{ franchiseId: 'c', score: 90, depth: 0 },
+		] } },
+	}, 'projections');
 	assert.equal(tied.byFranchise.get('a').overall, 1);
 	assert.equal(tied.byFranchise.get('b').overall, 1);
 	assert.equal(tied.byFranchise.get('c').overall, 3);
 }
 
 {
-	const power = (myScore, myDepth, otherScore, otherDepth) => ({
-		source: { basis: 'projections', season: '2026', week: '0', inSeason: false },
-		teams: [
-			{ franchiseId: '1', score: myScore, depth: myDepth },
-			{ franchiseId: '2', score: otherScore, depth: otherDepth },
-		],
+	const basis = (teams, source) => ({ source, teams });
+	const projSource = { basis: 'projections', season: '2026', week: '0', inSeason: false };
+	const ecrSource = { basis: 'ecr', season: '2026', rankingType: 'DYNASTY', scoring: 'PPR', inSeason: false };
+	const both = (mine, other) => ({
+		projections: basis([
+			{ franchiseId: '1', score: mine[0], depth: mine[1] },
+			{ franchiseId: '2', score: other[0], depth: other[1] },
+		], projSource),
+		ecr: basis([
+			{ franchiseId: '1', score: mine[2], depth: mine[3] },
+			{ franchiseId: '2', score: other[2], depth: other[3] },
+		], ecrSource),
 	});
+
 	const leagues = [
-		// Mid-pack dynasty league, current season.
-		{ id: 'A', name: 'League A', type: 'dynasty', season: '2026', franchiseId: '1', power: power(100, 10, 120, 40) },
+		// Current-season dynasty league: leads projections, trails ECR.
+		{ id: 'A', name: 'League A', type: 'dynasty', season: '2026', franchiseId: '1',
+			power: both([200, 20, 1, 1], [100, 10, 9, 9]) },
 		// Redraft league still on last season: excluded however good the rank.
-		{ id: 'B', name: 'League B', type: 'redraft', season: '2025', franchiseId: '1', power: power(500, 500, 10, 10) },
+		{ id: 'B', name: 'League B', type: 'redraft', season: '2025', franchiseId: '1',
+			power: both([999, 999, 999, 999], [1, 1, 1, 1]) },
 		// Dynasty league still on last season: rosters carry over, so it stays.
-		{ id: 'C', name: 'League C', type: 'dynasty', season: '2025', franchiseId: '1', power: power(200, 200, 10, 10) },
-		// No power data at all: no row, not a row of dashes.
+		{ id: 'C', name: 'League C', type: 'dynasty', season: '2025', franchiseId: '1',
+			power: both([300, 30, 30, 30], [1, 1, 1, 1]) },
+		// No power data at all: no row.
 		{ id: 'D', name: 'League D', type: 'dynasty', season: '2026', franchiseId: '1' },
+		// Projections only — the in-season shape if rankings ever fail.
+		{ id: 'E', name: 'League E', type: 'dynasty', season: '2026', franchiseId: '1',
+			power: { projections: basis([{ franchiseId: '1', score: 50, depth: 5 }, { franchiseId: '2', score: 60, depth: 6 }], projSource), ecr: null } },
 		// Wrong group: filtered by types before anything else.
-		{ id: 'E', name: 'League E', type: 'draftonly', season: '2026', franchiseId: '1', power: power(1, 1, 2, 2) },
+		{ id: 'F', name: 'League F', type: 'draftonly', season: '2026', franchiseId: '1',
+			power: both([1, 1, 1, 1], [2, 2, 2, 2]) },
 	];
 	const rows = computeMyPowerRows(leagues, ['dynasty', 'redraft'], 2026);
-	assert.deepEqual([...rows].map((r) => r.label), ['League C', 'League A'], 'best overall rank first; the trailing redraft league is gone, the trailing dynasty league is not');
-	assert.deepEqual({ ...rows[0] }, { label: 'League C', size: 2, overall: 1, starters: 1, depth: 1, source: { basis: 'projections', season: '2026', week: '0', inSeason: false } });
-	assert.deepEqual({ ...rows[1] }, { label: 'League A', size: 2, overall: 2, starters: 2, depth: 2, source: { basis: 'projections', season: '2026', week: '0', inSeason: false } });
+	assert.deepEqual([...rows].map((r) => r.label), ['League C', 'League A', 'League E'],
+		'ordered by projections; the trailing redraft league is gone, the trailing dynasty league is not');
+
+	// A league keeps both bases, and they can disagree — that gap is the point.
+	const a = rows.find((r) => r.label === 'League A');
+	assert.equal(a.proj.overall, 1, 'best projected roster in its league');
+	assert.equal(a.ecr.overall, 2, 'and the worse consensus asset base');
+	assert.equal(a.size, 2);
+	assert.equal(a.projSource.basis, 'projections');
+	assert.equal(a.ecrSource.basis, 'ecr');
+
+	// A league with only one basis still gets a row; the other side is null,
+	// which is what the card renders as TBD.
+	const e = rows.find((r) => r.label === 'League E');
+	assert.notEqual(e.proj, null);
+	assert.equal(e.ecr, null);
+	assert.equal(e.ecrSource, null);
 }
 
-// ---- Which basis the card reports ------------------------------------------
+// ---- What the card says about its bases -------------------------------------
 
 {
-	const row = (source) => ({ source });
+	const projRow = (projSource, proj = { overall: 1, starters: 1, depth: 1 }) => ({ proj, projSource, ecr: null, ecrSource: null });
+	const ecrRow = (ecr = { overall: 1, starters: 1, depth: 1 }) => ({ proj: null, projSource: null, ecr, ecrSource: { basis: 'ecr' } });
+	const bothRow = { proj: { overall: 1 }, projSource: { basis: 'projections', week: '5', inSeason: true }, ecr: { overall: 2 }, ecrSource: { basis: 'ecr' } };
 
+	// The preseason-slot warning fires on the projections side only, and only
+	// for the one dangerous combination.
 	assert.equal(powerUsesPreseasonProjections([]), false, 'nothing to judge');
-	assert.equal(powerUsesPreseasonProjections([row(null)]), false,
+	assert.equal(powerUsesPreseasonProjections([projRow(null)]), false,
 		'a power object from before provenance was recorded says nothing rather than crying wolf');
+	assert.equal(powerUsesPreseasonProjections([projRow({ week: '0', inSeason: false })]), false, 'preseason ranks in the preseason are fine');
+	assert.equal(powerUsesPreseasonProjections([bothRow]), false, 'an in-season slot in season is fine');
+	assert.equal(powerUsesPreseasonProjections([projRow({ week: '0', inSeason: true })]), true, 'the season is under way on the preseason slot');
+	assert.equal(powerUsesPreseasonProjections([projRow({ week: 0, inSeason: true })]), true, 'week arrives as a number from some snapshots');
+	assert.equal(powerUsesPreseasonProjections([ecrRow()]), false,
+		'an ECR-only row has no projection slot to be frozen on');
 
-	// Safe combinations: preseason ranks in the preseason, in-season ranks
-	// drawn from a real in-season slot.
-	const preseason = { basis: 'projections', season: '2026', week: '0', inSeason: false };
-	const inSeasonWeek = { basis: 'projections', season: '2026', week: '5', inSeason: true };
-	assert.equal(powerUsesPreseasonProjections([row(preseason)]), false);
-	assert.equal(powerUsesPreseasonProjections([row(inSeasonWeek)]), false);
+	// Which side is missing decides which explanation the card prints.
+	assert.deepEqual({ ...powerMissingBasis([ecrRow()]) }, { projections: true, ecr: false }, 'the offseason shape');
+	assert.deepEqual({ ...powerMissingBasis([projRow({ week: '0', inSeason: false })]) }, { projections: false, ecr: true });
+	assert.deepEqual({ ...powerMissingBasis([bothRow]) }, { projections: false, ecr: false }, 'nothing to explain');
+	assert.deepEqual({ ...powerMissingBasis([]) }, { projections: false, ecr: false });
 
-	// The dangerous one: the season is under way and the ranks still rest on
-	// the preseason slot.
-	const frozen = { basis: 'projections', season: '2026', week: '0', inSeason: true };
-	assert.equal(powerUsesPreseasonProjections([row(frozen)]), true);
-	assert.equal(powerUsesPreseasonProjections([row(inSeasonWeek), row(frozen)]), true,
-		'one league on the bad combination is enough — a carried-forward object can lag a phase change');
-
-	// The week arrives as a number from some snapshots and a string from
-	// others; both must read as the preseason slot.
-	assert.equal(powerUsesPreseasonProjections([row({ ...frozen, week: 0 })]), true);
-
-	// The ECR fallback is reported on its own terms and never mistaken for
-	// the frozen-projections case, which is about a different basis entirely.
-	const ecr = { basis: 'ecr', season: '2027', rankingType: 'DYNASTY', scoring: 'PPR', inSeason: false };
-	assert.equal(powerUsesRankings([row(ecr)]), true);
-	assert.equal(powerUsesPreseasonProjections([row(ecr)]), false,
-		'an ECR-based rank has no projection slot to be frozen on');
-	assert.equal(powerUsesRankings([row(preseason)]), false);
-	assert.equal(powerUsesRankings([row(null)]), false);
-	assert.equal(powerUsesRankings([]), false);
+	// Starters and Depth follow projections when the card has any, and the
+	// rankings otherwise — card-wide, so two rows never describe different
+	// things under the same header.
+	assert.equal(powerDetailBasis([bothRow]), 'projections');
+	assert.equal(powerDetailBasis([ecrRow()]), 'ecr');
+	assert.equal(powerDetailBasis([ecrRow(), bothRow]), 'projections', 'one row with projections is enough to fix the column');
+	assert.equal(powerDetailBasis([]), 'ecr');
 }
 
 console.log('test-power-rank: all assertions passed');

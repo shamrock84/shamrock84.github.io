@@ -461,6 +461,13 @@
 			color: var(--accent);
 		}
 		.digest-player { font-weight: 600; }
+		/* A power rank that can't be computed yet — an offseason with no
+		   projections published, mostly. Muted so a column of them reads as
+		   "not yet" rather than competing with the ranks beside it. */
+		.power-tbd {
+			color: var(--muted);
+			font-size: 0.8rem;
+		}
 		.group-label {
 			font-size: 0.72rem;
 			font-weight: 700;
@@ -2590,8 +2597,13 @@
 			return ranks;
 		}
 
-		function leaguePowerRanks(league) {
-			const teams = league.power && Array.isArray(league.power.teams) ? league.power.teams : [];
+		// One basis at a time — 'projections' or 'ecr'. Each is ranked entirely
+		// on its own numbers: the same franchises, ordered twice, so a team can
+		// legitimately be 2nd by projected points and 7th by consensus rank.
+		// That gap is the point of showing both, not a discrepancy to reconcile.
+		function leaguePowerRanks(league, basis) {
+			const block = league.power ? league.power[basis] : null;
+			const teams = block && Array.isArray(block.teams) ? block.teams : [];
 			if (teams.length === 0) return null;
 			const keyed = teams.map((t) => ({ key: String(t.franchiseId), score: Number(t.score) || 0, depth: t.depth == null ? null : Number(t.depth) }));
 			const hasDepth = keyed.every((t) => t.depth != null && Number.isFinite(t.depth));
@@ -2608,7 +2620,7 @@
 					depth: depth ? depth.get(t.key) : null,
 				});
 			}
-			return { size: keyed.length, byFranchise };
+			return { size: keyed.length, byFranchise, source: block.source || null };
 		}
 
 		// One row per league we hold a team in, ranked inside that league. The
@@ -2618,32 +2630,45 @@
 		// way it clears their wire. Rows come back in reading order: best
 		// overall rank first, starters rank breaking ties, config order
 		// breaking what's left (Array.prototype.sort is stable).
+		// One row per league we hold a team in, carrying both bases. A league
+		// contributes a row if *either* basis ranked it; the missing one shows
+		// as TBD rather than dropping the league, since "we couldn't value
+		// this yet" and "this league isn't here" are different statements and
+		// only the first is true in an offseason.
+		//
+		// Rows are ordered by projections when the card has them and by
+		// rankings otherwise, so the sort follows the column a reader is most
+		// likely treating as the headline. Ties fall to the other basis, then
+		// to config order (Array.prototype.sort is stable).
 		function computeMyPowerRows(leagues, types, year) {
 			const rows = [];
 			for (const league of leagues || []) {
 				if (!types.includes(league.type)) continue;
 				if (awaitingRollover(league, year)) continue;
-				const ranks = leaguePowerRanks(league);
-				if (!ranks) continue;
-				const mine = ranks.byFranchise.get(String(league.franchiseId));
-				if (!mine) continue;
+				const key = String(league.franchiseId);
+				const projRanks = leaguePowerRanks(league, 'projections');
+				const ecrRanks = leaguePowerRanks(league, 'ecr');
+				const proj = projRanks ? projRanks.byFranchise.get(key) || null : null;
+				const ecr = ecrRanks ? ecrRanks.byFranchise.get(key) || null : null;
+				if (!proj && !ecr) continue;
 				rows.push({
 					label: league.name || league.leagueName,
-					size: ranks.size,
-					overall: mine.overall,
-					starters: mine.starters,
-					depth: mine.depth,
-					// What this rank was computed from: the projections slot
-					// and the phase it was computed in, or the ranking list
-					// the ECR fallback used. The two bases weight players
-					// differently, so which one is in play is the difference
-					// between a rank moving because a roster changed and a
-					// rank moving because the measure did. Absent on power
-					// objects written before the sync recorded it.
-					source: league.power.source || null,
+					// Identical across bases (both rank the same franchises),
+					// so whichever answered is the league's size.
+					size: (projRanks || ecrRanks).size,
+					proj,
+					ecr,
+					// What each side was computed from — the projections slot
+					// and phase, or the ranking list. Which is in play is the
+					// difference between a rank moving because a roster
+					// changed and one moving because the measure did.
+					projSource: projRanks ? projRanks.source : null,
+					ecrSource: ecrRanks ? ecrRanks.source : null,
 				});
 			}
-			rows.sort((a, b) => a.overall - b.overall || a.starters - b.starters);
+			const lead = (r) => (r.proj ? r.proj.overall : r.ecr.overall);
+			const second = (r) => (r.proj && r.ecr ? r.ecr.overall : lead(r));
+			rows.sort((a, b) => lead(a) - lead(b) || second(a) - second(b));
 			return rows;
 		}
 
@@ -2666,24 +2691,34 @@
 		// week argument changes.
 		function powerUsesPreseasonProjections(rows) {
 			return (rows || []).some(
-				(r) => r.source && r.source.basis === 'projections'
-					&& r.source.inSeason === true && String(r.source.week) === '0'
+				(r) => r.projSource && r.projSource.inSeason === true && String(r.projSource.week) === '0'
 			);
 		}
 
-		// Whether these ranks came from the consensus-rankings fallback rather
-		// than projections — see buildEcrIndex in scripts/lib/fantasypros.mjs.
-		// Not a fault and not rare: FantasyPros publishes projections per
-		// season, so every offseason spends months with none to ask for, and
-		// the rankings are the live valuation in exactly that window.
+		// Whether any league is missing a basis entirely — the state the TBD
+		// cells report. Worth one line under the table because a column of
+		// TBDs otherwise reads as a bug rather than as a season of the year:
+		// FantasyPros publishes projections per season, so every offseason
+		// spends months with none to ask for.
+		function powerMissingBasis(rows) {
+			return {
+				projections: (rows || []).some((r) => !r.proj),
+				ecr: (rows || []).some((r) => !r.ecr),
+			};
+		}
+
+		// Which basis the Starters and Depth columns describe. Both bases split
+		// a roster the same way — best legal lineup against everyone left over
+		// — so there are two of each, and showing four would put seven columns
+		// on a table that has to survive a phone. Projections win when the card
+		// has them, because that is the split a reader is asking about ("who
+		// starts this week"); the rankings split is what remains in the
+		// offseason, when it is also the only one available.
 		//
-		// It is said out loud anyway, because the two bases are different
-		// measures — a rank ordinal converted through a log curve weights
-		// stars harder than raw projected points do — and a reader who sees a
-		// team move three places in February deserves to know whether the
-		// roster changed or the ruler did.
-		function powerUsesRankings(rows) {
-			return (rows || []).some((r) => r.source && r.source.basis === 'ecr');
+		// Card-wide rather than per row, so two rows never quietly describe
+		// different things in the same column.
+		function powerDetailBasis(rows) {
+			return (rows || []).some((r) => r.proj) ? 'projections' : 'ecr';
 		}
 
 		function renderStandingsCard(league) {
@@ -3876,34 +3911,56 @@
 			// explanation — it appears only when the numbers under the card
 			// have actually stopped moving, which is the single symptom the
 			// frozen-projections failure produces.
-			// At most one of these: the fallback and the preseason-slot warning
-			// describe different bases, so they cannot both be true of the same
-			// sync. The fallback line wins the ordering below only because it
-			// is the commoner state by months of the year.
-			if (powerUsesRankings(rows)) {
+			// At most one line, and only when it changes how a number should be
+			// read. A missing basis explains its own column of TBDs; the
+			// preseason-slot case explains numbers that look fine and aren't.
+			const missing = powerMissingBasis(rows);
+			if (missing.projections) {
 				card.appendChild(el('div', {
 					class: 'error-box',
-					text: 'Ranked on consensus rankings — projections aren’t published for this season yet.',
+					text: 'Projections aren’t published for this season yet — ranked on consensus rankings until they are.',
 				}));
 			} else if (powerUsesPreseasonProjections(rows)) {
 				card.appendChild(el('div', {
 					class: 'error-box',
-					text: "Ranked on preseason projections — these don't reflect what's happened this season yet.",
+					text: "Projections are preseason — they don't reflect what's happened this season yet.",
 				}));
 			}
 
+			const detailBasis = powerDetailBasis(rows);
+			const detailLabel = detailBasis === 'projections' ? 'projections' : 'consensus rankings';
 			const table = el('table', { class: 'standings' });
 			const headRow = el('tr');
-			['League', 'Power', 'Starters', 'Depth'].forEach((h) => headRow.appendChild(el('th', { text: h })));
+			headRow.appendChild(el('th', { text: 'League' }));
+			headRow.appendChild(el('th', { text: 'Proj', title: 'Rank by projected points of the best legal lineup, plus bench' }));
+			headRow.appendChild(el('th', { text: 'ECR', title: 'Rank by consensus ranking of the same roster' }));
+			headRow.appendChild(el('th', { text: 'Starters', title: `Lineup rank, by ${detailLabel}` }));
+			headRow.appendChild(el('th', { text: 'Depth', title: `Bench rank, by ${detailLabel}` }));
 			table.appendChild(headRow);
+
+			// TBD rather than a dash: the number isn't missing, it isn't
+			// computable yet, and it will be. A dash reads as "nothing here".
+			const rankCell = (entry, withSize, size, why) => {
+				if (!entry) return el('td', { class: 'power-tbd', text: 'TBD', title: why });
+				return el('td', { text: withSize ? `${entry.overall}/${size}` : String(entry.overall) });
+			};
+
 			for (const r of rows) {
 				const row = el('tr');
 				row.appendChild(el('td', { text: r.label }));
-				// The league size prints once, on the rank that orders the
-				// card; repeating "/12" across all three columns is noise.
-				row.appendChild(el('td', { text: `${r.overall}/${r.size}` }));
-				row.appendChild(el('td', { text: String(r.starters) }));
-				row.appendChild(el('td', { text: r.depth == null ? '—' : String(r.depth) }));
+				// The league size prints once, on the column the card is
+				// ordered by — repeating "/12" across four columns is noise.
+				// It follows the lead basis so it is always on a real number.
+				const leadIsProj = !!r.proj;
+				row.appendChild(rankCell(r.proj, leadIsProj, r.size, 'No projections published for this season yet'));
+				row.appendChild(rankCell(r.ecr, !leadIsProj, r.size, 'No consensus rankings available for this league'));
+				const detail = detailBasis === 'projections' ? r.proj : r.ecr;
+				row.appendChild(el('td', detail ? { text: String(detail.starters) } : { class: 'power-tbd', text: 'TBD' }));
+				row.appendChild(
+					detail && detail.depth != null
+						? el('td', { text: String(detail.depth) })
+						: el('td', { class: 'power-tbd', text: detail ? '—' : 'TBD' })
+				);
 				table.appendChild(row);
 			}
 			card.appendChild(table);

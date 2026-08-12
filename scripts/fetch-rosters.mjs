@@ -709,38 +709,56 @@ async function main() {
         const slots = league.lineupSlots
           || (config.provider === 'espn' ? DEFAULT_POWER_SLOTS : null);
         if (!slots) continue;
-        // Projections when this run has them, this league's own ranking pool
-        // when it doesn't. A league with neither — no rankings this run, so no
-        // pool to fall back to — is skipped quietly and carries forward, the
-        // same as every other league whose inputs didn't arrive.
-        const values = projections || ecrIndexFor(league);
-        if (!values) continue;
-        const power = computeLeaguePower({
+        // Both bases, every run, because they answer different questions and
+        // the card shows them side by side. Projections value a roster by the
+        // points it should score; rankings value it by where consensus places
+        // its players, which in a dynasty league is a bet on the next several
+        // years rather than this one. A team can lead one and trail the other,
+        // and that gap is the contender-versus-rebuilder signal the pair
+        // exists to show.
+        //
+        // Computing both costs nothing extra at the provider: the projections
+        // were fetched once for the whole sync, the pools were already fetched
+        // for Top Available, and what remains is arithmetic over a few dozen
+        // names. Either may come back null on its own — see the guard in
+        // computeLeaguePower — and the page renders that side as TBD rather
+        // than dropping the league.
+        const common = {
           franchises: league.rosterFranchises,
           slots,
-          values,
           // The same resolution the ECR column uses: explicit config wins,
           // then the detected format, PPR as the last resort.
           scoring: rankingSpecForLeague(config, now).scoring,
           joinById: (config.provider || 'mfl') === 'mfl',
           computedAt: now.toISOString(),
-        });
-        // null means no franchise in the league seated anybody — see the
-        // guard in computeLeaguePower. Skipping leaves the previous sync's
-        // ranks in place via the carry-forward below, and says so out loud;
-        // assigning it would replace them with a league-wide tie at zero.
-        if (!power) {
-          console.error(`${league.name}: power ranks skipped — no franchise seated a projected player (join or slot shape broken?)`);
+        };
+        const projPower = projections ? computeLeaguePower({ ...common, values: projections }) : null;
+        const ecrValues = ecrIndexFor(league);
+        const ecrPower = ecrValues ? computeLeaguePower({ ...common, values: ecrValues }) : null;
+
+        // Only when *neither* basis produced anything is there nothing to
+        // say. Skipping leaves the previous sync's ranks in place via the
+        // carry-forward below, and says so out loud.
+        if (!projPower && !ecrPower) {
+          console.error(`${league.name}: power ranks skipped — no franchise seated a player on either basis (join or slot shape broken?)`);
           skipped++;
           continue;
         }
-        league.power = power;
+        league.power = {
+          computedAt: now.toISOString(),
+          scoring: common.scoring,
+          // Per basis rather than merged: each carries its own provenance, and
+          // each ranks the same franchises independently.
+          projections: projPower ? { source: projPower.source, teams: projPower.teams } : null,
+          ecr: ecrPower ? { source: ecrPower.source, teams: ecrPower.teams } : null,
+        };
         powered++;
-        if (power.source?.basis) byBasis[power.source.basis]++;
+        if (projPower) byBasis.projections++;
+        if (ecrPower) byBasis.ecr++;
       }
       console.log(
         `FantasyPros — power ranks computed for ${powered} league(s) `
-        + `(${byBasis.projections} on projections, ${byBasis.ecr} on consensus rankings)`
+        + `(${byBasis.projections} with projections, ${byBasis.ecr} with consensus rankings)`
         + `${skipped > 0 ? `, skipped ${skipped} with no usable join` : ''}`
       );
     } catch (err) {
