@@ -1,0 +1,32 @@
+name: Probe FantasyPros Power Rank (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here, the
+# same rule the other manual workflows follow.
+#
+# Asks whether the partner API can answer anything team-shaped — a "power
+# rank" of a league's franchises — or whether that is My Playbook-only and a
+# power rank has to be computed homegrown from data the sync already fetches.
+# Also reports whether the key can reach projections, which decides what the
+# homegrown score would weight by. api.fantasypros.com is unreachable from a
+# sandbox and the key is a secret, so a workflow run is the only place to ask.
+#
+# Read-only: a handful of GETs.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Probe team-level endpoints
+        env:
+          FANTASYPROS_API_KEY: ${{ secrets.FANTASYPROS_API_KEY }}
+        run: node scripts/probe-fantasypros-power-rank.mjs
