@@ -2634,7 +2634,11 @@
 		// A row of TBDs with no explanation reads as a bug; these are the three
 		// states that actually produce one, and they want different responses
 		// — wait, look at the league, or wait for the next sync.
-		function powerUnrankedReason(league) {
+		// `trailing` leads because it is the only one of these where ranks were
+		// suppressed rather than missing: the league has data, it is just about
+		// a season that has ended.
+		function powerUnrankedReason(league, trailing) {
+			if (trailing) return 'Still on last season — ranks resume when the league rolls over';
 			if (league.draftInProgress === true) return 'Draft in progress — ranks resume once it finishes';
 			if (league.error) return 'Roster sync is failing for this league';
 			return 'No power data from the last sync yet';
@@ -2672,19 +2676,28 @@
 		// measures), then to config order, which is the display order every
 		// other tab uses (Array.prototype.sort is stable).
 		//
-		// A row with neither basis would sort last, but cannot occur: a league
-		// that produced no ranks at all contributes no row (see the guard
-		// below), and there is nothing further to fall back on if it did —
-		// Starters and Depth are sub-metrics *of* these two bases, not a third
-		// measure, so a row with both ranks missing has a missing Starters too.
+		// A row with neither basis sorts last, and there is nothing further to
+		// fall back on for it — Starters and Depth are sub-metrics *of* these
+		// two bases, not a third measure, so a row with both ranks missing has
+		// a missing Starters too. Those rows keep config order among
+		// themselves.
 		function computeMyPowerRows(leagues, types, year) {
 			const rows = [];
 			for (const league of leagues || []) {
 				if (!types.includes(league.type)) continue;
-				if (awaitingRollover(league, year)) continue;
+				// Suppressed, not skipped: a redraft league still on last
+				// season generally *does* carry power data, computed from
+				// last season's rosters, and that data is a correct answer
+				// about a season that has ended — rendering it would state
+				// last year's standings as this year's outlook. So the league
+				// appears, as TBDs, saying what it is waiting for. Type-gated
+				// by awaitingRollover, so a trailing dynasty league keeps its
+				// real ranks: its roster carried over, so they still describe
+				// something.
+				const trailing = awaitingRollover(league, year);
 				const key = String(league.franchiseId);
-				const projRanks = leaguePowerRanks(league, 'projections');
-				const ecrRanks = leaguePowerRanks(league, 'ecr');
+				const projRanks = trailing ? null : leaguePowerRanks(league, 'projections');
+				const ecrRanks = trailing ? null : leaguePowerRanks(league, 'ecr');
 				const proj = projRanks ? projRanks.byFranchise.get(key) || null : null;
 				const ecr = ecrRanks ? ecrRanks.byFranchise.get(key) || null : null;
 				rows.push({
@@ -2697,7 +2710,7 @@
 					ecr,
 					// Set only on a row with no ranks at all — the two bases
 					// have their own explanations when just one is missing.
-					reason: proj || ecr ? null : powerUnrankedReason(league),
+					reason: proj || ecr ? null : powerUnrankedReason(league, trailing),
 					// What each side was computed from — the projections slot
 					// and phase, or the ranking list. Which is in play is the
 					// difference between a rank moving because a roster
