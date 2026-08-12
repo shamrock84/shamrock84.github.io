@@ -2640,7 +2640,21 @@
 		function powerUnrankedReason(league, trailing) {
 			if (trailing) return 'Still on last season — ranks resume when the league rolls over';
 			if (league.draftInProgress === true) return 'Draft in progress — ranks resume once it finishes';
+			// Before the empty-roster check on purpose: a league that errored
+			// falls back to its previous entry, which can itself be empty, so
+			// an error would otherwise be reported as "hasn't drafted".
 			if (league.error) return 'Roster sync is failing for this league';
+			// The commonest unranked state by far, and the one that used to
+			// fall through to the generic message below and read as a sync
+			// fault: a league nobody has drafted yet holds nobody, so there is
+			// no roster to value. It reaches here rather than through the
+			// mid-draft branch because a draft that has not *started* is not a
+			// draft in progress — MFL returns zero picks for a league with no
+			// draft scheduled, which draftStatusFromResults deliberately calls
+			// "couldn't tell" rather than "unfinished", and ESPN is exempt from
+			// the draft check altogether. An empty roster is the one
+			// observation that covers all of those without guessing at a cause.
+			if (!(league.players || []).length) return 'No rosters yet — ranks resume once the league drafts';
 			return 'No power data from the last sync yet';
 		}
 
