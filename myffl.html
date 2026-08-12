@@ -2636,10 +2636,29 @@
 		// this yet" and "this league isn't here" are different statements and
 		// only the first is true in an offseason.
 		//
-		// Rows are ordered by projections when the card has them and by
-		// rankings otherwise, so the sort follows the column a reader is most
-		// likely treating as the headline. Ties fall to the other basis, then
-		// to config order (Array.prototype.sort is stable).
+		// Rows are ordered by the mean of the two ranks where both bases
+		// answered, and by whichever one did where only one has. Averaging is
+		// what makes the card treat the bases as equals: ordering by
+		// projections and using rankings only to break ties reads as a
+		// projections card with a second column, and quietly buries a roster
+		// that consensus rates highly. A row with one basis is not
+		// disadvantaged by it — a single value is its own mean — so an
+		// offseason card, where nothing has projections, comes out ordered
+		// exactly as it would have been on rankings alone.
+		//
+		// The consequence to know: neither column reads monotonically down the
+		// page any more. That is the honest presentation of a composite order,
+		// and the alternative is the one this replaces.
+		//
+		// Ties fall to the projections rank (the more concrete of the two
+		// measures), then to config order, which is the display order every
+		// other tab uses (Array.prototype.sort is stable).
+		//
+		// A row with neither basis would sort last, but cannot occur: a league
+		// that produced no ranks at all contributes no row (see the guard
+		// below), and there is nothing further to fall back on if it did —
+		// Starters and Depth are sub-metrics *of* these two bases, not a third
+		// measure, so a row with both ranks missing has a missing Starters too.
 		function computeMyPowerRows(leagues, types, year) {
 			const rows = [];
 			for (const league of leagues || []) {
@@ -2666,9 +2685,18 @@
 					ecrSource: ecrRanks ? ecrRanks.source : null,
 				});
 			}
-			const lead = (r) => (r.proj ? r.proj.overall : r.ecr.overall);
-			const second = (r) => (r.proj && r.ecr ? r.ecr.overall : lead(r));
-			rows.sort((a, b) => lead(a) - lead(b) || second(a) - second(b));
+			const meanRank = (r) => {
+				const parts = [];
+				if (r.proj) parts.push(r.proj.overall);
+				if (r.ecr) parts.push(r.ecr.overall);
+				if (parts.length === 0) return Infinity;
+				return parts.reduce((sum, v) => sum + v, 0) / parts.length;
+			};
+			const tieBreak = (r) => (r.proj ? r.proj.overall : r.ecr ? r.ecr.overall : Infinity);
+			// Compared rather than subtracted so an Infinity on both sides is a
+			// tie instead of the NaN that would scramble the whole sort.
+			const cmp = (x, y) => (x === y ? 0 : x < y ? -1 : 1);
+			rows.sort((a, b) => cmp(meanRank(a), meanRank(b)) || cmp(tieBreak(a), tieBreak(b)));
 			return rows;
 		}
 
@@ -3948,9 +3976,11 @@
 			for (const r of rows) {
 				const row = el('tr');
 				row.appendChild(el('td', { text: r.label }));
-				// The league size prints once, on the column the card is
-				// ordered by — repeating "/12" across four columns is noise.
-				// It follows the lead basis so it is always on a real number.
+				// The league size prints once — repeating "/12" across four
+				// columns is noise — on the leftmost rank column that actually
+				// has a number, so it never lands on a TBD. It is no longer
+				// "the column the card is ordered by": the order is now the
+				// mean of both, which belongs to neither column alone.
 				const leadIsProj = !!r.proj;
 				row.appendChild(rankCell(r.proj, leadIsProj, r.size, 'No projections published for this season yet'));
 				row.appendChild(rankCell(r.ecr, !leadIsProj, r.size, 'No consensus rankings available for this league'));

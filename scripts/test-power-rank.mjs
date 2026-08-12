@@ -56,7 +56,11 @@
 //     lead on projected points and trail on consensus rank, which is the
 //     contender-versus-rebuilder signal the pair exists to show. A basis
 //     that couldn't be computed renders as TBD rather than dropping the
-//     league, since "not valued yet" and "not here" are different claims.
+//     league, since "not valued yet" and "not here" are different claims;
+//   - and the card's order is the *mean* of the two ranks, so neither basis
+//     is privileged: ordering by projections and using rankings only to
+//     break ties would bury a roster consensus rates highly. A row with one
+//     basis is not disadvantaged, since a single value is its own mean.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -599,6 +603,51 @@ const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, pow
 	assert.notEqual(e.proj, null);
 	assert.equal(e.ecr, null);
 	assert.equal(e.ecrSource, null);
+}
+
+{
+	// Ordering is the mean of the two ranks, which is the whole reason it
+	// isn't just the projections column: a roster that leads projections and
+	// trails consensus badly must not outrank one that is solid on both.
+	const src = { proj: { basis: 'projections' }, ecr: { basis: 'ecr' } };
+	const league = (id, projRank, ecrRank, size = 10) => {
+		// A franchise list where ours lands on the requested rank in each
+		// basis: score descends by position, ours slotted at want-1.
+		const teams = (want) => {
+			const out = [];
+			for (let i = 0; i < size; i++) {
+				const rank = i < want - 1 ? i : i + 1;
+				if (i !== want - 1) out.push({ franchiseId: `x${i}`, score: 1000 - rank * 10, depth: 0 });
+			}
+			out.push({ franchiseId: '1', score: 1000 - (want - 1) * 10, depth: 0 });
+			return out;
+		};
+		return {
+			id, name: id, type: 'dynasty', season: '2026', franchiseId: '1',
+			power: {
+				projections: projRank == null ? null : { source: src.proj, teams: teams(projRank) },
+				ecr: ecrRank == null ? null : { source: src.ecr, teams: teams(ecrRank) },
+			},
+		};
+	};
+
+	const rows = computeMyPowerRows([
+		league('lopsided', 1, 9),   // mean 5.0 — best projected, nearly worst by consensus
+		league('solid', 3, 3),      // mean 3.0
+		league('consensus', 8, 2),  // mean 5.0, tie with lopsided
+		league('projOnly', 4, null),// mean 4.0 — a single value is its own mean
+	], ['dynasty'], 2026);
+
+	assert.deepEqual([...rows].map((r) => r.label), ['solid', 'projOnly', 'lopsided', 'consensus'],
+		'ordered by mean rank, not by the projections column');
+	// The tie at 5.0 breaks on the projections rank, the more concrete of the
+	// two measures — 1 beats 8, so lopsided precedes consensus above.
+	assert.equal(rows[2].proj.overall, 1);
+	assert.equal(rows[3].proj.overall, 8);
+	// And the single-basis row sits on its own rank rather than being pushed
+	// to either end for having only one number.
+	assert.equal(rows[1].label, 'projOnly');
+	assert.equal(rows[1].ecr, null);
 }
 
 // ---- What the card says about its bases -------------------------------------
