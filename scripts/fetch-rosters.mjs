@@ -659,7 +659,11 @@ async function main() {
     // below, exactly like `available`. Four projection GETs a sync, shared
     // across all eighteen leagues, and never allowed to fail the run.
     try {
-      const projections = await fetchProjections({ apiKey: fpApiKey, season });
+      // phase.inSeason rides along so a power object can say whether it was
+      // built from preseason projections during the season — see the meta
+      // comment in fetchProjections. The sync is the side that decides this,
+      // the page only describes it, same division as the ranking calendar.
+      const projections = await fetchProjections({ apiKey: fpApiKey, season, inSeason: phase.inSeason });
       const configById = new Map(LEAGUES.map((l) => [l.id, l]));
       let powered = 0;
       let skipped = 0;

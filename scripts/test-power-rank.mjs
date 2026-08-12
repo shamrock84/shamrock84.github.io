@@ -37,9 +37,12 @@
 //   - and the two fail-loud guards, which exist because the quiet version
 //     of each is a card nobody would question: a league where no franchise
 //     seated anybody computes to null (every team would otherwise tie at
-//     zero and so rank first), and a projection stamp older than the
-//     staleness horizon puts a warning on the card — the only visible
-//     symptom the frozen-preseason-projections case would ever produce.
+//     zero and so rank first), and ranks computed from the preseason
+//     projection slot *during* the season put a warning on the card — the
+//     only visible symptom that case would ever produce. That check is
+//     phase-and-slot rather than a freshness date because the probe found
+//     the projections endpoint carries no last_updated at all, so a
+//     date-based guard would never fire while looking like it worked.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -294,7 +297,7 @@ function mflStarters(positions, count) {
   const projections = buildProjectionIndex({
     QB: [projPlayer('Real Guy', 1111, { ppr: 300, half: 300, std: 300 })],
   });
-  projections.meta = { season: '2026', week: '0', lastUpdated: '2026-08-11 06:00:00' };
+  projections.meta = { season: '2026', week: '0', inSeason: false };
   const slots = [{ positions: ['QB'], count: 1 }];
 
   // Nobody in the league joins to a projection — an id space that stopped
@@ -328,8 +331,8 @@ function mflStarters(positions, count) {
     computedAt: '2026-08-12T00:00:00Z',
   });
   assert.notEqual(partial, null);
-  assert.deepEqual({ ...partial.projections }, { season: '2026', week: '0', lastUpdated: '2026-08-11 06:00:00' },
-    'provenance rides along so the page can see when the numbers stopped moving');
+  assert.deepEqual({ ...partial.projections }, { season: '2026', week: '0', inSeason: false },
+    'provenance rides along so the page can see which slot the ranks rest on');
   assert.equal(partial.teams.length, 2);
 }
 
@@ -370,13 +373,8 @@ const context = {
 vm.createContext(context);
 vm.runInContext(scriptSource, context);
 
-const { leaguePowerRanks, computeMyPowerRows, powerProjectionAge } = context;
+const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections } = context;
 
-// A top-level `const` in the page's script block doesn't land on the vm
-// context's global the way a function declaration does, so the horizon is
-// read out of the source instead of imported — which keeps this pinned to
-// the real value rather than a copy that could drift from it.
-const STALE_DAYS = Number(scriptSource.match(/POWER_PROJECTION_STALE_DAYS = (\d+)/)[1]);
 
 {
 	assert.equal(leaguePowerRanks({}), null, 'no power data, no ranks');
@@ -427,7 +425,7 @@ const STALE_DAYS = Number(scriptSource.match(/POWER_PROJECTION_STALE_DAYS = (\d+
 
 {
 	const power = (myScore, myDepth, otherScore, otherDepth) => ({
-		projections: { season: '2026', week: '0', lastUpdated: '2026-08-11 06:00:00' },
+		projections: { season: '2026', week: '0', inSeason: false },
 		teams: [
 			{ franchiseId: '1', score: myScore, depth: myDepth },
 			{ franchiseId: '2', score: otherScore, depth: otherDepth },
@@ -447,33 +445,41 @@ const STALE_DAYS = Number(scriptSource.match(/POWER_PROJECTION_STALE_DAYS = (\d+
 	];
 	const rows = computeMyPowerRows(leagues, ['dynasty', 'redraft'], 2026);
 	assert.deepEqual([...rows].map((r) => r.label), ['League C', 'League A'], 'best overall rank first; the trailing redraft league is gone, the trailing dynasty league is not');
-	assert.deepEqual({ ...rows[0] }, { label: 'League C', size: 2, overall: 1, starters: 1, depth: 1, projectionsUpdated: '2026-08-11 06:00:00' });
-	assert.deepEqual({ ...rows[1] }, { label: 'League A', size: 2, overall: 2, starters: 2, depth: 2, projectionsUpdated: '2026-08-11 06:00:00' });
+	assert.deepEqual({ ...rows[0] }, { label: 'League C', size: 2, overall: 1, starters: 1, depth: 1, projections: { season: '2026', week: '0', inSeason: false } });
+	assert.deepEqual({ ...rows[1] }, { label: 'League A', size: 2, overall: 2, starters: 2, depth: 2, projections: { season: '2026', week: '0', inSeason: false } });
 }
 
-// ---- The staleness horizon ---------------------------------------------------
+// ---- The preseason-projections warning --------------------------------------
 
 {
-	const day = 86400000;
-	const now = new Date('2026-11-01T00:00:00Z').getTime();
-	const row = (stamp) => ({ projectionsUpdated: stamp });
+	const row = (projections) => ({ projections });
 
-	assert.equal(powerProjectionAge([], now), null, 'nothing to judge');
-	assert.equal(powerProjectionAge([row(null)], now), null, 'a power object from before provenance was recorded says nothing');
-	assert.equal(powerProjectionAge([row('not a date')], now), null, 'an unparseable stamp is not a false alarm');
+	assert.equal(powerUsesPreseasonProjections([]), false, 'nothing to judge');
+	assert.equal(powerUsesPreseasonProjections([row(null)]), false,
+		'a power object from before provenance was recorded says nothing rather than crying wolf');
 
-	// The frozen-preseason case this whole guard exists for: ranks computed
-	// in November off projections FantasyPros last touched in August.
-	const frozen = powerProjectionAge([row('2026-08-11 06:00:00')], now);
-	assert.ok(frozen > 80 && frozen < 84, `August projections read in November are ~82 days old, got ${frozen}`);
-	assert.ok(frozen > STALE_DAYS, 'and so past the horizon that puts the warning on the card');
+	// The safe combinations: preseason ranks in the preseason, and in-season
+	// ranks drawn from a real in-season slot.
+	assert.equal(powerUsesPreseasonProjections([row({ season: '2026', week: '0', inSeason: false })]), false);
+	assert.equal(powerUsesPreseasonProjections([row({ season: '2026', week: '5', inSeason: true })]), false);
 
-	// The oldest stamp wins, so one lagging league is enough to flag.
-	const mixed = powerProjectionAge([row('2026-10-30 06:00:00'), row('2026-08-11 06:00:00')], now);
-	assert.equal(Math.round(mixed), Math.round(frozen));
+	// The dangerous one, and the whole reason the check exists: the season is
+	// under way and the ranks still rest on the preseason slot.
+	assert.equal(powerUsesPreseasonProjections([row({ season: '2026', week: '0', inSeason: true })]), true);
 
-	// A healthy in-season sync is well inside the horizon and says nothing.
-	assert.ok(powerProjectionAge([row(new Date(now - 2 * day).toISOString())], now) < STALE_DAYS);
+	// One league on the bad combination is enough — they are all computed in
+	// the same sync, but a carried-forward power object can lag a phase change.
+	assert.equal(
+		powerUsesPreseasonProjections([
+			row({ season: '2026', week: '9', inSeason: true }),
+			row({ season: '2026', week: '0', inSeason: true }),
+		]),
+		true
+	);
+
+	// The week arrives as a number from some snapshots and a string from
+	// others; both must read as the preseason slot.
+	assert.equal(powerUsesPreseasonProjections([row({ season: '2026', week: 0, inSeason: true })]), true);
 }
 
 console.log('test-power-rank: all assertions passed');

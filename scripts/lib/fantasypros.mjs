@@ -589,9 +589,8 @@ export function buildProjectionIndex(playersByPosition) {
 // fetch-rosters.mjs's catch, which logs it and leaves the previous sync's
 // power object in place: stale-but-real beats confidently-wrong, the same
 // trade every other fallback here makes.
-export async function fetchProjections({ apiKey, season, week = 0 }) {
+export async function fetchProjections({ apiKey, season, week = 0, inSeason = false }) {
   const playersByPosition = {};
-  let lastUpdated = null;
   for (const position of POWER_POSITIONS) {
     const data = await fpGet(`/nfl/${season}/projections?position=${position}&week=${week}`, apiKey);
     const players = data?.players || [];
@@ -599,14 +598,22 @@ export async function fetchProjections({ apiKey, season, week = 0 }) {
       throw new Error(`projections returned no ${position}s for ${season} week ${week}`);
     }
     playersByPosition[position] = players;
-    if (data?.last_updated) lastUpdated = data.last_updated;
   }
   return {
     ...buildProjectionIndex(playersByPosition),
     // Provenance, carried onto every power object so the page can say when
-    // the numbers underneath it stopped moving — the one visible symptom
-    // the frozen-week=0 case would otherwise never produce.
-    meta: { season: String(season), week: String(week), lastUpdated },
+    // the ranks rest on preseason numbers during the season itself.
+    //
+    // This is phase-and-week rather than a date on purpose, and the probe is
+    // why: unlike consensus-rankings, the *projections* endpoint carries no
+    // `last_updated` at all (it came back absent for every week asked), so a
+    // freshness check built on one would never fire and would look like a
+    // working guard. The deterministic question is just as good and needs no
+    // metadata: were we in season, and did we ask for the preseason slot?
+    // That is exactly the dangerous combination, it is knowable here, and it
+    // stops being true the moment the week argument changes — which is the
+    // change the post-kickoff probe is meant to inform.
+    meta: { season: String(season), week: String(week), inSeason: !!inSeason },
   };
 }
 
