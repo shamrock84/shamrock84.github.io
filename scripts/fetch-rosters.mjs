@@ -45,8 +45,10 @@ import {
   nflSeasonPhase,
   normalizePlayerName,
   fetchProjections,
+  buildEcrIndex,
   computeLeaguePower,
   rankingSpecForLeague,
+  rankingPoolKey,
   DEFAULT_POWER_SLOTS,
 } from './lib/fantasypros.mjs';
 
@@ -663,10 +665,38 @@ async function main() {
       // built from preseason projections during the season — see the meta
       // comment in fetchProjections. The sync is the side that decides this,
       // the page only describes it, same division as the ranking calendar.
-      const projections = await fetchProjections({ apiKey: fpApiKey, season, inSeason: phase.inSeason });
+      //
+      // Projections are the preferred basis and are not always there:
+      // FantasyPros publishes them per season, so from the Super Bowl until
+      // the next season's list goes up there is nothing to ask for and every
+      // position comes back empty. That is an ordinary state of the year
+      // rather than a failure, so it falls back to the ranking pools this
+      // sync already fetched (see buildEcrIndex) instead of leaving the card
+      // to carry January's ranks through to July.
+      let projections = null;
+      try {
+        projections = await fetchProjections({ apiKey: fpApiKey, season, inSeason: phase.inSeason });
+      } catch (err) {
+        console.log(`FantasyPros — projections unavailable (${err.message}); power ranks fall back to consensus rankings`);
+      }
+
+      // One ECR index per distinct ranking pool rather than per league, the
+      // same sharing rankingPoolKey already buys the pools themselves — a
+      // dozen leagues typically draw on two or three lists.
+      const ecrIndexByPool = new Map();
+      const ecrIndexFor = (league) => {
+        if (!league.rankings) return null;
+        const key = rankingPoolKey(league.rankings);
+        if (!ecrIndexByPool.has(key)) {
+          ecrIndexByPool.set(key, buildEcrIndex(rankingPools[key], { season, inSeason: phase.inSeason }));
+        }
+        return ecrIndexByPool.get(key);
+      };
+
       const configById = new Map(LEAGUES.map((l) => [l.id, l]));
       let powered = 0;
       let skipped = 0;
+      const byBasis = { projections: 0, ecr: 0 };
       for (const league of leagues) {
         if (league.draftInProgress) continue; // cleared below, like available
         if (!Array.isArray(league.rosterFranchises) || league.rosterFranchises.length === 0) continue;
@@ -679,10 +709,16 @@ async function main() {
         const slots = league.lineupSlots
           || (config.provider === 'espn' ? DEFAULT_POWER_SLOTS : null);
         if (!slots) continue;
+        // Projections when this run has them, this league's own ranking pool
+        // when it doesn't. A league with neither — no rankings this run, so no
+        // pool to fall back to — is skipped quietly and carries forward, the
+        // same as every other league whose inputs didn't arrive.
+        const values = projections || ecrIndexFor(league);
+        if (!values) continue;
         const power = computeLeaguePower({
           franchises: league.rosterFranchises,
           slots,
-          projections,
+          values,
           // The same resolution the ECR column uses: explicit config wins,
           // then the detected format, PPR as the last resort.
           scoring: rankingSpecForLeague(config, now).scoring,
@@ -700,8 +736,13 @@ async function main() {
         }
         league.power = power;
         powered++;
+        if (power.source?.basis) byBasis[power.source.basis]++;
       }
-      console.log(`FantasyPros — power ranks computed for ${powered} league(s)${skipped > 0 ? `, skipped ${skipped} with no usable join` : ''}`);
+      console.log(
+        `FantasyPros — power ranks computed for ${powered} league(s) `
+        + `(${byBasis.projections} on projections, ${byBasis.ecr} on consensus rankings)`
+        + `${skipped > 0 ? `, skipped ${skipped} with no usable join` : ''}`
+      );
     } catch (err) {
       console.error(`Failed to compute power ranks: ${err.message}`);
     }

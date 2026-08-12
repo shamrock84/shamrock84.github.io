@@ -2633,12 +2633,14 @@
 					overall: mine.overall,
 					starters: mine.starters,
 					depth: mine.depth,
-					// Which projection slot this rank was computed from, and
-					// whether the season had started when it was — see
-					// powerUsesPreseasonProjections, the only way the stale
-					// -projections failure becomes visible on screen. Absent
-					// on power objects written before the sync recorded it.
-					projections: league.power.projections || null,
+					// What this rank was computed from: the projections slot
+					// and the phase it was computed in, or the ranking list
+					// the ECR fallback used. The two bases weight players
+					// differently, so which one is in play is the difference
+					// between a rank moving because a roster changed and a
+					// rank moving because the measure did. Absent on power
+					// objects written before the sync recorded it.
+					source: league.power.source || null,
 				});
 			}
 			rows.sort((a, b) => a.overall - b.overall || a.starters - b.starters);
@@ -2664,8 +2666,24 @@
 		// week argument changes.
 		function powerUsesPreseasonProjections(rows) {
 			return (rows || []).some(
-				(r) => r.projections && r.projections.inSeason === true && String(r.projections.week) === '0'
+				(r) => r.source && r.source.basis === 'projections'
+					&& r.source.inSeason === true && String(r.source.week) === '0'
 			);
+		}
+
+		// Whether these ranks came from the consensus-rankings fallback rather
+		// than projections — see buildEcrIndex in scripts/lib/fantasypros.mjs.
+		// Not a fault and not rare: FantasyPros publishes projections per
+		// season, so every offseason spends months with none to ask for, and
+		// the rankings are the live valuation in exactly that window.
+		//
+		// It is said out loud anyway, because the two bases are different
+		// measures — a rank ordinal converted through a log curve weights
+		// stars harder than raw projected points do — and a reader who sees a
+		// team move three places in February deserves to know whether the
+		// roster changed or the ruler did.
+		function powerUsesRankings(rows) {
+			return (rows || []).some((r) => r.source && r.source.basis === 'ecr');
 		}
 
 		function renderStandingsCard(league) {
@@ -3858,7 +3876,16 @@
 			// explanation — it appears only when the numbers under the card
 			// have actually stopped moving, which is the single symptom the
 			// frozen-projections failure produces.
-			if (powerUsesPreseasonProjections(rows)) {
+			// At most one of these: the fallback and the preseason-slot warning
+			// describe different bases, so they cannot both be true of the same
+			// sync. The fallback line wins the ordering below only because it
+			// is the commoner state by months of the year.
+			if (powerUsesRankings(rows)) {
+				card.appendChild(el('div', {
+					class: 'error-box',
+					text: 'Ranked on consensus rankings — projections aren’t published for this season yet.',
+				}));
+			} else if (powerUsesPreseasonProjections(rows)) {
 				card.appendChild(el('div', {
 					class: 'error-box',
 					text: "Ranked on preseason projections — these don't reflect what's happened this season yet.",

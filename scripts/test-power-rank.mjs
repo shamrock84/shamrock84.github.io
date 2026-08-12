@@ -42,7 +42,17 @@
 //     only visible symptom that case would ever produce. That check is
 //     phase-and-slot rather than a freshness date because the probe found
 //     the projections endpoint carries no last_updated at all, so a
-//     date-based guard would never fire while looking like it worked.
+//     date-based guard would never fire while looking like it worked;
+//   - and the ECR fallback, which is what runs every offseason: FantasyPros
+//     publishes projections per season, so from the Super Bowl until the
+//     next season's list appears there is nothing to ask for, and without a
+//     fallback the card would carry January's ranks through to July while
+//     reporting the phase and slot it was *originally* computed under (the
+//     safe-looking combination). Rank is converted to value by a log curve
+//     that reaches zero at the pool edge; the index it builds is the same
+//     shape as the projections one, so computeLeaguePower consumes either;
+//     and the basis travels to the page, because the two measures can order
+//     the same teams differently.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -52,6 +62,8 @@ import { fileURLToPath } from 'node:url';
 
 import {
   buildProjectionIndex,
+  buildEcrIndex,
+  ecrValue,
   computePowerScore,
   computeLeaguePower,
   DEFAULT_POWER_SLOTS,
@@ -247,7 +259,7 @@ function mflStarters(positions, count) {
   const mfl = computeLeaguePower({
     franchises: [{ franchiseId: '0001', players: [{ id: '13589', name: 'Josh Allen' }, { id: '7777', name: 'Solo Back' }, { id: '55555', name: 'Josh Allen' }] }],
     slots,
-    projections,
+    values: projections,
     scoring: 'HALF',
     joinById: true,
     computedAt: '2026-08-12T00:00:00Z',
@@ -262,7 +274,7 @@ function mflStarters(positions, count) {
   const sleeper = computeLeaguePower({
     franchises: [{ franchiseId: '4', players: [{ id: '4034', name: 'Josh Allen' }, { id: '8888', name: 'Solo Back' }] }],
     slots,
-    projections,
+    values: projections,
     scoring: 'PPR',
     joinById: false,
     computedAt: '2026-08-12T00:00:00Z',
@@ -276,7 +288,7 @@ function mflStarters(positions, count) {
       { franchiseId: '0001', players: [{ id: '13589', name: 'Josh Allen' }] },
     ],
     slots,
-    projections,
+    values: projections,
     scoring: null,
     joinById: true,
     computedAt: null,
@@ -291,13 +303,97 @@ function mflStarters(positions, count) {
   assert.deepEqual(DEFAULT_POWER_SLOTS.find((s) => s.positions.length > 1).positions, ['RB', 'WR', 'TE']);
 }
 
+// ---- The ECR fallback -------------------------------------------------------
+
+{
+  // The curve: steep at the top, flat through the middle, exactly zero at
+  // the pool edge, and nothing outside it.
+  assert.ok(ecrValue(1, 250) > ecrValue(10, 250), 'monotone decreasing');
+  assert.ok(ecrValue(10, 250) > ecrValue(100, 250));
+  assert.equal(ecrValue(250, 250), 0, 'the last ranked player is worth nothing, not a floor');
+  assert.equal(ecrValue(251, 250), 0, 'outside the pool is zero rather than negative');
+  assert.equal(ecrValue(0, 250), 0);
+  assert.equal(ecrValue(5, 0), 0);
+  assert.equal(ecrValue(null, 250), 0);
+  // Steeper than linear: the gap between 1 and 10 must exceed the gap
+  // between 100 and 109, or a roster of filler would outscore one with stars.
+  assert.ok(ecrValue(1, 250) - ecrValue(10, 250) > ecrValue(100, 250) - ecrValue(109, 250));
+}
+
+{
+  // Pool entries shaped exactly as data/rosters.json stores them.
+  const pool = {
+    type: 'DYNASTY',
+    scoring: 'PPR',
+    position: 'ALL',
+    players: [
+      { name: "Ja'Marr Chase", position: 'WR', team: 'CIN', rank: 1 },
+      { name: 'Bijan Robinson', position: 'RB', team: 'ATL', rank: 2 },
+      { name: 'Some Kicker', position: 'K', team: 'BUF', rank: 3 },
+      { name: 'Josh Allen', position: 'QB', team: 'BUF', rank: 4 },
+      { name: 'Josh Allen', position: 'WR', team: 'JAX', rank: 5 },
+    ],
+  };
+  const index = buildEcrIndex(pool, { season: '2027', inSeason: false });
+  assert.equal(index.byMflId.size, 0, 'pool entries carry no MFL id, so the id join is empty by construction');
+  assert.equal(index.byName.get('some kicker'), undefined, 'kickers never enter the valuation');
+  assert.equal(index.byName.get('josh allen'), null, 'the same tombstone rule as the projections index');
+  assert.ok(index.byName.get("jamarr chase").points.PPR > index.byName.get('bijan robinson').points.PPR);
+  assert.equal(index.byName.get("jamarr chase").position, 'WR');
+  // A pool is scoring-specific already, so one value serves all three.
+  const chase = index.byName.get("jamarr chase");
+  assert.equal(chase.points.PPR, chase.points.HALF);
+  assert.equal(chase.points.STD, chase.points.HALF);
+  assert.deepEqual({ ...index.meta }, { basis: 'ecr', season: '2027', rankingType: 'DYNASTY', scoring: 'PPR', inSeason: false });
+
+  assert.equal(buildEcrIndex(null, {}), null, 'no pool, no fallback — the league carries forward instead');
+  assert.equal(buildEcrIndex({ players: [] }, {}), null);
+  assert.equal(buildEcrIndex({ players: [{ name: 'Only A Kicker', position: 'K', rank: 1 }] }, {}), null,
+    'a pool with nothing startable in it is no basis at all');
+}
+
+{
+  // The whole point of the shared shape: computeLeaguePower takes the ECR
+  // index without knowing it is one, and an MFL league (joinById) still
+  // resolves — by name, since byMflId is empty.
+  const pool = {
+    type: 'DYNASTY',
+    scoring: 'PPR',
+    players: [
+      { name: 'Star Back', position: 'RB', rank: 1 },
+      { name: 'Decent Back', position: 'RB', rank: 40 },
+      { name: 'Deep Stash', position: 'RB', rank: 100 },
+      // Sets the pool's depth: without an entry this deep, the stash above
+      // would sit at the pool edge and be valued at zero. Pinning it here
+      // is also what keeps buildEcrIndex measuring depth by deepest rank
+      // rather than by entry count.
+      { name: 'Pool Edge', position: 'WR', rank: 250 },
+    ],
+  };
+  const values = buildEcrIndex(pool, { season: '2027', inSeason: false });
+  const power = computeLeaguePower({
+    franchises: [
+      { franchiseId: '0001', players: [{ id: '111', name: 'Star Back' }, { id: '222', name: 'Deep Stash' }] },
+      { franchiseId: '0002', players: [{ id: '333', name: 'Decent Back' }] },
+    ],
+    slots: [{ positions: ['RB'], count: 1 }],
+    values,
+    scoring: 'PPR',
+    joinById: true,
+    computedAt: '2027-03-01T00:00:00Z',
+  });
+  assert.equal(power.teams[0].franchiseId, '0001', 'the better player ranks first on the ECR basis too');
+  assert.ok(power.teams[0].depth > 0, 'the unseated stash is depth, exactly as on the projections basis');
+  assert.equal(power.source.basis, 'ecr', 'and the basis travels so the page can say which ruler was used');
+}
+
 // ---- The fail-loud guards ---------------------------------------------------
 
 {
   const projections = buildProjectionIndex({
     QB: [projPlayer('Real Guy', 1111, { ppr: 300, half: 300, std: 300 })],
   });
-  projections.meta = { season: '2026', week: '0', inSeason: false };
+  projections.meta = { basis: 'projections', season: '2026', week: '0', inSeason: false };
   const slots = [{ positions: ['QB'], count: 1 }];
 
   // Nobody in the league joins to a projection — an id space that stopped
@@ -310,7 +406,7 @@ function mflStarters(positions, count) {
       { franchiseId: '0002', players: [{ id: '8888', name: 'Also Nobody' }] },
     ],
     slots,
-    projections,
+    values: projections,
     scoring: 'PPR',
     joinById: true,
     computedAt: '2026-08-12T00:00:00Z',
@@ -325,14 +421,14 @@ function mflStarters(positions, count) {
       { franchiseId: '0002', players: [] },
     ],
     slots,
-    projections,
+    values: projections,
     scoring: 'PPR',
     joinById: true,
     computedAt: '2026-08-12T00:00:00Z',
   });
   assert.notEqual(partial, null);
-  assert.deepEqual({ ...partial.projections }, { season: '2026', week: '0', inSeason: false },
-    'provenance rides along so the page can see which slot the ranks rest on');
+  assert.deepEqual({ ...partial.source }, { basis: 'projections', season: '2026', week: '0', inSeason: false },
+    'provenance rides along so the page can see which basis the ranks rest on');
   assert.equal(partial.teams.length, 2);
 }
 
@@ -373,7 +469,7 @@ const context = {
 vm.createContext(context);
 vm.runInContext(scriptSource, context);
 
-const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections } = context;
+const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, powerUsesRankings } = context;
 
 
 {
@@ -425,7 +521,7 @@ const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections } = 
 
 {
 	const power = (myScore, myDepth, otherScore, otherDepth) => ({
-		projections: { season: '2026', week: '0', inSeason: false },
+		source: { basis: 'projections', season: '2026', week: '0', inSeason: false },
 		teams: [
 			{ franchiseId: '1', score: myScore, depth: myDepth },
 			{ franchiseId: '2', score: otherScore, depth: otherDepth },
@@ -445,41 +541,46 @@ const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections } = 
 	];
 	const rows = computeMyPowerRows(leagues, ['dynasty', 'redraft'], 2026);
 	assert.deepEqual([...rows].map((r) => r.label), ['League C', 'League A'], 'best overall rank first; the trailing redraft league is gone, the trailing dynasty league is not');
-	assert.deepEqual({ ...rows[0] }, { label: 'League C', size: 2, overall: 1, starters: 1, depth: 1, projections: { season: '2026', week: '0', inSeason: false } });
-	assert.deepEqual({ ...rows[1] }, { label: 'League A', size: 2, overall: 2, starters: 2, depth: 2, projections: { season: '2026', week: '0', inSeason: false } });
+	assert.deepEqual({ ...rows[0] }, { label: 'League C', size: 2, overall: 1, starters: 1, depth: 1, source: { basis: 'projections', season: '2026', week: '0', inSeason: false } });
+	assert.deepEqual({ ...rows[1] }, { label: 'League A', size: 2, overall: 2, starters: 2, depth: 2, source: { basis: 'projections', season: '2026', week: '0', inSeason: false } });
 }
 
-// ---- The preseason-projections warning --------------------------------------
+// ---- Which basis the card reports ------------------------------------------
 
 {
-	const row = (projections) => ({ projections });
+	const row = (source) => ({ source });
 
 	assert.equal(powerUsesPreseasonProjections([]), false, 'nothing to judge');
 	assert.equal(powerUsesPreseasonProjections([row(null)]), false,
 		'a power object from before provenance was recorded says nothing rather than crying wolf');
 
-	// The safe combinations: preseason ranks in the preseason, and in-season
-	// ranks drawn from a real in-season slot.
-	assert.equal(powerUsesPreseasonProjections([row({ season: '2026', week: '0', inSeason: false })]), false);
-	assert.equal(powerUsesPreseasonProjections([row({ season: '2026', week: '5', inSeason: true })]), false);
+	// Safe combinations: preseason ranks in the preseason, in-season ranks
+	// drawn from a real in-season slot.
+	const preseason = { basis: 'projections', season: '2026', week: '0', inSeason: false };
+	const inSeasonWeek = { basis: 'projections', season: '2026', week: '5', inSeason: true };
+	assert.equal(powerUsesPreseasonProjections([row(preseason)]), false);
+	assert.equal(powerUsesPreseasonProjections([row(inSeasonWeek)]), false);
 
-	// The dangerous one, and the whole reason the check exists: the season is
-	// under way and the ranks still rest on the preseason slot.
-	assert.equal(powerUsesPreseasonProjections([row({ season: '2026', week: '0', inSeason: true })]), true);
-
-	// One league on the bad combination is enough — they are all computed in
-	// the same sync, but a carried-forward power object can lag a phase change.
-	assert.equal(
-		powerUsesPreseasonProjections([
-			row({ season: '2026', week: '9', inSeason: true }),
-			row({ season: '2026', week: '0', inSeason: true }),
-		]),
-		true
-	);
+	// The dangerous one: the season is under way and the ranks still rest on
+	// the preseason slot.
+	const frozen = { basis: 'projections', season: '2026', week: '0', inSeason: true };
+	assert.equal(powerUsesPreseasonProjections([row(frozen)]), true);
+	assert.equal(powerUsesPreseasonProjections([row(inSeasonWeek), row(frozen)]), true,
+		'one league on the bad combination is enough — a carried-forward object can lag a phase change');
 
 	// The week arrives as a number from some snapshots and a string from
 	// others; both must read as the preseason slot.
-	assert.equal(powerUsesPreseasonProjections([row({ season: '2026', week: 0, inSeason: true })]), true);
+	assert.equal(powerUsesPreseasonProjections([row({ ...frozen, week: 0 })]), true);
+
+	// The ECR fallback is reported on its own terms and never mistaken for
+	// the frozen-projections case, which is about a different basis entirely.
+	const ecr = { basis: 'ecr', season: '2027', rankingType: 'DYNASTY', scoring: 'PPR', inSeason: false };
+	assert.equal(powerUsesRankings([row(ecr)]), true);
+	assert.equal(powerUsesPreseasonProjections([row(ecr)]), false,
+		'an ECR-based rank has no projection slot to be frozen on');
+	assert.equal(powerUsesRankings([row(preseason)]), false);
+	assert.equal(powerUsesRankings([row(null)]), false);
+	assert.equal(powerUsesRankings([]), false);
 }
 
 console.log('test-power-rank: all assertions passed');

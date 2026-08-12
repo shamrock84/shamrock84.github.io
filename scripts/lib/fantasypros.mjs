@@ -613,7 +613,7 @@ export async function fetchProjections({ apiKey, season, week = 0, inSeason = fa
     // That is exactly the dangerous combination, it is knowable here, and it
     // stops being true the moment the week argument changes — which is the
     // change the post-kickoff probe is meant to inform.
-    meta: { season: String(season), week: String(week), inSeason: !!inSeason },
+    meta: { basis: 'projections', season: String(season), week: String(week), inSeason: !!inSeason },
   };
 }
 
@@ -670,6 +670,100 @@ export function computePowerScore(players, slots) {
   return { score, depth: totalPoints - score, filled, slotCount };
 }
 
+// ---- The ECR fallback ---------------------------------------------------
+// What the power score runs on when projections aren't available, which is
+// not an edge case but a season: FantasyPros publishes projections for a
+// season, and between the Super Bowl and whenever the next season's list
+// goes up (`nflSeasonPhase` has already rolled the target year over by
+// February) there is nothing to ask for. Every position comes back empty,
+// fetchProjections throws, and without this the card would carry January's
+// ranks forward through the entire offseason — against rosters that have
+// since traded and drafted — with nothing on screen to say so, because a
+// carried-forward power object still reports the phase and slot it was
+// *originally* computed under.
+//
+// Rankings, unlike projections, exist year-round: that is the whole point of
+// automaticRankingType, which serves DYNASTY/DRAFT in the offseason and ROS
+// in season. The pools the sync already stores for the Top Available card
+// are therefore a live valuation of every player, keyed by name, in exactly
+// the window where projections are dark.
+//
+// The cost is that a rank is an ordinal, and ordinals cannot be summed —
+// which is precisely why projections won the primary job. Converting one to
+// a value needs a curve, and this is the honest version of that: consensus
+// value falls off steeply at the top of a list and flattens through the
+// middle, which a logarithm captures with no tuned constants, and it reaches
+// exactly zero at the edge of the pool so a player who barely ranks
+// contributes nothing rather than a floor. Only the *ordering* this produces
+// is ever shown, so the curve has to be monotone and roughly the right
+// shape rather than calibrated against real scoring.
+//
+// Two consequences worth stating rather than discovering. This curve is
+// steeper than raw projected points (which carry a large baseline every
+// startable player earns), so the two bases weight stars differently and can
+// order the same teams differently — which is why the card says which basis
+// it used, so a rank that moves in February is explainable. And the pool is
+// RANKING_POOL_SIZE deep where projections cover every ranked player, so
+// depth on this basis counts only pool players and is the shallower measure;
+// every franchise in a league is measured the same way, so the ordinal
+// holds, but a bench of unranked stashes reads as empty rather than thin.
+export function ecrValue(rank, poolSize) {
+  const r = Number(rank);
+  const size = Number(poolSize);
+  if (!(r > 0) || !(size > 0) || r > size) return 0;
+  return Math.log(size / r);
+}
+
+// A ranking pool turned into the same shape fetchProjections returns, so
+// computeLeaguePower consumes either without knowing which it has. byMflId
+// is deliberately empty: pool entries carry no MFL id (they are the
+// FantasyPros list, joined to rosters by name everywhere else too), and
+// computeLeaguePower already falls through to the name index when the id
+// lookup misses, so an MFL league joins by name here without a special case.
+//
+// The same tombstone rule as buildProjectionIndex, for the same reason: two
+// pool players whose names normalize alike resolve to nobody.
+export function buildEcrIndex(pool, { season, inSeason } = {}) {
+  const players = pool?.players || [];
+  if (players.length === 0) return null;
+  // The pool's own depth rather than RANKING_POOL_SIZE: a pool that came
+  // back short is still internally consistent, and the constant would hand
+  // its last players a negative value. Measured as the deepest rank present
+  // rather than the entry count, which are the same number for a pool as
+  // stored (a contiguous top-N with the unranked already dropped) but come
+  // apart the moment anything filters it — and the count is the one that
+  // silently zeroes every player past it.
+  const deepest = players.reduce((max, p) => Math.max(max, Number(p.rank) || 0), 0);
+  const size = Math.max(players.length, deepest);
+  const byName = new Map();
+  for (const p of players) {
+    if (!POWER_POSITIONS.includes(p.position)) continue;
+    const key = normalizePlayerName(p.name);
+    if (!key) continue;
+    const value = ecrValue(p.rank, size);
+    const entry = {
+      name: p.name,
+      position: p.position,
+      // A pool is already scoring-specific — the scoring is part of its key
+      // — so the three variants are one number here rather than three.
+      points: { PPR: value, HALF: value, STD: value },
+    };
+    byName.set(key, byName.has(key) ? null : entry);
+  }
+  if (byName.size === 0) return null;
+  return {
+    byMflId: new Map(),
+    byName,
+    meta: {
+      basis: 'ecr',
+      season: String(season ?? ''),
+      rankingType: pool?.type ?? null,
+      scoring: pool?.scoring ?? null,
+      inSeason: !!inSeason,
+    },
+  };
+}
+
 // Every franchise in one league, scored and sorted. `joinById` is true only
 // for MFL, whose roster player ids are the same ids the projections carry —
 // Sleeper's ids live in a different id space that happens to look identical
@@ -677,15 +771,19 @@ export function computePowerScore(players, slots) {
 // quietly credit franchises with the wrong players. Everyone else joins by
 // normalized name and inherits that join's known property: a collision
 // resolves to nobody rather than to the wrong body.
-export function computeLeaguePower({ franchises, slots, projections, scoring, joinById, computedAt }) {
+// `values` is whichever player valuation this run has — fetchProjections'
+// index, or buildEcrIndex's when projections are dark. They share a shape on
+// purpose, so which one is in hand is the caller's problem and not this
+// function's; the choice travels to the page in `source`.
+export function computeLeaguePower({ franchises, slots, values, scoring, joinById, computedAt }) {
   const effectiveScoring = scoring || 'PPR';
   const teams = (franchises || []).map((f) => {
     const players = [];
     for (const p of f.players || []) {
-      let entry = joinById ? projections.byMflId.get(String(p.id)) : null;
+      let entry = joinById ? values.byMflId.get(String(p.id)) : null;
       if (!entry) {
         const key = normalizePlayerName(p.name);
-        entry = key ? projections.byName.get(key) : null;
+        entry = key ? values.byName.get(key) : null;
       }
       if (!entry) continue;
       const points = entry.points[effectiveScoring] ?? entry.points.PPR;
@@ -713,7 +811,10 @@ export function computeLeaguePower({ franchises, slots, projections, scoring, jo
   return {
     computedAt: computedAt ?? null,
     scoring: effectiveScoring,
-    projections: projections?.meta ?? null,
+    // What these numbers were computed from — the projections slot and phase,
+    // or the ranking list the ECR fallback used. Named for the question it
+    // answers rather than for either basis, since it carries both.
+    source: values?.meta ?? null,
     teams,
   };
 }
