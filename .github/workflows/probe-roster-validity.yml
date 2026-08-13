@@ -1,0 +1,41 @@
+name: Probe Roster Validity (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here, the
+# same rule the other manual workflows follow.
+#
+# Asks whether MFL's API says anything about a roster being invalid, so the
+# problems digest can flag it if it does. Nothing in this project reads
+# anything limit-shaped today. Run against a league currently known to be in
+# an invalid state (default: OSD) — a probe against a compliant roster could
+# only prove a field exists, never that it fires.
+#
+# Read-only: two GETs against endpoints the sync already calls every run.
+on:
+  workflow_dispatch:
+    inputs:
+      league_name:
+        description: 'League name from config/leagues.json to probe (must currently be MFL)'
+        type: string
+        default: 'OSD'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Dump every roster/league field for the target league
+        env:
+          MFL_USERNAME: ${{ secrets.MFL_USERNAME }}
+          MFL_PASSWORD: ${{ secrets.MFL_PASSWORD }}
+          PROBE_LEAGUE_NAME: ${{ inputs.league_name }}
+        run: node scripts/probe-roster-validity.mjs
