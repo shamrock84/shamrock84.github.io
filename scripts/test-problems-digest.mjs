@@ -1,6 +1,8 @@
 // Unit test for the cross-league problems digest — computeLeagueProblems /
-// computeProblemsDigest / parseLineupMinimums in myffl.html, the strip above
-// the grid that collects everything needing attention across all leagues.
+// computeProblemsDigest / parseLineupMinimums / rosterLimitProblems in
+// myffl.html, the strip above the grid that collects everything needing
+// attention across all leagues — and parseRosterLimits in
+// scripts/lib/providers.mjs, the sync-side half of the same feature.
 //
 // Every decision pinned here is a *noise* decision, and noise failures are the
 // quiet kind: a digest that flags too much doesn't error, it just trains the
@@ -23,7 +25,14 @@
 //     beats the injury beats the bye;
 //   - the required-starters check uses the *minimum* implied by the
 //     requirement string, so it can miss a short lineup but never flag a
-//     legal one, and best-ball "0-N" strings can never fire it.
+//     legal one, and best-ball "0-N" strings can never fire it;
+//   - roster-limit checks (rosterSize/taxiSquad/injuredReserve/per-position,
+//     off MFL's TYPE=league — see parseRosterLimits) run independently of
+//     the lineup-pilot gate, since a salary-cap or draft-only league with no
+//     lineup editor still has a roster that can go over its limits; they
+//     share the lineup checks' mid-draft and trailing-season gates but not
+//     its lineup-data gate, and a roster over more than one limit at once
+//     gets one row per limit rather than a single collapsed line.
 //
 // As in test-injury-exposure.mjs there is no DOM here: the page's script
 // block is evaluated in a vm with the browser globals stubbed, so this runs
@@ -34,6 +43,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
+import { parseRosterLimits } from './lib/providers.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const html = fs.readFileSync(path.join(root, 'myffl.html'), 'utf8');
@@ -70,7 +80,15 @@ const context = {
 vm.createContext(context);
 vm.runInContext(scriptSource, context);
 
-const { computeLeagueProblems, computeProblemsDigest, parseLineupMinimums } = context;
+const { computeLeagueProblems, computeProblemsDigest, parseLineupMinimums, rosterLimitProblems } = context;
+
+// DIGEST_ALERT_KINDS is a top-level `const` in the page's script block, which
+// doesn't land on the vm context's global the way a function declaration
+// does — so it's read out of the source itself instead, the same workaround
+// test-power-rank.mjs uses for POWER_PROJECTION_STALE_DAYS.
+const DIGEST_ALERT_KINDS = JSON.parse(
+	scriptSource.match(/DIGEST_ALERT_KINDS = (\[[^\]]*\])/)[1].replace(/'/g, '"')
+);
 
 // A league with lineup data, current season, draft settled — the state where
 // every lineup check is live. Overrides carve out the special cases.
@@ -265,6 +283,179 @@ const kinds = (problems) => [...problems].map((p) => p.kind);
 	// player nobody can name.
 	const l = league({ starters: ['999'], startingLineup: null, players: [player('1')] });
 	assert.equal(computeLeagueProblems(l, YEAR).length, 0);
+}
+
+// ---- parseRosterLimits (sync-side: scripts/lib/providers.mjs) -------------
+//
+// Shaped from what probe-roster-validity.yml actually returned for OSD in
+// August 2026: rosterSize/taxiSquad/injuredReserve as bare numeric strings,
+// rosterLimits.position as an array of { name, limit } with "min-max"
+// strings identical in shape to starters.position.limit.
+function mflLeague(overrides = {}) {
+	return {
+		league: {
+			rosterSize: '28',
+			taxiSquad: '4',
+			injuredReserve: '0',
+			rosterLimits: {
+				position: [
+					{ name: 'QB', limit: '0-23' },
+					{ name: 'RB', limit: '0-23' },
+					{ name: 'WR', limit: '0-23' },
+					{ name: 'TE', limit: '0-23' },
+					{ name: 'PK', limit: '0-23' },
+					{ name: 'Def', limit: '0-23' },
+				],
+			},
+			...overrides,
+		},
+	};
+}
+
+{
+	const parsed = parseRosterLimits(mflLeague());
+	assert.deepEqual(parsed, {
+		size: 28,
+		taxi: 4,
+		ir: 0,
+		position: [
+			{ position: 'QB', max: 23 }, { position: 'RB', max: 23 }, { position: 'WR', max: 23 },
+			{ position: 'TE', max: 23 }, { position: 'PK', max: 23 }, { position: 'Def', max: 23 },
+		],
+	}, 'matches the real OSD shape the probe returned, numbers coerced from strings');
+}
+
+{
+	// A redraft league that simply doesn't offer an IR slot — a real MFL
+	// shape, not a hypothetical — still has a real rosterSize worth checking.
+	// Missing pieces are nulled individually rather than failing the object.
+	const parsed = parseRosterLimits(mflLeague({ injuredReserve: undefined, rosterLimits: undefined }));
+	assert.deepEqual(parsed, { size: 28, taxi: 4, ir: null, position: [] });
+}
+
+{
+	// MFL flattens a single-item array to a bare object elsewhere in this
+	// codebase (starters.position does the same) — must be handled the same
+	// way here rather than only ever seeing arrays in practice.
+	const parsed = parseRosterLimits(mflLeague({ rosterLimits: { position: { name: 'QB', limit: '0-4' } } }));
+	assert.deepEqual(parsed.position, [{ position: 'QB', max: 4 }]);
+}
+
+{
+	// Nothing usable anywhere: null rather than an object of nulls, so the
+	// caller's truthiness check (`league.rosterLimits && ...`) is the whole
+	// gate and never needs to inspect the shape.
+	assert.equal(parseRosterLimits({ league: {} }), null);
+	assert.equal(parseRosterLimits({ league: { rosterLimits: { position: [{ name: 'QB', limit: 'garbage' }] } } }), null);
+	assert.equal(parseRosterLimits(null), null);
+}
+
+// ---- rosterLimitProblems (page-side counting: myffl.html) -----------------
+
+const rosterLimits = (overrides = {}) => ({ size: 28, taxi: 4, ir: 0, position: [], ...overrides });
+
+{
+	// The exact numbers probe-roster-validity.yml found for OSD: 29 ROSTER
+	// players against a 28 limit, taxi and IR both exactly at their caps
+	// (not over). One row, not three, since only one limit is actually
+	// exceeded.
+	const roster = Array.from({ length: 29 }, (_, i) => player(String(i + 1), { slot: 'ROSTER' }))
+		.concat(Array.from({ length: 4 }, (_, i) => player(`t${i + 1}`, { slot: 'TAXI_SQUAD' })));
+	const l = league({ rosterLimits: rosterLimits(), players: roster });
+	const problems = rosterLimitProblems(l);
+	assert.equal(problems.length, 1);
+	assert.equal(problems[0].kind, 'roster-limit');
+	assert.equal(problems[0].player, null);
+	assert.match(problems[0].label, /Roster carries 29 players — 1 over the 28 limit/);
+}
+
+{
+	// Exactly at every limit is not over it — "at capacity" and "in
+	// violation" are different states, and only the second is a problem.
+	const roster = Array.from({ length: 28 }, (_, i) => player(String(i + 1), { slot: 'ROSTER' }))
+		.concat(Array.from({ length: 4 }, (_, i) => player(`t${i + 1}`, { slot: 'TAXI_SQUAD' })));
+	assert.equal(rosterLimitProblems(league({ rosterLimits: rosterLimits(), players: roster })).length, 0);
+}
+
+{
+	// Over on taxi squad and IR simultaneously, roster size fine: two rows,
+	// not a single summary line, because each is independently actionable
+	// (drop a taxi stash vs. an IR designation is a different decision).
+	const roster = [
+		...Array.from({ length: 5 }, (_, i) => player(`t${i + 1}`, { slot: 'TAXI_SQUAD' })),
+		...Array.from({ length: 2 }, (_, i) => player(`ir${i + 1}`, { slot: 'INJURED_RESERVE' })),
+	];
+	const problems = rosterLimitProblems(league({ rosterLimits: rosterLimits(), players: roster }));
+	assert.equal(problems.length, 2);
+	assert.match(problems[0].label, /Taxi squad carries 5 players — 1 over the 4 limit/);
+	assert.match(problems[1].label, /Injured Reserve carries 2 players — 2 over the 0 limit/);
+}
+
+{
+	// A per-position cap, exceeded — the case OSD's own rosterLimits did NOT
+	// hit (every position there was 0-23 against far smaller real counts),
+	// but the mechanism has to work when a league's cap is actually tight.
+	const roster = Array.from({ length: 6 }, (_, i) => player(`q${i + 1}`, { slot: 'ROSTER' }));
+	for (const p of roster) p.position = 'QB';
+	const problems = rosterLimitProblems(league({ rosterLimits: rosterLimits({ size: 99, position: [{ position: 'QB', max: 4 }] }), players: roster }));
+	assert.equal(problems.length, 1);
+	assert.match(problems[0].label, /Roster carries 6 QB — 2 over the 4 limit/);
+}
+
+{
+	// A limit that didn't parse (null) never fires — absence of data is not
+	// evidence of a violation.
+	const roster = Array.from({ length: 50 }, (_, i) => player(String(i + 1), { slot: 'ROSTER' }));
+	assert.equal(rosterLimitProblems(league({ rosterLimits: rosterLimits({ size: null }), players: roster })).length, 0);
+}
+
+// ---- Roster-limit checks inside computeLeagueProblems ----------------------
+
+{
+	// The regression this whole placement guards against: a salary-cap or
+	// draft-only league with NO lineup pilot (no starters array, no
+	// lineupWeek) still gets its roster-limit check. Putting this check
+	// after the lineup-data early return would silently turn it off for
+	// every league but the three that happen to have a lineup editor.
+	const roster = Array.from({ length: 29 }, (_, i) => player(String(i + 1), { slot: 'ROSTER' }));
+	const noPilot = league({ starters: undefined, lineupWeek: null, startingLineup: null, rosterLimits: rosterLimits(), players: roster });
+	const problems = computeLeagueProblems(noPilot, YEAR);
+	assert.deepEqual(kinds(problems), ['roster-limit']);
+}
+
+{
+	// Shares the lineup checks' two noise gates, not their lineup-data gate.
+	const roster = Array.from({ length: 29 }, (_, i) => player(String(i + 1), { slot: 'ROSTER' }));
+	const drafting = league({ draftInProgress: true, starters: undefined, lineupWeek: null, rosterLimits: rosterLimits(), players: roster, error: 'boom' });
+	assert.deepEqual(kinds(computeLeagueProblems(drafting, YEAR)), ['sync'], 'mid-draft: roster-limit check suppressed too, sync error still reported');
+
+	const trailing = league({ season: '2025', starters: undefined, lineupWeek: null, rosterLimits: rosterLimits(), players: roster });
+	assert.equal(computeLeagueProblems(trailing, YEAR).length, 0, 'last season\'s roster count is not this week\'s problem either');
+}
+
+{
+	// No rosterLimits at all — every Sleeper and ESPN league, always — is
+	// simply not checked, not a crash from missing data.
+	const roster = Array.from({ length: 99 }, (_, i) => player(String(i + 1), { slot: 'ROSTER' }));
+	const l = league({ starters: undefined, lineupWeek: null, rosterLimits: undefined, players: roster });
+	assert.equal(computeLeagueProblems(l, YEAR).length, 0);
+}
+
+{
+	// A lineup-pilot league gets both kinds of row together: the roster-limit
+	// check runs first (it's pushed before the lineup-data early return), an
+	// injured starter still gets its own row afterward.
+	const roster = Array.from({ length: 29 }, (_, i) => player(String(i + 1), { slot: 'ROSTER' }));
+	roster[0] = player('1', { slot: 'ROSTER', injury: 'O' });
+	const l = league({ starters: ['1'], startingLineup: null, rosterLimits: rosterLimits(), players: roster });
+	assert.deepEqual(kinds(computeLeagueProblems(l, YEAR)), ['roster-limit', 'injury']);
+}
+
+{
+	// A roster-limit violation renders as a red dot, not gold: it isn't a
+	// judgment call the way a Questionable starter is — MFL's own deadline
+	// forces the drop eventually regardless of what the manager decides.
+	assert.ok(DIGEST_ALERT_KINDS.includes('roster-limit'));
 }
 
 // ---- The digest itself -----------------------------------------------------
