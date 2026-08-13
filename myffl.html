@@ -4142,9 +4142,12 @@
 				headRow.appendChild(sortableHeader('League', 'league', 'Team count in parentheses'));
 				headRow.appendChild(sortableHeader('Proj', 'proj', 'Rank by projected points of the best legal lineup, plus bench'));
 				headRow.appendChild(sortableHeader('ECR', 'ecr', 'Rank by consensus ranking of the same roster'));
-				headRow.appendChild(sortableHeader('Starters', 'starters', `Lineup rank, by ${detailLabel}`));
-				headRow.appendChild(sortableHeader('Depth', 'depth', `Bench rank, by ${detailLabel}`));
-				headRow.appendChild(sortableHeader('Avg', 'avg', 'Mean of ECR, Starters and Depth'));
+				// Abbreviated so six columns fit a phone without wrapping. The
+				// tooltips carry the full words, which is where "Ben" earns its
+				// keep — on its own it could be read as a name.
+				headRow.appendChild(sortableHeader('Start', 'starters', `Starters: lineup rank, by ${detailLabel}`));
+				headRow.appendChild(sortableHeader('Ben', 'depth', `Bench: depth rank, by ${detailLabel}`));
+				headRow.appendChild(sortableHeader('Avg', 'avg', 'Mean of ECR, Start and Ben'));
 				table.appendChild(headRow);
 
 				for (const r of sortedRows()) {

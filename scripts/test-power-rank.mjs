@@ -922,7 +922,7 @@ const labelsOf = (card) =>
 	// Every column is clickable — including League, which the shared analytics
 	// table deliberately leaves unsortable, because there a name is not a
 	// measure and here it is the row's identity.
-	for (const label of ['League', 'Proj', 'ECR', 'Starters', 'Depth', 'Avg']) {
+	for (const label of ['League', 'Proj', 'ECR', 'Start', 'Ben', 'Avg']) {
 		const th = thNamed(card, label);
 		assert.ok(th, `${label} header exists`);
 		assert.ok(th.cls.includes('sortable'), `${label} is sortable`);
