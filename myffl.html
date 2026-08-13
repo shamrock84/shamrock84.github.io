@@ -910,8 +910,14 @@
 		}
 		tr.me-row td {
 			font-weight: 700;
-			background: var(--gold);
-			color: var(--gold-text);
+			/* Same light yellow as the Provider/Year badges (--gold-chip-*)
+			   rather than the full-strength --gold used for warning states
+			   (the contract banner, the problems digest) — a highlighted
+			   row isn't a warning, and sharing the badge tokens keeps the
+			   two "this is mine" and "this is metadata" yellows visually
+			   related instead of one reading as an alert. */
+			background: var(--gold-chip-bg);
+			color: var(--gold-chip-text);
 		}
 		.exposure-leagues {
 			color: var(--muted);
