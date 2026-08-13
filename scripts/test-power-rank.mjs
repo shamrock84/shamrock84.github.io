@@ -66,10 +66,19 @@
 //     missing-basis note tests "ranked on one but not the other", never
 //     "missing this one", or a single mid-draft league would announce that
 //     projections aren't published during a season when they are;
-//   - and the card's order is the *mean* of the two ranks, so neither basis
-//     is privileged: ordering by projections and using rankings only to
-//     break ties would bury a roster consensus rates highly. A row with one
-//     basis is not disadvantaged, since a single value is its own mean.
+//   - the card's order is the row average — the mean of ECR, Starters and
+//     Depth — so neither basis is privileged: ordering by projections and
+//     using rankings only to break ties would bury a roster consensus rates
+//     highly. Proj is deliberately outside that average, because Starters
+//     and Depth are the projections basis decomposed and Proj is those same
+//     halves recombined, which would let projections outvote consensus 3:1
+//     in a number meant to summarise both;
+//   - and click-to-sort on every column, which copies the shared analytics
+//     table's three rules rather than inventing its own: three states
+//     (natural → reverse → back to the card's order), ties falling back to
+//     that order, and a TBD staying at the bottom in BOTH directions. That
+//     last one is the silent failure — the obvious implementation reads
+//     correctly ascending and then hands unranked leagues the top rows.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -486,7 +495,7 @@ const context = {
 vm.createContext(context);
 vm.runInContext(scriptSource, context);
 
-const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, powerMissingBasis, powerDetailBasis } = context;
+const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, powerMissingBasis, powerDetailBasis, powerRowAverage } = context;
 
 
 {
@@ -773,6 +782,177 @@ const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, pow
 	assert.equal(powerDetailBasis([ecrRow()]), 'ecr');
 	assert.equal(powerDetailBasis([ecrRow(), bothRow]), 'projections', 'one row with projections is enough to fix the column');
 	assert.equal(powerDetailBasis([]), 'ecr');
+}
+
+// ---- The row average -------------------------------------------------------
+
+{
+	// Built explicitly so the detail values are unambiguous: detailBasis picks
+	// which side Starters and Depth are read from.
+	const r = (opts) => ({ proj: opts.proj || null, ecr: opts.ecr || null });
+	const entry = (overall, starters, depth) => ({ overall, starters, depth });
+
+	// The ordinary case: ECR overall, plus Starters and Depth from the
+	// projections side, averaged. Proj's own overall is NOT in it.
+	const full = r({ proj: entry(1, 4, 2), ecr: entry(6, 9, 9) });
+	assert.equal(powerRowAverage(full, 'projections'), (6 + 4 + 2) / 3);
+	// Switching the detail basis switches which halves are averaged.
+	assert.equal(powerRowAverage(full, 'ecr'), (6 + 9 + 9) / 3);
+
+	// A league with no ECR averages what it has rather than being penalised
+	// for the gap — otherwise a missing basis would push a good roster down.
+	assert.equal(powerRowAverage(r({ proj: entry(2, 3, 5) }), 'projections'), (3 + 5) / 2);
+	// Depth that isn't rankable drops out of the mean, it doesn't count zero.
+	assert.equal(powerRowAverage(r({ proj: entry(2, 3, null), ecr: entry(4, 1, 1) }), 'projections'), (4 + 3) / 2);
+	// Nothing at all: null, which is what sorts a TBD row last.
+	assert.equal(powerRowAverage(r({}), 'projections'), null);
+}
+
+// ---- Click-to-sort ----------------------------------------------------------
+//
+// The sort state lives in the rendered card's closure rather than in a pure
+// function, so this drives a DOM stub the way test-analytics-sort.mjs does —
+// the smallest tree that can hold nodes, be searched, and fire a click.
+
+function domNode(tag = 'div') {
+	const n = {
+		tag, children: [], attrs: {}, cls: '', _text: '', dataset: {}, style: {}, listeners: {},
+		classList: {
+			add(c) { n.cls += ' ' + c; }, remove() {}, toggle() {}, contains: (c) => n.cls.includes(c),
+		},
+		addEventListener(type, fn) { (n.listeners[type] = n.listeners[type] || []).push(fn); },
+		removeEventListener() {},
+		setAttribute(k, v) { n.attrs[k] = v; },
+		focus() {}, remove() {},
+		appendChild(c) { n.children.push(c); return c; },
+		insertBefore(c) { n.children.push(c); return c; },
+		querySelector: () => null, querySelectorAll: () => [], closest: () => null,
+		get className() { return n.cls; },
+		set className(v) { n.cls = v; },
+		get innerHTML() { return ''; },
+		set innerHTML(v) { if (v === '') n.children.length = 0; },
+		get textContent() { return n._text; },
+		set textContent(v) { n._text = v; },
+		click() { (n.listeners.click || []).forEach((fn) => fn()); },
+	};
+	return n;
+}
+
+const domCtx = {
+	console,
+	localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
+	setTimeout, clearTimeout, setInterval, clearInterval,
+	document: {
+		addEventListener() {},
+		getElementById: () => domNode(),
+		createElement: (t) => domNode(t),
+		createTextNode: (t) => { const n = domNode('#text'); n.textContent = t; return n; },
+		querySelector: () => null,
+		querySelectorAll: () => [],
+		visibilityState: 'visible',
+		body: domNode(),
+	},
+	window: { addEventListener() {} },
+	fetch: async () => ({ ok: false, status: 503, json: async () => ({}) }),
+};
+vm.createContext(domCtx);
+vm.runInContext(scriptSource, domCtx);
+
+function findAll(n, pred, out = []) {
+	if (!n || !n.children) return out;
+	for (const c of n.children) {
+		if (pred(c)) out.push(c);
+		findAll(c, pred, out);
+	}
+	return out;
+}
+const thNamed = (card, label) => findAll(card, (c) => c.tag === 'th').find((h) => h._text.startsWith(label));
+const clickTh = (card, label) => thNamed(card, label).click();
+// The league name is the first cell's own text; the team-count span is a child.
+const labelsOf = (card) =>
+	findAll(card, (c) => c.tag === 'tr')
+		.filter((tr) => tr.children.some((c) => c.tag === 'td'))
+		.map((tr) => tr.children[0]._text);
+
+{
+	// Our franchise placed at a chosen rank among `size` franchises. Depth is
+	// zero for everyone, so every league's Depth rank ties at 1 and the row
+	// average reduces to (ECR + Starters + 1) / 3 — which keeps the expected
+	// numbers below checkable by hand.
+	const teamsWith = (want, size) => {
+		const out = [];
+		for (let i = 0; i < size; i++) {
+			if (i === want - 1) continue;
+			const rank = i < want - 1 ? i : i + 1;
+			out.push({ franchiseId: `x${i}`, score: 1000 - rank * 10, depth: 0 });
+		}
+		out.push({ franchiseId: '1', score: 1000 - (want - 1) * 10, depth: 0 });
+		return out;
+	};
+	const mk = (id, name, projRank, ecrRank) => ({
+		id, name, type: 'dynasty', season: '2026', franchiseId: '1',
+		power: {
+			projections: { source: { basis: 'projections' }, teams: teamsWith(projRank, 8) },
+			ecr: { source: { basis: 'ecr' }, teams: teamsWith(ecrRank, 8) },
+		},
+	});
+	const leagues = [
+		mk('A', 'Alpha', 1, 1),     // avg (1 + 1 + 1) / 3 = 1.00
+		mk('B', 'Bravo', 2, 4),     // avg (4 + 2 + 1) / 3 = 2.33
+		mk('C', 'Charlie', 3, 7),   // avg (7 + 3 + 1) / 3 = 3.67
+		{ id: 'D', name: 'Delta', type: 'dynasty', season: '2026', franchiseId: '1',
+			players: [{ id: 'p', name: 'Someone' }] },
+	];
+
+	// Sanity-check the fixture itself before trusting what it sorts to.
+	const rows = domCtx.computeMyPowerRows(leagues, ['dynasty'], 2026);
+	const byLabel = Object.fromEntries([...rows].map((r) => [r.label, r]));
+	assert.equal(byLabel.Alpha.avg.toFixed(2), '1.00');
+	assert.equal(byLabel.Bravo.avg.toFixed(2), '2.33');
+	assert.equal(byLabel.Charlie.avg.toFixed(2), '3.67');
+	assert.equal(byLabel.Delta.avg, null, 'the unranked league has no average');
+
+	const card = domCtx.renderPowerRankCard('dynasty', ['dynasty'], leagues, 2026);
+	assert.notEqual(card, null, 'the card renders when at least one league ranked');
+
+	const base = labelsOf(card);
+	assert.deepEqual([...base], ['Alpha', 'Bravo', 'Charlie', 'Delta'],
+		'the card opens ordered by the row average, unranked last');
+
+	// Every column is clickable — including League, which the shared analytics
+	// table deliberately leaves unsortable, because there a name is not a
+	// measure and here it is the row's identity.
+	for (const label of ['League', 'Proj', 'ECR', 'Starters', 'Depth', 'Avg']) {
+		const th = thNamed(card, label);
+		assert.ok(th, `${label} header exists`);
+		assert.ok(th.cls.includes('sortable'), `${label} is sortable`);
+	}
+
+	// Three states: natural, reverse, then back to the card's own order.
+	clickTh(card, 'ECR');
+	assert.deepEqual([...labelsOf(card)], ['Alpha', 'Bravo', 'Charlie', 'Delta'], 'ECR ascending');
+	clickTh(card, 'ECR');
+	assert.deepEqual([...labelsOf(card)], ['Charlie', 'Bravo', 'Alpha', 'Delta'],
+		'ECR descending — and the unranked league does NOT take the top row');
+	clickTh(card, 'ECR');
+	assert.deepEqual([...labelsOf(card)], [...base], 'third click restores the default order');
+
+	// The rule that is silent when wrong, checked on the summary column too:
+	// ascending it would land at the bottom anyway, descending is where a
+	// naive implementation promotes it.
+	clickTh(card, 'Avg');
+	assert.equal(labelsOf(card).at(-1), 'Delta', 'unranked last, ascending');
+	clickTh(card, 'Avg');
+	assert.equal(labelsOf(card).at(-1), 'Delta', 'and still last, descending');
+	clickTh(card, 'Avg');
+
+	// League sorts alphabetically, and the unranked league is not pinned there
+	// — it has a name like any other row, and missing-last is about measures.
+	clickTh(card, 'League');
+	assert.deepEqual([...labelsOf(card)], ['Alpha', 'Bravo', 'Charlie', 'Delta']);
+	clickTh(card, 'League');
+	assert.deepEqual([...labelsOf(card)], ['Delta', 'Charlie', 'Bravo', 'Alpha'],
+		'reversed alphabetically, unranked included');
 }
 
 console.log('test-power-rank: all assertions passed');
