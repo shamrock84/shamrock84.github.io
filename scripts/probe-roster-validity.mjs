@@ -35,7 +35,7 @@
 
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { mflLogin, mflGet, seasonOf } from './lib/providers.mjs';
+import { mflLogin, mflGet, seasonOf, loadPlayerMap } from './lib/providers.mjs';
 
 const CONFIG_PATH = fileURLToPath(new URL('../config/leagues.json', import.meta.url));
 const { leagues } = JSON.parse(await readFile(CONFIG_PATH, 'utf8'));
@@ -121,7 +121,40 @@ for (const p of rawPlayers) counts.set(p.status || '(none)', (counts.get(p.statu
 for (const [status, n] of counts) console.log(`  ${status}: ${n}`);
 console.log(`  TOTAL: ${rawPlayers.length}`);
 
+// The first pass only printed rosterLimits' shape ("{position}"), not its
+// values — and a per-position limit structure is exactly the kind of thing
+// that could make "29 on the roster, limit 28" the wrong story (e.g. a
+// legal total that's illegal only because of too many players at one
+// position, or vice versa). Print it in full before trusting the simple
+// count.
+console.log('\n--- rosterLimits, in full ---');
+console.log(JSON.stringify(leagueData?.league?.rosterLimits, null, 2));
+console.log(`playerLimitUnit: ${JSON.stringify(leagueData?.league?.playerLimitUnit)}`);
+
+// Position breakdown of the current roster, joined against the full player
+// map the sync already loads every run — one heavier read, but read-only and
+// the same call fetchLeagueRoster's caller makes regardless.
+const playerMap = await loadPlayerMap(cookie);
+const byPosition = new Map();
+for (const p of rawPlayers) {
+  if (p.status !== 'ROSTER') continue; // taxi/IR are separate pools with their own limits
+  const pos = playerMap.get(p.id)?.position || '(unknown)';
+  byPosition.set(pos, (byPosition.get(pos) || 0) + 1);
+}
+console.log('\n--- ROSTER-status players by position (the group rosterSize applies to) ---');
+for (const [pos, n] of [...byPosition].sort((a, b) => b[1] - a[1])) console.log(`  ${pos}: ${n}`);
+
 console.log('\n=== verdict ===');
-console.log('Read the SUSPECT-flagged lines above by hand — this prints candidates, it does not decide anything.');
-console.log('If nothing usable turned up, the counts-by-status block above plus TYPE=league\'s limits (if any appeared)');
-console.log('are what a client-side check would compare, the same way the power score works from raw fields rather than a provided verdict.');
+const rosterCount = counts.get('ROSTER') || 0;
+const rosterSize = Number(leagueData?.league?.rosterSize);
+const taxiCount = counts.get('TAXI_SQUAD') || 0;
+const taxiLimit = Number(leagueData?.league?.taxiSquad);
+const irCount = counts.get('INJURED_RESERVE') || 0;
+const irLimit = Number(leagueData?.league?.injuredReserve);
+console.log(`ROSTER: ${rosterCount} vs rosterSize ${rosterSize}${rosterCount > rosterSize ? '  <-- OVER by ' + (rosterCount - rosterSize) : ''}`);
+console.log(`TAXI_SQUAD: ${taxiCount} vs taxiSquad ${taxiLimit}${taxiCount > taxiLimit ? '  <-- OVER by ' + (taxiCount - taxiLimit) : ''}`);
+console.log(`INJURED_RESERVE: ${irCount} vs injuredReserve ${irLimit}${irCount > irLimit ? '  <-- OVER by ' + (irCount - irLimit) : ''}`);
+console.log('\nNo key anywhere in either response matched invalid/violation/warn/alert/legal/error by name —');
+console.log('MFL does not appear to expose a computed verdict; the numbers above are what a client-side check would compare.');
+console.log('Read rosterLimits and the position breakdown above by hand before trusting the simple total, though:');
+console.log('a per-position structure there would mean the real rule is finer-grained than rosterSize alone.');
