@@ -524,6 +524,66 @@ async function fetchSalaryAdjustments(league, cookie) {
 // would hand their slots to flex.
 const POWER_SKILL_POSITIONS = new Set(['QB', 'RB', 'WR', 'TE']);
 
+// The roster-size limits themselves — not the starting lineup, the whole
+// roster: how many players a franchise may carry ROSTER/TAXI_SQUAD/
+// INJURED_RESERVE, and per position. All four come off TYPE=league, which
+// fetchLeagueRoster already fetches every run for franchise/team info —
+// nothing extra requested for this.
+//
+// This exists because a franchise can legally sit *over* one of these
+// limits for a while: MFL enforces them at certain deadlines (post-draft
+// cutdown, the day after a trade window closes) rather than blocking the
+// roster move itself, so a trade or a waiver claim can leave a roster
+// briefly — or, if nobody notices, not so briefly — over its limit. MFL's
+// own site flags this, but probe-roster-validity.yml established there is
+// no field anywhere in TYPE=league or TYPE=rosters that says so: every key
+// name on both responses was dumped by hand against a league confirmed to
+// be over its limit (OSD, August 2026 — rosterSize 28, actually carrying
+// 29) and none of them read as a verdict. So, like the power score, this
+// is computed from raw counts against raw limits rather than a value MFL
+// hands over already judged — see rosterLimitProblems in myffl.html, which
+// is where the counting happens (the roster this compares against is
+// already on the page, so there's nothing to duplicate here).
+//
+// Limits are strings of the same "min-max" shape `starters.position.limit`
+// already uses (parsed the same way, one line up in this file) — a bare
+// number for size/taxi/ir, "0-23" for a position entry that isn't
+// meaningfully capped, something tighter for a league that actually
+// restricts a position. Nulled out individually rather than failing the
+// whole object when one piece is missing or unparseable, since a league
+// missing just injuredReserve (redraft leagues often don't offer an IR
+// slot at all) still has a real rosterSize worth checking.
+export function parseRosterLimits(leagueData) {
+  const league = leagueData?.league;
+  if (!league) return null;
+
+  const toCount = (raw) => {
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  };
+
+  const rawPositionLimits = league.rosterLimits?.position;
+  const positionList = Array.isArray(rawPositionLimits)
+    ? rawPositionLimits
+    : rawPositionLimits
+    ? [rawPositionLimits]
+    : [];
+  const position = positionList
+    .map((slot) => {
+      const [minStr, maxStr] = String(slot?.limit ?? '').split('-');
+      const max = maxStr !== undefined ? toCount(maxStr) : toCount(minStr);
+      return slot?.name && max != null ? { position: slot.name, max } : null;
+    })
+    .filter(Boolean);
+
+  const size = toCount(league.rosterSize);
+  const taxi = toCount(league.taxiSquad);
+  const ir = toCount(league.injuredReserve);
+  if (size == null && taxi == null && ir == null && position.length === 0) return null;
+
+  return { size, taxi, ir, position };
+}
+
 export function startingSlotCounts(leagueData) {
   const rawSlots = leagueData?.league?.starters?.position;
   const slots = Array.isArray(rawSlots) ? rawSlots : rawSlots ? [rawSlots] : [];
@@ -843,6 +903,13 @@ export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, inj
     console.error(`Failed to parse starting lineup requirements for ${league.name}: ${err.message}`);
   }
 
+  let rosterLimits = null;
+  try {
+    rosterLimits = parseRosterLimits(leagueData);
+  } catch (err) {
+    console.error(`Failed to parse roster limits for ${league.name}: ${err.message}`);
+  }
+
   return {
     id: league.id,
     name: league.name,
@@ -856,6 +923,7 @@ export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, inj
     salaryAdjustments,
     startingLineup,
     lineupSlots,
+    rosterLimits,
     updatedAt: new Date().toISOString(),
     error: null,
   };
