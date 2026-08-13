@@ -5018,13 +5018,13 @@
 			for (const groupKey of SUBTAB_ORDER) {
 				const types = typesInSubtabGroup(groupKey);
 				if (!data.leagues.some((l) => types.includes(l.type))) continue;
-				const powerCard = renderPowerRankCard(groupKey, types, data.leagues, data.year);
-				if (powerCard) gridEl.appendChild(powerCard);
 				gridEl.appendChild(renderAnalyticsCard(groupKey, types, data.leagues));
 				const injuryCard = renderInjuryExposureCard(groupKey, types, data.leagues);
 				if (injuryCard) gridEl.appendChild(injuryCard);
 				const availableCard = renderTopAvailableCard(groupKey, types, data.leagues, data.rankingPools, data.year);
 				if (availableCard) gridEl.appendChild(availableCard);
+				const powerCard = renderPowerRankCard(groupKey, types, data.leagues, data.year);
+				if (powerCard) gridEl.appendChild(powerCard);
 			}
 
 			// Logged-out visitors never get this card, so 'admin' never makes it
