@@ -342,6 +342,27 @@ function mflLeague(overrides = {}) {
 }
 
 {
+	// The regression this exists to catch. Confirmed on the real API by
+	// probe-roster-validity.yml against a second live league (Wise Guys, a
+	// salary-cap/auction league) after the first fix shipped a bug: MFL
+	// returns "0-0" for every position on an auction-format league, meaning
+	// "no per-position cap is configured" — the same off-switch
+	// startingSlotCounts already recognises for the starting-lineup node,
+	// one function up in this file. Treating "0-0" as a real limit of zero
+	// turned a legal three-quarterback roster into "3 over the 0 limit" on
+	// the live site before this was caught.
+	const parsed = parseRosterLimits(mflLeague({
+		rosterSize: '23', taxiSquad: '50', injuredReserve: '50',
+		rosterLimits: { position: [
+			{ name: 'QB', limit: '0-0' }, { name: 'RB', limit: '0-0' },
+			{ name: 'WR', limit: '0-0' }, { name: 'TE', limit: '0-0' },
+		] },
+	}));
+	assert.deepEqual(parsed.position, [], '"0-0" positions are dropped entirely, not kept as a real zero limit');
+	assert.equal(parsed.size, 23, 'the aggregate limits are untouched by this — only per-position entries can be "0-0"');
+}
+
+{
 	// Nothing usable anywhere: null rather than an object of nulls, so the
 	// caller's truthiness check (`league.rosterLimits && ...`) is the whole
 	// gate and never needs to inspect the shape.
