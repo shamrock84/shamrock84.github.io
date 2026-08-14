@@ -4109,16 +4109,33 @@
 			return card;
 		}
 
-		// Returns null rather than a card carrying the "need at least 2 leagues"
-		// message: the Player Exposure card sitting beside it already says that,
-		// and saying it twice about the same group of leagues reads as two
-		// separate problems.
+		// Used to return null rather than a card carrying the "need at least 2
+		// leagues" message, on the theory that the Player Exposure card sitting
+		// beside it already says so. That reasoning doesn't survive a group
+		// small enough to trip this at all: Redraft can hold a single drafted
+		// league for most of the preseason, Player Exposure is the only
+		// Analytics card left standing in that state, and Injury Exposure simply
+		// isn't in the grid — nothing on screen says it exists, let alone why
+		// it's missing. A card that vanishes reads as broken; a card that says
+		// what it's waiting for reads as a state. Same message as Player
+		// Exposure on purpose, since it's the same condition on the same
+		// leagues.
 		function renderInjuryExposureCard(groupKey, types, leagues) {
 			const { total, rows } = computeInjuryExposure(leagues, types);
-			if (total < 2) return null;
 
 			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
 			card.appendChild(el('h2', { text: 'Injury Exposure' }));
+
+			if (total < 2) {
+				card.appendChild(el('div', {
+					class: 'error-box',
+					text: total === 1
+						? 'Only one league here has rosters so far — exposure needs at least two to compare.'
+						: 'No leagues here have roster data yet.',
+				}));
+				return card;
+			}
+
 			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(total)}` }));
 
 			if (rows.length === 0) {
@@ -4130,11 +4147,11 @@
 			return card;
 		}
 
-		// Like the Injury Exposure card, this one returns null rather than an
-		// explanatory box when it has nothing to work from — a data/rosters.json
-		// written before rankingPools existed, or by a sync with no FantasyPros
-		// key. That isn't a state the reader can act on. An empty *wire*, on the
-		// other hand, is an answer, and gets said out loud below.
+		// This one returns null rather than an explanatory box when it has
+		// nothing to work from — a data/rosters.json written before
+		// rankingPools existed, or by a sync with no FantasyPros key. That
+		// isn't a state the reader can act on. An empty *wire*, on the other
+		// hand, is an answer, and gets said out loud below.
 		//
 		// There was a Top Players card here too, listing the pool itself with
 		// the players we own called out. It's gone: knowing who the best players
@@ -5198,8 +5215,7 @@
 					const types = typesInSubtabGroup(groupKey);
 					if (!data.leagues.some((l) => types.includes(l.type))) continue;
 					gridEl.appendChild(renderAnalyticsCard(groupKey, types, data.leagues));
-					const injuryCard = renderInjuryExposureCard(groupKey, types, data.leagues);
-					if (injuryCard) gridEl.appendChild(injuryCard);
+					gridEl.appendChild(renderInjuryExposureCard(groupKey, types, data.leagues));
 					const availableCard = renderTopAvailableCard(groupKey, types, data.leagues, data.rankingPools, data.year);
 					if (availableCard) gridEl.appendChild(availableCard);
 					const powerCard = renderPowerRankCard(groupKey, types, data.leagues, data.year);
