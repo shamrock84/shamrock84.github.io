@@ -1,0 +1,32 @@
+name: Probe FantasyPros Sleepers (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here, the
+# same rule the other manual workflows follow.
+#
+# Asks whether FantasyPros' "Sleepers" list — undervalued/breakout picks,
+# published as editorial content on their site — is reachable as ranking
+# data behind the partner API key this project already holds, either as
+# another `type` value on the consensus-rankings endpoint the sync already
+# calls, or as its own resource. api.fantasypros.com is unreachable from a
+# sandbox and the key is a secret, so a workflow run is the only place to ask.
+#
+# Read-only: a handful of GETs.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Probe Sleepers reachability
+        env:
+          FANTASYPROS_API_KEY: ${{ secrets.FANTASYPROS_API_KEY }}
+        run: node scripts/probe-fantasypros-sleepers.mjs
