@@ -571,7 +571,19 @@ export function parseRosterLimits(leagueData) {
   const position = positionList
     .map((slot) => {
       const [minStr, maxStr] = String(slot?.limit ?? '').split('-');
-      const max = maxStr !== undefined ? toCount(maxStr) : toCount(minStr);
+      const min = toCount(minStr) ?? 0;
+      const max = maxStr !== undefined ? toCount(maxStr) : min;
+      // "0-0" is the same off-switch startingSlotCounts already treats it
+      // as, confirmed on the same field by probe-roster-validity.yml
+      // against two different leagues: OSD (dynasty, no per-position rule)
+      // carried "0-23" for every position, while Wise Guys and Super Cap
+      // (salary-cap, drafted by auction rather than by position-slotted
+      // rounds) carried "0-0" for every one — not a rule forbidding the
+      // position, just MFL's way of saying no per-position cap is
+      // configured for an auction-format league. Treating it as a real
+      // limit of zero is exactly the bug that shape produces: a legal
+      // three-quarterback roster reads as "3 over the 0 limit."
+      if (min === 0 && max === 0) return null;
       return slot?.name && max != null ? { position: slot.name, max } : null;
     })
     .filter(Boolean);
