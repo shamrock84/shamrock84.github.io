@@ -1,0 +1,33 @@
+name: Probe MFL Power Sources (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here, the
+# same rule the other manual workflows follow.
+#
+# Asks whether MFL itself can supply a second source for the Power Rankings
+# card (today FantasyPros-only) to average against: TYPE=projectedScores as
+# an analog to Proj, TYPE=adp/TYPE=aav as an analog to ECR. None of these
+# have been hit by this project before, so their real shape — and whether
+# these param names are even current — is unknown. api.myfantasyleague.com
+# is unreachable from a sandbox, so a workflow run is the only place to ask.
+#
+# Read-only: TYPE=league (control), TYPE=projectedScores, TYPE=adp, TYPE=aav.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Probe MFL projections/ADP/AAV
+        env:
+          MFL_USERNAME: ${{ secrets.MFL_USERNAME }}
+          MFL_PASSWORD: ${{ secrets.MFL_PASSWORD }}
+        run: node scripts/probe-mfl-power-sources.mjs
