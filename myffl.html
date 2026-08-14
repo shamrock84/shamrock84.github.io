@@ -415,7 +415,13 @@
 		   entirely when there's nothing to say: an all-clear banner would
 		   train the eye to skip the one spot where real problems appear. */
 		.problems-digest {
-			background: var(--card-bg);
+			/* Same light gold as the Provider/Year badges (--gold-chip-*,
+			   see .badge-provider/.badge-season) rather than the plain card
+			   background — the strip reads as "flagged" the moment you see
+			   it, the same visual language the badges already use for
+			   "metadata worth noticing," instead of needing the left border
+			   alone to carry that. */
+			background: var(--gold-chip-bg);
 			border: 1px solid var(--border);
 			border-left: 4px solid var(--gold);
 			border-radius: 12px;
