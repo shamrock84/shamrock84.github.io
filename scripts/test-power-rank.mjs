@@ -982,8 +982,8 @@ const tablesOf = (card) => findAll(card, (c) => c.tag === 'table');
 	assert.notEqual(card, null, 'the card renders when at least one league ranked');
 
 	const groupLabels = findAll(card, (c) => c.cls.includes('group-label')).map((n) => n._text);
-	assert.deepEqual(groupLabels, ['Starter Rankings', 'Bench Rankings'],
-		'Power Rankings needs no label of its own — the card h2 already says so');
+	assert.deepEqual(groupLabels, ['Overall Rankings', 'Starter Rankings', 'Bench Rankings'],
+		'each table is labelled — the card h2 names the card, these three name its tables');
 
 	const [powerTable, starterTable, benchTable] = tablesOf(card);
 	assert.ok(powerTable && starterTable && benchTable, 'all three tables render');

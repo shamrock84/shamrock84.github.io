@@ -4242,6 +4242,7 @@
 			};
 
 			const powerOrder = orderPowerRows(rows, (r) => r.basisAvg, (r) => (r.proj ? r.proj.overall : null));
+			card.appendChild(el('div', { class: 'group-label', text: 'Overall Rankings' }));
 			card.appendChild(buildPowerTable(powerOrder, [
 				leagueColumn,
 				{
