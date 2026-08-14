@@ -41,6 +41,7 @@ import {
 } from './lib/providers.mjs';
 import {
   attachRankings,
+  attachSleepers,
   fantasyProsApiKey,
   nflSeasonPhase,
   normalizePlayerName,
@@ -648,6 +649,15 @@ async function main() {
       }
     } catch (err) {
       console.error(`Failed to attach FantasyPros rankings: ${err.message}`);
+    }
+
+    // Sleepers: a second, independent FantasyPros list layered on the same
+    // way — non-fatal, one fetch for the whole sync (see attachSleepers).
+    try {
+      const sleeperResult = await attachSleepers(leagues, { apiKey: fpApiKey, season });
+      console.log(`FantasyPros — sleepers: ${sleeperResult.matched} roster spots matched against ${sleeperResult.total} listed`);
+    } catch (err) {
+      console.error(`Failed to attach FantasyPros sleepers: ${err.message}`);
     }
 
     // Power ranks: every franchise in a league graded by its best legal

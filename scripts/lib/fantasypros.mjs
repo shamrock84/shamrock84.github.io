@@ -465,6 +465,54 @@ export async function attachRankings(leagues, leagueConfigs, { apiKey, season, n
   return { summary, pools };
 }
 
+// Attaches a `sleeper` object to every player who appears on FantasyPros'
+// "Sleepers" list — undervalued/breakout picks, published as editorial
+// content rather than a full positional ranking, confirmed reachable by
+// probe-fantasypros-sleepers.yml as `type=SLEEPERS` (plural) on the SAME
+// consensus-rankings endpoint attachRankings already calls. That probe is
+// the reason this is spelled the way it is: `type=SLEEPER` (singular) is
+// NOT an error, it silently falls back to the Draft list — FantasyPros
+// doesn't 4xx an unrecognized `type`, so a misspelling here would ship a
+// column that quietly means something else. Always re-verify with that
+// probe before touching the literal string 'SLEEPERS' below.
+//
+// One fetch for the whole sync, not one per league. Sleepers is a single
+// curated list rather than a scoring-sensitive positional ranking the way
+// DRAFT/DYNASTY/ROS are, so unlike attachRankings this doesn't vary the
+// request by league type or scoring format — every league joins against
+// the same list. (Untested: whether the list itself would actually differ
+// by scoring format. Fixed at PPR/ALL rather than assumed either way.)
+//
+// Joined exactly like ECR — buildRankingIndex/lookupPlayer by normalized
+// name, a name collision resolving to nobody rather than a guess — because
+// the Sleepers response is shaped identically to every other
+// consensus-rankings response; nothing about the join needed to change.
+//
+// Failure here is non-fatal at the call site (see fetch-rosters.mjs): a
+// league's roster and its primary ECR numbers must never be held hostage
+// by a secondary, "nice to have" list.
+// The join itself, pulled out of attachSleepers so it's testable without a
+// network call — mirrors how attachInjuryDetail takes already-fetched data
+// rather than fetching inside the function it's named for.
+export function applySleepers(leagues, index) {
+  let matched = 0;
+  for (const league of leagues) {
+    for (const player of league.players || []) {
+      const hit = lookupPlayer(index, player);
+      if (!hit) continue;
+      player.sleeper = { rank: hit.ecr, posRank: hit.posRank, tier: hit.tier, url: hit.url };
+      matched++;
+    }
+  }
+  return matched;
+}
+
+export async function attachSleepers(leagues, { apiKey, season }) {
+  const data = await fpGet(`/nfl/${season}/consensus-rankings?position=ALL&type=SLEEPERS&scoring=PPR`, apiKey);
+  const matched = applySleepers(leagues, buildRankingIndex(data?.players));
+  return { matched, total: (data?.players || []).length, lastUpdated: data?.last_updated ?? null };
+}
+
 // The best-ranked players in this league's pool that nobody in the league
 // rosters. Names only: the rank, position and profile link all live on the
 // pool entry the page looks the name back up in, and repeating them once per

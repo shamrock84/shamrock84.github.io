@@ -484,15 +484,17 @@
 		}
 		/* The summary column: the one number to read if you read one. */
 		.power-avg { font-weight: 600; }
-		/* "Studs" sub-line under a league's name — same treatment as the
-		   exposure cards' leagueLine under a player's name (.exposure-leagues),
-		   just under a different kind of row. */
-		.power-studs {
+		/* "Studs" and "Sleepers" sub-lines under a league's name (see
+		   powerPlayersLine) — same treatment as the exposure cards' leagueLine
+		   under a player's name (.exposure-leagues), just under a different
+		   kind of row, and shared by both lines the same way that class is
+		   shared by "Free in"/"Own in". */
+		.power-players {
 			color: var(--muted);
 			font-size: 0.72rem;
 			margin-top: 0.1rem;
 		}
-		.power-studs-label {
+		.power-players-label {
 			opacity: 0.7;
 			text-transform: uppercase;
 			font-size: 0.62rem;
@@ -2733,27 +2735,39 @@
 		// a missing Starters too. Those rows keep config order among
 		// themselves.
 		//
-		// Each row also carries `studs` — the rostered players who rank in the
-		// league's own top STUDS_RANK_THRESHOLD overall by FantasyPros
-		// consensus rank (see leagueStuds). Rendered as a sub-line under the
-		// league name, the same idiom the exposure cards already use under a
+		// Each row also carries `studs` and `sleepers` — the rostered players
+		// who rank in the league's own top N by, respectively, FantasyPros
+		// consensus rank (leagueStuds) and FantasyPros' separate "Sleepers"
+		// list (leagueSleepers, p.sleeper — see attachSleepers in
+		// scripts/lib/fantasypros.mjs). Rendered as sub-lines under the league
+		// name, the same idiom the exposure cards already use under a
 		// player's name (leagueLine) — just flipped: there the line under a
 		// PLAYER names the leagues, here the line under a LEAGUE names the
 		// players.
 		//
-		// "Adjusted to ROS during the season" needs nothing new here: p.ecr.rank
-		// is already the automaticRankingType-driven rank every other ECR read
-		// on the page uses, computed once at sync time.
+		// Studs needs nothing new to stay "adjusted to ROS during the season":
+		// p.ecr.rank is already the automaticRankingType-driven rank every
+		// other ECR read on the page uses, computed once at sync time. Sleeper
+		// rank has no such seasonal flip — FantasyPros' Sleepers list is one
+		// list year-round, not a DRAFT/DYNASTY/ROS-style rotation, so
+		// p.sleeper.rank means the same thing in March as it does in October.
 		//
-		// Whole roster, not just starters — a taxi-squad stash worth bragging
-		// about is exactly the kind of thing this is meant to surface, and it
-		// is why this reads league.players directly rather than the best-legal
-		// lineup computeLeaguePower already built for Proj/ECR.
+		// Whole roster, not just starters, for both — a taxi-squad stash worth
+		// bragging about is exactly the kind of thing either line is meant to
+		// surface, and it is why these read league.players directly rather
+		// than the best-legal lineup computeLeaguePower already built for
+		// Proj/ECR.
 		const STUDS_RANK_THRESHOLD = 25;
 		function leagueStuds(league) {
 			return (league.players || [])
 				.filter((p) => p.ecr && Number.isFinite(p.ecr.rank) && p.ecr.rank <= STUDS_RANK_THRESHOLD)
 				.sort((a, b) => a.ecr.rank - b.ecr.rank);
+		}
+		const SLEEPER_RANK_THRESHOLD = 25;
+		function leagueSleepers(league) {
+			return (league.players || [])
+				.filter((p) => p.sleeper && Number.isFinite(p.sleeper.rank) && p.sleeper.rank <= SLEEPER_RANK_THRESHOLD)
+				.sort((a, b) => a.sleeper.rank - b.sleeper.rank);
 		}
 
 		function computeMyPowerRows(leagues, types, year) {
@@ -2795,8 +2809,9 @@
 					// Suppressed the same as proj/ecr: a league with neither
 					// basis has nothing to say about this season yet, whether
 					// that's a trailing roster or one that hasn't drafted, so
-					// it gets no studs line either.
+					// it gets no studs/sleepers line either.
 					studs: proj || ecr ? leagueStuds(league) : [],
+					sleepers: proj || ecr ? leagueSleepers(league) : [],
 				});
 			}
 			// Each row's summary average, and the card's default order. Stamped
@@ -4149,13 +4164,18 @@
 		// LEAGUE's name and lists the players. Each name carries its overall
 		// ECR rank as a tooltip, the same "Overall ECR N" wording buildEcrCell
 		// already uses for the per-player ECR column on the Rosters tab.
-		function studsLine(players) {
+		// Shared by the Studs and Sleepers sub-lines — same idea as leagueLine
+		// on the exposure cards being reused for both "Free in" and "Own in"
+		// rather than two near-identical functions. `rankLabel(p)` supplies the
+		// tooltip text since the two lines read the rank off different fields
+		// (p.ecr.rank vs p.sleeper.rank).
+		function powerPlayersLine(label, players, rankLabel) {
 			if (!players || players.length === 0) return null;
-			const line = el('div', { class: 'power-studs' });
-			line.appendChild(el('span', { class: 'power-studs-label', text: 'Studs ' }));
+			const line = el('div', { class: 'power-players' });
+			line.appendChild(el('span', { class: 'power-players-label', text: `${label} ` }));
 			players.forEach((p, i) => {
 				if (i > 0) line.appendChild(document.createTextNode(', '));
-				const entry = el('span', { title: `Overall ECR ${p.ecr.rank}` });
+				const entry = el('span', { title: rankLabel(p) });
 				entry.appendChild(document.createTextNode(p.name));
 				appendTeamSuffix(entry, p.team);
 				line.appendChild(entry);
@@ -4304,8 +4324,10 @@
 					// had nowhere to go.
 					const nameCell = el('td', { text: r.label });
 					if (r.size != null) nameCell.appendChild(el('span', { class: 'power-size', text: ` (${r.size})` }));
-					const studs = studsLine(r.studs);
+					const studs = powerPlayersLine('Studs', r.studs, (p) => `Overall ECR ${p.ecr.rank}`);
 					if (studs) nameCell.appendChild(studs);
+					const sleepers = powerPlayersLine('Sleepers', r.sleepers, (p) => `Sleeper rank ${p.sleeper.rank}`);
+					if (sleepers) nameCell.appendChild(sleepers);
 					row.appendChild(nameCell);
 					// A league with no ranks at all explains itself once, in its
 					// own terms — "draft in progress" rather than two separate

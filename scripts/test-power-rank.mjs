@@ -495,7 +495,7 @@ const context = {
 vm.createContext(context);
 vm.runInContext(scriptSource, context);
 
-const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, powerMissingBasis, powerDetailBasis, powerRowAverage, leagueStuds } = context;
+const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, powerMissingBasis, powerDetailBasis, powerRowAverage, leagueStuds, leagueSleepers } = context;
 
 
 {
@@ -870,6 +870,62 @@ const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, pow
 	assert.deepEqual([...byLabel['No Power League'].studs], [], 'no power data at all — same TBD framing, same suppression');
 }
 
+// ---- Sleepers ------------------------------------------------------------------
+//
+// Structurally identical to the Studs tests above — same threshold-and-sort
+// filter, same suppression rule in computeMyPowerRows — just reading
+// p.sleeper.rank (attached sync-side by attachSleepers in
+// scripts/lib/fantasypros.mjs, see test-sleepers.mjs) instead of p.ecr.rank.
+// The two fields are populated by two independent FantasyPros lists, so
+// nothing here assumes a player carries both or either.
+
+{
+	const THRESHOLD = 25;
+	const player = (name, rank) => ({ name, team: 'BUF', sleeper: rank == null ? null : { rank } });
+	const league = {
+		players: [
+			player('Just Outside', THRESHOLD + 1),
+			player('Exactly At The Line', THRESHOLD),
+			player('Best Sleeper', 1),
+			player('No Rank At All', null),
+			player('Middling Sleeper', 12),
+		],
+	};
+	const sleepers = leagueSleepers(league);
+	assert.deepEqual(sleepers.map((p) => p.name), ['Best Sleeper', 'Middling Sleeper', 'Exactly At The Line'],
+		'sorted best-first; the threshold is inclusive; unranked and below-threshold players are excluded');
+	assert.deepEqual([...leagueSleepers({})], [], 'no players array at all — an empty roster, not a crash');
+	assert.deepEqual([...leagueSleepers({ players: [] })], []);
+}
+
+{
+	// Same suppression as studs: a row with neither basis gets no sleepers
+	// line either, and the two fields (studs/sleepers) are gated by the SAME
+	// condition but read INDEPENDENT roster fields — a player who is a
+	// sleeper but not a stud (or vice versa) is exactly the expected shape,
+	// not an edge case.
+	const proj = [{ franchiseId: '1', score: 100, depth: 20 }, { franchiseId: '2', score: 10, depth: 5 }];
+	const ranked = {
+		id: 'R', name: 'Ranked League', type: 'dynasty', season: '2026', franchiseId: '1',
+		players: [
+			{ name: 'Stud Only', team: 'KC', ecr: { rank: 3 } },
+			{ name: 'Sleeper Only', team: 'KC', sleeper: { rank: 8 } },
+		],
+		power: { projections: { source: { basis: 'projections' }, teams: proj }, ecr: null },
+	};
+	const trailing = {
+		id: 'T', name: 'Trailing League', type: 'redraft', season: '2025', franchiseId: '1',
+		players: [{ name: 'Also A Sleeper', team: 'KC', sleeper: { rank: 3 } }],
+		power: { projections: { source: { basis: 'projections' }, teams: proj }, ecr: null },
+	};
+	const rows = computeMyPowerRows([ranked, trailing], ['dynasty', 'redraft'], 2026);
+	const byLabel = Object.fromEntries(rows.map((r) => [r.label, r]));
+	assert.deepEqual(byLabel['Ranked League'].studs.map((p) => p.name), ['Stud Only']);
+	assert.deepEqual(byLabel['Ranked League'].sleepers.map((p) => p.name), ['Sleeper Only'],
+		'the two lists never mix — a player on one never leaks onto the other');
+	assert.deepEqual([...byLabel['Trailing League'].sleepers], [], "a trailing league's roster is stale, so no sleepers line either");
+}
+
 // ---- Click-to-sort ----------------------------------------------------------
 //
 // The sort state lives in the rendered card's closure rather than in a pure
@@ -960,17 +1016,20 @@ const labelsOf = (card) =>
 		},
 	});
 	const leagues = [
-		// A studs line, so the rendered card is checked here too rather than
-		// only via computeMyPowerRows — Alpha carries one qualifying player.
-		mk('A', 'Alpha', 1, 1, [{ name: 'Franchise QB', team: 'BUF', ecr: { rank: 5 } }]),     // avg (1 + 1 + 1) / 3 = 1.00
+		// Alpha carries both a stud AND a sleeper, so the rendered card checks
+		// that the two lines stack independently rather than one crowding out
+		// the other. Charlie carries a sleeper but no stud, proving the two
+		// lines really are gated on separate fields (p.ecr vs p.sleeper), not
+		// one flag driving both.
+		mk('A', 'Alpha', 1, 1, [{ name: 'Franchise QB', team: 'BUF', ecr: { rank: 5 }, sleeper: { rank: 10 } }]),     // avg (1 + 1 + 1) / 3 = 1.00
 		mk('B', 'Bravo', 2, 4),     // avg (4 + 2 + 1) / 3 = 2.33
-		mk('C', 'Charlie', 3, 7),   // avg (7 + 3 + 1) / 3 = 3.67
+		mk('C', 'Charlie', 3, 7, [{ name: 'Deep Stash', team: 'KC', sleeper: { rank: 20 } }]),   // avg (7 + 3 + 1) / 3 = 3.67
 		// Delta is fully unranked (no power object at all), but its roster
-		// carries a top-25 player anyway — proof the studs line is suppressed
-		// by the same TBD framing as the rank columns, not skipped only when
-		// the roster itself is empty.
+		// carries both a top-25 stud and a top-25 sleeper anyway — proof both
+		// lines are suppressed by the same TBD framing as the rank columns,
+		// not skipped only when the roster itself is empty.
 		{ id: 'D', name: 'Delta', type: 'dynasty', season: '2026', franchiseId: '1',
-			players: [{ id: 'p', name: 'Someone', ecr: { rank: 1 } }] },
+			players: [{ id: 'p', name: 'Someone', ecr: { rank: 1 }, sleeper: { rank: 1 } }] },
 	];
 
 	// Sanity-check the fixture itself before trusting what it sorts to.
@@ -988,17 +1047,30 @@ const labelsOf = (card) =>
 	assert.deepEqual([...base], ['Alpha', 'Bravo', 'Charlie', 'Delta'],
 		'the card opens ordered by the row average, unranked last');
 
-	// Studs render as a sub-line under the league name, not a column of their
-	// own — so the league label itself (what labelsOf/click-to-sort key off
-	// of) is untouched by whether a studs line is present.
+	// Studs and Sleepers render as sub-lines under the league name, not a
+	// column of their own — so the league label itself (what labelsOf/
+	// click-to-sort key off of) is untouched by whether either line is
+	// present. Both share the .power-players class (see powerPlayersLine),
+	// so a lookup has to match on the line's own label text to tell them
+	// apart, the same way a reader would.
 	const nameCellOf = (label) => findAll(card, (c) => c.tag === 'tr')
 		.filter((tr) => tr.children.some((c) => c.tag === 'td'))
 		.find((tr) => tr.children[0]._text === label).children[0];
-	const studsDivOf = (label) => nameCellOf(label).children.find((c) => c.cls.includes('power-studs'));
-	assert.ok(studsDivOf('Alpha'), 'Alpha has a qualifying player, so it gets a studs line');
-	assert.equal(studsDivOf('Bravo'), undefined, 'no qualifying player — no studs line, not an empty one');
+	const playerLineOf = (rowLabel, lineLabel) => nameCellOf(rowLabel).children.find(
+		(c) => c.cls.includes('power-players') && c.children[0]?._text === `${lineLabel} `
+	);
+	const studsDivOf = (label) => playerLineOf(label, 'Studs');
+	const sleepersDivOf = (label) => playerLineOf(label, 'Sleepers');
+
+	assert.ok(studsDivOf('Alpha'), 'Alpha has a qualifying stud, so it gets a Studs line');
+	assert.ok(sleepersDivOf('Alpha'), 'Alpha ALSO has a qualifying sleeper — the two lines stack, neither crowds out the other');
+	assert.equal(studsDivOf('Bravo'), undefined, 'no qualifying player — no Studs line, not an empty one');
+	assert.equal(sleepersDivOf('Bravo'), undefined);
+	assert.equal(studsDivOf('Charlie'), undefined, 'Charlie has a sleeper but no stud — the two lines are gated independently');
+	assert.ok(sleepersDivOf('Charlie'), "and Charlie's sleeper line renders on its own with no stud present");
 	assert.equal(studsDivOf('Delta'), undefined,
-		"Delta's roster has a rank-1 player, but the league is fully unranked — suppressed the same as its Avg column");
+		"Delta's roster has a rank-1 stud and a rank-1 sleeper, but the league is fully unranked — both suppressed the same as its Avg column");
+	assert.equal(sleepersDivOf('Delta'), undefined);
 
 	// Every column is clickable — including League, which the shared analytics
 	// table deliberately leaves unsortable, because there a name is not a
