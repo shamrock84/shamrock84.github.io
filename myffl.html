@@ -484,6 +484,20 @@
 		}
 		/* The summary column: the one number to read if you read one. */
 		.power-avg { font-weight: 600; }
+		/* "Studs" sub-line under a league's name — same treatment as the
+		   exposure cards' leagueLine under a player's name (.exposure-leagues),
+		   just under a different kind of row. */
+		.power-studs {
+			color: var(--muted);
+			font-size: 0.72rem;
+			margin-top: 0.1rem;
+		}
+		.power-studs-label {
+			opacity: 0.7;
+			text-transform: uppercase;
+			font-size: 0.62rem;
+			letter-spacing: 0.03em;
+		}
 		.group-label {
 			font-size: 0.72rem;
 			font-weight: 700;
@@ -2718,6 +2732,30 @@
 		// two bases, not a third measure, so a row with both ranks missing has
 		// a missing Starters too. Those rows keep config order among
 		// themselves.
+		//
+		// Each row also carries `studs` — the rostered players who rank in the
+		// league's own top STUDS_RANK_THRESHOLD overall by FantasyPros
+		// consensus rank (see leagueStuds). Rendered as a sub-line under the
+		// league name, the same idiom the exposure cards already use under a
+		// player's name (leagueLine) — just flipped: there the line under a
+		// PLAYER names the leagues, here the line under a LEAGUE names the
+		// players.
+		//
+		// "Adjusted to ROS during the season" needs nothing new here: p.ecr.rank
+		// is already the automaticRankingType-driven rank every other ECR read
+		// on the page uses, computed once at sync time.
+		//
+		// Whole roster, not just starters — a taxi-squad stash worth bragging
+		// about is exactly the kind of thing this is meant to surface, and it
+		// is why this reads league.players directly rather than the best-legal
+		// lineup computeLeaguePower already built for Proj/ECR.
+		const STUDS_RANK_THRESHOLD = 25;
+		function leagueStuds(league) {
+			return (league.players || [])
+				.filter((p) => p.ecr && Number.isFinite(p.ecr.rank) && p.ecr.rank <= STUDS_RANK_THRESHOLD)
+				.sort((a, b) => a.ecr.rank - b.ecr.rank);
+		}
+
 		function computeMyPowerRows(leagues, types, year) {
 			const rows = [];
 			for (const league of leagues || []) {
@@ -2754,6 +2792,11 @@
 					// changed and one moving because the measure did.
 					projSource: projRanks ? projRanks.source : null,
 					ecrSource: ecrRanks ? ecrRanks.source : null,
+					// Suppressed the same as proj/ecr: a league with neither
+					// basis has nothing to say about this season yet, whether
+					// that's a trailing roster or one that hasn't drafted, so
+					// it gets no studs line either.
+					studs: proj || ecr ? leagueStuds(league) : [],
 				});
 			}
 			// Each row's summary average, and the card's default order. Stamped
@@ -4101,6 +4144,25 @@
 		// even though their scores are computed under different slot shapes
 		// and scoring formats — the cross-list hazard that keeps Analytics on
 		// one grouping (see SUBTAB_GROUP) doesn't reach an ordinal.
+		// Mirrors leagueLine on the exposure cards, flipped: there the grey
+		// line under a PLAYER's name lists the leagues; here it's under a
+		// LEAGUE's name and lists the players. Each name carries its overall
+		// ECR rank as a tooltip, the same "Overall ECR N" wording buildEcrCell
+		// already uses for the per-player ECR column on the Rosters tab.
+		function studsLine(players) {
+			if (!players || players.length === 0) return null;
+			const line = el('div', { class: 'power-studs' });
+			line.appendChild(el('span', { class: 'power-studs-label', text: 'Studs ' }));
+			players.forEach((p, i) => {
+				if (i > 0) line.appendChild(document.createTextNode(', '));
+				const entry = el('span', { title: `Overall ECR ${p.ecr.rank}` });
+				entry.appendChild(document.createTextNode(p.name));
+				appendTeamSuffix(entry, p.team);
+				line.appendChild(entry);
+			});
+			return line;
+		}
+
 		function renderPowerRankCard(groupKey, types, leagues, year) {
 			const rows = computeMyPowerRows(leagues, types, year);
 			// A card where nothing at all could be ranked is not a card. The
@@ -4242,6 +4304,8 @@
 					// had nowhere to go.
 					const nameCell = el('td', { text: r.label });
 					if (r.size != null) nameCell.appendChild(el('span', { class: 'power-size', text: ` (${r.size})` }));
+					const studs = studsLine(r.studs);
+					if (studs) nameCell.appendChild(studs);
 					row.appendChild(nameCell);
 					// A league with no ranks at all explains itself once, in its
 					// own terms — "draft in progress" rather than two separate

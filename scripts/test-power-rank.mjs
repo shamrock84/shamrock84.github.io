@@ -495,7 +495,7 @@ const context = {
 vm.createContext(context);
 vm.runInContext(scriptSource, context);
 
-const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, powerMissingBasis, powerDetailBasis, powerRowAverage } = context;
+const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, powerMissingBasis, powerDetailBasis, powerRowAverage, leagueStuds } = context;
 
 
 {
@@ -808,6 +808,68 @@ const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, pow
 	assert.equal(powerRowAverage(r({}), 'projections'), null);
 }
 
+// ---- Studs -------------------------------------------------------------------
+
+{
+	// leagueStuds is a plain filter over the roster: top-25 overall by
+	// p.ecr.rank (myffl.html's STUDS_RANK_THRESHOLD — a top-level const in a
+	// non-module script, so it isn't reachable through the vm context the
+	// way the function declarations below it are; 25 is hardcoded here to
+	// match), sorted best-first. No positional logic, no best-lineup
+	// valuation — the whole roster counts, taxi squad included, since a
+	// stashed rookie stud is exactly the kind of thing this is meant to
+	// surface.
+	const THRESHOLD = 25;
+	const player = (name, rank) => ({ name, team: 'BUF', ecr: rank == null ? null : { rank } });
+	const league = {
+		players: [
+			player('Just Outside', THRESHOLD + 1),
+			player('Exactly At The Line', THRESHOLD),
+			player('Best Player', 1),
+			player('No Rank At All', null),
+			player('Middling Stud', 12),
+		],
+	};
+	const studs = leagueStuds(league);
+	assert.deepEqual(studs.map((p) => p.name), ['Best Player', 'Middling Stud', 'Exactly At The Line'],
+		'sorted best-first; the threshold is inclusive; unranked and below-threshold players are excluded');
+	// Spread first: an empty array built inside the vm-evaluated script is a
+	// different realm's Array than the [] literal here, and assert.deepEqual
+	// treats that as "same structure but not reference-equal" for an empty
+	// array specifically (non-empty primitive arrays compare fine element by
+	// element) — [...x] re-materializes it as a plain array in this realm.
+	assert.deepEqual([...leagueStuds({})], [], 'no players array at all — an empty roster, not a crash');
+	assert.deepEqual([...leagueStuds({ players: [] })], []);
+}
+
+{
+	// computeMyPowerRows gates studs the same way it gates proj/ecr: a row
+	// with neither basis (a trailing league, or one with no power data at
+	// all) gets an empty studs list too, even if the roster itself has real
+	// top-25 players sitting right there — the row's whole framing is "wait
+	// for it," and a studs line would contradict that.
+	const proj = [{ franchiseId: '1', score: 100, depth: 20 }, { franchiseId: '2', score: 10, depth: 5 }];
+	const ranked = {
+		id: 'R', name: 'Ranked League', type: 'dynasty', season: '2026', franchiseId: '1',
+		players: [{ name: 'Stud McStudface', team: 'KC', ecr: { rank: 3 } }],
+		power: { projections: { source: { basis: 'projections' }, teams: proj }, ecr: null },
+	};
+	const trailing = {
+		id: 'T', name: 'Trailing League', type: 'redraft', season: '2025', franchiseId: '1',
+		players: [{ name: 'Also A Stud', team: 'KC', ecr: { rank: 3 } }],
+		power: { projections: { source: { basis: 'projections' }, teams: proj }, ecr: null },
+	};
+	const noPower = {
+		id: 'N', name: 'No Power League', type: 'dynasty', season: '2026', franchiseId: '1',
+		players: [{ name: 'Yet Another Stud', team: 'KC', ecr: { rank: 3 } }],
+	};
+	const rows = computeMyPowerRows([ranked, trailing, noPower], ['dynasty', 'redraft'], 2026);
+	const byLabel = Object.fromEntries(rows.map((r) => [r.label, r]));
+	assert.deepEqual(byLabel['Ranked League'].studs.map((p) => p.name), ['Stud McStudface']);
+	assert.deepEqual([...byLabel['Trailing League'].studs], [], "a trailing league's roster is stale, so no studs line either");
+	assert.deepEqual([...byLabel['No Power League'].studs], [], 'no power data at all — same TBD framing, same suppression');
+}
+
 // ---- Click-to-sort ----------------------------------------------------------
 //
 // The sort state lives in the rendered card's closure rather than in a pure
@@ -889,19 +951,26 @@ const labelsOf = (card) =>
 		out.push({ franchiseId: '1', score: 1000 - (want - 1) * 10, depth: 0 });
 		return out;
 	};
-	const mk = (id, name, projRank, ecrRank) => ({
+	const mk = (id, name, projRank, ecrRank, players) => ({
 		id, name, type: 'dynasty', season: '2026', franchiseId: '1',
+		players,
 		power: {
 			projections: { source: { basis: 'projections' }, teams: teamsWith(projRank, 8) },
 			ecr: { source: { basis: 'ecr' }, teams: teamsWith(ecrRank, 8) },
 		},
 	});
 	const leagues = [
-		mk('A', 'Alpha', 1, 1),     // avg (1 + 1 + 1) / 3 = 1.00
+		// A studs line, so the rendered card is checked here too rather than
+		// only via computeMyPowerRows — Alpha carries one qualifying player.
+		mk('A', 'Alpha', 1, 1, [{ name: 'Franchise QB', team: 'BUF', ecr: { rank: 5 } }]),     // avg (1 + 1 + 1) / 3 = 1.00
 		mk('B', 'Bravo', 2, 4),     // avg (4 + 2 + 1) / 3 = 2.33
 		mk('C', 'Charlie', 3, 7),   // avg (7 + 3 + 1) / 3 = 3.67
+		// Delta is fully unranked (no power object at all), but its roster
+		// carries a top-25 player anyway — proof the studs line is suppressed
+		// by the same TBD framing as the rank columns, not skipped only when
+		// the roster itself is empty.
 		{ id: 'D', name: 'Delta', type: 'dynasty', season: '2026', franchiseId: '1',
-			players: [{ id: 'p', name: 'Someone' }] },
+			players: [{ id: 'p', name: 'Someone', ecr: { rank: 1 } }] },
 	];
 
 	// Sanity-check the fixture itself before trusting what it sorts to.
@@ -918,6 +987,18 @@ const labelsOf = (card) =>
 	const base = labelsOf(card);
 	assert.deepEqual([...base], ['Alpha', 'Bravo', 'Charlie', 'Delta'],
 		'the card opens ordered by the row average, unranked last');
+
+	// Studs render as a sub-line under the league name, not a column of their
+	// own — so the league label itself (what labelsOf/click-to-sort key off
+	// of) is untouched by whether a studs line is present.
+	const nameCellOf = (label) => findAll(card, (c) => c.tag === 'tr')
+		.filter((tr) => tr.children.some((c) => c.tag === 'td'))
+		.find((tr) => tr.children[0]._text === label).children[0];
+	const studsDivOf = (label) => nameCellOf(label).children.find((c) => c.cls.includes('power-studs'));
+	assert.ok(studsDivOf('Alpha'), 'Alpha has a qualifying player, so it gets a studs line');
+	assert.equal(studsDivOf('Bravo'), undefined, 'no qualifying player — no studs line, not an empty one');
+	assert.equal(studsDivOf('Delta'), undefined,
+		"Delta's roster has a rank-1 player, but the league is fully unranked — suppressed the same as its Avg column");
 
 	// Every column is clickable — including League, which the shared analytics
 	// table deliberately leaves unsortable, because there a name is not a
