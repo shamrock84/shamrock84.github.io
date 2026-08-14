@@ -988,11 +988,12 @@ const tablesOf = (card) => findAll(card, (c) => c.tag === 'table');
 	const [powerTable, starterTable, benchTable] = tablesOf(card);
 	assert.ok(powerTable && starterTable && benchTable, 'all three tables render');
 
-	// Power Rankings: just League, Proj, ECR — Start/Ben/Avg moved out to
-	// the other two tables entirely.
-	for (const label of ['League', 'Proj', 'ECR']) {
+	// Overall Rankings: League, Proj, ECR, and its own Total (the mean of
+	// Proj and ECR) — Start/Ben/Avg moved out to the other two tables
+	// entirely.
+	for (const label of ['League', 'Proj', 'ECR', 'Total']) {
 		const th = thNamed(powerTable, label);
-		assert.ok(th, `${label} header exists on Power Rankings`);
+		assert.ok(th, `${label} header exists on Overall Rankings`);
 		assert.ok(th.cls.includes('sortable'), `${label} is sortable`);
 	}
 	assert.equal(thNamed(powerTable, 'Start'), undefined, 'Start is not on this table any more');
@@ -1027,6 +1028,11 @@ const tablesOf = (card) => findAll(card, (c) => c.tag === 'table');
 			.find((tr) => tr.children[0]._text === label).children;
 	assert.equal(cellsOf(starterTable, 'Bravo')[2]._text, '1.0');
 	assert.equal(cellsOf(starterTable, 'Alpha')[2]._text, '3.0');
+	// Overall Rankings' own Total is a real mean, not a copy — it's the
+	// same basisAvg the table is ordered by, at column index 3 (League,
+	// Proj, ECR, Total).
+	assert.equal(cellsOf(powerTable, 'Alpha')[3]._text, '2.0');
+	assert.equal(cellsOf(powerTable, 'Charlie')[3]._text, '4.0');
 
 	// Click-to-sort on Power Rankings: three states, ties fall back to that
 	// table's own order, and the unranked league stays at the bottom in

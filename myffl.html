@@ -4183,15 +4183,16 @@
 			return table;
 		}
 
-		// Three tables rather than one: Power Rankings (Proj/ECR) stays as it
-		// was, and the Starters/Depth halves of the old single Avg column each
-		// get their own table — Starter Rankings and Bench Rankings — with a
-		// Total column standing in for "the mean of this table's columns" so
-		// a second column landing in either one later is a one-line addition
-		// (see meanOf in computeMyPowerRows) rather than a redesign. Each
-		// table orders independently by its own summary number rather than
-		// sharing one order, so a league's row in Bench Rankings doesn't move
-		// just because its Proj rank changed.
+		// Three tables rather than one: Overall Rankings (Proj/ECR) is what
+		// the card used to be entirely, and the Starters/Depth halves of the
+		// old single Avg column each get their own table below it — Starter
+		// Rankings and Bench Rankings. All three carry a Total column
+		// standing in for "the mean of this table's columns" so a second
+		// column landing in any of them later is a one-line addition (see
+		// meanOf in computeMyPowerRows) rather than a redesign. Each table
+		// orders independently by its own summary number rather than sharing
+		// one order, so a league's row in Bench Rankings doesn't move just
+		// because its Proj rank changed.
 		function renderPowerRankCard(groupKey, types, leagues, year) {
 			const rows = computeMyPowerRows(leagues, types, year);
 			// A card where nothing at all could be ranked is not a card. The
@@ -4258,6 +4259,11 @@
 					key: 'ecr', label: 'ECR', title: 'Rank by consensus ranking of the same roster',
 					value: (r) => (r.ecr ? r.ecr.overall : null), missingLast: true,
 					cell: (r) => powerRankCell(r.ecr ? r.ecr.overall : null, false, r.reason || 'No consensus rankings available for this league'),
+				},
+				{
+					key: 'total', label: 'Total', title: 'Mean of the columns in this table',
+					value: (r) => r.basisAvg, missingLast: true,
+					cell: (r) => powerRankCell(r.basisAvg, false, r.reason, { decimal: true }),
 				},
 			]));
 
