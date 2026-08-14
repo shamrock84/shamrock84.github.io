@@ -988,10 +988,11 @@ const tablesOf = (card) => findAll(card, (c) => c.tag === 'table');
 	const [powerTable, starterTable, benchTable] = tablesOf(card);
 	assert.ok(powerTable && starterTable && benchTable, 'all three tables render');
 
-	// Overall Rankings: League, Proj, ECR, and its own Total (the mean of
-	// Proj and ECR) — Start/Ben/Avg moved out to the other two tables
-	// entirely.
-	for (const label of ['League', 'Proj', 'ECR', 'Total']) {
+	// Overall Rankings: League, FP Proj, FP ECR, and its own Total (the mean
+	// of the two) — the old bare Proj/ECR/Start/Ben/Avg labels all now name
+	// the source (FantasyPros) rather than just the measure, since the
+	// measure is already named by the table it's in.
+	for (const label of ['League', 'FP Proj', 'FP ECR', 'Total']) {
 		const th = thNamed(powerTable, label);
 		assert.ok(th, `${label} header exists on Overall Rankings`);
 		assert.ok(th.cls.includes('sortable'), `${label} is sortable`);
@@ -1002,7 +1003,10 @@ const tablesOf = (card) => findAll(card, (c) => c.tag === 'table');
 	assert.deepEqual([...powerDefault], ['Alpha', 'Bravo', 'Charlie', 'Delta'],
 		'Power Rankings opens ordered by the mean of Proj and ECR, unranked last');
 
-	for (const label of ['League', 'Start', 'Total']) {
+	// Starter Rankings' one metric column is labelled just "FP" — the table
+	// itself is already named "Starter Rankings", so the column only needs
+	// to say where the number comes from.
+	for (const label of ['League', 'FP', 'Total']) {
 		assert.ok(thNamed(starterTable, label), `${label} header exists on Starter Rankings`);
 	}
 	const starterDefault = labelsOf(starterTable);
@@ -1012,7 +1016,7 @@ const tablesOf = (card) => findAll(card, (c) => c.tag === 'table');
 	// Bench Rankings: every ranked league ties on Total (depth 0 for
 	// everyone), so its default order falls entirely to config/array order —
 	// the same fallback a third click restores.
-	for (const label of ['League', 'Ben', 'Total']) {
+	for (const label of ['League', 'FP', 'Total']) {
 		assert.ok(thNamed(benchTable, label), `${label} header exists on Bench Rankings`);
 	}
 	const benchDefault = labelsOf(benchTable);
@@ -1037,21 +1041,21 @@ const tablesOf = (card) => findAll(card, (c) => c.tag === 'table');
 	// Click-to-sort on Power Rankings: three states, ties fall back to that
 	// table's own order, and the unranked league stays at the bottom in
 	// BOTH directions — the rule that is silent when wrong.
-	clickTh(powerTable, 'ECR');
+	clickTh(powerTable, 'FP ECR');
 	assert.deepEqual([...labelsOf(powerTable)], ['Alpha', 'Bravo', 'Charlie', 'Delta'], 'ECR ascending');
-	clickTh(powerTable, 'ECR');
+	clickTh(powerTable, 'FP ECR');
 	assert.deepEqual([...labelsOf(powerTable)], ['Charlie', 'Bravo', 'Alpha', 'Delta'],
 		'ECR descending — and the unranked league does NOT take the top row');
-	clickTh(powerTable, 'ECR');
+	clickTh(powerTable, 'FP ECR');
 	assert.deepEqual([...labelsOf(powerTable)], [...powerDefault], "third click restores Power Rankings' own order");
 
 	// Sorting Power Rankings must not disturb Starter Rankings — the whole
 	// point of three independent tables rather than one shared sort state.
-	clickTh(powerTable, 'ECR');
+	clickTh(powerTable, 'FP ECR');
 	assert.deepEqual([...labelsOf(starterTable)], [...starterDefault],
 		'Starter Rankings keeps its own order while Power Rankings is sorted');
-	clickTh(powerTable, 'ECR');
-	clickTh(powerTable, 'ECR'); // back to Power Rankings' own default
+	clickTh(powerTable, 'FP ECR');
+	clickTh(powerTable, 'FP ECR'); // back to Power Rankings' own default
 
 	// Same three rules, pinned again on Starter Rankings' own Total column
 	// so the shared buildPowerTable logic is checked on a second table, not

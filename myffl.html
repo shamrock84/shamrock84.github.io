@@ -4247,7 +4247,7 @@
 			card.appendChild(buildPowerTable(powerOrder, [
 				leagueColumn,
 				{
-					key: 'proj', label: 'Proj', title: 'Rank by projected points of the best legal lineup, plus bench',
+					key: 'proj', label: 'FP Proj', title: 'FantasyPros: rank by projected points of the best legal lineup, plus bench',
 					value: (r) => (r.proj ? r.proj.overall : null), missingLast: true,
 					// A league with no ranks at all explains itself once, in its
 					// own terms — "draft in progress" rather than two separate
@@ -4256,7 +4256,7 @@
 					cell: (r) => powerRankCell(r.proj ? r.proj.overall : null, false, r.reason || 'No projections published for this season yet'),
 				},
 				{
-					key: 'ecr', label: 'ECR', title: 'Rank by consensus ranking of the same roster',
+					key: 'ecr', label: 'FP ECR', title: 'FantasyPros: rank by consensus ranking of the same roster',
 					value: (r) => (r.ecr ? r.ecr.overall : null), missingLast: true,
 					cell: (r) => powerRankCell(r.ecr ? r.ecr.overall : null, false, r.reason || 'No consensus rankings available for this league'),
 				},
@@ -4272,7 +4272,7 @@
 			card.appendChild(buildPowerTable(starterOrder, [
 				leagueColumn,
 				{
-					key: 'start', label: 'Start', title: `Lineup rank, by ${detailLabel}`,
+					key: 'start', label: 'FP', title: `FantasyPros: lineup rank, by ${detailLabel}`,
 					value: (r) => (detailOf(r) ? detailOf(r).starters : null), missingLast: true,
 					cell: (r) => powerRankCell(detailOf(r) ? detailOf(r).starters : null, false, r.reason),
 				},
@@ -4288,7 +4288,7 @@
 			card.appendChild(buildPowerTable(benchOrder, [
 				leagueColumn,
 				{
-					key: 'ben', label: 'Ben', title: `Depth rank, by ${detailLabel}`,
+					key: 'ben', label: 'FP', title: `FantasyPros: depth rank, by ${detailLabel}`,
 					value: (r) => (detailOf(r) && detailOf(r).depth != null ? detailOf(r).depth : null), missingLast: true,
 					cell: (r) => powerRankCell(
 						detailOf(r) && detailOf(r).depth != null ? detailOf(r).depth : null,
