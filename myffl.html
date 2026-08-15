@@ -2790,7 +2790,7 @@
 				const proj = projRanks ? projRanks.byFranchise.get(key) || null : null;
 				const ecr = ecrRanks ? ecrRanks.byFranchise.get(key) || null : null;
 				rows.push({
-					label: league.name || league.leagueName,
+					label: league.leagueName || league.name,
 					// Identical across bases (both rank the same franchises),
 					// so whichever answered is the league's size; null when
 					// neither did, which is also when nothing prints it.
@@ -3472,7 +3472,7 @@
 						title: 'Go to this league',
 					});
 					row.appendChild(el('span', { class: 'digest-dot' }));
-					row.appendChild(el('span', { class: 'digest-league', text: league.name || league.leagueName || league.id }));
+					row.appendChild(el('span', { class: 'digest-league', text: league.leagueName || league.name || league.id }));
 					const labelEl = el('span', { class: 'digest-label' });
 					if (problem.player) {
 						const nameEl = el('span', { class: 'digest-player', text: problem.player.name });
