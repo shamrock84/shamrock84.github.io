@@ -2643,18 +2643,32 @@
 			// no mail link.
 			const isDynasty = league.type === 'dynasty';
 			const showCutPlanning = isDynasty && !duringWeeks1Through17() && isLoggedIn();
-			// How many need to go, from the same raw counts rosterLimitProblems
-			// uses, with the same two noise gates: a roster mid-draft hasn't
-			// gone over anything yet, and a league still on last season isn't
-			// this week's problem. Both gates read `null` as "can't tell" —
-			// NaN < year is false, so a pre-`season` snapshot still gets a
-			// target rather than being silently skipped.
+			// The target is deliberately NOT league.rosterLimits.size, unlike
+			// rosterLimitProblems' own check. That field is MFL's own limit,
+			// and a Dynasty commissioner routinely sets it *larger* for the
+			// offseason specifically so a roster swollen with rookie picks
+			// doesn't get flagged on MFL's own site — it describes what MFL
+			// will tolerate right now, not what the league's rules actually
+			// require once the season starts. That number lives nowhere any
+			// provider exposes (MNMx and OSD have no shared rules document at
+			// all, and Survivors' is private), so it's a manual per-league
+			// override, config/leagues.json's `cutdownRosterSize` — read live
+			// off the league object rather than copied into a local, so an
+			// Admin-tab edit (or a hand edit) takes effect on the next
+			// render with no cache to invalidate.
+			//
+			// Same two noise gates rosterLimitProblems uses: a roster
+			// mid-draft hasn't gone over anything yet, and a league still on
+			// last season isn't this week's problem. Both gates read `null`
+			// as "can't tell" — NaN < year is false, so a pre-`season`
+			// snapshot still gets a target rather than being silently
+			// skipped.
 			const cutsNeeded = () => {
-				if (!league.rosterLimits || league.rosterLimits.size == null) return null;
+				if (league.cutdownRosterSize == null) return null;
 				if (league.draftInProgress === true) return null;
 				if (Number(league.season) < Number(pageData?.year)) return null;
 				const rosterCount = (league.players || []).filter((p) => (p.status || 'ROSTER').toUpperCase() === 'ROSTER').length;
-				return Math.max(0, rosterCount - league.rosterLimits.size);
+				return Math.max(0, rosterCount - league.cutdownRosterSize);
 			};
 			const cutsPlanned = () => (league.players || [])
 				.filter((p) => (p.status || 'ROSTER').toUpperCase() === 'ROSTER' && getCutPlan(league.id, p.id))
