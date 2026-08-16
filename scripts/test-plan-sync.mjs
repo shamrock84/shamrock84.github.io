@@ -32,6 +32,7 @@ const scriptSource = html.match(/<script>([\s\S]*)<\/script>/)[1];
 
 const CONTRACT_KEY = 'myfflContractPlans';
 const SALARY_KEY = 'myfflSalaryPlans';
+const CUT_KEY = 'myfflCutPlans';
 const PENDING_KEY = 'myfflPlanPending';
 const SYNCED_KEY = 'myfflPlanSynced';
 
@@ -98,6 +99,7 @@ function loadPage(disk, respond) {
 		requests,
 		contracts: () => JSON.parse(localStorage.getItem(CONTRACT_KEY) || '{}'),
 		salaries: () => JSON.parse(localStorage.getItem(SALARY_KEY) || '{}'),
+		cuts: () => JSON.parse(localStorage.getItem(CUT_KEY) || '{}'),
 		pending: () => JSON.parse(localStorage.getItem(PENDING_KEY) || 'null'),
 	};
 }
@@ -183,6 +185,7 @@ test('a plan set on one device still arrives on the other', async () => {
 	await a.g.syncPlans();
 	a.g.setContractPlan('L1', 'p1', '3');
 	a.g.setSalaryPlan('L1', 'p1', '22');
+	a.g.setCutPlan('L1', 'p2', true);
 	await flush(a);
 
 	const b = loadPage(phone, store.serve);
@@ -191,6 +194,20 @@ test('a plan set on one device still arrives on the other', async () => {
 
 	assert.deepEqual(b.contracts(), { L1: { p1: '3' } });
 	assert.deepEqual(b.salaries(), { L1: { p1: '22' } });
+	assert.deepEqual(b.cuts(), { L1: { p2: '1' } });
+});
+
+test('a planned cut clears the same way a contract length does', async () => {
+	const store = newStore({ cutPlans: { L1: { p2: '1' } } });
+	const disk = newDisk({ [CUT_KEY]: JSON.stringify({ L1: { p2: '1' } }), [SYNCED_KEY]: '1' });
+
+	const page = loadPage(disk, store.serve);
+	await page.g.syncPlans();
+	page.g.setCutPlan('L1', 'p2', false);
+	await flush(page);
+
+	assert.deepEqual(page.cuts(), {}, 'unchecking clears the local plan');
+	assert.deepEqual(store.read().cutPlans, {}, 'and the clear reaches the store');
 });
 
 test('a device the store has never met introduces itself with a merge', async () => {
@@ -289,7 +306,7 @@ test('an edit made with the store down is pushed on the next load', async () => 
 	offline.g.setContractPlan('L1', 'p1', '');
 	await flush(offline);
 	assert.deepEqual(offline.contracts(), {}, 'the page still works offline');
-	assert.deepEqual(offline.pending(), { contractPlans: { L1: { p1: '' } }, salaryPlans: {} });
+	assert.deepEqual(offline.pending(), { contractPlans: { L1: { p1: '' } }, salaryPlans: {}, cutPlans: {} });
 
 	const back = loadPage(disk, store.serve);
 	await back.g.syncPlans();
@@ -331,7 +348,7 @@ test('an edit made while a push is in flight stays pending', async () => {
 
 	assert.deepEqual(
 		page.pending(),
-		{ contractPlans: { L1: { p1: '2', p2: '3' } }, salaryPlans: {} },
+		{ contractPlans: { L1: { p1: '2', p2: '3' } }, salaryPlans: {}, cutPlans: {} },
 		'the second edit is not cleared by an answer that predates it'
 	);
 });

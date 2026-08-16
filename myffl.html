@@ -778,7 +778,8 @@
 		.years-cell,
 		.bye-cell,
 		.ecr-cell,
-		.pts-cell {
+		.pts-cell,
+		.cut-cell {
 			text-align: right;
 			font-variant-numeric: tabular-nums;
 			font-size: 0.82rem;
@@ -788,7 +789,8 @@
 		tr.roster-head th.years-cell,
 		tr.roster-head th.bye-cell,
 		tr.roster-head th.ecr-cell,
-		tr.roster-head th.pts-cell {
+		tr.roster-head th.pts-cell,
+		tr.roster-head th.cut-cell {
 			text-align: right;
 		}
 		.pts-cell.pts-prior-year {
@@ -859,7 +861,11 @@
 		.contract-warn-icon.contract-warn-planned {
 			color: var(--accent);
 		}
-		.needs-contract-banner {
+		/* Shared with .needs-cut-banner — the Dynasty cut-planning banner is
+		   the same "target and a count, gold until it's met" shape as the
+		   Salary Cap contract banner below, just without a mail link. */
+		.needs-contract-banner,
+		.needs-cut-banner {
 			display: flex;
 			align-items: center;
 			justify-content: space-between;
@@ -872,11 +878,12 @@
 			font-size: 0.8rem;
 			font-weight: 600;
 		}
-		/* Every length planned: the banner stops being a task and becomes a
-		   status line, so it takes the purple chip the planned rows already
-		   wear. Gold anywhere on the card then means work outstanding, with no
-		   exceptions to read past. */
-		.needs-contract-banner.contract-banner-planned {
+		/* Every length planned (or every cut planned): the banner stops being
+		   a task and becomes a status line, so it takes the purple chip the
+		   planned rows already wear. Gold anywhere on the card then means
+		   work outstanding, with no exceptions to read past. */
+		.needs-contract-banner.contract-banner-planned,
+		.needs-cut-banner.cut-banner-planned {
 			background: var(--chip-bg);
 			color: var(--accent);
 		}
@@ -1487,6 +1494,40 @@
 			schedulePlanPush();
 		}
 
+		// Locally-planned cut for a Dynasty roster spot — offseason-only (see
+		// showCutPlanning in renderCard), and unlike the two plans above there
+		// is no real MFL value this could ever defer to: MFL has no concept of
+		// a "planned" cut, only an executed one, so this is pure strategy with
+		// nothing to fall back from. Same leagueId -> playerId shape and same
+		// independent storage as contract/salary plans, for the same reason —
+		// three different domains (term, money, a roster decision) that should
+		// never leak into each other's rules for what counts as "unset".
+		// Boolean rather than a dropdown value: a cut is planned or it isn't.
+		const CUT_PLAN_STORAGE_KEY = 'myfflCutPlans';
+		function loadCutPlans() {
+			try {
+				return JSON.parse(localStorage.getItem(CUT_PLAN_STORAGE_KEY) || '{}');
+			} catch {
+				return {};
+			}
+		}
+		function getCutPlan(leagueId, playerId) {
+			return !!loadCutPlans()[leagueId]?.[playerId];
+		}
+		function setCutPlan(leagueId, playerId, planned) {
+			const plans = loadCutPlans();
+			if (!planned) {
+				delete plans[leagueId]?.[playerId];
+				if (plans[leagueId] && Object.keys(plans[leagueId]).length === 0) delete plans[leagueId];
+			} else {
+				plans[leagueId] = plans[leagueId] || {};
+				plans[leagueId][playerId] = '1';
+			}
+			localStorage.setItem(CUT_PLAN_STORAGE_KEY, JSON.stringify(plans));
+			recordPlanEdit('cutPlans', leagueId, playerId, planned ? '1' : '');
+			schedulePlanPush();
+		}
+
 		// --- Plan sync -------------------------------------------------------
 		//
 		// localStorage is per browser per device, so an iPad and a phone kept
@@ -1525,12 +1566,13 @@
 		let planPushGeneration = 0;
 
 		function localPlansDocument() {
-			return { contractPlans: loadContractPlans(), salaryPlans: loadSalaryPlans() };
+			return { contractPlans: loadContractPlans(), salaryPlans: loadSalaryPlans(), cutPlans: loadCutPlans() };
 		}
 
 		function writePlansLocal(doc) {
 			localStorage.setItem(CONTRACT_PLAN_STORAGE_KEY, JSON.stringify(doc.contractPlans || {}));
 			localStorage.setItem(SALARY_PLAN_STORAGE_KEY, JSON.stringify(doc.salaryPlans || {}));
+			localStorage.setItem(CUT_PLAN_STORAGE_KEY, JSON.stringify(doc.cutPlans || {}));
 		}
 
 		// Edits this device has made but not yet confirmed in the store, in the
@@ -1550,10 +1592,10 @@
 		// can tell a plan another device deleted apart from one this device
 		// simply hasn't been told about yet.
 		const PLAN_PENDING_KEY = 'myfflPlanPending';
-		const PLAN_KINDS = ['contractPlans', 'salaryPlans'];
+		const PLAN_KINDS = ['contractPlans', 'salaryPlans', 'cutPlans'];
 
 		function emptyPlanEdits() {
-			return { contractPlans: {}, salaryPlans: {} };
+			return { contractPlans: {}, salaryPlans: {}, cutPlans: {} };
 		}
 
 		function loadPendingPlanEdits() {
@@ -1954,6 +1996,27 @@
 			return td;
 		}
 
+		// Cut-planning checkbox for a Dynasty roster row — only rendered at all
+		// when showCutPlanning gated it (see renderCard): logged in, Dynasty,
+		// and the offseason. Unlike buildSalaryCell/buildYearsCell there's no
+		// real value to defer to and so no not-logged-in fallback to render —
+		// the column itself doesn't exist for a logged-out viewer, same as the
+		// lineup editor's own starter checkboxes.
+		function buildCutCell(p, leagueId, onCutChange) {
+			const td = el('td', { class: 'cut-cell' });
+			const checkbox = el('input', {
+				type: 'checkbox',
+				title: 'Plan to cut before Week 1 — a personal note, not sent anywhere',
+			});
+			checkbox.checked = getCutPlan(leagueId, p.id);
+			checkbox.addEventListener('change', () => {
+				setCutPlan(leagueId, p.id, checkbox.checked);
+				onCutChange?.();
+			});
+			td.appendChild(checkbox);
+			return td;
+		}
+
 		// The NFL team rides on the name cell rather than holding a column of its
 		// own — it reads fine as a suffix, and giving the width back to the name
 		// is what stops long names wrapping. Every table that names a player uses
@@ -1995,7 +2058,7 @@
 			});
 		}
 
-		function buildRosterTable(players, isAuction, statusKey, leagueId, onSalaryChange, onContractChange) {
+		function buildRosterTable(players, isAuction, statusKey, leagueId, onSalaryChange, onContractChange, showCutColumn, onCutChange) {
 			// roster-auction is about width, not about the team suffix: only the
 			// salary-cap tables carry Salary/Yrs, and only they need the phone
 			// type shrink that class drives.
@@ -2010,6 +2073,7 @@
 				headRow.appendChild(el('th', { class: 'salary-cell', text: 'Sal' }));
 				headRow.appendChild(el('th', { class: 'years-cell', text: 'Yrs' }));
 			}
+			if (showCutColumn) headRow.appendChild(el('th', { class: 'cut-cell', text: 'Cut' }));
 			table.appendChild(headRow);
 			let prevPosition = null;
 			for (const p of sortByPositionThenEcr(players)) {
@@ -2034,6 +2098,7 @@
 					row.appendChild(buildSalaryCell(p, leagueId, onSalaryChange));
 					row.appendChild(buildYearsCell(p, leagueId, onContractChange));
 				}
+				if (showCutColumn) row.appendChild(buildCutCell(p, leagueId, onCutChange));
 				table.appendChild(row);
 			}
 			// A phone is narrower than the salary-cap table's own minimum, so
@@ -2166,7 +2231,7 @@
 		// gate as MFL), but permanently read-only: checkboxes render disabled,
 		// for reference, and no Submit control ever appears regardless of
 		// login state.
-		function buildLineupEditor(league, players, starterIdSet) {
+		function buildLineupEditor(league, players, starterIdSet, showCutColumn, onCutChange) {
 			const visible = isLoggedIn();
 			const writable = visible && (!league.provider || league.provider === 'mfl');
 			// This table has no Salary/Yrs of its own, so it never runs out of
@@ -2182,6 +2247,7 @@
 			headRow.appendChild(el('th', { class: 'bye-cell', text: 'Bye' }));
 			if (visible) headRow.appendChild(el('th', { class: 'ecr-cell', text: 'ECR' }));
 			headRow.appendChild(el('th', { class: 'pts-cell', text: 'Pts' }));
+			if (showCutColumn) headRow.appendChild(el('th', { class: 'cut-cell', text: 'Cut' }));
 			table.appendChild(headRow);
 
 			const checkboxes = [];
@@ -2212,6 +2278,7 @@
 				const ptsValue = usingPriorYear ? p.priorYearPts : p.pts;
 				const ptsAttrs = { class: `pts-cell${usingPriorYear ? ' pts-prior-year' : ''}`, text: ptsValue != null ? Number(ptsValue).toFixed(2) : '—' };
 				row.appendChild(el('td', ptsAttrs));
+				if (showCutColumn) row.appendChild(buildCutCell(p, league.id, onCutChange));
 
 				table.appendChild(row);
 			}
@@ -2522,6 +2589,58 @@
 				refreshContractBanner();
 			}
 
+			// Dynasty rosters balloon after the rookie draft and have to come
+			// back down to the roster-size limit before Week 1 — offseason-only
+			// (see nflInSeason) and Dynasty-only, unlike Salary/Yrs which is
+			// Salary Cap-only: the two league types get different planning
+			// tools because they have different offseason problems. There's no
+			// MFL value this could ever resolve to (see buildCutCell) and
+			// nothing to email a commissioner — cutting a player is something
+			// you do yourself on MFL, not something they record — so this
+			// banner is simpler than the contract one: a target and a count,
+			// no mail link.
+			const isDynasty = league.type === 'dynasty';
+			const showCutPlanning = isDynasty && !nflInSeason() && isLoggedIn();
+			// How many need to go, from the same raw counts rosterLimitProblems
+			// uses, with the same two noise gates: a roster mid-draft hasn't
+			// gone over anything yet, and a league still on last season isn't
+			// this week's problem. Both gates read `null` as "can't tell" —
+			// NaN < year is false, so a pre-`season` snapshot still gets a
+			// target rather than being silently skipped.
+			const cutsNeeded = () => {
+				if (!league.rosterLimits || league.rosterLimits.size == null) return null;
+				if (league.draftInProgress === true) return null;
+				if (Number(league.season) < Number(pageData?.year)) return null;
+				const rosterCount = (league.players || []).filter((p) => (p.status || 'ROSTER').toUpperCase() === 'ROSTER').length;
+				return Math.max(0, rosterCount - league.rosterLimits.size);
+			};
+			const cutsPlanned = () => (league.players || [])
+				.filter((p) => (p.status || 'ROSTER').toUpperCase() === 'ROSTER' && getCutPlan(league.id, p.id))
+				.length;
+			let cutBannerEl = null;
+			let cutBannerTextEl = null;
+			const refreshCutBanner = () => {
+				if (!cutBannerTextEl) return;
+				const total = cutsNeeded();
+				const planned = cutsPlanned();
+				const set = Math.min(planned, total);
+				cutBannerTextEl.textContent = set >= total
+					? `✓ ${planned}/${total} cut${total === 1 ? '' : 's'} planned — ready for Week 1`
+					: `⚠ ${planned}/${total} cut${total === 1 ? '' : 's'} planned`;
+				cutBannerEl.classList.toggle('cut-banner-planned', set >= total);
+			};
+			// Same shape as the contract banner's own gate: hidden outright
+			// rather than shown with nothing to count, since a league that
+			// isn't over its limit has no cuts to plan yet.
+			if (showCutPlanning && cutsNeeded() > 0) {
+				const banner = el('div', { class: 'needs-cut-banner' });
+				cutBannerEl = banner;
+				cutBannerTextEl = el('span', {});
+				banner.appendChild(cutBannerTextEl);
+				card.appendChild(banner);
+				refreshCutBanner();
+			}
+
 			card.appendChild(buildCardHead(league, formatBadgeLabels(league)));
 			card.appendChild(el('div', { class: 'team', text: league.teamName || '' }));
 
@@ -2558,9 +2677,14 @@
 				// than leaving a stale Total/Cap Room on screen until reload.
 				const needsCapSummary = group.key === 'ROSTER' && isAuction && league.salaryCap != null;
 				let summaryEl = needsCapSummary ? buildSalarySummary(league, players) : null;
+				// Cuts are counted against the roster-size limit, which only
+				// applies to ROSTER-status players (see rosterLimitProblems) —
+				// taxi squad and IR have their own separate limits, unrelated
+				// to this tool.
+				const showCutColumn = showCutPlanning && group.key === 'ROSTER';
 
 				if (group.key === 'ROSTER' && starterIdSet) {
-					card.appendChild(buildLineupEditor(league, players, starterIdSet));
+					card.appendChild(buildLineupEditor(league, players, starterIdSet, showCutColumn, refreshCutBanner));
 				} else {
 					const onSalaryChange = needsCapSummary
 						? () => {
@@ -2569,7 +2693,7 @@
 							summaryEl = fresh;
 						}
 						: undefined;
-					card.appendChild(buildRosterTable(players, isAuction, group.key.toLowerCase(), league.id, onSalaryChange, refreshContractBanner));
+					card.appendChild(buildRosterTable(players, isAuction, group.key.toLowerCase(), league.id, onSalaryChange, refreshContractBanner, showCutColumn, refreshCutBanner));
 				}
 
 				if (summaryEl) card.appendChild(summaryEl);

@@ -1,6 +1,7 @@
 // Vercel serverless function: stores the roster planning values — planned
-// contract lengths and planned salaries — server-side so they follow the
-// manager between devices instead of living in one browser's localStorage.
+// contract lengths, planned salaries, and planned cuts — server-side so they
+// follow the manager between devices instead of living in one browser's
+// localStorage.
 //
 // Why this exists: plans were browser-local from the start, which meant an
 // iPad and a phone kept entirely separate copies and neither knew about the
@@ -47,7 +48,7 @@ const MAX_ENTRIES_PER_LEAGUE = 400;
 const MAX_VALUE_LENGTH = 8;
 const MAX_BODY_BYTES = 256 * 1024;
 
-const PLAN_KINDS = ['contractPlans', 'salaryPlans'];
+const PLAN_KINDS = ['contractPlans', 'salaryPlans', 'cutPlans'];
 
 // Exported for the unit test in scripts/test-plans.mjs. Vercel only ever
 // invokes the default export, so extra named exports cost nothing at runtime.
@@ -72,7 +73,7 @@ function resolveStore(env) {
 }
 
 function emptyDocument() {
-  return { contractPlans: {}, salaryPlans: {}, updatedAt: null };
+  return { contractPlans: {}, salaryPlans: {}, cutPlans: {}, updatedAt: null };
 }
 
 // Returns an array of human-readable problems — empty means valid.
