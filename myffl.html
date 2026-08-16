@@ -833,6 +833,28 @@
 			padding: 0.05rem 0.15rem;
 			text-align: right;
 		}
+		/* Same shape as .years-select/.salary-select, but a plain select
+		   rather than a checkbox — see buildCutCell for why — so it needs its
+		   own base rule rather than reusing theirs. */
+		.cut-select {
+			font: inherit;
+			font-size: 0.82rem;
+			color: var(--accent);
+			background: var(--chip-bg);
+			border: 1px solid var(--border);
+			border-radius: 4px;
+			padding: 0.05rem 0.15rem;
+			text-align: right;
+		}
+		/* Marked to cut: the same IR red used for the Injured Reserve group
+		   label, not the purple Yrs/Sal turn once planned — a cut is a
+		   player leaving the roster, not a value going official, and
+		   shouldn't read as the same kind of "done". */
+		.cut-select.cut-select-marked {
+			color: var(--ir-text);
+			background: var(--ir-bg);
+			border-color: color-mix(in srgb, var(--ir-text) 35%, var(--border));
+		}
 		/* Top-24 overall gets the accent treatment so the studs on a roster
 		   stand out at a glance without having to read every row. */
 		.ecr-cell.ecr-elite {
@@ -1502,7 +1524,15 @@
 		// independent storage as contract/salary plans, for the same reason —
 		// three different domains (term, money, a roster decision) that should
 		// never leak into each other's rules for what counts as "unset".
-		// Boolean rather than a dropdown value: a cut is planned or it isn't.
+		// A dropdown ('' / 'CUT'), deliberately not a checkbox: the lineup
+		// editor already has one checkbox column (who's starting, which
+		// Submit Lineup reads), and a second checkbox column right next to it
+		// — feeding a completely different action, or no action at all — is
+		// exactly the kind of pair a glance can mix up, and a mis-click on
+		// the wrong one is a real MFL write. A dropdown reads as its own kind
+		// of control at a glance, the same way Yrs/Sal do on the Salary Cap
+		// tables, and can't be confused with a start checkbox no matter how
+		// fast you're scanning the row.
 		const CUT_PLAN_STORAGE_KEY = 'myfflCutPlans';
 		function loadCutPlans() {
 			try {
@@ -1512,19 +1542,19 @@
 			}
 		}
 		function getCutPlan(leagueId, playerId) {
-			return !!loadCutPlans()[leagueId]?.[playerId];
+			return loadCutPlans()[leagueId]?.[playerId] || '';
 		}
-		function setCutPlan(leagueId, playerId, planned) {
+		function setCutPlan(leagueId, playerId, value) {
 			const plans = loadCutPlans();
-			if (!planned) {
+			if (!value) {
 				delete plans[leagueId]?.[playerId];
 				if (plans[leagueId] && Object.keys(plans[leagueId]).length === 0) delete plans[leagueId];
 			} else {
 				plans[leagueId] = plans[leagueId] || {};
-				plans[leagueId][playerId] = '1';
+				plans[leagueId][playerId] = value;
 			}
 			localStorage.setItem(CUT_PLAN_STORAGE_KEY, JSON.stringify(plans));
-			recordPlanEdit('cutPlans', leagueId, playerId, planned ? '1' : '');
+			recordPlanEdit('cutPlans', leagueId, playerId, value);
 			schedulePlanPush();
 		}
 
@@ -1996,24 +2026,33 @@
 			return td;
 		}
 
-		// Cut-planning checkbox for a Dynasty roster row — only rendered at all
+		// Cut-planning dropdown for a Dynasty roster row — only rendered at all
 		// when showCutPlanning gated it (see renderCard): logged in, Dynasty,
 		// and the offseason. Unlike buildSalaryCell/buildYearsCell there's no
 		// real value to defer to and so no not-logged-in fallback to render —
 		// the column itself doesn't exist for a logged-out viewer, same as the
-		// lineup editor's own starter checkboxes.
+		// lineup editor's own starter checkboxes. A two-option select rather
+		// than a checkbox on purpose: the lineup editor already spends a
+		// checkbox column on who's starting, which Submit Lineup reads
+		// straight off — a second checkbox column next to it, doing nothing
+		// of the sort, is exactly the pair a quick glance (or a fast thumb on
+		// a phone) can mix up. The marked state is styled red rather than the
+		// purple Yrs/Sal use once planned: this isn't a value becoming
+		// official, it's a player marked to leave the roster, and the two
+		// shouldn't read the same.
 		function buildCutCell(p, leagueId, onCutChange) {
 			const td = el('td', { class: 'cut-cell' });
-			const checkbox = el('input', {
-				type: 'checkbox',
-				title: 'Plan to cut before Week 1 — a personal note, not sent anywhere',
-			});
-			checkbox.checked = getCutPlan(leagueId, p.id);
-			checkbox.addEventListener('change', () => {
-				setCutPlan(leagueId, p.id, checkbox.checked);
+			const select = el('select', { class: 'cut-select', title: 'Plan to cut before Week 1 — a personal note, not sent anywhere' });
+			select.appendChild(el('option', { value: '', text: '—' }));
+			select.appendChild(el('option', { value: 'CUT', text: 'CUT' }));
+			select.value = getCutPlan(leagueId, p.id);
+			select.classList.toggle('cut-select-marked', !!select.value);
+			select.addEventListener('change', () => {
+				setCutPlan(leagueId, p.id, select.value);
+				select.classList.toggle('cut-select-marked', !!select.value);
 				onCutChange?.();
 			});
-			td.appendChild(checkbox);
+			td.appendChild(select);
 			return td;
 		}
 

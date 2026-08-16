@@ -185,7 +185,7 @@ test('a plan set on one device still arrives on the other', async () => {
 	await a.g.syncPlans();
 	a.g.setContractPlan('L1', 'p1', '3');
 	a.g.setSalaryPlan('L1', 'p1', '22');
-	a.g.setCutPlan('L1', 'p2', true);
+	a.g.setCutPlan('L1', 'p2', 'CUT');
 	await flush(a);
 
 	const b = loadPage(phone, store.serve);
@@ -194,19 +194,19 @@ test('a plan set on one device still arrives on the other', async () => {
 
 	assert.deepEqual(b.contracts(), { L1: { p1: '3' } });
 	assert.deepEqual(b.salaries(), { L1: { p1: '22' } });
-	assert.deepEqual(b.cuts(), { L1: { p2: '1' } });
+	assert.deepEqual(b.cuts(), { L1: { p2: 'CUT' } });
 });
 
 test('a planned cut clears the same way a contract length does', async () => {
-	const store = newStore({ cutPlans: { L1: { p2: '1' } } });
-	const disk = newDisk({ [CUT_KEY]: JSON.stringify({ L1: { p2: '1' } }), [SYNCED_KEY]: '1' });
+	const store = newStore({ cutPlans: { L1: { p2: 'CUT' } } });
+	const disk = newDisk({ [CUT_KEY]: JSON.stringify({ L1: { p2: 'CUT' } }), [SYNCED_KEY]: '1' });
 
 	const page = loadPage(disk, store.serve);
 	await page.g.syncPlans();
-	page.g.setCutPlan('L1', 'p2', false);
+	page.g.setCutPlan('L1', 'p2', '');
 	await flush(page);
 
-	assert.deepEqual(page.cuts(), {}, 'unchecking clears the local plan');
+	assert.deepEqual(page.cuts(), {}, 'clearing the dropdown clears the local plan');
 	assert.deepEqual(store.read().cutPlans, {}, 'and the clear reaches the store');
 });
 
