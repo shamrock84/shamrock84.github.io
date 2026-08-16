@@ -99,6 +99,14 @@ jobs:
       - name: Test the page's plan reconciliation
         run: node scripts/test-plan-sync.mjs
 
+      # The Dynasty cut-planning dropdown's own offseason boundary, narrower
+      # than nflInSeason() and with its own year-wraparound math (the last
+      # game of Week 17 crosses the new year in some seasons and not others).
+      # Wrong in either direction is silent: the dropdown just doesn't show up
+      # when it should, or keeps showing when it shouldn't.
+      - name: Test the cut-planning window
+        run: node scripts/test-cut-planning-window.mjs
+
       # The Analytics tab's judgement calls, run against myffl.html itself.
       # Every one of them is invisible when wrong — a denominator that quietly
       # counts a league it shouldn't, or a player you own not being recognised

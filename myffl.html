@@ -2629,9 +2629,12 @@
 			}
 
 			// Dynasty rosters balloon after the rookie draft and have to come
-			// back down to the roster-size limit before Week 1 — offseason-only
-			// (see nflInSeason) and Dynasty-only, unlike Salary/Yrs which is
-			// Salary Cap-only: the two league types get different planning
+			// back down to the roster-size limit before Week 1 — available
+			// outside Weeks 1-17 (see duringWeeks1Through17; deliberately not
+			// nflInSeason, which runs through the Super Bowl for the
+			// FantasyPros ranking-set flip and has nothing to do with when a
+			// cutdown makes sense) and Dynasty-only, unlike Salary/Yrs which
+			// is Salary Cap-only: the two league types get different planning
 			// tools because they have different offseason problems. There's no
 			// MFL value this could ever resolve to (see buildCutCell) and
 			// nothing to email a commissioner — cutting a player is something
@@ -2639,7 +2642,7 @@
 			// banner is simpler than the contract one: a target and a count,
 			// no mail link.
 			const isDynasty = league.type === 'dynasty';
-			const showCutPlanning = isDynasty && !nflInSeason() && isLoggedIn();
+			const showCutPlanning = isDynasty && !duringWeeks1Through17() && isLoggedIn();
 			// How many need to go, from the same raw counts rosterLimitProblems
 			// uses, with the same two noise gates: a roster mid-draft hasn't
 			// gone over anything yet, and a league still on last season isn't
@@ -4778,6 +4781,43 @@
 			const year = now.getUTCFullYear();
 			const day = 24 * 60 * 60 * 1000;
 			return now.getTime() >= nth(year, 8, 1, 1) + 3 * day || now.getTime() < nth(year, 1, 0, 2) + day;
+		}
+
+		// Cut-planning's own blackout window — narrower than nflInSeason()'s,
+		// which runs through the Super Bowl for the FantasyPros ranking-set
+		// flip. That calendar has nothing to do with when it's reasonable to
+		// plan a cutdown; the user drew this line at the last game of Week
+		// 17, not the Super Bowl and not even Week 18 (the real end of the
+		// modern 18-week regular season) — most dynasty leagues' own
+		// championship lands in Week 17, and Week 18 is already the "teams
+		// rest their starters" week that has nothing left to do with anyone's
+		// roster planning.
+		//
+		// Same walk from kickoff nflInSeason() uses for its own start
+		// boundary (Thursday after Labor Day = the first game of Week 1),
+		// carried 16 more 7-day weeks to Week 17's Thursday and then 4 more
+		// days to that week's Monday Night game. Unlike nflInSeason's Super
+		// Bowl boundary — pinned to a fixed February calendar date, so it
+		// never needs to know when the season that led up to it actually
+		// kicked off — the last game of Week 17 is 116 days after kickoff,
+		// and kickoff itself moves across a 7-day range depending on which
+		// day of the week Labor Day falls on. That's enough for the landing
+		// date to cross the new year in some seasons and not others, so a
+		// date in the first days of January can belong to either this year's
+		// walk or last year's, and both have to be checked.
+		function duringWeeks1Through17(now = new Date()) {
+			const nth = (year, month, weekday, n) => {
+				const firstDow = new Date(Date.UTC(year, month, 1)).getUTCDay();
+				return Date.UTC(year, month, 1 + ((weekday - firstDow + 7) % 7) + (n - 1) * 7);
+			};
+			const day = 24 * 60 * 60 * 1000;
+			const time = now.getTime();
+			for (const year of [now.getUTCFullYear(), now.getUTCFullYear() - 1]) {
+				const kickoff = nth(year, 8, 1, 1) + 3 * day;
+				const week17MondayNight = kickoff + (16 * 7 + 4) * day;
+				if (time >= kickoff && time < week17MondayNight + day) return true;
+			}
+			return false;
 		}
 
 		const ADMIN_RANKINGS = [['', 'Automatic'], ['DYNASTY', 'Dynasty'], ['DRAFT', 'Draft'], ['ROS', 'Rest-of-season'], ['WEEKLY', 'Weekly'], ['ADP', 'ADP']];
