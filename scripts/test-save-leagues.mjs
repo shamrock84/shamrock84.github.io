@@ -66,6 +66,10 @@ check('allows an https commissioner contact link', validate(withField('commishCo
   JSON.stringify(validate(withField('commishContact', 'https://discord.gg/abc123'))));
 check('allows an http commissioner contact link', validate(withField('commishContact', 'http://example.com/contact')).length === 0);
 check('rejects a commissioner contact link with no scheme', validate(withField('commishContact', 'discord.gg/abc123')).length > 0);
+// slack:// deep links straight to a DM are a legitimate contact too — see
+// slack://channel?team=TEAM_ID&id=USER_ID in the schema note.
+check('allows a slack commissioner contact link', validate(withField('commishContact', 'slack://channel?team=T12345678&id=U12345678')).length === 0,
+  JSON.stringify(validate(withField('commishContact', 'slack://channel?team=T12345678&id=U12345678'))));
 check('allows a blank commissioner contact', validate(withField('commishContact', '')).length === 0);
 // Deliberately not tied to type: switching a league away from Salary Cap and
 // back must not silently discard the contact.

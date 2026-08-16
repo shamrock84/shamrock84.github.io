@@ -2435,7 +2435,12 @@
 			if (plans.length === 0) return null;
 
 			const contact = league.commishContact.trim();
-			if (/^https?:\/\//i.test(contact)) {
+			// slack:// alongside http(s):// — a deep link straight to a DM
+			// (slack://channel?team=TEAM_ID&id=USER_ID) is the real Slack
+			// scheme; there is no separate slack://user form. Same treatment
+			// as any other link: the browser hands it to the OS/app, we don't
+			// have to know or care what's on the other end.
+			if (/^(https?|slack):\/\//i.test(contact)) {
 				return el('a', {
 					href: contact,
 					target: '_blank',
@@ -5180,9 +5185,10 @@
 					// re-renders the card, so it appears and disappears as you switch.
 					// Accepts either an email address (opens a pre-filled mailto:) or
 					// a link (opened as-is) — the latter is for a commissioner who'd
-					// rather be reached some other way, e.g. a Discord invite.
+					// rather be reached some other way, e.g. a Discord invite or a
+					// slack://channel?team=…&id=… deep link straight to their DM.
 					if (league.type === 'salarycap') {
-						field('Commissioner contact', adminText(league.commishContact, 'name@example.com or https://…', (v) => { league.commishContact = v || undefined; }), true);
+						field('Commissioner contact', adminText(league.commishContact, 'name@example.com, https://…, or slack://…', (v) => { league.commishContact = v || undefined; }), true);
 					}
 					field('Rules link', adminText(league.rulesUrl, 'https://…', (v) => { league.rulesUrl = v || undefined; }), true);
 					node.appendChild(fields);

@@ -127,13 +127,16 @@ function validate(leagues) {
     // and the Admin tab already hides the field where it doesn't apply.
     // Either an email address (mailto:, pre-filled with the plan) or a link
     // (opened as-is) is valid — a URL is how a commissioner who doesn't want
-    // to be emailed for this can still be reached.
+    // to be emailed for this can still be reached. slack:// is accepted
+    // alongside http(s):// for exactly that case — a deep link straight to
+    // a DM (slack://channel?team=TEAM_ID&id=USER_ID), which Slack's own docs
+    // confirm is the real scheme; there is no separate slack://user form.
     if (league.commishContact != null && league.commishContact !== '') {
       const contact = isNonEmptyString(league.commishContact) ? league.commishContact.trim() : '';
       const looksLikeEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact);
-      const looksLikeUrl = /^https?:\/\//i.test(contact);
+      const looksLikeUrl = /^(https?|slack):\/\//i.test(contact);
       if (!contact || !(looksLikeEmail || looksLikeUrl)) {
-        errors.push(`${label}: commissioner contact must be an email address or a link starting with http:// or https://.`);
+        errors.push(`${label}: commissioner contact must be an email address or a link starting with http://, https://, or slack://.`);
       }
     }
     if (league.rulesUrl != null && league.rulesUrl !== '') {
