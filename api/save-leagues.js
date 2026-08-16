@@ -37,7 +37,10 @@ const PROVIDERS = new Set(['mfl', 'espn', 'sleeper']);
 // a removed field from living forever in the config.
 //   format — 'auction' always agreed with type 'salarycap', which now drives
 //            the salary/contract UI on its own; 'dynasty' was never read.
-const RETIRED_KEYS = new Set(['format']);
+//   commishEmail — renamed to commishContact, which accepts a URL as well as
+//                  an email address (for a commissioner who'd rather not be
+//                  emailed at all).
+const RETIRED_KEYS = new Set(['format', 'commishEmail']);
 const RANKING_TYPES = new Set(['DYNASTY', 'DRAFT', 'ROS', 'WEEKLY', 'ADP']);
 const SCORING_FORMATS = new Set(['PPR', 'HALF', 'STD']);
 
@@ -46,7 +49,7 @@ const SCORING_FORMATS = new Set(['PPR', 'HALF', 'STD']);
 // appended after — see mergeLeague below for why that matters.
 const KEY_ORDER = [
   'id', 'franchiseId', 'name', 'type', 'provider',
-  'tags', 'lineupPilot', 'rankingType', 'scoring', 'season', 'rulesUrl', 'commishEmail',
+  'tags', 'lineupPilot', 'rankingType', 'scoring', 'season', 'rulesUrl', 'commishContact',
 ];
 
 function isNonEmptyString(v) {
@@ -118,13 +121,19 @@ function validate(leagues) {
         errors.push(`${label}: tags must be a list of words.`);
       }
     }
-    // Only salary-cap leagues use this (it's who the contract-length summary is
-    // mailed to), but the check is on shape rather than on type: a league that
-    // changes type shouldn't have its address silently discarded, and the
-    // Admin tab already hides the field where it doesn't apply.
-    if (league.commishEmail != null && league.commishEmail !== '') {
-      if (!isNonEmptyString(league.commishEmail) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(league.commishEmail.trim())) {
-        errors.push(`${label}: commissioner email doesn't look like an email address.`);
+    // Only salary-cap leagues use this (it's who/where the contract-length
+    // summary is sent), but the check is on shape rather than on type: a
+    // league that changes type shouldn't have its contact silently discarded,
+    // and the Admin tab already hides the field where it doesn't apply.
+    // Either an email address (mailto:, pre-filled with the plan) or a link
+    // (opened as-is) is valid — a URL is how a commissioner who doesn't want
+    // to be emailed for this can still be reached.
+    if (league.commishContact != null && league.commishContact !== '') {
+      const contact = isNonEmptyString(league.commishContact) ? league.commishContact.trim() : '';
+      const looksLikeEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact);
+      const looksLikeUrl = /^https?:\/\//i.test(contact);
+      if (!contact || !(looksLikeEmail || looksLikeUrl)) {
+        errors.push(`${label}: commissioner contact must be an email address or a link starting with http:// or https://.`);
       }
     }
     if (league.rulesUrl != null && league.rulesUrl !== '') {
@@ -162,7 +171,7 @@ function mergeLeague(league) {
   put('scoring', league.scoring);
   put('season', league.season == null ? '' : String(league.season).trim());
   put('rulesUrl', league.rulesUrl);
-  put('commishEmail', league.commishEmail == null ? '' : String(league.commishEmail).trim());
+  put('commishContact', league.commishContact == null ? '' : String(league.commishContact).trim());
 
   for (const [k, v] of Object.entries(league)) {
     if (!KEY_ORDER.includes(k) && !RETIRED_KEYS.has(k) && v !== undefined) out[k] = v;

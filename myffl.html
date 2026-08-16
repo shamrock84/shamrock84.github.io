@@ -910,11 +910,11 @@
 			color: var(--accent);
 		}
 		/* Stays gold even when the banner around it goes purple. Planning a
-		   length here and emailing the commissioner are different acts, and
-		   nothing on this page can tell whether the mail was ever sent — so
-		   the link keeps calling for action rather than joining a done state
-		   it has no evidence for. */
-		.contract-email-link {
+		   length here and reaching the commissioner about it are different
+		   acts, and nothing on this page can tell whether that ever happened
+		   — so the link keeps calling for action rather than joining a done
+		   state it has no evidence for. */
+		.contract-contact-link {
 			flex-shrink: 0;
 			color: var(--gold-chip-text);
 			text-decoration: underline;
@@ -2407,28 +2407,43 @@
 			}
 		}
 
-		// "Send via Email" link for the needs-contract banner — a mailto:
+		// Contact link for the needs-contract banner. Two shapes depending on
+		// what commishContact holds: an email address becomes a mailto:
 		// pre-filled with every player this manager has actually pencilled in
 		// a length for (not just every player still missing one; once a real
 		// contractYear lands from a sync, that player drops out here too,
 		// same as they drop out of the banner count and stop showing the
-		// dropdown at all). Returns null (renders nothing) if there's nothing
-		// to send yet, or if logged out — the planned lengths themselves are
-		// exactly the private data the dropdown is already gated on, so the
-		// email summarizing them needs the same gate.
-		function buildContractEmailLink(league) {
+		// dropdown at all); a URL is opened as-is, since there's no mail body
+		// to fill and no guarantee the destination even accepts one — a
+		// commissioner who set a link chose it specifically because they
+		// don't want to be emailed for this. Returns null (renders nothing)
+		// if there's nothing to send yet, or if logged out — the planned
+		// lengths themselves are exactly the private data the dropdown is
+		// already gated on, so this needs the same gate.
+		function buildContractContactLink(league) {
 			if (!isLoggedIn()) return null;
-			// No address, no link — deliberately, and not only as a safety net.
-			// Clearing commishEmail is how you switch this off for a league whose
-			// commissioner wants to be contacted some other way. It also removes
-			// the failure this used to have: a mailto to a placeholder opens
-			// looking entirely normal and reaches nobody.
-			if (!league.commishEmail) return null;
+			// No contact, no link — deliberately, and not only as a safety net.
+			// Clearing commishContact is how you switch this off for a league
+			// whose commissioner wants to be reached some other way entirely.
+			// It also removes the failure this used to have: a mailto to a
+			// placeholder opens looking entirely normal and reaches nobody.
+			if (!league.commishContact) return null;
 			const plans = (league.players || [])
 				.filter((p) => !(Number(p.contractYear) > 0))
 				.map((p) => ({ name: p.name, years: getContractPlan(league.id, p.id) }))
 				.filter((p) => p.years);
 			if (plans.length === 0) return null;
+
+			const contact = league.commishContact.trim();
+			if (/^https?:\/\//i.test(contact)) {
+				return el('a', {
+					href: contact,
+					target: '_blank',
+					rel: 'noopener',
+					class: 'contract-contact-link',
+					text: '↗ Contact Commissioner',
+				});
+			}
 
 			// That league's own season — during the rollover window it can
 			// legitimately differ from the rest of the site's.
@@ -2442,8 +2457,8 @@
 			const body = plans.map((p) => `${p.name}: ${p.years} year${p.years === '1' ? '' : 's'}`).join('\n');
 
 			return el('a', {
-				href: `mailto:${encodeURIComponent(league.commishEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,
-				class: 'contract-email-link',
+				href: `mailto:${encodeURIComponent(contact)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,
+				class: 'contract-contact-link',
 				text: '✉ Send via Email',
 			});
 		}
@@ -2597,19 +2612,20 @@
 				// that moves as you work down the roster. The done state adds the
 				// next move, which is yours: the commissioner has no way of
 				// knowing these lengths until you send them, which is what the
-				// mail link below the text is for.
+				// contact link below the text is for.
 				contractBannerTextEl.textContent = unplanned === 0
 					? `✓ ${set}/${total} contract${total === 1 ? '' : 's'} set — remember to notify commish`
 					: `⚠ ${set}/${total} contract${total === 1 ? '' : 's'} set`;
 				contractBannerEl.classList.toggle('contract-banner-planned', unplanned === 0);
 				// Rebuilt, not built once: the link doesn't exist at all until
-				// some length is planned, and its mail body is a snapshot of the
-				// plans at the moment it was made. Built at render it would be
-				// missing for the whole session the plans were made in, and once
-				// present would keep mailing the plans as they stood on load.
-				contractBannerEl.querySelector('.contract-email-link')?.remove();
-				const emailLink = buildContractEmailLink(league);
-				if (emailLink) contractBannerEl.appendChild(emailLink);
+				// some length is planned, and an email link's body is a snapshot
+				// of the plans at the moment it was made. Built at render it
+				// would be missing for the whole session the plans were made in,
+				// and once present would keep mailing the plans as they stood on
+				// load.
+				contractBannerEl.querySelector('.contract-contact-link')?.remove();
+				const contactLink = buildContractContactLink(league);
+				if (contactLink) contractBannerEl.appendChild(contactLink);
 			};
 
 			// Logged out this is hidden outright rather than shown with plans
@@ -5159,11 +5175,14 @@
 						const tags = v.split(',').map((t) => t.trim()).filter(Boolean);
 						league.tags = tags.length ? tags : undefined;
 					}), true);
-					// Salary Cap only: this is who the contract-length summary is
-					// mailed to, and no other league type produces one. Changing Type
+					// Salary Cap only: this is who/where the contract-length summary
+					// goes, and no other league type produces one. Changing Type
 					// re-renders the card, so it appears and disappears as you switch.
+					// Accepts either an email address (opens a pre-filled mailto:) or
+					// a link (opened as-is) — the latter is for a commissioner who'd
+					// rather be reached some other way, e.g. a Discord invite.
 					if (league.type === 'salarycap') {
-						field('Commissioner email', adminText(league.commishEmail, 'name@example.com', (v) => { league.commishEmail = v || undefined; }), true);
+						field('Commissioner contact', adminText(league.commishContact, 'name@example.com or https://…', (v) => { league.commishContact = v || undefined; }), true);
 					}
 					field('Rules link', adminText(league.rulesUrl, 'https://…', (v) => { league.rulesUrl = v || undefined; }), true);
 					node.appendChild(fields);

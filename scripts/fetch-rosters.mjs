@@ -373,7 +373,7 @@ async function main() {
         provider: league.provider || null,
         tags: league.tags || [],
         rulesUrl: league.rulesUrl || null,
-        commishEmail: league.commishEmail || null,
+        commishContact: league.commishContact || null,
         cutdownRosterSize: league.cutdownRosterSize || null,
         leagueName: league.name,
         franchiseId: null,
@@ -396,7 +396,7 @@ async function main() {
       result.tags = league.tags || [];
       result.provider = league.provider || null;
       result.rulesUrl = league.rulesUrl || null;
-      result.commishEmail = league.commishEmail || null;
+      result.commishContact = league.commishContact || null;
       result.cutdownRosterSize = league.cutdownRosterSize || null;
       // Recorded per league because it's what the next sync reads to decide
       // whether this league has already rolled over — see resolveSeason.
@@ -414,7 +414,7 @@ async function main() {
         provider: league.provider || null,
         tags: league.tags || [],
         rulesUrl: league.rulesUrl || null,
-        commishEmail: league.commishEmail || null,
+        commishContact: league.commishContact || null,
         cutdownRosterSize: league.cutdownRosterSize || null,
         leagueName: prev?.leagueName || league.name,
         franchiseId: league.franchiseId,
