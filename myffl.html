@@ -2719,7 +2719,7 @@
 				const planned = cutsPlanned();
 				const set = Math.min(planned, total);
 				cutBannerTextEl.textContent = set >= total
-					? `✓ ${planned}/${total} cut${total === 1 ? '' : 's'} planned — ready for Week 1`
+					? `✓ ${planned}/${total} cut${total === 1 ? '' : 's'} planned — remember to make your cuts!`
 					: `⚠ ${planned}/${total} cut${total === 1 ? '' : 's'} planned`;
 				cutBannerEl.classList.toggle('cut-banner-planned', set >= total);
 			};
