@@ -108,8 +108,21 @@ function toNumberOrNull(value) {
   return Number.isFinite(n) ? n : null;
 }
 
-async function fpGet(path, apiKey) {
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// A sync makes a burst of FantasyPros calls back-to-back — rankings per
+// league, sleepers, then up to a handful of projections GETs — and
+// FantasyPros rate-limits bursts (429) exactly the way MFL does. mflGet in
+// providers.mjs already retries a 429 with a short backoff rather than
+// failing whatever request happened to land last in the burst; this mirrors
+// that fix, which is what let a WR projections call 429 immediately after
+// the QB and RB calls just ahead of it succeeded (see fetch-rosters.mjs).
+async function fpGet(path, apiKey, attempt = 1) {
   const res = await fetch(`${FP_BASE}${path}`, { headers: { 'x-api-key': apiKey } });
+  if (res.status === 429 && attempt < 4) {
+    await sleep(attempt * 1500);
+    return fpGet(path, apiKey, attempt + 1);
+  }
   const text = await res.text();
   if (!res.ok) {
     throw new Error(`FantasyPros request failed (${res.status}): ${path} — ${text.slice(0, 200)}`);
