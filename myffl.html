@@ -2413,8 +2413,9 @@
 		// a length for (not just every player still missing one; once a real
 		// contractYear lands from a sync, that player drops out here too,
 		// same as they drop out of the banner count and stop showing the
-		// dropdown at all); a URL is opened as-is, since there's no mail body
-		// to fill and no guarantee the destination even accepts one — a
+		// dropdown at all); a URL is opened as-is and copies that same
+		// summary to the clipboard on click, since there's no mail body to
+		// pre-fill and no guarantee the destination even accepts one — a
 		// commissioner who set a link chose it specifically because they
 		// don't want to be emailed for this. Returns null (renders nothing)
 		// if there's nothing to send yet, or if logged out — the planned
@@ -2435,19 +2436,36 @@
 			if (plans.length === 0) return null;
 
 			const contact = league.commishContact.trim();
+			const body = plans.map((p) => `${p.name}: ${p.years} year${p.years === '1' ? '' : 's'}`).join('\n');
+
 			// slack:// alongside http(s):// — a deep link straight to a DM
 			// (slack://channel?team=TEAM_ID&id=USER_ID) is the real Slack
 			// scheme; there is no separate slack://user form. Same treatment
 			// as any other link: the browser hands it to the OS/app, we don't
 			// have to know or care what's on the other end.
 			if (/^(https?|slack):\/\//i.test(contact)) {
-				return el('a', {
+				const link = el('a', {
 					href: contact,
 					target: '_blank',
 					rel: 'noopener',
 					class: 'contract-contact-link',
 					text: '↗ Send to Commish',
 				});
+				// There's no mail body to pre-fill here and no guarantee the
+				// destination even accepts one, so the click itself copies
+				// the same summary the mailto body uses — land in the DM
+				// with it already on the clipboard, one tap, no second
+				// button. Best-effort: clipboard access can be unavailable
+				// or denied, and that must never block the link from
+				// actually opening.
+				const originalText = link.textContent;
+				link.addEventListener('click', () => {
+					navigator.clipboard?.writeText(body).catch(() => {});
+					link.textContent = '📋 Copied!';
+					clearTimeout(link._copyResetTimer);
+					link._copyResetTimer = setTimeout(() => { link.textContent = originalText; }, 2000);
+				});
+				return link;
 			}
 
 			// That league's own season — during the rollover window it can
@@ -2459,7 +2477,6 @@
 			const leagueName = (league.leagueName || league.name).trim();
 			const teamName = (league.teamName || league.name).trim();
 			const subject = `${year} ${leagueName} Contract Lengths for ${teamName}`;
-			const body = plans.map((p) => `${p.name}: ${p.years} year${p.years === '1' ? '' : 's'}`).join('\n');
 
 			return el('a', {
 				href: `mailto:${encodeURIComponent(contact)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,
