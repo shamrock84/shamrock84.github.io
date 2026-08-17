@@ -3022,6 +3022,13 @@
 					// Set only on a row with no ranks at all — the two bases
 					// have their own explanations when just one is missing.
 					reason: proj || ecr ? null : powerUnrankedReason(league, trailing),
+					// Why proj is missing, when it is: an ordinary offseason gap
+					// or a rate-limited sync (see powerProjectionsUnavailableReason).
+					// Null on a row that has proj, on a trailing league whose
+					// ranks are suppressed rather than genuinely missing, or on a
+					// snapshot from before this was recorded — which reads as the
+					// offseason case, the one that has always been true here.
+					projectionsUnavailable: proj || trailing || !league.power ? null : league.power.projectionsUnavailable || null,
 					// What each side was computed from — the projections slot
 					// and phase, or the ranking list. Which is in play is the
 					// difference between a rank moving because a roster
@@ -3091,6 +3098,22 @@
 				projections: (rows || []).some((r) => r.ecr && !r.proj),
 				ecr: (rows || []).some((r) => r.proj && !r.ecr),
 			};
+		}
+
+		// Which wording the missing-projections banner uses. The same empty
+		// column shows up for two different reasons that look identical on
+		// screen: FantasyPros hasn't published the season's list yet (normal,
+		// lasts months) or the sync got rate-limited fetching it on its last
+		// run (transient, clears on the next one). fetch-rosters.mjs tags every
+		// league it powers with which one happened; a row missing proj with no
+		// tag is a snapshot from before that existed, which was always the
+		// offseason case, so it defaults there rather than to the newer one.
+		// Any rate-limited row is reason enough to say so — the fetch is one
+		// shared call per sync, so a 'fetch_failed' tag speaks for every league
+		// that call touched, not just the row carrying it.
+		function powerProjectionsUnavailableReason(rows) {
+			const missing = (rows || []).filter((r) => r.ecr && !r.proj);
+			return missing.some((r) => r.projectionsUnavailable === 'fetch_failed') ? 'fetch_failed' : 'not_published';
 		}
 
 		// Which basis the Starters and Depth columns describe. Both bases split
@@ -4444,9 +4467,12 @@
 			// preseason-slot case explains numbers that look fine and aren't.
 			const missing = powerMissingBasis(rows);
 			if (missing.projections) {
+				const unavailableReason = powerProjectionsUnavailableReason(rows);
 				card.appendChild(el('div', {
 					class: 'error-box',
-					text: 'Projections aren’t published for this season yet — ranked on consensus rankings until they are.',
+					text: unavailableReason === 'fetch_failed'
+						? 'Projections were rate-limited on the last sync — ranked on consensus rankings until the next sync succeeds.'
+						: 'Projections aren’t published for this season yet — ranked on consensus rankings until they are.',
 				}));
 			} else if (powerUsesPreseasonProjections(rows)) {
 				card.appendChild(el('div', {

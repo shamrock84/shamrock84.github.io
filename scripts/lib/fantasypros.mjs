@@ -643,7 +643,14 @@ export async function fetchProjections({ apiKey, season, week = 0, inSeason = fa
     const data = await fpGet(`/nfl/${season}/projections?position=${position}&week=${week}`, apiKey);
     const players = data?.players || [];
     if (players.length === 0) {
-      throw new Error(`projections returned no ${position}s for ${season} week ${week}`);
+      const err = new Error(`projections returned no ${position}s for ${season} week ${week}`);
+      // Tagged so fetch-rosters.mjs can tell this apart from fpGet's own
+      // throw (a non-2xx status, e.g. a 429 rate limit, or bad JSON): both
+      // land here as "projections unavailable" and produce the same empty
+      // column on the card, but only this one means the season's list
+      // genuinely isn't up yet rather than the last sync getting throttled.
+      err.projectionsNotPublished = true;
+      throw err;
     }
     playersByPosition[position] = players;
   }

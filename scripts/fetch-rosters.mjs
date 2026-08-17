@@ -687,9 +687,18 @@ async function main() {
       // sync already fetched (see buildEcrIndex) instead of leaving the card
       // to carry January's ranks through to July.
       let projections = null;
+      // Only meaningful when projections stays null: which of the two things
+      // that both look like "no players came back" actually happened. The
+      // season not being up yet is an ordinary offseason state that lasts
+      // months; FantasyPros rate-limiting this run's projections calls is a
+      // transient failure that should clear on its own next sync. The page
+      // needs to say different things about each rather than one banner
+      // wording standing in for both.
+      let projectionsUnavailable = null;
       try {
         projections = await fetchProjections({ apiKey: fpApiKey, season, inSeason: phase.inSeason });
       } catch (err) {
+        projectionsUnavailable = err.projectionsNotPublished ? 'not_published' : 'fetch_failed';
         console.log(`FantasyPros — projections unavailable (${err.message}); power ranks fall back to consensus rankings`);
       }
 
@@ -764,6 +773,12 @@ async function main() {
           // each ranks the same franchises independently.
           projections: projPower ? { source: projPower.source, teams: projPower.teams } : null,
           ecr: ecrPower ? { source: ecrPower.source, teams: ecrPower.teams } : null,
+          // Why the projections basis is missing, when it is — carried onto
+          // every league this run touches the projections fetch for, since
+          // that fetch is one shared call for the whole sync. Null once
+          // projPower exists; there is nothing to explain on a row that has
+          // its data.
+          projectionsUnavailable: projPower ? null : projectionsUnavailable,
         };
         powered++;
         if (projPower) byBasis.projections++;

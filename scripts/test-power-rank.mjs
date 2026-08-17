@@ -495,7 +495,7 @@ const context = {
 vm.createContext(context);
 vm.runInContext(scriptSource, context);
 
-const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, powerMissingBasis, powerDetailBasis, powerRowAverage, leagueStuds, leagueSleepers } = context;
+const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, powerMissingBasis, powerProjectionsUnavailableReason, powerDetailBasis, powerRowAverage, leagueStuds, leagueSleepers } = context;
 
 
 {
@@ -641,6 +641,39 @@ const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, pow
 	assert.notEqual(e.proj, null);
 	assert.equal(e.ecr, null);
 	assert.equal(e.ecrSource, null);
+	// A row with proj has nothing to explain, whatever the sync stamped —
+	// the field only matters on a row missing proj.
+	assert.equal(e.projectionsUnavailable, null);
+}
+
+{
+	// computeMyPowerRows carries the sync's projectionsUnavailable tag
+	// straight from league.power onto the row, for powerProjectionsUnavailableReason
+	// to read later — but only on a row actually missing proj, and never for
+	// a trailing league whose ranks are suppressed rather than genuinely gone.
+	const ecrOnly = (id, type, season, projectionsUnavailable) => ({
+		id, name: id, type, season, franchiseId: '1',
+		power: {
+			projections: null,
+			ecr: { source: { basis: 'ecr' }, teams: [{ franchiseId: '1', score: 1, depth: 1 }] },
+			projectionsUnavailable,
+		},
+	});
+	const [rateLimited, notPublished, untagged, trailing] = computeMyPowerRows([
+		ecrOnly('RateLimited', 'dynasty', '2026', 'fetch_failed'),
+		ecrOnly('NotPublished', 'dynasty', '2026', 'not_published'),
+		ecrOnly('Untagged', 'dynasty', '2026', undefined),
+		// A redraft league still on last season: awaitingRollover suppresses
+		// both bases regardless of what the tag says.
+		ecrOnly('Trailing', 'redraft', '2025', 'fetch_failed'),
+	], ['dynasty', 'redraft'], 2026);
+	assert.equal(rateLimited.projectionsUnavailable, 'fetch_failed');
+	assert.equal(notPublished.projectionsUnavailable, 'not_published');
+	assert.equal(untagged.projectionsUnavailable, null, 'a snapshot from before the tag existed carries nothing, not undefined');
+	// Trailing leagues have both proj and ecr suppressed — computeMyPowerRows
+	// must not read the tag off a row that isn't reporting real state.
+	assert.equal(trailing.proj, null);
+	assert.equal(trailing.projectionsUnavailable, null);
 }
 
 {
@@ -745,7 +778,8 @@ const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, pow
 
 {
 	const projRow = (projSource, proj = { overall: 1, starters: 1, depth: 1 }) => ({ proj, projSource, ecr: null, ecrSource: null });
-	const ecrRow = (ecr = { overall: 1, starters: 1, depth: 1 }) => ({ proj: null, projSource: null, ecr, ecrSource: { basis: 'ecr' } });
+	const ecrRow = (ecr = { overall: 1, starters: 1, depth: 1 }, projectionsUnavailable = null) =>
+		({ proj: null, projSource: null, ecr, ecrSource: { basis: 'ecr' }, projectionsUnavailable });
 	const bothRow = { proj: { overall: 1 }, projSource: { basis: 'projections', week: '5', inSeason: true }, ecr: { overall: 2 }, ecrSource: { basis: 'ecr' } };
 
 	// The preseason-slot warning fires on the projections side only, and only
@@ -774,6 +808,24 @@ const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, pow
 		'an unranked league explains itself; it does not speak for the season');
 	assert.deepEqual({ ...powerMissingBasis([ecrRow(), unrankedRow]) }, { projections: true, ecr: false },
 		'while a genuinely projection-less card still says so');
+
+	// Which wording the missing-projections banner uses: the offseason gap
+	// versus a rate-limited sync, distinguished by the tag fetch-rosters.mjs
+	// stamps onto each row's power object.
+	assert.equal(powerProjectionsUnavailableReason([ecrRow()]), 'not_published',
+		'no tag at all — a snapshot from before this shipped, or a genuine offseason gap — reads as the offseason case');
+	assert.equal(powerProjectionsUnavailableReason([ecrRow({ overall: 1, starters: 1, depth: 1 }, 'not_published')]), 'not_published');
+	assert.equal(powerProjectionsUnavailableReason([ecrRow({ overall: 1, starters: 1, depth: 1 }, 'fetch_failed')]), 'fetch_failed',
+		'a rate-limited sync gets its own wording rather than the offseason one');
+	// One shared projections fetch per sync, so one rate-limited row is enough
+	// to explain every row missing proj this cycle, not just the row carrying
+	// the tag.
+	assert.equal(
+		powerProjectionsUnavailableReason([ecrRow({ overall: 1, starters: 1, depth: 1 }, 'not_published'), ecrRow({ overall: 2, starters: 2, depth: 2 }, 'fetch_failed')]),
+		'fetch_failed'
+	);
+	// A row that isn't missing proj never speaks for the banner, tag or not.
+	assert.equal(powerProjectionsUnavailableReason([bothRow]), 'not_published', 'nothing missing, default reads as harmless');
 
 	// Starters and Depth follow projections when the card has any, and the
 	// rankings otherwise — card-wide, so two rows never describe different
