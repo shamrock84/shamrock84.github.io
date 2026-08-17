@@ -1,6 +1,8 @@
-// Unit test for duringWeeks1Through17 in myffl.html — the boundary that gates
-// the Dynasty cut-planning dropdown and its banner (see showCutPlanning in
-// renderCard).
+// Unit test for duringWeeks1Through17 and duringIrClearingWindow in
+// myffl.html — the boundaries that gate the Dynasty cut-planning dropdown
+// and its banner (see showCutPlanning/cutsNeeded/showCutColumn in
+// renderCard), plus the pure roster-counting functions those closures defer
+// to (cutCountableStatuses/cutsNeededFor/cutsPlannedFor).
 //
 // This is deliberately a narrower window than nflInSeason(), which runs
 // through the Super Bowl for the FantasyPros ranking-set flip: cut planning
@@ -45,9 +47,16 @@ function fakeElement() {
 	};
 }
 
+// Stateful, unlike a stub that always returns null — cutsNeededFor's plan
+// count reads back what setCutPlan (via getCutPlan) actually wrote.
+const disk = new Map();
 const context = {
 	console,
-	localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
+	localStorage: {
+		getItem: (k) => (disk.has(k) ? disk.get(k) : null),
+		setItem: (k, v) => disk.set(k, String(v)),
+		removeItem: (k) => disk.delete(k),
+	},
 	setTimeout, clearTimeout, setInterval, clearInterval,
 	document: {
 		addEventListener() {},
@@ -63,7 +72,10 @@ const context = {
 };
 vm.createContext(context);
 vm.runInContext(scriptSource, context);
-const { duringWeeks1Through17 } = context;
+const {
+	duringWeeks1Through17, duringIrClearingWindow,
+	cutCountableStatuses, cutsNeededFor, cutsPlannedFor, setCutPlan,
+} = context;
 
 let failures = 0;
 function check(name, cond) {
@@ -101,6 +113,62 @@ check('and opens the very next day', !duringWeeks1Through17(new Date('2025-12-30
 // away. 2027-01-02 falls three days before the 2026-season Week 17 Monday
 // Night computed above (2027-01-04), so it must still read as blacked out.
 check('early January can still belong to last season’s Week 17', duringWeeks1Through17(new Date('2027-01-02T12:00:00Z')));
+
+// ---- duringIrClearingWindow -------------------------------------------
+// The sub-window inside cut planning's own blackout window: opens exactly
+// where duringWeeks1Through17 leaves off (2027-01-05T00:00Z for the 2026
+// season computed above) and closes at the Super Bowl (second Sunday of
+// the following February, 2027-02-15T00:00Z), not at next kickoff the way
+// duringWeeks1Through17 itself stays open.
+check('still Week 17 -> not yet the IR-clearing window', !duringIrClearingWindow(new Date('2027-01-04T23:00:00Z')));
+check('the day Week 17 ends -> the IR-clearing window opens', duringIrClearingWindow(new Date('2027-01-05T12:00:00Z')));
+check('deep in the playoffs -> still the IR-clearing window', duringIrClearingWindow(new Date('2027-01-20T12:00:00Z')));
+check('the day before the Super Bowl -> still the IR-clearing window', duringIrClearingWindow(new Date('2027-02-14T12:00:00Z')));
+check('the day after the Super Bowl -> the IR-clearing window has closed', !duringIrClearingWindow(new Date('2027-02-16T12:00:00Z')));
+check('deep offseason (July), well past the Super Bowl -> not the IR-clearing window', !duringIrClearingWindow(new Date('2026-07-01T12:00:00Z')));
+check('mid-season (November) -> not the IR-clearing window', !duringIrClearingWindow(new Date('2026-11-15T12:00:00Z')));
+
+// 2025 season wraparound: window opens 2025-12-30 and closes at the 2026
+// Super Bowl, 2026-02-09T00:00Z — the same early-January case
+// duringWeeks1Through17 needs its two-year walk for, on the other end.
+check('a Week 17 landing that stays in December opens the window the next day', duringIrClearingWindow(new Date('2025-12-30T12:00:00Z')));
+check('early January belongs to last season’s IR-clearing window, not blacked out', duringIrClearingWindow(new Date('2026-01-02T12:00:00Z')));
+check('the 2025-season Super Bowl still closes the window on schedule', !duringIrClearingWindow(new Date('2026-02-10T12:00:00Z')));
+
+// ---- cutCountableStatuses / cutsNeededFor / cutsPlannedFor ------------
+const MID_SEASON = new Date('2026-11-15T12:00:00Z');
+const IR_WINDOW = new Date('2027-01-20T12:00:00Z');
+
+check('outside the IR-clearing window, only ROSTER counts', JSON.stringify(cutCountableStatuses(MID_SEASON)) === JSON.stringify(['ROSTER']));
+check('inside the IR-clearing window, ROSTER and IR both count', JSON.stringify(cutCountableStatuses(IR_WINDOW)) === JSON.stringify(['ROSTER', 'INJURED_RESERVE']));
+
+const player = (id, status) => ({ id, status });
+const roster23roster2ir = [
+	...Array.from({ length: 23 }, (_, i) => player(`r${i}`, 'ROSTER')),
+	player('ir1', 'INJURED_RESERVE'),
+	player('ir2', 'INJURED_RESERVE'),
+];
+const cleanLeague = { id: 'L1', cutdownRosterSize: 23, season: '2026', draftInProgress: false, players: roster23roster2ir };
+
+check('ROSTER alone is already at the target -> 0 outside the IR-clearing window', cutsNeededFor(cleanLeague, '2026', MID_SEASON) === 0);
+check('the same roster still has 2 IR players to clear inside the IR-clearing window', cutsNeededFor(cleanLeague, '2026', IR_WINDOW) === 2);
+
+const noTarget = { ...cleanLeague, cutdownRosterSize: null };
+check('cutdownRosterSize null -> cutsNeededFor is null (nothing configured)', cutsNeededFor(noTarget, '2026', IR_WINDOW) === null);
+
+const midDraft = { ...cleanLeague, draftInProgress: true };
+check('mid-draft -> cutsNeededFor is null even inside the IR-clearing window', cutsNeededFor(midDraft, '2026', IR_WINDOW) === null);
+
+const trailing = { ...cleanLeague, season: '2025' };
+check('a league still on last season -> cutsNeededFor is null', cutsNeededFor(trailing, '2026', IR_WINDOW) === null);
+
+const preSeasonField = { ...cleanLeague, season: undefined };
+check('no season on the snapshot yet -> NaN < year is false, still gets a target', cutsNeededFor(preSeasonField, '2026', IR_WINDOW) === 2);
+
+setCutPlan('L1', 'r0', 'CUT');
+setCutPlan('L1', 'ir1', 'CUT');
+check('outside the IR-clearing window, only the ROSTER cut plan counts', cutsPlannedFor(cleanLeague, MID_SEASON) === 1);
+check('inside the IR-clearing window, the IR cut plan counts too', cutsPlannedFor(cleanLeague, IR_WINDOW) === 2);
 
 if (failures) {
 	console.log(`\n${failures} cut-planning-window test(s) failed.`);

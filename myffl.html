@@ -2701,16 +2701,16 @@
 			// as "can't tell" — NaN < year is false, so a pre-`season`
 			// snapshot still gets a target rather than being silently
 			// skipped.
-			const cutsNeeded = () => {
-				if (league.cutdownRosterSize == null) return null;
-				if (league.draftInProgress === true) return null;
-				if (Number(league.season) < Number(pageData?.year)) return null;
-				const rosterCount = (league.players || []).filter((p) => (p.status || 'ROSTER').toUpperCase() === 'ROSTER').length;
-				return Math.max(0, rosterCount - league.cutdownRosterSize);
-			};
-			const cutsPlanned = () => (league.players || [])
-				.filter((p) => (p.status || 'ROSTER').toUpperCase() === 'ROSTER' && getCutPlan(league.id, p.id))
-				.length;
+			//
+			// Between Week 17's end and the Super Bowl (duringIrClearingWindow),
+			// the count also folds in INJURED_RESERVE: rookie-draft-swollen
+			// rosters are still months off, so a roster already at its in-season
+			// ROSTER count reads as "clean" by ROSTER alone even though every IR
+			// player on it still has to be cut before Week 1 — there's nowhere
+			// for an "activated" IR player to sit that isn't itself over the
+			// limit. See cutCountableStatuses/cutsNeededFor.
+			const cutsNeeded = () => cutsNeededFor(league, pageData?.year);
+			const cutsPlanned = () => cutsPlannedFor(league);
 			let cutBannerEl = null;
 			let cutBannerTextEl = null;
 			const refreshCutBanner = () => {
@@ -2771,11 +2771,15 @@
 				// than leaving a stale Total/Cap Room on screen until reload.
 				const needsCapSummary = group.key === 'ROSTER' && isAuction && league.salaryCap != null;
 				let summaryEl = needsCapSummary ? buildSalarySummary(league, players) : null;
-				// Cuts are counted against the roster-size limit, which only
-				// applies to ROSTER-status players (see rosterLimitProblems) —
-				// taxi squad and IR have their own separate limits, unrelated
-				// to this tool.
-				const showCutColumn = showCutPlanning && group.key === 'ROSTER';
+				// Cuts are counted against cutdownRosterSize, which normally
+				// applies to ROSTER-status players only (see rosterLimitProblems,
+				// which checks MFL's own separate taxi/IR limits instead) — except
+				// inside duringIrClearingWindow, where cutsNeededFor also folds in
+				// INJURED_RESERVE (see the comment on cutsNeeded above), so the
+				// dropdown has to reach IR rows too or there'd be a target with no
+				// way to mark against it.
+				const showCutColumn = showCutPlanning
+					&& (group.key === 'ROSTER' || (group.key === 'INJURED_RESERVE' && duringIrClearingWindow()));
 
 				if (group.key === 'ROSTER' && starterIdSet) {
 					card.appendChild(buildLineupEditor(league, players, starterIdSet, showCutColumn, refreshCutBanner));
@@ -4870,6 +4874,74 @@
 				if (time >= kickoff && time < week17MondayNight + day) return true;
 			}
 			return false;
+		}
+
+		// The sub-window inside cut planning's own blackout window where getting
+		// under cutdownRosterSize means clearing IR: the stretch from the last
+		// game of Week 17 (where duringWeeks1Through17 leaves off) through the
+		// Super Bowl (nflInSeason's own boundary). Rookie-draft-swollen rosters
+		// are still months away here, so a roster sitting right at its in-season
+		// ROSTER count is already "clean" by cutsNeeded's normal ROSTER-only
+		// math — even though every IR player on it still has to come off the
+		// roster (by being cut; there's no such thing as a "planned activation"
+		// with nowhere for the activated player to sit) before Week 1. Counting
+		// IR alongside ROSTER only in this window, and only here, is what
+		// surfaces that: past the Super Bowl the rookie draft is close enough
+		// that ROSTER alone is expected to blow past the limit anyway, and nothing
+		// distinguishes "cleared IR" from "haven't drafted yet" at that point.
+		//
+		// Same two-calendar-year walk as duringWeeks1Through17 and for the same
+		// reason — the window can open in December, and the Super Bowl that
+		// closes it always lands the following February, i.e. year + 1 relative
+		// to the kickoff year being tested, not now's own calendar year the way
+		// nflInSeason reads it.
+		function duringIrClearingWindow(now = new Date()) {
+			const nth = (year, month, weekday, n) => {
+				const firstDow = new Date(Date.UTC(year, month, 1)).getUTCDay();
+				return Date.UTC(year, month, 1 + ((weekday - firstDow + 7) % 7) + (n - 1) * 7);
+			};
+			const day = 24 * 60 * 60 * 1000;
+			const time = now.getTime();
+			for (const year of [now.getUTCFullYear(), now.getUTCFullYear() - 1]) {
+				const kickoff = nth(year, 8, 1, 1) + 3 * day;
+				const week17MondayNight = kickoff + (16 * 7 + 4) * day;
+				const superBowlEnd = nth(year + 1, 1, 0, 2) + day;
+				if (time >= week17MondayNight + day && time < superBowlEnd) return true;
+			}
+			return false;
+		}
+
+		// The statuses cutsNeededFor/cutsPlannedFor count against
+		// cutdownRosterSize — ROSTER alone outside duringIrClearingWindow,
+		// ROSTER plus INJURED_RESERVE inside it. Also what gates the Cut
+		// column onto the Injured Reserve table in renderCard: a status this
+		// function doesn't count is a status with no reason to expose a cut
+		// dropdown, since cutsNeeded/cutsPlanned would never see the mark.
+		function cutCountableStatuses(now = new Date()) {
+			return duringIrClearingWindow(now) ? ['ROSTER', 'INJURED_RESERVE'] : ['ROSTER'];
+		}
+
+		// How many players a Dynasty roster is over cutdownRosterSize by, or
+		// null when there's nothing to count yet — same two noise gates
+		// rosterLimitProblems uses (a roster mid-draft hasn't gone over
+		// anything, and a league still on last season isn't this week's
+		// problem; NaN < year is false, so a pre-`season` snapshot still gets
+		// a target). Pulled out of renderCard, where cutsNeeded()/cutsPlanned()
+		// close over `league`, so this can be pinned directly.
+		function cutsNeededFor(league, year, now = new Date()) {
+			if (league.cutdownRosterSize == null) return null;
+			if (league.draftInProgress === true) return null;
+			if (Number(league.season) < Number(year)) return null;
+			const statuses = cutCountableStatuses(now);
+			const rosterCount = (league.players || []).filter((p) => statuses.includes((p.status || 'ROSTER').toUpperCase())).length;
+			return Math.max(0, rosterCount - league.cutdownRosterSize);
+		}
+
+		function cutsPlannedFor(league, now = new Date()) {
+			const statuses = cutCountableStatuses(now);
+			return (league.players || [])
+				.filter((p) => statuses.includes((p.status || 'ROSTER').toUpperCase()) && getCutPlan(league.id, p.id))
+				.length;
 		}
 
 		const ADMIN_RANKINGS = [['', 'Automatic'], ['DYNASTY', 'Dynasty'], ['DRAFT', 'Draft'], ['ROS', 'Rest-of-season'], ['WEEKLY', 'Weekly'], ['ADP', 'ADP']];
