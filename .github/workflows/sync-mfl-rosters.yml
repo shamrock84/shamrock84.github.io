@@ -2,8 +2,11 @@ name: Sync MFL Rosters
 
 on:
   schedule:
-    # Every 4 hours
-    - cron: '0 */4 * * *'
+    # Every 4 hours, offset to :17 rather than :00. GitHub's scheduler
+    # queues every repo's top-of-hour cron together, and that contention is
+    # what turned into 20-70 minute delays here — a less popular minute
+    # queues behind less of it. Not a guarantee, just less lateness.
+    - cron: '17 */4 * * *'
   workflow_dispatch:
     inputs:
       refresh_availability:
