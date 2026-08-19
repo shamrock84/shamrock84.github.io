@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-19T04:53:55.866Z",
+  "generatedAt": "2026-08-19T08:57:38.618Z",
   "year": "2026",
   "rankingPools": {
     "DYNASTY|PPR|ALL": {
@@ -5853,7 +5853,7 @@
             "rank": 200,
             "posRank": "WR81",
             "tier": 10,
-            "delta": -11,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/ted-hurst.php"
           }
         },
@@ -5967,7 +5967,7 @@
             "rank": 289,
             "posRank": "K4",
             "tier": 12,
-            "delta": 3,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/will-reichard.php"
           }
         },
@@ -6054,7 +6054,7 @@
           }
         ]
       },
-      "updatedAt": "2026-08-19T04:53:27.187Z",
+      "updatedAt": "2026-08-19T08:55:40.370Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -7080,7 +7080,7 @@
             "rank": 289,
             "posRank": "K4",
             "tier": 12,
-            "delta": 3,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/will-reichard.php"
           }
         },
@@ -7167,7 +7167,7 @@
           }
         ]
       },
-      "updatedAt": "2026-08-19T04:53:28.261Z",
+      "updatedAt": "2026-08-19T08:55:41.092Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -7910,7 +7910,7 @@
             "rank": 214,
             "posRank": "WR89",
             "tier": 11,
-            "delta": -11,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/jalen-nailor.php"
           },
           "sleeper": {
@@ -8293,7 +8293,7 @@
           }
         ]
       },
-      "updatedAt": "2026-08-19T04:53:29.212Z",
+      "updatedAt": "2026-08-19T08:55:42.090Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -9236,7 +9236,7 @@
           }
         ]
       },
-      "updatedAt": "2026-08-19T04:53:30.323Z",
+      "updatedAt": "2026-08-19T08:55:43.280Z",
       "error": null,
       "tags": [
         "Best Ball"
@@ -10251,7 +10251,7 @@
         "ir": 50,
         "position": []
       },
-      "updatedAt": "2026-08-19T04:53:31.155Z",
+      "updatedAt": "2026-08-19T08:55:44.460Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -11207,7 +11207,7 @@
         "ir": 50,
         "position": []
       },
-      "updatedAt": "2026-08-19T04:53:31.999Z",
+      "updatedAt": "2026-08-19T08:55:45.467Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -11813,7 +11813,7 @@
             "rank": 15,
             "posRank": "RB4",
             "tier": 2,
-            "delta": null,
+            "delta": 1,
             "url": "https://www.fantasypros.com/nfl/players/jonathan-taylor.php"
           }
         },
@@ -11888,7 +11888,7 @@
             "rank": 181,
             "posRank": "RB58",
             "tier": 8,
-            "delta": 8,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/nick-singleton.php"
           },
           "sleeper": {
@@ -12143,7 +12143,7 @@
             "rank": 395,
             "posRank": "TE74",
             "tier": 12,
-            "delta": null,
+            "delta": 8,
             "url": "https://www.fantasypros.com/nfl/players/michael-trigg.php"
           }
         },
@@ -12164,7 +12164,7 @@
             "rank": 369,
             "posRank": "TE62",
             "tier": 12,
-            "delta": null,
+            "delta": -8,
             "url": "https://www.fantasypros.com/nfl/players/zach-ertz.php"
           }
         }
@@ -12178,7 +12178,7 @@
         "ir": 15,
         "position": []
       },
-      "updatedAt": "2026-08-19T04:53:33.078Z",
+      "updatedAt": "2026-08-19T08:55:46.517Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -12594,7 +12594,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-19T04:53:33.372Z",
+      "updatedAt": "2026-08-19T08:55:46.795Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -12751,7 +12751,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-19T04:53:33.649Z",
+      "updatedAt": "2026-08-19T08:55:47.059Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -13394,7 +13394,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-19T04:53:34.362Z",
+      "updatedAt": "2026-08-19T08:55:47.597Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -13509,8 +13509,18 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet",
+      "scoringError": "MFL request failed (429): /export?TYPE=league&L=72911&JSON=1 (year 2026)",
       "draftInProgress": false,
+      "rankings": {
+        "type": "DRAFT",
+        "scoring": "HALF",
+        "position": "OP",
+        "lastUpdated": "8/19",
+        "totalExperts": 94,
+        "matched": 17,
+        "total": 18
+      },
+      "rankingsError": null,
       "available": [
         "Jeremiyah Love",
         "Jadarian Price",
@@ -13554,16 +13564,6 @@
         "Jaylin Noel"
       ],
       "availableAt": "2026-08-18T08:54:32.081Z",
-      "rankings": {
-        "type": "DRAFT",
-        "scoring": "HALF",
-        "position": "OP",
-        "lastUpdated": "8/19",
-        "totalExperts": 94,
-        "matched": 17,
-        "total": 18
-      },
-      "rankingsError": null,
       "power": {
         "computedAt": "2026-08-18T08:54:32.081Z",
         "scoring": "HALF",
@@ -14176,7 +14176,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-19T04:53:35.102Z",
+      "updatedAt": "2026-08-19T08:55:48.348Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -14311,7 +14311,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet",
+      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=54766&JSON=1 (year 2026)",
       "draftInProgress": false,
       "available": [
         "Kenny Gainwell",
@@ -14707,7 +14707,7 @@
             "rank": 14,
             "posRank": "RB3",
             "tier": 2,
-            "delta": null,
+            "delta": -1,
             "url": "https://www.fantasypros.com/nfl/players/christian-mccaffrey.php"
           }
         },
@@ -14815,7 +14815,7 @@
             "rank": 56,
             "posRank": "RB17",
             "tier": 4,
-            "delta": -2,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/josh-jacobs.php"
           }
         },
@@ -15027,7 +15027,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-19T04:53:35.863Z",
+      "updatedAt": "2026-08-19T08:55:49.460Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -15143,51 +15143,8 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet",
+      "scoringError": "MFL request failed (429): /export?TYPE=league&L=54458&JSON=1 (year 2026)",
       "draftInProgress": false,
-      "available": [
-        "Kenny Gainwell",
-        "Stefon Diggs",
-        "Tyler Allgeier",
-        "Tyjae Spears",
-        "Tank Bigsby",
-        "Chig Okonkwo",
-        "Deebo Samuel Sr.",
-        "Brian Robinson Jr.",
-        "Dylan Sampson",
-        "Jonah Coleman",
-        "MarShawn Lloyd",
-        "Braelon Allen",
-        "Adonai Mitchell",
-        "Jalen Nailor",
-        "Ray Davis",
-        "Nicholas Singleton",
-        "Dontayvion Wicks",
-        "Sean Tucker",
-        "Emmett Johnson",
-        "Tua Tagovailoa",
-        "Terrance Ferguson",
-        "Kimani Vidal",
-        "Pat Bryant",
-        "Emanuel Wilson",
-        "Kaytron Allen",
-        "Mike Washington Jr.",
-        "Rashod Bateman",
-        "Jaylin Noel",
-        "Jaydon Blue",
-        "Darnell Mooney",
-        "George Holani",
-        "Ollie Gordon II",
-        "Jaylen Wright",
-        "Oscar Delp",
-        "Zachariah Branch",
-        "Justice Hill",
-        "Demond Claiborne",
-        "Isaiah Davis",
-        "Tory Horton",
-        "Jack Bech"
-      ],
-      "availableAt": "2026-08-18T08:54:32.081Z",
       "rankings": {
         "type": "DRAFT",
         "scoring": "HALF",
@@ -15198,8 +15155,50 @@
         "total": 20
       },
       "rankingsError": null,
+      "available": [
+        "Kenny Gainwell",
+        "Stefon Diggs",
+        "Tyler Allgeier",
+        "Tyjae Spears",
+        "Tank Bigsby",
+        "Deebo Samuel Sr.",
+        "Chig Okonkwo",
+        "Dylan Sampson",
+        "Jonah Coleman",
+        "Brian Robinson Jr.",
+        "Braelon Allen",
+        "Adonai Mitchell",
+        "MarShawn Lloyd",
+        "Jalen Nailor",
+        "Dontayvion Wicks",
+        "Ray Davis",
+        "Nicholas Singleton",
+        "Tua Tagovailoa",
+        "Terrance Ferguson",
+        "Sean Tucker",
+        "Emmett Johnson",
+        "Kimani Vidal",
+        "Pat Bryant",
+        "Kaytron Allen",
+        "Mike Washington Jr.",
+        "Rashod Bateman",
+        "Emanuel Wilson",
+        "Jaylin Noel",
+        "Darnell Mooney",
+        "Jaydon Blue",
+        "Jaylen Wright",
+        "Oscar Delp",
+        "George Holani",
+        "Ollie Gordon II",
+        "Zachariah Branch",
+        "Jack Bech",
+        "Demond Claiborne",
+        "Justice Hill",
+        "Chimere Dike",
+        "Tory Horton"
+      ],
       "power": {
-        "computedAt": "2026-08-18T08:54:32.081Z",
+        "computedAt": "2026-08-19T08:55:38.433Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -15211,8 +15210,8 @@
           "teams": [
             {
               "franchiseId": "0004",
-              "score": 2536,
-              "depth": 1308.2,
+              "score": 2535.6,
+              "depth": 1306.4,
               "filled": 10,
               "slotCount": 10
             },
@@ -15225,14 +15224,14 @@
             },
             {
               "franchiseId": "0006",
-              "score": 2346.2,
+              "score": 2345.4,
               "depth": 1132.2,
               "filled": 10,
               "slotCount": 10
             },
             {
               "franchiseId": "0003",
-              "score": 2323.1,
+              "score": 2323,
               "depth": 1011.4,
               "filled": 10,
               "slotCount": 10
@@ -15246,15 +15245,15 @@
             },
             {
               "franchiseId": "0008",
-              "score": 2305.8,
+              "score": 2303.9,
               "depth": 1244.4,
               "filled": 10,
               "slotCount": 10
             },
             {
               "franchiseId": "0001",
-              "score": 2270.1,
-              "depth": 1031,
+              "score": 2271.9,
+              "depth": 1025.2,
               "filled": 10,
               "slotCount": 10
             },
@@ -15267,14 +15266,14 @@
             },
             {
               "franchiseId": "0010",
-              "score": 2137.1,
+              "score": 2135.9,
               "depth": 967.4,
               "filled": 10,
               "slotCount": 10
             },
             {
               "franchiseId": "0005",
-              "score": 2113.4,
+              "score": 2107.6,
               "depth": 1063,
               "filled": 10,
               "slotCount": 10
@@ -15293,21 +15292,21 @@
             {
               "franchiseId": "0002",
               "score": 20.8,
-              "depth": 4.2,
+              "depth": 4.1,
               "filled": 10,
               "slotCount": 10
             },
             {
               "franchiseId": "0007",
               "score": 20.4,
-              "depth": 5.3,
+              "depth": 5.2,
               "filled": 10,
               "slotCount": 10
             },
             {
               "franchiseId": "0001",
-              "score": 20.1,
-              "depth": 4.1,
+              "score": 20.2,
+              "depth": 4,
               "filled": 10,
               "slotCount": 10
             },
@@ -15328,7 +15327,7 @@
             {
               "franchiseId": "0009",
               "score": 19.1,
-              "depth": 3.7,
+              "depth": 3.6,
               "filled": 10,
               "slotCount": 10
             },
@@ -15356,14 +15355,15 @@
             {
               "franchiseId": "0005",
               "score": 15.3,
-              "depth": 4.1,
+              "depth": 4.2,
               "filled": 10,
               "slotCount": 10
             }
           ]
         },
         "projectionsUnavailable": null
-      }
+      },
+      "availableAt": "2026-08-19T08:55:38.433Z"
     },
     {
       "id": "61777",
@@ -15840,7 +15840,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-19T04:53:36.403Z",
+      "updatedAt": "2026-08-19T08:55:50.239Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -15966,51 +15966,8 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet",
+      "scoringError": "MFL request failed (429): /export?TYPE=league&L=61777&JSON=1 (year 2026)",
       "draftInProgress": false,
-      "available": [
-        "Kenny Gainwell",
-        "Stefon Diggs",
-        "Tank Bigsby",
-        "Chig Okonkwo",
-        "Deebo Samuel Sr.",
-        "Brian Robinson Jr.",
-        "Jonah Coleman",
-        "Braelon Allen",
-        "Ray Davis",
-        "Nicholas Singleton",
-        "Sean Tucker",
-        "Emanuel Wilson",
-        "Kaytron Allen",
-        "Mike Washington Jr.",
-        "Jaylin Noel",
-        "Jaydon Blue",
-        "Darnell Mooney",
-        "George Holani",
-        "Ollie Gordon II",
-        "Jaylen Wright",
-        "Oscar Delp",
-        "Zachariah Branch",
-        "Justice Hill",
-        "Demond Claiborne",
-        "Isaiah Davis",
-        "Tory Horton",
-        "Jack Bech",
-        "Chris Brooks",
-        "Germie Bernard",
-        "LeQuint Allen Jr.",
-        "Samaje Perine",
-        "Chris Bell",
-        "Ted Hurst III",
-        "Jordan James",
-        "Malachi Fields",
-        "Kaelon Black",
-        "Elijah Sarratt",
-        "DJ Giddens",
-        "Ty Johnson",
-        "Christian Kirk"
-      ],
-      "availableAt": "2026-08-18T08:54:32.081Z",
       "rankings": {
         "type": "DRAFT",
         "scoring": "HALF",
@@ -16021,8 +15978,50 @@
         "total": 20
       },
       "rankingsError": null,
+      "available": [
+        "Kenny Gainwell",
+        "Stefon Diggs",
+        "Tank Bigsby",
+        "Deebo Samuel Sr.",
+        "Chig Okonkwo",
+        "Jonah Coleman",
+        "Brian Robinson Jr.",
+        "Braelon Allen",
+        "Ray Davis",
+        "Nicholas Singleton",
+        "Sean Tucker",
+        "Kaytron Allen",
+        "Mike Washington Jr.",
+        "Emanuel Wilson",
+        "Jaylin Noel",
+        "Darnell Mooney",
+        "Jaydon Blue",
+        "Jaylen Wright",
+        "Oscar Delp",
+        "George Holani",
+        "Ollie Gordon II",
+        "Zachariah Branch",
+        "Jack Bech",
+        "Demond Claiborne",
+        "Justice Hill",
+        "Tory Horton",
+        "Isaiah Davis",
+        "Germie Bernard",
+        "Chris Brooks",
+        "Malachi Fields",
+        "Samaje Perine",
+        "LeQuint Allen Jr.",
+        "Ted Hurst III",
+        "Keenan Allen",
+        "Jordan James",
+        "Chris Bell",
+        "DJ Giddens",
+        "Ty Johnson",
+        "Kaelon Black",
+        "Devaughn Vele"
+      ],
       "power": {
-        "computedAt": "2026-08-18T08:54:32.081Z",
+        "computedAt": "2026-08-19T08:55:38.433Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -16048,28 +16047,28 @@
             },
             {
               "franchiseId": "0002",
-              "score": 2343.5,
+              "score": 2342.8,
               "depth": 1142.1,
               "filled": 10,
               "slotCount": 10
             },
             {
               "franchiseId": "0003",
-              "score": 2328.1,
-              "depth": 1183.3,
+              "score": 2327.7,
+              "depth": 1181.5,
               "filled": 10,
               "slotCount": 10
             },
             {
               "franchiseId": "0010",
-              "score": 2288.7,
+              "score": 2288.6,
               "depth": 1175.8,
               "filled": 10,
               "slotCount": 10
             },
             {
               "franchiseId": "0004",
-              "score": 2253.7,
+              "score": 2251.7,
               "depth": 1012.8,
               "filled": 10,
               "slotCount": 10
@@ -16077,7 +16076,7 @@
             {
               "franchiseId": "0005",
               "score": 2244.8,
-              "depth": 927.6,
+              "depth": 927.5,
               "filled": 10,
               "slotCount": 10
             },
@@ -16097,14 +16096,14 @@
             },
             {
               "franchiseId": "0001",
-              "score": 2084.7,
-              "depth": 994,
+              "score": 2080.6,
+              "depth": 988.3,
               "filled": 10,
               "slotCount": 10
             },
             {
               "franchiseId": "0007",
-              "score": 1932.5,
+              "score": 1931.3,
               "depth": 731.6,
               "filled": 10,
               "slotCount": 10
@@ -16144,20 +16143,20 @@
             {
               "franchiseId": "0009",
               "score": 19.4,
-              "depth": 3.9,
+              "depth": 3.8,
               "filled": 10,
               "slotCount": 10
             },
             {
               "franchiseId": "0005",
-              "score": 18.6,
+              "score": 18.7,
               "depth": 2.1,
               "filled": 10,
               "slotCount": 10
             },
             {
               "franchiseId": "0004",
-              "score": 17.9,
+              "score": 17.8,
               "depth": 3.4,
               "filled": 10,
               "slotCount": 10
@@ -16172,27 +16171,27 @@
             {
               "franchiseId": "0010",
               "score": 16.9,
-              "depth": 4.8,
+              "depth": 4.9,
               "filled": 10,
               "slotCount": 10
             },
             {
               "franchiseId": "0011",
-              "score": 16.8,
+              "score": 16.7,
               "depth": 2.8,
               "filled": 10,
               "slotCount": 10
             },
             {
               "franchiseId": "0006",
-              "score": 16.3,
+              "score": 16.4,
               "depth": 2.7,
               "filled": 10,
               "slotCount": 10
             },
             {
               "franchiseId": "0007",
-              "score": 13.6,
+              "score": 13.5,
               "depth": 2.8,
               "filled": 10,
               "slotCount": 10
@@ -16200,7 +16199,8 @@
           ]
         },
         "projectionsUnavailable": null
-      }
+      },
+      "availableAt": "2026-08-19T08:55:38.433Z"
     },
     {
       "id": "30196",
@@ -16638,7 +16638,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-19T04:53:36.910Z",
+      "updatedAt": "2026-08-19T08:55:50.726Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -17129,7 +17129,7 @@
             "rank": 14,
             "posRank": "RB3",
             "tier": 2,
-            "delta": null,
+            "delta": -1,
             "url": "https://www.fantasypros.com/nfl/players/christian-mccaffrey.php"
           }
         },
@@ -17153,7 +17153,7 @@
             "rank": 56,
             "posRank": "RB17",
             "tier": 4,
-            "delta": -2,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/josh-jacobs.php"
           }
         },
@@ -17446,7 +17446,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-19T04:53:37.636Z",
+      "updatedAt": "2026-08-19T08:55:51.394Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -17582,7 +17582,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet",
+      "scoringError": "MFL request failed (429): /export?TYPE=league&L=26222&JSON=1 (year 2026)",
       "draftInProgress": false,
       "available": [
         "Kenny Gainwell",
@@ -18031,7 +18031,7 @@
             "rank": 56,
             "posRank": "RB17",
             "tier": 4,
-            "delta": -2,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/josh-jacobs.php"
           }
         },
@@ -18227,7 +18227,7 @@
         }
       ],
       "draftInProgress": false,
-      "updatedAt": "2026-08-19T04:53:37.921Z",
+      "updatedAt": "2026-08-19T08:55:51.508Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -18492,7 +18492,7 @@
         "Trey Benson"
       ],
       "power": {
-        "computedAt": "2026-08-19T04:53:25.519Z",
+        "computedAt": "2026-08-19T08:55:38.433Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -18568,14 +18568,14 @@
             {
               "franchiseId": "9",
               "score": 2039.4,
-              "depth": 750.5,
+              "depth": 745.1,
               "filled": 10,
               "slotCount": 10
             },
             {
               "franchiseId": "2",
               "score": 2016.8,
-              "depth": 815.5,
+              "depth": 836.6,
               "filled": 10,
               "slotCount": 10
             },
@@ -18685,7 +18685,7 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-08-19T04:53:25.519Z"
+      "availableAt": "2026-08-19T08:55:38.433Z"
     },
     {
       "id": "1966972",
@@ -18696,7 +18696,7 @@
       "teamName": "Big Dart Energy",
       "url": "https://fantasy.espn.com/football/team?leagueId=1966972&teamId=10",
       "players": [],
-      "updatedAt": "2026-08-19T04:53:38.056Z",
+      "updatedAt": "2026-08-19T08:55:51.712Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -18887,7 +18887,7 @@
       "teamName": "Jeffer Justinson",
       "url": "https://fantasy.espn.com/football/team?leagueId=421871710&teamId=5",
       "players": [],
-      "updatedAt": "2026-08-19T04:53:38.134Z",
+      "updatedAt": "2026-08-19T08:55:51.772Z",
       "error": null,
       "tags": [],
       "provider": "espn",
