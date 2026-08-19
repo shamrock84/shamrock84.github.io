@@ -703,6 +703,15 @@
 		table.contract-expiration-summary th:first-child,
 		table.contract-expiration-summary td:first-child {
 			text-align: left;
+		}
+		/* th:first-child (the "Future Roster"/"Future Taxi" label) is left
+		   at that — no further override — so it inherits the same bold,
+		   muted styling every other th already gets, rather than reading
+		   lighter than the year headers beside it. td:first-child (the
+		   "Expiring"/"Salary" row labels) still wants its own lighter
+		   weight: those are labels for the bold numbers in the same row,
+		   not headers themselves. */
+		table.contract-expiration-summary td:first-child {
 			color: var(--muted);
 			font-weight: normal;
 		}
