@@ -2287,11 +2287,11 @@
 
 			const table = el('table', { class: 'contract-expiration-summary' });
 			const headRow = el('tr');
-			headRow.appendChild(el('th', { text: 'Expiring' }));
+			headRow.appendChild(el('th', {}));
 			for (const col of columns) headRow.appendChild(el('th', { text: String(col.year) }));
 			table.appendChild(headRow);
 			const countRow = el('tr');
-			countRow.appendChild(el('td', { text: 'Contracts' }));
+			countRow.appendChild(el('td', { text: 'Expiring' }));
 			for (const col of columns) countRow.appendChild(el('td', { text: String(col.count) }));
 			table.appendChild(countRow);
 			return table;
