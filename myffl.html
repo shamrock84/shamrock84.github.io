@@ -2275,10 +2275,19 @@
 		// (this league year + N - 1) — a 1-year contract is already expiring
 		// THIS year, not next — which is what sorts N=1/2/3 straight into
 		// three columns without needing to know each player's actual
-		// draft/signing year. Spans the whole roster (Active/Taxi/Practice/IR
-		// alike, the same scope the top-of-card contract banner already uses)
-		// rather than just Active Roster — a taxi-squad stash's contract comes
-		// due exactly the same as a starter's.
+		// draft/signing year. Spans Active Roster/Practice Squad/Injured
+		// Reserve — the same scope the top-of-card contract banner uses,
+		// minus one exclusion below — rather than just Active Roster, since
+		// an IR or practice-squad contract comes due exactly the same as a
+		// starter's.
+		//
+		// Taxi Squad is the one status excluded, deliberately unlike the
+		// top-of-card banner: a taxi-squad stash doesn't count against the
+		// cap at all until promoted, so its contract length and salary
+		// aren't a planning concern here the way an active roster spot's
+		// are — those numbers only start to matter the day it's promoted,
+		// at which point it shows up in this table like any other roster
+		// move would.
 		//
 		// A player expiring in a given column contributes nothing to that
 		// column's Salary — the whole point of the row is what's still on the
@@ -2302,7 +2311,10 @@
 			const currentYear = Number(league.season ?? pageData?.year);
 			if (!Number.isFinite(currentYear)) return null;
 
-			const players = league.players || [];
+			// Taxi Squad doesn't count against the cap until promoted — see the
+			// comment above — so it's excluded here even though the top-of-card
+			// contract banner (contractsMissing) counts it.
+			const players = (league.players || []).filter((p) => (p.status || 'ROSTER').toUpperCase() !== 'TAXI_SQUAD');
 			const columns = [1, 2, 3].map((contractLength) => {
 				// A contractLength-year contract signed this season plays out
 				// its final season contractLength - 1 years from now, e.g. a
