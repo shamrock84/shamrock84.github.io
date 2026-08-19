@@ -2905,7 +2905,13 @@
 				}
 
 				if (summaryEl) card.appendChild(summaryEl);
-				if (expirationSummaryEl) card.appendChild(expirationSummaryEl);
+				// Scoped to the ROSTER iteration like summaryEl above — appendChild
+				// on a node already in the DOM *moves* it, so without this gate the
+				// still-truthy outer expirationSummaryEl would get relocated to the
+				// end of the card on every later status group's iteration too,
+				// landing it after Taxi Squad/IR instead of right below Salary
+				// Summary where it belongs.
+				if (group.key === 'ROSTER' && expirationSummaryEl) card.appendChild(expirationSummaryEl);
 			}
 
 			if (!league.players || league.players.length === 0) {
