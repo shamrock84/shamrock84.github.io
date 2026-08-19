@@ -2303,6 +2303,15 @@
 		// contributes nothing there, and nothing to any column after that
 		// either — a lapsed contract doesn't come back.
 		//
+		// The current-year column also folds in Salary Adjustments, the same
+		// figure the Salary Summary above adds into its own Total — real
+		// money against this season's cap (drops, carry-overs, ...) rather
+		// than a projection, so it only ever lands in the one column that
+		// isn't a projection either. With every contract length known (real
+		// or planned), that first column equals the Salary Summary's Total
+		// exactly; the two later columns have no adjustments figure to add
+		// since nothing projects a future season's drops and carry-overs.
+		//
 		// Returns null only when the league's own current year can't be
 		// resolved (a rosters.json written before leagues carried `season`,
 		// and pageData.year unset too) — there's no year to label the columns
@@ -2316,13 +2325,18 @@
 			// comment above — so it's excluded here even though the top-of-card
 			// contract banner (contractsMissing) counts it.
 			const players = (league.players || []).filter((p) => (p.status || 'ROSTER').toUpperCase() !== 'TAXI_SQUAD');
+			// Same drops/carry-overs figure the Salary Summary above folds into
+			// its own Total — real money against this season's cap, with
+			// nothing in it that projects forward, so it belongs in the
+			// current-year column only, never the two projected ones.
+			const adjustments = Number(league.salaryAdjustments) || 0;
 			const columns = [1, 2, 3].map((contractLength) => {
 				// A contractLength-year contract signed this season plays out
 				// its final season contractLength - 1 years from now, e.g. a
 				// 1-year deal is done at the end of THIS season (offset 0).
 				const columnOffset = contractLength - 1;
 				let expiringCount = 0;
-				let salaryTotal = 0;
+				let salaryTotal = columnOffset === 0 ? adjustments : 0;
 				for (const p of players) {
 					const yrs = contractYearsRemaining(league, p);
 					// Independent checks, not if/else-if: a player expiring
