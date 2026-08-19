@@ -2265,29 +2265,19 @@
 		// constant rather than something read off a response.
 		const CONTRACT_SALARY_ESCALATION_RATE = 1.075;
 
-		// Auction/salary-cap leagues only, appended right below the Salary
-		// Summary — for each of the next three league years, how many
-		// contracts expire at its end (Expiring) and what the roster's
-		// remaining contracts will cost that year (Salary), for planning
-		// contract lengths against. contractYearsRemaining counts down to a
-		// player's final season the same way MFL's own Yrs column does, so a
-		// player showing an N-year contract plays out its last season in
-		// (this league year + N - 1) — a 1-year contract is already expiring
-		// THIS year, not next — which is what sorts N=1/2/3 straight into
-		// three columns without needing to know each player's actual
-		// draft/signing year. Spans Active Roster/Practice Squad/Injured
-		// Reserve — the same scope the top-of-card contract banner uses,
-		// minus one exclusion below — rather than just Active Roster, since
-		// an IR or practice-squad contract comes due exactly the same as a
-		// starter's.
-		//
-		// Taxi Squad is the one status excluded, deliberately unlike the
-		// top-of-card banner: a taxi-squad stash doesn't count against the
-		// cap at all until promoted, so its contract length and salary
-		// aren't a planning concern here the way an active roster spot's
-		// are — those numbers only start to matter the day it's promoted,
-		// at which point it shows up in this table like any other roster
-		// move would.
+		// Shared by buildContractExpirationSummary (Active Roster/Practice
+		// Squad/Injured Reserve) and buildTaxiContractExpirationSummary (Taxi
+		// Squad alone) — same table, built over whatever player list the
+		// caller hands it, so the two scopes can never drift out of sync with
+		// each other's math. For each of the next three league years, how
+		// many contracts expire at its end (Expiring) and what those players
+		// will cost that year (Salary), for planning contract lengths
+		// against. contractYearsRemaining counts down to a player's final
+		// season the same way MFL's own Yrs column does, so a player showing
+		// an N-year contract plays out its last season in (this league year
+		// + N - 1) — a 1-year contract is already expiring THIS year, not
+		// next — which is what sorts N=1/2/3 straight into three columns
+		// without needing to know each player's actual draft/signing year.
 		//
 		// A player expiring in a column's own year still counts toward that
 		// column's Salary — that's the whole point of calling it their final
@@ -2303,33 +2293,24 @@
 		// contributes nothing there, and nothing to any column after that
 		// either — a lapsed contract doesn't come back.
 		//
-		// The current-year column also folds in Salary Adjustments, the same
-		// figure the Salary Summary above adds into its own Total — real
-		// money against this season's cap (drops, carry-overs, ...) rather
-		// than a projection, so it only ever lands in the one column that
-		// isn't a projection either. With every contract length known (real
-		// or planned), that first column equals the Salary Summary's Total
-		// exactly; the two later columns have no adjustments figure to add
-		// since nothing projects a future season's drops and carry-overs.
+		// includeAdjustments folds Salary Adjustments — the same figure the
+		// Salary Summary above adds into its own Total — into the
+		// current-year column only: real money against this season's cap
+		// rather than a projection, so it only ever lands in the one column
+		// that isn't a projection either, and it's the caller's call whether
+		// it applies at all (see buildTaxiContractExpirationSummary, where it
+		// never does — that figure is Active Roster's alone).
 		//
 		// Returns null only when the league's own current year can't be
 		// resolved (a rosters.json written before leagues carried `season`,
 		// and pageData.year unset too) — there's no year to label the columns
 		// with. It does NOT hide itself when every count is zero: watching
 		// zeros turn into numbers as lengths get planned is the point.
-		function buildContractExpirationSummary(league) {
+		function buildContractYearTable(league, players, { includeAdjustments = false } = {}) {
 			const currentYear = Number(league.season ?? pageData?.year);
 			if (!Number.isFinite(currentYear)) return null;
 
-			// Taxi Squad doesn't count against the cap until promoted — see the
-			// comment above — so it's excluded here even though the top-of-card
-			// contract banner (contractsMissing) counts it.
-			const players = (league.players || []).filter((p) => (p.status || 'ROSTER').toUpperCase() !== 'TAXI_SQUAD');
-			// Same drops/carry-overs figure the Salary Summary above folds into
-			// its own Total — real money against this season's cap, with
-			// nothing in it that projects forward, so it belongs in the
-			// current-year column only, never the two projected ones.
-			const adjustments = Number(league.salaryAdjustments) || 0;
+			const adjustments = includeAdjustments ? (Number(league.salaryAdjustments) || 0) : 0;
 			const columns = [1, 2, 3].map((contractLength) => {
 				// A contractLength-year contract signed this season plays out
 				// its final season contractLength - 1 years from now, e.g. a
@@ -2365,6 +2346,51 @@
 			for (const col of columns) salaryRow.appendChild(el('td', { text: `$${col.salaryTotal.toFixed(2)}` }));
 			table.appendChild(salaryRow);
 			return table;
+		}
+
+		// Auction/salary-cap leagues only, appended right below the Salary
+		// Summary. Spans Active Roster/Practice Squad/Injured Reserve — the
+		// same scope the top-of-card contract banner uses, minus Taxi Squad —
+		// rather than just Active Roster, since an IR or practice-squad
+		// contract comes due exactly the same as a starter's.
+		//
+		// Taxi Squad is the one status excluded here, deliberately unlike the
+		// top-of-card banner: a taxi-squad stash doesn't count against the
+		// cap at all until promoted, so its contract length and salary aren't
+		// a planning concern in THIS table the way an active roster spot's
+		// are. It gets the identical breakdown on its own terms instead — see
+		// buildTaxiContractExpirationSummary below — so that "not a concern
+		// here" doesn't read as "not tracked anywhere."
+		function buildContractExpirationSummary(league) {
+			const players = (league.players || []).filter((p) => (p.status || 'ROSTER').toUpperCase() !== 'TAXI_SQUAD');
+			return buildContractYearTable(league, players, { includeAdjustments: true });
+		}
+
+		// Taxi Squad's own salary total — same effectiveSalary fallback
+		// (real value wins, else a manager's locally-planned one) the Active
+		// Roster's Salary Summary uses, but just the one Total row: no
+		// Salary Adjustments/Salary Cap/Cap Room Available, since none of
+		// that applies to a group of players who don't count against the cap
+		// at all until promoted (see buildContractExpirationSummary above).
+		function buildTaxiSalaryTotal(league, players) {
+			const total = players.reduce((sum, p) => sum + effectiveSalary(league, p), 0);
+			const table = el('table', { class: 'salary-summary' });
+			const tr = el('tr', { class: 'salary-total' });
+			tr.appendChild(el('td', { text: 'Total' }));
+			tr.appendChild(el('td', { text: `$${total.toFixed(2)}` }));
+			table.appendChild(tr);
+			return table;
+		}
+
+		// Taxi Squad's own Expiring/Salary breakdown, appended right below
+		// buildTaxiSalaryTotal — same buildContractYearTable as Active
+		// Roster's, over Taxi Squad's players instead. No Salary Adjustments:
+		// that figure is Active Roster's alone (it's already folded into
+		// buildContractExpirationSummary's current-year column), and folding
+		// it in a second time here would double-count it across the two
+		// tables for anyone reading both.
+		function buildTaxiContractExpirationSummary(league, players) {
+			return buildContractYearTable(league, players, { includeAdjustments: false });
 		}
 
 		function buildLoginPrompt() {
@@ -2815,12 +2841,37 @@
 					expirationSummaryEl = fresh;
 				}
 			};
+			// Taxi Squad's own Total (buildTaxiSalaryTotal) and Expiring/Salary
+			// breakdown (buildTaxiContractExpirationSummary) — same outer-
+			// variable shape as expirationSummaryEl above, appended below the
+			// Taxi Squad table further down. byStatus isn't assigned until
+			// after this point in renderCard, but these are closures invoked
+			// later (never during this initial setup), by which time it is.
+			let taxiSalaryTotalEl = null;
+			const refreshTaxiSalaryTotal = () => {
+				if (!taxiSalaryTotalEl) return;
+				const fresh = buildTaxiSalaryTotal(league, byStatus.TAXI_SQUAD || []);
+				taxiSalaryTotalEl.replaceWith(fresh);
+				taxiSalaryTotalEl = fresh;
+			};
+			let taxiExpirationSummaryEl = null;
+			const refreshTaxiExpirationSummary = () => {
+				if (!taxiExpirationSummaryEl) return;
+				const fresh = buildTaxiContractExpirationSummary(league, byStatus.TAXI_SQUAD || []);
+				if (fresh) {
+					taxiExpirationSummaryEl.replaceWith(fresh);
+					taxiExpirationSummaryEl = fresh;
+				}
+			};
 			// Single callback threaded through every status group's table so a
-			// Yrs edit anywhere on the roster refreshes both the top-of-card
-			// banner and the expiration summary in one pass.
+			// Yrs edit anywhere on the roster refreshes the top-of-card banner,
+			// the main expiration summary, and Taxi Squad's own breakdown in
+			// one pass — cheap enough to always run all three regardless of
+			// which group's row actually changed.
 			const onContractChange = () => {
 				refreshContractBanner();
 				refreshExpirationSummary();
+				refreshTaxiExpirationSummary();
 			};
 
 			// Logged out this is hidden outright rather than shown with plans
@@ -2951,6 +3002,13 @@
 				if (group.key === 'ROSTER' && isAuction) {
 					expirationSummaryEl = buildContractExpirationSummary(league);
 				}
+				// Taxi Squad's own Total and Expiring/Salary breakdown, same
+				// isAuction-only gate and same reasoning as the ROSTER pair
+				// above — not gated on salaryCap either.
+				if (group.key === 'TAXI_SQUAD' && isAuction) {
+					taxiSalaryTotalEl = buildTaxiSalaryTotal(league, players);
+					taxiExpirationSummaryEl = buildTaxiContractExpirationSummary(league, players);
+				}
 				// Cuts are counted against cutdownRosterSize, which normally
 				// applies to ROSTER-status players only (see rosterLimitProblems,
 				// which checks MFL's own separate taxi/IR limits instead) — except
@@ -2970,7 +3028,12 @@
 							if (summaryEl && fresh) summaryEl.replaceWith(fresh);
 							summaryEl = fresh;
 						}
-						: undefined;
+						: group.key === 'TAXI_SQUAD' && isAuction
+							? () => {
+								refreshTaxiSalaryTotal();
+								refreshTaxiExpirationSummary();
+							}
+							: undefined;
 					card.appendChild(buildRosterTable(players, isAuction, group.key.toLowerCase(), league.id, onSalaryChange, onContractChange, showCutColumn, refreshCutBanner));
 				}
 
@@ -2982,6 +3045,10 @@
 				// landing it after Taxi Squad/IR instead of right below Salary
 				// Summary where it belongs.
 				if (group.key === 'ROSTER' && expirationSummaryEl) card.appendChild(expirationSummaryEl);
+				// Same move-not-duplicate caveat, scoped to the TAXI_SQUAD
+				// iteration instead.
+				if (group.key === 'TAXI_SQUAD' && taxiSalaryTotalEl) card.appendChild(taxiSalaryTotalEl);
+				if (group.key === 'TAXI_SQUAD' && taxiExpirationSummaryEl) card.appendChild(taxiExpirationSummaryEl);
 			}
 
 			if (!league.players || league.players.length === 0) {
