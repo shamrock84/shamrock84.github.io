@@ -2481,7 +2481,12 @@
 		// and pageData.year unset too) — there's no year to label the columns
 		// with. It does NOT hide itself when every count is zero: watching
 		// zeros turn into numbers as lengths get planned is the point.
-		function buildContractYearTable(league, players, { includeAdjustments = false } = {}) {
+		//
+		// label fills the otherwise-empty top-left cell — "Future Roster" or
+		// "Future Taxi" — naming which table this is, since the two sit one
+		// above the other on a Taxi Squad card and "Expiring"/"Salary" alone
+		// don't say which player group they're counting.
+		function buildContractYearTable(league, players, { includeAdjustments = false, label = '' } = {}) {
 			const currentYear = Number(league.season ?? pageData?.year);
 			if (!Number.isFinite(currentYear)) return null;
 
@@ -2509,7 +2514,7 @@
 
 			const table = el('table', { class: 'contract-expiration-summary' });
 			const headRow = el('tr');
-			headRow.appendChild(el('th', {}));
+			headRow.appendChild(el('th', { text: label }));
 			for (const col of columns) headRow.appendChild(el('th', { text: String(col.year) }));
 			table.appendChild(headRow);
 			const countRow = el('tr');
@@ -2538,7 +2543,7 @@
 		// here" doesn't read as "not tracked anywhere."
 		function buildContractExpirationSummary(league) {
 			const players = (league.players || []).filter((p) => (p.status || 'ROSTER').toUpperCase() !== 'TAXI_SQUAD');
-			return buildContractYearTable(league, players, { includeAdjustments: true });
+			return buildContractYearTable(league, players, { includeAdjustments: true, label: 'Future Roster' });
 		}
 
 		// Taxi Squad's own salary total — same effectiveSalary fallback
@@ -2565,7 +2570,7 @@
 		// it in a second time here would double-count it across the two
 		// tables for anyone reading both.
 		function buildTaxiContractExpirationSummary(league, players) {
-			return buildContractYearTable(league, players, { includeAdjustments: false });
+			return buildContractYearTable(league, players, { includeAdjustments: false, label: 'Future Taxi' });
 		}
 
 		function buildLoginPrompt() {
