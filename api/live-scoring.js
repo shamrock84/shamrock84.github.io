@@ -17,13 +17,9 @@ import {
   fetchEspnScoring,
   fetchSleeperScoring,
 } from '../scripts/lib/providers.mjs';
+import { applyCors } from './lib/cors.mjs';
 
 const CONFIG_PATH = fileURLToPath(new URL('../config/leagues.json', import.meta.url));
-
-const ALLOWED_ORIGINS = new Set([
-  'https://melbostads.com',
-  'https://shamrock84.github.io',
-]);
 
 // Module-level cache — persists across warm invocations of this function
 // instance (not guaranteed across cold starts, which is fine: worst case we
@@ -68,17 +64,7 @@ async function loadLeagueConfig() {
 }
 
 export default async function handler(req, res) {
-  const origin = req.headers.origin;
-  if (origin && ALLOWED_ORIGINS.has(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Cache-Control', 'no-store');
-
-  if (req.method === 'OPTIONS') {
-    res.status(204).end();
-    return;
-  }
+  if (applyCors(req, res, { methods: 'GET, OPTIONS' })) return;
   if (req.method !== 'GET') {
     res.status(405).json({ error: 'Method not allowed' });
     return;

@@ -9,10 +9,7 @@
 // enforces a cooldown so the page can't be used to hammer the workflow (and
 // in turn MFL/ESPN's APIs) by spamming the button or the endpoint directly.
 
-const ALLOWED_ORIGINS = new Set([
-  'https://melbostads.com',
-  'https://shamrock84.github.io',
-]);
+import { applyCors } from './lib/cors.mjs';
 
 const OWNER = 'shamrock84';
 const REPO = 'shamrock84.github.io';
@@ -27,17 +24,7 @@ const COOLDOWN_MS = 2 * 60 * 1000; // 2 min
 let lastTriggeredAt = 0;
 
 export default async function handler(req, res) {
-  const origin = req.headers.origin;
-  if (origin && ALLOWED_ORIGINS.has(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Cache-Control', 'no-store');
-
-  if (req.method === 'OPTIONS') {
-    res.status(204).end();
-    return;
-  }
+  if (applyCors(req, res, { methods: 'POST, OPTIONS' })) return;
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
     return;

@@ -21,13 +21,9 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { fetchMflLineup, mflLogin, submitMflLineup } from '../scripts/lib/providers.mjs';
 import { verifyToken } from './lib/auth.mjs';
+import { applyCors } from './lib/cors.mjs';
 
 const CONFIG_PATH = fileURLToPath(new URL('../config/leagues.json', import.meta.url));
-
-const ALLOWED_ORIGINS = new Set([
-  'https://melbostads.com',
-  'https://shamrock84.github.io',
-]);
 
 async function loadLineupPilotLeague(leagueId) {
   const raw = await readFile(CONFIG_PATH, 'utf8');
@@ -36,18 +32,7 @@ async function loadLineupPilotLeague(leagueId) {
 }
 
 export default async function handler(req, res) {
-  const origin = req.headers.origin;
-  if (origin && ALLOWED_ORIGINS.has(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Cache-Control', 'no-store');
-
-  if (req.method === 'OPTIONS') {
-    res.status(204).end();
-    return;
-  }
+  if (applyCors(req, res, { methods: 'POST, OPTIONS', headers: 'Content-Type, Authorization' })) return;
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
     return;
