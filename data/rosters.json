@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-08-19T16:49:17.897Z",
+  "generatedAt": "2026-08-19T20:47:32.979Z",
   "year": "2026",
   "rankingPools": {
     "DYNASTY|PPR|ALL": {
       "type": "DYNASTY",
       "scoring": "PPR",
       "position": "ALL",
-      "lastUpdated": "8/18",
+      "lastUpdated": "8/19",
       "players": [
         {
           "name": "Ja'Marr Chase",
@@ -632,18 +632,18 @@
           "url": "/nfl/players/eli-stowers.php"
         },
         {
-          "name": "Jayden Higgins",
-          "position": "WR",
-          "team": "HOU",
-          "rank": 90,
-          "url": "/nfl/players/jayden-higgins.php"
-        },
-        {
           "name": "Michael Wilson",
           "position": "WR",
           "team": "ARI",
-          "rank": 91,
+          "rank": 90,
           "url": "/nfl/players/michael-wilson.php"
+        },
+        {
+          "name": "Jayden Higgins",
+          "position": "WR",
+          "team": "HOU",
+          "rank": 91,
+          "url": "/nfl/players/jayden-higgins.php"
         },
         {
           "name": "Denzel Boston",
@@ -842,18 +842,18 @@
           "url": "/nfl/players/cam-ward.php"
         },
         {
-          "name": "Jonathon Brooks",
-          "position": "RB",
-          "team": "CAR",
-          "rank": 120,
-          "url": "/nfl/players/jonathon-brooks.php"
-        },
-        {
           "name": "Jalen Coker",
           "position": "WR",
           "team": "CAR",
-          "rank": 121,
+          "rank": 120,
           "url": "/nfl/players/jalen-coker.php"
+        },
+        {
+          "name": "Jonathon Brooks",
+          "position": "RB",
+          "team": "CAR",
+          "rank": 121,
+          "url": "/nfl/players/jonathon-brooks.php"
         },
         {
           "name": "C.J. Stroud",
@@ -1122,25 +1122,25 @@
           "url": "/nfl/players/tyrone-tracy-jr.php"
         },
         {
+          "name": "Jaylin Noel",
+          "position": "WR",
+          "team": "HOU",
+          "rank": 160,
+          "url": "/nfl/players/jaylin-noel.php"
+        },
+        {
           "name": "Tyler Allgeier",
           "position": "RB",
           "team": "ARI",
-          "rank": 160,
+          "rank": 161,
           "url": "/nfl/players/tyler-allgeier.php"
         },
         {
           "name": "T.J. Hockenson",
           "position": "TE",
           "team": "MIN",
-          "rank": 161,
-          "url": "/nfl/players/tj-hockenson.php"
-        },
-        {
-          "name": "Jaylin Noel",
-          "position": "WR",
-          "team": "HOU",
           "rank": 162,
-          "url": "/nfl/players/jaylin-noel.php"
+          "url": "/nfl/players/tj-hockenson.php"
         },
         {
           "name": "Jordan Mason",
@@ -2061,18 +2061,18 @@
           "url": "/nfl/players/kyren-williams.php"
         },
         {
-          "name": "Joe Burrow",
-          "position": "QB",
-          "team": "CIN",
-          "rank": 43,
-          "url": "/nfl/players/joe-burrow.php"
-        },
-        {
           "name": "Josh Jacobs",
           "position": "RB",
           "team": "GB",
-          "rank": 44,
+          "rank": 43,
           "url": "/nfl/players/josh-jacobs.php"
+        },
+        {
+          "name": "Joe Burrow",
+          "position": "QB",
+          "team": "CIN",
+          "rank": 44,
+          "url": "/nfl/players/joe-burrow.php"
         },
         {
           "name": "Javonte Williams",
@@ -2152,25 +2152,25 @@
           "url": "/nfl/players/jayden-daniels.php"
         },
         {
+          "name": "Christian Watson",
+          "position": "WR",
+          "team": "GB",
+          "rank": 56,
+          "url": "/nfl/players/christian-watson.php"
+        },
+        {
           "name": "Rome Odunze",
           "position": "WR",
           "team": "CHI",
-          "rank": 56,
+          "rank": 57,
           "url": "/nfl/players/rome-odunze.php"
         },
         {
           "name": "D'Andre Swift",
           "position": "RB",
           "team": "CHI",
-          "rank": 57,
-          "url": "/nfl/players/dandre-swift.php"
-        },
-        {
-          "name": "Christian Watson",
-          "position": "WR",
-          "team": "GB",
           "rank": 58,
-          "url": "/nfl/players/christian-watson.php"
+          "url": "/nfl/players/dandre-swift.php"
         },
         {
           "name": "Jalen Hurts",
@@ -2257,32 +2257,32 @@
           "url": "/nfl/players/jadarian-price.php"
         },
         {
-          "name": "Tucker Kraft",
-          "position": "TE",
-          "team": "GB",
-          "rank": 71,
-          "url": "/nfl/players/tucker-kraft.php"
-        },
-        {
           "name": "Harold Fannin Jr.",
           "position": "TE",
           "team": "CLE",
-          "rank": 72,
+          "rank": 71,
           "url": "/nfl/players/harold-fannin-jr.php"
         },
         {
-          "name": "Jaylen Warren",
-          "position": "RB",
-          "team": "PIT",
-          "rank": 73,
-          "url": "/nfl/players/jaylen-warren.php"
+          "name": "Tucker Kraft",
+          "position": "TE",
+          "team": "GB",
+          "rank": 72,
+          "url": "/nfl/players/tucker-kraft.php"
         },
         {
           "name": "Brian Thomas Jr.",
           "position": "WR",
           "team": "JAX",
-          "rank": 74,
+          "rank": 73,
           "url": "/nfl/players/brian-thomas-jr.php"
+        },
+        {
+          "name": "Jaylen Warren",
+          "position": "RB",
+          "team": "PIT",
+          "rank": 74,
+          "url": "/nfl/players/jaylen-warren.php"
         },
         {
           "name": "Trevor Lawrence",
@@ -2355,18 +2355,18 @@
           "url": "/nfl/players/courtland-sutton.php"
         },
         {
-          "name": "Josh Downs",
-          "position": "WR",
-          "team": "IND",
-          "rank": 85,
-          "url": "/nfl/players/josh-downs.php"
-        },
-        {
           "name": "Wan'Dale Robinson",
           "position": "WR",
           "team": "TEN",
-          "rank": 86,
+          "rank": 85,
           "url": "/nfl/players/wandale-robinson.php"
+        },
+        {
+          "name": "Josh Downs",
+          "position": "WR",
+          "team": "IND",
+          "rank": 86,
+          "url": "/nfl/players/josh-downs.php"
         },
         {
           "name": "Michael Wilson",
@@ -2397,18 +2397,18 @@
           "url": "/nfl/players/brock-purdy.php"
         },
         {
-          "name": "Jaxson Dart",
-          "position": "QB",
-          "team": "NYG",
-          "rank": 91,
-          "url": "/nfl/players/jaxson-dart.php"
-        },
-        {
           "name": "Chuba Hubbard",
           "position": "RB",
           "team": "CAR",
-          "rank": 92,
+          "rank": 91,
           "url": "/nfl/players/chuba-hubbard.php"
+        },
+        {
+          "name": "Jaxson Dart",
+          "position": "QB",
+          "team": "NYG",
+          "rank": 92,
+          "url": "/nfl/players/jaxson-dart.php"
         },
         {
           "name": "Alec Pierce",
@@ -2446,25 +2446,25 @@
           "url": "/nfl/players/quentin-johnston.php"
         },
         {
+          "name": "Bo Nix",
+          "position": "QB",
+          "team": "DEN",
+          "rank": 98,
+          "url": "/nfl/players/bo-nix.php"
+        },
+        {
           "name": "Patrick Mahomes II",
           "position": "QB",
           "team": "KC",
-          "rank": 98,
+          "rank": 99,
           "url": "/nfl/players/patrick-mahomes.php"
         },
         {
           "name": "Jakobi Meyers",
           "position": "WR",
           "team": "JAX",
-          "rank": 99,
-          "url": "/nfl/players/jakobi-meyers.php"
-        },
-        {
-          "name": "Bo Nix",
-          "position": "QB",
-          "team": "DEN",
           "rank": 100,
-          "url": "/nfl/players/bo-nix.php"
+          "url": "/nfl/players/jakobi-meyers.php"
         },
         {
           "name": "George Kittle",
@@ -2537,18 +2537,18 @@
           "url": "/nfl/players/blake-corum.php"
         },
         {
-          "name": "Kyler Murray",
-          "position": "QB",
-          "team": "MIN",
-          "rank": 111,
-          "url": "/nfl/players/kyler-murray.php"
-        },
-        {
           "name": "Kyle Monangai",
           "position": "RB",
           "team": "CHI",
-          "rank": 112,
+          "rank": 111,
           "url": "/nfl/players/kyle-monangai.php"
+        },
+        {
+          "name": "Kyler Murray",
+          "position": "QB",
+          "team": "MIN",
+          "rank": 112,
+          "url": "/nfl/players/kyler-murray.php"
         },
         {
           "name": "Dalton Kincaid",
@@ -2572,18 +2572,18 @@
           "url": "/nfl/players/aaron-jones.php"
         },
         {
-          "name": "Isaiah Likely",
-          "position": "TE",
-          "team": "NYG",
-          "rank": 116,
-          "url": "/nfl/players/isaiah-likely.php"
-        },
-        {
           "name": "Baker Mayfield",
           "position": "QB",
           "team": "TB",
-          "rank": 117,
+          "rank": 116,
           "url": "/nfl/players/baker-mayfield.php"
+        },
+        {
+          "name": "Isaiah Likely",
+          "position": "TE",
+          "team": "NYG",
+          "rank": 117,
+          "url": "/nfl/players/isaiah-likely.php"
         },
         {
           "name": "Jacory Croskey-Merritt",
@@ -2593,18 +2593,18 @@
           "url": "/nfl/players/jacory-croskeymerritt.php"
         },
         {
-          "name": "Jordan Love",
-          "position": "QB",
-          "team": "GB",
-          "rank": 119,
-          "url": "/nfl/players/jordan-love.php"
-        },
-        {
           "name": "Jordan Mason",
           "position": "RB",
           "team": "MIN",
-          "rank": 120,
+          "rank": 119,
           "url": "/nfl/players/jordan-mason.php"
+        },
+        {
+          "name": "Jordan Love",
+          "position": "QB",
+          "team": "GB",
+          "rank": 120,
+          "url": "/nfl/players/jordan-love.php"
         },
         {
           "name": "Khalil Shakir",
@@ -2628,25 +2628,25 @@
           "url": "/nfl/players/kevin-concepcion.php"
         },
         {
+          "name": "Jordyn Tyson",
+          "position": "WR",
+          "team": "NO",
+          "rank": 124,
+          "url": "/nfl/players/jordyn-tyson.php"
+        },
+        {
           "name": "Tyler Shough",
           "position": "QB",
           "team": "NO",
-          "rank": 124,
+          "rank": 125,
           "url": "/nfl/players/tyler-shough.php"
         },
         {
           "name": "Jalen Coker",
           "position": "WR",
           "team": "CAR",
-          "rank": 125,
-          "url": "/nfl/players/jalen-coker.php"
-        },
-        {
-          "name": "Jordyn Tyson",
-          "position": "WR",
-          "team": "NO",
           "rank": 126,
-          "url": "/nfl/players/jordyn-tyson.php"
+          "url": "/nfl/players/jalen-coker.php"
         },
         {
           "name": "Xavier Worthy",
@@ -2656,18 +2656,18 @@
           "url": "/nfl/players/xavier-worthy.php"
         },
         {
-          "name": "Mark Andrews",
-          "position": "TE",
-          "team": "BAL",
-          "rank": 128,
-          "url": "/nfl/players/mark-andrews.php"
-        },
-        {
           "name": "Matthew Golden",
           "position": "WR",
           "team": "GB",
-          "rank": 129,
+          "rank": 128,
           "url": "/nfl/players/matthew-golden.php"
+        },
+        {
+          "name": "Mark Andrews",
+          "position": "TE",
+          "team": "BAL",
+          "rank": 129,
+          "url": "/nfl/players/mark-andrews.php"
         },
         {
           "name": "Romeo Doubs",
@@ -2712,18 +2712,18 @@
           "url": "/nfl/players/tyler-allgeier.php"
         },
         {
-          "name": "Chris Rodriguez Jr.",
-          "position": "RB",
-          "team": "JAX",
-          "rank": 136,
-          "url": "/nfl/players/chris-rodriguez-jr.php"
-        },
-        {
           "name": "Tyjae Spears",
           "position": "RB",
           "team": "TEN",
-          "rank": 137,
+          "rank": 136,
           "url": "/nfl/players/tyjae-spears.php"
+        },
+        {
+          "name": "Chris Rodriguez Jr.",
+          "position": "RB",
+          "team": "JAX",
+          "rank": 137,
+          "url": "/nfl/players/chris-rodriguez-jr.php"
         },
         {
           "name": "Sam Darnold",
@@ -2761,25 +2761,25 @@
           "url": "/nfl/players/deebo-samuel.php"
         },
         {
-          "name": "Alvin Kamara",
-          "position": "RB",
-          "team": "NO",
+          "name": "De'Zhaun Stribling",
+          "position": "WR",
+          "team": "SF",
           "rank": 143,
-          "url": "/nfl/players/alvin-kamara.php"
-        },
-        {
-          "name": "Keaton Mitchell",
-          "position": "RB",
-          "team": "LAC",
-          "rank": 144,
-          "url": "/nfl/players/keaton-mitchell.php"
+          "url": "/nfl/players/dezhaun-stribling.php"
         },
         {
           "name": "Denzel Boston",
           "position": "WR",
           "team": "CLE",
-          "rank": 145,
+          "rank": 144,
           "url": "/nfl/players/denzel-boston.php"
+        },
+        {
+          "name": "Alvin Kamara",
+          "position": "RB",
+          "team": "NO",
+          "rank": 145,
+          "url": "/nfl/players/alvin-kamara.php"
         },
         {
           "name": "Rashid Shaheed",
@@ -2789,25 +2789,25 @@
           "url": "/nfl/players/rashid-shaheed.php"
         },
         {
-          "name": "De'Zhaun Stribling",
-          "position": "WR",
-          "team": "SF",
+          "name": "Keaton Mitchell",
+          "position": "RB",
+          "team": "LAC",
           "rank": 147,
-          "url": "/nfl/players/dezhaun-stribling.php"
-        },
-        {
-          "name": "Chig Okonkwo",
-          "position": "TE",
-          "team": "WAS",
-          "rank": 148,
-          "url": "/nfl/players/chigoziem-okonkwo.php"
+          "url": "/nfl/players/keaton-mitchell.php"
         },
         {
           "name": "Daniel Jones",
           "position": "QB",
           "team": "IND",
-          "rank": 149,
+          "rank": 148,
           "url": "/nfl/players/daniel-jones.php"
+        },
+        {
+          "name": "Chig Okonkwo",
+          "position": "TE",
+          "team": "WAS",
+          "rank": 149,
+          "url": "/nfl/players/chigoziem-okonkwo.php"
         },
         {
           "name": "Brenton Strange",
@@ -2845,18 +2845,18 @@
           "url": "/nfl/players/hunter-henry.php"
         },
         {
-          "name": "Bryce Young",
-          "position": "QB",
-          "team": "CAR",
-          "rank": 155,
-          "url": "/nfl/players/bryce-young.php"
-        },
-        {
           "name": "Tank Bigsby",
           "position": "RB",
           "team": "PHI",
-          "rank": 156,
+          "rank": 155,
           "url": "/nfl/players/tank-bigsby.php"
+        },
+        {
+          "name": "Bryce Young",
+          "position": "QB",
+          "team": "CAR",
+          "rank": 156,
+          "url": "/nfl/players/bryce-young.php"
         },
         {
           "name": "Jauan Jennings",
@@ -2876,14 +2876,14 @@
           "name": "Tre Tucker",
           "position": "WR",
           "team": "LV",
-          "rank": 159,
+          "rank": 160,
           "url": "/nfl/players/tre-tucker.php"
         },
         {
           "name": "Adonai Mitchell",
           "position": "WR",
           "team": "NYJ",
-          "rank": 160,
+          "rank": 161,
           "url": "/nfl/players/adonai-mitchell.php"
         },
         {
@@ -2894,25 +2894,25 @@
           "url": "/nfl/players/jalen-mcmillan.php"
         },
         {
+          "name": "Dalton Schultz",
+          "position": "TE",
+          "team": "HOU",
+          "rank": 163,
+          "url": "/nfl/players/dalton-schultz.php"
+        },
+        {
           "name": "Brian Robinson Jr.",
           "position": "RB",
           "team": "ATL",
-          "rank": 163,
+          "rank": 164,
           "url": "/nfl/players/brian-robinson-jr.php"
         },
         {
           "name": "Tre' Harris",
           "position": "WR",
           "team": "LAC",
-          "rank": 164,
-          "url": "/nfl/players/tre-harris.php"
-        },
-        {
-          "name": "Dalton Schultz",
-          "position": "TE",
-          "team": "HOU",
           "rank": 165,
-          "url": "/nfl/players/dalton-schultz.php"
+          "url": "/nfl/players/tre-harris.php"
         },
         {
           "name": "Omar Cooper Jr.",
@@ -2950,18 +2950,18 @@
           "url": "/nfl/players/tj-hockenson.php"
         },
         {
-          "name": "Jalen Nailor",
-          "position": "WR",
-          "team": "LV",
-          "rank": 174,
-          "url": "/nfl/players/jalen-nailor.php"
-        },
-        {
           "name": "Jacoby Brissett",
           "position": "QB",
           "team": "ARI",
-          "rank": 175,
+          "rank": 174,
           "url": "/nfl/players/jacoby-brissett.php"
+        },
+        {
+          "name": "Jalen Nailor",
+          "position": "WR",
+          "team": "LV",
+          "rank": 175,
+          "url": "/nfl/players/jalen-nailor.php"
         },
         {
           "name": "Ryan Flournoy",
@@ -2978,25 +2978,32 @@
           "url": "/nfl/players/malik-washington.php"
         },
         {
-          "name": "Dontayvion Wicks",
-          "position": "WR",
-          "team": "PHI",
-          "rank": 179,
-          "url": "/nfl/players/dontayvion-wicks.php"
-        },
-        {
           "name": "Ray Davis",
           "position": "RB",
           "team": "BUF",
-          "rank": 180,
+          "rank": 179,
           "url": "/nfl/players/ray-davis.php"
+        },
+        {
+          "name": "Dontayvion Wicks",
+          "position": "WR",
+          "team": "PHI",
+          "rank": 180,
+          "url": "/nfl/players/dontayvion-wicks.php"
         },
         {
           "name": "Pat Bryant",
           "position": "WR",
           "team": "DEN",
-          "rank": 182,
+          "rank": 181,
           "url": "/nfl/players/pat-bryant.php"
+        },
+        {
+          "name": "MarShawn Lloyd",
+          "position": "RB",
+          "team": "GB",
+          "rank": 184,
+          "url": "/nfl/players/marshawn-lloyd.php"
         },
         {
           "name": "Emmett Johnson",
@@ -3006,102 +3013,95 @@
           "url": "/nfl/players/emmett-johnson.php"
         },
         {
-          "name": "MarShawn Lloyd",
-          "position": "RB",
-          "team": "GB",
-          "rank": 186,
-          "url": "/nfl/players/marshawn-lloyd.php"
+          "name": "Jaylin Noel",
+          "position": "WR",
+          "team": "HOU",
+          "rank": 189,
+          "url": "/nfl/players/jaylin-noel.php"
         },
         {
           "name": "Sean Tucker",
           "position": "RB",
           "team": "TB",
-          "rank": 189,
+          "rank": 190,
           "url": "/nfl/players/sean-tucker.php"
         },
         {
           "name": "AJ Barner",
           "position": "TE",
           "team": "SEA",
-          "rank": 190,
+          "rank": 191,
           "url": "/nfl/players/aj-barner.php"
+        },
+        {
+          "name": "Kayshon Boutte",
+          "position": "WR",
+          "team": "NE",
+          "rank": 192,
+          "url": "/nfl/players/kayshon-boutte.php"
         },
         {
           "name": "Kimani Vidal",
           "position": "RB",
           "team": "LAC",
-          "rank": 191,
+          "rank": 193,
           "url": "/nfl/players/kimani-vidal.php"
         },
         {
           "name": "James Conner",
           "position": "RB",
           "team": "ARI",
-          "rank": 193,
+          "rank": 195,
           "url": "/nfl/players/james-conner.php"
-        },
-        {
-          "name": "Kayshon Boutte",
-          "position": "WR",
-          "team": "NE",
-          "rank": 194,
-          "url": "/nfl/players/kayshon-boutte.php"
         },
         {
           "name": "Calvin Ridley",
           "position": "WR",
           "team": "TEN",
-          "rank": 195,
+          "rank": 198,
           "url": "/nfl/players/calvin-ridley.php"
+        },
+        {
+          "name": "Tank Dell",
+          "position": "WR",
+          "team": "HOU",
+          "rank": 199,
+          "url": "/nfl/players/nathaniel-dell.php"
         },
         {
           "name": "Mike Washington Jr.",
           "position": "RB",
           "team": "LV",
-          "rank": 198,
+          "rank": 200,
           "url": "/nfl/players/mike-washington-jr.php"
         },
         {
           "name": "Nicholas Singleton",
           "position": "RB",
           "team": "TEN",
-          "rank": 200,
+          "rank": 202,
           "url": "/nfl/players/nick-singleton.php"
-        },
-        {
-          "name": "Troy Franklin",
-          "position": "WR",
-          "team": "DEN",
-          "rank": 201,
-          "url": "/nfl/players/troy-franklin.php"
         },
         {
           "name": "Gunnar Helm",
           "position": "TE",
           "team": "TEN",
-          "rank": 202,
+          "rank": 203,
           "url": "/nfl/players/gunnar-helm.php"
         },
         {
-          "name": "Jaylin Noel",
+          "name": "Troy Franklin",
           "position": "WR",
-          "team": "HOU",
-          "rank": 203,
-          "url": "/nfl/players/jaylin-noel.php"
+          "team": "DEN",
+          "rank": 204,
+          "url": "/nfl/players/troy-franklin.php"
         },
         {
           "name": "Kenyon Sadiq",
           "position": "TE",
           "team": "NYJ",
-          "rank": 205,
-          "url": "/nfl/players/kenyon-sadiq.php"
-        },
-        {
-          "name": "Tank Dell",
-          "position": "WR",
-          "team": "HOU",
           "rank": 207,
-          "url": "/nfl/players/nathaniel-dell.php"
+          "url": "/nfl/players/kenyon-sadiq.php"
         },
         {
           "name": "Isaac TeSlaa",
@@ -3114,7 +3114,7 @@
           "name": "Emanuel Wilson",
           "position": "RB",
           "team": "SEA",
-          "rank": 209,
+          "rank": 211,
           "url": "/nfl/players/emanuel-wilson.php"
         },
         {
@@ -3135,22 +3135,22 @@
           "name": "Aaron Rodgers",
           "position": "QB",
           "team": "PIT",
-          "rank": 216,
+          "rank": 215,
           "url": "/nfl/players/aaron-rodgers.php"
         },
         {
           "name": "Darnell Mooney",
           "position": "WR",
           "team": "NYG",
-          "rank": 217,
+          "rank": 216,
           "url": "/nfl/players/darnell-mooney.php"
         },
         {
-          "name": "Kaytron Allen",
+          "name": "Jaydon Blue",
           "position": "RB",
-          "team": "WAS",
+          "team": "DAL",
           "rank": 218,
-          "url": "/nfl/players/kaytron-allen.php"
+          "url": "/nfl/players/jaydon-blue.php"
         },
         {
           "name": "Geno Smith",
@@ -3160,17 +3160,17 @@
           "url": "/nfl/players/geno-smith.php"
         },
         {
-          "name": "Jaydon Blue",
+          "name": "Kaytron Allen",
           "position": "RB",
-          "team": "DAL",
+          "team": "WAS",
           "rank": 220,
-          "url": "/nfl/players/jaydon-blue.php"
+          "url": "/nfl/players/kaytron-allen.php"
         },
         {
           "name": "Antonio Williams",
           "position": "WR",
           "team": "WAS",
-          "rank": 221,
+          "rank": 223,
           "url": "/nfl/players/antonio-williams-wr.php"
         },
         {
@@ -3195,39 +3195,39 @@
           "url": "/nfl/players/pat-freiermuth.php"
         },
         {
-          "name": "Germie Bernard",
+          "name": "Keenan Allen",
           "position": "WR",
-          "team": "PIT",
-          "rank": 229,
-          "url": "/nfl/players/germie-bernard.php"
+          "team": "IND",
+          "rank": 228,
+          "url": "/nfl/players/keenan-allen.php"
         },
         {
           "name": "Cade Otton",
           "position": "TE",
           "team": "TB",
-          "rank": 230,
+          "rank": 231,
           "url": "/nfl/players/cade-otton.php"
+        },
+        {
+          "name": "Germie Bernard",
+          "position": "WR",
+          "team": "PIT",
+          "rank": 232,
+          "url": "/nfl/players/germie-bernard.php"
         },
         {
           "name": "Jaylen Wright",
           "position": "RB",
           "team": "MIA",
-          "rank": 235,
+          "rank": 236,
           "url": "/nfl/players/jaylen-wright.php"
         },
         {
           "name": "Greg Dulcich",
           "position": "TE",
           "team": "MIA",
-          "rank": 236,
-          "url": "/nfl/players/greg-dulcich.php"
-        },
-        {
-          "name": "Keenan Allen",
-          "position": "WR",
-          "team": "IND",
           "rank": 237,
-          "url": "/nfl/players/keenan-allen.php"
+          "url": "/nfl/players/greg-dulcich.php"
         },
         {
           "name": "Jack Bech",
@@ -3247,7 +3247,7 @@
           "name": "Chimere Dike",
           "position": "WR",
           "team": "TEN",
-          "rank": 241,
+          "rank": 240,
           "url": "/nfl/players/chimere-dike.php"
         },
         {
@@ -3258,53 +3258,53 @@
           "url": "/nfl/players/justice-hill.php"
         },
         {
+          "name": "Evan Engram",
+          "position": "TE",
+          "team": "DEN",
+          "rank": 243,
+          "url": "/nfl/players/evan-engram.php"
+        },
+        {
           "name": "George Holani",
           "position": "RB",
           "team": "SEA",
-          "rank": 243,
+          "rank": 244,
           "url": "/nfl/players/george-holani.php"
         },
         {
           "name": "Fernando Mendoza",
           "position": "QB",
           "team": "LV",
-          "rank": 244,
-          "url": "/nfl/players/fernando-mendoza.php"
-        },
-        {
-          "name": "Evan Engram",
-          "position": "TE",
-          "team": "DEN",
           "rank": 245,
-          "url": "/nfl/players/evan-engram.php"
-        },
-        {
-          "name": "Demond Claiborne",
-          "position": "RB",
-          "team": "MIN",
-          "rank": 247,
-          "url": "/nfl/players/demond-claiborne.php"
+          "url": "/nfl/players/fernando-mendoza.php"
         },
         {
           "name": "Keon Coleman",
           "position": "WR",
           "team": "BUF",
-          "rank": 248,
+          "rank": 247,
           "url": "/nfl/players/keon-coleman.php"
         },
         {
           "name": "Ted Hurst III",
           "position": "WR",
           "team": "TB",
-          "rank": 249,
+          "rank": 248,
           "url": "/nfl/players/ted-hurst.php"
         },
         {
-          "name": "Elic Ayomanor",
-          "position": "WR",
-          "team": "TEN",
+          "name": "Demond Claiborne",
+          "position": "RB",
+          "team": "MIN",
+          "rank": 249,
+          "url": "/nfl/players/demond-claiborne.php"
+        },
+        {
+          "name": "David Njoku",
+          "position": "TE",
+          "team": "LAC",
           "rank": 250,
-          "url": "/nfl/players/elic-ayomanor.php"
+          "url": "/nfl/players/david-njoku.php"
         },
         {
           "name": "Isaiah Davis",
@@ -3314,18 +3314,18 @@
           "url": "/nfl/players/isaiah-davis.php"
         },
         {
-          "name": "David Njoku",
-          "position": "TE",
-          "team": "LAC",
-          "rank": 252,
-          "url": "/nfl/players/david-njoku.php"
-        },
-        {
           "name": "Malachi Fields",
           "position": "WR",
           "team": "NYG",
-          "rank": 254,
+          "rank": 252,
           "url": "/nfl/players/malachi-fields.php"
+        },
+        {
+          "name": "Elic Ayomanor",
+          "position": "WR",
+          "team": "TEN",
+          "rank": 253,
+          "url": "/nfl/players/elic-ayomanor.php"
         },
         {
           "name": "Chris Bell",
@@ -3356,39 +3356,39 @@
           "url": "/nfl/players/tory-horton.php"
         },
         {
-          "name": "Christian Kirk",
-          "position": "WR",
-          "team": "SF",
-          "rank": 259,
-          "url": "/nfl/players/christian-kirk.php"
-        },
-        {
           "name": "Ja'Kobi Lane",
           "position": "WR",
           "team": "BAL",
-          "rank": 260,
+          "rank": 259,
           "url": "/nfl/players/jakobi-lane.php"
+        },
+        {
+          "name": "Christian Kirk",
+          "position": "WR",
+          "team": "SF",
+          "rank": 260,
+          "url": "/nfl/players/christian-kirk.php"
+        },
+        {
+          "name": "LeQuint Allen Jr.",
+          "position": "RB",
+          "team": "JAX",
+          "rank": 261,
+          "url": "/nfl/players/lequint-allen-jr.php"
         },
         {
           "name": "Elijah Sarratt",
           "position": "WR",
           "team": "BAL",
-          "rank": 261,
+          "rank": 262,
           "url": "/nfl/players/elijah-sarratt.php"
         },
         {
           "name": "Jordan James",
           "position": "RB",
           "team": "SF",
-          "rank": 262,
-          "url": "/nfl/players/jordan-james.php"
-        },
-        {
-          "name": "LeQuint Allen Jr.",
-          "position": "RB",
-          "team": "JAX",
           "rank": 263,
-          "url": "/nfl/players/lequint-allen-jr.php"
+          "url": "/nfl/players/jordan-james.php"
         },
         {
           "name": "Kaelon Black",
@@ -3412,18 +3412,18 @@
           "url": "/nfl/players/devaughn-vele.php"
         },
         {
+          "name": "Caleb Douglas",
+          "position": "WR",
+          "team": "MIA",
+          "rank": 267,
+          "url": "/nfl/players/caleb-douglas.php"
+        },
+        {
           "name": "Chris Brooks",
           "position": "RB",
           "team": "GB",
-          "rank": 267,
-          "url": "/nfl/players/christopher-brooks.php"
-        },
-        {
-          "name": "Samaje Perine",
-          "position": "RB",
-          "team": "CIN",
           "rank": 268,
-          "url": "/nfl/players/samaje-perine.php"
+          "url": "/nfl/players/christopher-brooks.php"
         },
         {
           "name": "DJ Giddens",
@@ -3433,52 +3433,52 @@
           "url": "/nfl/players/dj-giddens.php"
         },
         {
-          "name": "Caleb Douglas",
-          "position": "WR",
-          "team": "MIA",
+          "name": "Samaje Perine",
+          "position": "RB",
+          "team": "CIN",
           "rank": 270,
-          "url": "/nfl/players/caleb-douglas.php"
+          "url": "/nfl/players/samaje-perine.php"
         },
         {
           "name": "Mason Taylor",
           "position": "TE",
           "team": "NYJ",
-          "rank": 271,
+          "rank": 272,
           "url": "/nfl/players/mason-taylor.php"
         },
         {
           "name": "Tyquan Thornton",
           "position": "WR",
           "team": "KC",
-          "rank": 272,
+          "rank": 273,
           "url": "/nfl/players/tyquan-thornton.php"
         },
         {
           "name": "Xavier Legette",
           "position": "WR",
           "team": "CAR",
-          "rank": 273,
+          "rank": 274,
           "url": "/nfl/players/xavier-legette.php"
         },
         {
           "name": "Darius Slayton",
           "position": "WR",
           "team": "NYG",
-          "rank": 274,
+          "rank": 275,
           "url": "/nfl/players/darius-slayton.php"
         },
         {
           "name": "Eli Stowers",
           "position": "TE",
           "team": "PHI",
-          "rank": 275,
+          "rank": 276,
           "url": "/nfl/players/eli-stowers.php"
         },
         {
           "name": "Marvin Mims Jr.",
           "position": "WR",
           "team": "DEN",
-          "rank": 277,
+          "rank": 278,
           "url": "/nfl/players/marvin-mims.php"
         },
         {
@@ -3510,11 +3510,11 @@
           "url": "/nfl/players/cyrus-allen.php"
         },
         {
-          "name": "Malik Davis",
+          "name": "Devin Neal",
           "position": "RB",
-          "team": "DAL",
+          "team": "NO",
           "rank": 283,
-          "url": "/nfl/players/malik-davis.php"
+          "url": "/nfl/players/devin-neal.php"
         }
       ]
     },
@@ -3616,18 +3616,18 @@
           "url": "/nfl/players/caleb-williams.php"
         },
         {
-          "name": "Christian McCaffrey",
-          "position": "RB",
-          "team": "SF",
-          "rank": 14,
-          "url": "/nfl/players/christian-mccaffrey.php"
-        },
-        {
           "name": "Jonathan Taylor",
           "position": "RB",
           "team": "IND",
-          "rank": 15,
+          "rank": 14,
           "url": "/nfl/players/jonathan-taylor.php"
+        },
+        {
+          "name": "Christian McCaffrey",
+          "position": "RB",
+          "team": "SF",
+          "rank": 15,
+          "url": "/nfl/players/christian-mccaffrey.php"
         },
         {
           "name": "Justin Herbert",
@@ -3658,18 +3658,18 @@
           "url": "/nfl/players/brock-purdy.php"
         },
         {
-          "name": "Justin Jefferson",
-          "position": "WR",
-          "team": "MIN",
-          "rank": 20,
-          "url": "/nfl/players/justin-jefferson.php"
-        },
-        {
           "name": "Trevor Lawrence",
           "position": "QB",
           "team": "JAX",
-          "rank": 21,
+          "rank": 20,
           "url": "/nfl/players/trevor-lawrence.php"
+        },
+        {
+          "name": "Justin Jefferson",
+          "position": "WR",
+          "team": "MIN",
+          "rank": 21,
+          "url": "/nfl/players/justin-jefferson.php"
         },
         {
           "name": "Dak Prescott",
@@ -3763,18 +3763,18 @@
           "url": "/nfl/players/nico-collins.php"
         },
         {
-          "name": "George Pickens",
-          "position": "WR",
-          "team": "DAL",
-          "rank": 35,
-          "url": "/nfl/players/george-pickens.php"
-        },
-        {
           "name": "Derrick Henry",
           "position": "RB",
           "team": "BAL",
-          "rank": 36,
+          "rank": 35,
           "url": "/nfl/players/derrick-henry.php"
+        },
+        {
+          "name": "George Pickens",
+          "position": "WR",
+          "team": "DAL",
+          "rank": 36,
+          "url": "/nfl/players/george-pickens.php"
         },
         {
           "name": "Kenneth Walker III",
@@ -3784,18 +3784,18 @@
           "url": "/nfl/players/kenneth-walker-rb.php"
         },
         {
-          "name": "Trey McBride",
-          "position": "TE",
-          "team": "ARI",
-          "rank": 38,
-          "url": "/nfl/players/trey-mcbride.php"
-        },
-        {
           "name": "Matthew Stafford",
           "position": "QB",
           "team": "LAR",
-          "rank": 39,
+          "rank": 38,
           "url": "/nfl/players/matthew-stafford.php"
+        },
+        {
+          "name": "Trey McBride",
+          "position": "TE",
+          "team": "ARI",
+          "rank": 39,
+          "url": "/nfl/players/trey-mcbride.php"
         },
         {
           "name": "Jared Goff",
@@ -3896,39 +3896,39 @@
           "url": "/nfl/players/breece-hall.php"
         },
         {
-          "name": "Ladd McConkey",
-          "position": "WR",
-          "team": "LAC",
-          "rank": 54,
-          "url": "/nfl/players/ladd-mcconkey.php"
-        },
-        {
           "name": "Josh Jacobs",
           "position": "RB",
           "team": "GB",
-          "rank": 55,
+          "rank": 54,
           "url": "/nfl/players/josh-jacobs.php"
         },
         {
           "name": "Jeremiyah Love",
           "position": "RB",
           "team": "ARI",
-          "rank": 56,
+          "rank": 55,
           "url": "/nfl/players/jeremiyah-love.php"
         },
         {
-          "name": "Emeka Egbuka",
+          "name": "Ladd McConkey",
           "position": "WR",
-          "team": "TB",
-          "rank": 57,
-          "url": "/nfl/players/emeka-egbuka.php"
+          "team": "LAC",
+          "rank": 56,
+          "url": "/nfl/players/ladd-mcconkey.php"
         },
         {
           "name": "Tyler Shough",
           "position": "QB",
           "team": "NO",
-          "rank": 58,
+          "rank": 57,
           "url": "/nfl/players/tyler-shough.php"
+        },
+        {
+          "name": "Emeka Egbuka",
+          "position": "WR",
+          "team": "TB",
+          "rank": 58,
+          "url": "/nfl/players/emeka-egbuka.php"
         },
         {
           "name": "Jaylen Waddle",
@@ -3994,18 +3994,18 @@
           "url": "/nfl/players/cam-skattebo.php"
         },
         {
-          "name": "Jameson Williams",
-          "position": "WR",
-          "team": "DET",
-          "rank": 68,
-          "url": "/nfl/players/jameson-williams.php"
-        },
-        {
           "name": "D'Andre Swift",
           "position": "RB",
           "team": "CHI",
-          "rank": 69,
+          "rank": 68,
           "url": "/nfl/players/dandre-swift.php"
+        },
+        {
+          "name": "Jameson Williams",
+          "position": "WR",
+          "team": "DET",
+          "rank": 69,
+          "url": "/nfl/players/jameson-williams.php"
         },
         {
           "name": "Tyler Warren",
@@ -4015,32 +4015,32 @@
           "url": "/nfl/players/tyler-warren.php"
         },
         {
-          "name": "Bucky Irving",
-          "position": "RB",
-          "team": "TB",
-          "rank": 71,
-          "url": "/nfl/players/bucky-irving.php"
-        },
-        {
           "name": "Quinshon Judkins",
           "position": "RB",
           "team": "CLE",
-          "rank": 72,
+          "rank": 71,
           "url": "/nfl/players/quinshon-judkins.php"
         },
         {
           "name": "David Montgomery",
           "position": "RB",
           "team": "HOU",
-          "rank": 73,
+          "rank": 72,
           "url": "/nfl/players/david-montgomery.php"
         },
         {
           "name": "Mike Evans",
           "position": "WR",
           "team": "SF",
-          "rank": 74,
+          "rank": 73,
           "url": "/nfl/players/mike-evans.php"
+        },
+        {
+          "name": "Bucky Irving",
+          "position": "RB",
+          "team": "TB",
+          "rank": 74,
+          "url": "/nfl/players/bucky-irving.php"
         },
         {
           "name": "DJ Moore",
@@ -4085,18 +4085,18 @@
           "url": "/nfl/players/treveyon-henderson.php"
         },
         {
-          "name": "Jadarian Price",
-          "position": "RB",
-          "team": "SEA",
-          "rank": 81,
-          "url": "/nfl/players/jadarian-price.php"
-        },
-        {
           "name": "Sam Darnold",
           "position": "QB",
           "team": "SEA",
-          "rank": 82,
+          "rank": 81,
           "url": "/nfl/players/sam-darnold.php"
+        },
+        {
+          "name": "Jadarian Price",
+          "position": "RB",
+          "team": "SEA",
+          "rank": 82,
+          "url": "/nfl/players/jadarian-price.php"
         },
         {
           "name": "Cam Ward",
@@ -4120,18 +4120,18 @@
           "url": "/nfl/players/tucker-kraft.php"
         },
         {
-          "name": "Marvin Harrison Jr.",
-          "position": "WR",
-          "team": "ARI",
-          "rank": 86,
-          "url": "/nfl/players/marvin-harrison-jr.php"
-        },
-        {
           "name": "Daniel Jones",
           "position": "QB",
           "team": "IND",
-          "rank": 87,
+          "rank": 86,
           "url": "/nfl/players/daniel-jones.php"
+        },
+        {
+          "name": "Marvin Harrison Jr.",
+          "position": "WR",
+          "team": "ARI",
+          "rank": 87,
+          "url": "/nfl/players/marvin-harrison-jr.php"
         },
         {
           "name": "Carnell Tate",
@@ -4183,18 +4183,18 @@
           "url": "/nfl/players/harold-fannin-jr.php"
         },
         {
-          "name": "DK Metcalf",
-          "position": "WR",
-          "team": "PIT",
-          "rank": 95,
-          "url": "/nfl/players/dk-metcalf.php"
-        },
-        {
           "name": "Bryce Young",
           "position": "QB",
           "team": "CAR",
-          "rank": 96,
+          "rank": 95,
           "url": "/nfl/players/bryce-young.php"
+        },
+        {
+          "name": "DK Metcalf",
+          "position": "WR",
+          "team": "PIT",
+          "rank": 96,
+          "url": "/nfl/players/dk-metcalf.php"
         },
         {
           "name": "Rico Dowdle",
@@ -4253,18 +4253,18 @@
           "url": "/nfl/players/michael-pittman.php"
         },
         {
-          "name": "Alec Pierce",
-          "position": "WR",
-          "team": "IND",
-          "rank": 105,
-          "url": "/nfl/players/alec-pierce.php"
-        },
-        {
           "name": "Michael Wilson",
           "position": "WR",
           "team": "ARI",
-          "rank": 106,
+          "rank": 105,
           "url": "/nfl/players/michael-wilson.php"
+        },
+        {
+          "name": "Alec Pierce",
+          "position": "WR",
+          "team": "IND",
+          "rank": 106,
+          "url": "/nfl/players/alec-pierce.php"
         },
         {
           "name": "Chuba Hubbard",
@@ -4344,18 +4344,18 @@
           "url": "/nfl/players/travis-kelce.php"
         },
         {
-          "name": "Kenny Gainwell",
-          "position": "RB",
-          "team": "TB",
-          "rank": 118,
-          "url": "/nfl/players/kenneth-gainwell.php"
-        },
-        {
           "name": "Stefon Diggs",
           "position": "WR",
           "team": "WAS",
-          "rank": 119,
+          "rank": 118,
           "url": "/nfl/players/stefon-diggs.php"
+        },
+        {
+          "name": "Kenny Gainwell",
+          "position": "RB",
+          "team": "TB",
+          "rank": 119,
+          "url": "/nfl/players/kenneth-gainwell.php"
         },
         {
           "name": "Jordan Mason",
@@ -4365,11 +4365,11 @@
           "url": "/nfl/players/jordan-mason.php"
         },
         {
-          "name": "Jakobi Meyers",
+          "name": "Jayden Reed",
           "position": "WR",
-          "team": "JAX",
+          "team": "GB",
           "rank": 121,
-          "url": "/nfl/players/jakobi-meyers.php"
+          "url": "/nfl/players/jayden-reed.php"
         },
         {
           "name": "Makai Lemon",
@@ -4379,11 +4379,11 @@
           "url": "/nfl/players/makai-lemon.php"
         },
         {
-          "name": "Jayden Reed",
+          "name": "Jakobi Meyers",
           "position": "WR",
-          "team": "GB",
+          "team": "JAX",
           "rank": 123,
-          "url": "/nfl/players/jayden-reed.php"
+          "url": "/nfl/players/jakobi-meyers.php"
         },
         {
           "name": "Rachaad White",
@@ -4428,32 +4428,32 @@
           "url": "/nfl/players/jake-ferguson.php"
         },
         {
-          "name": "Mark Andrews",
-          "position": "TE",
-          "team": "BAL",
-          "rank": 130,
-          "url": "/nfl/players/mark-andrews.php"
-        },
-        {
           "name": "Jordyn Tyson",
           "position": "WR",
           "team": "NO",
-          "rank": 131,
+          "rank": 130,
           "url": "/nfl/players/jordyn-tyson.php"
         },
         {
-          "name": "Xavier Worthy",
-          "position": "WR",
-          "team": "KC",
-          "rank": 132,
-          "url": "/nfl/players/xavier-worthy.php"
+          "name": "Mark Andrews",
+          "position": "TE",
+          "team": "BAL",
+          "rank": 131,
+          "url": "/nfl/players/mark-andrews.php"
         },
         {
           "name": "Geno Smith",
           "position": "QB",
           "team": "NYJ",
-          "rank": 133,
+          "rank": 132,
           "url": "/nfl/players/geno-smith.php"
+        },
+        {
+          "name": "Xavier Worthy",
+          "position": "WR",
+          "team": "KC",
+          "rank": 133,
+          "url": "/nfl/players/xavier-worthy.php"
         },
         {
           "name": "KC Concepcion",
@@ -4491,18 +4491,18 @@
           "url": "/nfl/players/matthew-golden.php"
         },
         {
-          "name": "Tyrone Tracy Jr.",
-          "position": "RB",
-          "team": "NYG",
-          "rank": 139,
-          "url": "/nfl/players/tyrone-tracy-jr.php"
-        },
-        {
           "name": "Tyler Allgeier",
           "position": "RB",
           "team": "ARI",
-          "rank": 140,
+          "rank": 139,
           "url": "/nfl/players/tyler-allgeier.php"
+        },
+        {
+          "name": "Tyrone Tracy Jr.",
+          "position": "RB",
+          "team": "NYG",
+          "rank": 140,
+          "url": "/nfl/players/tyrone-tracy-jr.php"
         },
         {
           "name": "Woody Marks",
@@ -4547,18 +4547,18 @@
           "url": "/nfl/players/aaron-rodgers.php"
         },
         {
-          "name": "Alvin Kamara",
-          "position": "RB",
-          "team": "NO",
-          "rank": 147,
-          "url": "/nfl/players/alvin-kamara.php"
-        },
-        {
           "name": "De'Zhaun Stribling",
           "position": "WR",
           "team": "SF",
-          "rank": 148,
+          "rank": 147,
           "url": "/nfl/players/dezhaun-stribling.php"
+        },
+        {
+          "name": "Alvin Kamara",
+          "position": "RB",
+          "team": "NO",
+          "rank": 148,
+          "url": "/nfl/players/alvin-kamara.php"
         },
         {
           "name": "Jonah Coleman",
@@ -4575,25 +4575,25 @@
           "url": "/nfl/players/tank-bigsby.php"
         },
         {
-          "name": "Keaton Mitchell",
-          "position": "RB",
-          "team": "LAC",
-          "rank": 151,
-          "url": "/nfl/players/keaton-mitchell.php"
-        },
-        {
           "name": "Brenton Strange",
           "position": "TE",
           "team": "JAX",
-          "rank": 152,
+          "rank": 151,
           "url": "/nfl/players/brenton-strange.php"
         },
         {
-          "name": "Deebo Samuel Sr.",
-          "position": "WR",
-          "team": "SF",
+          "name": "Keaton Mitchell",
+          "position": "RB",
+          "team": "LAC",
+          "rank": 152,
+          "url": "/nfl/players/keaton-mitchell.php"
+        },
+        {
+          "name": "Hunter Henry",
+          "position": "TE",
+          "team": "NE",
           "rank": 153,
-          "url": "/nfl/players/deebo-samuel.php"
+          "url": "/nfl/players/hunter-henry.php"
         },
         {
           "name": "Chig Okonkwo",
@@ -4603,25 +4603,25 @@
           "url": "/nfl/players/chigoziem-okonkwo.php"
         },
         {
-          "name": "Hunter Henry",
-          "position": "TE",
-          "team": "NE",
-          "rank": 155,
-          "url": "/nfl/players/hunter-henry.php"
-        },
-        {
           "name": "Isiah Pacheco",
           "position": "RB",
           "team": "DET",
-          "rank": 156,
+          "rank": 155,
           "url": "/nfl/players/isiah-pacheco.php"
         },
         {
           "name": "Dylan Sampson",
           "position": "RB",
           "team": "CLE",
-          "rank": 157,
+          "rank": 156,
           "url": "/nfl/players/dylan-sampson.php"
+        },
+        {
+          "name": "Deebo Samuel Sr.",
+          "position": "WR",
+          "team": "SF",
+          "rank": 157,
+          "url": "/nfl/players/deebo-samuel.php"
         },
         {
           "name": "Rashid Shaheed",
@@ -4638,18 +4638,18 @@
           "url": "/nfl/players/denzel-boston.php"
         },
         {
-          "name": "Tre Tucker",
-          "position": "WR",
-          "team": "LV",
-          "rank": 160,
-          "url": "/nfl/players/tre-tucker.php"
-        },
-        {
           "name": "Oronde Gadsden II",
           "position": "TE",
           "team": "LAC",
-          "rank": 161,
+          "rank": 160,
           "url": "/nfl/players/oronde-gadsden-ii.php"
+        },
+        {
+          "name": "Tre Tucker",
+          "position": "WR",
+          "team": "LV",
+          "rank": 161,
+          "url": "/nfl/players/tre-tucker.php"
         },
         {
           "name": "Brian Robinson Jr.",
@@ -4680,18 +4680,18 @@
           "url": "/nfl/players/jerry-jeudy.php"
         },
         {
-          "name": "Adonai Mitchell",
-          "position": "WR",
-          "team": "NYJ",
-          "rank": 166,
-          "url": "/nfl/players/adonai-mitchell.php"
-        },
-        {
           "name": "Jalen McMillan",
           "position": "WR",
           "team": "TB",
-          "rank": 167,
+          "rank": 166,
           "url": "/nfl/players/jalen-mcmillan.php"
+        },
+        {
+          "name": "Adonai Mitchell",
+          "position": "WR",
+          "team": "NYJ",
+          "rank": 167,
+          "url": "/nfl/players/adonai-mitchell.php"
         },
         {
           "name": "T.J. Hockenson",
@@ -4701,25 +4701,25 @@
           "url": "/nfl/players/tj-hockenson.php"
         },
         {
-          "name": "Fernando Mendoza",
-          "position": "QB",
-          "team": "LV",
-          "rank": 169,
-          "url": "/nfl/players/fernando-mendoza.php"
-        },
-        {
           "name": "MarShawn Lloyd",
           "position": "RB",
           "team": "GB",
-          "rank": 170,
+          "rank": 169,
           "url": "/nfl/players/marshawn-lloyd.php"
         },
         {
-          "name": "Jalen Nailor",
-          "position": "WR",
+          "name": "Fernando Mendoza",
+          "position": "QB",
           "team": "LV",
+          "rank": 170,
+          "url": "/nfl/players/fernando-mendoza.php"
+        },
+        {
+          "name": "Jauan Jennings",
+          "position": "WR",
+          "team": "MIN",
           "rank": 171,
-          "url": "/nfl/players/jalen-nailor.php"
+          "url": "/nfl/players/jauan-jennings.php"
         },
         {
           "name": "Omar Cooper Jr.",
@@ -4729,32 +4729,32 @@
           "url": "/nfl/players/omar-cooper-jr.php"
         },
         {
-          "name": "Jauan Jennings",
-          "position": "WR",
-          "team": "MIN",
-          "rank": 173,
-          "url": "/nfl/players/jauan-jennings.php"
-        },
-        {
           "name": "Tre' Harris",
           "position": "WR",
           "team": "LAC",
-          "rank": 174,
+          "rank": 173,
           "url": "/nfl/players/tre-harris.php"
         },
         {
           "name": "AJ Barner",
           "position": "TE",
           "team": "SEA",
-          "rank": 175,
+          "rank": 174,
           "url": "/nfl/players/aj-barner.php"
         },
         {
           "name": "Travis Hunter",
           "position": "WR",
           "team": "JAX",
-          "rank": 176,
+          "rank": 175,
           "url": "/nfl/players/travis-hunter.php"
+        },
+        {
+          "name": "Jalen Nailor",
+          "position": "WR",
+          "team": "LV",
+          "rank": 176,
+          "url": "/nfl/players/jalen-nailor.php"
         },
         {
           "name": "Dontayvion Wicks",
@@ -4771,25 +4771,25 @@
           "url": "/nfl/players/ray-davis.php"
         },
         {
-          "name": "Nicholas Singleton",
-          "position": "RB",
-          "team": "TEN",
-          "rank": 179,
-          "url": "/nfl/players/nick-singleton.php"
-        },
-        {
           "name": "Tua Tagovailoa",
           "position": "QB",
           "team": "ATL",
-          "rank": 180,
+          "rank": 179,
           "url": "/nfl/players/tua-tagovailoa.php"
         },
         {
           "name": "Kenyon Sadiq",
           "position": "TE",
           "team": "NYJ",
-          "rank": 181,
+          "rank": 180,
           "url": "/nfl/players/kenyon-sadiq.php"
+        },
+        {
+          "name": "Nicholas Singleton",
+          "position": "RB",
+          "team": "TEN",
+          "rank": 181,
+          "url": "/nfl/players/nick-singleton.php"
         },
         {
           "name": "Terrance Ferguson",
@@ -4806,25 +4806,25 @@
           "url": "/nfl/players/emmett-johnson.php"
         },
         {
-          "name": "Sean Tucker",
-          "position": "RB",
-          "team": "TB",
-          "rank": 184,
-          "url": "/nfl/players/sean-tucker.php"
-        },
-        {
           "name": "Kayshon Boutte",
           "position": "WR",
           "team": "NE",
-          "rank": 185,
+          "rank": 184,
           "url": "/nfl/players/kayshon-boutte.php"
         },
         {
-          "name": "Gunnar Helm",
-          "position": "TE",
-          "team": "TEN",
+          "name": "Sean Tucker",
+          "position": "RB",
+          "team": "TB",
+          "rank": 185,
+          "url": "/nfl/players/sean-tucker.php"
+        },
+        {
+          "name": "Tank Dell",
+          "position": "WR",
+          "team": "HOU",
           "rank": 186,
-          "url": "/nfl/players/gunnar-helm.php"
+          "url": "/nfl/players/nathaniel-dell.php"
         },
         {
           "name": "Ryan Flournoy",
@@ -4841,67 +4841,67 @@
           "url": "/nfl/players/malik-washington.php"
         },
         {
+          "name": "Gunnar Helm",
+          "position": "TE",
+          "team": "TEN",
+          "rank": 189,
+          "url": "/nfl/players/gunnar-helm.php"
+        },
+        {
           "name": "Kimani Vidal",
           "position": "RB",
           "team": "LAC",
-          "rank": 189,
+          "rank": 190,
           "url": "/nfl/players/kimani-vidal.php"
         },
         {
           "name": "Calvin Ridley",
           "position": "WR",
           "team": "TEN",
-          "rank": 190,
+          "rank": 191,
           "url": "/nfl/players/calvin-ridley.php"
+        },
+        {
+          "name": "Jaylin Noel",
+          "position": "WR",
+          "team": "HOU",
+          "rank": 192,
+          "url": "/nfl/players/jaylin-noel.php"
         },
         {
           "name": "James Conner",
           "position": "RB",
           "team": "ARI",
-          "rank": 191,
+          "rank": 193,
           "url": "/nfl/players/james-conner.php"
         },
         {
           "name": "Pat Bryant",
           "position": "WR",
           "team": "DEN",
-          "rank": 192,
+          "rank": 194,
           "url": "/nfl/players/pat-bryant.php"
-        },
-        {
-          "name": "Kaytron Allen",
-          "position": "RB",
-          "team": "WAS",
-          "rank": 193,
-          "url": "/nfl/players/kaytron-allen.php"
         },
         {
           "name": "Mike Washington Jr.",
           "position": "RB",
           "team": "LV",
-          "rank": 194,
+          "rank": 195,
           "url": "/nfl/players/mike-washington-jr.php"
+        },
+        {
+          "name": "Kaytron Allen",
+          "position": "RB",
+          "team": "WAS",
+          "rank": 196,
+          "url": "/nfl/players/kaytron-allen.php"
         },
         {
           "name": "Rashod Bateman",
           "position": "WR",
           "team": "BAL",
-          "rank": 195,
-          "url": "/nfl/players/rashod-bateman.php"
-        },
-        {
-          "name": "Isaac TeSlaa",
-          "position": "WR",
-          "team": "DET",
-          "rank": 196,
-          "url": "/nfl/players/isaac-teslaa.php"
-        },
-        {
-          "name": "Tank Dell",
-          "position": "WR",
-          "team": "HOU",
           "rank": 197,
-          "url": "/nfl/players/nathaniel-dell.php"
+          "url": "/nfl/players/rashod-bateman.php"
         },
         {
           "name": "Cade Otton",
@@ -4918,53 +4918,53 @@
           "url": "/nfl/players/pat-freiermuth.php"
         },
         {
+          "name": "Isaac TeSlaa",
+          "position": "WR",
+          "team": "DET",
+          "rank": 200,
+          "url": "/nfl/players/isaac-teslaa.php"
+        },
+        {
           "name": "Emanuel Wilson",
           "position": "RB",
           "team": "SEA",
-          "rank": 200,
-          "url": "/nfl/players/emanuel-wilson.php"
-        },
-        {
-          "name": "Jaylin Noel",
-          "position": "WR",
-          "team": "HOU",
           "rank": 201,
-          "url": "/nfl/players/jaylin-noel.php"
-        },
-        {
-          "name": "Troy Franklin",
-          "position": "WR",
-          "team": "DEN",
-          "rank": 202,
-          "url": "/nfl/players/troy-franklin.php"
-        },
-        {
-          "name": "Darnell Mooney",
-          "position": "WR",
-          "team": "NYG",
-          "rank": 203,
-          "url": "/nfl/players/darnell-mooney.php"
+          "url": "/nfl/players/emanuel-wilson.php"
         },
         {
           "name": "Jaydon Blue",
           "position": "RB",
           "team": "DAL",
-          "rank": 204,
+          "rank": 202,
           "url": "/nfl/players/jaydon-blue.php"
         },
         {
-          "name": "Jaylen Wright",
-          "position": "RB",
-          "team": "MIA",
-          "rank": 205,
-          "url": "/nfl/players/jaylen-wright.php"
+          "name": "Troy Franklin",
+          "position": "WR",
+          "team": "DEN",
+          "rank": 203,
+          "url": "/nfl/players/troy-franklin.php"
         },
         {
           "name": "Cooper Kupp",
           "position": "WR",
           "team": "SEA",
-          "rank": 206,
+          "rank": 204,
           "url": "/nfl/players/cooper-kupp.php"
+        },
+        {
+          "name": "Darnell Mooney",
+          "position": "WR",
+          "team": "NYG",
+          "rank": 205,
+          "url": "/nfl/players/darnell-mooney.php"
+        },
+        {
+          "name": "Jaylen Wright",
+          "position": "RB",
+          "team": "MIA",
+          "rank": 206,
+          "url": "/nfl/players/jaylen-wright.php"
         },
         {
           "name": "Oscar Delp",
@@ -4974,18 +4974,18 @@
           "url": "/nfl/players/oscar-delp.php"
         },
         {
-          "name": "Ollie Gordon II",
-          "position": "RB",
-          "team": "MIA",
-          "rank": 208,
-          "url": "/nfl/players/ollie-gordon.php"
-        },
-        {
           "name": "David Njoku",
           "position": "TE",
           "team": "LAC",
-          "rank": 209,
+          "rank": 208,
           "url": "/nfl/players/david-njoku.php"
+        },
+        {
+          "name": "Ollie Gordon II",
+          "position": "RB",
+          "team": "MIA",
+          "rank": 209,
+          "url": "/nfl/players/ollie-gordon.php"
         },
         {
           "name": "George Holani",
@@ -4995,25 +4995,25 @@
           "url": "/nfl/players/george-holani.php"
         },
         {
-          "name": "Antonio Williams",
-          "position": "WR",
-          "team": "WAS",
-          "rank": 211,
-          "url": "/nfl/players/antonio-williams-wr.php"
-        },
-        {
           "name": "Colby Parkinson",
           "position": "TE",
           "team": "LAR",
-          "rank": 212,
+          "rank": 211,
           "url": "/nfl/players/colby-parkinson.php"
         },
         {
           "name": "Evan Engram",
           "position": "TE",
           "team": "DEN",
-          "rank": 213,
+          "rank": 212,
           "url": "/nfl/players/evan-engram.php"
+        },
+        {
+          "name": "Antonio Williams",
+          "position": "WR",
+          "team": "WAS",
+          "rank": 213,
+          "url": "/nfl/players/antonio-williams-wr.php"
         },
         {
           "name": "Jack Bech",
@@ -5023,18 +5023,18 @@
           "url": "/nfl/players/jack-bech.php"
         },
         {
-          "name": "Demond Claiborne",
-          "position": "RB",
-          "team": "MIN",
-          "rank": 215,
-          "url": "/nfl/players/demond-claiborne.php"
-        },
-        {
           "name": "Justice Hill",
           "position": "RB",
           "team": "BAL",
-          "rank": 216,
+          "rank": 215,
           "url": "/nfl/players/justice-hill.php"
+        },
+        {
+          "name": "Keenan Allen",
+          "position": "WR",
+          "team": "IND",
+          "rank": 216,
+          "url": "/nfl/players/keenan-allen.php"
         },
         {
           "name": "Chimere Dike",
@@ -5044,32 +5044,32 @@
           "url": "/nfl/players/chimere-dike.php"
         },
         {
-          "name": "Germie Bernard",
-          "position": "WR",
-          "team": "PIT",
-          "rank": 218,
-          "url": "/nfl/players/germie-bernard.php"
-        },
-        {
           "name": "Zachariah Branch",
           "position": "WR",
           "team": "ATL",
-          "rank": 219,
+          "rank": 218,
           "url": "/nfl/players/zachariah-branch.php"
         },
         {
-          "name": "Kirk Cousins",
-          "position": "QB",
-          "team": "LV",
-          "rank": 220,
-          "url": "/nfl/players/kirk-cousins.php"
+          "name": "Demond Claiborne",
+          "position": "RB",
+          "team": "MIN",
+          "rank": 219,
+          "url": "/nfl/players/demond-claiborne.php"
         },
         {
           "name": "Isaiah Davis",
           "position": "RB",
           "team": "NYJ",
-          "rank": 221,
+          "rank": 220,
           "url": "/nfl/players/isaiah-davis.php"
+        },
+        {
+          "name": "Germie Bernard",
+          "position": "WR",
+          "team": "PIT",
+          "rank": 221,
+          "url": "/nfl/players/germie-bernard.php"
         },
         {
           "name": "Chris Brooks",
@@ -5079,32 +5079,32 @@
           "url": "/nfl/players/christopher-brooks.php"
         },
         {
+          "name": "Kirk Cousins",
+          "position": "QB",
+          "team": "LV",
+          "rank": 223,
+          "url": "/nfl/players/kirk-cousins.php"
+        },
+        {
           "name": "Tory Horton",
           "position": "WR",
           "team": "SEA",
-          "rank": 223,
+          "rank": 224,
           "url": "/nfl/players/tory-horton.php"
         },
         {
           "name": "Keon Coleman",
           "position": "WR",
           "team": "BUF",
-          "rank": 224,
+          "rank": 225,
           "url": "/nfl/players/keon-coleman.php"
         },
         {
-          "name": "Deshaun Watson",
+          "name": "Michael Penix Jr.",
           "position": "QB",
-          "team": "CLE",
-          "rank": 225,
-          "url": "/nfl/players/deshaun-watson.php"
-        },
-        {
-          "name": "Keenan Allen",
-          "position": "WR",
-          "team": "IND",
+          "team": "ATL",
           "rank": 226,
-          "url": "/nfl/players/keenan-allen.php"
+          "url": "/nfl/players/michael-penix-jr.php"
         },
         {
           "name": "Elic Ayomanor",
@@ -5114,18 +5114,18 @@
           "url": "/nfl/players/elic-ayomanor.php"
         },
         {
-          "name": "Michael Penix Jr.",
-          "position": "QB",
-          "team": "ATL",
-          "rank": 228,
-          "url": "/nfl/players/michael-penix-jr.php"
-        },
-        {
           "name": "Ted Hurst III",
           "position": "WR",
           "team": "TB",
-          "rank": 229,
+          "rank": 228,
           "url": "/nfl/players/ted-hurst.php"
+        },
+        {
+          "name": "Deshaun Watson",
+          "position": "QB",
+          "team": "CLE",
+          "rank": 229,
+          "url": "/nfl/players/deshaun-watson.php"
         },
         {
           "name": "Malachi Fields",
@@ -5142,123 +5142,123 @@
           "url": "/nfl/players/lequint-allen-jr.php"
         },
         {
-          "name": "Jordan James",
-          "position": "RB",
-          "team": "SF",
-          "rank": 232,
-          "url": "/nfl/players/jordan-james.php"
-        },
-        {
           "name": "Samaje Perine",
           "position": "RB",
           "team": "CIN",
-          "rank": 233,
+          "rank": 232,
           "url": "/nfl/players/samaje-perine.php"
         },
         {
           "name": "Chris Bell",
           "position": "WR",
           "team": "MIA",
-          "rank": 234,
+          "rank": 233,
           "url": "/nfl/players/chris-bell.php"
-        },
-        {
-          "name": "Shedeur Sanders",
-          "position": "QB",
-          "team": "CLE",
-          "rank": 235,
-          "url": "/nfl/players/shedeur-sanders.php"
         },
         {
           "name": "Ty Johnson",
           "position": "RB",
           "team": "BUF",
-          "rank": 236,
+          "rank": 234,
           "url": "/nfl/players/ty-johnson.php"
+        },
+        {
+          "name": "Jordan James",
+          "position": "RB",
+          "team": "SF",
+          "rank": 235,
+          "url": "/nfl/players/jordan-james.php"
         },
         {
           "name": "Elijah Sarratt",
           "position": "WR",
           "team": "BAL",
-          "rank": 237,
+          "rank": 236,
           "url": "/nfl/players/elijah-sarratt.php"
         },
         {
           "name": "DJ Giddens",
           "position": "RB",
           "team": "IND",
-          "rank": 238,
+          "rank": 237,
           "url": "/nfl/players/dj-giddens.php"
         },
         {
           "name": "Christian Kirk",
           "position": "WR",
           "team": "SF",
-          "rank": 239,
+          "rank": 238,
           "url": "/nfl/players/christian-kirk.php"
-        },
-        {
-          "name": "Kaelon Black",
-          "position": "RB",
-          "team": "SF",
-          "rank": 240,
-          "url": "/nfl/players/kaelon-black.php"
         },
         {
           "name": "Devaughn Vele",
           "position": "WR",
           "team": "NO",
-          "rank": 241,
+          "rank": 239,
           "url": "/nfl/players/devaughn-vele.php"
         },
         {
-          "name": "Greg Dulcich",
-          "position": "TE",
-          "team": "MIA",
-          "rank": 242,
-          "url": "/nfl/players/greg-dulcich.php"
+          "name": "Shedeur Sanders",
+          "position": "QB",
+          "team": "CLE",
+          "rank": 240,
+          "url": "/nfl/players/shedeur-sanders.php"
+        },
+        {
+          "name": "Kaelon Black",
+          "position": "RB",
+          "team": "SF",
+          "rank": 241,
+          "url": "/nfl/players/kaelon-black.php"
         },
         {
           "name": "Tyquan Thornton",
           "position": "WR",
           "team": "KC",
-          "rank": 243,
+          "rank": 242,
           "url": "/nfl/players/tyquan-thornton.php"
         },
         {
           "name": "Mason Taylor",
           "position": "TE",
           "team": "NYJ",
-          "rank": 244,
+          "rank": 243,
           "url": "/nfl/players/mason-taylor.php"
         },
         {
           "name": "Xavier Legette",
           "position": "WR",
           "team": "CAR",
-          "rank": 245,
+          "rank": 244,
           "url": "/nfl/players/xavier-legette.php"
         },
         {
-          "name": "Marvin Mims Jr.",
-          "position": "WR",
-          "team": "DEN",
-          "rank": 246,
-          "url": "/nfl/players/marvin-mims.php"
+          "name": "Greg Dulcich",
+          "position": "TE",
+          "team": "MIA",
+          "rank": 245,
+          "url": "/nfl/players/greg-dulcich.php"
         },
         {
           "name": "Darius Slayton",
           "position": "WR",
           "team": "NYG",
-          "rank": 247,
+          "rank": 246,
           "url": "/nfl/players/darius-slayton.php"
         },
         {
           "name": "Trey Benson",
           "position": "RB",
           "team": "ARI",
-          "rank": 248,
+          "rank": 247,
           "url": "/nfl/players/trey-benson.php"
+        },
+        {
+          "name": "Marvin Mims Jr.",
+          "position": "WR",
+          "team": "DEN",
+          "rank": 248,
+          "url": "/nfl/players/marvin-mims.php"
         },
         {
           "name": "Ja'Kobi Lane",
@@ -6054,7 +6054,7 @@
           }
         ]
       },
-      "updatedAt": "2026-08-19T16:47:48.047Z",
+      "updatedAt": "2026-08-19T20:47:05.885Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -6209,7 +6209,7 @@
         "type": "DYNASTY",
         "scoring": "PPR",
         "position": "ALL",
-        "lastUpdated": "8/18",
+        "lastUpdated": "8/19",
         "totalExperts": 29,
         "matched": 32,
         "total": 32
@@ -6642,7 +6642,7 @@
           "pts": 0,
           "priorYearPts": 123,
           "ecr": {
-            "rank": 160,
+            "rank": 161,
             "posRank": "RB43",
             "tier": 9,
             "delta": null,
@@ -6778,16 +6778,16 @@
           "status": "ROSTER",
           "salary": null,
           "contractYear": null,
-          "injuryStatus": "Q",
+          "injuryStatus": "D",
           "injuryDetail": {
-            "part": "Lower Body",
-            "until": "Aug 20, 2026"
+            "part": "Knee - ACL",
+            "until": "Sep 13, 2026"
           },
           "pts": 0,
           "priorYearPts": 129.5,
           "ecr": {
-            "rank": 90,
-            "posRank": "WR38",
+            "rank": 91,
+            "posRank": "WR39",
             "tier": 7,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/jayden-higgins.php"
@@ -7167,7 +7167,7 @@
           }
         ]
       },
-      "updatedAt": "2026-08-19T16:47:49.234Z",
+      "updatedAt": "2026-08-19T20:47:06.889Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -7321,7 +7321,7 @@
         "type": "DYNASTY",
         "scoring": "PPR",
         "position": "ALL",
-        "lastUpdated": "8/18",
+        "lastUpdated": "8/19",
         "totalExperts": 29,
         "matched": 32,
         "total": 32
@@ -7886,7 +7886,7 @@
           "pts": 0,
           "priorYearPts": 90.4,
           "ecr": {
-            "rank": 121,
+            "rank": 120,
             "posRank": "WR55",
             "tier": 8,
             "delta": null,
@@ -7958,7 +7958,7 @@
           "contractYear": null,
           "injuryStatus": "Q",
           "injuryDetail": {
-            "part": "Leg",
+            "part": "Hamstring",
             "until": "Aug 21, 2026"
           },
           "pts": 0,
@@ -8245,7 +8245,7 @@
           "pts": 0,
           "priorYearPts": 118,
           "ecr": {
-            "rank": 395,
+            "rank": 394,
             "posRank": "DST19",
             "tier": 14,
             "delta": null,
@@ -8293,7 +8293,7 @@
           }
         ]
       },
-      "updatedAt": "2026-08-19T16:47:50.370Z",
+      "updatedAt": "2026-08-19T20:47:07.852Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -8453,7 +8453,7 @@
         "type": "DYNASTY",
         "scoring": "PPR",
         "position": "ALL",
-        "lastUpdated": "8/18",
+        "lastUpdated": "8/19",
         "totalExperts": 29,
         "matched": 30,
         "total": 31
@@ -8698,7 +8698,7 @@
           "pts": 0,
           "priorYearPts": 227.18,
           "ecr": {
-            "rank": 91,
+            "rank": 92,
             "posRank": "QB12",
             "tier": 7,
             "delta": null,
@@ -8768,7 +8768,7 @@
           "priorYearPts": 6.6,
           "ecr": {
             "rank": 269,
-            "posRank": "RB79",
+            "posRank": "RB78",
             "tier": 12,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/dj-giddens.php"
@@ -8789,7 +8789,7 @@
           "priorYearPts": 0,
           "ecr": {
             "rank": 185,
-            "posRank": "RB57",
+            "posRank": "RB58",
             "tier": 10,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/emmett-johnson.php"
@@ -8815,7 +8815,7 @@
           "pts": 0,
           "priorYearPts": 55.2,
           "ecr": {
-            "rank": 144,
+            "rank": 147,
             "posRank": "RB50",
             "tier": 9,
             "delta": null,
@@ -9013,7 +9013,7 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 261,
+            "rank": 262,
             "posRank": "WR95",
             "tier": 12,
             "delta": null,
@@ -9088,7 +9088,7 @@
           "pts": 0,
           "priorYearPts": 68.7,
           "ecr": {
-            "rank": 182,
+            "rank": 181,
             "posRank": "WR71",
             "tier": 10,
             "delta": null,
@@ -9136,8 +9136,8 @@
           "pts": 0,
           "priorYearPts": 179.1,
           "ecr": {
-            "rank": 201,
-            "posRank": "WR74",
+            "rank": 204,
+            "posRank": "WR76",
             "tier": 11,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/troy-franklin.php"
@@ -9233,7 +9233,7 @@
           }
         ]
       },
-      "updatedAt": "2026-08-19T16:47:51.867Z",
+      "updatedAt": "2026-08-19T20:47:09.115Z",
       "error": null,
       "tags": [
         "Best Ball"
@@ -9370,16 +9370,6 @@
       "scoring": null,
       "scoringError": "No live scoring available yet",
       "draftInProgress": false,
-      "rankings": {
-        "type": "DRAFT",
-        "scoring": "PPR",
-        "position": "ALL",
-        "lastUpdated": "8/19",
-        "totalExperts": 95,
-        "matched": 24,
-        "total": 24
-      },
-      "rankingsError": null,
       "available": [
         "Kenny Gainwell",
         "Chig Okonkwo",
@@ -9403,6 +9393,17 @@
         "Cyrus Allen",
         "Malik Davis"
       ],
+      "availableAt": "2026-08-19T16:47:46.010Z",
+      "rankings": {
+        "type": "DRAFT",
+        "scoring": "PPR",
+        "position": "ALL",
+        "lastUpdated": "8/19",
+        "totalExperts": 96,
+        "matched": 24,
+        "total": 24
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-08-19T16:47:46.010Z",
         "scoring": "PPR",
@@ -9596,8 +9597,7 @@
           ]
         },
         "projectionsUnavailable": null
-      },
-      "availableAt": "2026-08-19T16:47:46.010Z"
+      }
     },
     {
       "id": "34850",
@@ -9667,7 +9667,7 @@
           "pts": 0,
           "priorYearPts": 67.13,
           "ecr": {
-            "rank": 235,
+            "rank": 240,
             "posRank": "QB35",
             "tier": 9,
             "delta": null,
@@ -9688,7 +9688,7 @@
           "pts": 0,
           "priorYearPts": 271.98,
           "ecr": {
-            "rank": 21,
+            "rank": 20,
             "posRank": "QB10",
             "tier": 2,
             "delta": null,
@@ -9784,7 +9784,7 @@
           "pts": 0,
           "priorYearPts": 6.6,
           "ecr": {
-            "rank": 238,
+            "rank": 237,
             "posRank": "RB78",
             "tier": 9,
             "delta": null,
@@ -9805,7 +9805,7 @@
           "pts": 0,
           "priorYearPts": 68.7,
           "ecr": {
-            "rank": 157,
+            "rank": 156,
             "posRank": "RB53",
             "tier": 7,
             "delta": null,
@@ -9853,7 +9853,7 @@
           "pts": 0,
           "priorYearPts": 50.7,
           "ecr": {
-            "rank": 151,
+            "rank": 152,
             "posRank": "RB51",
             "tier": 7,
             "delta": null,
@@ -9928,8 +9928,8 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 308,
-            "posRank": "WR122",
+            "rank": 304,
+            "posRank": "WR120",
             "tier": 11,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/chris-brazzell-ii.php"
@@ -9952,7 +9952,7 @@
           "pts": 0,
           "priorYearPts": 43.7,
           "ecr": {
-            "rank": 239,
+            "rank": 238,
             "posRank": "WR94",
             "tier": 9,
             "delta": null,
@@ -10027,7 +10027,7 @@
           "pts": 0,
           "priorYearPts": 145.1,
           "ecr": {
-            "rank": 20,
+            "rank": 21,
             "posRank": "WR6",
             "tier": 2,
             "delta": null,
@@ -10049,7 +10049,7 @@
           "priorYearPts": 83.4,
           "ecr": {
             "rank": 188,
-            "posRank": "WR71",
+            "posRank": "WR72",
             "tier": 8,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/malik-washington.php"
@@ -10093,7 +10093,7 @@
           "contractYear": "",
           "injuryStatus": "Q",
           "injuryDetail": {
-            "part": "Leg",
+            "part": "Hamstring",
             "until": "Aug 21, 2026"
           },
           "pts": 0,
@@ -10123,7 +10123,7 @@
           "pts": 0,
           "priorYearPts": 65.4,
           "ecr": {
-            "rank": 74,
+            "rank": 73,
             "posRank": "WR26",
             "tier": 5,
             "delta": null,
@@ -10144,8 +10144,8 @@
           "pts": 0,
           "priorYearPts": 44.9,
           "ecr": {
-            "rank": 195,
-            "posRank": "WR74",
+            "rank": 197,
+            "posRank": "WR76",
             "tier": 8,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/rashod-bateman.php"
@@ -10171,7 +10171,7 @@
           "pts": 0,
           "priorYearPts": 86.3,
           "ecr": {
-            "rank": 209,
+            "rank": 208,
             "posRank": "TE30",
             "tier": 9,
             "delta": null,
@@ -10192,8 +10192,8 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 300,
-            "posRank": "TE47",
+            "rank": 299,
+            "posRank": "TE46",
             "tier": 11,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/erick-all.php"
@@ -10234,7 +10234,7 @@
           "pts": 0,
           "priorYearPts": 130.6,
           "ecr": {
-            "rank": 130,
+            "rank": 131,
             "posRank": "TE15",
             "tier": 7,
             "delta": null,
@@ -10251,7 +10251,7 @@
         "ir": 50,
         "position": []
       },
-      "updatedAt": "2026-08-19T16:47:52.898Z",
+      "updatedAt": "2026-08-19T20:47:10.278Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -10394,7 +10394,7 @@
         "scoring": "HALF",
         "position": "OP",
         "lastUpdated": "8/19",
-        "totalExperts": 93,
+        "totalExperts": 94,
         "matched": 27,
         "total": 27
       },
@@ -10405,23 +10405,22 @@
         "Calvin Ridley",
         "James Conner",
         "Cooper Kupp",
-        "George Holani",
         "Ollie Gordon II",
+        "George Holani",
+        "Keenan Allen",
         "Chimere Dike",
         "Isaiah Davis",
-        "Kirk Cousins",
         "Chris Brooks",
-        "Samaje Perine",
+        "Kirk Cousins",
         "LeQuint Allen Jr.",
-        "Greg Dulcich",
+        "Samaje Perine",
         "Tyquan Thornton",
+        "Greg Dulcich",
         "Darius Slayton",
-        "Malik Davis",
-        "Keenan Allen"
+        "Malik Davis"
       ],
-      "availableAt": "2026-08-18T13:09:40.179Z",
       "power": {
-        "computedAt": "2026-08-18T13:09:40.179Z",
+        "computedAt": "2026-08-19T20:47:03.955Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -10433,85 +10432,85 @@
           "teams": [
             {
               "franchiseId": "0003",
-              "score": 2263.9,
-              "depth": 1163.1,
+              "score": 2262.5,
+              "depth": 1163.4,
               "filled": 9,
               "slotCount": 9
             },
             {
               "franchiseId": "0002",
               "score": 2236,
-              "depth": 1435.1,
+              "depth": 1327.3,
               "filled": 9,
               "slotCount": 9
             },
             {
               "franchiseId": "0012",
-              "score": 2124.6,
-              "depth": 949.5,
+              "score": 2128.5,
+              "depth": 970.1,
               "filled": 9,
               "slotCount": 9
             },
             {
               "franchiseId": "0004",
-              "score": 2097.3,
+              "score": 2096.5,
               "depth": 1151.3,
               "filled": 9,
               "slotCount": 9
             },
             {
               "franchiseId": "0008",
-              "score": 2095.4,
-              "depth": 1060.6,
+              "score": 2094.9,
+              "depth": 1068.2,
               "filled": 9,
               "slotCount": 9
             },
             {
               "franchiseId": "0007",
-              "score": 1999.5,
-              "depth": 1449.1,
+              "score": 1990.7,
+              "depth": 1450.2,
               "filled": 9,
               "slotCount": 9
             },
             {
               "franchiseId": "0010",
-              "score": 1983.8,
-              "depth": 1758.2,
+              "score": 1983.7,
+              "depth": 1758.3,
               "filled": 9,
               "slotCount": 9
             },
             {
               "franchiseId": "0001",
               "score": 1948.9,
-              "depth": 1394.3,
+              "depth": 1379.5,
               "filled": 9,
               "slotCount": 9
             },
             {
               "franchiseId": "0006",
               "score": 1927,
-              "depth": 1169.9,
+              "depth": 1216.7,
               "filled": 9,
               "slotCount": 9
             },
             {
               "franchiseId": "0009",
-              "score": 1918.5,
-              "depth": 1167.8,
+              "score": 1920.3,
+              "depth": 1163.7,
               "filled": 9,
               "slotCount": 9
             },
             {
               "franchiseId": "0005",
-              "score": 1701.8,
-              "depth": 908.5,
+              "score": 1703.9,
+              "depth": 915.3,
               "filled": 9,
               "slotCount": 9
             },
             {
               "franchiseId": "0011",
-              "score": 1615.2,
-              "depth": 614.2,
+              "score": 1609.5,
+              "depth": 681.1,
               "filled": 9,
               "slotCount": 9
             }
@@ -10528,21 +10527,21 @@
           "teams": [
             {
               "franchiseId": "0002",
-              "score": 24.3,
-              "depth": 6.7,
+              "score": 24.1,
+              "depth": 6,
               "filled": 9,
               "slotCount": 9
             },
             {
               "franchiseId": "0003",
-              "score": 20.4,
-              "depth": 4.2,
+              "score": 20.2,
+              "depth": 4.3,
               "filled": 9,
               "slotCount": 9
             },
             {
               "franchiseId": "0004",
-              "score": 18.3,
+              "score": 18.6,
               "depth": 4.4,
               "filled": 9,
               "slotCount": 9
@@ -10550,7 +10549,7 @@
             {
               "franchiseId": "0012",
               "score": 17.5,
-              "depth": 2.4,
+              "depth": 2.3,
               "filled": 9,
               "slotCount": 9
             },
@@ -10564,27 +10563,27 @@
             {
               "franchiseId": "0007",
               "score": 15.1,
-              "depth": 6.9,
+              "depth": 6.8,
               "filled": 9,
               "slotCount": 9
             },
             {
               "franchiseId": "0006",
               "score": 15,
-              "depth": 4.3,
+              "depth": 4.5,
               "filled": 9,
               "slotCount": 9
             },
             {
               "franchiseId": "0010",
               "score": 14.7,
-              "depth": 6.4,
+              "depth": 6.5,
               "filled": 9,
               "slotCount": 9
             },
             {
               "franchiseId": "0009",
-              "score": 14,
+              "score": 14.1,
               "depth": 3.6,
               "filled": 9,
               "slotCount": 9
@@ -10599,21 +10598,22 @@
             {
               "franchiseId": "0011",
               "score": 12,
-              "depth": 1.6,
+              "depth": 1.7,
               "filled": 9,
               "slotCount": 9
             },
             {
               "franchiseId": "0005",
               "score": 10,
-              "depth": 3.2,
+              "depth": 3.3,
               "filled": 9,
               "slotCount": 9
             }
           ]
         },
         "projectionsUnavailable": null
-      }
+      },
+      "availableAt": "2026-08-19T20:47:03.955Z"
     },
     {
       "id": "30641",
@@ -10638,7 +10638,7 @@
           "pts": 0,
           "priorYearPts": 169.14,
           "ecr": {
-            "rank": 96,
+            "rank": 95,
             "posRank": "QB26",
             "tier": 6,
             "delta": null,
@@ -10683,8 +10683,8 @@
           "pts": 0,
           "priorYearPts": 97.62,
           "ecr": {
-            "rank": 228,
-            "posRank": "QB34",
+            "rank": 226,
+            "posRank": "QB33",
             "tier": 9,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/michael-penix-jr.php"
@@ -10725,7 +10725,7 @@
           "pts": 0,
           "priorYearPts": 209.3,
           "ecr": {
-            "rank": 69,
+            "rank": 68,
             "posRank": "RB20",
             "tier": 5,
             "delta": null,
@@ -10746,8 +10746,8 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 193,
-            "posRank": "RB63",
+            "rank": 196,
+            "posRank": "RB64",
             "tier": 8,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/kaytron-allen.php"
@@ -10869,9 +10869,9 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 299,
-            "posRank": "WR118",
-            "tier": 11,
+            "rank": 292,
+            "posRank": "WR115",
+            "tier": 10,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/bryce-lance.php"
           }
@@ -10890,8 +10890,8 @@
           "pts": 0,
           "priorYearPts": 38.8,
           "ecr": {
-            "rank": 190,
-            "posRank": "WR72",
+            "rank": 191,
+            "posRank": "WR73",
             "tier": 8,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/calvin-ridley.php"
@@ -10954,10 +10954,10 @@
           "status": "TAXI_SQUAD",
           "salary": "16.12",
           "contractYear": "2",
-          "injuryStatus": "Q",
+          "injuryStatus": "D",
           "injuryDetail": {
-            "part": "Lower Body",
-            "until": "Aug 20, 2026"
+            "part": "Knee - ACL",
+            "until": "Sep 13, 2026"
           },
           "pts": 0,
           "priorYearPts": 103.7
@@ -10976,8 +10976,8 @@
           "pts": 0,
           "priorYearPts": 39,
           "ecr": {
-            "rank": 123,
-            "posRank": "WR47",
+            "rank": 121,
+            "posRank": "WR45",
             "tier": 7,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/jayden-reed.php"
@@ -11000,8 +11000,8 @@
           "pts": 0,
           "priorYearPts": 55.6,
           "ecr": {
-            "rank": 201,
-            "posRank": "WR77",
+            "rank": 192,
+            "posRank": "WR74",
             "tier": 8,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/jaylin-noel.php"
@@ -11078,8 +11078,8 @@
           "pts": 0,
           "priorYearPts": 165.2,
           "ecr": {
-            "rank": 106,
-            "posRank": "WR39",
+            "rank": 105,
+            "posRank": "WR38",
             "tier": 6,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/michael-wilson.php"
@@ -11099,7 +11099,7 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 229,
+            "rank": 228,
             "posRank": "WR90",
             "tier": 9,
             "delta": null,
@@ -11120,7 +11120,7 @@
           "pts": 0,
           "priorYearPts": 69.1,
           "ecr": {
-            "rank": 245,
+            "rank": 244,
             "posRank": "WR97",
             "tier": 9,
             "delta": null,
@@ -11162,7 +11162,7 @@
           "pts": 0,
           "priorYearPts": 130.6,
           "ecr": {
-            "rank": 130,
+            "rank": 131,
             "posRank": "TE15",
             "tier": 7,
             "delta": null,
@@ -11183,8 +11183,8 @@
           "pts": 0,
           "priorYearPts": 129.8,
           "ecr": {
-            "rank": 253,
-            "posRank": "TE36",
+            "rank": 252,
+            "posRank": "TE35",
             "tier": 9,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/theo-johnson.php"
@@ -11200,7 +11200,7 @@
         "ir": 50,
         "position": []
       },
-      "updatedAt": "2026-08-19T16:47:54.002Z",
+      "updatedAt": "2026-08-19T20:47:11.454Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -11373,7 +11373,7 @@
         "scoring": "HALF",
         "position": "OP",
         "lastUpdated": "8/19",
-        "totalExperts": 93,
+        "totalExperts": 94,
         "matched": 24,
         "total": 25
       },
@@ -11641,8 +11641,8 @@
           "pts": 0,
           "priorYearPts": 59.36,
           "ecr": {
-            "rank": 759,
-            "posRank": "QB71",
+            "rank": 766,
+            "posRank": "QB73",
             "tier": 14,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/dillon-gabriel.php"
@@ -11662,8 +11662,8 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 659,
-            "posRank": "QB58",
+            "rank": 660,
+            "posRank": "QB59",
             "tier": 14,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/drew-allar.php"
@@ -11683,7 +11683,7 @@
           "pts": 0,
           "priorYearPts": 140.3,
           "ecr": {
-            "rank": 133,
+            "rank": 132,
             "posRank": "QB28",
             "tier": 7,
             "delta": null,
@@ -11704,7 +11704,7 @@
           "pts": 0,
           "priorYearPts": 129.32,
           "ecr": {
-            "rank": 180,
+            "rank": 179,
             "posRank": "QB31",
             "tier": 8,
             "delta": null,
@@ -11725,7 +11725,7 @@
           "pts": 0,
           "priorYearPts": 113.91,
           "ecr": {
-            "rank": 58,
+            "rank": 57,
             "posRank": "QB20",
             "tier": 4,
             "delta": null,
@@ -11755,7 +11755,7 @@
           "pts": 0,
           "priorYearPts": 6.6,
           "ecr": {
-            "rank": 238,
+            "rank": 237,
             "posRank": "RB78",
             "tier": 9,
             "delta": null,
@@ -11803,8 +11803,8 @@
           "pts": 0,
           "priorYearPts": 345.4,
           "ecr": {
-            "rank": 15,
-            "posRank": "RB4",
+            "rank": 14,
+            "posRank": "RB3",
             "tier": 2,
             "delta": 1,
             "url": "https://www.fantasypros.com/nfl/players/jonathan-taylor.php"
@@ -11824,8 +11824,8 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 193,
-            "posRank": "RB63",
+            "rank": 196,
+            "posRank": "RB64",
             "tier": 8,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/kaytron-allen.php"
@@ -11851,7 +11851,7 @@
           "pts": 0,
           "priorYearPts": 50.7,
           "ecr": {
-            "rank": 151,
+            "rank": 152,
             "posRank": "RB51",
             "tier": 7,
             "delta": null,
@@ -11878,7 +11878,7 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 179,
+            "rank": 181,
             "posRank": "RB58",
             "tier": 8,
             "delta": null,
@@ -11929,8 +11929,8 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 274,
-            "posRank": "WR107",
+            "rank": 275,
+            "posRank": "WR108",
             "tier": 10,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/brandon-aiyuk.php"
@@ -11950,8 +11950,8 @@
           "pts": 0,
           "priorYearPts": 72.9,
           "ecr": {
-            "rank": 247,
-            "posRank": "WR99",
+            "rank": 246,
+            "posRank": "WR98",
             "tier": 9,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/darius-slayton.php"
@@ -11995,7 +11995,7 @@
           "pts": 0,
           "priorYearPts": 163.7,
           "ecr": {
-            "rank": 95,
+            "rank": 96,
             "posRank": "WR34",
             "tier": 6,
             "delta": null,
@@ -12043,7 +12043,7 @@
           "pts": 0,
           "priorYearPts": 48.7,
           "ecr": {
-            "rank": 264,
+            "rank": 265,
             "posRank": "WR103",
             "tier": 10,
             "delta": null,
@@ -12065,7 +12065,7 @@
           "priorYearPts": 83.4,
           "ecr": {
             "rank": 188,
-            "posRank": "WR71",
+            "posRank": "WR72",
             "tier": 8,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/malik-washington.php"
@@ -12091,9 +12091,9 @@
           "pts": 0,
           "priorYearPts": 143.6,
           "ecr": {
-            "rank": 202,
+            "rank": 203,
             "posRank": "WR78",
-            "tier": 8,
+            "tier": 9,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/troy-franklin.php"
           }
@@ -12133,7 +12133,7 @@
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
-            "rank": 394,
+            "rank": 395,
             "posRank": "TE74",
             "tier": 12,
             "delta": 8,
@@ -12154,8 +12154,8 @@
           "pts": 0,
           "priorYearPts": 138.9,
           "ecr": {
-            "rank": 368,
-            "posRank": "TE62",
+            "rank": 380,
+            "posRank": "TE64",
             "tier": 12,
             "delta": -8,
             "url": "https://www.fantasypros.com/nfl/players/zach-ertz.php"
@@ -12171,7 +12171,7 @@
         "ir": 15,
         "position": []
       },
-      "updatedAt": "2026-08-19T16:47:55.312Z",
+      "updatedAt": "2026-08-19T20:47:12.629Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -12341,7 +12341,7 @@
         "scoring": "HALF",
         "position": "OP",
         "lastUpdated": "8/19",
-        "totalExperts": 93,
+        "totalExperts": 94,
         "matched": 25,
         "total": 25
       },
@@ -12587,7 +12587,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-19T16:47:55.748Z",
+      "updatedAt": "2026-08-19T20:47:12.920Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -12744,7 +12744,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-19T16:47:56.395Z",
+      "updatedAt": "2026-08-19T20:47:13.249Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -13068,8 +13068,8 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 228,
-            "posRank": "QB34",
+            "rank": 226,
+            "posRank": "QB33",
             "tier": 9,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/michael-penix-jr.php"
@@ -13089,7 +13089,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 235,
+            "rank": 240,
             "posRank": "QB35",
             "tier": 9,
             "delta": null,
@@ -13234,11 +13234,8 @@
           "status": "ROSTER",
           "salary": null,
           "contractYear": null,
-          "injuryStatus": "Q",
-          "injuryDetail": {
-            "part": "Leg",
-            "until": "Aug 21, 2026"
-          },
+          "injuryStatus": null,
+          "injuryDetail": null,
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
@@ -13290,7 +13287,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 74,
+            "rank": 73,
             "posRank": "WR26",
             "tier": 5,
             "delta": null,
@@ -13387,7 +13384,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-19T16:47:57.444Z",
+      "updatedAt": "2026-08-19T20:47:14.054Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -13552,7 +13549,7 @@
         "scoring": "HALF",
         "position": "OP",
         "lastUpdated": "8/19",
-        "totalExperts": 93,
+        "totalExperts": 94,
         "matched": 17,
         "total": 18
       },
@@ -13747,7 +13744,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 87,
+            "rank": 86,
             "posRank": "QB25",
             "tier": 6,
             "delta": null,
@@ -13798,8 +13795,8 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 228,
-            "posRank": "QB34",
+            "rank": 226,
+            "posRank": "QB33",
             "tier": 9,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/michael-penix-jr.php"
@@ -13819,8 +13816,8 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 71,
-            "posRank": "RB21",
+            "rank": 74,
+            "posRank": "RB23",
             "tier": 5,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/bucky-irving.php"
@@ -13930,8 +13927,8 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 139,
-            "posRank": "RB43",
+            "rank": 140,
+            "posRank": "RB44",
             "tier": 7,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/tyrone-tracy-jr.php"
@@ -13954,8 +13951,8 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 105,
-            "posRank": "WR38",
+            "rank": 106,
+            "posRank": "WR39",
             "tier": 6,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/alec-pierce.php"
@@ -13978,8 +13975,8 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 274,
-            "posRank": "WR107",
+            "rank": 275,
+            "posRank": "WR108",
             "tier": 10,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/brandon-aiyuk.php"
@@ -13999,8 +13996,8 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 173,
-            "posRank": "WR65",
+            "rank": 171,
+            "posRank": "WR63",
             "tier": 8,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/jauan-jennings.php"
@@ -14119,7 +14116,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 161,
+            "rank": 160,
             "posRank": "TE20",
             "tier": 8,
             "delta": null,
@@ -14169,7 +14166,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-19T16:47:58.386Z",
+      "updatedAt": "2026-08-19T20:47:14.880Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -14354,7 +14351,7 @@
         "scoring": "HALF",
         "position": "OP",
         "lastUpdated": "8/19",
-        "totalExperts": 93,
+        "totalExperts": 94,
         "matched": 18,
         "total": 18
       },
@@ -14577,7 +14574,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 133,
+            "rank": 132,
             "posRank": "QB28",
             "tier": 7,
             "delta": null,
@@ -14646,7 +14643,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 58,
+            "rank": 57,
             "posRank": "QB20",
             "tier": 4,
             "delta": null,
@@ -14697,8 +14694,8 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 14,
-            "posRank": "RB3",
+            "rank": 15,
+            "posRank": "RB4",
             "tier": 2,
             "delta": -1,
             "url": "https://www.fantasypros.com/nfl/players/christian-mccaffrey.php"
@@ -14718,7 +14715,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 81,
+            "rank": 82,
             "posRank": "RB26",
             "tier": 6,
             "delta": null,
@@ -14805,7 +14802,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 55,
+            "rank": 54,
             "posRank": "RB16",
             "tier": 4,
             "delta": null,
@@ -14889,8 +14886,8 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 139,
-            "posRank": "RB43",
+            "rank": 140,
+            "posRank": "RB44",
             "tier": 7,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/tyrone-tracy-jr.php"
@@ -14913,8 +14910,8 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 274,
-            "posRank": "WR107",
+            "rank": 275,
+            "posRank": "WR108",
             "tier": 10,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/brandon-aiyuk.php"
@@ -14934,7 +14931,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 86,
+            "rank": 87,
             "posRank": "WR31",
             "tier": 6,
             "delta": null,
@@ -15003,7 +15000,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 130,
+            "rank": 131,
             "posRank": "TE15",
             "tier": 7,
             "delta": null,
@@ -15020,7 +15017,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-19T16:47:59.471Z",
+      "updatedAt": "2026-08-19T20:47:15.732Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -15186,7 +15183,7 @@
         "scoring": "HALF",
         "position": "OP",
         "lastUpdated": "8/19",
-        "totalExperts": 93,
+        "totalExperts": 94,
         "matched": 20,
         "total": 20
       },
@@ -15456,7 +15453,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 180,
+            "rank": 179,
             "posRank": "QB31",
             "tier": 8,
             "delta": null,
@@ -15606,7 +15603,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 151,
+            "rank": 152,
             "posRank": "RB51",
             "tier": 7,
             "delta": null,
@@ -15633,8 +15630,8 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 139,
-            "posRank": "RB43",
+            "rank": 140,
+            "posRank": "RB44",
             "tier": 7,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/tyrone-tracy-jr.php"
@@ -15702,7 +15699,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 20,
+            "rank": 21,
             "posRank": "WR6",
             "tier": 2,
             "delta": null,
@@ -15723,7 +15720,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 185,
+            "rank": 184,
             "posRank": "WR69",
             "tier": 8,
             "delta": null,
@@ -15810,7 +15807,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 161,
+            "rank": 160,
             "posRank": "TE20",
             "tier": 8,
             "delta": null,
@@ -15833,7 +15830,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-19T16:48:00.519Z",
+      "updatedAt": "2026-08-19T20:47:16.846Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -15959,7 +15956,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=61777&JSON=1 (year 2026)",
+      "scoringError": "No live scoring available yet",
       "draftInProgress": false,
       "available": [
         "Kenny Gainwell",
@@ -16009,7 +16006,7 @@
         "scoring": "HALF",
         "position": "OP",
         "lastUpdated": "8/19",
-        "totalExperts": 93,
+        "totalExperts": 94,
         "matched": 20,
         "total": 20
       },
@@ -16266,7 +16263,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 58,
+            "rank": 57,
             "posRank": "QB20",
             "tier": 4,
             "delta": null,
@@ -16338,7 +16335,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 69,
+            "rank": 68,
             "posRank": "RB20",
             "tier": 5,
             "delta": null,
@@ -16359,8 +16356,8 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 73,
-            "posRank": "RB23",
+            "rank": 72,
+            "posRank": "RB22",
             "tier": 5,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/david-montgomery.php"
@@ -16422,7 +16419,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 151,
+            "rank": 152,
             "posRank": "RB51",
             "tier": 7,
             "delta": null,
@@ -16473,8 +16470,8 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 173,
-            "posRank": "WR65",
+            "rank": 171,
+            "posRank": "WR63",
             "tier": 8,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/jauan-jennings.php"
@@ -16524,7 +16521,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 74,
+            "rank": 73,
             "posRank": "WR26",
             "tier": 5,
             "delta": null,
@@ -16614,7 +16611,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 38,
+            "rank": 39,
             "posRank": "TE2",
             "tier": 4,
             "delta": null,
@@ -16631,7 +16628,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-19T16:48:01.033Z",
+      "updatedAt": "2026-08-19T20:47:17.571Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -16758,16 +16755,6 @@
       "scoring": null,
       "scoringError": "No live scoring available yet",
       "draftInProgress": false,
-      "rankings": {
-        "type": "DRAFT",
-        "scoring": "HALF",
-        "position": "OP",
-        "lastUpdated": "8/19",
-        "totalExperts": 93,
-        "matched": 18,
-        "total": 18
-      },
-      "rankingsError": null,
       "available": [
         "Kenny Gainwell",
         "Stefon Diggs",
@@ -16810,6 +16797,17 @@
         "Isaiah Davis",
         "Chris Brooks"
       ],
+      "availableAt": "2026-08-19T16:47:46.010Z",
+      "rankings": {
+        "type": "DRAFT",
+        "scoring": "HALF",
+        "position": "OP",
+        "lastUpdated": "8/19",
+        "totalExperts": 94,
+        "matched": 18,
+        "total": 18
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-08-19T16:47:46.010Z",
         "scoring": "HALF",
@@ -16989,8 +16987,7 @@
           ]
         },
         "projectionsUnavailable": null
-      },
-      "availableAt": "2026-08-19T16:47:46.010Z"
+      }
     },
     {
       "id": "26222",
@@ -17014,7 +17011,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 133,
+            "rank": 132,
             "posRank": "QB28",
             "tier": 7,
             "delta": null,
@@ -17119,8 +17116,8 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 14,
-            "posRank": "RB3",
+            "rank": 15,
+            "posRank": "RB4",
             "tier": 2,
             "delta": -1,
             "url": "https://www.fantasypros.com/nfl/players/christian-mccaffrey.php"
@@ -17143,7 +17140,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 55,
+            "rank": 54,
             "posRank": "RB16",
             "tier": 4,
             "delta": null,
@@ -17212,8 +17209,8 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 139,
-            "posRank": "RB43",
+            "rank": 140,
+            "posRank": "RB44",
             "tier": 7,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/tyrone-tracy-jr.php"
@@ -17233,8 +17230,8 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 166,
-            "posRank": "WR61",
+            "rank": 167,
+            "posRank": "WR62",
             "tier": 8,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/adonai-mitchell.php"
@@ -17374,7 +17371,7 @@
           "pts": 0,
           "priorYearPts": null,
           "ecr": {
-            "rank": 175,
+            "rank": 174,
             "posRank": "TE23",
             "tier": 8,
             "delta": null,
@@ -17442,7 +17439,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-19T16:48:01.910Z",
+      "updatedAt": "2026-08-19T20:47:18.158Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -17578,7 +17575,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=league&L=26222&JSON=1 (year 2026)",
+      "scoringError": "No live scoring available yet",
       "draftInProgress": false,
       "available": [
         "Kenny Gainwell",
@@ -17628,7 +17625,7 @@
         "scoring": "HALF",
         "position": "OP",
         "lastUpdated": "8/19",
-        "totalExperts": 93,
+        "totalExperts": 94,
         "matched": 18,
         "total": 18
       },
@@ -17847,7 +17844,7 @@
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
-            "rank": 169,
+            "rank": 170,
             "posRank": "QB30",
             "tier": 8,
             "delta": null,
@@ -17864,7 +17861,7 @@
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
-            "rank": 322,
+            "rank": 323,
             "posRank": "QB37",
             "tier": 11,
             "delta": null,
@@ -17948,8 +17945,8 @@
             "until": "Aug 28, 2026"
           },
           "ecr": {
-            "rank": 228,
-            "posRank": "QB34",
+            "rank": 226,
+            "posRank": "QB33",
             "tier": 9,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/michael-penix-jr.php"
@@ -18003,7 +18000,7 @@
             "until": "Aug 23, 2026"
           },
           "ecr": {
-            "rank": 200,
+            "rank": 201,
             "posRank": "RB65",
             "tier": 8,
             "delta": null,
@@ -18024,7 +18021,7 @@
             "until": "Aug 21, 2026"
           },
           "ecr": {
-            "rank": 55,
+            "rank": 54,
             "posRank": "RB16",
             "tier": 4,
             "delta": null,
@@ -18075,8 +18072,8 @@
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
-            "rank": 139,
-            "posRank": "RB43",
+            "rank": 140,
+            "posRank": "RB44",
             "tier": 7,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/tyrone-tracy-jr.php"
@@ -18126,7 +18123,7 @@
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
-            "rank": 20,
+            "rank": 21,
             "posRank": "WR6",
             "tier": 2,
             "delta": null,
@@ -18143,7 +18140,7 @@
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
-            "rank": 229,
+            "rank": 228,
             "posRank": "WR90",
             "tier": 9,
             "delta": null,
@@ -18160,7 +18157,7 @@
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
-            "rank": 152,
+            "rank": 151,
             "posRank": "TE17",
             "tier": 7,
             "delta": null,
@@ -18219,7 +18216,7 @@
         }
       ],
       "draftInProgress": false,
-      "updatedAt": "2026-08-19T16:48:02.100Z",
+      "updatedAt": "2026-08-19T20:47:18.290Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -18451,7 +18448,7 @@
         "scoring": "HALF",
         "position": "OP",
         "lastUpdated": "8/19",
-        "totalExperts": 93,
+        "totalExperts": 94,
         "matched": 20,
         "total": 20
       },
@@ -18472,20 +18469,20 @@
         "Chris Brooks",
         "Elic Ayomanor",
         "LeQuint Allen Jr.",
-        "Jordan James",
         "Samaje Perine",
         "Ty Johnson",
+        "Jordan James",
         "DJ Giddens",
         "Christian Kirk",
         "Kaelon Black",
         "Xavier Legette",
-        "Marvin Mims Jr.",
         "Darius Slayton",
         "Trey Benson",
+        "Marvin Mims Jr.",
         "Malik Davis"
       ],
       "power": {
-        "computedAt": "2026-08-19T16:47:46.010Z",
+        "computedAt": "2026-08-19T20:47:03.955Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -18497,57 +18494,57 @@
           "teams": [
             {
               "franchiseId": "4",
-              "score": 2237,
-              "depth": 1086.2,
+              "score": 2236,
+              "depth": 1077.9,
               "filled": 10,
               "slotCount": 10
             },
             {
               "franchiseId": "6",
-              "score": 2220.6,
-              "depth": 1133.2,
+              "score": 2220.5,
+              "depth": 1140.9,
               "filled": 10,
               "slotCount": 10
             },
             {
               "franchiseId": "1",
-              "score": 2177.1,
-              "depth": 1055.1,
+              "score": 2181.1,
+              "depth": 1083.4,
               "filled": 10,
               "slotCount": 10
             },
             {
               "franchiseId": "5",
               "score": 2173.8,
-              "depth": 1016,
+              "depth": 1047.1,
               "filled": 10,
               "slotCount": 10
             },
             {
               "franchiseId": "10",
-              "score": 2131.3,
-              "depth": 1010.9,
+              "score": 2131.2,
+              "depth": 1017.8,
               "filled": 10,
               "slotCount": 10
             },
             {
               "franchiseId": "8",
               "score": 2119.2,
-              "depth": 1094.2,
+              "depth": 1084.5,
               "filled": 10,
               "slotCount": 10
             },
             {
               "franchiseId": "7",
-              "score": 2115.7,
-              "depth": 871.4,
+              "score": 2116,
+              "depth": 872.6,
               "filled": 10,
               "slotCount": 10
             },
             {
               "franchiseId": "3",
               "score": 2093.5,
-              "depth": 1118.3,
+              "depth": 1102.3,
               "filled": 10,
               "slotCount": 10
             },
@@ -18560,7 +18557,7 @@
             },
             {
               "franchiseId": "9",
-              "score": 2039.4,
+              "score": 2041.5,
               "depth": 745.1,
               "filled": 10,
               "slotCount": 10
@@ -18568,14 +18565,14 @@
             {
               "franchiseId": "2",
               "score": 2016.8,
-              "depth": 836.6,
+              "depth": 815.5,
               "filled": 10,
               "slotCount": 10
             },
             {
               "franchiseId": "12",
-              "score": 1962.6,
-              "depth": 800.5,
+              "score": 1962.5,
+              "depth": 796.5,
               "filled": 10,
               "slotCount": 10
             }
@@ -18593,7 +18590,7 @@
             {
               "franchiseId": "9",
               "score": 18.7,
-              "depth": 2.3,
+              "depth": 2.4,
               "filled": 10,
               "slotCount": 10
             },
@@ -18605,16 +18602,9 @@
               "slotCount": 10
             },
             {
-              "franchiseId": "7",
-              "score": 17.5,
-              "depth": 2.6,
-              "filled": 10,
-              "slotCount": 10
-            },
-            {
               "franchiseId": "8",
               "score": 17.5,
-              "depth": 4,
+              "depth": 4.1,
               "filled": 10,
               "slotCount": 10
             },
@@ -18627,8 +18617,15 @@
             },
             {
               "franchiseId": "5",
-              "score": 17.3,
-              "depth": 3.8,
+              "score": 17.4,
+              "depth": 3.9,
+              "filled": 10,
+              "slotCount": 10
+            },
+            {
+              "franchiseId": "7",
+              "score": 17.4,
+              "depth": 2.6,
               "filled": 10,
               "slotCount": 10
             },
@@ -18641,7 +18638,7 @@
             },
             {
               "franchiseId": "6",
-              "score": 16.8,
+              "score": 16.9,
               "depth": 3.3,
               "filled": 10,
               "slotCount": 10
@@ -18656,7 +18653,7 @@
             {
               "franchiseId": "12",
               "score": 15.8,
-              "depth": 2.4,
+              "depth": 2.3,
               "filled": 10,
               "slotCount": 10
             },
@@ -18670,7 +18667,7 @@
             {
               "franchiseId": "2",
               "score": 14.9,
-              "depth": 4.4,
+              "depth": 4.3,
               "filled": 10,
               "slotCount": 10
             }
@@ -18678,7 +18675,7 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-08-19T16:47:46.010Z"
+      "availableAt": "2026-08-19T20:47:03.955Z"
     },
     {
       "id": "1966972",
@@ -18689,7 +18686,7 @@
       "teamName": "Big Dart Energy",
       "url": "https://fantasy.espn.com/football/team?leagueId=1966972&teamId=10",
       "players": [],
-      "updatedAt": "2026-08-19T16:48:02.311Z",
+      "updatedAt": "2026-08-19T20:47:18.450Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -18880,7 +18877,7 @@
       "teamName": "Jeffer Justinson",
       "url": "https://fantasy.espn.com/football/team?leagueId=421871710&teamId=5",
       "players": [],
-      "updatedAt": "2026-08-19T16:48:02.396Z",
+      "updatedAt": "2026-08-19T20:47:18.550Z",
       "error": null,
       "tags": [],
       "provider": "espn",
