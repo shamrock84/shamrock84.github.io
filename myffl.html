@@ -706,6 +706,55 @@
 			color: var(--muted);
 			font-weight: normal;
 		}
+		/* A real salary that has a known contract length (see
+		   salaryByYearBreakdown) renders as this instead of plain text — a
+		   dotted underline signals "click me" without borrowing the solid
+		   underline .player-link already uses for an outbound link, since
+		   this opens a popover on the page rather than navigating away. */
+		.salary-link {
+			background: none;
+			border: none;
+			padding: 0;
+			margin: 0;
+			font: inherit;
+			font-variant-numeric: tabular-nums;
+			color: var(--accent);
+			text-decoration: underline dotted;
+			text-underline-offset: 0.15rem;
+			cursor: pointer;
+		}
+		/* Single shared instance (see buildSalaryCell) — position:fixed,
+		   coordinates set inline in JS per open. Sized to its content rather
+		   than the table it was opened from, since it's detached from the
+		   table (appended to <body>) precisely so a narrow phone's
+		   horizontally-scrolled roster table can't clip or misposition it. */
+		.salary-popover {
+			position: fixed;
+			z-index: 20;
+			background: var(--card-bg);
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+			padding: 0.5rem 0.7rem;
+			font-size: 0.85rem;
+			min-width: 10rem;
+		}
+		.salary-popover-title {
+			font-weight: 600;
+			color: var(--muted);
+			margin-bottom: 0.3rem;
+			white-space: nowrap;
+		}
+		.salary-popover-row {
+			display: flex;
+			justify-content: space-between;
+			gap: 1rem;
+			padding: 0.15rem 0;
+			font-variant-numeric: tabular-nums;
+		}
+		.salary-popover-row + .salary-popover-row {
+			border-top: 1px solid var(--border);
+		}
 		.pos-chip {
 			display: inline-block;
 			min-width: 2rem;
@@ -2033,9 +2082,92 @@
 		// Same login gate as buildYearsCell, same reason: a planned salary is
 		// strategy, and this page has no viewer-level access control — logged
 		// out, an unset value renders as a plain "—" instead of the dropdown.
-		function buildSalaryCell(p, leagueId, onSalaryChange) {
+		//
+		// Shared "Salary by Year" popover for the real-salary cell below — one
+		// instance reused across every click rather than a node per player,
+		// since only one can ever be open, and appended to <body> rather than
+		// nested in the table so its position:fixed coordinates are measured
+		// against the viewport, not a potentially-scrolling ancestor
+		// (.roster-scroll's own horizontal scroll on a phone would otherwise
+		// clip or misplace it). Built lazily on first use rather than at page
+		// load, since most page loads never open it.
+		let salaryPopoverEl = null;
+		let salaryPopoverOwner = null; // the <button> currently showing, or null
+		function closeSalaryPopover() {
+			if (!salaryPopoverEl) return;
+			salaryPopoverEl.classList.add('hidden');
+			salaryPopoverOwner = null;
+		}
+		function positionSalaryPopover(button) {
+			const rect = button.getBoundingClientRect();
+			salaryPopoverEl.style.top = `${rect.bottom + 4}px`;
+			// Anchored to the button's left edge, but pulled back from the
+			// right edge of the viewport — the Sal column sits at the right
+			// of a wide roster table, so a naive left-anchor would routinely
+			// try to render most of the popover off-screen.
+			const maxLeft = window.innerWidth - salaryPopoverEl.offsetWidth - 8;
+			salaryPopoverEl.style.left = `${Math.max(8, Math.min(rect.left, maxLeft))}px`;
+		}
+		function openSalaryPopover(button, playerName, rows) {
+			if (!salaryPopoverEl) {
+				salaryPopoverEl = el('div', { class: 'salary-popover hidden' });
+				document.body.appendChild(salaryPopoverEl);
+				// Closes rather than re-tracks on scroll/resize — this is a
+				// quick reference a click away again, not a pinned panel, and
+				// a stale position left behind by a scroll would be worse
+				// than it just going away.
+				window.addEventListener('scroll', closeSalaryPopover, true);
+				window.addEventListener('resize', closeSalaryPopover);
+				document.addEventListener('keydown', (e) => {
+					if (e.key === 'Escape') closeSalaryPopover();
+				});
+				document.addEventListener('click', (e) => {
+					if (!salaryPopoverOwner) return;
+					if (e.target === salaryPopoverOwner || salaryPopoverEl.contains(e.target)) return;
+					closeSalaryPopover();
+				});
+			}
+			salaryPopoverEl.innerHTML = '';
+			salaryPopoverEl.appendChild(el('div', { class: 'salary-popover-title', text: `${playerName} — Salary by Year` }));
+			for (const row of rows) {
+				const line = el('div', { class: 'salary-popover-row' });
+				line.appendChild(el('span', { text: String(row.year) }));
+				line.appendChild(el('span', { text: `$${row.amount.toFixed(2)}` }));
+				salaryPopoverEl.appendChild(line);
+			}
+			salaryPopoverEl.classList.remove('hidden');
+			salaryPopoverOwner = button;
+			positionSalaryPopover(button);
+		}
+		function toggleSalaryPopover(button, playerName, rows) {
+			if (salaryPopoverOwner === button && !salaryPopoverEl.classList.contains('hidden')) {
+				closeSalaryPopover();
+				return;
+			}
+			openSalaryPopover(button, playerName, rows);
+		}
+		function buildSalaryCell(p, league, onSalaryChange) {
 			if (Number(p.salary) > 0) {
-				return el('td', { class: 'salary-cell', text: `$${Number(p.salary).toFixed(2)}` });
+				const text = `$${Number(p.salary).toFixed(2)}`;
+				// The breakdown only exists once a contract length is known
+				// (real or locally planned — see contractYearsRemaining), so a
+				// real salary with no known length yet still renders as plain
+				// text, same as before this feature existed.
+				const breakdown = salaryByYearBreakdown(league, p);
+				if (!breakdown) {
+					return el('td', { class: 'salary-cell', text });
+				}
+				const btn = el('button', {
+					type: 'button',
+					class: 'salary-link',
+					title: 'Salary by year',
+					text,
+				});
+				btn.addEventListener('click', (e) => {
+					e.stopPropagation();
+					toggleSalaryPopover(btn, p.name, breakdown);
+				});
+				return el('td', { class: 'salary-cell' }, [btn]);
 			}
 			if (!isLoggedIn()) {
 				return el('td', { class: 'salary-cell', text: '—' });
@@ -2046,9 +2178,9 @@
 			for (let dollars = 1; dollars <= 200; dollars++) {
 				select.appendChild(el('option', { value: String(dollars), text: `$${dollars.toFixed(2)}` }));
 			}
-			select.value = getSalaryPlan(leagueId, p.id);
+			select.value = getSalaryPlan(league.id, p.id);
 			select.addEventListener('change', () => {
-				setSalaryPlan(leagueId, p.id, select.value);
+				setSalaryPlan(league.id, p.id, select.value);
 				onSalaryChange?.();
 			});
 			td.appendChild(select);
@@ -2126,7 +2258,7 @@
 			});
 		}
 
-		function buildRosterTable(players, isAuction, statusKey, leagueId, onSalaryChange, onContractChange, showCutColumn, onCutChange) {
+		function buildRosterTable(players, isAuction, statusKey, league, onSalaryChange, onContractChange, showCutColumn, onCutChange) {
 			// roster-auction is about width, not about the team suffix: only the
 			// salary-cap tables carry Salary/Yrs, and only they need the phone
 			// type shrink that class drives.
@@ -2163,10 +2295,26 @@
 				if (usingPriorYear) ptsAttrs.title = `${(pageData?.year ?? new Date().getFullYear()) - 1} season total \u2014 current season hasn't started yet`;
 				row.appendChild(el('td', ptsAttrs));
 				if (isAuction) {
-					row.appendChild(buildSalaryCell(p, leagueId, onSalaryChange));
-					row.appendChild(buildYearsCell(p, leagueId, onContractChange));
+					let salaryTd = buildSalaryCell(p, league, onSalaryChange);
+					row.appendChild(salaryTd);
+					// Rebuilds this row's own Salary cell after every Yrs edit,
+					// not just the shared onContractChange — a real salary with
+					// no known contract length renders as plain text (see
+					// buildSalaryCell), and planning that length is exactly
+					// what should turn it into the "Salary by Year" link, live,
+					// without waiting for a reload. The reverse case — a
+					// still-planned salary later gaining a known Yrs — stays a
+					// dropdown either way, same as before this feature existed;
+					// buildSalaryCell only ever links a *real* salary.
+					const onContractChangeForRow = () => {
+						onContractChange?.();
+						const freshSalaryTd = buildSalaryCell(p, league, onSalaryChange);
+						salaryTd.replaceWith(freshSalaryTd);
+						salaryTd = freshSalaryTd;
+					};
+					row.appendChild(buildYearsCell(p, league.id, onContractChangeForRow));
 				}
-				if (showCutColumn) row.appendChild(buildCutCell(p, leagueId, onCutChange));
+				if (showCutColumn) row.appendChild(buildCutCell(p, league.id, onCutChange));
 				table.appendChild(row);
 			}
 			// A phone is narrower than the salary-cap table's own minimum, so
@@ -2264,6 +2412,27 @@
 		// exposes this (it's not a field, it's a rule), so it's a single named
 		// constant rather than something read off a response.
 		const CONTRACT_SALARY_ESCALATION_RATE = 1.075;
+
+		// One player's own salary trajectory for as many seasons as their
+		// contract actually covers — the per-player mirror of
+		// buildContractYearTable's per-league columns, same math (current
+		// effectiveSalary compounded by CONTRACT_SALARY_ESCALATION_RATE once
+		// per year, zero times for this season), just walked out to yrs
+		// seasons instead of stopping at three. Returns null when there's
+		// nothing to project: no known contract length (real or planned —
+		// see contractYearsRemaining) means no season count to walk, and no
+		// salary means every season would read $0.
+		function salaryByYearBreakdown(league, p) {
+			const currentYear = Number(league.season ?? pageData?.year);
+			const yrs = contractYearsRemaining(league, p);
+			const base = effectiveSalary(league, p);
+			if (!Number.isFinite(currentYear) || yrs == null || !(base > 0)) return null;
+			const rows = [];
+			for (let k = 0; k < yrs; k++) {
+				rows.push({ year: currentYear + k, amount: base * (CONTRACT_SALARY_ESCALATION_RATE ** k) });
+			}
+			return rows;
+		}
 
 		// Shared by buildContractExpirationSummary (Active Roster/Practice
 		// Squad/Injured Reserve) and buildTaxiContractExpirationSummary (Taxi
@@ -3034,7 +3203,7 @@
 								refreshTaxiExpirationSummary();
 							}
 							: undefined;
-					card.appendChild(buildRosterTable(players, isAuction, group.key.toLowerCase(), league.id, onSalaryChange, onContractChange, showCutColumn, refreshCutBanner));
+					card.appendChild(buildRosterTable(players, isAuction, group.key.toLowerCase(), league, onSalaryChange, onContractChange, showCutColumn, refreshCutBanner));
 				}
 
 				if (summaryEl) card.appendChild(summaryEl);
