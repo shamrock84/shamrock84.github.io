@@ -6009,12 +6009,12 @@
 				for (const groupKey of SUBTAB_ORDER) {
 					const types = typesInSubtabGroup(groupKey);
 					if (!data.leagues.some((l) => types.includes(l.type))) continue;
-					gridEl.appendChild(renderAnalyticsCard(groupKey, types, data.leagues));
-					gridEl.appendChild(renderInjuryExposureCard(groupKey, types, data.leagues));
-					const availableCard = renderTopAvailableCard(groupKey, types, data.leagues, data.rankingPools, data.year);
-					if (availableCard) gridEl.appendChild(availableCard);
 					const powerCard = renderPowerRankCard(groupKey, types, data.leagues, data.year);
 					if (powerCard) gridEl.appendChild(powerCard);
+					const availableCard = renderTopAvailableCard(groupKey, types, data.leagues, data.rankingPools, data.year);
+					if (availableCard) gridEl.appendChild(availableCard);
+					gridEl.appendChild(renderAnalyticsCard(groupKey, types, data.leagues));
+					gridEl.appendChild(renderInjuryExposureCard(groupKey, types, data.leagues));
 				}
 			}
 
