@@ -2259,17 +2259,35 @@
 			return table;
 		}
 
+		// Every one of these leagues' rules documents escalates a signed
+		// contract's salary 7.5% per year it stays on the books — no provider
+		// exposes this (it's not a field, it's a rule), so it's a single named
+		// constant rather than something read off a response.
+		const CONTRACT_SALARY_ESCALATION_RATE = 1.075;
+
 		// Auction/salary-cap leagues only, appended right below the Salary
-		// Summary — how many contracts expire at the start of each of the next
-		// three league years, for planning contract lengths against. A player
-		// with N years remaining (real from MFL, or a locally-planned length
-		// standing in for one — see contractYearsRemaining) needs a new deal
-		// starting (this league year + N), so N=1/2/3 sort straight into three
-		// columns without needing to know each player's actual draft/signing
-		// year. Spans the whole roster (Active/Taxi/Practice/IR alike, the same
-		// scope the top-of-card contract banner already uses) rather than just
-		// Active Roster — a taxi-squad stash's contract comes due exactly the
-		// same as a starter's.
+		// Summary — for each of the next three league years, how many
+		// contracts expire at its start (Expiring) and what the roster's
+		// remaining contracts will cost that year (Salary), for planning
+		// contract lengths against. A player with N years remaining (real from
+		// MFL, or a locally-planned length standing in for one — see
+		// contractYearsRemaining) needs a new deal starting (this league year
+		// + N), so N=1/2/3 sort straight into three columns without needing to
+		// know each player's actual draft/signing year. Spans the whole roster
+		// (Active/Taxi/Practice/IR alike, the same scope the top-of-card
+		// contract banner already uses) rather than just Active Roster — a
+		// taxi-squad stash's contract comes due exactly the same as a
+		// starter's.
+		//
+		// A player expiring in a given column contributes nothing to that
+		// column's Salary — the whole point of the row is what's still on the
+		// books once the expiring names are gone — and nothing to any later
+		// column either, since a lapsed contract doesn't come back. Everyone
+		// else still under contract that year (yearsOut < their remaining
+		// years) is counted at their current effectiveSalary compounded by
+		// CONTRACT_SALARY_ESCALATION_RATE once per year between now and then,
+		// same "real wins, else the local plan" fallback the Salary Summary
+		// above already uses for money.
 		//
 		// Returns null only when the league's own current year can't be
 		// resolved (a rosters.json written before leagues carried `season`,
@@ -2280,10 +2298,20 @@
 			const currentYear = Number(league.season ?? pageData?.year);
 			if (!Number.isFinite(currentYear)) return null;
 
-			const columns = [1, 2, 3].map((yearsOut) => ({
-				year: currentYear + yearsOut,
-				count: (league.players || []).filter((p) => contractYearsRemaining(league, p) === yearsOut).length,
-			}));
+			const players = league.players || [];
+			const columns = [1, 2, 3].map((yearsOut) => {
+				let expiringCount = 0;
+				let salaryTotal = 0;
+				for (const p of players) {
+					const yrs = contractYearsRemaining(league, p);
+					if (yrs === yearsOut) {
+						expiringCount++;
+					} else if (yrs != null && yrs > yearsOut) {
+						salaryTotal += effectiveSalary(league, p) * (CONTRACT_SALARY_ESCALATION_RATE ** yearsOut);
+					}
+				}
+				return { year: currentYear + yearsOut, expiringCount, salaryTotal };
+			});
 
 			const table = el('table', { class: 'contract-expiration-summary' });
 			const headRow = el('tr');
@@ -2292,8 +2320,12 @@
 			table.appendChild(headRow);
 			const countRow = el('tr');
 			countRow.appendChild(el('td', { text: 'Expiring' }));
-			for (const col of columns) countRow.appendChild(el('td', { text: String(col.count) }));
+			for (const col of columns) countRow.appendChild(el('td', { text: String(col.expiringCount) }));
 			table.appendChild(countRow);
+			const salaryRow = el('tr');
+			salaryRow.appendChild(el('td', { text: 'Salary' }));
+			for (const col of columns) salaryRow.appendChild(el('td', { text: `$${col.salaryTotal.toFixed(2)}` }));
+			table.appendChild(salaryRow);
 			return table;
 		}
 
