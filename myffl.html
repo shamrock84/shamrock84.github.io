@@ -2267,27 +2267,31 @@
 
 		// Auction/salary-cap leagues only, appended right below the Salary
 		// Summary — for each of the next three league years, how many
-		// contracts expire at its start (Expiring) and what the roster's
+		// contracts expire at its end (Expiring) and what the roster's
 		// remaining contracts will cost that year (Salary), for planning
-		// contract lengths against. A player with N years remaining (real from
-		// MFL, or a locally-planned length standing in for one — see
-		// contractYearsRemaining) needs a new deal starting (this league year
-		// + N), so N=1/2/3 sort straight into three columns without needing to
-		// know each player's actual draft/signing year. Spans the whole roster
-		// (Active/Taxi/Practice/IR alike, the same scope the top-of-card
-		// contract banner already uses) rather than just Active Roster — a
-		// taxi-squad stash's contract comes due exactly the same as a
-		// starter's.
+		// contract lengths against. contractYearsRemaining counts down to a
+		// player's final season the same way MFL's own Yrs column does, so a
+		// player showing an N-year contract plays out its last season in
+		// (this league year + N - 1) — a 1-year contract is already expiring
+		// THIS year, not next — which is what sorts N=1/2/3 straight into
+		// three columns without needing to know each player's actual
+		// draft/signing year. Spans the whole roster (Active/Taxi/Practice/IR
+		// alike, the same scope the top-of-card contract banner already uses)
+		// rather than just Active Roster — a taxi-squad stash's contract comes
+		// due exactly the same as a starter's.
 		//
 		// A player expiring in a given column contributes nothing to that
 		// column's Salary — the whole point of the row is what's still on the
-		// books once the expiring names are gone — and nothing to any later
-		// column either, since a lapsed contract doesn't come back. Everyone
-		// else still under contract that year (yearsOut < their remaining
-		// years) is counted at their current effectiveSalary compounded by
-		// CONTRACT_SALARY_ESCALATION_RATE once per year between now and then,
-		// same "real wins, else the local plan" fallback the Salary Summary
-		// above already uses for money.
+		// books once the expiring names are gone — and nothing to any earlier
+		// column either (a longer contract still covers every season a
+		// shorter one would), nor any later one (a lapsed contract doesn't
+		// come back). Everyone still under contract beyond a column's own
+		// year (contractLength > that column's N) is counted at their current
+		// effectiveSalary compounded by CONTRACT_SALARY_ESCALATION_RATE once
+		// per year between now and then — zero times for the current-year
+		// column itself, since that salary is already this year's real
+		// number — same "real wins, else the local plan" fallback the Salary
+		// Summary above already uses for money.
 		//
 		// Returns null only when the league's own current year can't be
 		// resolved (a rosters.json written before leagues carried `season`,
@@ -2299,18 +2303,22 @@
 			if (!Number.isFinite(currentYear)) return null;
 
 			const players = league.players || [];
-			const columns = [1, 2, 3].map((yearsOut) => {
+			const columns = [1, 2, 3].map((contractLength) => {
+				// A contractLength-year contract signed this season plays out
+				// its final season contractLength - 1 years from now, e.g. a
+				// 1-year deal is done at the end of THIS season (offset 0).
+				const columnOffset = contractLength - 1;
 				let expiringCount = 0;
 				let salaryTotal = 0;
 				for (const p of players) {
 					const yrs = contractYearsRemaining(league, p);
-					if (yrs === yearsOut) {
+					if (yrs === contractLength) {
 						expiringCount++;
-					} else if (yrs != null && yrs > yearsOut) {
-						salaryTotal += effectiveSalary(league, p) * (CONTRACT_SALARY_ESCALATION_RATE ** yearsOut);
+					} else if (yrs != null && yrs > contractLength) {
+						salaryTotal += effectiveSalary(league, p) * (CONTRACT_SALARY_ESCALATION_RATE ** columnOffset);
 					}
 				}
-				return { year: currentYear + yearsOut, expiringCount, salaryTotal };
+				return { year: currentYear + columnOffset, expiringCount, salaryTotal };
 			});
 
 			const table = el('table', { class: 'contract-expiration-summary' });
