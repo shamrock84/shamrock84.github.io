@@ -18,11 +18,7 @@
 // the only symptom being data quietly going stale.
 
 import { verifyToken } from './lib/auth.mjs';
-
-const ALLOWED_ORIGINS = new Set([
-  'https://melbostads.com',
-  'https://shamrock84.github.io',
-]);
+import { applyCors } from './lib/cors.mjs';
 
 const OWNER = 'shamrock84';
 const REPO = 'shamrock84.github.io';
@@ -159,8 +155,16 @@ function validate(leagues) {
 // through any key this endpoint doesn't know about. The Admin tab only renders
 // the fields in KEY_ORDER, so without this a field added to the config later
 // would be silently erased the first time someone pressed Save.
+//
+// out is prototype-less rather than a plain {}: the unknown-key passthrough
+// below assigns with out[k] = v where k comes straight from the request body,
+// and on a normal object a key of "__proto__" wouldn't create an own property
+// at all — it would hit Object.prototype's setter and repoint out's
+// prototype. Object.create(null) has no such setter, so that key lands as an
+// ordinary own property like any other, which is what serialize/formatLeague
+// (both plain Object.entries/JSON.stringify calls) already expect.
 function mergeLeague(league) {
-  const out = {};
+  const out = Object.create(null);
   const put = (k, v) => { if (v !== undefined && v !== null && v !== '') out[k] = v; };
 
   put('id', String(league.id).trim());
@@ -242,18 +246,7 @@ async function githubGet(token) {
 }
 
 export default async function handler(req, res) {
-  const origin = req.headers.origin;
-  if (origin && ALLOWED_ORIGINS.has(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Cache-Control', 'no-store');
-
-  if (req.method === 'OPTIONS') {
-    res.status(204).end();
-    return;
-  }
+  if (applyCors(req, res, { methods: 'POST, OPTIONS', headers: 'Content-Type, Authorization' })) return;
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
     return;

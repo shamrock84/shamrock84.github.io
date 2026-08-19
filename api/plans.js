@@ -32,11 +32,7 @@
 // not one per user. PLANS_KEY is that document.
 
 import { verifyToken } from './lib/auth.mjs';
-
-const ALLOWED_ORIGINS = new Set([
-  'https://melbostads.com',
-  'https://shamrock84.github.io',
-]);
+import { applyCors } from './lib/cors.mjs';
 
 const PLANS_KEY = 'myffl:plans';
 
@@ -196,18 +192,7 @@ async function kvSet(url, token, document) {
 }
 
 export default async function handler(req, res) {
-  const origin = req.headers.origin;
-  if (origin && ALLOWED_ORIGINS.has(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Cache-Control', 'no-store');
-
-  if (req.method === 'OPTIONS') {
-    res.status(204).end();
-    return;
-  }
+  if (applyCors(req, res, { methods: 'GET, POST, OPTIONS', headers: 'Content-Type, Authorization' })) return;
   if (req.method !== 'GET' && req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
     return;
