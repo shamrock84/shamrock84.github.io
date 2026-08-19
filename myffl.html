@@ -2289,18 +2289,19 @@
 		// at which point it shows up in this table like any other roster
 		// move would.
 		//
-		// A player expiring in a given column contributes nothing to that
-		// column's Salary — the whole point of the row is what's still on the
-		// books once the expiring names are gone — and nothing to any earlier
-		// column either (a longer contract still covers every season a
-		// shorter one would), nor any later one (a lapsed contract doesn't
-		// come back). Everyone still under contract beyond a column's own
-		// year (contractLength > that column's N) is counted at their current
-		// effectiveSalary compounded by CONTRACT_SALARY_ESCALATION_RATE once
-		// per year between now and then — zero times for the current-year
-		// column itself, since that salary is already this year's real
-		// number — same "real wins, else the local plan" fallback the Salary
-		// Summary above already uses for money.
+		// A player expiring in a column's own year still counts toward that
+		// column's Salary — that's the whole point of calling it their final
+		// year rather than their first year gone: they're still rostered and
+		// drawing a cap hit through it, just not beyond it. So everyone whose
+		// contract reaches at least that far (their own N >= the column's N)
+		// is counted at their current effectiveSalary compounded by
+		// CONTRACT_SALARY_ESCALATION_RATE once per year between now and then
+		// — zero times for the current-year column itself, since that salary
+		// is already this year's real number — same "real wins, else the
+		// local plan" fallback the Salary Summary above already uses for
+		// money. A shorter contract that's already lapsed by a later column
+		// contributes nothing there, and nothing to any column after that
+		// either — a lapsed contract doesn't come back.
 		//
 		// Returns null only when the league's own current year can't be
 		// resolved (a rosters.json written before leagues carried `season`,
@@ -2324,9 +2325,12 @@
 				let salaryTotal = 0;
 				for (const p of players) {
 					const yrs = contractYearsRemaining(league, p);
-					if (yrs === contractLength) {
-						expiringCount++;
-					} else if (yrs != null && yrs > contractLength) {
+					// Independent checks, not if/else-if: a player expiring
+					// this column (yrs === contractLength) is still counted in
+					// this column's Salary too — they're gone from every
+					// later column, but not yet from this one.
+					if (yrs === contractLength) expiringCount++;
+					if (yrs != null && yrs >= contractLength) {
 						salaryTotal += effectiveSalary(league, p) * (CONTRACT_SALARY_ESCALATION_RATE ** columnOffset);
 					}
 				}
