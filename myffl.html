@@ -677,6 +677,35 @@
 			text-decoration: underline dashed;
 			text-underline-offset: 0.15rem;
 		}
+		/* Contract-expiration-by-year summary (buildContractExpirationSummary)
+		   — a small grid rather than the salary summary's label/value rows,
+		   since this is three parallel counts rather than a running total. */
+		table.contract-expiration-summary {
+			width: 100%;
+			border-collapse: collapse;
+			font-size: 0.85rem;
+			margin-top: 0.4rem;
+		}
+		table.contract-expiration-summary th,
+		table.contract-expiration-summary td {
+			padding: 0.3rem 0.2rem;
+			text-align: center;
+			font-variant-numeric: tabular-nums;
+		}
+		table.contract-expiration-summary th {
+			color: var(--muted);
+			font-weight: 600;
+		}
+		table.contract-expiration-summary td {
+			border-top: 1px solid var(--border);
+			font-weight: 600;
+		}
+		table.contract-expiration-summary th:first-child,
+		table.contract-expiration-summary td:first-child {
+			text-align: left;
+			color: var(--muted);
+			font-weight: normal;
+		}
 		.pos-chip {
 			display: inline-block;
 			min-width: 2rem;
@@ -2176,6 +2205,20 @@
 			return plannedSalary(league, p) ?? 0;
 		}
 
+		// Best-known contract length remaining for a Salary Cap player, for the
+		// expiration-summary table below — same real-value-wins-else-planned
+		// shape as effectiveSalary, just for Yrs instead of Salary. contractYear
+		// counts down to a player's final season the same way MFL's own Yrs
+		// column does, so a player showing N here needs a new deal starting
+		// (this league year + N) — see buildContractExpirationSummary.
+		function contractYearsRemaining(league, p) {
+			const real = Number(p.contractYear);
+			if (real > 0) return real;
+			if (!isLoggedIn()) return null;
+			const planned = Number(getContractPlan(league.id, p.id));
+			return planned > 0 ? planned : null;
+		}
+
 		// Auction/salary-cap leagues only, shown right after the Active Roster
 		// group — mirrors the Salary Adjustments/Total/Salary Cap/Cap Room
 		// Available rows MFL's own roster page shows. Total = this season's
@@ -2213,6 +2256,84 @@
 			row('Total', total, `salary-total${plannedNote ? ' salary-has-plan' : ''}`, plannedNote);
 			row('Salary Cap', league.salaryCap);
 			row('Cap Room Available', capRoom, `salary-cap-room${capRoom < 0 ? ' salary-negative' : ''}${plannedNote ? ' salary-has-plan' : ''}`, plannedNote);
+			return table;
+		}
+
+		// Every one of these leagues' rules documents escalates a signed
+		// contract's salary 7.5% per year it stays on the books — no provider
+		// exposes this (it's not a field, it's a rule), so it's a single named
+		// constant rather than something read off a response.
+		const CONTRACT_SALARY_ESCALATION_RATE = 1.075;
+
+		// Auction/salary-cap leagues only, appended right below the Salary
+		// Summary — for each of the next three league years, how many
+		// contracts expire at its end (Expiring) and what the roster's
+		// remaining contracts will cost that year (Salary), for planning
+		// contract lengths against. contractYearsRemaining counts down to a
+		// player's final season the same way MFL's own Yrs column does, so a
+		// player showing an N-year contract plays out its last season in
+		// (this league year + N - 1) — a 1-year contract is already expiring
+		// THIS year, not next — which is what sorts N=1/2/3 straight into
+		// three columns without needing to know each player's actual
+		// draft/signing year. Spans the whole roster (Active/Taxi/Practice/IR
+		// alike, the same scope the top-of-card contract banner already uses)
+		// rather than just Active Roster — a taxi-squad stash's contract comes
+		// due exactly the same as a starter's.
+		//
+		// A player expiring in a given column contributes nothing to that
+		// column's Salary — the whole point of the row is what's still on the
+		// books once the expiring names are gone — and nothing to any earlier
+		// column either (a longer contract still covers every season a
+		// shorter one would), nor any later one (a lapsed contract doesn't
+		// come back). Everyone still under contract beyond a column's own
+		// year (contractLength > that column's N) is counted at their current
+		// effectiveSalary compounded by CONTRACT_SALARY_ESCALATION_RATE once
+		// per year between now and then — zero times for the current-year
+		// column itself, since that salary is already this year's real
+		// number — same "real wins, else the local plan" fallback the Salary
+		// Summary above already uses for money.
+		//
+		// Returns null only when the league's own current year can't be
+		// resolved (a rosters.json written before leagues carried `season`,
+		// and pageData.year unset too) — there's no year to label the columns
+		// with. It does NOT hide itself when every count is zero: watching
+		// zeros turn into numbers as lengths get planned is the point.
+		function buildContractExpirationSummary(league) {
+			const currentYear = Number(league.season ?? pageData?.year);
+			if (!Number.isFinite(currentYear)) return null;
+
+			const players = league.players || [];
+			const columns = [1, 2, 3].map((contractLength) => {
+				// A contractLength-year contract signed this season plays out
+				// its final season contractLength - 1 years from now, e.g. a
+				// 1-year deal is done at the end of THIS season (offset 0).
+				const columnOffset = contractLength - 1;
+				let expiringCount = 0;
+				let salaryTotal = 0;
+				for (const p of players) {
+					const yrs = contractYearsRemaining(league, p);
+					if (yrs === contractLength) {
+						expiringCount++;
+					} else if (yrs != null && yrs > contractLength) {
+						salaryTotal += effectiveSalary(league, p) * (CONTRACT_SALARY_ESCALATION_RATE ** columnOffset);
+					}
+				}
+				return { year: currentYear + columnOffset, expiringCount, salaryTotal };
+			});
+
+			const table = el('table', { class: 'contract-expiration-summary' });
+			const headRow = el('tr');
+			headRow.appendChild(el('th', {}));
+			for (const col of columns) headRow.appendChild(el('th', { text: String(col.year) }));
+			table.appendChild(headRow);
+			const countRow = el('tr');
+			countRow.appendChild(el('td', { text: 'Expiring' }));
+			for (const col of columns) countRow.appendChild(el('td', { text: String(col.expiringCount) }));
+			table.appendChild(countRow);
+			const salaryRow = el('tr');
+			salaryRow.appendChild(el('td', { text: 'Salary' }));
+			for (const col of columns) salaryRow.appendChild(el('td', { text: `$${col.salaryTotal.toFixed(2)}` }));
+			table.appendChild(salaryRow);
 			return table;
 		}
 
@@ -2650,6 +2771,28 @@
 				if (contactLink) contractBannerEl.appendChild(contactLink);
 			};
 
+			// The expiration-by-year summary (buildContractExpirationSummary),
+			// appended below the Active Roster table further down — kept as an
+			// outer variable, like contractBannerEl above, because a Yrs edit on
+			// *any* status group's table (Taxi Squad, IR, ...) has to move these
+			// counts, not just an edit inside Active Roster.
+			let expirationSummaryEl = null;
+			const refreshExpirationSummary = () => {
+				if (!expirationSummaryEl) return;
+				const fresh = buildContractExpirationSummary(league);
+				if (fresh) {
+					expirationSummaryEl.replaceWith(fresh);
+					expirationSummaryEl = fresh;
+				}
+			};
+			// Single callback threaded through every status group's table so a
+			// Yrs edit anywhere on the roster refreshes both the top-of-card
+			// banner and the expiration summary in one pass.
+			const onContractChange = () => {
+				refreshContractBanner();
+				refreshExpirationSummary();
+			};
+
 			// Logged out this is hidden outright rather than shown with plans
 			// uncounted: the planning dropdowns aren't rendered either (a plan
 			// is strategy — same gate as plannedSalary), so the banner would be
@@ -2771,6 +2914,13 @@
 				// than leaving a stale Total/Cap Room on screen until reload.
 				const needsCapSummary = group.key === 'ROSTER' && isAuction && league.salaryCap != null;
 				let summaryEl = needsCapSummary ? buildSalarySummary(league, players) : null;
+				// Below the Salary Summary, same ROSTER-iteration placement — but
+				// scoped to the whole roster (see buildContractExpirationSummary),
+				// not just this group's players, and not gated on salaryCap being
+				// set since it needs nothing from the cap math.
+				if (group.key === 'ROSTER' && isAuction) {
+					expirationSummaryEl = buildContractExpirationSummary(league);
+				}
 				// Cuts are counted against cutdownRosterSize, which normally
 				// applies to ROSTER-status players only (see rosterLimitProblems,
 				// which checks MFL's own separate taxi/IR limits instead) — except
@@ -2791,10 +2941,17 @@
 							summaryEl = fresh;
 						}
 						: undefined;
-					card.appendChild(buildRosterTable(players, isAuction, group.key.toLowerCase(), league.id, onSalaryChange, refreshContractBanner, showCutColumn, refreshCutBanner));
+					card.appendChild(buildRosterTable(players, isAuction, group.key.toLowerCase(), league.id, onSalaryChange, onContractChange, showCutColumn, refreshCutBanner));
 				}
 
 				if (summaryEl) card.appendChild(summaryEl);
+				// Scoped to the ROSTER iteration like summaryEl above — appendChild
+				// on a node already in the DOM *moves* it, so without this gate the
+				// still-truthy outer expirationSummaryEl would get relocated to the
+				// end of the card on every later status group's iteration too,
+				// landing it after Taxi Squad/IR instead of right below Salary
+				// Summary where it belongs.
+				if (group.key === 'ROSTER' && expirationSummaryEl) card.appendChild(expirationSummaryEl);
 			}
 
 			if (!league.players || league.players.length === 0) {
