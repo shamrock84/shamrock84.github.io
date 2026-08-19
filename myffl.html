@@ -2417,11 +2417,15 @@
 		// contract actually covers — the per-player mirror of
 		// buildContractYearTable's per-league columns, same math (current
 		// effectiveSalary compounded by CONTRACT_SALARY_ESCALATION_RATE once
-		// per year, zero times for this season), just walked out to yrs
-		// seasons instead of stopping at three. Returns null when there's
-		// nothing to project: no known contract length (real or planned —
-		// see contractYearsRemaining) means no season count to walk, and no
-		// salary means every season would read $0.
+		// per year, zero times for this season). yrs is never more than 3:
+		// every one of these leagues' own rules caps a contract at 3 years,
+		// which is also why buildYearsCell's planning dropdown only offers
+		// 1/2/3 — so this always agrees with buildContractYearTable's own
+		// three columns rather than needing to be kept in sync with it by
+		// hand. Returns null when there's nothing to project: no known
+		// contract length (real or planned — see contractYearsRemaining)
+		// means no season count to walk, and no salary means every season
+		// would read $0.
 		function salaryByYearBreakdown(league, p) {
 			const currentYear = Number(league.season ?? pageData?.year);
 			const yrs = contractYearsRemaining(league, p);
@@ -2438,8 +2442,10 @@
 		// Squad/Injured Reserve) and buildTaxiContractExpirationSummary (Taxi
 		// Squad alone) — same table, built over whatever player list the
 		// caller hands it, so the two scopes can never drift out of sync with
-		// each other's math. For each of the next three league years, how
-		// many contracts expire at its end (Expiring) and what those players
+		// each other's math. For each of the next three league years — three
+		// because every one of these leagues' own rules caps a contract at
+		// 3 years, so a longer column would only ever read zero — how many
+		// contracts expire at its end (Expiring) and what those players
 		// will cost that year (Salary), for planning contract lengths
 		// against. contractYearsRemaining counts down to a player's final
 		// season the same way MFL's own Yrs column does, so a player showing
