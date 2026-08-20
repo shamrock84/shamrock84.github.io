@@ -283,8 +283,12 @@
 		   long unbroken word ("Semiquincentennial") that breaks mid-word at 300,
 		   which read as a rendering bug rather than a long name. 340 keeps that
 		   readable at 1366px and up (3 columns) and only gives up the 3rd column
-		   below that, same as before this rule existed. */
-		.grid[data-view="standings"] {
+		   below that, same as before this rule existed. Scoring shares the rule:
+		   its table (#, Team, Score) reuses the same `table.standings` class and
+		   is narrower still, so nothing here is untested against real content —
+		   no league has reported live scores yet, but the table shape is known.*/
+		.grid[data-view="standings"],
+		.grid[data-view="scoring"] {
 			grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
 		}
 		.card {
