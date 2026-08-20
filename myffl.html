@@ -4943,12 +4943,14 @@
 			return line;
 		}
 
-		// Three rather than the other cards' six or eight: this is the first
+		// Five rather than the other cards' six or eight: this is the first
 		// card in the tab now, and its rows run three lines deep before either
-		// list wraps, so even three of them stand as tall as a full page of
-		// the others. Aggressive on purpose — the card exists to answer "who's
-		// out this week", not to be scrolled through a season at a time.
-		const BYE_WEEKS_PAGE_SIZE = 3;
+		// list wraps, so even five of them stand as tall as a full page of
+		// the others. Three read as a waste of a wide desktop card — most of
+		// its width sat empty below a two-line-deep table — so this is still
+		// on the aggressive side of the other cards' page sizes, just not
+		// aggressive enough to leave a tall card looking half-empty.
+		const BYE_WEEKS_PAGE_SIZE = 5;
 
 		// Which page opens by default, so the pager doesn't sit on Week 5
 		// every visit once the season is in Week 11. Lands on the first row
