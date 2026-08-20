@@ -4458,22 +4458,29 @@
 		// this group of leagues actually rosters. Shares exposureLeagues with
 		// the other two cards so "how many leagues" means the same thing here.
 		//
-		// Both teams and players are deduplicated per week: a player held in
-		// three leagues in the group is one bye, not three, and his team is
-		// the same team whichever roster it's read off.
+		// Teams are deduplicated per week: a team held in three leagues in the
+		// group is one bye, not three. Players are deduplicated per league —
+		// so a franchise that somehow lists the same man twice isn't
+		// double-counted — but not across leagues, since how many of the
+		// group's leagues roster him is exactly the count the card now shows
+		// next to his name.
 		function computeByeWeeks(leagues, types) {
 			const eligible = exposureLeagues(leagues, types);
 			const weeks = new Map();
 
 			for (const league of eligible) {
+				const seen = new Set();
 				for (const p of league.players || []) {
 					const week = Number(p.bye);
 					if (!(week > 0)) continue;
+					const key = normalizeName(p.name);
+					if (!key || seen.has(key)) continue;
+					seen.add(key);
 					if (!weeks.has(week)) weeks.set(week, { teams: new Set(), players: new Map() });
 					const entry = weeks.get(week);
 					if (p.team) entry.teams.add(p.team);
-					const key = normalizeName(p.name);
-					if (key && !entry.players.has(key)) entry.players.set(key, p.name);
+					if (!entry.players.has(key)) entry.players.set(key, { name: p.name, count: 0 });
+					entry.players.get(key).count++;
 				}
 			}
 
@@ -4482,7 +4489,10 @@
 				.map(([week, entry]) => ({
 					week,
 					teams: [...entry.teams].sort(),
-					players: [...entry.players.values()].sort((a, b) => a.localeCompare(b)),
+					// Most leagues first — the count is the point of the sort, and
+					// a tie falls back to the name the way every other list here
+					// does.
+					players: [...entry.players.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)),
 				}))
 				.sort((a, b) => a.week - b.week);
 
@@ -5119,7 +5129,8 @@
 					cell.appendChild(el('div', { text: `Week ${r.week}` }));
 					const teamsLine = byeCountLine('Teams', r.teams, 'bye-teams');
 					if (teamsLine) cell.appendChild(teamsLine);
-					const playersLine = byeCountLine('Players', r.players, 'exposure-leagues');
+					const playerNames = r.players.map((p) => `${p.name} (${p.count})`);
+					const playersLine = byeCountLine('Players', playerNames, 'exposure-leagues');
 					if (playersLine) cell.appendChild(playersLine);
 					row.appendChild(cell);
 					table.appendChild(row);
