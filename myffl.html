@@ -1098,6 +1098,16 @@
 			font-size: 0.72rem;
 			margin-top: 0.1rem;
 		}
+		/* The Bye Weeks row for the NFL week currently in progress — same gold
+		   as tr.me-row, so "this week" reads as the same colour "this is my
+		   team" already does elsewhere. The Teams/Players sub-lines underneath
+		   keep their own purple/grey rather than inheriting gold, since those
+		   colours are set explicitly on .bye-teams/.exposure-leagues and win
+		   over the one inherited from the row. */
+		tr.bye-week-current td {
+			background: var(--gold-chip-bg);
+			color: var(--gold-chip-text);
+		}
 		/* Injury Exposure's Status column. Same red as the badge beside a name
 		   on a roster card, since it's the same designation — here it's a column
 		   of its own rather than a badge, so no parentheses. */
@@ -4306,6 +4316,51 @@
 			return { total, rows };
 		}
 
+		// The NFL week currently in progress — used only to highlight the Bye
+		// Weeks card's current row and to keep its pager caught up as the
+		// season moves. Prefers a live signal off the group's own leagues —
+		// scoring.week (the live-scoring pass) or lineupWeek (the lineup-pilot
+		// leagues' own current week) — over a calendar estimate, since live
+		// data already accounts for the NFL calendar's own quirks (a Week 18
+		// played on a Saturday, a game moved to London) that a formula would
+		// have to special-case. The mode across the group's leagues, ties
+		// broken toward the later week, rather than just the first league
+		// found: different providers can be a page-load apart mid-rollover.
+		//
+		// Falls back to a calendar walk from kickoff — the same one
+		// nflInSeason/duringWeeks1Through17 use — only when nothing in the
+		// group has reported a week yet, which in practice is early preseason,
+		// well before the first bye anyway; outside the regular season the
+		// walk itself returns null rather than a stale wraparound week.
+		function currentNflWeek(eligible, now = new Date()) {
+			const counts = new Map();
+			for (const l of eligible) {
+				for (const w of [Number(l.scoring?.week), Number(l.lineupWeek)]) {
+					if (Number.isFinite(w) && w > 0) counts.set(w, (counts.get(w) || 0) + 1);
+				}
+			}
+			if (counts.size > 0) {
+				let best = null;
+				for (const [week, count] of counts) {
+					if (!best || count > best.count || (count === best.count && week > best.week)) best = { week, count };
+				}
+				return best.week;
+			}
+			const nth = (year, month, weekday, n) => {
+				const firstDow = new Date(Date.UTC(year, month, 1)).getUTCDay();
+				return Date.UTC(year, month, 1 + ((weekday - firstDow + 7) % 7) + (n - 1) * 7);
+			};
+			const day = 24 * 60 * 60 * 1000;
+			const time = now.getTime();
+			for (const year of [now.getUTCFullYear(), now.getUTCFullYear() - 1]) {
+				const kickoff = nth(year, 8, 1, 1) + 3 * day;
+				if (time < kickoff) continue;
+				const week = Math.floor((time - kickoff) / (7 * day)) + 1;
+				if (week >= 1 && week <= 18) return week;
+			}
+			return null;
+		}
+
 		// Bye Weeks: which of a group's rostered NFL teams, and which of its
 		// rostered players, sit out a given week. Grounded in the rosters
 		// themselves — bye and team both already ride on every player object
@@ -4342,7 +4397,7 @@
 				}))
 				.sort((a, b) => a.week - b.week);
 
-			return { total, rows };
+			return { total, rows, currentWeek: currentNflWeek(eligible) };
 		}
 
 		// ---- Ranking cards: Top Players and Top Available ----
@@ -4888,19 +4943,47 @@
 			return line;
 		}
 
+		// Three rather than the other cards' six or eight: this is the first
+		// card in the tab now, and its rows run three lines deep before either
+		// list wraps, so even three of them stand as tall as a full page of
+		// the others. Aggressive on purpose — the card exists to answer "who's
+		// out this week", not to be scrolled through a season at a time.
+		const BYE_WEEKS_PAGE_SIZE = 3;
+
+		// Which page opens by default, so the pager doesn't sit on Week 5
+		// every visit once the season is in Week 11. Lands on the first row
+		// whose week hasn't passed yet — the current week if it's a bye week
+		// for somebody, otherwise the next upcoming one — so the card reads
+		// as "coming up" rather than "from the top" as the season moves. Once
+		// every listed week is behind us it holds the last page rather than
+		// resetting to the first, which would bury the season's final byes
+		// behind every one that already happened.
+		function initialByePage(rows, currentWeek, pageSize) {
+			if (currentWeek == null || rows.length === 0) return 0;
+			let idx = rows.findIndex((r) => r.week >= currentWeek);
+			if (idx === -1) idx = rows.length - 1;
+			return Math.floor(idx / pageSize);
+		}
+
 		// Mirrors the exposure cards' shape — same "Across N leagues" subtitle,
 		// same grounding in exposureLeagues — but a bye week has no position or
-		// ECR to hang a column on, so it skips appendAnalyticsTable entirely.
-		// Each row is one cell rather than one of several: the Player column on
-		// Injury Exposure shares its row with Pos/Status/ECR/Own In/Pct, and
-		// with none of those here the week's own cell fills the whole row.
+		// ECR to hang a column on, so it skips appendAnalyticsTable entirely in
+		// favour of its own small pager, the same markup and behaviour as the
+		// shared one (see appendAnalyticsTable) without the sort machinery a
+		// week-ordered list has no use for. Each row is one cell rather than
+		// one of several: the Player column on Injury Exposure shares its row
+		// with Pos/Status/ECR/Own In/Pct, and with none of those here the
+		// week's own cell fills the whole row.
 		//
 		// Same two-sub-line shape as Injury Exposure's Player column — the
 		// week standing in for the name, Teams standing in for the injury
 		// detail line below it — but purple rather than red: nothing here is a
 		// warning, it's just the week's other line reusing that line's slot.
+		// The current week's row additionally gets the gold highlight
+		// tr.me-row uses elsewhere for "this one is yours" — here, "this one
+		// is now" — set by currentNflWeek back in computeByeWeeks.
 		function renderByeWeeksCard(groupKey, types, leagues) {
-			const { total, rows } = computeByeWeeks(leagues, types);
+			const { total, rows, currentWeek } = computeByeWeeks(leagues, types);
 			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
 			card.appendChild(el('h2', { text: 'Bye Weeks' }));
 
@@ -4918,18 +5001,55 @@
 
 			const table = el('table', { class: 'standings' });
 			card.appendChild(table);
-			for (const r of rows) {
-				const row = el('tr');
-				const cell = el('td');
-				cell.appendChild(el('div', { text: `Week ${r.week}` }));
-				const teamsLine = byeCountLine('Teams', r.teams, 'bye-teams');
-				if (teamsLine) cell.appendChild(teamsLine);
-				const playersLine = byeCountLine('Players', r.players, 'exposure-leagues');
-				if (playersLine) cell.appendChild(playersLine);
-				row.appendChild(cell);
-				table.appendChild(row);
+
+			const pageCount = Math.ceil(rows.length / BYE_WEEKS_PAGE_SIZE);
+			let page = initialByePage(rows, currentWeek, BYE_WEEKS_PAGE_SIZE);
+			let pager = null;
+			let prevBtn = null;
+			let nextBtn = null;
+			let pageLabel = null;
+			if (pageCount > 1) {
+				pager = el('div', { class: 'pager' });
+				prevBtn = el('button', { type: 'button', class: 'pager-btn', text: 'Prev' });
+				pageLabel = el('span', { class: 'pager-label' });
+				nextBtn = el('button', { type: 'button', class: 'pager-btn', text: 'Next' });
+				pager.appendChild(prevBtn);
+				pager.appendChild(pageLabel);
+				pager.appendChild(nextBtn);
+				card.appendChild(pager);
 			}
 
+			function renderPage() {
+				table.innerHTML = '';
+				const start = page * BYE_WEEKS_PAGE_SIZE;
+				for (const r of rows.slice(start, start + BYE_WEEKS_PAGE_SIZE)) {
+					const row = el('tr', r.week === currentWeek ? { class: 'bye-week-current' } : {});
+					const cell = el('td');
+					cell.appendChild(el('div', { text: `Week ${r.week}` }));
+					const teamsLine = byeCountLine('Teams', r.teams, 'bye-teams');
+					if (teamsLine) cell.appendChild(teamsLine);
+					const playersLine = byeCountLine('Players', r.players, 'exposure-leagues');
+					if (playersLine) cell.appendChild(playersLine);
+					row.appendChild(cell);
+					table.appendChild(row);
+				}
+				if (pager) {
+					pageLabel.textContent = `Page ${page + 1} of ${pageCount}`;
+					prevBtn.disabled = page === 0;
+					nextBtn.disabled = page >= pageCount - 1;
+				}
+			}
+
+			if (pager) {
+				prevBtn.addEventListener('click', () => {
+					if (page > 0) { page--; renderPage(); }
+				});
+				nextBtn.addEventListener('click', () => {
+					if (page < pageCount - 1) { page++; renderPage(); }
+				});
+			}
+
+			renderPage();
 			return card;
 		}
 
@@ -6112,13 +6232,13 @@
 				for (const groupKey of SUBTAB_ORDER) {
 					const types = typesInSubtabGroup(groupKey);
 					if (!data.leagues.some((l) => types.includes(l.type))) continue;
+					gridEl.appendChild(renderByeWeeksCard(groupKey, types, data.leagues));
 					const powerCard = renderPowerRankCard(groupKey, types, data.leagues, data.year);
 					if (powerCard) gridEl.appendChild(powerCard);
 					const availableCard = renderTopAvailableCard(groupKey, types, data.leagues, data.rankingPools, data.year);
 					if (availableCard) gridEl.appendChild(availableCard);
 					gridEl.appendChild(renderAnalyticsCard(groupKey, types, data.leagues));
 					gridEl.appendChild(renderInjuryExposureCard(groupKey, types, data.leagues));
-					gridEl.appendChild(renderByeWeeksCard(groupKey, types, data.leagues));
 				}
 			}
 
