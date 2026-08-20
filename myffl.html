@@ -974,6 +974,16 @@
 			text-decoration-color: var(--ir-text);
 			opacity: 0.6;
 		}
+		/* An IR-planned row is the opposite move — the player is staying, so
+		   nothing strikes through — but it's also the rarer, easier-to-miss
+		   one, worth a whole-row highlight rather than just the select
+		   turning gold: a light yellow wash across every cell (the same
+		   gold-chip background, which the td's own transparent background
+		   lets show through from the tr) so it can't be scrolled past
+		   unnoticed. */
+		tr.player-row.cut-planned-ir {
+			background: var(--gold-chip-bg);
+		}
 		/* Top-24 overall gets the accent treatment so the studs on a roster
 		   stand out at a glance without having to read every row. */
 		.ecr-cell.ecr-elite {
@@ -2280,12 +2290,18 @@
 			// turns gold, the same "outstanding task" colour the Yrs cell
 			// uses before a contract length is picked. row is optional only
 			// for callers that never pass one; every real caller has it in
-			// hand already, since they build the cell after the row.
+			// hand already, since they build the cell after the row. IR also
+			// gets its own whole-row highlight, on top of the select turning
+			// gold — it's the rarer of the two plans and the one where
+			// missing it actually costs something (a startable-looking
+			// checkbox on a player who's supposed to be shut down), so it
+			// gets the harder-to-miss treatment.
 			const syncMarked = () => {
 				const value = select.value;
 				select.classList.toggle('cut-select-marked', value === 'CUT');
 				select.classList.toggle('cut-select-ir-marked', value === 'IR');
 				row?.classList.toggle('cut-planned', value === 'CUT');
+				row?.classList.toggle('cut-planned-ir', value === 'IR');
 			};
 			syncMarked();
 			select.addEventListener('change', () => {
