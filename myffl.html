@@ -4483,8 +4483,8 @@
 		// group is one bye, not three. Players are deduplicated per league —
 		// so a franchise that somehow lists the same man twice isn't
 		// double-counted — but not across leagues, since how many of the
-		// group's leagues roster him is exactly the count the card now shows
-		// next to his name.
+		// group's leagues roster him is exactly the count the card colors
+		// his name by.
 		function computeByeWeeks(leagues, types) {
 			const eligible = exposureLeagues(leagues, types);
 			const weeks = new Map();
@@ -4500,8 +4500,10 @@
 					if (!weeks.has(week)) weeks.set(week, { teams: new Set(), players: new Map() });
 					const entry = weeks.get(week);
 					if (p.team) entry.teams.add(p.team);
-					if (!entry.players.has(key)) entry.players.set(key, { name: p.name, count: 0 });
-					entry.players.get(key).count++;
+					if (!entry.players.has(key)) entry.players.set(key, { name: p.name, count: 0, ranks: [] });
+					const player = entry.players.get(key);
+					player.count++;
+					if (p.ecr && Number.isFinite(p.ecr.rank)) player.ranks.push(p.ecr.rank);
 				}
 			}
 
@@ -4510,10 +4512,18 @@
 				.map(([week, entry]) => ({
 					week,
 					teams: [...entry.teams].sort(),
-					// Most leagues first — the count is the point of the sort, and
-					// a tie falls back to the name the way every other list here
-					// does.
-					players: [...entry.players.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)),
+					// Best player first, not most leagues: a top-ranked player on
+					// bye in one league matters more to a decision than a bench
+					// piece spread across three, and the median (same treatment
+					// as the exposure cards) is the representative rank when a
+					// player's own ECR differs across the group's leagues. An
+					// unranked player sorts last in both directions — rankOrLast's
+					// usual contract — and the league count, still shown and
+					// colored, only breaks a tie between two players ranked
+					// identically (or two both unranked).
+					players: [...entry.players.values()]
+						.map((p) => ({ name: p.name, count: p.count, ecr: medianRank(p.ranks) }))
+						.sort((a, b) => rankOrLast(a.ecr) - rankOrLast(b.ecr) || b.count - a.count || a.name.localeCompare(b.name)),
 				}))
 				.sort((a, b) => a.week - b.week);
 
