@@ -1141,6 +1141,21 @@
 			font-size: 0.72rem;
 			margin-top: 0.1rem;
 		}
+		/* Bye Weeks' player names, colored by how many of the group's leagues
+		   roster him — the count next to the name is the whole point, so the
+		   color rides on the name itself rather than a separate badge. Reuses
+		   the same two tokens the rest of the page already uses for "needs a
+		   look" (--ir-text) and "notable, not urgent" (--gold-chip-text)
+		   rather than inventing new colors; one league stays the line's
+		   plain --muted grey. */
+		.bye-player-high {
+			color: var(--ir-text);
+			font-weight: 600;
+		}
+		.bye-player-mid {
+			color: var(--gold-chip-text);
+			font-weight: 600;
+		}
 		/* The Bye Weeks row for the NFL week currently in progress — same gold
 		   as tr.me-row, so "this week" reads as the same colour "this is my
 		   team" already does elsewhere. The Teams/Players sub-lines underneath
@@ -5042,6 +5057,32 @@
 			return line;
 		}
 
+		// Which color, if any, a player's name takes on the Bye Weeks card —
+		// three or more of the group's leagues is the "pay attention" tier
+		// (red), exactly two is the "notable" tier (dark gold), and one league
+		// is the common case and stays plain.
+		function byePlayerColorClass(count) {
+			if (count >= 3) return 'bye-player-high';
+			if (count === 2) return 'bye-player-mid';
+			return null;
+		}
+
+		// The Players sub-line, built like byeCountLine's label-and-list shape
+		// but with each name in its own span rather than one joined text node,
+		// since each name's color depends on its own league count.
+		function byePlayersLine(players) {
+			if (!players || players.length === 0) return null;
+			const line = el('div', { class: 'exposure-leagues' });
+			line.appendChild(el('span', { class: 'exposure-leagues-label', text: `Players (${players.length}): ` }));
+			players.forEach((p, i) => {
+				if (i > 0) line.appendChild(document.createTextNode(', '));
+				const text = `${p.name} (${p.count})`;
+				const cls = byePlayerColorClass(p.count);
+				line.appendChild(cls ? el('span', { class: cls, text }) : document.createTextNode(text));
+			});
+			return line;
+		}
+
 		// Five rather than the other cards' six or eight: this is the first
 		// card in the tab now, and its rows run three lines deep before either
 		// list wraps, so even five of them stand as tall as a full page of
@@ -5129,8 +5170,7 @@
 					cell.appendChild(el('div', { text: `Week ${r.week}` }));
 					const teamsLine = byeCountLine('Teams', r.teams, 'bye-teams');
 					if (teamsLine) cell.appendChild(teamsLine);
-					const playerNames = r.players.map((p) => `${p.name} (${p.count})`);
-					const playersLine = byeCountLine('Players', playerNames, 'exposure-leagues');
+					const playersLine = byePlayersLine(r.players);
 					if (playersLine) cell.appendChild(playersLine);
 					row.appendChild(cell);
 					table.appendChild(row);
