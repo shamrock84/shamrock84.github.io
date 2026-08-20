@@ -276,6 +276,13 @@
 			grid-template-columns: repeat(auto-fill, minmax(min(440px, 100%), 1fr));
 			gap: 1rem;
 		}
+		/* Standings cards carry only 5 narrow columns (#, Team, W-L-T, PF, PA) —
+		   nowhere near what drives the 440px floor above — so they get their own,
+		   tighter minmax to fit a 3rd column on common desktop widths instead of
+		   sitting stuck at 2. */
+		.grid[data-view="standings"] {
+			grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+		}
 		.card {
 			background: var(--card-bg);
 			border: 1px solid var(--border);
@@ -5334,6 +5341,7 @@
 		}
 
 		function updateVisibility() {
+			document.getElementById('grid').dataset.view = currentView;
 			const q = document.getElementById('search').value.trim().toLowerCase();
 			document.querySelectorAll('.card').forEach((card) => {
 				const viewMatch = card.dataset.view === currentView;
