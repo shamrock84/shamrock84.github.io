@@ -1147,7 +1147,13 @@
 		   the same two tokens the rest of the page already uses for "needs a
 		   look" (--ir-text) and "notable, not urgent" (--gold-chip-text)
 		   rather than inventing new colors; one league stays the line's
-		   plain --muted grey. */
+		   plain --muted grey. Four or more gets a heavier weight on top of
+		   the same red as three — still one color tier, but the extra weight
+		   is its own signal that this one is worse than merely red. */
+		.bye-player-critical {
+			color: var(--ir-text);
+			font-weight: 700;
+		}
 		.bye-player-high {
 			color: var(--ir-text);
 			font-weight: 600;
@@ -5058,11 +5064,13 @@
 		}
 
 		// Which color, if any, a player's name takes on the Bye Weeks card —
-		// three or more of the group's leagues is the "pay attention" tier
-		// (red), exactly two is the "notable" tier (dark gold), and one league
-		// is the common case and stays plain.
+		// four or more of the group's leagues is the same red as three but
+		// bolded on top of it, three is the plain "pay attention" tier (red),
+		// exactly two is the "notable" tier (dark gold), and one league is
+		// the common case and stays plain.
 		function byePlayerColorClass(count) {
-			if (count >= 3) return 'bye-player-high';
+			if (count >= 4) return 'bye-player-critical';
+			if (count === 3) return 'bye-player-high';
 			if (count === 2) return 'bye-player-mid';
 			return null;
 		}
