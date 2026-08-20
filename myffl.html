@@ -958,6 +958,14 @@
 			background: var(--ir-bg);
 			border-color: color-mix(in srgb, var(--ir-text) 35%, var(--border));
 		}
+		/* The rest of a cut-planned row reads as already gone — struck through
+		   in the same IR red as the select, everywhere except the Cut column
+		   itself, which needs to stay legible so the plan can still be changed. */
+		tr.player-row.cut-planned td:not(.cut-cell) {
+			text-decoration: line-through;
+			text-decoration-color: var(--ir-text);
+			opacity: 0.6;
+		}
 		/* Top-24 overall gets the accent treatment so the studs on a roster
 		   stand out at a glance without having to read every row. */
 		.ecr-cell.ecr-elite {
@@ -2245,16 +2253,25 @@
 		// purple Yrs/Sal use once planned: this isn't a value becoming
 		// official, it's a player marked to leave the roster, and the two
 		// shouldn't read the same.
-		function buildCutCell(p, leagueId, onCutChange) {
+		function buildCutCell(p, leagueId, onCutChange, row) {
 			const td = el('td', { class: 'cut-cell' });
 			const select = el('select', { class: 'cut-select', title: 'Plan to cut before Week 1 — a personal note, not sent anywhere' });
 			select.appendChild(el('option', { value: '', text: '—' }));
 			select.appendChild(el('option', { value: 'CUT', text: 'CUT' }));
 			select.value = getCutPlan(leagueId, p.id);
-			select.classList.toggle('cut-select-marked', !!select.value);
+			// A row marked to cut reads as already gone: the rest of its cells
+			// strike through, same as the select itself turns IR red. row is
+			// optional only for callers that never pass one; every real caller
+			// has it in hand already, since they build the cell after the row.
+			const syncMarked = () => {
+				const planned = !!select.value;
+				select.classList.toggle('cut-select-marked', planned);
+				row?.classList.toggle('cut-planned', planned);
+			};
+			syncMarked();
 			select.addEventListener('change', () => {
 				setCutPlan(leagueId, p.id, select.value);
-				select.classList.toggle('cut-select-marked', !!select.value);
+				syncMarked();
 				onCutChange?.();
 			});
 			td.appendChild(select);
@@ -2358,7 +2375,7 @@
 					};
 					row.appendChild(buildYearsCell(p, league.id, onContractChangeForRow));
 				}
-				if (showCutColumn) row.appendChild(buildCutCell(p, league.id, onCutChange));
+				if (showCutColumn) row.appendChild(buildCutCell(p, league.id, onCutChange, row));
 				table.appendChild(row);
 			}
 			// A phone is narrower than the salary-cap table's own minimum, so
@@ -2720,7 +2737,7 @@
 				const ptsAttrs = { class: `pts-cell${usingPriorYear ? ' pts-prior-year' : ''}`, text: ptsValue != null ? Number(ptsValue).toFixed(2) : '—' };
 				row.appendChild(el('td', ptsAttrs));
 				if (showCutColumn) {
-					const cutCell = buildCutCell(p, league.id, onCutChange);
+					const cutCell = buildCutCell(p, league.id, onCutChange, row);
 					row.appendChild(cutCell);
 					// A player planned as a cut shouldn't also be started — the
 					// checkbox column already carries the "who's live" decision
