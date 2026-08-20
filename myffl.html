@@ -1098,6 +1098,13 @@
 			font-size: 0.72rem;
 			margin-top: 0.1rem;
 		}
+		/* Bye Weeks' own "Teams (4):"/"Players (12):" labels, layered on top of
+		   exposure-leagues-label rather than changed there — Top Available's
+		   "Free in"/"Own in" labels share that base class and stay their
+		   normal weight. */
+		.bye-count-label {
+			font-weight: 700;
+		}
 		/* The Bye Weeks row for the NFL week currently in progress — same gold
 		   as tr.me-row, so "this week" reads as the same colour "this is my
 		   team" already does elsewhere. The Teams/Players sub-lines underneath
@@ -4938,7 +4945,7 @@
 		function byeCountLine(label, items, cssClass) {
 			if (!items || items.length === 0) return null;
 			const line = el('div', { class: cssClass });
-			line.appendChild(el('span', { class: 'exposure-leagues-label', text: `${label} (${items.length}): ` }));
+			line.appendChild(el('span', { class: 'exposure-leagues-label bye-count-label', text: `${label} (${items.length}): ` }));
 			line.appendChild(document.createTextNode(items.join(', ')));
 			return line;
 		}
