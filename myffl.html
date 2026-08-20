@@ -958,6 +958,14 @@
 			background: var(--ir-bg);
 			border-color: color-mix(in srgb, var(--ir-text) 35%, var(--border));
 		}
+		/* Marked to move to IR: the player is being kept, not cut, so this
+		   borrows the gold "still pending" colour the unset Yrs cell uses
+		   rather than CUT's red — a different kind of note, not a lesser one. */
+		.cut-select.cut-select-ir-marked {
+			color: var(--gold-chip-text);
+			background: var(--gold-chip-bg);
+			border-color: color-mix(in srgb, var(--gold-chip-text) 35%, var(--border));
+		}
 		/* The rest of a cut-planned row reads as already gone — struck through
 		   in the same IR red as the select, everywhere except the Cut column
 		   itself, which needs to stay legible so the plan can still be changed. */
@@ -1654,7 +1662,7 @@
 		// independent storage as contract/salary plans, for the same reason —
 		// three different domains (term, money, a roster decision) that should
 		// never leak into each other's rules for what counts as "unset".
-		// A dropdown ('' / 'CUT'), deliberately not a checkbox: the lineup
+		// A dropdown ('' / 'CUT' / 'IR'), deliberately not a checkbox: the lineup
 		// editor already has one checkbox column (who's starting, which
 		// Submit Lineup reads), and a second checkbox column right next to it
 		// — feeding a completely different action, or no action at all — is
@@ -2244,29 +2252,40 @@
 		// and the offseason. Unlike buildSalaryCell/buildYearsCell there's no
 		// real value to defer to and so no not-logged-in fallback to render —
 		// the column itself doesn't exist for a logged-out viewer, same as the
-		// lineup editor's own starter checkboxes. A two-option select rather
-		// than a checkbox on purpose: the lineup editor already spends a
-		// checkbox column on who's starting, which Submit Lineup reads
-		// straight off — a second checkbox column next to it, doing nothing
-		// of the sort, is exactly the pair a quick glance (or a fast thumb on
-		// a phone) can mix up. The marked state is styled red rather than the
-		// purple Yrs/Sal use once planned: this isn't a value becoming
-		// official, it's a player marked to leave the roster, and the two
-		// shouldn't read the same.
+		// lineup editor's own starter checkboxes. A select rather than a
+		// checkbox on purpose: the lineup editor already spends a checkbox
+		// column on who's starting, which Submit Lineup reads straight off —
+		// a second checkbox column next to it, doing nothing of the sort, is
+		// exactly the pair a quick glance (or a fast thumb on a phone) can
+		// mix up. CUT is styled red rather than the purple Yrs/Sal use once
+		// planned: this isn't a value becoming official, it's a player
+		// marked to leave the roster, and the two shouldn't read the same.
+		// IR is a second, later-added option for the opposite case — a
+		// player being kept but moved to Injured Reserve as soon as the
+		// league allows it (an in-season roster move, not a Week-1 cutdown
+		// one, but the same personal note the manager wants recorded before
+		// then) — so it gets its own gold marking (the same "still pending"
+		// colour the not-yet-planned Yrs cell uses) rather than CUT's red,
+		// and deliberately does not strike the row: the player isn't leaving.
 		function buildCutCell(p, leagueId, onCutChange, row) {
 			const td = el('td', { class: 'cut-cell' });
-			const select = el('select', { class: 'cut-select', title: 'Plan to cut before Week 1 — a personal note, not sent anywhere' });
+			const select = el('select', { class: 'cut-select', title: 'Plan to cut or move to IR before Week 1 — a personal note, not sent anywhere' });
 			select.appendChild(el('option', { value: '', text: '—' }));
 			select.appendChild(el('option', { value: 'CUT', text: 'CUT' }));
+			select.appendChild(el('option', { value: 'IR', text: 'IR' }));
 			select.value = getCutPlan(leagueId, p.id);
-			// A row marked to cut reads as already gone: the rest of its cells
-			// strike through, same as the select itself turns IR red. row is
-			// optional only for callers that never pass one; every real caller
-			// has it in hand already, since they build the cell after the row.
+			// A row marked CUT reads as already gone: the rest of its cells
+			// strike through, same as the select itself turns IR red. A row
+			// marked IR keeps its player — no strike-through — but still
+			// turns gold, the same "outstanding task" colour the Yrs cell
+			// uses before a contract length is picked. row is optional only
+			// for callers that never pass one; every real caller has it in
+			// hand already, since they build the cell after the row.
 			const syncMarked = () => {
-				const planned = !!select.value;
-				select.classList.toggle('cut-select-marked', planned);
-				row?.classList.toggle('cut-planned', planned);
+				const value = select.value;
+				select.classList.toggle('cut-select-marked', value === 'CUT');
+				select.classList.toggle('cut-select-ir-marked', value === 'IR');
+				row?.classList.toggle('cut-planned', value === 'CUT');
 			};
 			syncMarked();
 			select.addEventListener('change', () => {
@@ -2739,10 +2758,12 @@
 				if (showCutColumn) {
 					const cutCell = buildCutCell(p, league.id, onCutChange, row);
 					row.appendChild(cutCell);
-					// A player planned as a cut shouldn't also be started — the
-					// checkbox column already carries the "who's live" decision
-					// that Submit Lineup reads, so a cut plan overrides it rather
-					// than leaving a contradictory pair of selections on screen.
+					// A player planned as a CUT or an IR move shouldn't also be
+					// started — either way he won't be on the active roster by
+					// game time, and the checkbox column already carries the
+					// "who's live" decision that Submit Lineup reads, so either
+					// plan overrides it rather than leaving a contradictory pair
+					// of selections on screen.
 					if (checkbox) {
 						const cutSelect = cutCell.querySelector('select');
 						const syncStarterCheckbox = () => {
