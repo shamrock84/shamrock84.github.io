@@ -2697,8 +2697,9 @@
 				prevPosition = p.position;
 				const row = el('tr', { class: `player-row${posBoundary ? ' pos-boundary' : ''}`, 'data-name': p.name.toLowerCase() });
 
+				let checkbox = null;
 				if (visible) {
-					const checkbox = el('input', { type: 'checkbox' });
+					checkbox = el('input', { type: 'checkbox' });
 					checkbox.checked = starterIdSet.has(p.id);
 					checkbox.disabled = !writable;
 					checkbox.dataset.playerId = p.id;
@@ -2718,7 +2719,24 @@
 				const ptsValue = usingPriorYear ? p.priorYearPts : p.pts;
 				const ptsAttrs = { class: `pts-cell${usingPriorYear ? ' pts-prior-year' : ''}`, text: ptsValue != null ? Number(ptsValue).toFixed(2) : '—' };
 				row.appendChild(el('td', ptsAttrs));
-				if (showCutColumn) row.appendChild(buildCutCell(p, league.id, onCutChange));
+				if (showCutColumn) {
+					const cutCell = buildCutCell(p, league.id, onCutChange);
+					row.appendChild(cutCell);
+					// A player planned as a cut shouldn't also be started — the
+					// checkbox column already carries the "who's live" decision
+					// that Submit Lineup reads, so a cut plan overrides it rather
+					// than leaving a contradictory pair of selections on screen.
+					if (checkbox) {
+						const cutSelect = cutCell.querySelector('select');
+						const syncStarterCheckbox = () => {
+							const planned = !!cutSelect.value;
+							checkbox.disabled = !writable || planned;
+							if (planned) checkbox.checked = false;
+						};
+						cutSelect.addEventListener('change', syncStarterCheckbox);
+						syncStarterCheckbox();
+					}
+				}
 
 				table.appendChild(row);
 			}
