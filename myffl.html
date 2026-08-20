@@ -279,9 +279,13 @@
 		/* Standings cards carry only 5 narrow columns (#, Team, W-L-T, PF, PA) —
 		   nowhere near what drives the 440px floor above — so they get their own,
 		   tighter minmax to fit a 3rd column on common desktop widths instead of
-		   sitting stuck at 2. */
+		   sitting stuck at 2. 340 rather than 300: a few league titles are one
+		   long unbroken word ("Semiquincentennial") that breaks mid-word at 300,
+		   which read as a rendering bug rather than a long name. 340 keeps that
+		   readable at 1366px and up (3 columns) and only gives up the 3rd column
+		   below that, same as before this rule existed. */
 		.grid[data-view="standings"] {
-			grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+			grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
 		}
 		.card {
 			background: var(--card-bg);
