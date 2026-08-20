@@ -1090,6 +1090,14 @@
 			font-size: 0.72rem;
 			margin-top: 0.1rem;
 		}
+		/* Bye Weeks' team list, same position and size as injury-detail above —
+		   purple (--accent, the site's own purple) rather than red, since a
+		   bye is a schedule fact rather than a warning. */
+		.bye-teams {
+			color: var(--accent);
+			font-size: 0.72rem;
+			margin-top: 0.1rem;
+		}
 		/* Injury Exposure's Status column. Same red as the badge beside a name
 		   on a roster card, since it's the same designation — here it's a column
 		   of its own rather than a badge, so no parentheses. */
@@ -4298,6 +4306,45 @@
 			return { total, rows };
 		}
 
+		// Bye Weeks: which of a group's rostered NFL teams, and which of its
+		// rostered players, sit out a given week. Grounded in the rosters
+		// themselves — bye and team both already ride on every player object
+		// (see fetchNflByeWeeks in providers.mjs) — rather than a separate
+		// global week->team map, so the card only ever names a team or player
+		// this group of leagues actually rosters. Shares exposureLeagues with
+		// the other two cards so "how many leagues" means the same thing here.
+		//
+		// Both teams and players are deduplicated per week: a player held in
+		// three leagues in the group is one bye, not three, and his team is
+		// the same team whichever roster it's read off.
+		function computeByeWeeks(leagues, types) {
+			const eligible = exposureLeagues(leagues, types);
+			const weeks = new Map();
+
+			for (const league of eligible) {
+				for (const p of league.players || []) {
+					const week = Number(p.bye);
+					if (!(week > 0)) continue;
+					if (!weeks.has(week)) weeks.set(week, { teams: new Set(), players: new Map() });
+					const entry = weeks.get(week);
+					if (p.team) entry.teams.add(p.team);
+					const key = normalizeName(p.name);
+					if (key && !entry.players.has(key)) entry.players.set(key, p.name);
+				}
+			}
+
+			const total = eligible.length;
+			const rows = [...weeks.entries()]
+				.map(([week, entry]) => ({
+					week,
+					teams: [...entry.teams].sort(),
+					players: [...entry.players.values()].sort((a, b) => a.localeCompare(b)),
+				}))
+				.sort((a, b) => a.week - b.week);
+
+			return { total, rows };
+		}
+
 		// ---- Ranking cards: Top Players and Top Available ----
 		//
 		// Both are driven by `rankingPools` in data/rosters.json — the top of each
@@ -4827,6 +4874,62 @@
 			}
 
 			appendAnalyticsTable(card, rows, total, { showStatus: true });
+			return card;
+		}
+
+		// One line under a bye week for a count-and-list pair — "Teams (4):
+		// ARI, ATL, CAR, TB" — shared by the Bye Weeks card's two sub-lines the
+		// way leagueLine is shared by the exposure cards' "Free in"/"Own in".
+		function byeCountLine(label, items, cssClass) {
+			if (!items || items.length === 0) return null;
+			const line = el('div', { class: cssClass });
+			line.appendChild(el('span', { class: 'exposure-leagues-label', text: `${label} (${items.length}): ` }));
+			line.appendChild(document.createTextNode(items.join(', ')));
+			return line;
+		}
+
+		// Mirrors the exposure cards' shape — same "Across N leagues" subtitle,
+		// same grounding in exposureLeagues — but a bye week has no position or
+		// ECR to hang a column on, so it skips appendAnalyticsTable entirely.
+		// Each row is one cell rather than one of several: the Player column on
+		// Injury Exposure shares its row with Pos/Status/ECR/Own In/Pct, and
+		// with none of those here the week's own cell fills the whole row.
+		//
+		// Same two-sub-line shape as Injury Exposure's Player column — the
+		// week standing in for the name, Teams standing in for the injury
+		// detail line below it — but purple rather than red: nothing here is a
+		// warning, it's just the week's other line reusing that line's slot.
+		function renderByeWeeksCard(groupKey, types, leagues) {
+			const { total, rows } = computeByeWeeks(leagues, types);
+			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
+			card.appendChild(el('h2', { text: 'Bye Weeks' }));
+
+			if (total === 0) {
+				card.appendChild(el('div', { class: 'error-box', text: 'No leagues here have roster data yet.' }));
+				return card;
+			}
+
+			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(total)}` }));
+
+			if (rows.length === 0) {
+				card.appendChild(el('div', { class: 'error-box', text: 'No bye week data available yet.' }));
+				return card;
+			}
+
+			const table = el('table', { class: 'standings' });
+			card.appendChild(table);
+			for (const r of rows) {
+				const row = el('tr');
+				const cell = el('td');
+				cell.appendChild(el('div', { text: `Week ${r.week}` }));
+				const teamsLine = byeCountLine('Teams', r.teams, 'bye-teams');
+				if (teamsLine) cell.appendChild(teamsLine);
+				const playersLine = byeCountLine('Players', r.players, 'exposure-leagues');
+				if (playersLine) cell.appendChild(playersLine);
+				row.appendChild(cell);
+				table.appendChild(row);
+			}
+
 			return card;
 		}
 
@@ -6015,6 +6118,7 @@
 					if (availableCard) gridEl.appendChild(availableCard);
 					gridEl.appendChild(renderAnalyticsCard(groupKey, types, data.leagues));
 					gridEl.appendChild(renderInjuryExposureCard(groupKey, types, data.leagues));
+					gridEl.appendChild(renderByeWeeksCard(groupKey, types, data.leagues));
 				}
 			}
 
