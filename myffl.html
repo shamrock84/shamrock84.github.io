@@ -698,7 +698,11 @@
 		   since this is three parallel counts rather than a running total. */
 		table.contract-expiration-summary {
 			width: 100%;
-			border-collapse: collapse;
+			border-collapse: separate;
+			border-spacing: 0;
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			overflow: hidden;
 			font-size: 0.85rem;
 			margin-top: 0.4rem;
 		}
