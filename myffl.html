@@ -724,9 +724,9 @@
 		   at that — no further override — so it inherits the same bold,
 		   muted styling every other th already gets, rather than reading
 		   lighter than the year headers beside it. td:first-child (the
-		   "Expiring"/"Salary" row labels) still wants its own lighter
-		   weight: those are labels for the bold numbers in the same row,
-		   not headers themselves. */
+		   "Rostered"/"Expiring"/"Salary" row labels) still wants its own
+		   lighter weight: those are labels for the bold numbers in the
+		   same row, not headers themselves. */
 		table.contract-expiration-summary td:first-child {
 			color: var(--muted);
 			font-weight: normal;
@@ -2562,9 +2562,10 @@
 		// each other's math. For each of the next three league years — three
 		// because every one of these leagues' own rules caps a contract at
 		// 3 years, so a longer column would only ever read zero — how many
-		// contracts expire at its end (Expiring) and what those players
-		// will cost that year (Salary), for planning contract lengths
-		// against. contractYearsRemaining counts down to a player's final
+		// players will still be rostered that year (Rostered), how many of
+		// those contracts expire at its end (Expiring), and what those
+		// players will cost that year (Salary), for planning contract
+		// lengths against. contractYearsRemaining counts down to a player's final
 		// season the same way MFL's own Yrs column does, so a player showing
 		// an N-year contract plays out its last season in (this league year
 		// + N - 1) — a 1-year contract is already expiring THIS year, not
@@ -2613,6 +2614,7 @@
 				// its final season contractLength - 1 years from now, e.g. a
 				// 1-year deal is done at the end of THIS season (offset 0).
 				const columnOffset = contractLength - 1;
+				let rosteredCount = 0;
 				let expiringCount = 0;
 				let salaryTotal = columnOffset === 0 ? adjustments : 0;
 				for (const p of players) {
@@ -2623,10 +2625,11 @@
 					// later column, but not yet from this one.
 					if (yrs === contractLength) expiringCount++;
 					if (yrs != null && yrs >= contractLength) {
+						rosteredCount++;
 						salaryTotal += effectiveSalary(league, p) * (CONTRACT_SALARY_ESCALATION_RATE ** columnOffset);
 					}
 				}
-				return { year: currentYear + columnOffset, expiringCount, salaryTotal };
+				return { year: currentYear + columnOffset, rosteredCount, expiringCount, salaryTotal };
 			});
 
 			const table = el('table', { class: 'contract-expiration-summary' });
@@ -2634,6 +2637,10 @@
 			headRow.appendChild(el('th', { text: label }));
 			for (const col of columns) headRow.appendChild(el('th', { text: String(col.year) }));
 			table.appendChild(headRow);
+			const rosteredRow = el('tr');
+			rosteredRow.appendChild(el('td', { text: 'Rostered' }));
+			for (const col of columns) rosteredRow.appendChild(el('td', { text: String(col.rosteredCount) }));
+			table.appendChild(rosteredRow);
 			const countRow = el('tr');
 			countRow.appendChild(el('td', { text: 'Expiring' }));
 			for (const col of columns) countRow.appendChild(el('td', { text: String(col.expiringCount) }));
