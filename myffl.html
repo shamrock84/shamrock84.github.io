@@ -590,6 +590,49 @@
 		.needs-popover-row + .needs-popover-row {
 			border-top: 1px solid var(--border);
 		}
+		/* Power Rankings' Start column: same clickable-number idiom as
+		   .needs-link, popping up who the starting lineup actually is
+		   rather than a starters/bench split — a separate class since it's
+		   an unrelated table, but identical styling on purpose. */
+		.starters-link {
+			background: none;
+			border: none;
+			padding: 0;
+			margin: 0;
+			font: inherit;
+			font-variant-numeric: tabular-nums;
+			color: var(--accent);
+			text-decoration: underline dotted;
+			text-underline-offset: 0.15rem;
+			cursor: pointer;
+		}
+		.starters-popover {
+			position: fixed;
+			z-index: 20;
+			background: var(--card-bg);
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+			padding: 0.5rem 0.7rem;
+			font-size: 0.85rem;
+			min-width: 10rem;
+		}
+		.starters-popover-title {
+			font-weight: 600;
+			color: var(--muted);
+			margin-bottom: 0.3rem;
+			white-space: nowrap;
+		}
+		.starters-popover-row {
+			display: flex;
+			justify-content: space-between;
+			gap: 1rem;
+			padding: 0.15rem 0;
+			font-variant-numeric: tabular-nums;
+		}
+		.starters-popover-row + .starters-popover-row {
+			border-top: 1px solid var(--border);
+		}
 		.group-label {
 			font-size: 0.72rem;
 			font-weight: 700;
@@ -3560,6 +3603,11 @@
 				score: Number(t.score) || 0,
 				depth: t.depth == null ? null : Number(t.depth),
 				byPosition: t.byPosition || null,
+				// Only ever present on the franchise fetch-rosters.mjs kept it
+				// for (see keepMyStarters) — every other team's is stripped
+				// before the sync ships, so this is null for them, not just
+				// unread.
+				starters: t.starters || null,
 			}));
 			const hasDepth = keyed.every((t) => t.depth != null && Number.isFinite(t.depth));
 			const starters = competitionRanks(keyed.map((t) => ({ key: t.key, value: t.score })));
@@ -3599,6 +3647,11 @@
 							depth: positionRanks[pos].depth.get(t.key),
 						}]))
 						: null,
+					// The actual roster behind the `starters` rank above — named
+					// `starterPlayers` rather than reusing that key, since one
+					// means "rank" and the other means "who". What
+					// renderPowerRankCard's Start-column popover reads.
+					starterPlayers: t.starters,
 				});
 			}
 			return { size: keyed.length, byFranchise, source: block.source || null };
@@ -5467,6 +5520,63 @@
 			return line;
 		}
 
+		// Shared "who are the starters" popover for Power Rankings' Start
+		// column — same shape as needsPopover/openSalaryPopover (one instance,
+		// built lazily, position:fixed, appended to <body>, dismissed on
+		// scroll/resize/Escape/outside-click), kept as its own instance for
+		// the same reason those two are separate from each other: unrelated
+		// content from an unrelated table.
+		let startersPopoverEl = null;
+		let startersPopoverOwner = null;
+		function closeStartersPopover() {
+			if (!startersPopoverEl) return;
+			startersPopoverEl.classList.add('hidden');
+			startersPopoverOwner = null;
+		}
+		function positionStartersPopover(button) {
+			const rect = button.getBoundingClientRect();
+			startersPopoverEl.style.top = `${rect.bottom + 4}px`;
+			const maxLeft = window.innerWidth - startersPopoverEl.offsetWidth - 8;
+			startersPopoverEl.style.left = `${Math.max(8, Math.min(rect.left, maxLeft))}px`;
+		}
+		// `players` is the same [{name, position}] list the clicked button's
+		// own count came from — no second lookup, so the popover can never
+		// disagree with the cell that opened it.
+		function openStartersPopover(button, label, players) {
+			if (!startersPopoverEl) {
+				startersPopoverEl = el('div', { class: 'starters-popover hidden' });
+				document.body.appendChild(startersPopoverEl);
+				window.addEventListener('scroll', closeStartersPopover, true);
+				window.addEventListener('resize', closeStartersPopover);
+				document.addEventListener('keydown', (e) => {
+					if (e.key === 'Escape') closeStartersPopover();
+				});
+				document.addEventListener('click', (e) => {
+					if (!startersPopoverOwner) return;
+					if (e.target === startersPopoverOwner || startersPopoverEl.contains(e.target)) return;
+					closeStartersPopover();
+				});
+			}
+			startersPopoverEl.innerHTML = '';
+			startersPopoverEl.appendChild(el('div', { class: 'starters-popover-title', text: `${label} — Starters` }));
+			for (const p of players) {
+				const line = el('div', { class: 'starters-popover-row' });
+				line.appendChild(el('span', { text: p.name }));
+				line.appendChild(el('span', { text: p.position }));
+				startersPopoverEl.appendChild(line);
+			}
+			startersPopoverEl.classList.remove('hidden');
+			startersPopoverOwner = button;
+			positionStartersPopover(button);
+		}
+		function toggleStartersPopover(button, label, players) {
+			if (startersPopoverOwner === button && !startersPopoverEl.classList.contains('hidden')) {
+				closeStartersPopover();
+				return;
+			}
+			openStartersPopover(button, label, players);
+		}
+
 		function renderPowerRankCard(groupKey, types, leagues, year) {
 			const rows = computeMyPowerRows(leagues, types, year);
 			// A card where nothing at all could be ranked is not a card. The
@@ -5623,7 +5733,32 @@
 					row.appendChild(rankCell(r.proj, r.reason || 'No projections published for this season yet'));
 					row.appendChild(rankCell(r.ecr, r.reason || 'No consensus rankings available for this league'));
 					const detail = detailOf(r);
-					row.appendChild(el('td', detail ? { text: String(detail.starters) } : { class: 'power-tbd', text: 'TBD' }));
+					if (!detail) {
+						row.appendChild(el('td', { class: 'power-tbd', text: 'TBD' }));
+					} else if (Array.isArray(detail.starterPlayers) && detail.starterPlayers.length > 0) {
+						// Clickable exactly like Team Needs' per-position ranks and
+						// Salary by Year: the rank stays the thing on screen, but a
+						// click reveals who actually makes up the lineup it was
+						// computed from. Only present on the row's own franchise —
+						// see keepMyStarters in fetch-rosters.mjs — so a league that
+						// hasn't resynced since this shipped falls back to plain
+						// text rather than a dead-looking button.
+						const btn = el('button', {
+							type: 'button',
+							class: 'starters-link',
+							title: 'Starters: click to see who',
+							text: String(detail.starters),
+						});
+						btn.addEventListener('click', (e) => {
+							e.stopPropagation();
+							toggleStartersPopover(btn, r.label, detail.starterPlayers);
+						});
+						const startCell = el('td');
+						startCell.appendChild(btn);
+						row.appendChild(startCell);
+					} else {
+						row.appendChild(el('td', { text: String(detail.starters) }));
+					}
 					row.appendChild(
 						detail && detail.depth != null
 							? el('td', { text: String(detail.depth) })

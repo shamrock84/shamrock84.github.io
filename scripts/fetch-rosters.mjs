@@ -715,6 +715,24 @@ async function main() {
         return ecrIndexByPool.get(key);
       };
 
+      // computeLeaguePower computes `starters` for every franchise in the
+      // league — ranking ours needs the same greedy fill run for everyone
+      // else regardless — but only ours is ever shown on the page (Power
+      // Rankings prints one row per league we hold a team in, never a
+      // full-league breakdown). Shipping every franchise's starter list
+      // would be N times the bytes for information nobody reads; this
+      // strips it back to just the matching franchise right before the
+      // sync writes its output.
+      function keepMyStarters(teams, myFranchiseId) {
+        return teams.map((t) => {
+          if (String(t.franchiseId) !== String(myFranchiseId)) {
+            const { starters, ...rest } = t;
+            return rest;
+          }
+          return t;
+        });
+      }
+
       const configById = new Map(LEAGUES.map((l) => [l.id, l]));
       let powered = 0;
       let skipped = 0;
@@ -771,8 +789,8 @@ async function main() {
           scoring: common.scoring,
           // Per basis rather than merged: each carries its own provenance, and
           // each ranks the same franchises independently.
-          projections: projPower ? { source: projPower.source, teams: projPower.teams } : null,
-          ecr: ecrPower ? { source: ecrPower.source, teams: ecrPower.teams } : null,
+          projections: projPower ? { source: projPower.source, teams: keepMyStarters(projPower.teams, league.franchiseId) } : null,
+          ecr: ecrPower ? { source: ecrPower.source, teams: keepMyStarters(ecrPower.teams, league.franchiseId) } : null,
           // Why the projections basis is missing, when it is — carried onto
           // every league this run touches the projections fetch for, since
           // that fetch is one shared call for the whole sync. Null once
