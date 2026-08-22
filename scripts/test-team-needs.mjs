@@ -149,7 +149,37 @@ const context = {
 vm.createContext(context);
 vm.runInContext(scriptSource, context);
 
-const { leaguePowerRanks, computeMyPowerRows } = context;
+const { leaguePowerRanks, computeMyPowerRows, rosterPlayersByPosition } = context;
+
+// ---- rosterPlayersByPosition: the roster grouped for the sub-line ------
+
+{
+	const players = [
+		{ name: 'A QB', position: 'QB' },
+		{ name: 'A RB', position: 'RB' },
+		{ name: 'Another RB', position: 'RB' },
+		{ name: 'A Kicker', position: 'PK' },
+		{ name: 'A Defense', position: 'Def' },
+	];
+	// Spread first, same reason as elsewhere in this file: an array built
+	// inside the vm-evaluated script is a different realm's Array than one
+	// built here, and [...x] re-materializes it as a plain array before
+	// deepEqual compares it.
+	const grouped = rosterPlayersByPosition(players);
+	assert.deepEqual([...grouped.QB].map((p) => p.name), ['A QB']);
+	assert.deepEqual([...grouped.RB].map((p) => p.name), ['A RB', 'Another RB']);
+	assert.deepEqual([...grouped.WR], [], 'a position with nobody on the roster is an empty group, not a missing key');
+	assert.deepEqual([...grouped.TE], []);
+	// Kicker/defense never enter any group: they're not one of the four
+	// POWER_POSITIONS keys this builds.
+	assert.deepEqual(Object.keys(grouped).sort(), ['QB', 'RB', 'TE', 'WR']);
+	const empty = rosterPlayersByPosition(undefined);
+	assert.deepEqual(
+		{ QB: [...empty.QB], RB: [...empty.RB], WR: [...empty.WR], TE: [...empty.TE] },
+		{ QB: [], RB: [], WR: [], TE: [] },
+		'no roster at all is four empty groups, not a crash'
+	);
+}
 
 {
 	// Three franchises, projections basis, every team carrying byPosition.
@@ -304,6 +334,16 @@ function findAll(n, pred, out = []) {
 	}
 	return out;
 }
+// The domNode stub tracks a node's own `_text` (set via el()'s `text` attr)
+// and its appended `children` as two independent things, unlike a real DOM
+// where setting textContent replaces children — every call site here only
+// ever uses one or the other on a given node, so concatenating both
+// reconstructs the visible text either way.
+function fullText(node) {
+	if (!node) return '';
+	if (!node.children || node.children.length === 0) return node._text || '';
+	return (node._text || '') + node.children.map(fullText).join('');
+}
 const thNamed = (card, label) => findAll(card, (c) => c.tag === 'th').find((h) => h._text === label);
 const clickTh = (card, label) => thNamed(card, label).click();
 const labelsOf = (card) =>
@@ -329,8 +369,9 @@ const labelsOf = (card) =>
 	const byPos = (qb, rb, wr, te) => ({
 		QB: { score: qb, depth: 0 }, RB: { score: rb, depth: 0 }, WR: { score: wr, depth: 0 }, TE: { score: te, depth: 0 },
 	});
-	const mkLeague = (id, name, myByPos, others) => ({
+	const mkLeague = (id, name, myByPos, others, players) => ({
 		id, name, type: 'dynasty', season: '2026', franchiseId: '1',
+		players,
 		power: {
 			projections: {
 				source: { basis: 'projections' },
@@ -345,10 +386,21 @@ const labelsOf = (card) =>
 
 	const leagues = [
 		// Alpha: weakest at RB (a real, sortable spread across positions).
-		mkLeague('A', 'Alpha', byPos(10, 5, 10, 10), [{ score: 50, byPosition: byPos(10, 50, 10, 10) }]),
+		// The roster carries two RBs — one ranked, one FantasyPros doesn't
+		// cover — plus a QB, so the sub-line's position filter and its
+		// best-first-with-unranked-last sort both have something to prove.
+		mkLeague('A', 'Alpha', byPos(10, 5, 10, 10), [{ score: 50, byPosition: byPos(10, 50, 10, 10) }], [
+			{ name: 'Deep Stash', position: 'RB', team: 'KC' },
+			{ name: 'Starting Back', position: 'RB', team: 'SF', ecr: { rank: 34 } },
+			{ name: 'Some QB', position: 'QB', team: 'BUF', ecr: { rank: 5 } },
+		]),
 		// Bravo: only one other franchise, so QB/RB/WR/TE are all ties at
-		// rank 1 for our team — no single weakest position to highlight.
-		mkLeague('B', 'Bravo', byPos(10, 10, 10, 10), [{ score: 5, byPosition: byPos(1, 1, 1, 1) }]),
+		// rank 1 for our team — no single weakest position to highlight. It
+		// still carries a full roster, proving the sub-line is gated on the
+		// highlight and not merely on having players to show.
+		mkLeague('B', 'Bravo', byPos(10, 10, 10, 10), [{ score: 5, byPosition: byPos(1, 1, 1, 1) }], [
+			{ name: 'Bravo RB', position: 'RB', team: 'DAL', ecr: { rank: 12 } },
+		]),
 		// Charlie: fully unranked (no power object at all), proving the
 		// row's own reason drives the TBD tooltip rather than a crash.
 		{ id: 'C', name: 'Charlie', type: 'dynasty', season: '2026', franchiseId: '1', players: [] },
@@ -380,6 +432,23 @@ const labelsOf = (card) =>
 	const bravoCells = cellsOf('Bravo');
 	assert.deepEqual(bravoCells.map((c) => c._text), ['1', '1', '1', '1']);
 	assert.ok(bravoCells.every((c) => !c.cls.includes('needs-weakest')), 'an all-tied row highlights nothing');
+
+	// The roster sub-line: only the RB cell (Alpha's uniquely-weakest
+	// position) carries one, listing the roster's own RBs — best ECR first,
+	// the unranked one last with an em dash — and nobody else's position.
+	// QB has a ranked player on the roster too, but QB isn't the weakest
+	// cell, so no sub-line appears there at all.
+	const findRoster = (cell) => findAll(cell, (c) => c.cls.includes('needs-roster'))[0];
+	assert.ok(findRoster(alphaCells[1]), 'RB — the weakest cell — carries a roster sub-line');
+	assert.equal(fullText(findRoster(alphaCells[1])), 'Starting Back SF (34), Deep Stash KC (—)');
+	assert.equal(findRoster(alphaCells[0]), undefined, "QB has a rostered, ranked player, but isn't the weakest cell, so no sub-line");
+	assert.equal(findRoster(alphaCells[2]), undefined, 'WR has nobody on the roster and no sub-line either');
+	assert.equal(findRoster(alphaCells[3]), undefined, 'TE likewise');
+
+	// Bravo has a real RB on its roster, but the row has no uniquely-weakest
+	// cell at all (every position ties), so no sub-line renders anywhere —
+	// gated on the highlight, not merely on having a roster to show.
+	assert.ok(bravoCells.every((c) => !findRoster(c)), 'a tied row shows no roster sub-line anywhere');
 
 	// Charlie: fully unranked, so every position cell is TBD and carries the
 	// row's own reason as its tooltip rather than a generic per-column one.
