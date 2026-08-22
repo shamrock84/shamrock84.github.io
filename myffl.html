@@ -502,7 +502,9 @@
 		/* Team Needs: any position ranked below the league's own average —
 		   worse than half the field — so a team weak at several positions
 		   at once gets each one flagged rather than an arbitrary single
-		   pick, or nothing at all for lack of one clear "worst". */
+		   pick. A team clearing the average everywhere falls back to its
+		   own weakest position(s) instead, so a strong roster still gets a
+		   real answer rather than a blank row. */
 		.needs-weakest {
 			color: var(--accent);
 			font-weight: 700;
@@ -5690,20 +5692,44 @@
 
 					const detail = detailOf(r);
 					const byPos = detail ? detail.byPosition : null;
-					// A "need" is any position ranked below the league's own
-					// average — worse than half the field, e.g. rank 6+ of 10,
-					// 7+ of 12, 8+ of 14 — not just whichever position happens
-					// to be worst. A team can be flagged at zero, one, or all
-					// four positions; a team weak at two positions at once
-					// (see Game On: dead last at both WR and TE) gets both
-					// flagged rather than an arbitrary single pick, or none at
-					// all for lack of a unique worst. r.size is the same
-					// league-size figure already printed beside the league
-					// name, so there's nothing new to compute it from.
+					// A "need" is primarily any position ranked below the
+					// league's own average — worse than half the field, e.g.
+					// rank 6+ of 10, 7+ of 12, 8+ of 14 — not just whichever
+					// position happens to be worst. A team can be flagged at
+					// zero, one, or all four positions this way; a team weak
+					// at two positions at once (see Game On: dead last at
+					// both WR and TE) gets both flagged rather than an
+					// arbitrary single pick. r.size is the same league-size
+					// figure already printed beside the league name, so
+					// there's nothing new to compute it from.
+					//
+					// A genuinely strong team can clear the average at every
+					// position and still have a real weakest spot relative to
+					// itself — that comparison is worth surfacing too, or a
+					// contender's row would sit permanently blank while a
+					// mediocre team's fills with flags. So when nothing clears
+					// the average line, the fallback is the team's own worst
+					// position(s): ties share the flag rather than picking one
+					// arbitrarily, the same rule the average-based flag
+					// already follows.
+					const ranked = byPos ? POWER_POSITIONS.filter((pos) => byPos[pos] != null) : [];
 					const needThreshold = r.size != null ? r.size / 2 : null;
-					const needPositions = byPos && needThreshold != null
-						? POWER_POSITIONS.filter((pos) => byPos[pos] != null && byPos[pos] > needThreshold)
+					let needPositions = needThreshold != null
+						? ranked.filter((pos) => byPos[pos] > needThreshold)
 						: [];
+					if (needPositions.length === 0 && ranked.length > 0) {
+						const values = ranked.map((pos) => byPos[pos]);
+						const worstValue = Math.max(...values);
+						// Only when there is an actual worst to point at — a
+						// team tied at the same rank everywhere (all 1s in a
+						// two-team league, say) has no position that is
+						// relatively weaker than the others, and flagging
+						// all four just because they share the max would
+						// call an evenly-strong roster needy everywhere.
+						if (worstValue > Math.min(...values)) {
+							needPositions = ranked.filter((pos) => byPos[pos] === worstValue);
+						}
+					}
 					// Under the league name, not in a flagged cell itself — a
 					// sub-line there would grow that one cell taller than its
 					// neighbors and throw off every column's alignment. This

@@ -512,37 +512,38 @@ const labelsOf = (card) =>
 // (rank 5 of 10 is fine, rank 6 is not) and the multi-flag case a real
 // league surfaced (Game On, dead last at both WR and TE at once — neither
 // is "the" worst, both are real needs).
-{
-	// Builds a `size`-team league where my franchise lands at exactly the
-	// requested rank at each position, independently, with no ties: my
-	// value is (size - rank + 1), and the other `size - 1` teams take every
-	// other integer 1..size at that position, so competitionRanks has
-	// nothing left to tie-break.
-	function leagueAtRanks(id, name, size, ranks, players) {
-		const positions = ['QB', 'RB', 'WR', 'TE'];
-		const myByPosition = {};
-		for (const pos of positions) myByPosition[pos] = { score: size - ranks[pos] + 1, depth: 0 };
-		const others = [];
-		for (let i = 0; i < size - 1; i++) {
-			const byPosition = {};
-			for (const pos of positions) {
-				const mine = size - ranks[pos] + 1;
-				const remaining = [];
-				for (let v = size; v >= 1; v--) if (v !== mine) remaining.push(v);
-				byPosition[pos] = { score: remaining[i], depth: 0 };
-			}
-			others.push({ franchiseId: `x${i}`, score: 0, depth: 0, byPosition });
+// Builds a `size`-team league where my franchise lands at exactly the
+// requested rank at each position, independently, with no ties: my value is
+// (size - rank + 1), and the other `size - 1` teams take every other
+// integer 1..size at that position, so competitionRanks has nothing left to
+// tie-break. Shared by the below-average tests and the fallback-tier tests
+// below.
+function leagueAtRanks(id, name, size, ranks, players) {
+	const positions = ['QB', 'RB', 'WR', 'TE'];
+	const myByPosition = {};
+	for (const pos of positions) myByPosition[pos] = { score: size - ranks[pos] + 1, depth: 0 };
+	const others = [];
+	for (let i = 0; i < size - 1; i++) {
+		const byPosition = {};
+		for (const pos of positions) {
+			const mine = size - ranks[pos] + 1;
+			const remaining = [];
+			for (let v = size; v >= 1; v--) if (v !== mine) remaining.push(v);
+			byPosition[pos] = { score: remaining[i], depth: 0 };
 		}
-		return {
-			id, name, type: 'dynasty', season: '2026', franchiseId: '1',
-			players,
-			power: { projections: { source: { basis: 'projections' }, teams: [
-				{ franchiseId: '1', score: 100, depth: 10, byPosition: myByPosition },
-				...others,
-			] }, ecr: null },
-		};
+		others.push({ franchiseId: `x${i}`, score: 0, depth: 0, byPosition });
 	}
+	return {
+		id, name, type: 'dynasty', season: '2026', franchiseId: '1',
+		players,
+		power: { projections: { source: { basis: 'projections' }, teams: [
+			{ franchiseId: '1', score: 100, depth: 10, byPosition: myByPosition },
+			...others,
+		] }, ecr: null },
+	};
+}
 
+{
 	// 10 teams, threshold 5: QB sits exactly on the line (not a need), RB
 	// is one worse (a need), WR is deep in the bottom (also a need, at the
 	// same time as RB), TE leads the league (nowhere close).
@@ -581,6 +582,87 @@ const labelsOf = (card) =>
 	assert.ok(byLabel.WR, 'a WR sub-line exists');
 	assert.equal(fullText(byLabel.RB), 'RB Echo RB KC (40)');
 	assert.equal(fullText(byLabel.WR), 'WR Echo WR SF (55)');
+}
+
+// ---- The fallback tier: a strong team still gets an answer -----------------
+//
+// The average-based flag can legitimately find nothing on a genuinely strong
+// roster — every position clears the league average. Leaving the row blank
+// there would mean a contender's row never has anything to say, while a
+// mediocre team's fills with flags every week. So when nothing clears the
+// average, the fallback is the team's own weakest position(s) relative to
+// itself, ties included — the same "flag all of them, not an arbitrary one"
+// rule the average-based flag already follows.
+
+{
+	// 10 teams, none below the average (threshold 5): 1, 2, 3, 1. WR (3) is
+	// the worst of the four, but nowhere near a real weakness — this is the
+	// fallback kicking in for a team with no genuine below-average spot.
+	const foxtrot = leagueAtRanks('F', 'Foxtrot', 10, { QB: 1, RB: 2, WR: 3, TE: 1 }, [
+		{ name: 'Foxtrot WR', position: 'WR', team: 'MIA', ecr: { rank: 20 } },
+	]);
+	const card = domCtx.renderTeamNeedsCard('dynasty', ['dynasty'], [foxtrot], 2026);
+	assert.notEqual(card, null);
+	const row = findAll(card, (c) => c.tag === 'tr').filter((tr) => tr.children.some((c) => c.tag === 'td'))[0];
+	const [qbCell, rbCell, wrCell, teCell] = row.children.slice(1);
+
+	assert.ok(!qbCell.cls.includes('needs-weakest'), 'rank 1 clears the average by a mile');
+	assert.ok(!rbCell.cls.includes('needs-weakest'), 'rank 2 also clears it');
+	assert.ok(!teCell.cls.includes('needs-weakest'), 'rank 1, tied for best, clears it too');
+	assert.ok(wrCell.cls.includes('needs-weakest'), 'nothing is below average, so the team\'s own worst (WR) is flagged instead');
+
+	// And it still gets a roster sub-line, exactly like an average-based flag
+	// would — "this is your weakest spot" is worth naming players for even
+	// when it isn't a real league-wide weakness.
+	const rosterLines = findAll(row.children[0], (c) => c.cls.trim().split(/\s+/).includes('power-players'));
+	assert.equal(rosterLines.length, 1);
+	assert.equal(fullText(rosterLines[0]), 'WR Foxtrot WR MIA (20)');
+}
+
+{
+	// 10 teams, none below average, and a tie for the team's own worst: RB
+	// and WR both sit at 3, QB and TE lead at 1. Both must be flagged —
+	// picking one over the other would claim a difference the numbers don't
+	// support, the same reasoning the average-based tie case already uses.
+	const golf = leagueAtRanks('G', 'Golf', 10, { QB: 1, RB: 3, WR: 3, TE: 1 }, [
+		{ name: 'Golf RB', position: 'RB', team: 'DAL', ecr: { rank: 30 } },
+		{ name: 'Golf WR', position: 'WR', team: 'ATL', ecr: { rank: 45 } },
+	]);
+	const card = domCtx.renderTeamNeedsCard('dynasty', ['dynasty'], [golf], 2026);
+	const row = findAll(card, (c) => c.tag === 'tr').filter((tr) => tr.children.some((c) => c.tag === 'td'))[0];
+	const [qbCell, rbCell, wrCell, teCell] = row.children.slice(1);
+
+	assert.ok(!qbCell.cls.includes('needs-weakest'));
+	assert.ok(!teCell.cls.includes('needs-weakest'));
+	assert.ok(rbCell.cls.includes('needs-weakest'), 'RB ties for the team\'s own worst');
+	assert.ok(wrCell.cls.includes('needs-weakest'), 'WR ties for it too — both flagged, not one picked arbitrarily');
+
+	const rosterLines = findAll(row.children[0], (c) => c.cls.trim().split(/\s+/).includes('power-players'));
+	assert.equal(rosterLines.length, 2, 'both tied positions get their own sub-line');
+}
+
+{
+	// A team tied at the SAME rank everywhere (a two-team league where mine
+	// leads at every position, byPos all 1s) has no relatively-weaker spot
+	// at all — the "worst" and "best" are identical, so the fallback must
+	// not flag all four positions just because they share the max. This is
+	// the fixture from the Alpha/Bravo block above, re-asserted here as the
+	// fallback tier's own boundary rather than an incidental side effect.
+	const byPos = (qb, rb, wr, te) => ({
+		QB: { score: qb, depth: 0 }, RB: { score: rb, depth: 0 }, WR: { score: wr, depth: 0 }, TE: { score: te, depth: 0 },
+	});
+	const hotel = {
+		id: 'H', name: 'Hotel', type: 'dynasty', season: '2026', franchiseId: '1',
+		power: { projections: { source: { basis: 'projections' }, teams: [
+			{ franchiseId: '1', score: 100, depth: 10, byPosition: byPos(10, 10, 10, 10) },
+			{ franchiseId: '2', score: 5, depth: 0, byPosition: byPos(1, 1, 1, 1) },
+		] }, ecr: null },
+	};
+	const card = domCtx.renderTeamNeedsCard('dynasty', ['dynasty'], [hotel], 2026);
+	const row = findAll(card, (c) => c.tag === 'tr').filter((tr) => tr.children.some((c) => c.tag === 'td'))[0];
+	const cells = row.children.slice(1);
+	assert.ok(cells.every((c) => !c.cls.includes('needs-weakest')), 'tied-everywhere: nothing is relatively worse, so nothing is flagged');
+	assert.equal(findAll(row.children[0], (c) => c.cls.trim().split(/\s+/).includes('power-players')).length, 0);
 }
 
 console.log('test-team-needs: all assertions passed');
