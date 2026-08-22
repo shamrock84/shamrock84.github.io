@@ -433,22 +433,24 @@ const labelsOf = (card) =>
 	assert.deepEqual(bravoCells.map((c) => c._text), ['1', '1', '1', '1']);
 	assert.ok(bravoCells.every((c) => !c.cls.includes('needs-weakest')), 'an all-tied row highlights nothing');
 
-	// The roster sub-line: only the RB cell (Alpha's uniquely-weakest
-	// position) carries one, listing the roster's own RBs — best ECR first,
-	// the unranked one last with an em dash — and nobody else's position.
-	// QB has a ranked player on the roster too, but QB isn't the weakest
-	// cell, so no sub-line appears there at all.
-	const findRoster = (cell) => findAll(cell, (c) => c.cls.includes('needs-roster'))[0];
-	assert.ok(findRoster(alphaCells[1]), 'RB — the weakest cell — carries a roster sub-line');
-	assert.equal(fullText(findRoster(alphaCells[1])), 'Starting Back SF (34), Deep Stash KC (—)');
-	assert.equal(findRoster(alphaCells[0]), undefined, "QB has a rostered, ranked player, but isn't the weakest cell, so no sub-line");
-	assert.equal(findRoster(alphaCells[2]), undefined, 'WR has nobody on the roster and no sub-line either');
-	assert.equal(findRoster(alphaCells[3]), undefined, 'TE likewise');
+	// The roster sub-line lives under the league name — same slot and
+	// styling as Studs/Sleepers — not in the weakest cell itself, so every
+	// position column stays a plain, aligned number. Alpha's weakest
+	// position is RB, so the name cell gets one "RB ..." line naming the
+	// roster's own RBs, best ECR first, the unranked one last with an em
+	// dash. Alpha's QB is rostered and ranked too, but QB isn't the weakest
+	// position, so it never gets a line of its own.
+	const nameCellOf = (label) => rowOf(label).children[0];
+	const findRoster = (cell) => findAll(cell, (c) => c.cls.includes('power-players'))[0];
+	const alphaRoster = findRoster(nameCellOf('Alpha'));
+	assert.ok(alphaRoster, "Alpha's name cell carries the weakest-position roster line");
+	assert.equal(fullText(alphaRoster), 'RB Starting Back SF (34), Deep Stash KC (—)');
+	assert.equal(alphaCells.every((c) => !findRoster(c)), true, 'no position cell carries a sub-line — only the name cell does');
 
 	// Bravo has a real RB on its roster, but the row has no uniquely-weakest
-	// cell at all (every position ties), so no sub-line renders anywhere —
-	// gated on the highlight, not merely on having a roster to show.
-	assert.ok(bravoCells.every((c) => !findRoster(c)), 'a tied row shows no roster sub-line anywhere');
+	// position at all (every position ties), so no sub-line renders anywhere
+	// — gated on the highlight, not merely on having a roster to show.
+	assert.equal(findRoster(nameCellOf('Bravo')), undefined, 'a tied row shows no roster sub-line even under its name');
 
 	// Charlie: fully unranked, so every position cell is TBD and carries the
 	// row's own reason as its tooltip rather than a generic per-column one.

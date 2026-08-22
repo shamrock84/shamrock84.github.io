@@ -505,17 +505,6 @@
 			color: var(--accent);
 			font-weight: 700;
 		}
-		/* The weakest cell's roster sub-line (see positionRosterLine). Left-
-		   aligned against the cell's own right-aligned number: a comma-list
-		   of names reads raggedly right-aligned, the same reason
-		   .power-players sits left-aligned under a name column. */
-		.needs-roster {
-			text-align: left;
-			color: var(--muted);
-			font-weight: 400;
-			font-size: 0.72rem;
-			margin-top: 0.15rem;
-		}
 		/* "Studs" and "Sleepers" sub-lines under a league's name (see
 		   powerPlayersLine) — same treatment as the exposure cards' leagueLine
 		   under a player's name (.exposure-leagues), just under a different
@@ -5350,21 +5339,25 @@
 			return line;
 		}
 
-		// Team Needs' weakest-cell sub-line: every rostered player at that
-		// position, not just the top-N the way Studs/Sleepers filter — the
-		// whole group is the point, since the rank above already blends
-		// starters and bench. Unlike powerPlayersLine, the rank rides inline
-		// in parens rather than in a hover title: the request this exists to
-		// answer ("who do I have there, and how good are they") wants the
-		// number visible without a hover, on a line that's already
-		// secondary-styled text. Best-ECR first; unranked players (no
-		// FantasyPros coverage) sort last and print an em dash, the same
-		// missing-value convention buildEcrCell uses for the Rosters tab's
-		// own ECR column.
-		function positionRosterLine(players) {
+		// Team Needs' weakest-position sub-line — under the league name, the
+		// same slot and the same .power-players/.power-players-label styling
+		// Studs and Sleepers already use on Power Rankings, so a row growing
+		// a third kind of sub-line doesn't disrupt anything: every position
+		// column stays a plain, aligned number, and only the first column
+		// ever grows taller. Every rostered player at the position, not just
+		// the top-N the way Studs/Sleepers filter — the whole group is the
+		// point, since the rank above already blends starters and bench.
+		// Unlike powerPlayersLine, the rank rides inline in parens rather
+		// than in a hover title: the question this line answers ("who do I
+		// have there, and how good are they") wants the number visible
+		// without a hover. Best-ECR first; unranked players (no FantasyPros
+		// coverage) sort last and print an em dash, the same missing-value
+		// convention buildEcrCell uses for the Rosters tab's own ECR column.
+		function needsRosterLine(pos, players) {
 			if (!players || players.length === 0) return null;
 			const sorted = [...players].sort((a, b) => (a.ecr?.rank ?? Infinity) - (b.ecr?.rank ?? Infinity));
-			const line = el('div', { class: 'needs-roster' });
+			const line = el('div', { class: 'power-players' });
+			line.appendChild(el('span', { class: 'power-players-label', text: `${pos} ` }));
 			sorted.forEach((p, i) => {
 				if (i > 0) line.appendChild(document.createTextNode(', '));
 				const entry = el('span');
@@ -5686,21 +5679,20 @@
 							if (worstCandidates.length === 1) worstPos = worstCandidates[0];
 						}
 					}
+					// Under the league name, not in the weakest cell itself — a
+					// sub-line there would grow that one cell taller than its
+					// neighbors and throw off every column's alignment. This
+					// keeps every position cell a plain, aligned number.
+					if (worstPos) {
+						const roster = needsRosterLine(worstPos, r.rosterByPosition ? r.rosterByPosition[worstPos] : null);
+						if (roster) nameCell.appendChild(roster);
+					}
 					for (const pos of POWER_POSITIONS) {
 						const value = byPos ? byPos[pos] : null;
 						if (value == null) {
 							row.appendChild(el('td', { class: 'power-tbd', text: 'TBD', title: r.reason || `No rank at ${pos} yet` }));
 						} else {
-							const cell = el('td', { class: pos === worstPos ? 'needs-weakest' : '', text: String(value) });
-							// Only on the row's own uniquely-weakest cell — showing
-							// the roster for every position would repeat the same
-							// four groups on every row and bury the one number this
-							// card exists to surface.
-							if (pos === worstPos) {
-								const roster = positionRosterLine(r.rosterByPosition ? r.rosterByPosition[pos] : null);
-								if (roster) cell.appendChild(roster);
-							}
-							row.appendChild(cell);
+							row.appendChild(el('td', { class: pos === worstPos ? 'needs-weakest' : '', text: String(value) }));
 						}
 					}
 					table.appendChild(row);
