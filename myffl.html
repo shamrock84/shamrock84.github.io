@@ -499,8 +499,10 @@
 		}
 		/* The summary column: the one number to read if you read one. */
 		.power-avg { font-weight: 600; }
-		/* Team Needs: the single weakest position in a row, so the read this
-		   card exists for doesn't need scanning four numbers by eye. */
+		/* Team Needs: any position ranked below the league's own average —
+		   worse than half the field — so a team weak at several positions
+		   at once gets each one flagged rather than an arbitrary single
+		   pick, or nothing at all for lack of one clear "worst". */
 		.needs-weakest {
 			color: var(--accent);
 			font-weight: 700;
@@ -5688,30 +5690,28 @@
 
 					const detail = detailOf(r);
 					const byPos = detail ? detail.byPosition : null;
-					// The weakest of this row's own ranks, highlighted so the
-					// read this card exists for — "which position, for this
-					// team" — doesn't require scanning four numbers against
-					// each other by eye. Only when more than one position
-					// actually has a rank (a row with one real number and
-					// three TBDs has nothing to compare it against), and only
-					// when the worst value is uniquely worst — a four-way tie
-					// has no single position to point at, and highlighting
-					// the first one anyway would claim a need that isn't there.
-					let worstPos = null;
-					if (byPos) {
-						const ranked = POWER_POSITIONS.filter((pos) => byPos[pos] != null);
-						if (ranked.length > 1) {
-							const worstValue = Math.max(...ranked.map((pos) => byPos[pos]));
-							const worstCandidates = ranked.filter((pos) => byPos[pos] === worstValue);
-							if (worstCandidates.length === 1) worstPos = worstCandidates[0];
-						}
-					}
-					// Under the league name, not in the weakest cell itself — a
+					// A "need" is any position ranked below the league's own
+					// average — worse than half the field, e.g. rank 6+ of 10,
+					// 7+ of 12, 8+ of 14 — not just whichever position happens
+					// to be worst. A team can be flagged at zero, one, or all
+					// four positions; a team weak at two positions at once
+					// (see Game On: dead last at both WR and TE) gets both
+					// flagged rather than an arbitrary single pick, or none at
+					// all for lack of a unique worst. r.size is the same
+					// league-size figure already printed beside the league
+					// name, so there's nothing new to compute it from.
+					const needThreshold = r.size != null ? r.size / 2 : null;
+					const needPositions = byPos && needThreshold != null
+						? POWER_POSITIONS.filter((pos) => byPos[pos] != null && byPos[pos] > needThreshold)
+						: [];
+					// Under the league name, not in a flagged cell itself — a
 					// sub-line there would grow that one cell taller than its
 					// neighbors and throw off every column's alignment. This
-					// keeps every position cell a plain, aligned number.
-					if (worstPos) {
-						const roster = needsRosterLine(worstPos, r.rosterByPosition ? r.rosterByPosition[worstPos] : null);
+					// keeps every position cell a plain, aligned number. One
+					// line per flagged position, each labeled with its own
+					// position, same as a single flag would be.
+					for (const pos of needPositions) {
+						const roster = needsRosterLine(pos, r.rosterByPosition ? r.rosterByPosition[pos] : null);
 						if (roster) nameCell.appendChild(roster);
 					}
 					for (const pos of POWER_POSITIONS) {
@@ -5719,7 +5719,7 @@
 						if (value == null) {
 							row.appendChild(el('td', { class: 'power-tbd', text: 'TBD', title: r.reason || `No rank at ${pos} yet` }));
 						} else {
-							row.appendChild(el('td', { class: pos === worstPos ? 'needs-weakest' : '', text: String(value) }));
+							row.appendChild(el('td', { class: needPositions.includes(pos) ? 'needs-weakest' : '', text: String(value) }));
 						}
 					}
 					table.appendChild(row);

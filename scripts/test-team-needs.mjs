@@ -32,6 +32,11 @@
 //   - the card itself is absent, not a wall of TBDs, when nothing in the
 //     group has byPosition yet — the same "nothing to show" treatment
 //     Power Rankings gives its own bootstrap gap;
+//   - a "need" is any position ranked below the league's own average —
+//     worse than half the field (rank 6+ of 10, 7+ of 12, 8+ of 14) —
+//     rather than only whichever single position happens to be worst, so a
+//     team weak at two positions at once gets both flagged instead of an
+//     arbitrary pick or nothing at all for lack of one unique worst;
 //   - and click-to-sort on every position column follows the same three
 //     rules as every other analytics table: natural -> reverse -> the
 //     card's own order, ties fall back to that order, and a TBD cell stays
@@ -397,10 +402,10 @@ const labelsOf = (card) =>
 			{ name: 'Taxi Prospect', position: 'RB', team: 'DEN', status: 'TAXI_SQUAD', ecr: { rank: 60 } },
 			{ name: 'Some QB', position: 'QB', team: 'BUF', ecr: { rank: 5 } },
 		]),
-		// Bravo: only one other franchise, so QB/RB/WR/TE are all ties at
-		// rank 1 for our team — no single weakest position to highlight. It
-		// still carries a full roster, proving the sub-line is gated on the
-		// highlight and not merely on having players to show.
+		// Bravo: 1st of two at every position for our team — nowhere near the
+		// below-average threshold, so nothing is flagged. It still carries a
+		// full roster, proving the sub-line is gated on the flag and not
+		// merely on having players to show.
 		mkLeague('B', 'Bravo', byPos(10, 10, 10, 10), [{ score: 5, byPosition: byPos(1, 1, 1, 1) }], [
 			{ name: 'Bravo RB', position: 'RB', team: 'DAL', ecr: { rank: 12 } },
 		]),
@@ -463,10 +468,11 @@ const labelsOf = (card) =>
 	assert.equal(taxiEntries.length, 1, 'exactly one player is flagged as taxi-squad');
 	assert.ok(fullText(taxiEntries[0]).startsWith('Taxi Prospect'), 'the flagged player is the taxi-squad one, not an active-roster teammate');
 
-	// Bravo has a real RB on its roster, but the row has no uniquely-weakest
-	// position at all (every position ties), so no sub-line renders anywhere
-	// — gated on the highlight, not merely on having a roster to show.
-	assert.equal(findRoster(nameCellOf('Bravo')), undefined, 'a tied row shows no roster sub-line even under its name');
+	// Bravo has a real RB on its roster, but leads at every position (a
+	// 2-team league, rank 1 of 2, nowhere near the below-average
+	// threshold), so no sub-line renders anywhere — gated on the flag, not
+	// merely on having a roster to show.
+	assert.equal(findRoster(nameCellOf('Bravo')), undefined, 'a row with nothing flagged shows no roster sub-line even under its name');
 
 	// Charlie: fully unranked, so every position cell is TBD and carries the
 	// row's own reason as its tooltip rather than a generic per-column one.
@@ -493,6 +499,88 @@ const labelsOf = (card) =>
 	assert.deepEqual([...labelsOf(card)], ['Alpha', 'Bravo', 'Charlie'], 'RB descending: Alpha (2) before Bravo (1), Charlie (TBD) STILL last');
 	clickTh(card, 'RB');
 	assert.deepEqual([...labelsOf(card)], base, 'third click restores the default order');
+}
+
+// ---- The below-average threshold, and multiple needs at once ---------------
+//
+// "Need" was originally "whichever position happens to be worst, if there's
+// a unique one" — the Alpha/Bravo fixtures above still exercise that shape
+// coincidentally (a 2-team league only has one non-trivial threshold). The
+// real rule is a franchise-independent line: any position ranked below the
+// league's own average, i.e. worse than half the field. A team can clear
+// zero, one, or several positions at once — this pins the exact boundary
+// (rank 5 of 10 is fine, rank 6 is not) and the multi-flag case a real
+// league surfaced (Game On, dead last at both WR and TE at once — neither
+// is "the" worst, both are real needs).
+{
+	// Builds a `size`-team league where my franchise lands at exactly the
+	// requested rank at each position, independently, with no ties: my
+	// value is (size - rank + 1), and the other `size - 1` teams take every
+	// other integer 1..size at that position, so competitionRanks has
+	// nothing left to tie-break.
+	function leagueAtRanks(id, name, size, ranks, players) {
+		const positions = ['QB', 'RB', 'WR', 'TE'];
+		const myByPosition = {};
+		for (const pos of positions) myByPosition[pos] = { score: size - ranks[pos] + 1, depth: 0 };
+		const others = [];
+		for (let i = 0; i < size - 1; i++) {
+			const byPosition = {};
+			for (const pos of positions) {
+				const mine = size - ranks[pos] + 1;
+				const remaining = [];
+				for (let v = size; v >= 1; v--) if (v !== mine) remaining.push(v);
+				byPosition[pos] = { score: remaining[i], depth: 0 };
+			}
+			others.push({ franchiseId: `x${i}`, score: 0, depth: 0, byPosition });
+		}
+		return {
+			id, name, type: 'dynasty', season: '2026', franchiseId: '1',
+			players,
+			power: { projections: { source: { basis: 'projections' }, teams: [
+				{ franchiseId: '1', score: 100, depth: 10, byPosition: myByPosition },
+				...others,
+			] }, ecr: null },
+		};
+	}
+
+	// 10 teams, threshold 5: QB sits exactly on the line (not a need), RB
+	// is one worse (a need), WR is deep in the bottom (also a need, at the
+	// same time as RB), TE leads the league (nowhere close).
+	const echo = leagueAtRanks('E', 'Echo', 10, { QB: 5, RB: 6, WR: 9, TE: 1 }, [
+		{ name: 'Echo RB', position: 'RB', team: 'KC', ecr: { rank: 40 } },
+		{ name: 'Echo WR', position: 'WR', team: 'SF', ecr: { rank: 55 } },
+	]);
+	const card = domCtx.renderTeamNeedsCard('dynasty', ['dynasty'], [echo], 2026);
+	assert.notEqual(card, null);
+
+	const row = findAll(card, (c) => c.tag === 'tr').filter((tr) => tr.children.some((c) => c.tag === 'td'))[0];
+	const nameCell = row.children[0];
+	const [qbCell, rbCell, wrCell, teCell] = row.children.slice(1);
+
+	assert.equal(qbCell._text, '5');
+	assert.equal(rbCell._text, '6');
+	assert.equal(wrCell._text, '9');
+	assert.equal(teCell._text, '1');
+
+	// The boundary: exactly at the average is fine, one worse is a need.
+	assert.ok(!qbCell.cls.includes('needs-weakest'), 'rank 5 of 10 sits exactly on the average — not a need');
+	assert.ok(rbCell.cls.includes('needs-weakest'), 'rank 6 of 10 is one worse than average — a need');
+
+	// Two needs at once: neither displaces the other, both are flagged
+	// together, and TE — nowhere near the threshold — is flagged at neither.
+	assert.ok(wrCell.cls.includes('needs-weakest'), 'rank 9 of 10 is also a need, simultaneously with RB');
+	assert.ok(!teCell.cls.includes('needs-weakest'), 'the league leader at TE is never a need');
+
+	// One roster sub-line per flagged position, each carrying only that
+	// position's own roster — not merged into a single line, and not
+	// printed for QB or TE despite QB sitting one player away from the line.
+	const rosterLines = findAll(nameCell, (c) => c.cls.trim().split(/\s+/).includes('power-players'));
+	assert.equal(rosterLines.length, 2, 'exactly one sub-line per flagged position');
+	const byLabel = Object.fromEntries(rosterLines.map((line) => [line.children[0]._text.trim(), line]));
+	assert.ok(byLabel.RB, 'an RB sub-line exists');
+	assert.ok(byLabel.WR, 'a WR sub-line exists');
+	assert.equal(fullText(byLabel.RB), 'RB Echo RB KC (40)');
+	assert.equal(fullText(byLabel.WR), 'WR Echo WR SF (55)');
 }
 
 console.log('test-team-needs: all assertions passed');
