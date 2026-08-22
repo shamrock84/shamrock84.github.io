@@ -212,16 +212,28 @@ const { leaguePowerRanks, computeMyPowerRows, rosterPlayersByPosition } = contex
 	assert.notEqual(ranks, null);
 	// Franchise 3 leads overall (highest score) but is worst at RB.
 	assert.equal(ranks.byFranchise.get('0003').overall, 1);
-	assert.equal(ranks.byFranchise.get('0003').byPosition.RB, 3, 'weakest RB in the league despite the best roster');
-	assert.equal(ranks.byFranchise.get('0003').byPosition.WR, 1, 'and the strongest WR room');
+	assert.equal(ranks.byFranchise.get('0003').byPosition.RB.overall, 3, 'weakest RB in the league despite the best roster');
+	assert.equal(ranks.byFranchise.get('0003').byPosition.WR.overall, 1, 'and the strongest WR room');
 	// Franchise 1 is the RB/WR middle-of-the-road team.
-	assert.equal(ranks.byFranchise.get('0001').byPosition.RB, 2);
-	assert.equal(ranks.byFranchise.get('0001').byPosition.WR, 2);
+	assert.equal(ranks.byFranchise.get('0001').byPosition.RB.overall, 2);
+	assert.equal(ranks.byFranchise.get('0001').byPosition.WR.overall, 2);
 	// QB and TE are tied across all three franchises, so every franchise
 	// shares rank 1 there.
-	assert.equal(ranks.byFranchise.get('0001').byPosition.QB, 1);
-	assert.equal(ranks.byFranchise.get('0002').byPosition.QB, 1);
-	assert.equal(ranks.byFranchise.get('0003').byPosition.QB, 1);
+	assert.equal(ranks.byFranchise.get('0001').byPosition.QB.overall, 1);
+	assert.equal(ranks.byFranchise.get('0002').byPosition.QB.overall, 1);
+	assert.equal(ranks.byFranchise.get('0003').byPosition.QB.overall, 1);
+
+	// Each position carries the same three-way split the whole roster does
+	// (overall/starters/depth) — not just the blended number. Every
+	// fixture here has depth: 0 at every position, so starters and overall
+	// coincide, but the fields must exist independently: this is what the
+	// per-position popover reads.
+	// Spread first, same reason as elsewhere in this file: an object built
+	// inside the vm-evaluated script is a different realm's object than one
+	// built here, and {...x} re-materializes it as a plain object before
+	// deepEqual compares it.
+	const f3rb = { ...ranks.byFranchise.get('0003').byPosition.RB };
+	assert.deepEqual(f3rb, { overall: 3, starters: 3, depth: 1 }, 'starters and overall agree when depth is uniformly zero, and depth ranks the uniform zeros as a three-way tie');
 }
 
 {
@@ -236,7 +248,7 @@ const { leaguePowerRanks, computeMyPowerRows, rosterPlayersByPosition } = contex
 		] } },
 	}, 'projections');
 	assert.equal(ranks.byFranchise.get('0001').depth, null, 'whole-roster depth is still missing');
-	assert.equal(ranks.byFranchise.get('0002').byPosition.QB, 1, 'but position ranking does not depend on it');
+	assert.equal(ranks.byFranchise.get('0002').byPosition.QB.overall, 1, 'but position ranking does not depend on it');
 }
 
 {
@@ -282,7 +294,17 @@ const { leaguePowerRanks, computeMyPowerRows, rosterPlayersByPosition } = contex
 	}];
 	const rows = computeMyPowerRows(leagues, ['dynasty'], 2026);
 	assert.notEqual(rows[0].proj.byPosition, null);
-	assert.deepEqual({ ...rows[0].proj.byPosition }, { QB: 1, RB: 1, WR: 1, TE: 1 }, 'a tie across two identical teams shares rank 1 everywhere');
+	const tied = { overall: 1, starters: 1, depth: 1 };
+	assert.deepEqual(
+		{
+			QB: { ...rows[0].proj.byPosition.QB },
+			RB: { ...rows[0].proj.byPosition.RB },
+			WR: { ...rows[0].proj.byPosition.WR },
+			TE: { ...rows[0].proj.byPosition.TE },
+		},
+		{ QB: tied, RB: tied, WR: tied, TE: tied },
+		'a tie across two identical teams shares rank 1 everywhere, on all three of overall/starters/depth'
+	);
 }
 
 // ---- The card ------------------------------------------------------------
@@ -290,8 +312,14 @@ const { leaguePowerRanks, computeMyPowerRows, rosterPlayersByPosition } = contex
 function domNode(tag = 'div') {
 	const n = {
 		tag, children: [], attrs: {}, cls: '', _text: '', dataset: {}, style: {}, listeners: {},
+		// A real token set, not the substring-matching placeholder this used
+		// to be: the popover's open/close toggling depends on `remove`
+		// actually removing 'hidden' rather than silently no-op'ing.
 		classList: {
-			add(c) { n.cls += ' ' + c; }, remove() {}, toggle() {}, contains: (c) => n.cls.includes(c),
+			add(c) { const t = n.cls.trim().split(/\s+/).filter(Boolean); if (!t.includes(c)) n.cls = [...t, c].join(' '); },
+			remove(c) { n.cls = n.cls.trim().split(/\s+/).filter((x) => x && x !== c).join(' '); },
+			toggle(c) { n.cls.trim().split(/\s+/).includes(c) ? this.remove(c) : this.add(c); },
+			contains: (c) => n.cls.trim().split(/\s+/).includes(c),
 		},
 		addEventListener(type, fn) { (n.listeners[type] = n.listeners[type] || []).push(fn); },
 		removeEventListener() {},
@@ -306,7 +334,16 @@ function domNode(tag = 'div') {
 		set innerHTML(v) { if (v === '') n.children.length = 0; },
 		get textContent() { return n._text; },
 		set textContent(v) { n._text = v; },
-		click() { (n.listeners.click || []).forEach((fn) => fn()); },
+		// Zeroed rect/offsets — the popover's own positioning math runs
+		// against these, but this suite checks that it opens with the right
+		// content, not where it lands on a real screen.
+		getBoundingClientRect: () => ({ top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0 }),
+		offsetWidth: 0,
+		offsetHeight: 0,
+		// A real click event always carries a stopPropagation a handler can
+		// call without checking; production code (see the Team Needs rank
+		// buttons) relies on that exactly like a browser would.
+		click() { (n.listeners.click || []).forEach((fn) => fn({ stopPropagation() {} })); },
 	};
 	return n;
 }
@@ -325,7 +362,7 @@ const domCtx = {
 		visibilityState: 'visible',
 		body: domNode(),
 	},
-	window: { addEventListener() {} },
+	window: { addEventListener() {}, innerWidth: 1024 },
 	fetch: async () => ({ ok: false, status: 503, json: async () => ({}) }),
 };
 vm.createContext(domCtx);
@@ -431,14 +468,14 @@ const labelsOf = (card) =>
 	// Alpha: RB is 2nd (worse) of the two franchises, everything else is 1st
 	// — RB is the lone worst cell and gets the highlight class.
 	const alphaCells = cellsOf('Alpha');
-	assert.deepEqual(alphaCells.map((c) => c._text), ['1', '2', '1', '1']);
+	assert.deepEqual(alphaCells.map((c) => fullText(c)), ['1', '2', '1', '1']);
 	assert.ok(alphaCells[1].cls.includes('needs-weakest'), 'RB is Alpha\'s weakest position');
 	assert.ok(!alphaCells[0].cls.includes('needs-weakest'), 'QB is not flagged');
 
 	// Bravo: our team ties for 1st at every position against the one other
 	// franchise, so there is no single worst cell to flag.
 	const bravoCells = cellsOf('Bravo');
-	assert.deepEqual(bravoCells.map((c) => c._text), ['1', '1', '1', '1']);
+	assert.deepEqual(bravoCells.map((c) => fullText(c)), ['1', '1', '1', '1']);
 	assert.ok(bravoCells.every((c) => !c.cls.includes('needs-weakest')), 'an all-tied row highlights nothing');
 
 	// The roster sub-line lives under the league name — same slot and
@@ -477,7 +514,7 @@ const labelsOf = (card) =>
 	// Charlie: fully unranked, so every position cell is TBD and carries the
 	// row's own reason as its tooltip rather than a generic per-column one.
 	const charlieCells = cellsOf('Charlie');
-	assert.ok(charlieCells.every((c) => c.cls.includes('power-tbd') && c._text === 'TBD'));
+	assert.ok(charlieCells.every((c) => c.cls.includes('power-tbd') && fullText(c) === 'TBD'));
 
 	// Default order matches computeMyPowerRows' own order (the row average),
 	// not a Team-Needs-specific resort — the two cards describe the same
@@ -558,10 +595,10 @@ function leagueAtRanks(id, name, size, ranks, players) {
 	const nameCell = row.children[0];
 	const [qbCell, rbCell, wrCell, teCell] = row.children.slice(1);
 
-	assert.equal(qbCell._text, '5');
-	assert.equal(rbCell._text, '6');
-	assert.equal(wrCell._text, '9');
-	assert.equal(teCell._text, '1');
+	assert.equal(fullText(qbCell), '5');
+	assert.equal(fullText(rbCell), '6');
+	assert.equal(fullText(wrCell), '9');
+	assert.equal(fullText(teCell), '1');
 
 	// The boundary: exactly at the average is fine, one worse is a need.
 	assert.ok(!qbCell.cls.includes('needs-weakest'), 'rank 5 of 10 sits exactly on the average — not a need');
@@ -663,6 +700,68 @@ function leagueAtRanks(id, name, size, ranks, players) {
 	const cells = row.children.slice(1);
 	assert.ok(cells.every((c) => !c.cls.includes('needs-weakest')), 'tied-everywhere: nothing is relatively worse, so nothing is flagged');
 	assert.equal(findAll(row.children[0], (c) => c.cls.trim().split(/\s+/).includes('power-players')).length, 0);
+}
+
+// ---- The Starters/Bench popover ---------------------------------------------
+//
+// Every Team Needs rank is a button, the same idiom .salary-link uses for
+// Salary by Year on the Rosters tab: clicking it reveals the Starters/Bench
+// split behind the blended number on screen, via a single shared popover
+// instance appended to <body>.
+
+{
+	// A single position (RB) built by hand, with real, distinct
+	// starters/depth splits per franchise so overall, starters and depth can
+	// all disagree — proving the popover shows the real breakdown rather
+	// than the same number three times. QB/WR/TE are trivial and identical
+	// across franchises: hasByPosition only needs them present, not
+	// interesting.
+	const flat = { score: 10, depth: 0 };
+	const league = {
+		id: 'P', name: 'Popover League', type: 'dynasty', season: '2026', franchiseId: '1',
+		power: { projections: { source: { basis: 'projections' }, teams: [
+			// Mine: 2nd by starters, 2nd by depth, but 3rd overall — the
+			// combined total a rival with a worse split still edges out.
+			{ franchiseId: '1', score: 100, depth: 10, byPosition: { QB: flat, RB: { score: 50, depth: 10 }, WR: flat, TE: flat } },
+			{ franchiseId: '2', score: 90, depth: 5, byPosition: { QB: flat, RB: { score: 80, depth: 5 }, WR: flat, TE: flat } },
+			{ franchiseId: '3', score: 80, depth: 20, byPosition: { QB: flat, RB: { score: 30, depth: 100 }, WR: flat, TE: flat } },
+		] }, ecr: null },
+	};
+
+	const card = domCtx.renderTeamNeedsCard('dynasty', ['dynasty'], [league], 2026);
+	assert.notEqual(card, null);
+	const row = findAll(card, (c) => c.tag === 'tr').filter((tr) => tr.children.some((c) => c.tag === 'td'))[0];
+	const [qbCell, rbCell] = row.children.slice(1);
+	assert.equal(fullText(rbCell), '3', "my RB's combined score+depth (60) trails both rivals (85, 130)");
+
+	const findPopover = () => domCtx.document.body.children.find((c) => c.cls.trim().split(/\s+/).includes('needs-popover'));
+	assert.equal(findPopover(), undefined, 'no popover exists before any rank is clicked');
+
+	const rbButton = rbCell.children.find((c) => c.tag === 'button');
+	assert.ok(rbButton, 'the rank is a real button, not plain text');
+	rbButton.click();
+
+	const popover = findPopover();
+	assert.ok(popover, 'clicking the rank opens the popover');
+	assert.ok(!popover.cls.includes('hidden'), 'and it is visible, not just present');
+	const title = popover.children.find((c) => c.cls.includes('needs-popover-title'));
+	assert.equal(fullText(title), 'Popover League — RB');
+	const rows = popover.children.filter((c) => c.cls.includes('needs-popover-row'));
+	assert.deepEqual(rows.map((r) => fullText(r)), ['Starters2', 'Bench2'], 'starters (rank 2) and bench (rank 2) both differ from the overall rank (3) shown on the button');
+
+	// Clicking the same button again closes it — the same toggle behavior
+	// Salary by Year uses.
+	rbButton.click();
+	assert.ok(findPopover().cls.includes('hidden'), 'a second click on the same button closes the popover');
+
+	// Clicking a different rank's button reuses the one shared instance
+	// (never a second popover element) and replaces its content.
+	const qbButton = qbCell.children.find((c) => c.tag === 'button');
+	qbButton.click();
+	const reopened = findPopover();
+	assert.ok(!reopened.cls.includes('hidden'));
+	assert.equal(domCtx.document.body.children.filter((c) => c.cls.trim().split(/\s+/).includes('needs-popover')).length, 1, 'one shared popover instance, not one per button');
+	assert.equal(fullText(reopened.children.find((c) => c.cls.includes('needs-popover-title'))), 'Popover League — QB');
 }
 
 console.log('test-team-needs: all assertions passed');
