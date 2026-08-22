@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-22T02:01:50.599Z",
+  "generatedAt": "2026-08-22T02:11:27.927Z",
   "year": "2026",
   "rankingPools": {
     "DYNASTY|PPR|ALL": {
@@ -6060,7 +6060,7 @@
           }
         ]
       },
-      "updatedAt": "2026-08-22T02:01:20.482Z",
+      "updatedAt": "2026-08-22T02:09:26.419Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -6188,6 +6188,16 @@
       ],
       "lineupError": null,
       "draftInProgress": false,
+      "rankings": {
+        "type": "DYNASTY",
+        "scoring": "PPR",
+        "position": "ALL",
+        "lastUpdated": "8/22",
+        "totalExperts": 26,
+        "matched": 32,
+        "total": 32
+      },
+      "rankingsError": null,
       "available": [
         "Chig Okonkwo",
         "Kenny Gainwell",
@@ -6210,19 +6220,8 @@
         "Mac Jones",
         "Christian Kirk"
       ],
-      "availableAt": "2026-08-22T01:51:54.463Z",
-      "rankings": {
-        "type": "DYNASTY",
-        "scoring": "PPR",
-        "position": "ALL",
-        "lastUpdated": "8/22",
-        "totalExperts": 26,
-        "matched": 32,
-        "total": 32
-      },
-      "rankingsError": null,
       "power": {
-        "computedAt": "2026-08-22T01:51:54.463Z",
+        "computedAt": "2026-08-22T02:09:24.584Z",
         "scoring": "PPR",
         "projections": {
           "source": {
@@ -6237,70 +6236,250 @@
               "score": 2032.2,
               "depth": 2398.3,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 372.5,
+                  "depth": 389.7
+                },
+                "RB": {
+                  "score": 518.7,
+                  "depth": 718.9
+                },
+                "WR": {
+                  "score": 886.8,
+                  "depth": 937.8
+                },
+                "TE": {
+                  "score": 254.3,
+                  "depth": 351.8
+                }
+              }
             },
             {
               "franchiseId": "0008",
               "score": 1998.6,
               "depth": 2548.1,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 310.9,
+                  "depth": 586.8
+                },
+                "RB": {
+                  "score": 917.2,
+                  "depth": 468.5
+                },
+                "WR": {
+                  "score": 588.4,
+                  "depth": 1228.3
+                },
+                "TE": {
+                  "score": 182,
+                  "depth": 264.5
+                }
+              }
             },
             {
               "franchiseId": "0010",
               "score": 1995.6,
               "depth": 2050.5,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 298.2,
+                  "depth": 560.8
+                },
+                "RB": {
+                  "score": 707.6,
+                  "depth": 418.7
+                },
+                "WR": {
+                  "score": 745.7,
+                  "depth": 608.7
+                },
+                "TE": {
+                  "score": 244.1,
+                  "depth": 462.3
+                }
+              }
             },
             {
               "franchiseId": "0001",
               "score": 1907.2,
               "depth": 3401.5,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 320.5,
+                  "depth": 729.3
+                },
+                "RB": {
+                  "score": 829,
+                  "depth": 585.8
+                },
+                "WR": {
+                  "score": 562.1,
+                  "depth": 1759
+                },
+                "TE": {
+                  "score": 195.7,
+                  "depth": 327.4
+                }
+              }
             },
             {
               "franchiseId": "0007",
               "score": 1759.8,
               "depth": 2103.7,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 324.9,
+                  "depth": 425.3
+                },
+                "RB": {
+                  "score": 550.4,
+                  "depth": 578.5
+                },
+                "WR": {
+                  "score": 685.2,
+                  "depth": 795.3
+                },
+                "TE": {
+                  "score": 199.2,
+                  "depth": 304.5
+                }
+              }
             },
             {
               "franchiseId": "0005",
               "score": 1737.9,
               "depth": 2490.8,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 307.5,
+                  "depth": 861.9
+                },
+                "RB": {
+                  "score": 494.1,
+                  "depth": 550.5
+                },
+                "WR": {
+                  "score": 724.9,
+                  "depth": 751
+                },
+                "TE": {
+                  "score": 211.4,
+                  "depth": 327.4
+                }
+              }
             },
             {
               "franchiseId": "0009",
               "score": 1680.2,
               "depth": 2621.2,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 323,
+                  "depth": 638.6
+                },
+                "RB": {
+                  "score": 505.5,
+                  "depth": 1090.2
+                },
+                "WR": {
+                  "score": 684.3,
+                  "depth": 673
+                },
+                "TE": {
+                  "score": 167.4,
+                  "depth": 219.3
+                }
+              }
             },
             {
               "franchiseId": "0004",
               "score": 1634.9,
               "depth": 2590,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 322.5,
+                  "depth": 762.6
+                },
+                "RB": {
+                  "score": 681.3,
+                  "depth": 310.7
+                },
+                "WR": {
+                  "score": 497,
+                  "depth": 1164.9
+                },
+                "TE": {
+                  "score": 134.1,
+                  "depth": 351.8
+                }
+              }
             },
             {
               "franchiseId": "0006",
               "score": 1565.4,
               "depth": 2140,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 299.6,
+                  "depth": 491.1
+                },
+                "RB": {
+                  "score": 404.9,
+                  "depth": 942.6
+                },
+                "WR": {
+                  "score": 682.5,
+                  "depth": 450.4
+                },
+                "TE": {
+                  "score": 178.4,
+                  "depth": 255.8
+                }
+              }
             },
             {
               "franchiseId": "0003",
               "score": 1404.3,
               "depth": 1672.9,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 302.9,
+                  "depth": 337.6
+                },
+                "RB": {
+                  "score": 365.9,
+                  "depth": 215.7
+                },
+                "WR": {
+                  "score": 555.9,
+                  "depth": 889.1
+                },
+                "TE": {
+                  "score": 179.5,
+                  "depth": 230.5
+                }
+              }
             }
           ]
         },
@@ -6318,75 +6497,256 @@
               "score": 20.7,
               "depth": 12.9,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.8,
+                  "depth": 2.4
+                },
+                "RB": {
+                  "score": 10.2,
+                  "depth": 1.4
+                },
+                "WR": {
+                  "score": 8.2,
+                  "depth": 8.2
+                },
+                "TE": {
+                  "score": 0.5,
+                  "depth": 1
+                }
+              }
             },
             {
               "franchiseId": "0002",
               "score": 18.9,
               "depth": 9,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 2.4,
+                  "depth": 1.5
+                },
+                "RB": {
+                  "score": 3.3,
+                  "depth": 2.8
+                },
+                "WR": {
+                  "score": 10.8,
+                  "depth": 4
+                },
+                "TE": {
+                  "score": 2.3,
+                  "depth": 0.8
+                }
+              }
             },
             {
               "franchiseId": "0001",
               "score": 16.9,
               "depth": 14.6,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.5,
+                  "depth": 2
+                },
+                "RB": {
+                  "score": 5.5,
+                  "depth": 3.5
+                },
+                "WR": {
+                  "score": 8.6,
+                  "depth": 7.4
+                },
+                "TE": {
+                  "score": 1.4,
+                  "depth": 1.7
+                }
+              }
             },
             {
               "franchiseId": "0010",
               "score": 16.5,
               "depth": 8.8,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.2,
+                  "depth": 1.3
+                },
+                "RB": {
+                  "score": 5.5,
+                  "depth": 2
+                },
+                "WR": {
+                  "score": 7,
+                  "depth": 3.1
+                },
+                "TE": {
+                  "score": 2.8,
+                  "depth": 2.4
+                }
+              }
             },
             {
               "franchiseId": "0007",
               "score": 15.2,
               "depth": 7.3,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 2,
+                  "depth": 1
+                },
+                "RB": {
+                  "score": 5,
+                  "depth": 2.1
+                },
+                "WR": {
+                  "score": 6.6,
+                  "depth": 3.6
+                },
+                "TE": {
+                  "score": 1.7,
+                  "depth": 0.7
+                }
+              }
             },
             {
               "franchiseId": "0009",
               "score": 15,
               "depth": 13.2,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 2.3,
+                  "depth": 2.9
+                },
+                "RB": {
+                  "score": 3.9,
+                  "depth": 4.2
+                },
+                "WR": {
+                  "score": 7.7,
+                  "depth": 4.3
+                },
+                "TE": {
+                  "score": 1,
+                  "depth": 1.9
+                }
+              }
             },
             {
               "franchiseId": "0005",
               "score": 13.9,
               "depth": 7.7,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.3,
+                  "depth": 2.1
+                },
+                "RB": {
+                  "score": 3.2,
+                  "depth": 1.8
+                },
+                "WR": {
+                  "score": 7.5,
+                  "depth": 2.8
+                },
+                "TE": {
+                  "score": 1.9,
+                  "depth": 1.1
+                }
+              }
             },
             {
               "franchiseId": "0006",
               "score": 12.3,
               "depth": 7.7,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.7,
+                  "depth": 1.2
+                },
+                "RB": {
+                  "score": 2.8,
+                  "depth": 3.4
+                },
+                "WR": {
+                  "score": 6.2,
+                  "depth": 1.7
+                },
+                "TE": {
+                  "score": 1.6,
+                  "depth": 1.4
+                }
+              }
             },
             {
               "franchiseId": "0004",
               "score": 11.7,
               "depth": 9.4,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.9,
+                  "depth": 1.8
+                },
+                "RB": {
+                  "score": 2.6,
+                  "depth": 1.6
+                },
+                "WR": {
+                  "score": 6,
+                  "depth": 5.5
+                },
+                "TE": {
+                  "score": 1.2,
+                  "depth": 0.5
+                }
+              }
             },
             {
               "franchiseId": "0003",
               "score": 8.3,
               "depth": 2.2,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.6,
+                  "depth": 0.3
+                },
+                "RB": {
+                  "score": 2.6,
+                  "depth": 0.1
+                },
+                "WR": {
+                  "score": 2.7,
+                  "depth": 1.2
+                },
+                "TE": {
+                  "score": 1.4,
+                  "depth": 0.5
+                }
+              }
             }
           ]
         },
         "projectionsUnavailable": null
-      }
+      },
+      "availableAt": "2026-08-22T02:09:24.584Z"
     },
     {
       "id": "25608",
@@ -7173,7 +7533,7 @@
           }
         ]
       },
-      "updatedAt": "2026-08-22T02:01:21.325Z",
+      "updatedAt": "2026-08-22T02:09:27.305Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -7301,6 +7661,16 @@
       ],
       "lineupError": null,
       "draftInProgress": false,
+      "rankings": {
+        "type": "DYNASTY",
+        "scoring": "PPR",
+        "position": "ALL",
+        "lastUpdated": "8/22",
+        "totalExperts": 26,
+        "matched": 32,
+        "total": 32
+      },
+      "rankingsError": null,
       "available": [
         "Chig Okonkwo",
         "Kenny Gainwell",
@@ -7321,19 +7691,8 @@
         "Justin Joly",
         "Christian Kirk"
       ],
-      "availableAt": "2026-08-22T01:51:54.463Z",
-      "rankings": {
-        "type": "DYNASTY",
-        "scoring": "PPR",
-        "position": "ALL",
-        "lastUpdated": "8/22",
-        "totalExperts": 26,
-        "matched": 32,
-        "total": 32
-      },
-      "rankingsError": null,
       "power": {
-        "computedAt": "2026-08-22T01:51:54.463Z",
+        "computedAt": "2026-08-22T02:09:24.584Z",
         "scoring": "PPR",
         "projections": {
           "source": {
@@ -7348,70 +7707,250 @@
               "score": 1876.3,
               "depth": 2691.1,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 323,
+                  "depth": 616.1
+                },
+                "RB": {
+                  "score": 468.9,
+                  "depth": 899.9
+                },
+                "WR": {
+                  "score": 893.3,
+                  "depth": 922.3
+                },
+                "TE": {
+                  "score": 191.2,
+                  "depth": 252.8
+                }
+              }
             },
             {
               "franchiseId": "0001",
               "score": 1862.4,
               "depth": 2928,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 320.5,
+                  "depth": 833.4
+                },
+                "RB": {
+                  "score": 644.9,
+                  "depth": 717.3
+                },
+                "WR": {
+                  "score": 652.9,
+                  "depth": 943.7
+                },
+                "TE": {
+                  "score": 244.1,
+                  "depth": 433.7
+                }
+              }
             },
             {
               "franchiseId": "0010",
               "score": 1828.8,
               "depth": 2047.9,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 267.7,
+                  "depth": 481.6
+                },
+                "RB": {
+                  "score": 648,
+                  "depth": 509.7
+                },
+                "WR": {
+                  "score": 717.5,
+                  "depth": 917.5
+                },
+                "TE": {
+                  "score": 195.7,
+                  "depth": 139
+                }
+              }
             },
             {
               "franchiseId": "0005",
               "score": 1811.7,
               "depth": 2776.9,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 306.2,
+                  "depth": 985.9
+                },
+                "RB": {
+                  "score": 646.6,
+                  "depth": 767.9
+                },
+                "WR": {
+                  "score": 691.5,
+                  "depth": 647.9
+                },
+                "TE": {
+                  "score": 167.4,
+                  "depth": 375.2
+                }
+              }
             },
             {
               "franchiseId": "0009",
               "score": 1759.9,
               "depth": 2070,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 372.5,
+                  "depth": 301.4
+                },
+                "RB": {
+                  "score": 513.3,
+                  "depth": 613.6
+                },
+                "WR": {
+                  "score": 662.7,
+                  "depth": 773.2
+                },
+                "TE": {
+                  "score": 211.4,
+                  "depth": 381.8
+                }
+              }
             },
             {
               "franchiseId": "0008",
               "score": 1757.4,
               "depth": 2776.7,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 298.2,
+                  "depth": 541.1
+                },
+                "RB": {
+                  "score": 534.7,
+                  "depth": 390.9
+                },
+                "WR": {
+                  "score": 670.3,
+                  "depth": 1485.7
+                },
+                "TE": {
+                  "score": 254.3,
+                  "depth": 358.9
+                }
+              }
             },
             {
               "franchiseId": "0002",
               "score": 1738.8,
               "depth": 2655.6,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 310.9,
+                  "depth": 505.3
+                },
+                "RB": {
+                  "score": 474.3,
+                  "depth": 704.4
+                },
+                "WR": {
+                  "score": 798.9,
+                  "depth": 1255.6
+                },
+                "TE": {
+                  "score": 154.7,
+                  "depth": 190.2
+                }
+              }
             },
             {
               "franchiseId": "0004",
               "score": 1730.3,
               "depth": 1750.6,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 324.9,
+                  "depth": 323
+                },
+                "RB": {
+                  "score": 426.9,
+                  "depth": 313.9
+                },
+                "WR": {
+                  "score": 800.1,
+                  "depth": 753.1
+                },
+                "TE": {
+                  "score": 178.4,
+                  "depth": 360.7
+                }
+              }
             },
             {
               "franchiseId": "0006",
               "score": 1649.8,
               "depth": 2296,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 322.5,
+                  "depth": 558.4
+                },
+                "RB": {
+                  "score": 489.6,
+                  "depth": 451.1
+                },
+                "WR": {
+                  "score": 662,
+                  "depth": 873.9
+                },
+                "TE": {
+                  "score": 175.6,
+                  "depth": 412.6
+                }
+              }
             },
             {
               "franchiseId": "0007",
               "score": 1636.5,
               "depth": 2328.2,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 287.7,
+                  "depth": 448.2
+                },
+                "RB": {
+                  "score": 509.6,
+                  "depth": 821.1
+                },
+                "WR": {
+                  "score": 640,
+                  "depth": 728
+                },
+                "TE": {
+                  "score": 199.2,
+                  "depth": 330.9
+                }
+              }
             }
           ]
         },
@@ -7429,75 +7968,256 @@
               "score": 17.8,
               "depth": 12.2,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 2.3,
+                  "depth": 2.7
+                },
+                "RB": {
+                  "score": 3.1,
+                  "depth": 3.8
+                },
+                "WR": {
+                  "score": 10.9,
+                  "depth": 3.9
+                },
+                "TE": {
+                  "score": 1.5,
+                  "depth": 1.7
+                }
+              }
             },
             {
               "franchiseId": "0010",
               "score": 16.2,
               "depth": 6.3,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.1,
+                  "depth": 1.6
+                },
+                "RB": {
+                  "score": 6,
+                  "depth": 1.4
+                },
+                "WR": {
+                  "score": 7.8,
+                  "depth": 3.3
+                },
+                "TE": {
+                  "score": 1.4,
+                  "depth": 0
+                }
+              }
             },
             {
               "franchiseId": "0008",
               "score": 15.8,
               "depth": 15.4,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.2,
+                  "depth": 1.4
+                },
+                "RB": {
+                  "score": 5.6,
+                  "depth": 1.3
+                },
+                "WR": {
+                  "score": 6.6,
+                  "depth": 10.7
+                },
+                "TE": {
+                  "score": 2.3,
+                  "depth": 2
+                }
+              }
             },
             {
               "franchiseId": "0004",
               "score": 15.4,
               "depth": 6.4,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 2,
+                  "depth": 2.1
+                },
+                "RB": {
+                  "score": 2.9,
+                  "depth": 1.2
+                },
+                "WR": {
+                  "score": 8.9,
+                  "depth": 2.5
+                },
+                "TE": {
+                  "score": 1.6,
+                  "depth": 0.6
+                }
+              }
             },
             {
               "franchiseId": "0005",
               "score": 15,
               "depth": 8.2,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.1,
+                  "depth": 2.5
+                },
+                "RB": {
+                  "score": 6.6,
+                  "depth": 3.2
+                },
+                "WR": {
+                  "score": 6.4,
+                  "depth": 1.3
+                },
+                "TE": {
+                  "score": 0.8,
+                  "depth": 1.2
+                }
+              }
             },
             {
               "franchiseId": "0001",
               "score": 14.9,
               "depth": 13,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.5,
+                  "depth": 2.4
+                },
+                "RB": {
+                  "score": 4.1,
+                  "depth": 3.4
+                },
+                "WR": {
+                  "score": 6.4,
+                  "depth": 5.1
+                },
+                "TE": {
+                  "score": 2.8,
+                  "depth": 2.2
+                }
+              }
             },
             {
               "franchiseId": "0002",
               "score": 14,
               "depth": 10.6,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.8,
+                  "depth": 0.9
+                },
+                "RB": {
+                  "score": 2.7,
+                  "depth": 1.9
+                },
+                "WR": {
+                  "score": 8.4,
+                  "depth": 6.9
+                },
+                "TE": {
+                  "score": 1,
+                  "depth": 0.9
+                }
+              }
             },
             {
               "franchiseId": "0007",
               "score": 13.9,
               "depth": 7.9,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 0.9,
+                  "depth": 0.8
+                },
+                "RB": {
+                  "score": 6,
+                  "depth": 3.4
+                },
+                "WR": {
+                  "score": 5.3,
+                  "depth": 2
+                },
+                "TE": {
+                  "score": 1.7,
+                  "depth": 1.7
+                }
+              }
             },
             {
               "franchiseId": "0009",
               "score": 12.7,
               "depth": 7.4,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 2.4,
+                  "depth": 1.7
+                },
+                "RB": {
+                  "score": 2.9,
+                  "depth": 2.4
+                },
+                "WR": {
+                  "score": 5.4,
+                  "depth": 2.7
+                },
+                "TE": {
+                  "score": 1.9,
+                  "depth": 0.6
+                }
+              }
             },
             {
               "franchiseId": "0006",
               "score": 12.4,
               "depth": 8.4,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.9,
+                  "depth": 1.7
+                },
+                "RB": {
+                  "score": 3.8,
+                  "depth": 1.7
+                },
+                "WR": {
+                  "score": 5.7,
+                  "depth": 3.6
+                },
+                "TE": {
+                  "score": 1.1,
+                  "depth": 1.4
+                }
+              }
             }
           ]
         },
         "projectionsUnavailable": null
-      }
+      },
+      "availableAt": "2026-08-22T02:09:24.584Z"
     },
     {
       "id": "23545",
@@ -8307,7 +9027,7 @@
           }
         ]
       },
-      "updatedAt": "2026-08-22T02:01:22.311Z",
+      "updatedAt": "2026-08-22T02:09:28.252Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -8455,15 +9175,6 @@
       ],
       "lineupError": null,
       "draftInProgress": false,
-      "available": [
-        "Chig Okonkwo",
-        "Kenny Gainwell",
-        "Cade Otton",
-        "Michael Mayer",
-        "Mac Jones",
-        "Christian Kirk"
-      ],
-      "availableAt": "2026-08-22T01:51:54.463Z",
       "rankings": {
         "type": "DYNASTY",
         "scoring": "PPR",
@@ -8474,8 +9185,16 @@
         "total": 31
       },
       "rankingsError": null,
+      "available": [
+        "Chig Okonkwo",
+        "Kenny Gainwell",
+        "Cade Otton",
+        "Michael Mayer",
+        "Mac Jones",
+        "Christian Kirk"
+      ],
       "power": {
-        "computedAt": "2026-08-22T01:51:54.463Z",
+        "computedAt": "2026-08-22T02:09:24.584Z",
         "scoring": "PPR",
         "projections": {
           "source": {
@@ -8490,84 +9209,300 @@
               "score": 1845.7,
               "depth": 1618.1,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 302.9,
+                  "depth": 287.7
+                },
+                "RB": {
+                  "score": 630.8,
+                  "depth": 116
+                },
+                "WR": {
+                  "score": 736.3,
+                  "depth": 1016.5
+                },
+                "TE": {
+                  "score": 175.6,
+                  "depth": 198
+                }
+              }
             },
             {
               "franchiseId": "0002",
               "score": 1788.8,
               "depth": 2398.2,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 266.2,
+                  "depth": 646.4
+                },
+                "RB": {
+                  "score": 580.2,
+                  "depth": 1026.5
+                },
+                "WR": {
+                  "score": 792,
+                  "depth": 609.7
+                },
+                "TE": {
+                  "score": 150.4,
+                  "depth": 115.6
+                }
+              }
             },
             {
               "franchiseId": "0006",
               "score": 1773.2,
               "depth": 2179.4,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 324.9,
+                  "depth": 388.9
+                },
+                "RB": {
+                  "score": 472,
+                  "depth": 654.2
+                },
+                "WR": {
+                  "score": 811.3,
+                  "depth": 829.2
+                },
+                "TE": {
+                  "score": 165,
+                  "depth": 307.1
+                }
+              }
             },
             {
               "franchiseId": "0001",
               "score": 1766.8,
               "depth": 1831.5,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 323,
+                  "depth": 317.4
+                },
+                "RB": {
+                  "score": 411,
+                  "depth": 512.3
+                },
+                "WR": {
+                  "score": 788.8,
+                  "depth": 627.9
+                },
+                "TE": {
+                  "score": 244.1,
+                  "depth": 374
+                }
+              }
             },
             {
               "franchiseId": "0010",
               "score": 1753.1,
               "depth": 1821.9,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 310.9,
+                  "depth": 388
+                },
+                "RB": {
+                  "score": 545.1,
+                  "depth": 404.2
+                },
+                "WR": {
+                  "score": 717.7,
+                  "depth": 738.6
+                },
+                "TE": {
+                  "score": 179.4,
+                  "depth": 291.2
+                }
+              }
             },
             {
               "franchiseId": "0003",
               "score": 1750.1,
               "depth": 1871.9,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 306.2,
+                  "depth": 601
+                },
+                "RB": {
+                  "score": 509.6,
+                  "depth": 482.7
+                },
+                "WR": {
+                  "score": 722.9,
+                  "depth": 369
+                },
+                "TE": {
+                  "score": 211.4,
+                  "depth": 419.2
+                }
+              }
             },
             {
               "franchiseId": "0012",
               "score": 1737.7,
               "depth": 1997.1,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 322.5,
+                  "depth": 565.6
+                },
+                "RB": {
+                  "score": 593.2,
+                  "depth": 350.6
+                },
+                "WR": {
+                  "score": 667.3,
+                  "depth": 673.9
+                },
+                "TE": {
+                  "score": 154.7,
+                  "depth": 406.9
+                }
+              }
             },
             {
               "franchiseId": "0008",
               "score": 1695,
               "depth": 2241.6,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 285.3,
+                  "depth": 495.6
+                },
+                "RB": {
+                  "score": 557,
+                  "depth": 450.1
+                },
+                "WR": {
+                  "score": 598.4,
+                  "depth": 1024.2
+                },
+                "TE": {
+                  "score": 254.3,
+                  "depth": 271.8
+                }
+              }
             },
             {
               "franchiseId": "0011",
               "score": 1671.2,
               "depth": 1882.4,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 372.5,
+                  "depth": 329.8
+                },
+                "RB": {
+                  "score": 549.1,
+                  "depth": 468.4
+                },
+                "WR": {
+                  "score": 582.3,
+                  "depth": 847.8
+                },
+                "TE": {
+                  "score": 167.4,
+                  "depth": 236.4
+                }
+              }
             },
             {
               "franchiseId": "0009",
               "score": 1627.8,
               "depth": 1493.3,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 281.9,
+                  "depth": 276.8
+                },
+                "RB": {
+                  "score": 461.5,
+                  "depth": 373.2
+                },
+                "WR": {
+                  "score": 685.3,
+                  "depth": 702.7
+                },
+                "TE": {
+                  "score": 199.2,
+                  "depth": 140.7
+                }
+              }
             },
             {
               "franchiseId": "0007",
               "score": 1513.5,
               "depth": 2296.9,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 307.5,
+                  "depth": 576.4
+                },
+                "RB": {
+                  "score": 389.2,
+                  "depth": 715.4
+                },
+                "WR": {
+                  "score": 637.3,
+                  "depth": 736.8
+                },
+                "TE": {
+                  "score": 179.5,
+                  "depth": 268.3
+                }
+              }
             },
             {
               "franchiseId": "0004",
               "score": 1449.5,
               "depth": 1830.3,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 232.4,
+                  "depth": 620.2
+                },
+                "RB": {
+                  "score": 415.3,
+                  "depth": 423.3
+                },
+                "WR": {
+                  "score": 610.6,
+                  "depth": 513
+                },
+                "TE": {
+                  "score": 191.2,
+                  "depth": 273.9
+                }
+              }
             }
           ]
         },
@@ -8585,89 +9520,306 @@
               "score": 16.3,
               "depth": 5.8,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.7,
+                  "depth": 3.1
+                },
+                "RB": {
+                  "score": 6,
+                  "depth": 1
+                },
+                "WR": {
+                  "score": 6.7,
+                  "depth": 1.2
+                },
+                "TE": {
+                  "score": 1.9,
+                  "depth": 0.6
+                }
+              }
             },
             {
               "franchiseId": "0001",
               "score": 15.9,
               "depth": 10.3,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 2.3,
+                  "depth": 1
+                },
+                "RB": {
+                  "score": 1.9,
+                  "depth": 1.4
+                },
+                "WR": {
+                  "score": 8.9,
+                  "depth": 4.9
+                },
+                "TE": {
+                  "score": 2.8,
+                  "depth": 3
+                }
+              }
             },
             {
               "franchiseId": "0012",
               "score": 15.6,
               "depth": 7.6,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.9,
+                  "depth": 1.8
+                },
+                "RB": {
+                  "score": 5.5,
+                  "depth": 1.7
+                },
+                "WR": {
+                  "score": 7,
+                  "depth": 2.9
+                },
+                "TE": {
+                  "score": 1.2,
+                  "depth": 1.2
+                }
+              }
             },
             {
               "franchiseId": "0005",
               "score": 14.3,
               "depth": 6.2,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.6,
+                  "depth": 0.9
+                },
+                "RB": {
+                  "score": 6.2,
+                  "depth": 0
+                },
+                "WR": {
+                  "score": 5.6,
+                  "depth": 4.5
+                },
+                "TE": {
+                  "score": 0.9,
+                  "depth": 0.9
+                }
+              }
             },
             {
               "franchiseId": "0006",
               "score": 14.3,
               "depth": 6.9,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 2,
+                  "depth": 1.4
+                },
+                "RB": {
+                  "score": 2.6,
+                  "depth": 2
+                },
+                "WR": {
+                  "score": 8.6,
+                  "depth": 2.9
+                },
+                "TE": {
+                  "score": 1.1,
+                  "depth": 0.7
+                }
+              }
             },
             {
               "franchiseId": "0002",
               "score": 13.8,
               "depth": 8.6,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 0.7,
+                  "depth": 0.8
+                },
+                "RB": {
+                  "score": 3.6,
+                  "depth": 5
+                },
+                "WR": {
+                  "score": 8.4,
+                  "depth": 2.4
+                },
+                "TE": {
+                  "score": 1,
+                  "depth": 0.4
+                }
+              }
             },
             {
               "franchiseId": "0010",
               "score": 13.5,
               "depth": 5.7,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.8,
+                  "depth": 0.9
+                },
+                "RB": {
+                  "score": 3.9,
+                  "depth": 1.5
+                },
+                "WR": {
+                  "score": 7.1,
+                  "depth": 2.6
+                },
+                "TE": {
+                  "score": 0.6,
+                  "depth": 0.6
+                }
+              }
             },
             {
               "franchiseId": "0007",
               "score": 13.3,
               "depth": 6.8,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.3,
+                  "depth": 1.7
+                },
+                "RB": {
+                  "score": 2.4,
+                  "depth": 2.5
+                },
+                "WR": {
+                  "score": 8.2,
+                  "depth": 1
+                },
+                "TE": {
+                  "score": 1.4,
+                  "depth": 1.5
+                }
+              }
             },
             {
               "franchiseId": "0011",
               "score": 12,
               "depth": 7.5,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 2.4,
+                  "depth": 1.5
+                },
+                "RB": {
+                  "score": 4.6,
+                  "depth": 1.7
+                },
+                "WR": {
+                  "score": 4.1,
+                  "depth": 4
+                },
+                "TE": {
+                  "score": 0.8,
+                  "depth": 0.3
+                }
+              }
             },
             {
               "franchiseId": "0004",
               "score": 11.9,
               "depth": 3.5,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 0.7,
+                  "depth": 0.5
+                },
+                "RB": {
+                  "score": 4.1,
+                  "depth": 0.7
+                },
+                "WR": {
+                  "score": 5.6,
+                  "depth": 1.9
+                },
+                "TE": {
+                  "score": 1.5,
+                  "depth": 0.5
+                }
+              }
             },
             {
               "franchiseId": "0008",
               "score": 11.4,
               "depth": 7.3,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 0.8,
+                  "depth": 1.5
+                },
+                "RB": {
+                  "score": 4.5,
+                  "depth": 1.8
+                },
+                "WR": {
+                  "score": 3.8,
+                  "depth": 2.6
+                },
+                "TE": {
+                  "score": 2.3,
+                  "depth": 1.4
+                }
+              }
             },
             {
               "franchiseId": "0009",
               "score": 11.2,
               "depth": 5.3,
               "filled": 7,
-              "slotCount": 7
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.1,
+                  "depth": 0.8
+                },
+                "RB": {
+                  "score": 1.7,
+                  "depth": 1.3
+                },
+                "WR": {
+                  "score": 6.7,
+                  "depth": 2.8
+                },
+                "TE": {
+                  "score": 1.7,
+                  "depth": 0.4
+                }
+              }
             }
           ]
         },
         "projectionsUnavailable": null
-      }
+      },
+      "availableAt": "2026-08-22T02:09:24.584Z"
     },
     {
       "id": "35217",
@@ -9248,7 +10400,7 @@
           }
         ]
       },
-      "updatedAt": "2026-08-22T02:01:23.632Z",
+      "updatedAt": "2026-08-22T02:09:29.576Z",
       "error": null,
       "tags": [
         "Best Ball"
@@ -9385,29 +10537,6 @@
       "scoring": null,
       "scoringError": "No live scoring available yet",
       "draftInProgress": false,
-      "available": [
-        "Kenny Gainwell",
-        "Chig Okonkwo",
-        "Jalen Nailor",
-        "Dontayvion Wicks",
-        "Keenan Allen",
-        "Isaac TeSlaa",
-        "Rashod Bateman",
-        "Geno Smith",
-        "Justice Hill",
-        "Chimere Dike",
-        "George Holani",
-        "Greg Dulcich",
-        "Isaiah Davis",
-        "Tory Horton",
-        "Tua Tagovailoa",
-        "Christian Kirk",
-        "LeQuint Allen Jr.",
-        "Jordan James",
-        "Samaje Perine",
-        "Cyrus Allen"
-      ],
-      "availableAt": "2026-08-21T13:12:23.165Z",
       "rankings": {
         "type": "DRAFT",
         "scoring": "PPR",
@@ -9418,8 +10547,30 @@
         "total": 24
       },
       "rankingsError": null,
+      "available": [
+        "Kenny Gainwell",
+        "Chig Okonkwo",
+        "Jalen Nailor",
+        "Dontayvion Wicks",
+        "Keenan Allen",
+        "Isaac TeSlaa",
+        "Rashod Bateman",
+        "Geno Smith",
+        "Justice Hill",
+        "George Holani",
+        "Chimere Dike",
+        "Greg Dulcich",
+        "Isaiah Davis",
+        "Tory Horton",
+        "Tua Tagovailoa",
+        "Christian Kirk",
+        "LeQuint Allen Jr.",
+        "Jordan James",
+        "Samaje Perine",
+        "Kirk Cousins"
+      ],
       "power": {
-        "computedAt": "2026-08-21T13:12:23.165Z",
+        "computedAt": "2026-08-22T02:09:24.584Z",
         "scoring": "PPR",
         "projections": {
           "source": {
@@ -9434,84 +10585,300 @@
               "score": 2153.6,
               "depth": 1787.5,
               "filled": 8,
-              "slotCount": 8
+              "slotCount": 8,
+              "byPosition": {
+                "QB": {
+                  "score": 307.5,
+                  "depth": 396.9
+                },
+                "RB": {
+                  "score": 562.5,
+                  "depth": 472.2
+                },
+                "WR": {
+                  "score": 1087.9,
+                  "depth": 677.8
+                },
+                "TE": {
+                  "score": 195.7,
+                  "depth": 240.7
+                }
+              }
             },
             {
               "franchiseId": "0004",
               "score": 2145,
-              "depth": 1856.3,
+              "depth": 1867.5,
               "filled": 8,
-              "slotCount": 8
+              "slotCount": 8,
+              "byPosition": {
+                "QB": {
+                  "score": 322.5,
+                  "depth": 570.8
+                },
+                "RB": {
+                  "score": 503.4,
+                  "depth": 658.3
+                },
+                "WR": {
+                  "score": 853.4,
+                  "depth": 562.6
+                },
+                "TE": {
+                  "score": 465.7,
+                  "depth": 75.9
+                }
+              }
             },
             {
               "franchiseId": "0008",
               "score": 2089.6,
               "depth": 1409.9,
               "filled": 8,
-              "slotCount": 8
+              "slotCount": 8,
+              "byPosition": {
+                "QB": {
+                  "score": 372.5,
+                  "depth": 543.3
+                },
+                "RB": {
+                  "score": 868.3,
+                  "depth": 221.4
+                },
+                "WR": {
+                  "score": 721.6,
+                  "depth": 474.5
+                },
+                "TE": {
+                  "score": 127.3,
+                  "depth": 170.6
+                }
+              }
             },
             {
               "franchiseId": "0009",
               "score": 2055.2,
               "depth": 1414.2,
               "filled": 8,
-              "slotCount": 8
+              "slotCount": 8,
+              "byPosition": {
+                "QB": {
+                  "score": 274.6,
+                  "depth": 255.7
+                },
+                "RB": {
+                  "score": 841.4,
+                  "depth": 329.5
+                },
+                "WR": {
+                  "score": 748,
+                  "depth": 508.8
+                },
+                "TE": {
+                  "score": 191.2,
+                  "depth": 320.2
+                }
+              }
             },
             {
               "franchiseId": "0010",
               "score": 1982.5,
-              "depth": 1569.8,
+              "depth": 1591.9,
               "filled": 8,
-              "slotCount": 8
+              "slotCount": 8,
+              "byPosition": {
+                "QB": {
+                  "score": 324.9,
+                  "depth": 294
+                },
+                "RB": {
+                  "score": 766.1,
+                  "depth": 317.2
+                },
+                "WR": {
+                  "score": 724.3,
+                  "depth": 584.4
+                },
+                "TE": {
+                  "score": 167.2,
+                  "depth": 396.4
+                }
+              }
             },
             {
               "franchiseId": "0001",
               "score": 1828.2,
-              "depth": 1576.6,
+              "depth": 1601.2,
               "filled": 8,
-              "slotCount": 8
+              "slotCount": 8,
+              "byPosition": {
+                "QB": {
+                  "score": 323,
+                  "depth": 785.1
+                },
+                "RB": {
+                  "score": 441.9,
+                  "depth": 254.5
+                },
+                "WR": {
+                  "score": 685.8,
+                  "depth": 537.1
+                },
+                "TE": {
+                  "score": 377.6,
+                  "depth": 24.6
+                }
+              }
             },
             {
               "franchiseId": "0002",
               "score": 1809.6,
-              "depth": 2054.3,
+              "depth": 2024.3,
               "filled": 8,
-              "slotCount": 8
+              "slotCount": 8,
+              "byPosition": {
+                "QB": {
+                  "score": 302.9,
+                  "depth": 298.2
+                },
+                "RB": {
+                  "score": 745.1,
+                  "depth": 206.2
+                },
+                "WR": {
+                  "score": 637.2,
+                  "depth": 1173.2
+                },
+                "TE": {
+                  "score": 124.4,
+                  "depth": 346.7
+                }
+              }
             },
             {
               "franchiseId": "0007",
               "score": 1789.8,
               "depth": 1605.9,
               "filled": 8,
-              "slotCount": 8
+              "slotCount": 8,
+              "byPosition": {
+                "QB": {
+                  "score": 281.9,
+                  "depth": 289.5
+                },
+                "RB": {
+                  "score": 509.6,
+                  "depth": 519.6
+                },
+                "WR": {
+                  "score": 881.2,
+                  "depth": 587.2
+                },
+                "TE": {
+                  "score": 117.1,
+                  "depth": 209.6
+                }
+              }
             },
             {
               "franchiseId": "0006",
               "score": 1787.1,
               "depth": 1636.6,
               "filled": 8,
-              "slotCount": 8
+              "slotCount": 8,
+              "byPosition": {
+                "QB": {
+                  "score": 310.9,
+                  "depth": 280.2
+                },
+                "RB": {
+                  "score": 661.8,
+                  "depth": 271.8
+                },
+                "WR": {
+                  "score": 570.3,
+                  "depth": 729.5
+                },
+                "TE": {
+                  "score": 244.1,
+                  "depth": 355.1
+                }
+              }
             },
             {
               "franchiseId": "0005",
               "score": 1745.1,
               "depth": 1316.7,
               "filled": 8,
-              "slotCount": 8
+              "slotCount": 8,
+              "byPosition": {
+                "QB": {
+                  "score": 301.4,
+                  "depth": 267.7
+                },
+                "RB": {
+                  "score": 399.5,
+                  "depth": 547.3
+                },
+                "WR": {
+                  "score": 883.9,
+                  "depth": 266.6
+                },
+                "TE": {
+                  "score": 160.2,
+                  "depth": 235.2
+                }
+              }
             },
             {
               "franchiseId": "0011",
               "score": 1725.7,
               "depth": 1779.9,
               "filled": 8,
-              "slotCount": 8
+              "slotCount": 8,
+              "byPosition": {
+                "QB": {
+                  "score": 287.7,
+                  "depth": 360.3
+                },
+                "RB": {
+                  "score": 673.6,
+                  "depth": 423.1
+                },
+                "WR": {
+                  "score": 582.3,
+                  "depth": 590.8
+                },
+                "TE": {
+                  "score": 182,
+                  "depth": 405.7
+                }
+              }
             },
             {
               "franchiseId": "0003",
               "score": 1588,
               "depth": 1404.7,
               "filled": 8,
-              "slotCount": 8
+              "slotCount": 8,
+              "byPosition": {
+                "QB": {
+                  "score": 306.2,
+                  "depth": 525
+                },
+                "RB": {
+                  "score": 396.3,
+                  "depth": 156.1
+                },
+                "WR": {
+                  "score": 553.1,
+                  "depth": 551.5
+                },
+                "TE": {
+                  "score": 332.4,
+                  "depth": 172.1
+                }
+              }
             }
           ]
         },
@@ -9529,89 +10896,306 @@
               "score": 21.6,
               "depth": 5.5,
               "filled": 8,
-              "slotCount": 8
+              "slotCount": 8,
+              "byPosition": {
+                "QB": {
+                  "score": 1.3,
+                  "depth": 1.1
+                },
+                "RB": {
+                  "score": 6.4,
+                  "depth": 2.3
+                },
+                "WR": {
+                  "score": 12.7,
+                  "depth": 1.9
+                },
+                "TE": {
+                  "score": 1.3,
+                  "depth": 0.2
+                }
+              }
             },
             {
               "franchiseId": "0004",
               "score": 20.4,
               "depth": 8.5,
               "filled": 8,
-              "slotCount": 8
+              "slotCount": 8,
+              "byPosition": {
+                "QB": {
+                  "score": 1.7,
+                  "depth": 1.8
+                },
+                "RB": {
+                  "score": 4.3,
+                  "depth": 4.3
+                },
+                "WR": {
+                  "score": 9.8,
+                  "depth": 2.3
+                },
+                "TE": {
+                  "score": 4.7,
+                  "depth": 0
+                }
+              }
             },
             {
               "franchiseId": "0008",
               "score": 19.4,
               "depth": 4,
               "filled": 8,
-              "slotCount": 8
+              "slotCount": 8,
+              "byPosition": {
+                "QB": {
+                  "score": 2.4,
+                  "depth": 1.1
+                },
+                "RB": {
+                  "score": 8.5,
+                  "depth": 1.4
+                },
+                "WR": {
+                  "score": 8.2,
+                  "depth": 1.4
+                },
+                "TE": {
+                  "score": 0.3,
+                  "depth": 0.1
+                }
+              }
             },
             {
               "franchiseId": "0009",
               "score": 18.5,
               "depth": 7.5,
               "filled": 8,
-              "slotCount": 8
+              "slotCount": 8,
+              "byPosition": {
+                "QB": {
+                  "score": 0.7,
+                  "depth": 0.6
+                },
+                "RB": {
+                  "score": 8.4,
+                  "depth": 2.2
+                },
+                "WR": {
+                  "score": 8,
+                  "depth": 3
+                },
+                "TE": {
+                  "score": 1.4,
+                  "depth": 1.7
+                }
+              }
             },
             {
               "franchiseId": "0010",
-              "score": 17.6,
+              "score": 17.5,
               "depth": 5.6,
               "filled": 8,
-              "slotCount": 8
+              "slotCount": 8,
+              "byPosition": {
+                "QB": {
+                  "score": 2.2,
+                  "depth": 1
+                },
+                "RB": {
+                  "score": 6.5,
+                  "depth": 1.7
+                },
+                "WR": {
+                  "score": 8,
+                  "depth": 2.3
+                },
+                "TE": {
+                  "score": 0.8,
+                  "depth": 0.6
+                }
+              }
             },
             {
               "franchiseId": "0001",
               "score": 14.6,
               "depth": 6,
               "filled": 8,
-              "slotCount": 8
+              "slotCount": 8,
+              "byPosition": {
+                "QB": {
+                  "score": 2,
+                  "depth": 2.7
+                },
+                "RB": {
+                  "score": 2.8,
+                  "depth": 1.1
+                },
+                "WR": {
+                  "score": 6.8,
+                  "depth": 2.2
+                },
+                "TE": {
+                  "score": 3,
+                  "depth": 0
+                }
+              }
             },
             {
               "franchiseId": "0006",
               "score": 13.7,
-              "depth": 7,
+              "depth": 7.1,
               "filled": 8,
-              "slotCount": 8
+              "slotCount": 8,
+              "byPosition": {
+                "QB": {
+                  "score": 1.8,
+                  "depth": 0.9
+                },
+                "RB": {
+                  "score": 4.9,
+                  "depth": 1.6
+                },
+                "WR": {
+                  "score": 4.2,
+                  "depth": 2.6
+                },
+                "TE": {
+                  "score": 2.9,
+                  "depth": 1.9
+                }
+              }
             },
             {
               "franchiseId": "0002",
               "score": 13.6,
               "depth": 9.3,
               "filled": 8,
-              "slotCount": 8
+              "slotCount": 8,
+              "byPosition": {
+                "QB": {
+                  "score": 1.1,
+                  "depth": 1
+                },
+                "RB": {
+                  "score": 6.5,
+                  "depth": 1.8
+                },
+                "WR": {
+                  "score": 5.6,
+                  "depth": 5.8
+                },
+                "TE": {
+                  "score": 0.4,
+                  "depth": 0.6
+                }
+              }
             },
             {
               "franchiseId": "0005",
               "score": 13.5,
-              "depth": 5.1,
+              "depth": 5,
               "filled": 8,
-              "slotCount": 8
+              "slotCount": 8,
+              "byPosition": {
+                "QB": {
+                  "score": 1.5,
+                  "depth": 0.9
+                },
+                "RB": {
+                  "score": 2.6,
+                  "depth": 3.1
+                },
+                "WR": {
+                  "score": 8.4,
+                  "depth": 0.4
+                },
+                "TE": {
+                  "score": 0.9,
+                  "depth": 0.7
+                }
+              }
             },
             {
               "franchiseId": "0007",
               "score": 13.5,
               "depth": 6.7,
               "filled": 8,
-              "slotCount": 8
+              "slotCount": 8,
+              "byPosition": {
+                "QB": {
+                  "score": 0.9,
+                  "depth": 0.7
+                },
+                "RB": {
+                  "score": 4.4,
+                  "depth": 2.7
+                },
+                "WR": {
+                  "score": 8.1,
+                  "depth": 3.2
+                },
+                "TE": {
+                  "score": 0.2,
+                  "depth": 0.1
+                }
+              }
             },
             {
               "franchiseId": "0011",
               "score": 12.1,
               "depth": 6.6,
               "filled": 8,
-              "slotCount": 8
+              "slotCount": 8,
+              "byPosition": {
+                "QB": {
+                  "score": 1,
+                  "depth": 0.8
+                },
+                "RB": {
+                  "score": 5.7,
+                  "depth": 2.1
+                },
+                "WR": {
+                  "score": 4.4,
+                  "depth": 2.4
+                },
+                "TE": {
+                  "score": 1.1,
+                  "depth": 1.4
+                }
+              }
             },
             {
               "franchiseId": "0003",
               "score": 10,
               "depth": 3.9,
               "filled": 8,
-              "slotCount": 8
+              "slotCount": 8,
+              "byPosition": {
+                "QB": {
+                  "score": 1.4,
+                  "depth": 1.5
+                },
+                "RB": {
+                  "score": 2.9,
+                  "depth": 0.8
+                },
+                "WR": {
+                  "score": 4,
+                  "depth": 1
+                },
+                "TE": {
+                  "score": 1.8,
+                  "depth": 0.6
+                }
+              }
             }
           ]
         },
         "projectionsUnavailable": null
-      }
+      },
+      "availableAt": "2026-08-22T02:09:24.584Z"
     },
     {
       "id": "34850",
@@ -10271,7 +11855,7 @@
         "ir": 50,
         "position": []
       },
-      "updatedAt": "2026-08-22T02:01:24.618Z",
+      "updatedAt": "2026-08-22T02:09:30.488Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -10409,26 +11993,6 @@
       "scoring": null,
       "scoringError": "No live scoring available yet",
       "draftInProgress": false,
-      "available": [
-        "Kenny Gainwell",
-        "Chig Okonkwo",
-        "Calvin Ridley",
-        "Keenan Allen",
-        "James Conner",
-        "Kirk Cousins",
-        "George Holani",
-        "Cooper Kupp",
-        "Ollie Gordon II",
-        "Chris Brooks",
-        "Isaiah Davis",
-        "Chimere Dike",
-        "Samaje Perine",
-        "LeQuint Allen Jr.",
-        "Tyquan Thornton",
-        "Darius Slayton",
-        "Greg Dulcich"
-      ],
-      "availableAt": "2026-08-21T16:52:37.699Z",
       "rankings": {
         "type": "DRAFT",
         "scoring": "HALF",
@@ -10439,8 +12003,28 @@
         "total": 27
       },
       "rankingsError": null,
+      "available": [
+        "Kenny Gainwell",
+        "Chig Okonkwo",
+        "Calvin Ridley",
+        "Keenan Allen",
+        "James Conner",
+        "Kirk Cousins",
+        "Cooper Kupp",
+        "George Holani",
+        "Ollie Gordon II",
+        "Isaiah Davis",
+        "Chris Brooks",
+        "Chimere Dike",
+        "Samaje Perine",
+        "LeQuint Allen Jr.",
+        "Tyquan Thornton",
+        "Darius Slayton",
+        "Greg Dulcich",
+        "Najee Harris"
+      ],
       "power": {
-        "computedAt": "2026-08-21T16:52:37.699Z",
+        "computedAt": "2026-08-22T02:09:24.584Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -10455,84 +12039,300 @@
               "score": 2262.5,
               "depth": 1163.4,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 936.2,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 524.7,
+                  "depth": 368
+                },
+                "WR": {
+                  "score": 641.9,
+                  "depth": 535.5
+                },
+                "TE": {
+                  "score": 159.7,
+                  "depth": 259.9
+                }
+              }
             },
             {
               "franchiseId": "0002",
               "score": 2235.9,
               "depth": 1292.3,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 643.4,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 577.2,
+                  "depth": 481.1
+                },
+                "WR": {
+                  "score": 619.7,
+                  "depth": 557
+                },
+                "TE": {
+                  "score": 395.6,
+                  "depth": 254.3
+                }
+              }
             },
             {
               "franchiseId": "0012",
               "score": 2128.4,
-              "depth": 942.7,
+              "depth": 943.5,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 608.1,
+                  "depth": 32.6
+                },
+                "RB": {
+                  "score": 597,
+                  "depth": 211.4
+                },
+                "WR": {
+                  "score": 751.4,
+                  "depth": 331.3
+                },
+                "TE": {
+                  "score": 171.9,
+                  "depth": 368.2
+                }
+              }
             },
             {
               "franchiseId": "0004",
               "score": 2097.9,
               "depth": 1154.5,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 860.4,
+                  "depth": 9.1
+                },
+                "RB": {
+                  "score": 455.1,
+                  "depth": 364.6
+                },
+                "WR": {
+                  "score": 659.9,
+                  "depth": 593.6
+                },
+                "TE": {
+                  "score": 122.6,
+                  "depth": 187.2
+                }
+              }
             },
             {
               "franchiseId": "0008",
               "score": 2086.5,
-              "depth": 1068.4,
+              "depth": 1060.8,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 847,
+                  "depth": 32.6
+                },
+                "RB": {
+                  "score": 372.8,
+                  "depth": 204.5
+                },
+                "WR": {
+                  "score": 721.5,
+                  "depth": 590.3
+                },
+                "TE": {
+                  "score": 145.3,
+                  "depth": 233.3
+                }
+              }
             },
             {
               "franchiseId": "0007",
               "score": 1985,
-              "depth": 1434.7,
+              "depth": 1440.1,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 833.4,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 448.4,
+                  "depth": 575.2
+                },
+                "WR": {
+                  "score": 558.6,
+                  "depth": 534.6
+                },
+                "TE": {
+                  "score": 144.6,
+                  "depth": 330.3
+                }
+              }
             },
             {
               "franchiseId": "0010",
               "score": 1982.2,
               "depth": 1766.6,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 832.6,
+                  "depth": 90.7
+                },
+                "RB": {
+                  "score": 468.9,
+                  "depth": 751.9
+                },
+                "WR": {
+                  "score": 543.4,
+                  "depth": 650.6
+                },
+                "TE": {
+                  "score": 137.4,
+                  "depth": 273.4
+                }
+              }
             },
             {
               "franchiseId": "0001",
               "score": 1947.5,
               "depth": 1379.5,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 832.3,
+                  "depth": 164.5
+                },
+                "RB": {
+                  "score": 471.8,
+                  "depth": 681.9
+                },
+                "WR": {
+                  "score": 521,
+                  "depth": 357.3
+                },
+                "TE": {
+                  "score": 122.4,
+                  "depth": 175.8
+                }
+              }
             },
             {
               "franchiseId": "0006",
               "score": 1927,
-              "depth": 1243,
+              "depth": 1221.9,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 860.4,
+                  "depth": 18.8
+                },
+                "RB": {
+                  "score": 285.5,
+                  "depth": 427.2
+                },
+                "WR": {
+                  "score": 625.3,
+                  "depth": 646.6
+                },
+                "TE": {
+                  "score": 155.9,
+                  "depth": 129.2
+                }
+              }
             },
             {
               "franchiseId": "0009",
               "score": 1919.8,
               "depth": 1167,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 553.9,
+                  "depth": 83.5
+                },
+                "RB": {
+                  "score": 484.9,
+                  "depth": 519.9
+                },
+                "WR": {
+                  "score": 733.4,
+                  "depth": 356.1
+                },
+                "TE": {
+                  "score": 147.7,
+                  "depth": 207.6
+                }
+              }
             },
             {
               "franchiseId": "0005",
               "score": 1702.3,
               "depth": 914.8,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 234.8,
+                  "depth": 150.7
+                },
+                "RB": {
+                  "score": 876.3,
+                  "depth": 0
+                },
+                "WR": {
+                  "score": 444.6,
+                  "depth": 524.9
+                },
+                "TE": {
+                  "score": 146.7,
+                  "depth": 239.2
+                }
+              }
             },
             {
               "franchiseId": "0011",
               "score": 1606.8,
-              "depth": 642.3,
+              "depth": 670.6,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 503.8,
+                  "depth": 22.5
+                },
+                "RB": {
+                  "score": 471.8,
+                  "depth": 113.6
+                },
+                "WR": {
+                  "score": 488.7,
+                  "depth": 418.6
+                },
+                "TE": {
+                  "score": 142.5,
+                  "depth": 115.9
+                }
+              }
             }
           ]
         },
@@ -10547,92 +12347,309 @@
           "teams": [
             {
               "franchiseId": "0002",
-              "score": 23.3,
+              "score": 23.1,
               "depth": 5.9,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 8.2,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 5.6,
+                  "depth": 3
+                },
+                "WR": {
+                  "score": 5.6,
+                  "depth": 1.6
+                },
+                "TE": {
+                  "score": 3.8,
+                  "depth": 1.3
+                }
+              }
             },
             {
               "franchiseId": "0003",
-              "score": 20.9,
-              "depth": 4.2,
+              "score": 21,
+              "depth": 4.1,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 9.2,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 4.6,
+                  "depth": 2.2
+                },
+                "WR": {
+                  "score": 5.9,
+                  "depth": 2
+                },
+                "TE": {
+                  "score": 1.2,
+                  "depth": 0
+                }
+              }
             },
             {
               "franchiseId": "0004",
               "score": 18.1,
-              "depth": 4.5,
+              "depth": 4.6,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 6.6,
+                  "depth": 1
+                },
+                "RB": {
+                  "score": 3.5,
+                  "depth": 1.5
+                },
+                "WR": {
+                  "score": 7.5,
+                  "depth": 1.4
+                },
+                "TE": {
+                  "score": 0.5,
+                  "depth": 0.7
+                }
+              }
             },
             {
               "franchiseId": "0012",
               "score": 17.6,
               "depth": 2.3,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 4.7,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 5.6,
+                  "depth": 0.5
+                },
+                "WR": {
+                  "score": 5.9,
+                  "depth": 0.8
+                },
+                "TE": {
+                  "score": 1.4,
+                  "depth": 0.9
+                }
+              }
             },
             {
               "franchiseId": "0008",
               "score": 16,
-              "depth": 4.6,
+              "depth": 4.5,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 5.5,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 2.4,
+                  "depth": 1.4
+                },
+                "WR": {
+                  "score": 7.2,
+                  "depth": 2.2
+                },
+                "TE": {
+                  "score": 0.9,
+                  "depth": 0.9
+                }
+              }
             },
             {
               "franchiseId": "0007",
               "score": 15.6,
               "depth": 6.8,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 7.6,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 3.1,
+                  "depth": 3.3
+                },
+                "WR": {
+                  "score": 4.1,
+                  "depth": 2.3
+                },
+                "TE": {
+                  "score": 0.8,
+                  "depth": 1.2
+                }
+              }
             },
             {
               "franchiseId": "0006",
               "score": 15.1,
               "depth": 4.4,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 7.4,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 1.6,
+                  "depth": 2
+                },
+                "WR": {
+                  "score": 5.2,
+                  "depth": 2.4
+                },
+                "TE": {
+                  "score": 0.9,
+                  "depth": 0
+                }
+              }
             },
             {
               "franchiseId": "0010",
               "score": 15,
               "depth": 6.5,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 5.2,
+                  "depth": 0.7
+                },
+                "RB": {
+                  "score": 4.7,
+                  "depth": 3
+                },
+                "WR": {
+                  "score": 4.5,
+                  "depth": 2
+                },
+                "TE": {
+                  "score": 0.7,
+                  "depth": 0.8
+                }
+              }
             },
             {
               "franchiseId": "0009",
               "score": 14.2,
               "depth": 3.6,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 3.4,
+                  "depth": 0.2
+                },
+                "RB": {
+                  "score": 4,
+                  "depth": 2
+                },
+                "WR": {
+                  "score": 5.8,
+                  "depth": 1.2
+                },
+                "TE": {
+                  "score": 1.1,
+                  "depth": 0.2
+                }
+              }
             },
             {
               "franchiseId": "0001",
               "score": 13,
               "depth": 4.6,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 5.2,
+                  "depth": 0.4
+                },
+                "RB": {
+                  "score": 3.5,
+                  "depth": 2.9
+                },
+                "WR": {
+                  "score": 3.7,
+                  "depth": 1.2
+                },
+                "TE": {
+                  "score": 0.6,
+                  "depth": 0.2
+                }
+              }
             },
             {
               "franchiseId": "0011",
               "score": 11.9,
               "depth": 1.7,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 4.1,
+                  "depth": 0.4
+                },
+                "RB": {
+                  "score": 2.6,
+                  "depth": 0.7
+                },
+                "WR": {
+                  "score": 4.3,
+                  "depth": 0.6
+                },
+                "TE": {
+                  "score": 0.8,
+                  "depth": 0
+                }
+              }
             },
             {
               "franchiseId": "0005",
               "score": 9.9,
               "depth": 3.4,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 0.7,
+                  "depth": 0.1
+                },
+                "RB": {
+                  "score": 5.9,
+                  "depth": 0
+                },
+                "WR": {
+                  "score": 2.7,
+                  "depth": 2.2
+                },
+                "TE": {
+                  "score": 0.7,
+                  "depth": 1.1
+                }
+              }
             }
           ]
         },
         "projectionsUnavailable": null
-      }
+      },
+      "availableAt": "2026-08-22T02:09:24.584Z"
     },
     {
       "id": "30641",
@@ -11225,7 +13242,7 @@
         "ir": 50,
         "position": []
       },
-      "updatedAt": "2026-08-22T02:01:25.766Z",
+      "updatedAt": "2026-08-22T02:09:32.008Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -11363,6 +13380,16 @@
       "scoring": null,
       "scoringError": "No live scoring available yet",
       "draftInProgress": false,
+      "rankings": {
+        "type": "DRAFT",
+        "scoring": "HALF",
+        "position": "OP",
+        "lastUpdated": "8/22",
+        "totalExperts": 99,
+        "matched": 24,
+        "total": 25
+      },
+      "rankingsError": null,
       "available": [
         "Kenny Gainwell",
         "Chig Okonkwo",
@@ -11393,16 +13420,6 @@
         "Najee Harris"
       ],
       "availableAt": "2026-08-22T01:51:54.463Z",
-      "rankings": {
-        "type": "DRAFT",
-        "scoring": "HALF",
-        "position": "OP",
-        "lastUpdated": "8/22",
-        "totalExperts": 99,
-        "matched": 24,
-        "total": 25
-      },
-      "rankingsError": null,
       "power": {
         "computedAt": "2026-08-22T01:51:54.463Z",
         "scoring": "HALF",
@@ -12199,7 +14216,7 @@
         "ir": 15,
         "position": []
       },
-      "updatedAt": "2026-08-22T02:01:27.076Z",
+      "updatedAt": "2026-08-22T02:09:33.462Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -12375,7 +14392,7 @@
         "Tyquan Thornton"
       ],
       "power": {
-        "computedAt": "2026-08-22T02:01:18.536Z",
+        "computedAt": "2026-08-22T02:09:24.584Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -13100,7 +15117,7 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-08-22T02:01:18.536Z"
+      "availableAt": "2026-08-22T02:09:24.584Z"
     },
     {
       "id": "56191",
@@ -13120,7 +15137,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-22T02:01:27.399Z",
+      "updatedAt": "2026-08-22T02:09:33.794Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -13277,7 +15294,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-22T02:01:27.725Z",
+      "updatedAt": "2026-08-22T02:09:34.073Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -13877,7 +15894,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-22T02:01:28.533Z",
+      "updatedAt": "2026-08-22T02:09:34.856Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -13994,6 +16011,16 @@
       "scoring": null,
       "scoringError": "No live scoring available yet",
       "draftInProgress": false,
+      "rankings": {
+        "type": "DRAFT",
+        "scoring": "HALF",
+        "position": "OP",
+        "lastUpdated": "8/22",
+        "totalExperts": 99,
+        "matched": 17,
+        "total": 18
+      },
+      "rankingsError": null,
       "available": [
         "Jeremiyah Love",
         "Jadarian Price",
@@ -14037,16 +16064,6 @@
         "Rashod Bateman"
       ],
       "availableAt": "2026-08-21T13:12:23.165Z",
-      "rankings": {
-        "type": "DRAFT",
-        "scoring": "HALF",
-        "position": "OP",
-        "lastUpdated": "8/22",
-        "totalExperts": 99,
-        "matched": 17,
-        "total": 18
-      },
-      "rankingsError": null,
       "power": {
         "computedAt": "2026-08-21T13:12:23.165Z",
         "scoring": "HALF",
@@ -14659,7 +16676,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-22T02:01:29.358Z",
+      "updatedAt": "2026-08-22T02:09:35.285Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -14796,6 +16813,16 @@
       "scoring": null,
       "scoringError": "No live scoring available yet",
       "draftInProgress": false,
+      "rankings": {
+        "type": "DRAFT",
+        "scoring": "HALF",
+        "position": "OP",
+        "lastUpdated": "8/22",
+        "totalExperts": 99,
+        "matched": 18,
+        "total": 18
+      },
+      "rankingsError": null,
       "available": [
         "Stefon Diggs",
         "Kenny Gainwell",
@@ -14839,16 +16866,6 @@
         "Christian Kirk"
       ],
       "availableAt": "2026-08-21T13:12:23.165Z",
-      "rankings": {
-        "type": "DRAFT",
-        "scoring": "HALF",
-        "position": "OP",
-        "lastUpdated": "8/22",
-        "totalExperts": 99,
-        "matched": 18,
-        "total": 18
-      },
-      "rankingsError": null,
       "power": {
         "computedAt": "2026-08-21T13:12:23.165Z",
         "scoring": "HALF",
@@ -15510,7 +17527,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-22T02:01:30.169Z",
+      "updatedAt": "2026-08-22T02:09:36.063Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -15628,49 +17645,6 @@
       "scoring": null,
       "scoringError": "No live scoring available yet",
       "draftInProgress": false,
-      "available": [
-        "Stefon Diggs",
-        "Kenny Gainwell",
-        "Tyler Allgeier",
-        "Tyjae Spears",
-        "Tank Bigsby",
-        "Jonah Coleman",
-        "Dylan Sampson",
-        "Chig Okonkwo",
-        "Deebo Samuel Sr.",
-        "Brian Robinson Jr.",
-        "Adonai Mitchell",
-        "MarShawn Lloyd",
-        "Braelon Allen",
-        "Tua Tagovailoa",
-        "Jalen Nailor",
-        "Dontayvion Wicks",
-        "Ray Davis",
-        "Terrance Ferguson",
-        "Emmett Johnson",
-        "Sean Tucker",
-        "Nicholas Singleton",
-        "Pat Bryant",
-        "Jaylin Noel",
-        "Kimani Vidal",
-        "Mike Washington Jr.",
-        "Keenan Allen",
-        "Rashod Bateman",
-        "Kaytron Allen",
-        "Oscar Delp",
-        "Emanuel Wilson",
-        "Jaydon Blue",
-        "Darnell Mooney",
-        "Jaylen Wright",
-        "Ollie Gordon II",
-        "George Holani",
-        "Jack Bech",
-        "Justice Hill",
-        "Zachariah Branch",
-        "Chris Brooks",
-        "Germie Bernard"
-      ],
-      "availableAt": "2026-08-21T13:12:23.165Z",
       "rankings": {
         "type": "DRAFT",
         "scoring": "HALF",
@@ -15681,8 +17655,50 @@
         "total": 20
       },
       "rankingsError": null,
+      "available": [
+        "Stefon Diggs",
+        "Kenny Gainwell",
+        "Tyler Allgeier",
+        "Tyjae Spears",
+        "Deebo Samuel Sr.",
+        "Tank Bigsby",
+        "Jonah Coleman",
+        "Dylan Sampson",
+        "Chig Okonkwo",
+        "Brian Robinson Jr.",
+        "Adonai Mitchell",
+        "MarShawn Lloyd",
+        "Braelon Allen",
+        "Tua Tagovailoa",
+        "Jalen Nailor",
+        "Dontayvion Wicks",
+        "Ray Davis",
+        "Terrance Ferguson",
+        "Emmett Johnson",
+        "Nicholas Singleton",
+        "Sean Tucker",
+        "Pat Bryant",
+        "Jaylin Noel",
+        "Kimani Vidal",
+        "Mike Washington Jr.",
+        "Keenan Allen",
+        "Kaytron Allen",
+        "Rashod Bateman",
+        "Emanuel Wilson",
+        "Oscar Delp",
+        "Jaydon Blue",
+        "Darnell Mooney",
+        "Jaylen Wright",
+        "George Holani",
+        "Ollie Gordon II",
+        "Jack Bech",
+        "Justice Hill",
+        "Germie Bernard",
+        "Isaiah Davis",
+        "Chris Brooks"
+      ],
       "power": {
-        "computedAt": "2026-08-21T13:12:23.165Z",
+        "computedAt": "2026-08-22T02:09:24.584Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -15697,70 +17713,250 @@
               "score": 2534.9,
               "depth": 1286.7,
               "filled": 10,
-              "slotCount": 10
+              "slotCount": 10,
+              "byPosition": {
+                "QB": {
+                  "score": 1101.3,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 1433.6,
+                  "depth": 737.3
+                },
+                "WR": {
+                  "score": 0,
+                  "depth": 163.6
+                },
+                "TE": {
+                  "score": 0,
+                  "depth": 385.8
+                }
+              }
             },
             {
               "franchiseId": "0009",
               "score": 2513.7,
               "depth": 954.6,
               "filled": 10,
-              "slotCount": 10
+              "slotCount": 10,
+              "byPosition": {
+                "QB": {
+                  "score": 1099.9,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 841.8,
+                  "depth": 105.4
+                },
+                "WR": {
+                  "score": 425.3,
+                  "depth": 531.7
+                },
+                "TE": {
+                  "score": 146.7,
+                  "depth": 317.5
+                }
+              }
             },
             {
               "franchiseId": "0006",
               "score": 2346.9,
               "depth": 1132.3,
               "filled": 10,
-              "slotCount": 10
+              "slotCount": 10,
+              "byPosition": {
+                "QB": {
+                  "score": 886.2,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 716.8,
+                  "depth": 430.9
+                },
+                "WR": {
+                  "score": 743.9,
+                  "depth": 431.9
+                },
+                "TE": {
+                  "score": 0,
+                  "depth": 269.4
+                }
+              }
             },
             {
               "franchiseId": "0003",
               "score": 2322.9,
               "depth": 1002,
               "filled": 10,
-              "slotCount": 10
+              "slotCount": 10,
+              "byPosition": {
+                "QB": {
+                  "score": 831.1,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 787.6,
+                  "depth": 217.1
+                },
+                "WR": {
+                  "score": 704.2,
+                  "depth": 441.8
+                },
+                "TE": {
+                  "score": 0,
+                  "depth": 343.1
+                }
+              }
             },
             {
               "franchiseId": "0002",
               "score": 2312,
               "depth": 1158.8,
               "filled": 10,
-              "slotCount": 10
+              "slotCount": 10,
+              "byPosition": {
+                "QB": {
+                  "score": 1191.6,
+                  "depth": 83.5
+                },
+                "RB": {
+                  "score": 180.9,
+                  "depth": 143.4
+                },
+                "WR": {
+                  "score": 594.5,
+                  "depth": 331.5
+                },
+                "TE": {
+                  "score": 345.1,
+                  "depth": 600.4
+                }
+              }
             },
             {
               "franchiseId": "0008",
               "score": 2299.4,
               "depth": 1244,
               "filled": 10,
-              "slotCount": 10
+              "slotCount": 10,
+              "byPosition": {
+                "QB": {
+                  "score": 769,
+                  "depth": 288.6
+                },
+                "RB": {
+                  "score": 872.9,
+                  "depth": 583.2
+                },
+                "WR": {
+                  "score": 485.6,
+                  "depth": 372.2
+                },
+                "TE": {
+                  "score": 171.9,
+                  "depth": 0
+                }
+              }
             },
             {
               "franchiseId": "0001",
               "score": 2270.4,
               "depth": 1026.6,
               "filled": 10,
-              "slotCount": 10
+              "slotCount": 10,
+              "byPosition": {
+                "QB": {
+                  "score": 950,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 0,
+                  "depth": 0
+                },
+                "WR": {
+                  "score": 1320.5,
+                  "depth": 659
+                },
+                "TE": {
+                  "score": 0,
+                  "depth": 367.6
+                }
+              }
             },
             {
               "franchiseId": "0007",
               "score": 2178.5,
               "depth": 1063.7,
               "filled": 10,
-              "slotCount": 10
+              "slotCount": 10,
+              "byPosition": {
+                "QB": {
+                  "score": 643,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 315.5,
+                  "depth": 141.2
+                },
+                "WR": {
+                  "score": 1024.2,
+                  "depth": 737.9
+                },
+                "TE": {
+                  "score": 195.8,
+                  "depth": 184.6
+                }
+              }
             },
             {
               "franchiseId": "0010",
               "score": 2138.9,
               "depth": 967.4,
               "filled": 10,
-              "slotCount": 10
+              "slotCount": 10,
+              "byPosition": {
+                "QB": {
+                  "score": 512.6,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 836.9,
+                  "depth": 209.2
+                },
+                "WR": {
+                  "score": 629.6,
+                  "depth": 373.2
+                },
+                "TE": {
+                  "score": 159.7,
+                  "depth": 385
+                }
+              }
             },
             {
               "franchiseId": "0005",
               "score": 2103.3,
               "depth": 944,
               "filled": 10,
-              "slotCount": 10
+              "slotCount": 10,
+              "byPosition": {
+                "QB": {
+                  "score": 561.6,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 584.2,
+                  "depth": 0
+                },
+                "WR": {
+                  "score": 957.4,
+                  "depth": 626.1
+                },
+                "TE": {
+                  "score": 0,
+                  "depth": 317.9
+                }
+              }
             }
           ]
         },
@@ -15775,78 +17971,259 @@
           "teams": [
             {
               "franchiseId": "0002",
-              "score": 21.4,
+              "score": 21.3,
               "depth": 4.2,
               "filled": 10,
-              "slotCount": 10
+              "slotCount": 10,
+              "byPosition": {
+                "QB": {
+                  "score": 12.2,
+                  "depth": 0.2
+                },
+                "RB": {
+                  "score": 1.2,
+                  "depth": 0.7
+                },
+                "WR": {
+                  "score": 5.2,
+                  "depth": 1
+                },
+                "TE": {
+                  "score": 2.8,
+                  "depth": 2.4
+                }
+              }
             },
             {
               "franchiseId": "0007",
               "score": 20.5,
-              "depth": 5.2,
+              "depth": 5.1,
               "filled": 10,
-              "slotCount": 10
+              "slotCount": 10,
+              "byPosition": {
+                "QB": {
+                  "score": 7.6,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 0.9,
+                  "depth": 1.7
+                },
+                "WR": {
+                  "score": 9.9,
+                  "depth": 2.7
+                },
+                "TE": {
+                  "score": 2,
+                  "depth": 0.8
+                }
+              }
             },
             {
               "franchiseId": "0001",
               "score": 20.2,
               "depth": 4.1,
               "filled": 10,
-              "slotCount": 10
+              "slotCount": 10,
+              "byPosition": {
+                "QB": {
+                  "score": 9,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 0,
+                  "depth": 0
+                },
+                "WR": {
+                  "score": 11.2,
+                  "depth": 2.9
+                },
+                "TE": {
+                  "score": 0,
+                  "depth": 1.3
+                }
+              }
             },
             {
               "franchiseId": "0004",
-              "score": 19.5,
-              "depth": 6.8,
+              "score": 19.6,
+              "depth": 6.7,
               "filled": 10,
-              "slotCount": 10
+              "slotCount": 10,
+              "byPosition": {
+                "QB": {
+                  "score": 7.3,
+                  "depth": 0.7
+                },
+                "RB": {
+                  "score": 12.3,
+                  "depth": 3.2
+                },
+                "WR": {
+                  "score": 0,
+                  "depth": 1
+                },
+                "TE": {
+                  "score": 0,
+                  "depth": 1.8
+                }
+              }
             },
             {
               "franchiseId": "0006",
-              "score": 19.4,
+              "score": 19.3,
               "depth": 5.4,
               "filled": 10,
-              "slotCount": 10
+              "slotCount": 10,
+              "byPosition": {
+                "QB": {
+                  "score": 8,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 5.4,
+                  "depth": 2.3
+                },
+                "WR": {
+                  "score": 5.9,
+                  "depth": 1.5
+                },
+                "TE": {
+                  "score": 0,
+                  "depth": 1.6
+                }
+              }
             },
             {
               "franchiseId": "0009",
-              "score": 19.4,
+              "score": 19.3,
               "depth": 3.6,
               "filled": 10,
-              "slotCount": 10
+              "slotCount": 10,
+              "byPosition": {
+                "QB": {
+                  "score": 7.2,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 7.5,
+                  "depth": 0.5
+                },
+                "WR": {
+                  "score": 4.6,
+                  "depth": 1.6
+                },
+                "TE": {
+                  "score": 0,
+                  "depth": 1.6
+                }
+              }
             },
             {
               "franchiseId": "0003",
               "score": 19,
               "depth": 3.9,
               "filled": 10,
-              "slotCount": 10
+              "slotCount": 10,
+              "byPosition": {
+                "QB": {
+                  "score": 6,
+                  "depth": 0.6
+                },
+                "RB": {
+                  "score": 7,
+                  "depth": 1.1
+                },
+                "WR": {
+                  "score": 6.1,
+                  "depth": 1
+                },
+                "TE": {
+                  "score": 0,
+                  "depth": 1.2
+                }
+              }
             },
             {
               "franchiseId": "0010",
-              "score": 16.7,
+              "score": 16.8,
               "depth": 3.7,
               "filled": 10,
-              "slotCount": 10
+              "slotCount": 10,
+              "byPosition": {
+                "QB": {
+                  "score": 3.2,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 6.1,
+                  "depth": 1.3
+                },
+                "WR": {
+                  "score": 6.3,
+                  "depth": 1.6
+                },
+                "TE": {
+                  "score": 1.2,
+                  "depth": 0.7
+                }
+              }
             },
             {
               "franchiseId": "0008",
-              "score": 16.3,
+              "score": 16.4,
               "depth": 3.8,
               "filled": 10,
-              "slotCount": 10
+              "slotCount": 10,
+              "byPosition": {
+                "QB": {
+                  "score": 3.7,
+                  "depth": 0.8
+                },
+                "RB": {
+                  "score": 6.7,
+                  "depth": 1.4
+                },
+                "WR": {
+                  "score": 4.6,
+                  "depth": 1.6
+                },
+                "TE": {
+                  "score": 1.4,
+                  "depth": 0
+                }
+              }
             },
             {
               "franchiseId": "0005",
               "score": 15.2,
-              "depth": 3.6,
+              "depth": 3.5,
               "filled": 10,
-              "slotCount": 10
+              "slotCount": 10,
+              "byPosition": {
+                "QB": {
+                  "score": 3.8,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 4,
+                  "depth": 0
+                },
+                "WR": {
+                  "score": 6.4,
+                  "depth": 3.1
+                },
+                "TE": {
+                  "score": 0.9,
+                  "depth": 0.4
+                }
+              }
             }
           ]
         },
         "projectionsUnavailable": null
-      }
+      },
+      "availableAt": "2026-08-22T02:09:24.584Z"
     },
     {
       "id": "61777",
@@ -16323,7 +18700,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-22T02:01:31.258Z",
+      "updatedAt": "2026-08-22T02:09:37.011Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -16451,6 +18828,16 @@
       "scoring": null,
       "scoringError": "No live scoring available yet",
       "draftInProgress": false,
+      "rankings": {
+        "type": "DRAFT",
+        "scoring": "HALF",
+        "position": "OP",
+        "lastUpdated": "8/22",
+        "totalExperts": 99,
+        "matched": 20,
+        "total": 20
+      },
+      "rankingsError": null,
       "available": [
         "Stefon Diggs",
         "Kenny Gainwell",
@@ -16494,16 +18881,6 @@
         "Kaelon Black"
       ],
       "availableAt": "2026-08-21T13:12:23.165Z",
-      "rankings": {
-        "type": "DRAFT",
-        "scoring": "HALF",
-        "position": "OP",
-        "lastUpdated": "8/22",
-        "totalExperts": 99,
-        "matched": 20,
-        "total": 20
-      },
-      "rankingsError": null,
       "power": {
         "computedAt": "2026-08-21T13:12:23.165Z",
         "scoring": "HALF",
@@ -17121,7 +19498,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-22T02:01:32.014Z",
+      "updatedAt": "2026-08-22T02:09:37.767Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -17248,6 +19625,16 @@
       "scoring": null,
       "scoringError": "No live scoring available yet",
       "draftInProgress": false,
+      "rankings": {
+        "type": "DRAFT",
+        "scoring": "HALF",
+        "position": "OP",
+        "lastUpdated": "8/22",
+        "totalExperts": 99,
+        "matched": 18,
+        "total": 18
+      },
+      "rankingsError": null,
       "available": [
         "Stefon Diggs",
         "Kenny Gainwell",
@@ -17259,22 +19646,22 @@
         "Brian Robinson Jr.",
         "Braelon Allen",
         "Jalen Nailor",
+        "Omar Cooper Jr.",
         "Dontayvion Wicks",
         "Ray Davis",
-        "Omar Cooper Jr.",
         "Terrance Ferguson",
         "Emmett Johnson",
-        "Sean Tucker",
         "Nicholas Singleton",
+        "Sean Tucker",
         "Jaylin Noel",
         "Travis Hunter",
         "Cade Otton",
         "Mike Washington Jr.",
         "Keenan Allen",
-        "Rashod Bateman",
         "Kaytron Allen",
-        "Oscar Delp",
+        "Rashod Bateman",
         "Emanuel Wilson",
+        "Oscar Delp",
         "Jaydon Blue",
         "Troy Franklin",
         "Darnell Mooney",
@@ -17285,24 +19672,13 @@
         "Jack Bech",
         "Justice Hill",
         "Antonio Williams",
-        "Chris Brooks",
-        "Isaiah Davis",
         "Germie Bernard",
+        "Isaiah Davis",
+        "Chris Brooks",
         "Zachariah Branch"
       ],
-      "availableAt": "2026-08-21T16:52:37.699Z",
-      "rankings": {
-        "type": "DRAFT",
-        "scoring": "HALF",
-        "position": "OP",
-        "lastUpdated": "8/22",
-        "totalExperts": 99,
-        "matched": 18,
-        "total": 18
-      },
-      "rankingsError": null,
       "power": {
-        "computedAt": "2026-08-21T16:52:37.699Z",
+        "computedAt": "2026-08-22T02:09:24.584Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -17317,77 +19693,275 @@
               "score": 2158.8,
               "depth": 1091.7,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 872.4,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 581,
+                  "depth": 483.8
+                },
+                "WR": {
+                  "score": 533.6,
+                  "depth": 486.2
+                },
+                "TE": {
+                  "score": 171.9,
+                  "depth": 121.7
+                }
+              }
             },
             {
               "franchiseId": "0010",
               "score": 2156.6,
               "depth": 990.3,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 869.4,
+                  "depth": 47.2
+                },
+                "RB": {
+                  "score": 536,
+                  "depth": 192.7
+                },
+                "WR": {
+                  "score": 599.3,
+                  "depth": 505.1
+                },
+                "TE": {
+                  "score": 151.8,
+                  "depth": 245.4
+                }
+              }
             },
             {
               "franchiseId": "0002",
               "score": 2131.4,
               "depth": 1105.9,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 892.5,
+                  "depth": 223.5
+                },
+                "RB": {
+                  "score": 464.2,
+                  "depth": 400.7
+                },
+                "WR": {
+                  "score": 641.1,
+                  "depth": 262.9
+                },
+                "TE": {
+                  "score": 133.6,
+                  "depth": 218.8
+                }
+              }
             },
             {
               "franchiseId": "0001",
               "score": 2074.4,
-              "depth": 1025.3,
+              "depth": 1053.6,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 864.6,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 467.5,
+                  "depth": 385.7
+                },
+                "WR": {
+                  "score": 594.7,
+                  "depth": 480.1
+                },
+                "TE": {
+                  "score": 147.7,
+                  "depth": 187.8
+                }
+              }
             },
             {
               "franchiseId": "0008",
               "score": 2067.8,
               "depth": 1024.6,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 498.6,
+                  "depth": 357.4
+                },
+                "RB": {
+                  "score": 811.8,
+                  "depth": 105.4
+                },
+                "WR": {
+                  "score": 601.5,
+                  "depth": 353.1
+                },
+                "TE": {
+                  "score": 155.9,
+                  "depth": 208.6
+                }
+              }
             },
             {
               "franchiseId": "0011",
               "score": 2045.3,
               "depth": 1027.3,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 512.4,
+                  "depth": 83.5
+                },
+                "RB": {
+                  "score": 737.7,
+                  "depth": 255.9
+                },
+                "WR": {
+                  "score": 648.6,
+                  "depth": 543.3
+                },
+                "TE": {
+                  "score": 146.7,
+                  "depth": 144.6
+                }
+              }
             },
             {
               "franchiseId": "0004",
               "score": 2036.6,
               "depth": 1207.6,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 876,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 386.7,
+                  "depth": 629
+                },
+                "WR": {
+                  "score": 574.1,
+                  "depth": 382.8
+                },
+                "TE": {
+                  "score": 199.8,
+                  "depth": 195.8
+                }
+              }
             },
             {
               "franchiseId": "0009",
               "score": 2008.7,
               "depth": 890.5,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 647.5,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 426,
+                  "depth": 362.6
+                },
+                "WR": {
+                  "score": 797.9,
+                  "depth": 345.9
+                },
+                "TE": {
+                  "score": 137.4,
+                  "depth": 182
+                }
+              }
             },
             {
               "franchiseId": "0005",
               "score": 1960.8,
               "depth": 1132.8,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 918.2,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 454.2,
+                  "depth": 429.9
+                },
+                "WR": {
+                  "score": 457.9,
+                  "depth": 369.8
+                },
+                "TE": {
+                  "score": 130.5,
+                  "depth": 333.1
+                }
+              }
             },
             {
               "franchiseId": "0007",
               "score": 1953.3,
               "depth": 719.6,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 567,
+                  "depth": 150.7
+                },
+                "RB": {
+                  "score": 422.7,
+                  "depth": 310.4
+                },
+                "WR": {
+                  "score": 841.1,
+                  "depth": 183.6
+                },
+                "TE": {
+                  "score": 122.6,
+                  "depth": 74.8
+                }
+              }
             },
             {
               "franchiseId": "0003",
               "score": 1889.5,
               "depth": 982.9,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 611.4,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 345.9,
+                  "depth": 443.1
+                },
+                "WR": {
+                  "score": 772.6,
+                  "depth": 364.2
+                },
+                "TE": {
+                  "score": 159.7,
+                  "depth": 175.6
+                }
+              }
             }
           ]
         },
@@ -17401,86 +19975,285 @@
           },
           "teams": [
             {
-              "franchiseId": "0002",
-              "score": 18.6,
-              "depth": 4.9,
-              "filled": 9,
-              "slotCount": 9
-            },
-            {
               "franchiseId": "0009",
-              "score": 18.5,
+              "score": 18.6,
               "depth": 4.5,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 8.7,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 2.7,
+                  "depth": 2.2
+                },
+                "WR": {
+                  "score": 6.5,
+                  "depth": 1.8
+                },
+                "TE": {
+                  "score": 0.6,
+                  "depth": 0.4
+                }
+              }
+            },
+            {
+              "franchiseId": "0002",
+              "score": 18.5,
+              "depth": 4.9,
+              "filled": 9,
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 8.2,
+                  "depth": 0.6
+                },
+                "RB": {
+                  "score": 3.8,
+                  "depth": 2.4
+                },
+                "WR": {
+                  "score": 5.8,
+                  "depth": 0.9
+                },
+                "TE": {
+                  "score": 0.7,
+                  "depth": 1
+                }
+              }
             },
             {
               "franchiseId": "0006",
               "score": 17.8,
               "depth": 5.6,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 6.7,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 5.7,
+                  "depth": 2.6
+                },
+                "WR": {
+                  "score": 4.1,
+                  "depth": 2.5
+                },
+                "TE": {
+                  "score": 1.4,
+                  "depth": 0.5
+                }
+              }
             },
             {
               "franchiseId": "0005",
               "score": 17.7,
               "depth": 4,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 9.7,
+                  "depth": 0.7
+                },
+                "RB": {
+                  "score": 4.6,
+                  "depth": 1.3
+                },
+                "WR": {
+                  "score": 2.8,
+                  "depth": 0.9
+                },
+                "TE": {
+                  "score": 0.7,
+                  "depth": 1.1
+                }
+              }
             },
             {
               "franchiseId": "0010",
-              "score": 17.5,
+              "score": 17.4,
               "depth": 5,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 5.4,
+                  "depth": 1.3
+                },
+                "RB": {
+                  "score": 6,
+                  "depth": 0
+                },
+                "WR": {
+                  "score": 5,
+                  "depth": 2.4
+                },
+                "TE": {
+                  "score": 1,
+                  "depth": 1.3
+                }
+              }
             },
             {
               "franchiseId": "0004",
               "score": 16.4,
               "depth": 6.7,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 5.4,
+                  "depth": 1.6
+                },
+                "RB": {
+                  "score": 2.5,
+                  "depth": 3.6
+                },
+                "WR": {
+                  "score": 4.8,
+                  "depth": 1.6
+                },
+                "TE": {
+                  "score": 3.8,
+                  "depth": 0
+                }
+              }
             },
             {
               "franchiseId": "0001",
-              "score": 16.2,
+              "score": 16.3,
               "depth": 3.8,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 6.1,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 3.7,
+                  "depth": 1.3
+                },
+                "WR": {
+                  "score": 5.4,
+                  "depth": 2.1
+                },
+                "TE": {
+                  "score": 1.1,
+                  "depth": 0.3
+                }
+              }
             },
             {
               "franchiseId": "0007",
-              "score": 15.7,
+              "score": 15.8,
               "depth": 2.1,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 4.1,
+                  "depth": 0.1
+                },
+                "RB": {
+                  "score": 3.2,
+                  "depth": 1.5
+                },
+                "WR": {
+                  "score": 8,
+                  "depth": 0.3
+                },
+                "TE": {
+                  "score": 0.5,
+                  "depth": 0.2
+                }
+              }
             },
             {
               "franchiseId": "0003",
               "score": 15.5,
               "depth": 4.1,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 5.6,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 2.1,
+                  "depth": 2.1
+                },
+                "WR": {
+                  "score": 6.6,
+                  "depth": 1.2
+                },
+                "TE": {
+                  "score": 1.2,
+                  "depth": 0.8
+                }
+              }
             },
             {
               "franchiseId": "0008",
-              "score": 15.4,
+              "score": 15.3,
               "depth": 3.6,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 2.6,
+                  "depth": 0.8
+                },
+                "RB": {
+                  "score": 7.2,
+                  "depth": 0.5
+                },
+                "WR": {
+                  "score": 4.6,
+                  "depth": 1.6
+                },
+                "TE": {
+                  "score": 0.9,
+                  "depth": 0.7
+                }
+              }
             },
             {
               "franchiseId": "0011",
               "score": 14.9,
               "depth": 4.7,
               "filled": 9,
-              "slotCount": 9
+              "slotCount": 9,
+              "byPosition": {
+                "QB": {
+                  "score": 2.9,
+                  "depth": 0.2
+                },
+                "RB": {
+                  "score": 5.2,
+                  "depth": 1.2
+                },
+                "WR": {
+                  "score": 6,
+                  "depth": 2.7
+                },
+                "TE": {
+                  "score": 0.8,
+                  "depth": 0.7
+                }
+              }
             }
           ]
         },
         "projectionsUnavailable": null
-      }
+      },
+      "availableAt": "2026-08-22T02:09:24.584Z"
     },
     {
       "id": "26222",
@@ -17929,7 +20702,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-22T02:01:32.667Z",
+      "updatedAt": "2026-08-22T02:09:38.442Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -18067,6 +20840,16 @@
       "scoring": null,
       "scoringError": "No live scoring available yet",
       "draftInProgress": false,
+      "rankings": {
+        "type": "DRAFT",
+        "scoring": "HALF",
+        "position": "OP",
+        "lastUpdated": "8/22",
+        "totalExperts": 99,
+        "matched": 18,
+        "total": 18
+      },
+      "rankingsError": null,
       "available": [
         "Kenny Gainwell",
         "Chig Okonkwo",
@@ -18110,16 +20893,6 @@
         "Tyquan Thornton"
       ],
       "availableAt": "2026-08-22T01:51:54.463Z",
-      "rankings": {
-        "type": "DRAFT",
-        "scoring": "HALF",
-        "position": "OP",
-        "lastUpdated": "8/22",
-        "totalExperts": 99,
-        "matched": 18,
-        "total": 18
-      },
-      "rankingsError": null,
       "power": {
         "computedAt": "2026-08-22T01:51:54.463Z",
         "scoring": "HALF",
@@ -18712,7 +21485,7 @@
         }
       ],
       "draftInProgress": false,
-      "updatedAt": "2026-08-22T02:01:33.235Z",
+      "updatedAt": "2026-08-22T02:09:38.707Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -18977,7 +21750,7 @@
         "Najee Harris"
       ],
       "power": {
-        "computedAt": "2026-08-22T02:01:18.536Z",
+        "computedAt": "2026-08-22T02:09:24.584Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -19602,7 +22375,7 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-08-22T02:01:18.536Z"
+      "availableAt": "2026-08-22T02:09:24.584Z"
     },
     {
       "id": "1966972",
@@ -19613,7 +22386,7 @@
       "teamName": "Big Dart Energy",
       "url": "https://fantasy.espn.com/football/team?leagueId=1966972&teamId=10",
       "players": [],
-      "updatedAt": "2026-08-22T02:01:33.356Z",
+      "updatedAt": "2026-08-22T02:09:38.885Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -19804,7 +22577,7 @@
       "teamName": "Jeffer Justinson",
       "url": "https://fantasy.espn.com/football/team?leagueId=421871710&teamId=5",
       "players": [],
-      "updatedAt": "2026-08-22T02:01:33.423Z",
+      "updatedAt": "2026-08-22T02:09:38.942Z",
       "error": null,
       "tags": [],
       "provider": "espn",
