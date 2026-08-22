@@ -386,12 +386,15 @@ const labelsOf = (card) =>
 
 	const leagues = [
 		// Alpha: weakest at RB (a real, sortable spread across positions).
-		// The roster carries two RBs — one ranked, one FantasyPros doesn't
-		// cover — plus a QB, so the sub-line's position filter and its
-		// best-first-with-unranked-last sort both have something to prove.
+		// The roster carries three RBs — one ranked and active, one
+		// unranked and active, and one ranked but on the taxi squad — plus
+		// a QB, so the sub-line's position filter, its
+		// best-first-with-unranked-last sort, and the taxi-squad callout
+		// all have something to prove in one fixture.
 		mkLeague('A', 'Alpha', byPos(10, 5, 10, 10), [{ score: 50, byPosition: byPos(10, 50, 10, 10) }], [
 			{ name: 'Deep Stash', position: 'RB', team: 'KC' },
 			{ name: 'Starting Back', position: 'RB', team: 'SF', ecr: { rank: 34 } },
+			{ name: 'Taxi Prospect', position: 'RB', team: 'DEN', status: 'TAXI_SQUAD', ecr: { rank: 60 } },
 			{ name: 'Some QB', position: 'QB', team: 'BUF', ecr: { rank: 5 } },
 		]),
 		// Bravo: only one other franchise, so QB/RB/WR/TE are all ties at
@@ -444,8 +447,21 @@ const labelsOf = (card) =>
 	const findRoster = (cell) => findAll(cell, (c) => c.cls.includes('power-players'))[0];
 	const alphaRoster = findRoster(nameCellOf('Alpha'));
 	assert.ok(alphaRoster, "Alpha's name cell carries the weakest-position roster line");
-	assert.equal(fullText(alphaRoster), 'RB Starting Back SF (34), Deep Stash KC (—)');
+	assert.equal(fullText(alphaRoster), 'RB Starting Back SF (34), Taxi Prospect DEN (60), Deep Stash KC (—)');
 	assert.equal(alphaCells.every((c) => !findRoster(c)), true, 'no position cell carries a sub-line — only the name cell does');
+
+	// Colored to match the highlighted number it explains, not the muted
+	// grey Studs/Sleepers use — the whole line, including the "RB " label,
+	// inherits it since nothing overrides the label's own color.
+	assert.ok(alphaRoster.cls.includes('needs-players'), 'the roster line is colored to match .needs-weakest');
+
+	// The one taxi-squad player is set apart from his two active-roster
+	// teammates, and only him — this isn't a blanket style on the line.
+	const alphaEntries = alphaRoster.children.filter((c) => c.tag === 'span' && !c.cls.includes('power-players-label'));
+	assert.equal(alphaEntries.length, 3);
+	const taxiEntries = alphaEntries.filter((c) => c.cls.includes('needs-players-taxi'));
+	assert.equal(taxiEntries.length, 1, 'exactly one player is flagged as taxi-squad');
+	assert.ok(fullText(taxiEntries[0]).startsWith('Taxi Prospect'), 'the flagged player is the taxi-squad one, not an active-roster teammate');
 
 	// Bravo has a real RB on its roster, but the row has no uniquely-weakest
 	// position at all (every position ties), so no sub-line renders anywhere

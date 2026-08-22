@@ -522,6 +522,18 @@
 			letter-spacing: 0.03em;
 			font-weight: 700;
 		}
+		/* Team Needs' roster sub-line (see needsRosterLine): purple rather
+		   than .power-players' usual muted grey, to read as the answer to
+		   the purple number it sits under. The uppercase position label
+		   inherits this color too, since nothing overrides it. */
+		.needs-players { color: var(--accent); }
+		/* A taxi-squad player within that line, set apart in dark gold —
+		   an unused-elsewhere token (see the :root comment on --gold being
+		   reserved for the user's own team) rather than a new color,
+		   because he's a real asset at the position without costing a
+		   lineup slot the way an active-roster player would. The NFL team
+		   suffix (.team-suffix) keeps its own muted grey regardless. */
+		.needs-players-taxi { color: var(--gold-text); }
 		.group-label {
 			font-size: 0.72rem;
 			font-weight: 700;
@@ -5340,13 +5352,27 @@
 		}
 
 		// Team Needs' weakest-position sub-line — under the league name, the
-		// same slot and the same .power-players/.power-players-label styling
-		// Studs and Sleepers already use on Power Rankings, so a row growing
-		// a third kind of sub-line doesn't disrupt anything: every position
-		// column stays a plain, aligned number, and only the first column
-		// ever grows taller. Every rostered player at the position, not just
-		// the top-N the way Studs/Sleepers filter — the whole group is the
-		// point, since the rank above already blends starters and bench.
+		// same slot and the same .power-players/.power-players-label layout
+		// (font size, spacing) Studs and Sleepers already use on Power
+		// Rankings, so a row growing a third kind of sub-line doesn't disrupt
+		// anything: every position column stays a plain, aligned number, and
+		// only the first column ever grows taller. It breaks from that
+		// shared look in one way, deliberately: colored purple (.needs-
+		// players) rather than muted grey, since this line exists to answer
+		// "why is that number purple" and reads as connected to it rather
+		// than as a third, unrelated grey note under the same name.
+		//
+		// Every rostered player at the position, not just the top-N the way
+		// Studs/Sleepers filter — the whole group is the point, since the
+		// rank above already blends starters and bench. A taxi-squad player
+		// (.needs-players-taxi, --gold-text) is called out from the rest:
+		// he isn't on the active roster, so he's a real asset at the
+		// position without being a lineup-slot cost the way the others are,
+		// which is worth knowing at a glance rather than only on a click
+		// into the roster. The NFL team suffix stays its own usual muted
+		// grey regardless (see appendTeamSuffix / .team-suffix) — it isn't
+		// part of what's being called out.
+		//
 		// Unlike powerPlayersLine, the rank rides inline in parens rather
 		// than in a hover title: the question this line answers ("who do I
 		// have there, and how good are they") wants the number visible
@@ -5356,11 +5382,12 @@
 		function needsRosterLine(pos, players) {
 			if (!players || players.length === 0) return null;
 			const sorted = [...players].sort((a, b) => (a.ecr?.rank ?? Infinity) - (b.ecr?.rank ?? Infinity));
-			const line = el('div', { class: 'power-players' });
+			const line = el('div', { class: 'power-players needs-players' });
 			line.appendChild(el('span', { class: 'power-players-label', text: `${pos} ` }));
 			sorted.forEach((p, i) => {
 				if (i > 0) line.appendChild(document.createTextNode(', '));
-				const entry = el('span');
+				const onTaxi = (p.status || 'ROSTER').toUpperCase() === 'TAXI_SQUAD';
+				const entry = el('span', { class: onTaxi ? 'needs-players-taxi' : '' });
 				entry.appendChild(document.createTextNode(p.name));
 				appendTeamSuffix(entry, p.team);
 				const rank = Number.isFinite(p.ecr?.rank) ? p.ecr.rank : '—';
