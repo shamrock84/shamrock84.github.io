@@ -711,13 +711,24 @@ export async function fetchProjections({ apiKey, season, week = 0, inSeason = fa
 // is built from: a flex point earned by a rostered RB counts as RB strength
 // there, the same way it does here, rather than being invisible in a "flex"
 // bucket nobody can compare across teams.
+//
+// `starters` is the same fill, one level deeper still: not just which
+// position filled each slot, but which *player*. It costs nothing beyond
+// keeping the name that was already sitting on `players[i]` — the greedy
+// loop already holds a reference to the winning player at the moment it
+// seats them, this just remembers it instead of discarding it for the bare
+// point total. Order is seating order (dedicated slots first, most-
+// constrained first, so a flex winner lands last), not alphabetical or
+// score-sorted, since that's what tells a reader which one is the flex
+// without a separate label. This is what the Power Rankings "Start" column
+// popover reads (see computeLeaguePower / renderPowerRankCard).
 export function computePowerScore(players, slots) {
   const byPosition = new Map();
   for (const p of players || []) {
     if (!byPosition.has(p.position)) byPosition.set(p.position, []);
-    byPosition.get(p.position).push(p.points);
+    byPosition.get(p.position).push(p);
   }
-  for (const list of byPosition.values()) list.sort((a, b) => b - a);
+  for (const list of byPosition.values()) list.sort((a, b) => b.points - a.points);
   const cursor = new Map([...byPosition.keys()].map((pos) => [pos, 0]));
   const scoreByPosition = new Map([...byPosition.keys()].map((pos) => [pos, 0]));
 
@@ -725,34 +736,36 @@ export function computePowerScore(players, slots) {
   let score = 0;
   let filled = 0;
   let slotCount = 0;
+  const starters = [];
   for (const slot of ordered) {
     for (let i = 0; i < slot.count; i++) {
       slotCount++;
       let bestPos = null;
-      let bestPoints = -Infinity;
+      let bestPlayer = null;
       for (const pos of slot.positions) {
         const list = byPosition.get(pos);
         const at = cursor.get(pos) ?? 0;
-        if (list && at < list.length && list[at] > bestPoints) {
-          bestPoints = list[at];
+        if (list && at < list.length && (bestPlayer === null || list[at].points > bestPlayer.points)) {
+          bestPlayer = list[at];
           bestPos = pos;
         }
       }
       if (bestPos === null) continue;
       cursor.set(bestPos, (cursor.get(bestPos) ?? 0) + 1);
-      scoreByPosition.set(bestPos, (scoreByPosition.get(bestPos) ?? 0) + bestPoints);
-      score += bestPoints;
+      scoreByPosition.set(bestPos, (scoreByPosition.get(bestPos) ?? 0) + bestPlayer.points);
+      score += bestPlayer.points;
       filled++;
+      starters.push({ name: bestPlayer.name, position: bestPos });
     }
   }
   const totalPoints = (players || []).reduce((sum, p) => sum + p.points, 0);
   const byPositionOut = {};
   for (const [pos, list] of byPosition) {
-    const posTotal = list.reduce((sum, v) => sum + v, 0);
+    const posTotal = list.reduce((sum, p) => sum + p.points, 0);
     const posScore = scoreByPosition.get(pos) ?? 0;
     byPositionOut[pos] = { score: posScore, depth: posTotal - posScore };
   }
-  return { score, depth: totalPoints - score, filled, slotCount, byPosition: byPositionOut };
+  return { score, depth: totalPoints - score, filled, slotCount, byPosition: byPositionOut, starters };
 }
 
 // ---- The ECR fallback ---------------------------------------------------
@@ -873,9 +886,14 @@ export function computeLeaguePower({ franchises, slots, values, scoring, joinByI
       if (!entry) continue;
       const points = entry.points[effectiveScoring] ?? entry.points.PPR;
       if (!(points > 0)) continue;
-      players.push({ position: entry.position, points });
+      // The roster's own name, not the ranking list's — same convention as
+      // every other name on the page (the team suffix, for instance, always
+      // shows the provider's own spelling). Only ever read for display, in
+      // the Power Rankings "Start" popover; the join above already happened
+      // by id or normalized name, so this has no bearing on matching.
+      players.push({ position: entry.position, points, name: p.name });
     }
-    const { score, depth, filled, slotCount, byPosition } = computePowerScore(players, slots);
+    const { score, depth, filled, slotCount, byPosition, starters } = computePowerScore(players, slots);
     // Normalized to every POWER_POSITIONS entry, not just the ones this
     // roster happened to fill: a team with no rostered TE is genuinely
     // weakest there, and that has to show up as a real 0/0 rather than a
@@ -896,6 +914,14 @@ export function computeLeaguePower({ franchises, slots, values, scoring, joinByI
       filled,
       slotCount,
       byPosition: byPositionOut,
+      // Every team gets its starters computed here — ranking one franchise
+      // needs the greedy fill run for all of them regardless — but
+      // fetch-rosters.mjs strips this back off every team except the one
+      // matching the league's own franchiseId before writing the sync
+      // output, since only "my" starters are ever shown on the page. Kept
+      // general here rather than taking a "which franchise is mine"
+      // parameter, so this function's output doesn't depend on who's asking.
+      starters,
     };
   });
   teams.sort((a, b) => b.score - a.score);

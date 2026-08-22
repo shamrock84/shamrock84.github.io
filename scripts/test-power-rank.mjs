@@ -178,6 +178,31 @@ function projPlayer(name, mflid, { ppr = 100, half = 90, std = 80 } = {}) {
   assert.equal(slotCount, 3);
 }
 
+{
+  // The Power Rankings Start column's popover reads this list directly, so
+  // it has to carry real identity (name, and which slot actually seated
+  // him) rather than just a count. Flex listed first, same as the earlier
+  // dedicated-before-flex test, to pin that a bench player never displaces
+  // a dedicated-slot starter in the list either.
+  const slots = [
+    { positions: ['RB', 'WR'], count: 1 },
+    { positions: ['RB'], count: 1 },
+    { positions: ['WR'], count: 1 },
+  ];
+  const players = [
+    { name: 'Star RB', position: 'RB', points: 200 },
+    { name: 'Star WR', position: 'WR', points: 180 },
+    { name: 'Bench WR', position: 'WR', points: 150 },
+  ];
+  const { starters } = computePowerScore(players, slots);
+  assert.deepEqual([...starters], [
+    { name: 'Star RB', position: 'RB' },
+    { name: 'Star WR', position: 'WR' },
+    { name: 'Bench WR', position: 'WR' },
+  ], 'starters lists every seated player, dedicated slots before flex, in fill order');
+  assert.ok(!starters.some((s) => s.name === undefined), 'a slot nobody could fill never contributes a phantom starter');
+}
+
 // ---- MFL slot parsing ------------------------------------------------------
 
 // Shaped like TYPE=league's starters node, per formatStartingLineupRequirement
@@ -528,8 +553,8 @@ const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, pow
 
 	const proj = leaguePowerRanks(twoBasis, 'projections');
 	assert.equal(proj.size, 3);
-	assert.deepEqual({ ...proj.byFranchise.get('0003') }, { overall: 1, starters: 3, depth: 1, byPosition: null }, 'a farm system: best roster, worst lineup');
-	assert.deepEqual({ ...proj.byFranchise.get('0002') }, { overall: 3, starters: 1, depth: 3, byPosition: null }, 'a contender with no bench');
+	assert.deepEqual({ ...proj.byFranchise.get('0003') }, { overall: 1, starters: 3, depth: 1, byPosition: null, starterPlayers: null }, 'a farm system: best roster, worst lineup');
+	assert.deepEqual({ ...proj.byFranchise.get('0002') }, { overall: 3, starters: 1, depth: 3, byPosition: null, starterPlayers: null }, 'a contender with no bench');
 	assert.equal(proj.source.basis, 'projections');
 
 	// The same franchises ranked independently on the other basis — the whole
@@ -987,8 +1012,14 @@ const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, pow
 function domNode(tag = 'div') {
 	const n = {
 		tag, children: [], attrs: {}, cls: '', _text: '', dataset: {}, style: {}, listeners: {},
+		// A real token set, not a substring-matching placeholder: the
+		// Starters popover's open/close toggling depends on `remove`
+		// actually removing 'hidden' rather than silently no-op'ing.
 		classList: {
-			add(c) { n.cls += ' ' + c; }, remove() {}, toggle() {}, contains: (c) => n.cls.includes(c),
+			add(c) { const t = n.cls.trim().split(/\s+/).filter(Boolean); if (!t.includes(c)) n.cls = [...t, c].join(' '); },
+			remove(c) { n.cls = n.cls.trim().split(/\s+/).filter((x) => x && x !== c).join(' '); },
+			toggle(c) { n.cls.trim().split(/\s+/).includes(c) ? this.remove(c) : this.add(c); },
+			contains: (c) => n.cls.trim().split(/\s+/).includes(c),
 		},
 		addEventListener(type, fn) { (n.listeners[type] = n.listeners[type] || []).push(fn); },
 		removeEventListener() {},
@@ -1003,7 +1034,16 @@ function domNode(tag = 'div') {
 		set innerHTML(v) { if (v === '') n.children.length = 0; },
 		get textContent() { return n._text; },
 		set textContent(v) { n._text = v; },
-		click() { (n.listeners.click || []).forEach((fn) => fn()); },
+		// Zeroed rect/offsets — the popover's own positioning math runs
+		// against these, but this suite checks that it opens with the right
+		// content, not where it lands on a real screen.
+		getBoundingClientRect: () => ({ top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0 }),
+		offsetWidth: 0,
+		offsetHeight: 0,
+		// A real click event always carries a stopPropagation a handler can
+		// call without checking; production code (see the Start column
+		// button) relies on that exactly like a browser would.
+		click() { (n.listeners.click || []).forEach((fn) => fn({ stopPropagation() {} })); },
 	};
 	return n;
 }
@@ -1022,7 +1062,7 @@ const domCtx = {
 		visibilityState: 'visible',
 		body: domNode(),
 	},
-	window: { addEventListener() {} },
+	window: { addEventListener() {}, innerWidth: 1024 },
 	fetch: async () => ({ ok: false, status: 503, json: async () => ({}) }),
 };
 vm.createContext(domCtx);
@@ -1158,6 +1198,61 @@ const labelsOf = (card) =>
 	clickTh(card, 'League');
 	assert.deepEqual([...labelsOf(card)], ['Delta', 'Charlie', 'Bravo', 'Alpha'],
 		'reversed alphabetically, unranked included');
+}
+
+// ---- Start column: the "who are the starters" popover ---------------------
+//
+// The Start column's number is a plain rank; keepMyStarters (fetch-
+// rosters.mjs) only keeps the actual roster list for the row's own
+// franchise, so leaguePowerRanks only ever attaches `starterPlayers` to
+// that one team. The button/popover has to degrade to plain text exactly
+// when that's missing — an old snapshot from before this shipped, or (in
+// this fixture) a league with no roster data at all.
+{
+	const teams = (withStarters) => [
+		{ franchiseId: '1', score: 100, depth: 0, ...(withStarters ? { starters: [
+			{ name: 'Franchise QB', position: 'QB' },
+			{ name: 'Star RB', position: 'RB' },
+		] } : {}) },
+		{ franchiseId: '2', score: 90, depth: 0 },
+	];
+	const leagues = [
+		{ id: 'A', name: 'Alpha', type: 'dynasty', season: '2026', franchiseId: '1',
+			power: { projections: { source: { basis: 'projections' }, teams: teams(true) } } },
+		{ id: 'B', name: 'Bravo', type: 'dynasty', season: '2026', franchiseId: '1',
+			power: { projections: { source: { basis: 'projections' }, teams: teams(false) } } },
+	];
+
+	const card = domCtx.renderPowerRankCard('dynasty', ['dynasty'], leagues, 2026);
+	const rowOf = (label) => findAll(card, (c) => c.tag === 'tr')
+		.filter((tr) => tr.children.some((c) => c.tag === 'td'))
+		.find((tr) => tr.children[0]._text === label);
+	// Column order: League, Proj, ECR, Start, Ben, Avg — Start is index 3.
+	const startCellOf = (label) => rowOf(label).children[3];
+
+	const alphaBtn = startCellOf('Alpha').children[0];
+	assert.ok(alphaBtn && alphaBtn.cls.includes('starters-link'), 'a franchise with a roster gets a clickable Start number');
+	assert.equal(alphaBtn._text, '1', 'the button still shows the plain rank, not the roster');
+
+	const bravoCell = startCellOf('Bravo');
+	assert.ok(!bravoCell.children.some((c) => c.cls?.includes('starters-link')),
+		'no starterPlayers (old snapshot, or not this row\'s own franchise) — plain text, not a dead-looking button');
+	assert.equal(bravoCell._text, '1', 'same rank as Alpha (both leagues\' own franchise scores highest) — only the button is missing');
+
+	alphaBtn.click();
+	assert.ok(domCtx.document.body.children.some((c) => c.cls.includes('starters-popover') && !c.cls.includes('hidden')),
+		'clicking opens the popover');
+	const popover = domCtx.document.body.children.find((c) => c.cls.includes('starters-popover'));
+	const title = popover.children.find((c) => c.cls.includes('starters-popover-title'));
+	assert.equal(title._text, 'Alpha — Starters', 'titled with the league name, matching the needsPopover convention');
+	const rows = popover.children.filter((c) => c.cls.includes('starters-popover-row'));
+	assert.deepEqual(rows.map((r) => [r.children[0]._text, r.children[1]._text]), [
+		['Franchise QB', 'QB'],
+		['Star RB', 'RB'],
+	], 'one row per starter, name and the position that actually seated him');
+
+	alphaBtn.click();
+	assert.ok(popover.cls.includes('hidden'), 'clicking the same button again closes it (toggle)');
 }
 
 console.log('test-power-rank: all assertions passed');
