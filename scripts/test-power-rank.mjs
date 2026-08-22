@@ -528,8 +528,8 @@ const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, pow
 
 	const proj = leaguePowerRanks(twoBasis, 'projections');
 	assert.equal(proj.size, 3);
-	assert.deepEqual({ ...proj.byFranchise.get('0003') }, { overall: 1, starters: 3, depth: 1 }, 'a farm system: best roster, worst lineup');
-	assert.deepEqual({ ...proj.byFranchise.get('0002') }, { overall: 3, starters: 1, depth: 3 }, 'a contender with no bench');
+	assert.deepEqual({ ...proj.byFranchise.get('0003') }, { overall: 1, starters: 3, depth: 1, byPosition: null }, 'a farm system: best roster, worst lineup');
+	assert.deepEqual({ ...proj.byFranchise.get('0002') }, { overall: 3, starters: 1, depth: 3, byPosition: null }, 'a contender with no bench');
 	assert.equal(proj.source.basis, 'projections');
 
 	// The same franchises ranked independently on the other basis — the whole

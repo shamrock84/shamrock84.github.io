@@ -138,6 +138,13 @@ jobs:
       - name: Test the power ranks
         run: node scripts/test-power-rank.mjs
 
+      # Team Needs: the per-position split of the same power-rank data,
+      # and the card's own click-to-sort / weakest-cell highlighting. A
+      # wrong split here renders a plausible small number crediting one
+      # position with another's points.
+      - name: Test the Team Needs card
+        run: node scripts/test-team-needs.mjs
+
       # Click-to-sort on the shared analytics table. The sort state lives in a
       # closure rather than a pure function, so this one drives a DOM stub — and
       # every way it can break still renders a plausible-looking table.
