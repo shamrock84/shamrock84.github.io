@@ -499,6 +499,12 @@
 		}
 		/* The summary column: the one number to read if you read one. */
 		.power-avg { font-weight: 600; }
+		/* Team Needs: the single weakest position in a row, so the read this
+		   card exists for doesn't need scanning four numbers by eye. */
+		.needs-weakest {
+			color: var(--accent);
+			font-weight: 700;
+		}
 		/* "Studs" and "Sleepers" sub-lines under a league's name (see
 		   powerPlayersLine) — same treatment as the exposure cards' leagueLine
 		   under a player's name (.exposure-leagues), just under a different
@@ -3441,27 +3447,62 @@
 			return ranks;
 		}
 
+		// Mirrors POWER_POSITIONS in scripts/lib/fantasypros.mjs — a deliberate
+		// second copy, same reasoning as normalizeName/normalizePlayerName:
+		// the page has no build step and no imports, so the alternative would
+		// be shipping the constant inside data/rosters.json instead of in code
+		// on both sides of the sync boundary.
+		const POWER_POSITIONS = ['QB', 'RB', 'WR', 'TE'];
+
 		// One basis at a time — 'projections' or 'ecr'. Each is ranked entirely
 		// on its own numbers: the same franchises, ordered twice, so a team can
 		// legitimately be 2nd by projected points and 7th by consensus rank.
 		// That gap is the point of showing both, not a discrepancy to reconcile.
+		//
+		// Also ranks each POWER_POSITIONS entry the same way overall is ranked
+		// from score+depth — one blended number per position, since a need is
+		// more useful as a single verdict ("weakest at RB") than as a starters
+		// number and a depth number a reader has to weigh themselves. This is
+		// what the Team Needs card reads. Gated on every team in the league
+		// actually carrying a `byPosition` object: a league that hasn't synced
+		// since this shipped has team entries from the old shape, and ranking
+		// four positions against a league where half the teams have none would
+		// silently manufacture a needs column that means nothing — the same
+		// half-upgraded-league guard `hasDepth` already applies to Depth.
 		function leaguePowerRanks(league, basis) {
 			const block = league.power ? league.power[basis] : null;
 			const teams = block && Array.isArray(block.teams) ? block.teams : [];
 			if (teams.length === 0) return null;
-			const keyed = teams.map((t) => ({ key: String(t.franchiseId), score: Number(t.score) || 0, depth: t.depth == null ? null : Number(t.depth) }));
+			const keyed = teams.map((t) => ({
+				key: String(t.franchiseId),
+				score: Number(t.score) || 0,
+				depth: t.depth == null ? null : Number(t.depth),
+				byPosition: t.byPosition || null,
+			}));
 			const hasDepth = keyed.every((t) => t.depth != null && Number.isFinite(t.depth));
 			const starters = competitionRanks(keyed.map((t) => ({ key: t.key, value: t.score })));
 			const depth = hasDepth ? competitionRanks(keyed.map((t) => ({ key: t.key, value: t.depth }))) : null;
 			const overall = hasDepth
 				? competitionRanks(keyed.map((t) => ({ key: t.key, value: t.score + t.depth })))
 				: starters;
+
+			const hasByPosition = keyed.every((t) => t.byPosition && POWER_POSITIONS.every((pos) => t.byPosition[pos]));
+			const positionRanks = hasByPosition
+				? Object.fromEntries(POWER_POSITIONS.map((pos) => [
+					pos,
+					competitionRanks(keyed.map((t) => ({ key: t.key, value: t.byPosition[pos].score + t.byPosition[pos].depth }))),
+				]))
+				: null;
+
 			const byFranchise = new Map();
 			for (const t of keyed) {
 				byFranchise.set(t.key, {
 					overall: overall.get(t.key),
 					starters: starters.get(t.key),
 					depth: depth ? depth.get(t.key) : null,
+					byPosition: positionRanks
+						? Object.fromEntries(POWER_POSITIONS.map((pos) => [pos, positionRanks[pos].get(t.key)]))
+						: null,
 				});
 			}
 			return { size: keyed.length, byFranchise, source: block.source || null };
@@ -5292,10 +5333,10 @@
 
 			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
 			card.appendChild(el('h2', { text: 'Power Rankings' }));
-			// Word for word what the other three cards say, same reasoning.
+			// Word for word what the other four cards say, same reasoning.
 			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(rows.length)}` }));
 
-			// Conditional, and deliberately so: the four Analytics cards carry
+			// Conditional, and deliberately so: the five Analytics cards carry
 			// one identical subtitle and nothing else, because a standing
 			// explanation costs room on every visit. This is not an
 			// explanation — it appears only when the numbers under the card
@@ -5446,6 +5487,156 @@
 							? el('td', { class: 'power-tbd', text: 'TBD' })
 							: el('td', { class: 'power-avg', text: r.avg.toFixed(1) })
 					);
+					table.appendChild(row);
+				}
+			}
+			renderBody();
+			card.appendChild(table);
+			return card;
+		}
+
+		// Team Needs: the same per-franchise valuation Power Rankings already
+		// computes, read one level deeper — which position is actually thin,
+		// not just how the whole roster stacks up. Reuses computeMyPowerRows
+		// outright rather than a parallel row-builder: proj/ecr already carry
+		// `byPosition` (see leaguePowerRanks), so every gate Power Rankings
+		// applies — the awaitingRollover suppression, the mid-draft/error/
+		// no-roster reasons, the single active detail basis — comes along for
+		// free and can never drift from it, since both cards read identical
+		// rows.
+		//
+		// Deliberately no raw point values anywhere on this card, matching
+		// Power Rankings' own rule that those numbers only compare within a
+		// league, so only the ordinal is ever shown. A rank column here is
+		// that same within-league ordinal, one position at a time, blending
+		// a franchise's starters and bench at that position into one number
+		// exactly the way Overall blends the whole-roster Starters and Depth
+		// columns — a need is more useful as a single verdict ("weakest at
+		// RB") than as two numbers a reader has to weigh themselves.
+		//
+		// Rows keep computeMyPowerRows' own order (the row average) rather
+		// than re-sorting by "worst position": the two cards describe the
+		// same set of leagues, and matching order is what lets a reader move
+		// between them without re-finding each row. Every column is still
+		// clickable for a reader who specifically wants "who's weakest at RB
+		// across my leagues".
+		function renderTeamNeedsCard(groupKey, types, leagues, year) {
+			const rows = computeMyPowerRows(leagues, types, year);
+			const detailBasis = powerDetailBasis(rows);
+			const detailOf = (r) => (detailBasis === 'projections' ? r.proj : r.ecr);
+			// Absent, not a card of TBDs: a snapshot from before byPosition
+			// existed — or before this group's leagues have resynced since it
+			// shipped — has every detail present but byPosition null on all of
+			// them, the same "nothing to show yet" state Power Rankings treats
+			// as no card at all rather than a wall of TBDs.
+			if (!rows.some((r) => detailOf(r) && detailOf(r).byPosition)) return null;
+
+			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
+			card.appendChild(el('h2', { text: 'Team Needs' }));
+			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(rows.length)}` }));
+
+			const detailLabel = detailBasis === 'projections' ? 'projections' : 'consensus rankings';
+			const table = el('table', { class: 'standings' });
+
+			const SORTS = {
+				league: { dir: 1, value: (r) => r.label.toLowerCase() },
+				...Object.fromEntries(POWER_POSITIONS.map((pos) => [
+					pos,
+					{
+						dir: 1,
+						value: (r) => {
+							const d = detailOf(r);
+							return d && d.byPosition ? d.byPosition[pos] : null;
+						},
+						missingLast: true,
+					},
+				])),
+			};
+			let sortKey = null;
+			let sortDir = 0;
+			const defaultIndex = new Map(rows.map((r, i) => [r, i]));
+
+			function sortedRows() {
+				if (!sortKey) return rows;
+				const { value, missingLast } = SORTS[sortKey];
+				const byDefault = (a, b) => defaultIndex.get(a) - defaultIndex.get(b);
+				return [...rows].sort((a, b) => {
+					const av = value(a);
+					const bv = value(b);
+					if (missingLast && (av == null || bv == null)) {
+						if (av == null && bv == null) return byDefault(a, b);
+						return av == null ? 1 : -1;
+					}
+					return (av === bv ? 0 : av < bv ? -1 : 1) * sortDir || byDefault(a, b);
+				});
+			}
+
+			function cycleSort(key) {
+				if (sortKey !== key) {
+					sortKey = key;
+					sortDir = SORTS[key].dir;
+				} else if (sortDir === SORTS[key].dir) {
+					sortDir = -sortDir;
+				} else {
+					sortKey = null;
+					sortDir = 0;
+				}
+				renderBody();
+			}
+
+			function sortableHeader(label, key, title) {
+				const th = el('th', { class: 'sortable', text: label });
+				if (title) th.setAttribute('title', title);
+				if (sortKey === key) {
+					th.appendChild(el('span', { class: 'sort-arrow', text: sortDir === 1 ? ' ▲' : ' ▼' }));
+				}
+				th.addEventListener('click', () => cycleSort(key));
+				return th;
+			}
+
+			function renderBody() {
+				table.innerHTML = '';
+				const headRow = el('tr');
+				headRow.appendChild(sortableHeader('League', 'league', 'Team count in parentheses'));
+				for (const pos of POWER_POSITIONS) {
+					headRow.appendChild(sortableHeader(pos, pos, `Rank at ${pos} by ${detailLabel} — starters and bench combined, 1 = strongest`));
+				}
+				table.appendChild(headRow);
+
+				for (const r of sortedRows()) {
+					const row = el('tr');
+					const nameCell = el('td', { text: r.label });
+					if (r.size != null) nameCell.appendChild(el('span', { class: 'power-size', text: ` (${r.size})` }));
+					row.appendChild(nameCell);
+
+					const detail = detailOf(r);
+					const byPos = detail ? detail.byPosition : null;
+					// The weakest of this row's own ranks, highlighted so the
+					// read this card exists for — "which position, for this
+					// team" — doesn't require scanning four numbers against
+					// each other by eye. Only when more than one position
+					// actually has a rank (a row with one real number and
+					// three TBDs has nothing to compare it against), and only
+					// when the worst value is uniquely worst — a four-way tie
+					// has no single position to point at, and highlighting
+					// the first one anyway would claim a need that isn't there.
+					let worstPos = null;
+					if (byPos) {
+						const ranked = POWER_POSITIONS.filter((pos) => byPos[pos] != null);
+						if (ranked.length > 1) {
+							const worstValue = Math.max(...ranked.map((pos) => byPos[pos]));
+							const worstCandidates = ranked.filter((pos) => byPos[pos] === worstValue);
+							if (worstCandidates.length === 1) worstPos = worstCandidates[0];
+						}
+					}
+					for (const pos of POWER_POSITIONS) {
+						const value = byPos ? byPos[pos] : null;
+						if (value == null) {
+							row.appendChild(el('td', { class: 'power-tbd', text: 'TBD', title: r.reason || `No rank at ${pos} yet` }));
+						} else {
+							row.appendChild(el('td', { class: pos === worstPos ? 'needs-weakest' : '', text: String(value) }));
+						}
+					}
 					table.appendChild(row);
 				}
 			}
@@ -6408,6 +6599,8 @@
 					if (!data.leagues.some((l) => types.includes(l.type))) continue;
 					const powerCard = renderPowerRankCard(groupKey, types, data.leagues, data.year);
 					if (powerCard) gridEl.appendChild(powerCard);
+					const needsCard = renderTeamNeedsCard(groupKey, types, data.leagues, data.year);
+					if (needsCard) gridEl.appendChild(needsCard);
 					gridEl.appendChild(renderByeWeeksCard(groupKey, types, data.leagues));
 					const availableCard = renderTopAvailableCard(groupKey, types, data.leagues, data.rankingPools, data.year);
 					if (availableCard) gridEl.appendChild(availableCard);

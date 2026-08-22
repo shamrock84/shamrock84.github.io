@@ -702,6 +702,15 @@ export async function fetchProjections({ apiKey, season, week = 0, inSeason = fa
 // which is fine for the ordinal's purposes: roster limits are uniform
 // within a league, and within a league is the only place these numbers
 // compare.
+//
+// `byPosition` is the same score/depth split, one level deeper: which
+// position each seated point actually came from. The greedy fill already
+// knows this — `bestPos` is the real position of whichever player filled a
+// slot, dedicated or flex, not the slot's own label — so this costs nothing
+// beyond bookkeeping the fill already does. It is what the Team Needs card
+// is built from: a flex point earned by a rostered RB counts as RB strength
+// there, the same way it does here, rather than being invisible in a "flex"
+// bucket nobody can compare across teams.
 export function computePowerScore(players, slots) {
   const byPosition = new Map();
   for (const p of players || []) {
@@ -710,6 +719,7 @@ export function computePowerScore(players, slots) {
   }
   for (const list of byPosition.values()) list.sort((a, b) => b - a);
   const cursor = new Map([...byPosition.keys()].map((pos) => [pos, 0]));
+  const scoreByPosition = new Map([...byPosition.keys()].map((pos) => [pos, 0]));
 
   const ordered = [...(slots || [])].sort((a, b) => a.positions.length - b.positions.length);
   let score = 0;
@@ -730,12 +740,19 @@ export function computePowerScore(players, slots) {
       }
       if (bestPos === null) continue;
       cursor.set(bestPos, (cursor.get(bestPos) ?? 0) + 1);
+      scoreByPosition.set(bestPos, (scoreByPosition.get(bestPos) ?? 0) + bestPoints);
       score += bestPoints;
       filled++;
     }
   }
   const totalPoints = (players || []).reduce((sum, p) => sum + p.points, 0);
-  return { score, depth: totalPoints - score, filled, slotCount };
+  const byPositionOut = {};
+  for (const [pos, list] of byPosition) {
+    const posTotal = list.reduce((sum, v) => sum + v, 0);
+    const posScore = scoreByPosition.get(pos) ?? 0;
+    byPositionOut[pos] = { score: posScore, depth: posTotal - posScore };
+  }
+  return { score, depth: totalPoints - score, filled, slotCount, byPosition: byPositionOut };
 }
 
 // ---- The ECR fallback ---------------------------------------------------
@@ -858,13 +875,27 @@ export function computeLeaguePower({ franchises, slots, values, scoring, joinByI
       if (!(points > 0)) continue;
       players.push({ position: entry.position, points });
     }
-    const { score, depth, filled, slotCount } = computePowerScore(players, slots);
+    const { score, depth, filled, slotCount, byPosition } = computePowerScore(players, slots);
+    // Normalized to every POWER_POSITIONS entry, not just the ones this
+    // roster happened to fill: a team with no rostered TE is genuinely
+    // weakest there, and that has to show up as a real 0/0 rather than a
+    // missing key, or the Team Needs card would have nothing to rank it
+    // against at that position.
+    const byPositionOut = {};
+    for (const pos of POWER_POSITIONS) {
+      const posEntry = byPosition[pos];
+      byPositionOut[pos] = {
+        score: Math.round((posEntry?.score ?? 0) * 10) / 10,
+        depth: Math.round((posEntry?.depth ?? 0) * 10) / 10,
+      };
+    }
     return {
       franchiseId: String(f.franchiseId),
       score: Math.round(score * 10) / 10,
       depth: Math.round(depth * 10) / 10,
       filled,
       slotCount,
+      byPosition: byPositionOut,
     };
   });
   teams.sort((a, b) => b.score - a.score);
