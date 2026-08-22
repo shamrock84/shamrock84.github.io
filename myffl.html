@@ -502,7 +502,9 @@
 		/* Team Needs: any position ranked below the league's own average —
 		   worse than half the field — so a team weak at several positions
 		   at once gets each one flagged rather than an arbitrary single
-		   pick, or nothing at all for lack of one clear "worst". */
+		   pick. A team clearing the average everywhere falls back to its
+		   own weakest position(s) instead, so a strong roster still gets a
+		   real answer rather than a blank row. */
 		.needs-weakest {
 			color: var(--accent);
 			font-weight: 700;
@@ -536,6 +538,58 @@
 		   lineup slot the way an active-roster player would. The NFL team
 		   suffix (.team-suffix) keeps its own muted grey regardless. */
 		.needs-players-taxi { color: var(--gold-text); }
+		/* Every Team Needs rank is a button rather than plain text, the same
+		   idiom .salary-link uses on the Rosters tab: a dotted underline
+		   signals "click me" for a popover rather than an outbound link.
+		   font: inherit lets a flagged cell's bold (.needs-weakest) carry
+		   through to the button inside it rather than a <button>'s own UA
+		   styling resetting it. */
+		.needs-link {
+			background: none;
+			border: none;
+			padding: 0;
+			margin: 0;
+			font: inherit;
+			font-variant-numeric: tabular-nums;
+			color: var(--accent);
+			text-decoration: underline dotted;
+			text-underline-offset: 0.15rem;
+			cursor: pointer;
+		}
+		/* Starters/Bench popover for a Team Needs rank — same shape as
+		   .salary-popover (single shared instance, position:fixed, appended
+		   to <body> so a horizontally-scrolled table can't clip or
+		   misposition it) but named separately rather than shared: the two
+		   pop up different content from different tables, and duplicating
+		   this little CSS costs less than coupling two unrelated features
+		   to one shared class. */
+		.needs-popover {
+			position: fixed;
+			z-index: 20;
+			background: var(--card-bg);
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+			padding: 0.5rem 0.7rem;
+			font-size: 0.85rem;
+			min-width: 10rem;
+		}
+		.needs-popover-title {
+			font-weight: 600;
+			color: var(--muted);
+			margin-bottom: 0.3rem;
+			white-space: nowrap;
+		}
+		.needs-popover-row {
+			display: flex;
+			justify-content: space-between;
+			gap: 1rem;
+			padding: 0.15rem 0;
+			font-variant-numeric: tabular-nums;
+		}
+		.needs-popover-row + .needs-popover-row {
+			border-top: 1px solid var(--border);
+		}
 		.group-label {
 			font-size: 0.72rem;
 			font-weight: 700;
@@ -3515,10 +3569,20 @@
 				: starters;
 
 			const hasByPosition = keyed.every((t) => t.byPosition && POWER_POSITIONS.every((pos) => t.byPosition[pos]));
+			// Each position gets the same three-way split the whole roster does
+			// — overall, starters, depth — not just the blended overall number.
+			// The card prints only `overall`; `starters`/`depth` exist so a
+			// click on that number can show the breakdown behind it (see
+			// needsRosterLine's popover) without a second, separate computation
+			// having to agree with this one.
 			const positionRanks = hasByPosition
 				? Object.fromEntries(POWER_POSITIONS.map((pos) => [
 					pos,
-					competitionRanks(keyed.map((t) => ({ key: t.key, value: t.byPosition[pos].score + t.byPosition[pos].depth }))),
+					{
+						starters: competitionRanks(keyed.map((t) => ({ key: t.key, value: t.byPosition[pos].score }))),
+						depth: competitionRanks(keyed.map((t) => ({ key: t.key, value: t.byPosition[pos].depth }))),
+						overall: competitionRanks(keyed.map((t) => ({ key: t.key, value: t.byPosition[pos].score + t.byPosition[pos].depth }))),
+					},
 				]))
 				: null;
 
@@ -3529,7 +3593,11 @@
 					starters: starters.get(t.key),
 					depth: depth ? depth.get(t.key) : null,
 					byPosition: positionRanks
-						? Object.fromEntries(POWER_POSITIONS.map((pos) => [pos, positionRanks[pos].get(t.key)]))
+						? Object.fromEntries(POWER_POSITIONS.map((pos) => [pos, {
+							overall: positionRanks[pos].overall.get(t.key),
+							starters: positionRanks[pos].starters.get(t.key),
+							depth: positionRanks[pos].depth.get(t.key),
+						}]))
 						: null,
 				});
 			}
@@ -5574,6 +5642,67 @@
 			return card;
 		}
 
+		// Shared "Starters vs Bench" popover for Team Needs' per-position rank
+		// buttons — mirrors openSalaryPopover/toggleSalaryPopover on the
+		// Rosters tab exactly (one instance reused across every click, built
+		// lazily, appended to <body> so its position:fixed coordinates are
+		// measured against the viewport rather than a scrolling ancestor,
+		// dismissed on scroll/resize/Escape/outside-click). A separate
+		// instance rather than a shared one: the two pop up different content
+		// from different tables, and there is nothing to be gained by coupling
+		// them beyond the CSS shape they already duplicate on purpose (see
+		// .needs-popover).
+		let needsPopoverEl = null;
+		let needsPopoverOwner = null;
+		function closeNeedsPopover() {
+			if (!needsPopoverEl) return;
+			needsPopoverEl.classList.add('hidden');
+			needsPopoverOwner = null;
+		}
+		function positionNeedsPopover(button) {
+			const rect = button.getBoundingClientRect();
+			needsPopoverEl.style.top = `${rect.bottom + 4}px`;
+			const maxLeft = window.innerWidth - needsPopoverEl.offsetWidth - 8;
+			needsPopoverEl.style.left = `${Math.max(8, Math.min(rect.left, maxLeft))}px`;
+		}
+		// `entry` is the same {overall, starters, depth} object the clicked
+		// button's own number came from — no second lookup, so the popover
+		// can never disagree with the cell that opened it.
+		function openNeedsPopover(button, label, pos, entry) {
+			if (!needsPopoverEl) {
+				needsPopoverEl = el('div', { class: 'needs-popover hidden' });
+				document.body.appendChild(needsPopoverEl);
+				window.addEventListener('scroll', closeNeedsPopover, true);
+				window.addEventListener('resize', closeNeedsPopover);
+				document.addEventListener('keydown', (e) => {
+					if (e.key === 'Escape') closeNeedsPopover();
+				});
+				document.addEventListener('click', (e) => {
+					if (!needsPopoverOwner) return;
+					if (e.target === needsPopoverOwner || needsPopoverEl.contains(e.target)) return;
+					closeNeedsPopover();
+				});
+			}
+			needsPopoverEl.innerHTML = '';
+			needsPopoverEl.appendChild(el('div', { class: 'needs-popover-title', text: `${label} — ${pos}` }));
+			for (const [rowLabel, rank] of [['Starters', entry.starters], ['Bench', entry.depth]]) {
+				const line = el('div', { class: 'needs-popover-row' });
+				line.appendChild(el('span', { text: rowLabel }));
+				line.appendChild(el('span', { text: String(rank) }));
+				needsPopoverEl.appendChild(line);
+			}
+			needsPopoverEl.classList.remove('hidden');
+			needsPopoverOwner = button;
+			positionNeedsPopover(button);
+		}
+		function toggleNeedsPopover(button, label, pos, entry) {
+			if (needsPopoverOwner === button && !needsPopoverEl.classList.contains('hidden')) {
+				closeNeedsPopover();
+				return;
+			}
+			openNeedsPopover(button, label, pos, entry);
+		}
+
 		// Team Needs: the same per-franchise valuation Power Rankings already
 		// computes, read one level deeper — which position is actually thin,
 		// not just how the whole roster stacks up. Reuses computeMyPowerRows
@@ -5625,7 +5754,7 @@
 						dir: 1,
 						value: (r) => {
 							const d = detailOf(r);
-							return d && d.byPosition ? d.byPosition[pos] : null;
+							return d && d.byPosition && d.byPosition[pos] ? d.byPosition[pos].overall : null;
 						},
 						missingLast: true,
 					},
@@ -5690,20 +5819,44 @@
 
 					const detail = detailOf(r);
 					const byPos = detail ? detail.byPosition : null;
-					// A "need" is any position ranked below the league's own
-					// average — worse than half the field, e.g. rank 6+ of 10,
-					// 7+ of 12, 8+ of 14 — not just whichever position happens
-					// to be worst. A team can be flagged at zero, one, or all
-					// four positions; a team weak at two positions at once
-					// (see Game On: dead last at both WR and TE) gets both
-					// flagged rather than an arbitrary single pick, or none at
-					// all for lack of a unique worst. r.size is the same
-					// league-size figure already printed beside the league
-					// name, so there's nothing new to compute it from.
+					// A "need" is primarily any position ranked below the
+					// league's own average — worse than half the field, e.g.
+					// rank 6+ of 10, 7+ of 12, 8+ of 14 — not just whichever
+					// position happens to be worst. A team can be flagged at
+					// zero, one, or all four positions this way; a team weak
+					// at two positions at once (see Game On: dead last at
+					// both WR and TE) gets both flagged rather than an
+					// arbitrary single pick. r.size is the same league-size
+					// figure already printed beside the league name, so
+					// there's nothing new to compute it from.
+					//
+					// A genuinely strong team can clear the average at every
+					// position and still have a real weakest spot relative to
+					// itself — that comparison is worth surfacing too, or a
+					// contender's row would sit permanently blank while a
+					// mediocre team's fills with flags. So when nothing clears
+					// the average line, the fallback is the team's own worst
+					// position(s): ties share the flag rather than picking one
+					// arbitrarily, the same rule the average-based flag
+					// already follows.
+					const ranked = byPos ? POWER_POSITIONS.filter((pos) => byPos[pos] != null) : [];
 					const needThreshold = r.size != null ? r.size / 2 : null;
-					const needPositions = byPos && needThreshold != null
-						? POWER_POSITIONS.filter((pos) => byPos[pos] != null && byPos[pos] > needThreshold)
+					let needPositions = needThreshold != null
+						? ranked.filter((pos) => byPos[pos].overall > needThreshold)
 						: [];
+					if (needPositions.length === 0 && ranked.length > 0) {
+						const values = ranked.map((pos) => byPos[pos].overall);
+						const worstValue = Math.max(...values);
+						// Only when there is an actual worst to point at — a
+						// team tied at the same rank everywhere (all 1s in a
+						// two-team league, say) has no position that is
+						// relatively weaker than the others, and flagging
+						// all four just because they share the max would
+						// call an evenly-strong roster needy everywhere.
+						if (worstValue > Math.min(...values)) {
+							needPositions = ranked.filter((pos) => byPos[pos].overall === worstValue);
+						}
+					}
 					// Under the league name, not in a flagged cell itself — a
 					// sub-line there would grow that one cell taller than its
 					// neighbors and throw off every column's alignment. This
@@ -5715,11 +5868,28 @@
 						if (roster) nameCell.appendChild(roster);
 					}
 					for (const pos of POWER_POSITIONS) {
-						const value = byPos ? byPos[pos] : null;
-						if (value == null) {
+						const entry = byPos ? byPos[pos] : null;
+						if (entry == null) {
 							row.appendChild(el('td', { class: 'power-tbd', text: 'TBD', title: r.reason || `No rank at ${pos} yet` }));
 						} else {
-							row.appendChild(el('td', { class: needPositions.includes(pos) ? 'needs-weakest' : '', text: String(value) }));
+							// Clickable exactly like the Salary-by-Year figure on
+							// the Rosters tab: the blended number stays the thing
+							// on screen, but a click reveals the Starters/Bench
+							// split it was built from, rather than spending two
+							// more columns on every row to show it unconditionally.
+							const btn = el('button', {
+								type: 'button',
+								class: 'needs-link',
+								title: `${pos}: click for Starters/Bench split`,
+								text: String(entry.overall),
+							});
+							btn.addEventListener('click', (e) => {
+								e.stopPropagation();
+								toggleNeedsPopover(btn, r.label, pos, entry);
+							});
+							const cell = el('td', { class: needPositions.includes(pos) ? 'needs-weakest' : '' });
+							cell.appendChild(btn);
+							row.appendChild(cell);
 						}
 					}
 					table.appendChild(row);
