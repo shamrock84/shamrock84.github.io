@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-22T02:18:22.571Z",
+  "generatedAt": "2026-08-22T04:51:51.147Z",
   "year": "2026",
   "rankingPools": {
     "DYNASTY|PPR|ALL": {
@@ -2642,18 +2642,18 @@
           "url": "/nfl/players/tyler-shough.php"
         },
         {
-          "name": "Jordyn Tyson",
-          "position": "WR",
-          "team": "NO",
-          "rank": 126,
-          "url": "/nfl/players/jordyn-tyson.php"
-        },
-        {
           "name": "Xavier Worthy",
           "position": "WR",
           "team": "KC",
-          "rank": 127,
+          "rank": 126,
           "url": "/nfl/players/xavier-worthy.php"
+        },
+        {
+          "name": "Jordyn Tyson",
+          "position": "WR",
+          "team": "NO",
+          "rank": 127,
+          "url": "/nfl/players/jordyn-tyson.php"
         },
         {
           "name": "Matthew Golden",
@@ -3023,7 +3023,7 @@
           "name": "Sean Tucker",
           "position": "RB",
           "team": "TB",
-          "rank": 189,
+          "rank": 190,
           "url": "/nfl/players/sean-tucker.php"
         },
         {
@@ -3398,18 +3398,18 @@
           "url": "/nfl/players/lequint-allen-jr.php"
         },
         {
-          "name": "Caleb Douglas",
-          "position": "WR",
-          "team": "MIA",
-          "rank": 266,
-          "url": "/nfl/players/caleb-douglas.php"
-        },
-        {
           "name": "Kaelon Black",
           "position": "RB",
           "team": "SF",
-          "rank": 267,
+          "rank": 266,
           "url": "/nfl/players/kaelon-black.php"
+        },
+        {
+          "name": "Caleb Douglas",
+          "position": "WR",
+          "team": "MIA",
+          "rank": 267,
+          "url": "/nfl/players/caleb-douglas.php"
         },
         {
           "name": "Chris Brooks",
@@ -6060,7 +6060,7 @@
           }
         ]
       },
-      "updatedAt": "2026-08-22T02:14:37.952Z",
+      "updatedAt": "2026-08-22T04:51:31.853Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -6188,16 +6188,6 @@
       ],
       "lineupError": null,
       "draftInProgress": false,
-      "rankings": {
-        "type": "DYNASTY",
-        "scoring": "PPR",
-        "position": "ALL",
-        "lastUpdated": "8/22",
-        "totalExperts": 26,
-        "matched": 32,
-        "total": 32
-      },
-      "rankingsError": null,
       "available": [
         "Chig Okonkwo",
         "Kenny Gainwell",
@@ -6220,6 +6210,17 @@
         "Mac Jones",
         "Christian Kirk"
       ],
+      "availableAt": "2026-08-22T02:14:35.882Z",
+      "rankings": {
+        "type": "DYNASTY",
+        "scoring": "PPR",
+        "position": "ALL",
+        "lastUpdated": "8/22",
+        "totalExperts": 26,
+        "matched": 32,
+        "total": 32
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-08-22T02:14:35.882Z",
         "scoring": "PPR",
@@ -6745,8 +6746,7 @@
           ]
         },
         "projectionsUnavailable": null
-      },
-      "availableAt": "2026-08-22T02:14:35.882Z"
+      }
     },
     {
       "id": "25608",
@@ -7533,7 +7533,7 @@
           }
         ]
       },
-      "updatedAt": "2026-08-22T02:14:38.900Z",
+      "updatedAt": "2026-08-22T04:51:32.391Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -7661,16 +7661,6 @@
       ],
       "lineupError": null,
       "draftInProgress": false,
-      "rankings": {
-        "type": "DYNASTY",
-        "scoring": "PPR",
-        "position": "ALL",
-        "lastUpdated": "8/22",
-        "totalExperts": 26,
-        "matched": 32,
-        "total": 32
-      },
-      "rankingsError": null,
       "available": [
         "Chig Okonkwo",
         "Kenny Gainwell",
@@ -7691,6 +7681,17 @@
         "Justin Joly",
         "Christian Kirk"
       ],
+      "availableAt": "2026-08-22T02:14:35.882Z",
+      "rankings": {
+        "type": "DYNASTY",
+        "scoring": "PPR",
+        "position": "ALL",
+        "lastUpdated": "8/22",
+        "totalExperts": 26,
+        "matched": 32,
+        "total": 32
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-08-22T02:14:35.882Z",
         "scoring": "PPR",
@@ -8216,8 +8217,7 @@
           ]
         },
         "projectionsUnavailable": null
-      },
-      "availableAt": "2026-08-22T02:14:35.882Z"
+      }
     },
     {
       "id": "23545",
@@ -9027,7 +9027,7 @@
           }
         ]
       },
-      "updatedAt": "2026-08-22T02:14:40.020Z",
+      "updatedAt": "2026-08-22T04:51:32.926Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -9175,6 +9175,15 @@
       ],
       "lineupError": null,
       "draftInProgress": false,
+      "available": [
+        "Chig Okonkwo",
+        "Kenny Gainwell",
+        "Cade Otton",
+        "Michael Mayer",
+        "Mac Jones",
+        "Christian Kirk"
+      ],
+      "availableAt": "2026-08-22T02:14:35.882Z",
       "rankings": {
         "type": "DYNASTY",
         "scoring": "PPR",
@@ -9185,14 +9194,6 @@
         "total": 31
       },
       "rankingsError": null,
-      "available": [
-        "Chig Okonkwo",
-        "Kenny Gainwell",
-        "Cade Otton",
-        "Michael Mayer",
-        "Mac Jones",
-        "Christian Kirk"
-      ],
       "power": {
         "computedAt": "2026-08-22T02:14:35.882Z",
         "scoring": "PPR",
@@ -9818,8 +9819,7 @@
           ]
         },
         "projectionsUnavailable": null
-      },
-      "availableAt": "2026-08-22T02:14:35.882Z"
+      }
     },
     {
       "id": "35217",
@@ -10400,7 +10400,7 @@
           }
         ]
       },
-      "updatedAt": "2026-08-22T02:14:41.313Z",
+      "updatedAt": "2026-08-22T04:51:33.443Z",
       "error": null,
       "tags": [
         "Best Ball"
@@ -10537,16 +10537,6 @@
       "scoring": null,
       "scoringError": "No live scoring available yet",
       "draftInProgress": false,
-      "rankings": {
-        "type": "DRAFT",
-        "scoring": "PPR",
-        "position": "ALL",
-        "lastUpdated": "8/22",
-        "totalExperts": 101,
-        "matched": 24,
-        "total": 24
-      },
-      "rankingsError": null,
       "available": [
         "Kenny Gainwell",
         "Chig Okonkwo",
@@ -10568,6 +10558,17 @@
         "Jordan James",
         "Samaje Perine"
       ],
+      "availableAt": "2026-08-22T02:14:35.882Z",
+      "rankings": {
+        "type": "DRAFT",
+        "scoring": "PPR",
+        "position": "ALL",
+        "lastUpdated": "8/22",
+        "totalExperts": 101,
+        "matched": 24,
+        "total": 24
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-08-22T02:14:35.882Z",
         "scoring": "PPR",
@@ -11193,8 +11194,7 @@
           ]
         },
         "projectionsUnavailable": null
-      },
-      "availableAt": "2026-08-22T02:14:35.882Z"
+      }
     },
     {
       "id": "34850",
@@ -11854,7 +11854,7 @@
         "ir": 50,
         "position": []
       },
-      "updatedAt": "2026-08-22T02:14:42.937Z",
+      "updatedAt": "2026-08-22T04:51:34.113Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -11992,16 +11992,6 @@
       "scoring": null,
       "scoringError": "No live scoring available yet",
       "draftInProgress": false,
-      "rankings": {
-        "type": "DRAFT",
-        "scoring": "HALF",
-        "position": "OP",
-        "lastUpdated": "8/22",
-        "totalExperts": 99,
-        "matched": 27,
-        "total": 27
-      },
-      "rankingsError": null,
       "available": [
         "Kenny Gainwell",
         "Chig Okonkwo",
@@ -12022,6 +12012,17 @@
         "Greg Dulcich",
         "Najee Harris"
       ],
+      "availableAt": "2026-08-22T02:14:35.882Z",
+      "rankings": {
+        "type": "DRAFT",
+        "scoring": "HALF",
+        "position": "OP",
+        "lastUpdated": "8/22",
+        "totalExperts": 99,
+        "matched": 27,
+        "total": 27
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-08-22T02:14:35.882Z",
         "scoring": "HALF",
@@ -12647,8 +12648,7 @@
           ]
         },
         "projectionsUnavailable": null
-      },
-      "availableAt": "2026-08-22T02:14:35.882Z"
+      }
     },
     {
       "id": "30641",
@@ -13155,7 +13155,7 @@
           "contractYear": "1",
           "injuryStatus": "Q",
           "injuryDetail": {
-            "part": "Lower Body",
+            "part": "Ankle",
             "until": "Aug 28, 2026"
           },
           "pts": 0,
@@ -13241,7 +13241,7 @@
         "ir": 50,
         "position": []
       },
-      "updatedAt": "2026-08-22T02:14:44.015Z",
+      "updatedAt": "2026-08-22T04:51:34.576Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -13377,18 +13377,8 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=30641&JSON=1 (year 2026)",
+      "scoringError": "No live scoring available yet",
       "draftInProgress": false,
-      "rankings": {
-        "type": "DRAFT",
-        "scoring": "HALF",
-        "position": "OP",
-        "lastUpdated": "8/22",
-        "totalExperts": 99,
-        "matched": 24,
-        "total": 25
-      },
-      "rankingsError": null,
       "available": [
         "Kenny Gainwell",
         "Chig Okonkwo",
@@ -13418,6 +13408,17 @@
         "Greg Dulcich",
         "Najee Harris"
       ],
+      "availableAt": "2026-08-22T02:14:35.882Z",
+      "rankings": {
+        "type": "DRAFT",
+        "scoring": "HALF",
+        "position": "OP",
+        "lastUpdated": "8/22",
+        "totalExperts": 99,
+        "matched": 24,
+        "total": 25
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-08-22T02:14:35.882Z",
         "scoring": "HALF",
@@ -14043,8 +14044,7 @@
           ]
         },
         "projectionsUnavailable": null
-      },
-      "availableAt": "2026-08-22T02:14:35.882Z"
+      }
     },
     {
       "id": "64470",
@@ -14647,7 +14647,7 @@
         "ir": 15,
         "position": []
       },
-      "updatedAt": "2026-08-22T02:14:45.699Z",
+      "updatedAt": "2026-08-22T04:51:35.251Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -14805,6 +14805,14 @@
       "scoring": null,
       "scoringError": "No live scoring available yet",
       "draftInProgress": false,
+      "available": [
+        "Kenny Gainwell",
+        "Chig Okonkwo",
+        "Rashod Bateman",
+        "Samaje Perine",
+        "Tyquan Thornton"
+      ],
+      "availableAt": "2026-08-22T02:14:35.882Z",
       "rankings": {
         "type": "DRAFT",
         "scoring": "HALF",
@@ -14815,13 +14823,6 @@
         "total": 25
       },
       "rankingsError": null,
-      "available": [
-        "Kenny Gainwell",
-        "Chig Okonkwo",
-        "Rashod Bateman",
-        "Samaje Perine",
-        "Tyquan Thornton"
-      ],
       "power": {
         "computedAt": "2026-08-22T02:14:35.882Z",
         "scoring": "HALF",
@@ -15547,8 +15548,7 @@
           ]
         },
         "projectionsUnavailable": null
-      },
-      "availableAt": "2026-08-22T02:14:35.882Z"
+      }
     },
     {
       "id": "56191",
@@ -15568,7 +15568,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-22T02:14:46.049Z",
+      "updatedAt": "2026-08-22T04:51:35.422Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -15725,7 +15725,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-22T02:14:46.387Z",
+      "updatedAt": "2026-08-22T04:51:35.564Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -16325,7 +16325,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-22T02:14:47.097Z",
+      "updatedAt": "2026-08-22T04:51:35.967Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -16442,16 +16442,6 @@
       "scoring": null,
       "scoringError": "No live scoring available yet",
       "draftInProgress": false,
-      "rankings": {
-        "type": "DRAFT",
-        "scoring": "HALF",
-        "position": "OP",
-        "lastUpdated": "8/22",
-        "totalExperts": 99,
-        "matched": 17,
-        "total": 18
-      },
-      "rankingsError": null,
       "available": [
         "Jeremiyah Love",
         "Jadarian Price",
@@ -16494,6 +16484,17 @@
         "Keenan Allen",
         "Kaytron Allen"
       ],
+      "availableAt": "2026-08-22T02:14:35.882Z",
+      "rankings": {
+        "type": "DRAFT",
+        "scoring": "HALF",
+        "position": "OP",
+        "lastUpdated": "8/22",
+        "totalExperts": 99,
+        "matched": 17,
+        "total": 18
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-08-22T02:14:35.882Z",
         "scoring": "HALF",
@@ -17019,8 +17020,7 @@
           ]
         },
         "projectionsUnavailable": null
-      },
-      "availableAt": "2026-08-22T02:14:35.882Z"
+      }
     },
     {
       "id": "54766",
@@ -17467,7 +17467,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-22T02:14:48.018Z",
+      "updatedAt": "2026-08-22T04:51:36.257Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -17604,16 +17604,6 @@
       "scoring": null,
       "scoringError": "No live scoring available yet",
       "draftInProgress": false,
-      "rankings": {
-        "type": "DRAFT",
-        "scoring": "HALF",
-        "position": "OP",
-        "lastUpdated": "8/22",
-        "totalExperts": 99,
-        "matched": 18,
-        "total": 18
-      },
-      "rankingsError": null,
       "available": [
         "Stefon Diggs",
         "Kenny Gainwell",
@@ -17656,6 +17646,17 @@
         "Mason Taylor",
         "Elijah Sarratt"
       ],
+      "availableAt": "2026-08-22T02:14:35.882Z",
+      "rankings": {
+        "type": "DRAFT",
+        "scoring": "HALF",
+        "position": "OP",
+        "lastUpdated": "8/22",
+        "totalExperts": 99,
+        "matched": 18,
+        "total": 18
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-08-22T02:14:35.882Z",
         "scoring": "HALF",
@@ -18281,8 +18282,7 @@
           ]
         },
         "projectionsUnavailable": null
-      },
-      "availableAt": "2026-08-22T02:14:35.882Z"
+      }
     },
     {
       "id": "54458",
@@ -18750,7 +18750,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-22T02:14:48.705Z",
+      "updatedAt": "2026-08-22T04:51:36.639Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -18866,18 +18866,8 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=54458&JSON=1 (year 2026)",
+      "scoringError": "No live scoring available yet",
       "draftInProgress": false,
-      "rankings": {
-        "type": "DRAFT",
-        "scoring": "HALF",
-        "position": "OP",
-        "lastUpdated": "8/22",
-        "totalExperts": 99,
-        "matched": 20,
-        "total": 20
-      },
-      "rankingsError": null,
       "available": [
         "Stefon Diggs",
         "Kenny Gainwell",
@@ -18920,6 +18910,17 @@
         "Isaiah Davis",
         "Chris Brooks"
       ],
+      "availableAt": "2026-08-22T02:14:35.882Z",
+      "rankings": {
+        "type": "DRAFT",
+        "scoring": "HALF",
+        "position": "OP",
+        "lastUpdated": "8/22",
+        "totalExperts": 99,
+        "matched": 20,
+        "total": 20
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-08-22T02:14:35.882Z",
         "scoring": "HALF",
@@ -19445,8 +19446,7 @@
           ]
         },
         "projectionsUnavailable": null
-      },
-      "availableAt": "2026-08-22T02:14:35.882Z"
+      }
     },
     {
       "id": "61777",
@@ -19923,7 +19923,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-22T02:14:49.603Z",
+      "updatedAt": "2026-08-22T04:51:36.943Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -20051,16 +20051,6 @@
       "scoring": null,
       "scoringError": "No live scoring available yet",
       "draftInProgress": false,
-      "rankings": {
-        "type": "DRAFT",
-        "scoring": "HALF",
-        "position": "OP",
-        "lastUpdated": "8/22",
-        "totalExperts": 99,
-        "matched": 20,
-        "total": 20
-      },
-      "rankingsError": null,
       "available": [
         "Stefon Diggs",
         "Kenny Gainwell",
@@ -20103,6 +20093,17 @@
         "Christian Kirk",
         "Kaelon Black"
       ],
+      "availableAt": "2026-08-22T02:14:35.882Z",
+      "rankings": {
+        "type": "DRAFT",
+        "scoring": "HALF",
+        "position": "OP",
+        "lastUpdated": "8/22",
+        "totalExperts": 99,
+        "matched": 20,
+        "total": 20
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-08-22T02:14:35.882Z",
         "scoring": "HALF",
@@ -20678,8 +20679,7 @@
           ]
         },
         "projectionsUnavailable": null
-      },
-      "availableAt": "2026-08-22T02:14:35.882Z"
+      }
     },
     {
       "id": "30196",
@@ -21117,7 +21117,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-22T02:14:50.303Z",
+      "updatedAt": "2026-08-22T04:51:37.362Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -21242,18 +21242,8 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=league&L=30196&JSON=1 (year 2026)",
+      "scoringError": "No live scoring available yet",
       "draftInProgress": false,
-      "rankings": {
-        "type": "DRAFT",
-        "scoring": "HALF",
-        "position": "OP",
-        "lastUpdated": "8/22",
-        "totalExperts": 99,
-        "matched": 18,
-        "total": 18
-      },
-      "rankingsError": null,
       "available": [
         "Stefon Diggs",
         "Kenny Gainwell",
@@ -21296,6 +21286,17 @@
         "Chris Brooks",
         "Zachariah Branch"
       ],
+      "availableAt": "2026-08-22T02:14:35.882Z",
+      "rankings": {
+        "type": "DRAFT",
+        "scoring": "HALF",
+        "position": "OP",
+        "lastUpdated": "8/22",
+        "totalExperts": 99,
+        "matched": 18,
+        "total": 18
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-08-22T02:14:35.882Z",
         "scoring": "HALF",
@@ -21871,8 +21872,7 @@
           ]
         },
         "projectionsUnavailable": null
-      },
-      "availableAt": "2026-08-22T02:14:35.882Z"
+      }
     },
     {
       "id": "26222",
@@ -22321,7 +22321,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-22T02:14:51.154Z",
+      "updatedAt": "2026-08-22T04:51:37.727Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -22459,16 +22459,6 @@
       "scoring": null,
       "scoringError": "No live scoring available yet",
       "draftInProgress": false,
-      "rankings": {
-        "type": "DRAFT",
-        "scoring": "HALF",
-        "position": "OP",
-        "lastUpdated": "8/22",
-        "totalExperts": 99,
-        "matched": 18,
-        "total": 18
-      },
-      "rankingsError": null,
       "available": [
         "Kenny Gainwell",
         "Chig Okonkwo",
@@ -22511,6 +22501,17 @@
         "DJ Giddens",
         "Tyquan Thornton"
       ],
+      "availableAt": "2026-08-22T02:14:35.882Z",
+      "rankings": {
+        "type": "DRAFT",
+        "scoring": "HALF",
+        "position": "OP",
+        "lastUpdated": "8/22",
+        "totalExperts": 99,
+        "matched": 18,
+        "total": 18
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-08-22T02:14:35.882Z",
         "scoring": "HALF",
@@ -23136,8 +23137,7 @@
           ]
         },
         "projectionsUnavailable": null
-      },
-      "availableAt": "2026-08-22T02:14:35.882Z"
+      }
     },
     {
       "id": "1367867592919760896",
@@ -23536,7 +23536,7 @@
         }
       ],
       "draftInProgress": false,
-      "updatedAt": "2026-08-22T02:14:51.383Z",
+      "updatedAt": "2026-08-22T04:51:37.809Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -23801,7 +23801,7 @@
         "Trey Benson"
       ],
       "power": {
-        "computedAt": "2026-08-22T02:14:35.882Z",
+        "computedAt": "2026-08-22T04:51:30.847Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -24426,7 +24426,7 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-08-22T02:14:35.882Z"
+      "availableAt": "2026-08-22T04:51:30.847Z"
     },
     {
       "id": "1966972",
@@ -24437,7 +24437,7 @@
       "teamName": "Big Dart Energy",
       "url": "https://fantasy.espn.com/football/team?leagueId=1966972&teamId=10",
       "players": [],
-      "updatedAt": "2026-08-22T02:14:51.511Z",
+      "updatedAt": "2026-08-22T04:51:37.976Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -24628,7 +24628,7 @@
       "teamName": "Jeffer Justinson",
       "url": "https://fantasy.espn.com/football/team?leagueId=421871710&teamId=5",
       "players": [],
-      "updatedAt": "2026-08-22T02:14:51.586Z",
+      "updatedAt": "2026-08-22T04:51:38.052Z",
       "error": null,
       "tags": [],
       "provider": "espn",
