@@ -32,6 +32,23 @@
 // Run from the Actions tab (probe-league-history.yml). Every fetch is wrapped
 // so one provider's failure (a stale ESPN cookie, a league with no Sleeper
 // history) doesn't stop the others from reporting.
+//
+// First run, 2026-08 (league 26696 MFL / 1966972 ESPN / 1367867592919760896
+// Sleeper, year 2025): MFL's league goes back at least 8 years (2018-2025 all
+// existed) but TYPE=leagueStandings carries no rank field at all — the same
+// h2hw/h2hl/pf/pa shape the live sync already reads — so whether the row
+// order reflects the playoff bracket or just the regular-season record is
+// still unconfirmed; TYPE=playoffBracket exists but requires an ID this run
+// didn't supply ("Invalid or missing playoff bracket id"), now probed below.
+// ESPN's mTeam/mStandings DOES carry what looks like the answer:
+// rankCalculatedFinal (populated even for a non-playoff team, e.g. 6th of 10)
+// and a separate rankFinal that was 0 for that same team — now checked across
+// every team below to see whether rankCalculatedFinal forms a clean 1..N
+// permutation and which teams (if any) get a non-zero rankFinal. Sleeper's
+// one configured league had no history yet (previous_league_id was null, a
+// brand-new league) and its brackets returned null (mid-season, not yet
+// generated) — nothing there to confirm the placement field with, and out of
+// scope for now by request.
 
 import { mflLogin, mflGet, mflLeagueExists, espnGet, espnLeagueExists, YEAR } from './lib/providers.mjs';
 
@@ -82,13 +99,34 @@ if (MFL_LEAGUE_ID) {
       console.log(`  threw — ${err.message}`);
     }
 
-    console.log(`\n--- TYPE=playoffBracket, year ${probeYear} ---`);
+    // TYPE=playoffBracket with no ID failed "Invalid or missing playoff
+    // bracket id" on the first run — so first look at TYPE=league for
+    // whatever it says about configured brackets (a league can run more than
+    // one — championship, toilet bowl, ...), then try a couple of small
+    // literal IDs as a fallback guess, since single-bracket leagues commonly
+    // default to 1.
+    console.log(`\n--- TYPE=league, year ${probeYear} (full body, looking for bracket ids) ---`);
     try {
-      const data = await mflGet(`/export?TYPE=playoffBracket&L=${MFL_LEAGUE_ID}&JSON=1`, cookie, String(probeYear));
-      console.log(`  top-level keys: ${JSON.stringify(Object.keys(data || {}))}`);
-      console.log(`  body (first 1000 chars): ${JSON.stringify(data).slice(0, 1000)}`);
+      const data = await mflGet(`/export?TYPE=league&L=${MFL_LEAGUE_ID}&JSON=1`, cookie, String(probeYear));
+      if (data?.league) dumpFields('league, every top-level field', data.league);
+      console.log(`  body (first 2000 chars): ${JSON.stringify(data).slice(0, 2000)}`);
     } catch (err) {
       console.log(`  threw — ${err.message}`);
+    }
+
+    for (const bracketId of [1, 2]) {
+      console.log(`\n--- TYPE=playoffBracket&ID=${bracketId}, year ${probeYear} ---`);
+      try {
+        const data = await mflGet(
+          `/export?TYPE=playoffBracket&L=${MFL_LEAGUE_ID}&ID=${bracketId}&JSON=1`,
+          cookie,
+          String(probeYear)
+        );
+        console.log(`  top-level keys: ${JSON.stringify(Object.keys(data || {}))}`);
+        console.log(`  body (first 1500 chars): ${JSON.stringify(data).slice(0, 1500)}`);
+      } catch (err) {
+        console.log(`  threw — ${err.message}`);
+      }
     }
   }
 } else {
@@ -124,6 +162,21 @@ if (ESPN_LEAGUE_ID) {
       console.log(`  teams: ${teams.length}`);
       if (teams.length) dumpFields('first team, every field', teams[0]);
       if (teams[0]?.record) dumpFields('first team record', teams[0].record);
+
+      // The first run only showed one non-playoff team. What actually
+      // decides "3rd place" is whether rankCalculatedFinal forms a clean
+      // 1..N permutation across every team (including the ones that made
+      // the playoffs), and whether rankFinal is ever non-zero — if so, for
+      // which teams, since a field only set for the top few would mean a
+      // different source for the rest.
+      console.log('\n  --- rank fields across every team ---');
+      for (const t of teams) {
+        console.log(
+          `    id=${t.id} name=${JSON.stringify(t.name)} seed=${t.playoffSeed} ` +
+            `rankCalculatedFinal=${t.rankCalculatedFinal} rankFinal=${t.rankFinal} ` +
+            `overall=${JSON.stringify(t.record?.overall)}`
+        );
+      }
     } catch (err) {
       console.log(`  threw — ${err.message}`);
     }
@@ -169,22 +222,22 @@ if (SLEEPER_LEAGUE_ID) {
   if (!target) {
     console.log('  No league in the chain to probe brackets for.');
   } else {
-    console.log(`\n--- winners_bracket, league ${target.league_id} (season ${target.season}) ---`);
-    try {
-      const bracket = await sleeperGetRaw(`/league/${target.league_id}/winners_bracket`);
-      console.log(`  matches: ${bracket.length}`);
-      console.log(`  raw (first 1500 chars): ${JSON.stringify(bracket).slice(0, 1500)}`);
-    } catch (err) {
-      console.log(`  threw — ${err.message}`);
-    }
-
-    console.log(`\n--- losers_bracket, league ${target.league_id} (season ${target.season}) ---`);
-    try {
-      const bracket = await sleeperGetRaw(`/league/${target.league_id}/losers_bracket`);
-      console.log(`  matches: ${bracket.length}`);
-      console.log(`  raw (first 1500 chars): ${JSON.stringify(bracket).slice(0, 1500)}`);
-    } catch (err) {
-      console.log(`  threw — ${err.message}`);
+    for (const kind of ['winners_bracket', 'losers_bracket']) {
+      console.log(`\n--- ${kind}, league ${target.league_id} (season ${target.season}) ---`);
+      try {
+        const bracket = await sleeperGetRaw(`/league/${target.league_id}/${kind}`);
+        // Sleeper answers 200 with a null body before the bracket is
+        // generated (e.g. mid-season, no playoffs yet) — a real absence,
+        // not a request failure, so this is reported rather than thrown.
+        if (bracket === null) {
+          console.log('  null — no bracket yet for this league/season');
+        } else {
+          console.log(`  matches: ${bracket.length}`);
+          console.log(`  raw (first 1500 chars): ${JSON.stringify(bracket).slice(0, 1500)}`);
+        }
+      } catch (err) {
+        console.log(`  threw — ${err.message}`);
+      }
     }
   }
 } else {
