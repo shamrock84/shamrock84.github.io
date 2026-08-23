@@ -16,6 +16,11 @@ name: Backfill League History
 
 on:
   workflow_dispatch:
+    inputs:
+      league_id:
+        description: 'Optional: comma-separated league id(s) (config/leagues.json "id") to restrict the run to, skipping every other league entirely. Leave blank to run the normal round-robin pass across all leagues.'
+        type: string
+        default: ''
 
 permissions:
   contents: write
@@ -46,6 +51,7 @@ jobs:
           MFL_PASSWORD: ${{ secrets.MFL_PASSWORD }}
           ESPN_S2: ${{ secrets.ESPN_S2 }}
           ESPN_SWID: ${{ secrets.ESPN_SWID }}
+          LEAGUE_ID: ${{ inputs.league_id }}
         run: node scripts/backfill-history.mjs
 
       - name: Commit and push if changed

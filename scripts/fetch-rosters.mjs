@@ -282,6 +282,18 @@ export async function resolveSeason(league, previous, target, probes) {
 // a bug to fix by raising the budget.
 const HISTORY_MFL_REQUEST_BUDGET = 24;
 const HISTORY_ESPN_REQUEST_BUDGET = 8;
+// A cap on how much of the RUN's budget any single MFL league can spend,
+// enforced alongside HISTORY_MFL_REQUEST_BUDGET rather than instead of it.
+// Without this, a league with a long tail of still-guessed years (the
+// common shape now that a guess stays eligible for retry — see
+// yearsNeedingHistoryBackfill) sits first in iteration order and can
+// legitimately spend the entire run's budget on itself before any other
+// league gets a single request, run after run. Confirmed live: a real run
+// spent its whole 24-request budget re-backfilling one league's remaining
+// guessed years and never reached the other fourteen. This doesn't fix that
+// league's own backfill speed — it still needs the same number of runs to
+// fully clear — it only stops it from starving every league behind it.
+const HISTORY_MFL_PER_LEAGUE_BUDGET = 8;
 // MFL answers "how far back does this go" from its own history.league[]
 // field (see fetchMflLeagueHistory) — always exact, never a guess. ESPN has
 // no equivalent, so this is a cap on how far back it's ever walked, not a
@@ -389,10 +401,12 @@ export async function backfillLeagueHistory(leagues, previousById, cookie) {
 
     // MFL
     if (mflBudget <= 0 || mflRateLimited) continue;
+    let leagueMflBudget = HISTORY_MFL_PER_LEAGUE_BUDGET;
     let historyYears;
     try {
       historyYears = await fetchMflLeagueHistory(league, cookie, league.season);
       mflBudget--;
+      leagueMflBudget--;
     } catch (err) {
       if (err.status === 429) mflRateLimited = true;
       console.error(`Failed to fetch league history for ${league.name}: ${err.message}`);
@@ -400,7 +414,7 @@ export async function backfillLeagueHistory(leagues, previousById, cookie) {
     }
     const missing = yearsNeedingHistoryBackfill(historyYears, league.results, league.season);
     for (const { year, id } of missing) {
-      if (mflBudget <= 0 || mflRateLimited) break;
+      if (mflBudget <= 0 || mflRateLimited || leagueMflBudget <= 0) break;
       try {
         const { leagueFranchiseIds, regularSeasonOrder, brackets, bracketDataById } =
           await fetchMflSeasonBracketData(id, cookie, year);
@@ -408,7 +422,9 @@ export async function backfillLeagueHistory(leagues, previousById, cookie) {
         // bracket actually fetched — an honest count of what this year just
         // spent, so a deep-bracket league can't quietly blow the budget in
         // one iteration.
-        mflBudget -= 2 + bracketDataById.size;
+        const spent = 2 + bracketDataById.size;
+        mflBudget -= spent;
+        leagueMflBudget -= spent;
         if (leagueFranchiseIds.length === 0) continue; // try again next sync
         const placements = computeMflSeasonPlacements({
           leagueFranchiseIds,
