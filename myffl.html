@@ -1228,12 +1228,36 @@
 		   the "guessed" flag) is never shown identically to a confirmed one.
 		   Same red as the rest of the page uses for "needs a look". */
 		.results-guessed { color: var(--ir-text); }
-		/* The mean-finish footer row, set apart from the year-by-year rows
-		   above it the same way a running total would be. */
-		tr.results-average-row td {
-			font-weight: 700;
-			border-top: 2px solid var(--border);
+		/* League name and average finish share one row, name left / average
+		   right, so the headline number reads immediately without opening
+		   the yearly breakdown below it. */
+		.results-league-head {
+			display: flex;
+			justify-content: space-between;
+			align-items: baseline;
+			gap: 0.5rem;
+			margin: 0.75rem 0 0.35rem;
 		}
+		.results-league-head .group-label { margin: 0; }
+		.results-league-head:first-of-type { margin-top: 0; }
+		.results-avg {
+			font-weight: 700;
+			font-size: 0.85rem;
+			color: var(--text);
+			white-space: nowrap;
+			flex-shrink: 0;
+		}
+		/* Hidden by default — native <details>, so no toggle state has to be
+		   tracked across renderGrid() re-renders the way the Admin card's
+		   open/closed leagues are. */
+		.results-summary {
+			cursor: pointer;
+			font-size: 0.78rem;
+			color: var(--accent);
+			margin-bottom: 0.35rem;
+			user-select: none;
+		}
+		.results-details[open] .results-summary { margin-bottom: 0.5rem; }
 		/* Sortable analytics headers. The arrow is the only affordance a header
 		   gets until you hover, since three of these tables sit on one tab and a
 		   permanent marker on every sortable column is more noise than signal —
@@ -6184,12 +6208,32 @@
 			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(inGroup.length)}` }));
 
 			for (const { league, years, average } of summaries) {
-				card.appendChild(el('div', { class: 'group-label', text: league.name }));
+				// The average used to sit as a footer row inside the yearly
+				// table, which put a league's headline number below a block
+				// of detail nobody opened yet. It now sits beside the league
+				// name instead, and the year-by-year rows move into a
+				// <details> — a native disclosure, not a hand-rolled toggle
+				// like the Admin card's — because there is no state here
+				// that needs to survive a full renderGrid() re-render the
+				// way the Admin card's open/closed leagues do.
+				const head = el('div', { class: 'results-league-head' });
+				head.appendChild(el('span', { class: 'group-label', text: league.name }));
+				if (average != null) {
+					head.appendChild(el('span', {
+						class: 'results-avg',
+						title: `Average finish across ${years.filter((r) => Number.isFinite(r.rank)).length} year(s)`,
+						text: `Avg ${average.toFixed(1)}`,
+					}));
+				}
+				card.appendChild(head);
 
 				if (years.length === 0) {
 					card.appendChild(el('div', { class: 'error-box', text: 'No results yet — historical data is still being gathered.' }));
 					continue;
 				}
+
+				const details = el('details', { class: 'results-details' });
+				details.appendChild(el('summary', { class: 'results-summary', text: `Yearly breakdown (${years.length})` }));
 
 				const table = el('table', { class: 'standings results-table' });
 				const headRow = el('tr');
@@ -6211,14 +6255,8 @@
 					table.appendChild(row);
 				}
 
-				if (average != null) {
-					const avgRow = el('tr', { class: 'results-average-row' });
-					avgRow.appendChild(el('td', { text: 'Average' }));
-					avgRow.appendChild(el('td', { text: average.toFixed(1) }));
-					table.appendChild(avgRow);
-				}
-
-				card.appendChild(table);
+				details.appendChild(table);
+				card.appendChild(details);
 			}
 
 			return card;
