@@ -90,7 +90,7 @@
 // round also reworks to summarize matchups by franchise id + score instead
 // of a raw player-level dump that got cut off before anything useful.
 
-import { mflLogin, mflGet, mflLeagueExists, espnGet, espnLeagueExists, YEAR } from './lib/providers.mjs';
+import { mflLogin, mflGet, mflLeagueExists, espnGet, espnLeagueExists, YEAR, fetchMflLeagueHistory } from './lib/providers.mjs';
 
 const MFL_LEAGUE_ID = process.env.PROBE_MFL_LEAGUE_ID;
 const ESPN_LEAGUE_ID = process.env.PROBE_ESPN_LEAGUE_ID;
@@ -133,7 +133,21 @@ if (MFL_LEAGUE_ID) {
   console.log(`\n=== MFL league ${MFL_LEAGUE_ID} ===\n`);
   const cookie = await mflLogin(process.env.MFL_USERNAME, process.env.MFL_PASSWORD);
 
-  console.log(`--- existence walk-back from ${TARGET_YEAR} (${LOOKBACK_YEARS} years) ---`);
+  // Fourth run: diagnosing why Iron Bank's earliest backfilled years
+  // (2012-2014) came back guessed. history.league[] answers the same
+  // regardless of which season you ask it in (see fetchMflLeagueHistory in
+  // providers.mjs), so this just needs SOME valid season for MFL_LEAGUE_ID
+  // — dumps the whole year->id map so a follow-up run can target an old
+  // year's OWN id directly, the same way backfillLeagueHistory does.
+  console.log(`--- history.league[] year->id map (via TYPE=league) ---`);
+  try {
+    const historyYears = await fetchMflLeagueHistory({ id: MFL_LEAGUE_ID }, cookie, String(TARGET_YEAR));
+    for (const h of historyYears) console.log(`  ${h.year}: id=${h.id}`);
+  } catch (err) {
+    console.log(`  threw — ${err.message}`);
+  }
+
+  console.log(`\n--- existence walk-back from ${TARGET_YEAR} (${LOOKBACK_YEARS} years) ---`);
   const mflYears = [];
   for (let y = TARGET_YEAR; y > TARGET_YEAR - LOOKBACK_YEARS; y--) {
     const exists = await mflLeagueExists({ id: MFL_LEAGUE_ID }, cookie, String(y));
