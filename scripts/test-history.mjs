@@ -278,6 +278,112 @@ const toiletBowlConsolation = {
   assert.ok(byId['E'].guessed && byId['F'].guessed, 'both flagged as guesses — bracket data alone cannot order them');
 }
 
+// ---- Real MFL bracket data: league 35217 (Iron Bank), year 2020 -----------
+// Verbatim from probe-league-history.yml. This is the exact case that
+// exposed the name-based classification bug: the top family here runs TWO
+// secondary brackets, "3rd Place Game" and "7/8 position," neither
+// containing the word "consolation" — a keyword-only classifier finds no
+// consolation bracket at all, dumps all four of their combined participants
+// into one guessed fallback, and computes a regular-season-order guess for
+// a franchise (0004) whose placement was actually fully determined: it won
+// the 3rd Place Game 164.36-118.82. The user independently confirmed 3rd
+// place against MFL's own site.
+const ironBank2020Main = {
+  playoffRound: [
+    {
+      week: '14',
+      playoffGame: [
+        { home: { franchise_id: '0004', seed: '3', points: '159.14' }, away: { franchise_id: '0011', points: '135.14', seed: '6' }, game_id: '1' },
+        { away: { franchise_id: '0001', seed: '5', points: '118.32' }, game_id: '2', home: { franchise_id: '0010', seed: '4', points: '177.6' } },
+      ],
+    },
+    {
+      week: '15',
+      playoffGame: [
+        { home: { seed: '1', points: '126.46', franchise_id: '0002' }, game_id: '3', away: { franchise_id: '0010', points: '147.42', winner_of_game: '2' } },
+        { home: { franchise_id: '0009', seed: '2', points: '135.84' }, away: { winner_of_game: '1', franchise_id: '0004', points: '114.74' }, game_id: '4' },
+      ],
+    },
+    {
+      week: '16',
+      playoffGame: { home: { winner_of_game: '4', franchise_id: '0009', points: '118.08' }, game_id: '5', away: { points: '102.04', franchise_id: '0010', winner_of_game: '3' } },
+    },
+  ],
+};
+const ironBank2020ThirdPlace = {
+  playoffRound: { week: '16', playoffGame: { away: { points: '118.82', franchise_id: '0002', loser_of_game: '3' }, game_id: '1', home: { loser_of_game: '4', franchise_id: '0004', points: '164.36' } } },
+};
+const ironBank2020SeventhEighth = {
+  playoffRound: { week: '15', playoffGame: { home: { loser_of_game: '2', points: '102.42', franchise_id: '0001' }, away: { points: '84.5', franchise_id: '0011', loser_of_game: '1' }, game_id: '1' } },
+};
+const ironBank2020ToiletBowl = {
+  playoffRound: [
+    {
+      week: '14',
+      playoffGame: [
+        { game_id: '1', away: { seed: '6', points: '92.96', franchise_id: '0012' }, home: { franchise_id: '0003', points: '109.22', seed: '3' } },
+        { game_id: '2', away: { points: '43.68', seed: '5', franchise_id: '0008' }, home: { franchise_id: '0007', seed: '4', points: '87.82' } },
+      ],
+    },
+    {
+      week: '15',
+      playoffGame: [
+        { away: { franchise_id: '0007', points: '125.18', winner_of_game: '2' }, game_id: '3', home: { franchise_id: '0005', seed: '1', points: '121.72' } },
+        { game_id: '4', away: { winner_of_game: '1', points: '139.86', franchise_id: '0003' }, home: { franchise_id: '0006', points: '71.14', seed: '2' } },
+      ],
+    },
+    { week: '16', playoffGame: { home: { winner_of_game: '4', points: '142.7', franchise_id: '0003' }, away: { franchise_id: '0007', points: '97.9', winner_of_game: '3' }, game_id: '5' } },
+  ],
+};
+
+{
+  const brackets = [
+    { id: '1', name: 'Fantasy Bowl', teamsInvolved: '6', bracketWinnerTitle: 'League Champion' },
+    { id: '2', name: '3rd Place Game', teamsInvolved: '2', bracketWinnerTitle: '3rd Place' },
+    { id: '3', name: '7/8 position', teamsInvolved: '2', bracketWinnerTitle: '1.7 winner' },
+    { id: '4', name: 'Toilet Bowl', teamsInvolved: '6', bracketWinnerTitle: 'Toilet Bowl Champ' },
+  ];
+  const bracketDataById = new Map([
+    ['1', ironBank2020Main],
+    ['2', ironBank2020ThirdPlace],
+    ['3', ironBank2020SeventhEighth],
+    ['4', ironBank2020ToiletBowl],
+  ]);
+  const leagueFranchiseIds = ['0001', '0002', '0003', '0004', '0005', '0006', '0007', '0008', '0009', '0010', '0011', '0012'];
+  // Only the relative order of the bottom family's own unresolved four
+  // (0005/0006/0007/0008/0012 minus whichever two the Toilet Bowl final
+  // settles) matters here — nothing in this family has a secondary bracket
+  // to catch them, so it's a genuine gap, unaffected by this fix.
+  const regularSeasonOrder = ['0009', '0010', '0002', '0004', '0001', '0011', '0005', '0006', '0007', '0003', '0008', '0012'];
+
+  const result = computeMflSeasonPlacements({ leagueFranchiseIds, brackets, bracketDataById, regularSeasonOrder });
+  const byId = Object.fromEntries(result.map((r) => [r.franchiseId, r]));
+
+  assert.equal(byId['0009'].rank, 1, 'main final winner');
+  assert.equal(byId['0010'].rank, 2, 'main final loser');
+  assert.equal(byId['0004'].rank, 3, "won the 3rd Place Game — the user's own confirmed result, despite the bracket's name never saying 'consolation'");
+  assert.equal(byId['0002'].rank, 4, 'lost the 3rd Place Game');
+  assert.equal(byId['0001'].rank, 5, 'won the 7/8 position game — resolved after 3rd place, since its participants seeded worse');
+  assert.equal(byId['0011'].rank, 6, 'lost the 7/8 position game');
+  for (const id of ['0009', '0010', '0004', '0002', '0001', '0011']) {
+    assert.equal(byId[id].guessed, false, `${id} is fully determined by bracket results, not a guess`);
+    assert.equal(byId[id].total, 12);
+  }
+
+  // The bottom family (Toilet Bowl) has no secondary bracket at all here —
+  // its own final settles 2 of its 6, and the remaining 4 are a genuine gap,
+  // unaffected by this fix.
+  assert.equal(byId['0003'].rank, 7, 'Toilet Bowl final winner');
+  assert.equal(byId['0007'].rank, 8, 'Toilet Bowl final loser');
+  assert.deepEqual(
+    ['0005', '0006', '0008', '0012'].map((id) => byId[id].rank).sort((a, b) => a - b),
+    [9, 10, 11, 12]
+  );
+  for (const id of ['0005', '0006', '0008', '0012']) {
+    assert.equal(byId[id].guessed, true, `${id} has no secondary bracket to catch it — still a guess`);
+  }
+}
+
 // ---- franchisesInBracket ----------------------------------------------------
 
 {

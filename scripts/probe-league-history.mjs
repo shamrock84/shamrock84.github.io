@@ -189,12 +189,35 @@ if (MFL_LEAGUE_ID) {
     }
 
     console.log(`\n--- TYPE=playoffBrackets (plural, listing), year ${probeYear} ---`);
+    let bracketList = [];
     try {
       const data = await mflGet(`/export?TYPE=playoffBrackets&L=${MFL_LEAGUE_ID}&JSON=1`, cookie, String(probeYear));
       console.log(`  top-level keys: ${JSON.stringify(Object.keys(data || {}))}`);
       console.log(`  body (first 1500 chars): ${JSON.stringify(data).slice(0, 1500)}`);
+      const raw = data?.playoffBrackets?.playoffBracket;
+      bracketList = Array.isArray(raw) ? raw : raw ? [raw] : [];
     } catch (err) {
       console.log(`  threw — ${err.message}`);
+    }
+
+    // Fetch every bracket the listing named, not just id 1 — a league whose
+    // bracket names don't match the "Consolation"/"Toilet" keyword scheme
+    // (e.g. Iron Bank 2020: "Fantasy Bowl", "3rd Place Game", "7/8 position",
+    // "Toilet Bowl") needs its OTHER brackets' actual game trees to diagnose
+    // why computeMflSeasonPlacements fell back to a guess for a team that
+    // really did have a determinable placement.
+    for (const b of bracketList) {
+      console.log(`\n--- TYPE=playoffBracket&BRACKET_ID=${b.id} ("${b.name}", ${b.teamsInvolved} teams), year ${probeYear} ---`);
+      try {
+        const data = await mflGet(
+          `/export?TYPE=playoffBracket&L=${MFL_LEAGUE_ID}&BRACKET_ID=${b.id}&JSON=1`,
+          cookie,
+          String(probeYear)
+        );
+        console.log(`  body: ${JSON.stringify(data)}`);
+      } catch (err) {
+        console.log(`  threw — ${err.message}`);
+      }
     }
 
     // The plural listing worked and confirmed ids 1/2/3/4 are real for this
