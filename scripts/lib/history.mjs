@@ -12,34 +12,68 @@
 // MFL runs one or more independent single-elimination brackets per season
 // (TYPE=playoffBrackets lists them), each covering a contiguous slice of the
 // standings — a "Fantasy Bowl" for the top half, a "Toilet Bowl" for the
-// bottom half, commonly each with its own 2-team "Consolation" decider for
-// the placement tier just below the main bracket's final. Bracket NAMES are
-// commissioner-chosen free text — seen in the wild: "Fantasy Bowl", "Sole
-// Survivor", "Championship Bracket", and "Champions Bracket" all mean the
-// same top bracket across different leagues in this config, while "Toilet
-// Bowl" always means the bottom one — so classification is by keyword, not
-// an exhaustive name list: anything containing "toilet" is the bottom
-// family, everything else defaults to the top family, and "consolation" in
-// the name marks a bracket as that family's second-tier decider rather than
-// its main bracket. The two families are treated identically otherwise: in
-// both, the main bracket's final winner takes the family's best open rank
-// and the loser the next, exactly mirroring how the top family's
-// "champion" and "runner-up" work for the bottom family's "escaped last"
-// and "confirmed last" — a Toilet Bowl is not scored backwards.
+// bottom half, commonly each with one or more smaller decider brackets for
+// the placement tiers just below the main bracket's final (a "3rd place
+// game" for the two semifinal losers, sometimes another for the two
+// first-round losers, and so on). Bracket NAMES are commissioner-chosen free
+// text — seen in the wild: "Fantasy Bowl", "Sole Survivor", "Championship
+// Bracket", and "Champions Bracket" all mean the same top bracket across
+// different leagues in this config, while "Toilet Bowl" always means the
+// bottom one — so which FAMILY a bracket belongs to is still classified by
+// keyword: anything containing "toilet" is the bottom family, everything
+// else defaults to the top family.
 //
-// Within one family, exactly two finals settle up to four placements: the
-// main bracket's (winner/loser take the family's first two open ranks) and
-// its consolation's (winner/loser take the next two). Any team who played
-// in the main bracket but reached neither final — a bye-less team
-// eliminated in an early round, with no consolation game to catch it —
-// gets its rank by elimination when there is exactly one such team (the
-// common case: a 5-team bracket with one consolation game accounts for 4 of
-// the 5, leaving the fifth determined by there being nothing else left to
-// assign, not a guess). Two or more such leftovers, or a family with no
-// bracket at all, is a genuine gap bracket data can't resolve on its own —
-// those teams are ordered by regular-season standing instead and flagged
-// `guessed: true`, so the UI can show them differently (in red) rather than
-// presenting a guess as settled fact.
+// Which bracket within a family is the MAIN one, and which are its
+// secondary deciders, is deliberately NOT decided by name — a bracket named
+// "Consolation" is one real convention, but a real league (Iron Bank, 2020)
+// instead named its two secondary brackets "3rd Place Game" and "7/8
+// position," neither containing that word, and would have had both
+// misclassified as ungrouped "top family, non-consolation" brackets under a
+// keyword rule (with the bug this caused: a real 3rd-place finish — the
+// user's own team, confirmed against MFL's site — computed as a guess, the
+// four unresolved teams from ALL its secondary brackets combined dumped into
+// one regular-season-order fallback instead of split by their actual
+// results). Instead: the main bracket is the one with the most
+// `teamsInvolved` in its family, and any OTHER bracket in that family whose
+// own participants are entirely a subset of the main bracket's is a
+// secondary decider for it, whatever it's named — true of a
+// "Consolation"-named bracket too, so this supersedes name matching rather
+// than needing it alongside it (`isConsolationBracket` is kept as a
+// narrower, name-only utility below since it's still meaningful on its own,
+// just no longer how the main algorithm classifies anything). The two
+// families are treated identically otherwise: in both, the main bracket's
+// final winner takes the family's best open rank and the loser the next,
+// exactly mirroring how the top family's "champion" and "runner-up" work
+// for the bottom family's "escaped last" and "confirmed last" — a Toilet
+// Bowl is not scored backwards.
+//
+// A family can run more than one secondary bracket — Iron Bank's 2020
+// "Fantasy Bowl" ran both the 3rd-place game (the two semifinal losers) and
+// the 7/8 game (the two first-round losers). Multiple secondaries are
+// processed best-seeded-first, using each participant's own seed as
+// recorded in the MAIN bracket (a secondary's own game entries carry no
+// seed, only `winner_of_game`/`loser_of_game` — see fetchMflSeasonBracketData's
+// own game shape), so "who plays for 3rd" resolves before "who plays for
+// 7th": each secondary's final settles the next two open ranks in that
+// order, generalizing the old single-consolation slot to as many tiers as a
+// league actually ran, still within that family's own contiguous rank
+// block (nextLo) rather than interleaved with the other family's — Iron
+// Bank's "7/8 position" title reads like an absolute rank shared across
+// both families, but nothing here has strong enough evidence to abandon the
+// existing per-family-block model on the strength of one league's naming,
+// so its winner/loser still land at ranks 5/6 within the top family's own
+// six, not the bottom family's 7/8.
+//
+// Any team who played in the main bracket but reached no final at all — a
+// bye-less team eliminated in an early round, with no secondary bracket to
+// catch it — gets its rank by elimination when there is exactly one such
+// team (the common case: a 5-team bracket with one secondary bracket
+// accounts for 4 of the 5, leaving the fifth determined by there being
+// nothing else left to assign, not a guess). Two or more such leftovers, or
+// a family with no bracket at all, is a genuine gap bracket data can't
+// resolve on its own — those teams are ordered by regular-season standing
+// instead and flagged `guessed: true`, so the UI can show them differently
+// (in red) rather than presenting a guess as settled fact.
 
 const TOILET_BOWL_RE = /toilet/i;
 const CONSOLATION_RE = /consolation/i;
@@ -109,6 +143,38 @@ function groupBracketsByFamily(brackets) {
   return groups;
 }
 
+// The bracket with the most teamsInvolved in its family — robust across
+// every naming convention seen so far, since a secondary bracket (however
+// named) always covers a strict subset of the main bracket's own
+// participants and so is smaller. Ties keep whichever sorts first.
+function pickMainBracket(familyBrackets) {
+  let best = null;
+  for (const b of familyBrackets) {
+    if (!best || (Number(b.teamsInvolved) || 0) > (Number(best.teamsInvolved) || 0)) best = b;
+  }
+  return best;
+}
+
+// A franchise's seed within a bracket, read off wherever it enters directly
+// (a bye or a first-round starter carries `seed`; a team that advanced by
+// winning a prior game carries `winner_of_game` instead, with no seed
+// repeated there). Used only to order multiple secondary brackets within one
+// family relative to each other — see computeMflSeasonPlacements — never to
+// resolve a game result.
+function seedsInBracket(playoffBracket) {
+  const seeds = new Map();
+  for (const round of roundsInOrder(playoffBracket)) {
+    for (const game of gamesOf(round)) {
+      for (const side of [game.home, game.away]) {
+        if (side?.franchise_id && side.seed != null && !seeds.has(side.franchise_id)) {
+          seeds.set(side.franchise_id, Number(side.seed));
+        }
+      }
+    }
+  }
+  return seeds;
+}
+
 // leagueFranchiseIds: every franchise in the league this season (drives the
 // total N and the final gap-filling pass).
 // brackets: [{id, name, teamsInvolved}], from TYPE=playoffBrackets.
@@ -132,13 +198,13 @@ export function computeMflSeasonPlacements({ leagueFranchiseIds, brackets, brack
   for (const key of ['top', 'bottom']) {
     const familyBrackets = groups[key];
     if (familyBrackets.length === 0) continue;
-    const main = familyBrackets.find((b) => !isConsolationBracket(b.name));
+    const main = pickMainBracket(familyBrackets);
     if (!main) continue;
-    const consolation = familyBrackets.find((b) => isConsolationBracket(b.name));
     const size = Number(main.teamsInvolved) || null;
 
     const mainData = bracketDataById.get(String(main.id)) || null;
     const familyMembers = mainData ? franchisesInBracket(mainData) : new Set();
+    const seeds = mainData ? seedsInBracket(mainData) : new Map();
     let lo = nextLo;
 
     const mainResult = mainData ? resolveGame(finalGame(mainData)) : null;
@@ -148,12 +214,29 @@ export function computeMflSeasonPlacements({ leagueFranchiseIds, brackets, brack
       lo += 2;
     }
 
-    if (consolation) {
-      const cData = bracketDataById.get(String(consolation.id)) || null;
-      const cResult = cData ? resolveGame(finalGame(cData)) : null;
-      if (cResult) {
-        rankOf.set(cResult.winnerId, lo);
-        rankOf.set(cResult.loserId, lo + 1);
+    // Any other bracket in this family whose own participants are entirely
+    // among the main bracket's — structural, not name-based, so "3rd Place
+    // Game" and "7/8 position" both qualify exactly like a "Consolation"-
+    // named bracket would. Ordered best-seeded-first so the higher tier
+    // resolves before the lower one when a family runs more than one.
+    const secondaries = familyBrackets
+      .filter((b) => String(b.id) !== String(main.id))
+      .map((b) => {
+        const data = bracketDataById.get(String(b.id)) || null;
+        const members = data ? franchisesInBracket(data) : new Set();
+        const bestSeed = members.size
+          ? Math.min(...[...members].map((id) => seeds.get(id) ?? Infinity))
+          : Infinity;
+        return { data, members, bestSeed };
+      })
+      .filter(({ members }) => members.size > 0 && [...members].every((id) => familyMembers.has(id)))
+      .sort((a, b) => a.bestSeed - b.bestSeed);
+
+    for (const { data } of secondaries) {
+      const result = data ? resolveGame(finalGame(data)) : null;
+      if (result) {
+        rankOf.set(result.winnerId, lo);
+        rankOf.set(result.loserId, lo + 1);
         lo += 2;
       }
     }
