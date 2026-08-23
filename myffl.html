@@ -6203,8 +6203,29 @@
 				return a.average - b.average;
 			});
 
+			// The mean of each league's own average finish — every league
+			// counts once regardless of how many years of history it has,
+			// the same equal-weighting every other cross-league blend on
+			// this page uses (Team Needs' Avg column, Power Rankings'
+			// per-league medians). A league with nothing to average yet is
+			// left out of this mean entirely, same as it's left out of its
+			// own card-level average above.
+			const leaguesWithAverage = summaries.filter((s) => s.average != null);
+			const overallAverage = leaguesWithAverage.length
+				? leaguesWithAverage.reduce((sum, s) => sum + s.average, 0) / leaguesWithAverage.length
+				: null;
+
 			const card = el('div', { class: 'card', 'data-view': 'history', 'data-league-type': groupKey });
-			card.appendChild(el('h2', { text: 'Results' }));
+			const cardHead = el('div', { class: 'card-head' });
+			cardHead.appendChild(el('h2', { text: 'Results' }));
+			if (overallAverage != null) {
+				cardHead.appendChild(el('span', {
+					class: 'results-avg',
+					title: `Average finish across ${leaguesWithAverage.length} league(s)`,
+					text: `Avg Finish ${overallAverage.toFixed(1)}`,
+				}));
+			}
+			card.appendChild(cardHead);
 			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(inGroup.length)}` }));
 
 			for (const { league, years, average } of summaries) {
