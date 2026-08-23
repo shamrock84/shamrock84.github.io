@@ -1264,6 +1264,44 @@
 			user-select: none;
 		}
 		.results-details[open] .results-summary { margin-bottom: 0.5rem; }
+		/* Finances tab: same shapes as Results just above, kept as their own
+		   declarations rather than reusing .results-* — two features sharing
+		   a visual form get separate classes throughout this file (see
+		   .needs-popover vs .salary-popover), since there's nothing to gain
+		   from coupling them beyond the shape they duplicate on purpose. */
+		.finances-league-head {
+			display: flex;
+			justify-content: space-between;
+			align-items: baseline;
+			gap: 0.5rem;
+			margin: 0.75rem 0 0.35rem;
+		}
+		.finances-league-head .group-label { margin: 0; }
+		.finances-league-head:first-of-type { margin-top: 0; }
+		.finances-total {
+			font-weight: 700;
+			font-size: 0.85rem;
+			color: var(--text);
+			white-space: nowrap;
+			flex-shrink: 0;
+		}
+		.finances-total-overall {
+			font-size: 1.15rem;
+		}
+		.finances-summary {
+			cursor: pointer;
+			font-size: 0.78rem;
+			color: var(--accent);
+			margin-bottom: 0.35rem;
+			user-select: none;
+		}
+		.finances-details[open] .finances-summary { margin-bottom: 0.5rem; }
+		/* A net loss — the same token .salary-cap-room's negative state and
+		   Results' "guessed" flag both use for "this number needs a look".
+		   Declared last among the .finances-total rules so it wins the tie
+		   whether it's paired with .finances-total alone or with
+		   .finances-total-overall too. */
+		.finances-negative { color: var(--ir-text); }
 		/* Sortable analytics headers. The arrow is the only affordance a header
 		   gets until you hover, since three of these tables sit on one tab and a
 		   permanent marker on every sortable column is more noise than signal —
@@ -6289,10 +6327,129 @@
 			return card;
 		}
 
-		function renderFinancesCard(groupKey) {
+		// Whole dollars, no thousands separator — dues and payouts are the kind
+		// of round numbers a commissioner sets once ($50, $500), never cents.
+		// A negative amount gets its own leading minus rather than living
+		// inside toFixed's output ("$-50" reads as a typo; "-$50" reads as a
+		// loss), since the sign is doing real work here — it's the whole
+		// reason the Total column exists.
+		function formatMoney(n) {
+			return `${n < 0 ? '-' : ''}$${Math.abs(n).toFixed(0)}`;
+		}
+
+		// Dues and payouts don't exist anywhere yet — no sync writes them, and
+		// nothing in config/leagues.json defines them. This reads league.dues
+		// (a flat per-season entry fee, assumed constant year over year — see
+		// the Finances card's own remit) and league.payouts (a rank -> dollar
+		// table) defensively, so every league renders exactly like a league
+		// with real results and no financial config today (which is every
+		// league, right now): the shape is ready the moment either field
+		// shows up, the same way leagueResultsSummary was ready before any
+		// league had backfilled history. Reuses league.results rather than a
+		// separate per-year money array, since Won is *defined* as a function
+		// of that year's Finish — there is nothing else for it to read.
+		function leagueFinancesSummary(league) {
+			const results = Array.isArray(league.results) ? league.results : [];
+			const dues = league.dues != null ? Number(league.dues) : null;
+			const payouts = league.payouts && typeof league.payouts === 'object' ? league.payouts : null;
+			const years = [...results]
+				.sort((a, b) => Number(b.year) - Number(a.year))
+				.map((r) => {
+					// payouts[rank] absent means "this rank isn't in the payout
+					// table" (unknown), which must not collapse into $0 — a
+					// league that pays only 1st-3rd genuinely has no answer for
+					// 4th until someone says so, same missing-vs-zero rule the
+					// ranking pool's team field and Top Available's `available`
+					// already use elsewhere on this page.
+					const won = payouts && Number.isFinite(r.rank) && payouts[r.rank] != null ? Number(payouts[r.rank]) : null;
+					const total = dues != null && won != null ? won - dues : null;
+					return { year: r.year, dues, won, total };
+				});
+			const totaled = years.filter((y) => y.total != null);
+			const total = totaled.length ? totaled.reduce((sum, y) => sum + y.total, 0) : null;
+			return { league, years, total };
+		}
+
+		function renderFinancesCard(groupKey, types, leagues) {
+			const inGroup = (leagues || []).filter((l) => types.includes(l.type));
+			if (inGroup.length === 0) return null;
+
+			const summaries = inGroup.map(leagueFinancesSummary);
+			// Best net result first — highest total, the money equivalent of
+			// Results' lowest-average-finish-first. A league with nothing to
+			// total (no dues/payouts configured yet) sorts last rather than
+			// vanishing, same as a league with no backfilled history there.
+			summaries.sort((a, b) => {
+				if (a.total == null && b.total == null) return 0;
+				if (a.total == null) return 1;
+				if (b.total == null) return -1;
+				return b.total - a.total;
+			});
+
+			const leaguesWithTotal = summaries.filter((s) => s.total != null);
+			const overallTotal = leaguesWithTotal.length
+				? leaguesWithTotal.reduce((sum, s) => sum + s.total, 0)
+				: null;
+
 			const card = el('div', { class: 'card', 'data-view': 'history', 'data-league-type': groupKey });
-			card.appendChild(el('h2', { text: 'Finances' }));
-			card.appendChild(el('div', { class: 'team', text: 'Coming soon' }));
+			const cardHead = el('div', { class: 'card-head' });
+			cardHead.appendChild(el('h2', { text: 'Finances' }));
+			if (overallTotal != null) {
+				cardHead.appendChild(el('span', {
+					class: `finances-total finances-total-overall${overallTotal < 0 ? ' finances-negative' : ''}`,
+					title: `Net across ${leaguesWithTotal.length} league(s)`,
+					text: `Total ${formatMoney(overallTotal)}`,
+				}));
+			}
+			card.appendChild(cardHead);
+			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(inGroup.length)}` }));
+
+			for (const { league, years, total } of summaries) {
+				// Same shape as the Results card's per-league head: name left,
+				// headline number right, year-by-year detail collapsed under a
+				// <details> below it.
+				const head = el('div', { class: 'finances-league-head' });
+				head.appendChild(el('span', { class: 'group-label', text: league.name }));
+				if (total != null) {
+					head.appendChild(el('span', {
+						class: `finances-total${total < 0 ? ' finances-negative' : ''}`,
+						title: `Net across ${years.filter((y) => y.total != null).length} year(s)`,
+						text: formatMoney(total),
+					}));
+				}
+				card.appendChild(head);
+
+				if (years.length === 0) {
+					card.appendChild(el('div', { class: 'error-box', text: 'No financial data yet — dues and payouts haven\'t been set up for this league.' }));
+					continue;
+				}
+
+				const details = el('details', { class: 'finances-details' });
+				details.appendChild(el('summary', { class: 'finances-summary', text: `Yearly breakdown (${years.length})` }));
+
+				const table = el('table', { class: 'standings finances-table' });
+				const headRow = el('tr');
+				['Year', 'Dues', 'Won', 'Total'].forEach((h) => headRow.appendChild(el('th', { text: h })));
+				table.appendChild(headRow);
+
+				for (const y of years) {
+					const row = el('tr');
+					row.appendChild(el('td', { text: y.year }));
+					// Dues is stored as the positive entry fee; shown as the
+					// outflow it is.
+					row.appendChild(el('td', { text: y.dues != null ? formatMoney(-y.dues) : '—' }));
+					row.appendChild(el('td', { text: y.won != null ? formatMoney(y.won) : '—' }));
+					row.appendChild(el('td', {
+						class: y.total != null && y.total < 0 ? 'finances-negative' : '',
+						text: y.total != null ? formatMoney(y.total) : '—',
+					}));
+					table.appendChild(row);
+				}
+
+				details.appendChild(table);
+				card.appendChild(details);
+			}
+
 			return card;
 		}
 
@@ -7215,15 +7372,17 @@
 			// History: gated behind login the same way and for the same reason
 			// as the Analytics cards above — a separate loop over SUBTAB_ORDER
 			// rather than folded into the one above, since these are a
-			// different top-level tab, not more Analytics cards. Finances is
-			// still a placeholder; Results reads real backfilled data.
+			// different top-level tab, not more Analytics cards. Both cards
+			// read real backfilled data; Finances' Dues/Won columns are just
+			// waiting on league.dues/league.payouts to be configured anywhere.
 			if (isLoggedIn()) {
 				for (const groupKey of SUBTAB_ORDER) {
 					const types = typesInSubtabGroup(groupKey);
 					if (!data.leagues.some((l) => types.includes(l.type))) continue;
 					const resultsCard = renderResultsCard(groupKey, types, data.leagues);
 					if (resultsCard) gridEl.appendChild(resultsCard);
-					gridEl.appendChild(renderFinancesCard(groupKey));
+					const financesCard = renderFinancesCard(groupKey, types, data.leagues);
+					if (financesCard) gridEl.appendChild(financesCard);
 				}
 			}
 
