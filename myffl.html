@@ -1247,6 +1247,12 @@
 			white-space: nowrap;
 			flex-shrink: 0;
 		}
+		/* The card-level figure sits beside the "Results" h2 itself, so it
+		   reads as a peer of the title rather than a smaller annotation —
+		   matches .card h2's font-size exactly. */
+		.results-avg-overall {
+			font-size: 1.15rem;
+		}
 		/* Hidden by default — native <details>, so no toggle state has to be
 		   tracked across renderGrid() re-renders the way the Admin card's
 		   open/closed leagues are. */
@@ -6220,7 +6226,7 @@
 			cardHead.appendChild(el('h2', { text: 'Results' }));
 			if (overallAverage != null) {
 				cardHead.appendChild(el('span', {
-					class: 'results-avg',
+					class: 'results-avg results-avg-overall',
 					title: `Average finish across ${leaguesWithAverage.length} league(s)`,
 					text: `Avg Finish ${overallAverage.toFixed(1)}`,
 				}));
