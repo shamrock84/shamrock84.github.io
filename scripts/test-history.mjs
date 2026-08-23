@@ -322,6 +322,24 @@ const toiletBowlConsolation = {
   );
 
   assert.deepEqual(yearsNeedingHistoryBackfill([], [], '2026'), [], 'no known history at all — nothing to backfill');
+
+  // A `guessed: true` entry does NOT permanently block retry the way a
+  // confirmed one does. This is the fix for a real bug: MFL is already near
+  // its rate limit by the time the History backfill runs, and a 429 mid-year
+  // used to be indistinguishable from "this bracket genuinely doesn't exist"
+  // — computeMflSeasonPlacements' own honest gap-filling fallback then wrote
+  // a guessed placement that was really just a rate-limit artifact, and
+  // "a season once recorded is never re-fetched" made it permanent. Only a
+  // confirmed result may retire a year for good.
+  const mixedResults = [
+    { year: '2024', rank: 3, total: 10, guessed: false }, // confirmed — must stay retired
+    { year: '2025', rank: 8, total: 10, guessed: true }, // a guess — must remain eligible for retry
+  ];
+  assert.deepEqual(
+    yearsNeedingHistoryBackfill(historyYears, mixedResults, '2026').map((m) => m.year),
+    ['2025', '2023'],
+    'a guessed year is retried alongside a genuinely missing one; a confirmed year is not'
+  );
 }
 
 console.log('test-history: all assertions passed');
