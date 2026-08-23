@@ -340,6 +340,17 @@ export async function backfillLeagueHistory(leagues, previousById, cookie) {
   let espnBudget = HISTORY_ESPN_REQUEST_BUDGET;
   let yearsAdded = 0;
   let leaguesTouched = 0;
+  // The per-league cap exists to stop one league from starving every OTHER
+  // league's turn (see HISTORY_MFL_PER_LEAGUE_BUDGET above) — it has nothing
+  // to protect when `leagues` names exactly one league, which is exactly
+  // what backfill-history.mjs's LEAGUE_ID targeting produces. Confirmed live:
+  // a genuinely unresolvable bracket gap (two-plus leftover teams with no
+  // consolation game to place them — see computeMflSeasonPlacements) never
+  // confirms and so is retried every run, permanently occupying the front of
+  // that one league's queue; capped at 8, a LEAGUE_ID-targeted run could
+  // never get past it to reach an older year sitting right behind it. With
+  // only one league in play, handing it the whole run's budget is free.
+  const perLeagueMflBudget = leagues.length === 1 ? HISTORY_MFL_REQUEST_BUDGET : HISTORY_MFL_PER_LEAGUE_BUDGET;
   // A confirmed 429 means MFL is rate-limited for the rest of this run, not
   // just for the request that hit it — every other MFL call in this pass is
   // equally likely to fail. Once one lands, stop spending the remaining MFL
@@ -401,7 +412,7 @@ export async function backfillLeagueHistory(leagues, previousById, cookie) {
 
     // MFL
     if (mflBudget <= 0 || mflRateLimited) continue;
-    let leagueMflBudget = HISTORY_MFL_PER_LEAGUE_BUDGET;
+    let leagueMflBudget = perLeagueMflBudget;
     let historyYears;
     try {
       historyYears = await fetchMflLeagueHistory(league, cookie, league.season);
