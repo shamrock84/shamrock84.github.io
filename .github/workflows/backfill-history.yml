@@ -1,0 +1,61 @@
+name: Backfill League History
+
+# On-demand only. This exists because the regular 4-hourly sync already
+# brushes MFL's rate limit fetching rosters/standings/scoring/lineups for
+# every league before its own History backfill pass even starts — see
+# fetch-rosters.mjs's backfillLeagueHistory and CLAUDE.md's History section
+# for the real 429 cascade that once corrupted a league's placement data
+# because of exactly that contention. Dispatching backfill-history.mjs on
+# its own, instead, gives it a cookie and MFL rate-limit window with nothing
+# else competing for it.
+#
+# Never add a schedule trigger here — the regular sync already covers the
+# steady-state case (a league's full history is expected to take several of
+# ITS runs to backfill, at zero extra cost once complete), and this workflow
+# is only worth reaching for when that's stalling out on rate limits.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  # Shared with sync-mfl-rosters.yml on purpose: both write to
+  # data/rosters.json, and queuing (rather than running them side by side)
+  # is what keeps one from clobbering the other's commit — simpler and more
+  # complete than trying to merge two concurrent writes to the same file.
+  group: rosters-data-write
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Backfill League History (MFL + ESPN)
+        env:
+          MFL_USERNAME: ${{ secrets.MFL_USERNAME }}
+          MFL_PASSWORD: ${{ secrets.MFL_PASSWORD }}
+          ESPN_S2: ${{ secrets.ESPN_S2 }}
+          ESPN_SWID: ${{ secrets.ESPN_SWID }}
+        run: node scripts/backfill-history.mjs
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/rosters.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Backfill league history"
+            git push
+          fi

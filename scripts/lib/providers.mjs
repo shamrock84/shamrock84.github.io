@@ -1029,11 +1029,21 @@ export async function fetchMflSeasonBracketData(yearLeagueId, cookie, year) {
       );
       if (data?.playoffBracket) bracketDataById.set(b.id, data.playoffBracket);
     } catch (err) {
-      // One bracket failing (a 429, a malformed id) shouldn't sink the whole
-      // year — computeMflSeasonPlacements degrades a bracket it never got
-      // data for to its regular-season-order fallback, for just the teams
-      // that bracket would have covered, flagged as a guess, rather than
-      // losing the year's placement entirely.
+      // A 429 means MFL is rate-limited RIGHT NOW, which says nothing about
+      // whether this bracket has real data — every other in-flight request
+      // is equally unreliable at that moment. Swallowing it and computing a
+      // placement from whichever brackets happened to survive is exactly
+      // how a rate-limit blip gets permanently baked in as a false
+      // "guessed" placement: computeMflSeasonPlacements can't tell a bracket
+      // that's genuinely missing from one that just failed to fetch, so it
+      // falls back to regular-season order for real, and the caller then
+      // writes that into `results` believing it did a complete job — a
+      // season's placement is never re-fetched once recorded, so a bad
+      // guess born from a rate limit would never get a second chance. Only
+      // a 429 gets this treatment; any other failure (a malformed id, some
+      // other genuine gap) still degrades in place — see
+      // computeMflSeasonPlacements's own fallback for that case.
+      if (err.status === 429) throw err;
       console.error(`Failed to fetch playoff bracket ${b.id} for league ${yearLeagueId} (${year}): ${err.message}`);
     }
   }

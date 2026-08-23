@@ -297,19 +297,45 @@ const ESPN_HISTORY_LOOKBACK_YEARS = 15;
 // history in one run fills in from the present backward — the years a
 // manager is most likely to ask about — rather than from whichever end an
 // unordered scan happened to start.
+//
+// Only a *confirmed* (`guessed: false`) result counts as "already have it."
+// A `guessed: true` entry can be the honest gap-filling fallback described in
+// computeMflSeasonPlacements, but it can equally be the residue of a bracket
+// fetch that got 429'd mid-year — MFL is already near its rate limit by the
+// time this backfill pass runs, right after the main sync's own roster/
+// standings/scoring/lineup requests, so a real 429 here isn't rare. Treating
+// every guessed year as permanently resolved would bake a rate-limit blip in
+// forever, since "a season once recorded is never re-fetched" is the whole
+// point of this backfill. Leaving guessed years eligible for retry costs
+// nothing once a league's real answer has been found (a confirmed result
+// still blocks retry), and lets a bad guess correct itself the next time
+// MFL has budget to spare.
 export function yearsNeedingHistoryBackfill(historyYears, existingResults, currentSeason) {
-  const haveYears = new Set((existingResults || []).map((r) => String(r.year)));
+  const haveYears = new Set(
+    (existingResults || []).filter((r) => r.guessed === false).map((r) => String(r.year))
+  );
   return (historyYears || [])
     .filter((h) => Number(h.year) < Number(currentSeason))
     .filter((h) => !haveYears.has(String(h.year)))
     .sort((a, b) => Number(b.year) - Number(a.year));
 }
 
-async function backfillLeagueHistory(leagues, previousById, cookie) {
+// Exported so backfill-history.mjs — the on-demand, standalone companion to
+// this pass (see that file's header) — can invoke exactly this logic with
+// its own uncontested cookie and budget, instead of duplicating it.
+export async function backfillLeagueHistory(leagues, previousById, cookie) {
   let mflBudget = HISTORY_MFL_REQUEST_BUDGET;
   let espnBudget = HISTORY_ESPN_REQUEST_BUDGET;
   let yearsAdded = 0;
   let leaguesTouched = 0;
+  // A confirmed 429 means MFL is rate-limited for the rest of this run, not
+  // just for the request that hit it — every other MFL call in this pass is
+  // equally likely to fail. Once one lands, stop spending the remaining MFL
+  // budget on requests that would just add to the same pile (this is what let
+  // one real run's log spend 27 requests against a budget of 24). The
+  // providers.mjs re-throw is what makes this observable at all; without it
+  // a 429 here looked identical to "this bracket doesn't exist."
+  let mflRateLimited = false;
 
   for (const league of leagues) {
     const prev = previousById.get(league.id);
@@ -362,18 +388,19 @@ async function backfillLeagueHistory(leagues, previousById, cookie) {
     }
 
     // MFL
-    if (mflBudget <= 0) continue;
+    if (mflBudget <= 0 || mflRateLimited) continue;
     let historyYears;
     try {
       historyYears = await fetchMflLeagueHistory(league, cookie, league.season);
       mflBudget--;
     } catch (err) {
+      if (err.status === 429) mflRateLimited = true;
       console.error(`Failed to fetch league history for ${league.name}: ${err.message}`);
       continue;
     }
     const missing = yearsNeedingHistoryBackfill(historyYears, league.results, league.season);
     for (const { year, id } of missing) {
-      if (mflBudget <= 0) break;
+      if (mflBudget <= 0 || mflRateLimited) break;
       try {
         const { leagueFranchiseIds, regularSeasonOrder, brackets, bracketDataById } =
           await fetchMflSeasonBracketData(id, cookie, year);
@@ -391,11 +418,16 @@ async function backfillLeagueHistory(leagues, previousById, cookie) {
         });
         const mine = placements.find((p) => p.franchiseId === league.franchiseId);
         if (mine && mine.rank != null) {
+          // A retried year may already carry a guessed entry from a prior
+          // run (see yearsNeedingHistoryBackfill) — replace it rather than
+          // pushing a duplicate, whether this attempt confirms it or not.
+          league.results = league.results.filter((r) => String(r.year) !== String(year));
           league.results.push({ year, rank: mine.rank, total: mine.total, guessed: mine.guessed });
           yearsAdded++;
           leaguesTouched++;
         }
       } catch (err) {
+        if (err.status === 429) mflRateLimited = true;
         console.error(`History backfill failed for ${league.name} (${year}): ${err.message}`);
       }
     }
@@ -411,6 +443,7 @@ async function backfillLeagueHistory(leagues, previousById, cookie) {
     `History backfill: added ${yearsAdded} season(s) across ${leaguesTouched} league update(s) `
     + `(MFL budget ${HISTORY_MFL_REQUEST_BUDGET - mflBudget}/${HISTORY_MFL_REQUEST_BUDGET}, `
     + `ESPN budget ${HISTORY_ESPN_REQUEST_BUDGET - espnBudget}/${HISTORY_ESPN_REQUEST_BUDGET})`
+    + (mflRateLimited ? ' — stopped early on a 429, remaining leagues retry next sync' : '')
   );
 }
 
