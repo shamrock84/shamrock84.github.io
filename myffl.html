@@ -1700,11 +1700,12 @@
 			return node;
 		}
 
-		// 'admin' is only ever in this set when logged in — renderGrid simply
-		// doesn't build the card otherwise, and the tab list is derived from the
-		// cards that exist, so logging out removes the tab with no extra work.
-		const VIEW_LABELS = { rosters: 'Rosters', standings: 'Standings', scoring: 'Scores', analytics: 'Analytics', admin: 'Admin' };
-		const VIEW_ORDER = ['rosters', 'scoring', 'standings', 'analytics', 'admin'];
+		// 'admin' (and, the same way, 'history') is only ever in this set when
+		// logged in — renderGrid simply doesn't build the cards otherwise, and
+		// the tab list is derived from the cards that exist, so logging out
+		// removes the tab with no extra work.
+		const VIEW_LABELS = { rosters: 'Rosters', standings: 'Standings', scoring: 'Scores', analytics: 'Analytics', history: 'History', admin: 'Admin' };
+		const VIEW_ORDER = ['rosters', 'scoring', 'standings', 'analytics', 'history', 'admin'];
 		// Per-league type — still what individual Rosters cards badge
 		// themselves with (a Salary Cap league's card says "Salary Cap", not
 		// "Dynasty/Salary Cap"), just no longer what any sub-tab is named
@@ -6125,6 +6126,30 @@
 			return card;
 		}
 
+		// ---- History tab ---------------------------------------------------
+		// Placeholders only — Results and Finances are titled and wired into
+		// the tab/sub-tab machinery, gated behind login the same way Analytics
+		// is (both read as strategy: dues owed, payouts, past finishes), but
+		// carry no content yet. data-view: 'history' plus data-league-type:
+		// groupKey is the whole mechanism: renderSubTabs derives the sub-tab
+		// strip from whatever data-league-type values are actually present on
+		// the cards under the current view, so History gets the same Dynasty/
+		// Salary Cap, Redraft, Draft Only split as every other tab for free,
+		// with no History-specific sub-tab logic to write or maintain.
+		function renderResultsCard(groupKey) {
+			const card = el('div', { class: 'card', 'data-view': 'history', 'data-league-type': groupKey });
+			card.appendChild(el('h2', { text: 'Results' }));
+			card.appendChild(el('div', { class: 'team', text: 'Coming soon' }));
+			return card;
+		}
+
+		function renderFinancesCard(groupKey) {
+			const card = el('div', { class: 'card', 'data-view': 'history', 'data-league-type': groupKey });
+			card.appendChild(el('h2', { text: 'Finances' }));
+			card.appendChild(el('div', { class: 'team', text: 'Coming soon' }));
+			return card;
+		}
+
 		function updateVisibility() {
 			document.getElementById('grid').dataset.view = currentView;
 			const q = document.getElementById('search').value.trim().toLowerCase();
@@ -7038,6 +7063,20 @@
 					if (availableCard) gridEl.appendChild(availableCard);
 					gridEl.appendChild(renderAnalyticsCard(groupKey, types, data.leagues));
 					gridEl.appendChild(renderInjuryExposureCard(groupKey, types, data.leagues));
+				}
+			}
+
+			// History: placeholders for now (see renderResultsCard/
+			// renderFinancesCard), gated behind login the same way and for the
+			// same reason as the Analytics cards above — a separate loop over
+			// SUBTAB_ORDER rather than folded into the one above, since these
+			// are a different top-level tab, not more Analytics cards.
+			if (isLoggedIn()) {
+				for (const groupKey of SUBTAB_ORDER) {
+					const types = typesInSubtabGroup(groupKey);
+					if (!data.leagues.some((l) => types.includes(l.type))) continue;
+					gridEl.appendChild(renderResultsCard(groupKey));
+					gridEl.appendChild(renderFinancesCard(groupKey));
 				}
 			}
 
