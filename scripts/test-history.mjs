@@ -19,6 +19,7 @@ import {
   computeMflSeasonPlacements,
   espnSeasonPlacement,
 } from './lib/history.mjs';
+import { yearsNeedingHistoryBackfill } from './fetch-rosters.mjs';
 
 // ---- Bracket name classification -------------------------------------------
 
@@ -294,6 +295,33 @@ const toiletBowlConsolation = {
   assert.equal(espnSeasonPlacement({ rankCalculatedFinal: 0 }, 10), null, 'zero is not a real rank');
   assert.equal(espnSeasonPlacement({ rankCalculatedFinal: null }, 10), null);
   assert.equal(espnSeasonPlacement({}, 10), null, 'missing entirely — an old snapshot, or a season ESPN never resolved');
+}
+
+// ---- yearsNeedingHistoryBackfill --------------------------------------------
+
+{
+  const historyYears = [
+    { year: '2023', id: '111' },
+    { year: '2024', id: '111' },
+    { year: '2025', id: '111' },
+    { year: '2026', id: '111' }, // the currently active season
+  ];
+  const existingResults = [{ year: '2024', rank: 3, total: 10, guessed: false }];
+
+  const missing = yearsNeedingHistoryBackfill(historyYears, existingResults, '2026');
+  assert.deepEqual(
+    missing.map((m) => m.year),
+    ['2025', '2023'],
+    'the active season is excluded, an already-recorded year is skipped, and the rest come back most-recent-first'
+  );
+
+  assert.deepEqual(
+    yearsNeedingHistoryBackfill(historyYears, [], '2026').map((m) => m.year),
+    ['2025', '2024', '2023'],
+    'with nothing recorded yet, every past year is missing'
+  );
+
+  assert.deepEqual(yearsNeedingHistoryBackfill([], [], '2026'), [], 'no known history at all — nothing to backfill');
 }
 
 console.log('test-history: all assertions passed');
