@@ -137,7 +137,7 @@ function fullText(node) {
 	// the table, and the year-by-year rows live inside a collapsed-by-
 	// default <details> underneath it.
 	const avgs = findAll(card, (c) => c.cls.includes('results-avg')).map(fullText);
-	assert.deepEqual(avgs, ['Avg 3.7', 'Avg 5.0'], 'A: 3.67 -> 3.7, B: 5.0, in card order');
+	assert.deepEqual(avgs, ['Avg Finish 3.7', 'Avg Finish 5.0'], 'A: 3.67 -> 3.7, B: 5.0, in card order');
 
 	const detailsEls = findAll(card, (c) => c.tag === 'details');
 	assert.equal(detailsEls.length, 2, 'one <details> per league that has results');
