@@ -36,6 +36,15 @@
 // reached. Naming a league id sidesteps the queue entirely: the whole
 // budget goes to that league alone, which is the direct answer to "backfill
 // THIS league now" rather than waiting for its turn in iteration order.
+import { readFile, writeFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { mflLogin } from './lib/providers.mjs';
+import { backfillLeagueHistory } from './fetch-rosters.mjs';
+
+const USERNAME = process.env.MFL_USERNAME;
+const PASSWORD = process.env.MFL_PASSWORD;
+const OUTPUT_PATH = fileURLToPath(new URL('../data/rosters.json', import.meta.url));
+
 const targetLeagueIds = (process.env.LEAGUE_ID || '')
   .split(',')
   .map((id) => id.trim())
