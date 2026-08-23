@@ -971,6 +971,85 @@ export async function fetchStandings(league, cookie) {
   }));
 }
 
+// ---- History tab: past-season final placement ------------------------------
+// See scripts/lib/history.mjs for the derivation itself (bracket name
+// classification, the placement algorithm) and probe-league-history.yml /
+// scripts/probe-league-history.mjs for how each call below was confirmed
+// against the real API. All read-only; none of this touches current-season
+// data.
+
+// MFL's own year->league-id map for this league, straight off TYPE=league's
+// `history.league[]` — far better than walking mflLeagueExists backward one
+// year at a time, since it works even across an id change (one real league
+// in this config used four different ids between 2006 and 2016 before
+// settling on the one config carries today). The id is embedded in each
+// entry's own url rather than carried as a separate field. Answers the same
+// regardless of which season you ask it in, so callers pass the league's
+// own current season rather than needing a special-case call.
+const MFL_HISTORY_URL_ID_RE = /\/home\/(\w+)\s*$/;
+export async function fetchMflLeagueHistory(league, cookie, season) {
+  const data = await mflGet(`/export?TYPE=league&L=${league.id}&JSON=1`, cookie, season);
+  const entries = data?.league?.history?.league;
+  const list = Array.isArray(entries) ? entries : entries ? [entries] : [];
+  return list
+    .map((e) => {
+      const match = MFL_HISTORY_URL_ID_RE.exec(String(e.url || '').trim());
+      return match ? { year: String(e.year), id: match[1] } : null;
+    })
+    .filter(Boolean);
+}
+
+// Everything computeMflSeasonPlacements needs for one specific past,
+// completed season: the regular-season order (its fallback for a gap
+// bracket data can't resolve), the bracket listing, and every bracket's own
+// game tree. `yearLeagueId` is that year's own id (see
+// fetchMflLeagueHistory above) since MFL leagues can change id across their
+// history — never assume the league's *current* id answers for an old year.
+export async function fetchMflSeasonBracketData(yearLeagueId, cookie, year) {
+  const [standingsData, bracketsData] = await Promise.all([
+    mflGet(`/export?TYPE=leagueStandings&L=${yearLeagueId}&JSON=1`, cookie, year),
+    mflGet(`/export?TYPE=playoffBrackets&L=${yearLeagueId}&JSON=1`, cookie, year),
+  ]);
+
+  const rawRows = standingsData?.leagueStandings?.franchise;
+  const rows = Array.isArray(rawRows) ? rawRows : rawRows ? [rawRows] : [];
+  const regularSeasonOrder = rows.map((r) => r.id);
+
+  const rawBrackets = bracketsData?.playoffBrackets?.playoffBracket;
+  const brackets = (Array.isArray(rawBrackets) ? rawBrackets : rawBrackets ? [rawBrackets] : [])
+    .map((b) => ({ id: String(b.id), name: b.name, teamsInvolved: b.teamsInvolved }));
+
+  const bracketDataById = new Map();
+  for (const b of brackets) {
+    try {
+      const data = await mflGet(
+        `/export?TYPE=playoffBracket&L=${yearLeagueId}&BRACKET_ID=${b.id}&JSON=1`,
+        cookie,
+        year
+      );
+      if (data?.playoffBracket) bracketDataById.set(b.id, data.playoffBracket);
+    } catch (err) {
+      // One bracket failing (a 429, a malformed id) shouldn't sink the whole
+      // year — computeMflSeasonPlacements degrades a bracket it never got
+      // data for to its regular-season-order fallback, for just the teams
+      // that bracket would have covered, flagged as a guess, rather than
+      // losing the year's placement entirely.
+      console.error(`Failed to fetch playoff bracket ${b.id} for league ${yearLeagueId} (${year}): ${err.message}`);
+    }
+  }
+
+  return { leagueFranchiseIds: regularSeasonOrder, regularSeasonOrder, brackets, bracketDataById };
+}
+
+// A past season's team list carrying ESPN's own computed final rank
+// (rankCalculatedFinal — see espnSeasonPlacement in scripts/lib/history.mjs).
+// Same host/auth as fetchEspnStandings, just the extra mStandings view for
+// the field that one doesn't read.
+export async function fetchEspnSeasonTeams(league, season) {
+  const data = await espnGet({ ...league, season }, 'view=mTeam&view=mStandings');
+  return data?.teams || [];
+}
+
 // Fetches just the franchise-id -> name map for an MFL league (the part of
 // TYPE=league that fetchScoring needs). Callers that already have this
 // cached (e.g. the live-scoring proxy) can skip re-fetching it every poll.

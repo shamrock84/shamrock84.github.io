@@ -1223,6 +1223,17 @@
 		table.standings td:not(:first-child) {
 			text-align: right;
 		}
+		/* Results tab: a finish computeMflSeasonPlacements couldn't settle
+		   from bracket data (a gap filled in from regular-season order — see
+		   the "guessed" flag) is never shown identically to a confirmed one.
+		   Same red as the rest of the page uses for "needs a look". */
+		.results-guessed { color: var(--ir-text); }
+		/* The mean-finish footer row, set apart from the year-by-year rows
+		   above it the same way a running total would be. */
+		tr.results-average-row td {
+			font-weight: 700;
+			border-top: 2px solid var(--border);
+		}
 		/* Sortable analytics headers. The arrow is the only affordance a header
 		   gets until you hover, since three of these tables sit on one tab and a
 		   permanent marker on every sortable column is more noise than signal —
@@ -6127,19 +6138,89 @@
 		}
 
 		// ---- History tab ---------------------------------------------------
-		// Placeholders only — Results and Finances are titled and wired into
-		// the tab/sub-tab machinery, gated behind login the same way Analytics
-		// is (both read as strategy: dues owed, payouts, past finishes), but
-		// carry no content yet. data-view: 'history' plus data-league-type:
-		// groupKey is the whole mechanism: renderSubTabs derives the sub-tab
-		// strip from whatever data-league-type values are actually present on
-		// the cards under the current view, so History gets the same Dynasty/
-		// Salary Cap, Redraft, Draft Only split as every other tab for free,
-		// with no History-specific sub-tab logic to write or maintain.
-		function renderResultsCard(groupKey) {
+		// Results and Finances are wired into the tab/sub-tab machinery the
+		// same way every other tab is, gated behind login the same way
+		// Analytics is (both read as strategy: dues owed, payouts, past
+		// finishes). data-view: 'history' plus data-league-type: groupKey is
+		// the whole mechanism: renderSubTabs derives the sub-tab strip from
+		// whatever data-league-type values are actually present on the cards
+		// under the current view, so History gets the same Dynasty/Salary
+		// Cap, Redraft, Draft Only split as every other tab for free, with no
+		// History-specific sub-tab logic to write or maintain. Finances is
+		// still a placeholder — no design for it yet.
+
+		// One league's results ready to render: its rows most-recent-first
+		// (the natural reading order for "how have I done"), and the mean of
+		// every year's rank — never the raw fraction, which would let a
+		// 12-team league's numbers swamp a 10-team league's in the same
+		// average. A league with no `results` yet (not backfilled, or
+		// genuinely has none) gets an empty years list and a null average
+		// rather than being skipped — the card still names it, saying so.
+		function leagueResultsSummary(league) {
+			const results = Array.isArray(league.results) ? league.results : [];
+			const years = [...results].sort((a, b) => Number(b.year) - Number(a.year));
+			const ranked = years.filter((r) => Number.isFinite(r.rank));
+			const average = ranked.length ? ranked.reduce((sum, r) => sum + r.rank, 0) / ranked.length : null;
+			return { league, years, average };
+		}
+
+		function renderResultsCard(groupKey, types, leagues) {
+			const inGroup = (leagues || []).filter((l) => types.includes(l.type));
+			if (inGroup.length === 0) return null;
+
+			const summaries = inGroup.map(leagueResultsSummary);
+			// Best average finish first — a lower mean rank is a better finish,
+			// same convention every other ranked card on this page uses. A
+			// league with nothing to average sorts last rather than vanishing.
+			summaries.sort((a, b) => {
+				if (a.average == null && b.average == null) return 0;
+				if (a.average == null) return 1;
+				if (b.average == null) return -1;
+				return a.average - b.average;
+			});
+
 			const card = el('div', { class: 'card', 'data-view': 'history', 'data-league-type': groupKey });
 			card.appendChild(el('h2', { text: 'Results' }));
-			card.appendChild(el('div', { class: 'team', text: 'Coming soon' }));
+			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(inGroup.length)}` }));
+
+			for (const { league, years, average } of summaries) {
+				card.appendChild(el('div', { class: 'group-label', text: league.name }));
+
+				if (years.length === 0) {
+					card.appendChild(el('div', { class: 'error-box', text: 'No results yet — historical data is still being gathered.' }));
+					continue;
+				}
+
+				const table = el('table', { class: 'standings results-table' });
+				const headRow = el('tr');
+				['Year', 'Finish'].forEach((h) => headRow.appendChild(el('th', { text: h })));
+				table.appendChild(headRow);
+
+				for (const r of years) {
+					const row = el('tr');
+					row.appendChild(el('td', { text: r.year }));
+					// A guess (a gap no bracket data could settle, filled in from
+					// regular-season order — see computeMflSeasonPlacements) is
+					// never presented as identical to a confirmed result: red,
+					// same token the rest of the page uses for "needs a look".
+					row.appendChild(el('td', {
+						class: r.guessed ? 'results-guessed' : '',
+						title: r.guessed ? 'Estimated — no bracket data settled this year\'s exact finish' : '',
+						text: Number.isFinite(r.rank) ? `${r.rank}/${r.total}` : '—',
+					}));
+					table.appendChild(row);
+				}
+
+				if (average != null) {
+					const avgRow = el('tr', { class: 'results-average-row' });
+					avgRow.appendChild(el('td', { text: 'Average' }));
+					avgRow.appendChild(el('td', { text: average.toFixed(1) }));
+					table.appendChild(avgRow);
+				}
+
+				card.appendChild(table);
+			}
+
 			return card;
 		}
 
@@ -7066,16 +7147,17 @@
 				}
 			}
 
-			// History: placeholders for now (see renderResultsCard/
-			// renderFinancesCard), gated behind login the same way and for the
-			// same reason as the Analytics cards above — a separate loop over
-			// SUBTAB_ORDER rather than folded into the one above, since these
-			// are a different top-level tab, not more Analytics cards.
+			// History: gated behind login the same way and for the same reason
+			// as the Analytics cards above — a separate loop over SUBTAB_ORDER
+			// rather than folded into the one above, since these are a
+			// different top-level tab, not more Analytics cards. Finances is
+			// still a placeholder; Results reads real backfilled data.
 			if (isLoggedIn()) {
 				for (const groupKey of SUBTAB_ORDER) {
 					const types = typesInSubtabGroup(groupKey);
 					if (!data.leagues.some((l) => types.includes(l.type))) continue;
-					gridEl.appendChild(renderResultsCard(groupKey));
+					const resultsCard = renderResultsCard(groupKey, types, data.leagues);
+					if (resultsCard) gridEl.appendChild(resultsCard);
 					gridEl.appendChild(renderFinancesCard(groupKey));
 				}
 			}

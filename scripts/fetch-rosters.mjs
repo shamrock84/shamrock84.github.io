@@ -38,6 +38,9 @@ import {
   fetchMflRosteredNames,
   fetchEspnRosteredNames,
   fetchMflDraftStatus,
+  fetchMflLeagueHistory,
+  fetchMflSeasonBracketData,
+  fetchEspnSeasonTeams,
 } from './lib/providers.mjs';
 import {
   attachRankings,
@@ -52,6 +55,7 @@ import {
   rankingPoolKey,
   DEFAULT_POWER_SLOTS,
 } from './lib/fantasypros.mjs';
+import { computeMflSeasonPlacements, espnSeasonPlacement } from './lib/history.mjs';
 
 const USERNAME = process.env.MFL_USERNAME;
 const PASSWORD = process.env.MFL_PASSWORD;
@@ -263,6 +267,151 @@ export async function resolveSeason(league, previous, target, probes) {
     if (back === null) return { season: last || String(target), probeFailed: true };
   }
   return { season: String(target), unresolved: true };
+}
+
+// ---- History tab: one-time backfill of past-season final placement --------
+// See scripts/lib/history.mjs for the derivation itself. This is explicitly
+// a backfill, not a per-sync fetch: once a season is over its placement
+// never changes, so a year recorded in `results` is never re-fetched, and a
+// league whose full history is already captured costs nothing on every sync
+// after that. Deliberately budget-limited and run last, after every
+// season-critical fetch above — this is bonus historical data, and must
+// never compete with rosters/standings/scoring for MFL's rate limit. A
+// large league's full history (MNMx Dynasty goes back to 2006) is expected
+// to take several syncs to fully backfill; that is the intended shape, not
+// a bug to fix by raising the budget.
+const HISTORY_MFL_REQUEST_BUDGET = 24;
+const HISTORY_ESPN_REQUEST_BUDGET = 8;
+// MFL answers "how far back does this go" from its own history.league[]
+// field (see fetchMflLeagueHistory) — always exact, never a guess. ESPN has
+// no equivalent, so this is a cap on how far back it's ever walked, not a
+// real boundary: a league founded earlier than this simply won't get years
+// before it until the cap is widened.
+const ESPN_HISTORY_LOOKBACK_YEARS = 15;
+
+// Pure and budget-agnostic: which of a league's known past seasons still
+// need a placement fetched. The current/active season is always excluded —
+// its bracket hasn't been decided yet, and fetching it would either fail or
+// (worse) compute a "final" placement from a still-in-progress bracket.
+// Sorted most-recent-first, so a budget that can't cover a league's entire
+// history in one run fills in from the present backward — the years a
+// manager is most likely to ask about — rather than from whichever end an
+// unordered scan happened to start.
+export function yearsNeedingHistoryBackfill(historyYears, existingResults, currentSeason) {
+  const haveYears = new Set((existingResults || []).map((r) => String(r.year)));
+  return (historyYears || [])
+    .filter((h) => Number(h.year) < Number(currentSeason))
+    .filter((h) => !haveYears.has(String(h.year)))
+    .sort((a, b) => Number(b.year) - Number(a.year));
+}
+
+async function backfillLeagueHistory(leagues, previousById, cookie) {
+  let mflBudget = HISTORY_MFL_REQUEST_BUDGET;
+  let espnBudget = HISTORY_ESPN_REQUEST_BUDGET;
+  let yearsAdded = 0;
+  let leaguesTouched = 0;
+
+  for (const league of leagues) {
+    const prev = previousById.get(league.id);
+    league.results = prev?.results ? prev.results.map((r) => ({ ...r })) : [];
+    if (prev?.historyBoundaryYear) league.historyBoundaryYear = prev.historyBoundaryYear;
+
+    if (league.provider === 'sleeper') continue; // out of scope for now
+    if (!league.franchiseId) continue; // nothing to match a placement against, ever
+
+    if (league.provider === 'espn') {
+      if (espnBudget <= 0) continue;
+      // No history list to ask for, unlike MFL — walk backward from the
+      // known boundary (a confirmed absence from a previous run) or the
+      // lookback cap on a first attempt, stopping the moment budget runs
+      // out or a definitive absence narrows the boundary further. Anchored
+      // to this league's OWN resolved season, not the sync's global target
+      // — a trailing league's currently-active season is still in progress
+      // and must never be treated as a completed year to backfill.
+      const haveYears = new Set(league.results.map((r) => Number(r.year)));
+      const floor = league.historyBoundaryYear
+        ? Number(league.historyBoundaryYear)
+        : Number(league.season) - ESPN_HISTORY_LOOKBACK_YEARS;
+      for (let year = Number(league.season) - 1; year >= floor && espnBudget > 0; year--) {
+        if (haveYears.has(year)) continue;
+        try {
+          espnBudget--;
+          const exists = await espnLeagueExists({ id: league.id, provider: 'espn' }, String(year));
+          if (exists === false) {
+            // A definitive absence — remember it so future syncs never
+            // re-probe a year this league is now known not to reach.
+            league.historyBoundaryYear = String(year + 1);
+            break;
+          }
+          if (exists === null) break; // couldn't tell — stop, retry next sync
+          espnBudget--;
+          const teams = await fetchEspnSeasonTeams(league, String(year));
+          const mine = teams.find((t) => String(t.id) === String(league.franchiseId));
+          const placement = mine ? espnSeasonPlacement(mine, teams.length) : null;
+          if (placement) {
+            league.results.push({ year: String(year), ...placement });
+            yearsAdded++;
+            leaguesTouched++;
+          }
+        } catch (err) {
+          console.error(`History backfill failed for ${league.name} (${year}): ${err.message}`);
+          break;
+        }
+      }
+      continue;
+    }
+
+    // MFL
+    if (mflBudget <= 0) continue;
+    let historyYears;
+    try {
+      historyYears = await fetchMflLeagueHistory(league, cookie, league.season);
+      mflBudget--;
+    } catch (err) {
+      console.error(`Failed to fetch league history for ${league.name}: ${err.message}`);
+      continue;
+    }
+    const missing = yearsNeedingHistoryBackfill(historyYears, league.results, league.season);
+    for (const { year, id } of missing) {
+      if (mflBudget <= 0) break;
+      try {
+        const { leagueFranchiseIds, regularSeasonOrder, brackets, bracketDataById } =
+          await fetchMflSeasonBracketData(id, cookie, year);
+        // Two calls up front (standings, the bracket listing) plus one per
+        // bracket actually fetched — an honest count of what this year just
+        // spent, so a deep-bracket league can't quietly blow the budget in
+        // one iteration.
+        mflBudget -= 2 + bracketDataById.size;
+        if (leagueFranchiseIds.length === 0) continue; // try again next sync
+        const placements = computeMflSeasonPlacements({
+          leagueFranchiseIds,
+          brackets,
+          bracketDataById,
+          regularSeasonOrder,
+        });
+        const mine = placements.find((p) => p.franchiseId === league.franchiseId);
+        if (mine && mine.rank != null) {
+          league.results.push({ year, rank: mine.rank, total: mine.total, guessed: mine.guessed });
+          yearsAdded++;
+          leaguesTouched++;
+        }
+      } catch (err) {
+        console.error(`History backfill failed for ${league.name} (${year}): ${err.message}`);
+      }
+    }
+  }
+
+  for (const league of leagues) {
+    if (Array.isArray(league.results)) {
+      league.results.sort((a, b) => Number(a.year) - Number(b.year));
+    }
+  }
+
+  console.log(
+    `History backfill: added ${yearsAdded} season(s) across ${leaguesTouched} league update(s) `
+    + `(MFL budget ${HISTORY_MFL_REQUEST_BUDGET - mflBudget}/${HISTORY_MFL_REQUEST_BUDGET}, `
+    + `ESPN budget ${HISTORY_ESPN_REQUEST_BUDGET - espnBudget}/${HISTORY_ESPN_REQUEST_BUDGET})`
+  );
 }
 
 async function main() {
@@ -870,6 +1019,16 @@ async function main() {
   }
   if (Object.keys(rankingPools).length === 0 && previous?.rankingPools) {
     rankingPools = previous.rankingPools;
+  }
+
+  // Last, deliberately — this is bonus historical data for the History tab,
+  // never allowed to compete with the season-critical fetches above for
+  // MFL's rate limit. See backfillLeagueHistory's own comment for the
+  // budget/backfill shape.
+  try {
+    await backfillLeagueHistory(leagues, previousById, cookie);
+  } catch (err) {
+    console.error(`History backfill failed: ${err.message}`);
   }
 
   const output = {
