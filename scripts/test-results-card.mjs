@@ -133,17 +133,24 @@ function fullText(node) {
 	assert.deepEqual(labels, ['League A', 'League B', 'League C', 'League D'],
 		'best average first (A: 3.67, B: 5.0), then leagues with no average, in their original relative order');
 
-	// League A's table: rows most-recent-first, then an Average footer row.
+	// The average now sits beside the league name, not as a footer row in
+	// the table, and the year-by-year rows live inside a collapsed-by-
+	// default <details> underneath it.
+	const avgs = findAll(card, (c) => c.cls.includes('results-avg')).map(fullText);
+	assert.deepEqual(avgs, ['Avg 3.7', 'Avg 5.0'], 'A: 3.67 -> 3.7, B: 5.0, in card order');
+
+	const detailsEls = findAll(card, (c) => c.tag === 'details');
+	assert.equal(detailsEls.length, 2, 'one <details> per league that has results');
+	assert.ok(detailsEls.every((d) => d.attrs.open === undefined), 'hidden by default, not pre-expanded');
+
+	// League A's table: rows most-recent-first, no average row mixed in.
 	const tables = findAll(card, (c) => c.tag === 'table');
 	const rowsOf = (table) => findAll(table, (c) => c.tag === 'tr');
 	const [tableA, tableB] = tables;
 
 	const aRows = rowsOf(tableA);
+	assert.equal(aRows.length, 4, 'header row plus 3 year rows only');
 	assert.deepEqual(aRows.slice(1, 4).map((r) => fullText(r.children[0])), ['2025', '2024', '2023']);
-	const aAvgRow = aRows[aRows.length - 1];
-	assert.ok(aAvgRow.cls.includes('results-average-row'));
-	assert.equal(fullText(aAvgRow.children[0]), 'Average');
-	assert.equal(fullText(aAvgRow.children[1]), '3.7');
 
 	// League B: the guessed year's Finish cell is flagged, the confirmed
 	// year's is not — this isn't a blanket style on the whole row or table.
