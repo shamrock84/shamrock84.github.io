@@ -137,7 +137,15 @@ function fullText(node) {
 	// the table, and the year-by-year rows live inside a collapsed-by-
 	// default <details> underneath it.
 	const avgs = findAll(card, (c) => c.cls.includes('results-avg')).map(fullText);
-	assert.deepEqual(avgs, ['Avg Finish 3.7', 'Avg Finish 5.0'], 'A: 3.67 -> 3.7, B: 5.0, in card order');
+	assert.deepEqual(avgs, ['Avg Finish 4.3', 'Avg Finish 3.7', 'Avg Finish 5.0'],
+		'card-head carries the overall mean first (3.67 and 5.0 -> 4.33 -> 4.3), then each league\'s own');
+
+	// The overall figure lives in the card-head, beside the "Results" title
+	// itself — not mixed in with the per-league ones below.
+	const cardHead = findAll(card, (c) => c.cls.includes('card-head'))[0];
+	assert.ok(cardHead, 'card-head wraps the title and the overall average');
+	assert.equal(fullText(findAll(cardHead, (c) => c.tag === 'h2')[0]), 'Results');
+	assert.equal(fullText(findAll(cardHead, (c) => c.cls.includes('results-avg'))[0]), 'Avg Finish 4.3');
 
 	const detailsEls = findAll(card, (c) => c.tag === 'details');
 	assert.equal(detailsEls.length, 2, 'one <details> per league that has results');
@@ -172,6 +180,20 @@ function fullText(node) {
 	// A group with none of its types present renders no card at all, the
 	// same way every other Analytics/History card behaves.
 	assert.equal(domCtx.renderResultsCard('redraft', ['redraft'], leagues), null);
+}
+
+// A group where nothing has an average yet gets no overall figure — an
+// empty mean would be worse than no number at all, and there's nothing
+// here for "Avg Finish" to summarize.
+{
+	const leagues = [
+		{ id: 'E', name: 'League E', type: 'dynasty' },
+		{ id: 'F', name: 'League F', type: 'dynasty', results: [] },
+	];
+	const card = domCtx.renderResultsCard('dynasty', ['dynasty'], leagues);
+	const cardHead = findAll(card, (c) => c.cls.includes('card-head'))[0];
+	assert.equal(findAll(cardHead, (c) => c.cls.includes('results-avg')).length, 0,
+		'no leagues have an average, so the card-head carries none either');
 }
 
 console.log('test-results-card: all assertions passed');
