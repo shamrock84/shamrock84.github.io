@@ -428,15 +428,18 @@ const labelsOf = (card) =>
 
 	const leagues = [
 		// Alpha: weakest at RB (a real, sortable spread across positions).
-		// The roster carries three RBs — one ranked and active, one
-		// unranked and active, and one ranked but on the taxi squad — plus
-		// a QB, so the sub-line's position filter, its
-		// best-first-with-unranked-last sort, and the taxi-squad callout
-		// all have something to prove in one fixture.
+		// The roster carries four RBs — one ranked and active (top-50), one
+		// unranked and active, one ranked outside the top 50 but on the
+		// taxi squad, and one ranked INSIDE the top 50 while also on the
+		// taxi squad (the promote-flag conflict case) — plus a QB, so the
+		// sub-line's position filter, its best-first-with-unranked-last
+		// sort, and every combination of the top-50/taxi coloring have
+		// something to prove in one fixture.
 		mkLeague('A', 'Alpha', byPos(10, 5, 10, 10), [{ score: 50, byPosition: byPos(10, 50, 10, 10) }], [
 			{ name: 'Deep Stash', position: 'RB', team: 'KC' },
 			{ name: 'Starting Back', position: 'RB', team: 'SF', ecr: { rank: 34 } },
 			{ name: 'Taxi Prospect', position: 'RB', team: 'DEN', status: 'TAXI_SQUAD', ecr: { rank: 60 } },
+			{ name: 'Taxi Star', position: 'RB', team: 'MIA', status: 'TAXI_SQUAD', ecr: { rank: 20 } },
 			{ name: 'Some QB', position: 'QB', team: 'BUF', ecr: { rank: 5 } },
 		]),
 		// Bravo: 1st of two at every position for our team — nowhere near the
@@ -489,21 +492,42 @@ const labelsOf = (card) =>
 	const findRoster = (cell) => findAll(cell, (c) => c.cls.includes('power-players'))[0];
 	const alphaRoster = findRoster(nameCellOf('Alpha'));
 	assert.ok(alphaRoster, "Alpha's name cell carries the weakest-position roster line");
-	assert.equal(fullText(alphaRoster), 'RB Starting Back SF (34), Taxi Prospect DEN (60), Deep Stash KC (—)');
+	assert.equal(fullText(alphaRoster),
+		'RB Taxi Star MIA (20), Starting Back SF (34), Taxi Prospect DEN (60), Deep Stash KC (—)');
 	assert.equal(alphaCells.every((c) => !findRoster(c)), true, 'no position cell carries a sub-line — only the name cell does');
 
-	// Colored to match the highlighted number it explains, not the muted
-	// grey Studs/Sleepers use — the whole line, including the "RB " label,
-	// inherits it since nothing overrides the label's own color.
-	assert.ok(alphaRoster.cls.includes('needs-players'), 'the roster line is colored to match .needs-weakest');
-
-	// The one taxi-squad player is set apart from his two active-roster
-	// teammates, and only him — this isn't a blanket style on the line.
+	// Each player's own name carries its own color now — not the whole
+	// line the way it used to (see .needs-players in myffl.html): a
+	// top-50 name goes purple, a taxi-squad name goes gold regardless of
+	// rank, and a name with neither is left plain, matching the line's
+	// four real combinations across this one fixture.
 	const alphaEntries = alphaRoster.children.filter((c) => c.tag === 'span' && !c.cls.includes('power-players-label'));
-	assert.equal(alphaEntries.length, 3);
-	const taxiEntries = alphaEntries.filter((c) => c.cls.includes('needs-players-taxi'));
-	assert.equal(taxiEntries.length, 1, 'exactly one player is flagged as taxi-squad');
-	assert.ok(fullText(taxiEntries[0]).startsWith('Taxi Prospect'), 'the flagged player is the taxi-squad one, not an active-roster teammate');
+	assert.equal(alphaEntries.length, 4);
+	const [taxiStar, startingBack, taxiProspect, deepStash] = alphaEntries;
+	// The rank number rides in its own inner span (after the team-suffix
+	// span appendTeamSuffix adds), so its own color can differ from the
+	// name's — only true for the promote-flag conflict case below.
+	const rankSpanOf = (entry) => entry.children[entry.children.length - 1];
+
+	assert.ok(fullText(taxiStar).startsWith('Taxi Star'), 'sorted best-rank-first: rank 20 leads');
+	assert.ok(taxiStar.cls.includes('needs-players-taxi'), 'taxi-squad wins the name color even though rank 20 also clears the top-50 threshold');
+	assert.ok(!taxiStar.cls.includes('needs-players-top'), 'the two classes are mutually exclusive on one name');
+	assert.ok(rankSpanOf(taxiStar).cls.includes('needs-players-promote'),
+		'top-50 AND taxi-squad: the rank number flags "maybe promote him"');
+
+	assert.ok(fullText(startingBack).startsWith('Starting Back'));
+	assert.ok(startingBack.cls.includes('needs-players-top'), 'rank 34, not taxi — purple name');
+	assert.ok(!startingBack.cls.includes('needs-players-taxi'));
+	assert.equal(rankSpanOf(startingBack).cls, '', 'no promote flag without a taxi-squad conflict');
+
+	assert.ok(fullText(taxiProspect).startsWith('Taxi Prospect'));
+	assert.ok(taxiProspect.cls.includes('needs-players-taxi'), 'taxi-squad — gold name even though rank 60 misses the top-50 threshold');
+	assert.ok(!taxiProspect.cls.includes('needs-players-top'));
+	assert.equal(rankSpanOf(taxiProspect).cls, '', 'no promote flag without also clearing the top-50 threshold');
+
+	assert.ok(fullText(deepStash).startsWith('Deep Stash'));
+	assert.equal(deepStash.cls, '', 'unranked and not taxi — plain default color, no purple and no gold');
+	assert.equal(rankSpanOf(deepStash).cls, '');
 
 	// Bravo has a real RB on its roster, but leads at every position (a
 	// 2-team league, rank 1 of 2, nowhere near the below-average

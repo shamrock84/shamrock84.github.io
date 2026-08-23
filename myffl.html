@@ -28,6 +28,14 @@
 			--gold-text: #5c4300;
 			--gold-chip-bg: #fff3d1;
 			--gold-chip-text: #7a5c00;
+			/* A warmer, more saturated amber than --gold-chip-text — not the
+			   raw --gold itself, which is a bright yellow tuned to sit ON a
+			   light background (a chip, a border) and reads at roughly 1.6:1
+			   contrast as text directly on --card-bg, nearly invisible. Used
+			   only for Team Needs' "maybe should be promoted" flag, where it
+			   has to read as a step up from the muted gold a plain taxi-squad
+			   player gets. */
+			--gold-warn-text: #a15c00;
 			--stale-chip-bg: #000000;
 			--stale-chip-text: #ffffff;
 			--stale-chip-ring: transparent;
@@ -49,6 +57,7 @@
 				--gold-text: #3d2e00;
 				--gold-chip-bg: #3d2e05;
 				--gold-chip-text: #f0c33e;
+				--gold-warn-text: #ffa726;
 				/* Inverted against light: a black chip on a #1e1730 card reads as
 				   a hole rather than a mark, so the season a league is stuck on
 				   is the one white thing on a dark page. The ring keeps its
@@ -526,11 +535,18 @@
 			letter-spacing: 0.03em;
 			font-weight: 700;
 		}
-		/* Team Needs' roster sub-line (see needsRosterLine): purple rather
-		   than .power-players' usual muted grey, to read as the answer to
-		   the purple number it sits under. The uppercase position label
-		   inherits this color too, since nothing overrides it. */
-		.needs-players { color: var(--accent); }
+		/* Team Needs' roster sub-line (see needsRosterLine): each player's
+		   own name now carries its own color, rather than the whole line
+		   inheriting one — "notable" (purple) and "taxi squad" (gold) are
+		   properties of a specific player, not of the flagged position as a
+		   whole. A name with neither property is left uncolored, taking the
+		   line's own plain .power-players grey — the same default Studs/
+		   Sleepers already render in — rather than the purple every name
+		   used to inherit regardless. The uppercase position label keeps
+		   that same plain color too, for the same reason: most names on a
+		   line usually won't be purple anymore, so a permanently-purple
+		   label would read as attached to nothing. */
+		.needs-players-top { color: var(--accent); }
 		/* A taxi-squad player within that line, set apart in gold, because
 		   he's a real asset at the position without costing a lineup slot
 		   the way an active-roster player would. --gold-chip-text, the
@@ -541,6 +557,14 @@
 		   visible dark-on-dark here. The NFL team suffix (.team-suffix)
 		   keeps its own muted grey regardless. */
 		.needs-players-taxi { color: var(--gold-chip-text); }
+		/* A taxi-squad player who ALSO clears NEEDS_ROSTER_TOP_ECR_THRESHOLD:
+		   good enough to start, sitting somewhere he can't. The name itself
+		   stays gold — he's still on the taxi squad, that fact hasn't
+		   changed — but the rank number in parens switches to
+		   --gold-warn-text, a level up from the plain --gold-chip-text a
+		   taxi player otherwise gets, since the number is what's flagging
+		   "maybe promote him" rather than merely "here's an asset". */
+		.needs-players-promote { color: var(--gold-warn-text); font-weight: 700; }
 		/* Every Team Needs rank is a button rather than plain text, the same
 		   idiom .salary-link uses on the Rosters tab: a dotted underline
 		   signals "click me" for a popover rather than an outbound link.
@@ -5482,22 +5506,26 @@
 		// (font size, spacing) Studs and Sleepers already use on Power
 		// Rankings, so a row growing a third kind of sub-line doesn't disrupt
 		// anything: every position column stays a plain, aligned number, and
-		// only the first column ever grows taller. It breaks from that
-		// shared look in one way, deliberately: colored purple (.needs-
-		// players) rather than muted grey, since this line exists to answer
-		// "why is that number purple" and reads as connected to it rather
-		// than as a third, unrelated grey note under the same name.
+		// only the first column ever grows taller.
 		//
 		// Every rostered player at the position, not just the top-N the way
 		// Studs/Sleepers filter — the whole group is the point, since the
-		// rank above already blends starters and bench. A taxi-squad player
-		// (.needs-players-taxi, --gold-chip-text) is called out from the rest:
-		// he isn't on the active roster, so he's a real asset at the
-		// position without being a lineup-slot cost the way the others are,
-		// which is worth knowing at a glance rather than only on a click
-		// into the roster. The NFL team suffix stays its own usual muted
-		// grey regardless (see appendTeamSuffix / .team-suffix) — it isn't
-		// part of what's being called out.
+		// rank above already blends starters and bench. Each name is colored
+		// for what that specific player is, not for the position as a whole:
+		// a name clearing NEEDS_ROSTER_TOP_ECR_THRESHOLD (.needs-players-top,
+		// --accent) is good enough to answer "why is that number purple";
+		// everyone else prints in the line's own plain color. A taxi-squad
+		// player (.needs-players-taxi, --gold-chip-text) is called out
+		// separately, in gold, regardless of his rank: he isn't on the
+		// active roster, so he's a real asset at the position without being
+		// a lineup-slot cost the way the others are. The two can collide —
+		// a taxi-squad player good enough to start — and when they do the
+		// name stays gold (he's still not active) but the rank number itself
+		// switches to --gold-warn-text (.needs-players-promote), flagging
+		// "maybe promote him" rather than merely "here's an asset". The NFL
+		// team suffix stays its own usual muted grey regardless (see
+		// appendTeamSuffix / .team-suffix) — it isn't part of what's being
+		// called out either way.
 		//
 		// Unlike powerPlayersLine, the rank rides inline in parens rather
 		// than in a hover title: the question this line answers ("who do I
@@ -5505,6 +5533,7 @@
 		// without a hover. Best-ECR first; unranked players (no FantasyPros
 		// coverage) sort last and print an em dash, the same missing-value
 		// convention buildEcrCell uses for the Rosters tab's own ECR column.
+		const NEEDS_ROSTER_TOP_ECR_THRESHOLD = 50;
 		function needsRosterLine(pos, players) {
 			if (!players || players.length === 0) return null;
 			const sorted = [...players].sort((a, b) => (a.ecr?.rank ?? Infinity) - (b.ecr?.rank ?? Infinity));
@@ -5513,11 +5542,15 @@
 			sorted.forEach((p, i) => {
 				if (i > 0) line.appendChild(document.createTextNode(', '));
 				const onTaxi = (p.status || 'ROSTER').toUpperCase() === 'TAXI_SQUAD';
-				const entry = el('span', { class: onTaxi ? 'needs-players-taxi' : '' });
+				const rank = Number.isFinite(p.ecr?.rank) ? p.ecr.rank : null;
+				const isTop = rank != null && rank <= NEEDS_ROSTER_TOP_ECR_THRESHOLD;
+				const entry = el('span', { class: onTaxi ? 'needs-players-taxi' : (isTop ? 'needs-players-top' : '') });
 				entry.appendChild(document.createTextNode(p.name));
 				appendTeamSuffix(entry, p.team);
-				const rank = Number.isFinite(p.ecr?.rank) ? p.ecr.rank : '—';
-				entry.appendChild(document.createTextNode(` (${rank})`));
+				entry.appendChild(el('span', {
+					class: onTaxi && isTop ? 'needs-players-promote' : '',
+					text: ` (${rank ?? '—'})`,
+				}));
 				line.appendChild(entry);
 			});
 			return line;
