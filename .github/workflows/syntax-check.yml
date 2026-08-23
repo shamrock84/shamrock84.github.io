@@ -163,6 +163,20 @@ jobs:
       - name: Test the ranking pool
         run: node scripts/test-ranking-pool.mjs
 
+      # The History tab's placement derivation: MFL bracket-name
+      # classification, the winner/loser walk, and the gap-filling fallback
+      # to regular-season order. Silent when wrong in the most consequential
+      # way on this whole page — a franchise credited with someone else's
+      # championship reads as a perfectly plausible result.
+      - name: Test History placement derivation
+        run: node scripts/test-history.mjs
+
+      # The Results card itself, run against myffl.html — average-finish
+      # math, sort order, and that an estimated finish is never shown
+      # identically to a confirmed one.
+      - name: Test the Results card
+        run: node scripts/test-results-card.mjs
+
       - name: Validate config/leagues.json
         run: |
           node --input-type=module -e '
