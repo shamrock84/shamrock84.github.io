@@ -49,6 +49,26 @@
 // brand-new league) and its brackets returned null (mid-season, not yet
 // generated) — nothing there to confirm the placement field with, and out of
 // scope for now by request.
+//
+// Second run, 2026-08 (MFL/ESPN only, Sleeper out of scope by request): MFL's
+// TYPE=league carries a `history.league[]` field — {year, url} for every
+// season on record, with that year's league id embedded in the url — so this
+// league (26696) actually goes back to 2006, through several earlier ids
+// (80522 in 2006, 46820 in 2008, ...) before settling on 26696 in 2016. Much
+// better than a walk-back: one call gives the whole year->id map, even across
+// an id change. Confirmed leagueStandings is regular-season-only: the top
+// row's h2hwlt (13-1-0, 14 games) exactly equals lastRegularSeasonWeek (14),
+// with endWeek 18 — so playoff weeks 15-18 are NOT folded into h2hw/h2hl.
+// TYPE=playoffBracket&ID=1 and &ID=2 both still failed with the same "Invalid
+// or missing playoff bracket id", and no bracket-id field turned up anywhere
+// searched so far — now searched exhaustively (every nested key, not just
+// top-level) below, plus a plural TYPE=playoffBrackets listing attempt and a
+// weeklyResults pull for the actual playoff weeks as a derivation fallback.
+// ESPN is settled: rankCalculatedFinal formed a clean 1..10 permutation
+// across all 10 teams (not just a mirror of playoffSeed — e.g. seed 9 finished
+// rankCalculatedFinal 8, seed 7 finished 9), and rankFinal was 0 for every
+// team, so that field is unused here. rankCalculatedFinal is the answer for
+// ESPN; no further ESPN investigation needed.
 
 import { mflLogin, mflGet, mflLeagueExists, espnGet, espnLeagueExists, YEAR } from './lib/providers.mjs';
 
@@ -67,6 +87,23 @@ function dumpFields(label, obj) {
   for (const [k, v] of Object.entries(obj)) {
     const shown = typeof v === 'object' && v !== null ? JSON.stringify(v).slice(0, 200) : String(v);
     console.log(`    ${k}: ${shown}`);
+  }
+}
+
+// Walks the WHOLE parsed body — not just top-level fields, which dumpFields
+// showed truncated to 200 chars each and could easily hide a bracket
+// reference nested inside e.g. `franchises` — looking for any key whose name
+// contains `needle` (case-insensitive). Reports the path so a hit is
+// unambiguous about where it lives.
+function findKeysContaining(obj, needle, path = '') {
+  if (obj === null || typeof obj !== 'object') return;
+  for (const [k, v] of Object.entries(obj)) {
+    const here = path ? `${path}.${k}` : k;
+    if (k.toLowerCase().includes(needle)) {
+      const shown = typeof v === 'object' && v !== null ? JSON.stringify(v).slice(0, 300) : String(v);
+      console.log(`    MATCH ${here}: ${shown}`);
+    }
+    if (v && typeof v === 'object') findKeysContaining(v, needle, here);
   }
 }
 
@@ -89,27 +126,53 @@ if (MFL_LEAGUE_ID) {
     console.log(`  No year in range existed for this league — skipping standings/bracket probes.`);
   } else {
     console.log(`\n--- TYPE=leagueStandings, year ${probeYear} ---`);
+    let standingsData = null;
     try {
-      const data = await mflGet(`/export?TYPE=leagueStandings&L=${MFL_LEAGUE_ID}&JSON=1`, cookie, String(probeYear));
-      const rows = data?.leagueStandings?.franchise;
+      standingsData = await mflGet(`/export?TYPE=leagueStandings&L=${MFL_LEAGUE_ID}&JSON=1`, cookie, String(probeYear));
+      const rows = standingsData?.leagueStandings?.franchise;
       const rowList = Array.isArray(rows) ? rows : rows ? [rows] : [];
       console.log(`  franchise rows: ${rowList.length}`);
       if (rowList.length) dumpFields('first row, every field', rowList[0]);
+      console.log('  --- searching leagueStandings for anything named *bracket*/*place*/*final*/*rank* ---');
+      findKeysContaining(standingsData, 'bracket');
+      findKeysContaining(standingsData, 'place');
+      findKeysContaining(standingsData, 'final');
+      findKeysContaining(standingsData, 'rank');
     } catch (err) {
       console.log(`  threw — ${err.message}`);
     }
 
-    // TYPE=playoffBracket with no ID failed "Invalid or missing playoff
-    // bracket id" on the first run — so first look at TYPE=league for
-    // whatever it says about configured brackets (a league can run more than
-    // one — championship, toilet bowl, ...), then try a couple of small
-    // literal IDs as a fallback guess, since single-bracket leagues commonly
-    // default to 1.
-    console.log(`\n--- TYPE=league, year ${probeYear} (full body, looking for bracket ids) ---`);
+    // Round 2 confirmed the games-played arithmetic (h2hwlt totals ==
+    // lastRegularSeasonWeek exactly) — leagueStandings is regular-season
+    // seeding only, not adjusted for who actually won the bracket. This
+    // round: search the FULL TYPE=league body (not just its top-level
+    // fields, which dumpFields truncates at 200 chars each and could hide a
+    // bracket reference nested inside e.g. `franchises`) for anything named
+    // *bracket*, try the plural listing endpoint, and — since the league's
+    // own playoff window is now known (lastRegularSeasonWeek+1..endWeek) —
+    // pull the actual head-to-head matchups for those weeks as a fallback:
+    // even with no explicit placement field, who-beat-whom in the final
+    // week's matchups is enough to derive the bracket by hand.
+    console.log(`\n--- TYPE=league, year ${probeYear} (searching full body for bracket/playoff fields) ---`);
+    let lastRegWeek = null;
+    let endWeek = null;
     try {
       const data = await mflGet(`/export?TYPE=league&L=${MFL_LEAGUE_ID}&JSON=1`, cookie, String(probeYear));
-      if (data?.league) dumpFields('league, every top-level field', data.league);
-      console.log(`  body (first 2000 chars): ${JSON.stringify(data).slice(0, 2000)}`);
+      lastRegWeek = Number(data?.league?.lastRegularSeasonWeek);
+      endWeek = Number(data?.league?.endWeek);
+      console.log(`  lastRegularSeasonWeek=${lastRegWeek} endWeek=${endWeek}`);
+      console.log('  --- searching for anything named *bracket*/*playoff* ---');
+      findKeysContaining(data, 'bracket');
+      findKeysContaining(data, 'playoff');
+    } catch (err) {
+      console.log(`  threw — ${err.message}`);
+    }
+
+    console.log(`\n--- TYPE=playoffBrackets (plural, listing), year ${probeYear} ---`);
+    try {
+      const data = await mflGet(`/export?TYPE=playoffBrackets&L=${MFL_LEAGUE_ID}&JSON=1`, cookie, String(probeYear));
+      console.log(`  top-level keys: ${JSON.stringify(Object.keys(data || {}))}`);
+      console.log(`  body (first 1500 chars): ${JSON.stringify(data).slice(0, 1500)}`);
     } catch (err) {
       console.log(`  threw — ${err.message}`);
     }
@@ -127,6 +190,24 @@ if (MFL_LEAGUE_ID) {
       } catch (err) {
         console.log(`  threw — ${err.message}`);
       }
+    }
+
+    if (Number.isFinite(lastRegWeek) && Number.isFinite(endWeek)) {
+      for (let week = lastRegWeek + 1; week <= endWeek; week++) {
+        console.log(`\n--- TYPE=weeklyResults&W=${week} (playoff week), year ${probeYear} ---`);
+        try {
+          const data = await mflGet(
+            `/export?TYPE=weeklyResults&L=${MFL_LEAGUE_ID}&W=${week}&JSON=1`,
+            cookie,
+            String(probeYear)
+          );
+          console.log(`  body (first 1200 chars): ${JSON.stringify(data).slice(0, 1200)}`);
+        } catch (err) {
+          console.log(`  threw — ${err.message}`);
+        }
+      }
+    } else {
+      console.log('\n  (lastRegularSeasonWeek/endWeek not resolved — skipping weeklyResults)');
     }
   }
 } else {
