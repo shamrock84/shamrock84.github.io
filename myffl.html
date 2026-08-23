@@ -531,13 +531,16 @@
 		   the purple number it sits under. The uppercase position label
 		   inherits this color too, since nothing overrides it. */
 		.needs-players { color: var(--accent); }
-		/* A taxi-squad player within that line, set apart in dark gold —
-		   an unused-elsewhere token (see the :root comment on --gold being
-		   reserved for the user's own team) rather than a new color,
-		   because he's a real asset at the position without costing a
-		   lineup slot the way an active-roster player would. The NFL team
-		   suffix (.team-suffix) keeps its own muted grey regardless. */
-		.needs-players-taxi { color: var(--gold-text); }
+		/* A taxi-squad player within that line, set apart in gold, because
+		   he's a real asset at the position without costing a lineup slot
+		   the way an active-roster player would. --gold-chip-text, the
+		   same token Bye Weeks' .bye-player-mid uses for gold text
+		   directly on the card background — not --gold-text, which is
+		   meant as the dark foreground FOR a bright --gold/--gold-chip-bg
+		   chip and is itself dark in dark mode, so it read as barely
+		   visible dark-on-dark here. The NFL team suffix (.team-suffix)
+		   keeps its own muted grey regardless. */
+		.needs-players-taxi { color: var(--gold-chip-text); }
 		/* Every Team Needs rank is a button rather than plain text, the same
 		   idiom .salary-link uses on the Rosters tab: a dotted underline
 		   signals "click me" for a popover rather than an outbound link.
@@ -5488,7 +5491,7 @@
 		// Every rostered player at the position, not just the top-N the way
 		// Studs/Sleepers filter — the whole group is the point, since the
 		// rank above already blends starters and bench. A taxi-squad player
-		// (.needs-players-taxi, --gold-text) is called out from the rest:
+		// (.needs-players-taxi, --gold-chip-text) is called out from the rest:
 		// he isn't on the active roster, so he's a real asset at the
 		// position without being a lineup-slot cost the way the others are,
 		// which is worth knowing at a glance rather than only on a click
