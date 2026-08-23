@@ -17,6 +17,13 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  # Shared with backfill-history.yml on purpose: both write to
+  # data/rosters.json, and queuing (rather than running them side by side)
+  # is what keeps one from clobbering the other's commit.
+  group: rosters-data-write
+  cancel-in-progress: false
+
 jobs:
   sync:
     runs-on: ubuntu-latest

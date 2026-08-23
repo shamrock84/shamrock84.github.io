@@ -320,7 +320,10 @@ export function yearsNeedingHistoryBackfill(historyYears, existingResults, curre
     .sort((a, b) => Number(b.year) - Number(a.year));
 }
 
-async function backfillLeagueHistory(leagues, previousById, cookie) {
+// Exported so backfill-history.mjs — the on-demand, standalone companion to
+// this pass (see that file's header) — can invoke exactly this logic with
+// its own uncontested cookie and budget, instead of duplicating it.
+export async function backfillLeagueHistory(leagues, previousById, cookie) {
   let mflBudget = HISTORY_MFL_REQUEST_BUDGET;
   let espnBudget = HISTORY_ESPN_REQUEST_BUDGET;
   let yearsAdded = 0;
