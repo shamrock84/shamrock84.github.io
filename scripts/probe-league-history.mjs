@@ -69,6 +69,26 @@
 // rankCalculatedFinal 8, seed 7 finished 9), and rankFinal was 0 for every
 // team, so that field is unused here. rankCalculatedFinal is the answer for
 // ESPN; no further ESPN investigation needed.
+//
+// Third run, 2026-08: the recursive search found nothing in leagueStandings
+// or TYPE=league (confirmed dead ends). But TYPE=playoffBrackets (PLURAL —
+// note the s) is real and lists every bracket the league ran that year:
+// {id, name, bracketWinnerTitle, startWeek, teamsInvolved} — for league
+// 26696/2025, four brackets (Fantasy Bowl id=1 "Fantasy Bowl Champion" 5
+// teams from week 15; Fantasy Bowl Consolation id=2 "3rd Place" 2 teams from
+// week 17; Toilet Bowl id=3 "Toilet Bowl Winner" 5 teams from week 15; Toilet
+// Bowl Consolation id=4 "8th Place" 2 teams from week 17) — the titles
+// themselves spell out placement labels. Oddly, TYPE=playoffBracket
+// (singular) STILL rejected ID=1 with the identical error even though the
+// listing just confirmed 1 is real for this league+year — something about
+// how the singular endpoint wants its id is still wrong, now tried with a
+// few parameter-name variants below. Bracket LISTING alone isn't enough on
+// its own regardless: it names the brackets and their winner titles but not
+// which franchise ended up holding each title, so either the singular
+// endpoint needs to actually work, or final placement has to be derived by
+// hand from the playoff weeks' matchup results (weeklyResults) — which this
+// round also reworks to summarize matchups by franchise id + score instead
+// of a raw player-level dump that got cut off before anything useful.
 
 import { mflLogin, mflGet, mflLeagueExists, espnGet, espnLeagueExists, YEAR } from './lib/providers.mjs';
 
@@ -177,11 +197,23 @@ if (MFL_LEAGUE_ID) {
       console.log(`  threw — ${err.message}`);
     }
 
-    for (const bracketId of [1, 2]) {
-      console.log(`\n--- TYPE=playoffBracket&ID=${bracketId}, year ${probeYear} ---`);
+    // The plural listing worked and confirmed ids 1/2/3/4 are real for this
+    // league+year, yet the singular endpoint rejected ID=1 and ID=2 with the
+    // exact same error — so the id itself isn't the problem, something about
+    // how it's being passed is. Try a handful of plausible parameter-name
+    // variants for bracket id 1 (the real championship bracket) before
+    // giving up on this endpoint.
+    for (const [label, params] of [
+      ['ID=1', `ID=1`],
+      ['BRACKET_ID=1', `BRACKET_ID=1`],
+      ['bracket_id=1', `bracket_id=1`],
+      ['bracketId=1', `bracketId=1`],
+      ['ID=1&W=15', `ID=1&W=15`],
+    ]) {
+      console.log(`\n--- TYPE=playoffBracket&${label}, year ${probeYear} ---`);
       try {
         const data = await mflGet(
-          `/export?TYPE=playoffBracket&L=${MFL_LEAGUE_ID}&ID=${bracketId}&JSON=1`,
+          `/export?TYPE=playoffBracket&L=${MFL_LEAGUE_ID}&${params}&JSON=1`,
           cookie,
           String(probeYear)
         );
@@ -192,6 +224,13 @@ if (MFL_LEAGUE_ID) {
       }
     }
 
+    // Fallback path if the bracket endpoint never cooperates: summarize each
+    // playoff week's matchups down to franchise id + total score (the first
+    // run's raw dump was dominated by player-level detail and got cut off
+    // before showing whether a franchise-level total score field exists at
+    // all) — enough to derive who beat whom by hand, and to check whether a
+    // franchise-level `score` field exists to read directly rather than
+    // summing starters.
     if (Number.isFinite(lastRegWeek) && Number.isFinite(endWeek)) {
       for (let week = lastRegWeek + 1; week <= endWeek; week++) {
         console.log(`\n--- TYPE=weeklyResults&W=${week} (playoff week), year ${probeYear} ---`);
@@ -201,7 +240,26 @@ if (MFL_LEAGUE_ID) {
             cookie,
             String(probeYear)
           );
-          console.log(`  body (first 1200 chars): ${JSON.stringify(data).slice(0, 1200)}`);
+          const matchups = data?.weeklyResults?.matchup;
+          const matchupList = Array.isArray(matchups) ? matchups : matchups ? [matchups] : [];
+          console.log(`  matchups: ${matchupList.length}, regularSeason flag(s): ${JSON.stringify(matchupList.map((m) => m.regularSeason))}`);
+          for (const m of matchupList) {
+            const franchises = Array.isArray(m.franchise) ? m.franchise : m.franchise ? [m.franchise] : [];
+            const summary = franchises.map((f) => {
+              const players = Array.isArray(f.player) ? f.player : f.player ? [f.player] : [];
+              const starterSum = players
+                .filter((p) => p.shouldStart === '1' || p.status === 'starter')
+                .reduce((sum, p) => sum + (Number(p.score) || 0), 0);
+              return `id=${f.id} own-score-field=${f.score ?? '(none)'} summed-starters=${starterSum.toFixed(1)}`;
+            });
+            console.log(`    matchup: ${summary.join('  vs  ')}`);
+          }
+          // No matchup array at all (week 17's first run) — dump top-level
+          // shape directly so it's clear whether that's a truncation
+          // artifact or a genuinely different structure for that week.
+          if (matchupList.length === 0) {
+            console.log(`  no matchup array — top-level weeklyResults keys: ${JSON.stringify(Object.keys(data?.weeklyResults || {}))}`);
+          }
         } catch (err) {
           console.log(`  threw — ${err.message}`);
         }
