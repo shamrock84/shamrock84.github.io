@@ -28,14 +28,6 @@
 			--gold-text: #5c4300;
 			--gold-chip-bg: #fff3d1;
 			--gold-chip-text: #7a5c00;
-			/* A warmer, more saturated amber than --gold-chip-text — not the
-			   raw --gold itself, which is a bright yellow tuned to sit ON a
-			   light background (a chip, a border) and reads at roughly 1.6:1
-			   contrast as text directly on --card-bg, nearly invisible. Used
-			   only for Team Needs' "maybe should be promoted" flag, where it
-			   has to read as a step up from the muted gold a plain taxi-squad
-			   player gets. */
-			--gold-warn-text: #a15c00;
 			--stale-chip-bg: #000000;
 			--stale-chip-text: #ffffff;
 			--stale-chip-ring: transparent;
@@ -57,7 +49,6 @@
 				--gold-text: #3d2e00;
 				--gold-chip-bg: #3d2e05;
 				--gold-chip-text: #f0c33e;
-				--gold-warn-text: #ffa726;
 				/* Inverted against light: a black chip on a #1e1730 card reads as
 				   a hole rather than a mark, so the season a league is stuck on
 				   is the one white thing on a dark page. The ring keeps its
@@ -554,17 +545,28 @@
 		   directly on the card background — not --gold-text, which is
 		   meant as the dark foreground FOR a bright --gold/--gold-chip-bg
 		   chip and is itself dark in dark mode, so it read as barely
-		   visible dark-on-dark here. The NFL team suffix (.team-suffix)
-		   keeps its own muted grey regardless. */
+		   visible dark-on-dark here. Unlike every other use of .team-suffix
+		   on the page, the NFL team abbreviation here is pulled INTO the
+		   gold rather than left at its usual muted grey (see the descendant
+		   rule below) — a taxi-squad player is a single highlighted fact
+		   (name, team, and rank all describing the one asset), not a name
+		   with unrelated metadata hanging off it. */
 		.needs-players-taxi { color: var(--gold-chip-text); }
+		.needs-players-taxi .team-suffix { color: inherit; }
 		/* A taxi-squad player who ALSO clears NEEDS_ROSTER_TOP_ECR_THRESHOLD:
 		   good enough to start, sitting somewhere he can't. The name itself
 		   stays gold — he's still on the taxi squad, that fact hasn't
-		   changed — but the rank number in parens switches to
-		   --gold-warn-text, a level up from the plain --gold-chip-text a
-		   taxi player otherwise gets, since the number is what's flagging
-		   "maybe promote him" rather than merely "here's an asset". */
-		.needs-players-promote { color: var(--gold-warn-text); font-weight: 700; }
+		   changed — but the rank number in parens goes purple, the same
+		   --accent .needs-players-top uses: purple means "top-50" wherever
+		   it appears on this line, whether that's the whole name (an
+		   active-roster player) or just the number (a taxi-squad player
+		   whose gold name has to stay gold, since the taxi-squad fact
+		   hasn't changed). This was a bespoke warning-amber token
+		   (--gold-warn-text) at first, on the reasoning that "maybe
+		   promote him" is a distinct signal from "notable" — reverted once
+		   real use showed purple-for-top-50 reads more consistently as one
+		   rule applied twice than a second color would. */
+		.needs-players-promote { color: var(--accent); font-weight: 700; }
 		/* Every Team Needs rank is a button rather than plain text, the same
 		   idiom .salary-link uses on the Rosters tab: a dotted underline
 		   signals "click me" for a popover rather than an outbound link.
@@ -5518,14 +5520,18 @@
 		// player (.needs-players-taxi, --gold-chip-text) is called out
 		// separately, in gold, regardless of his rank: he isn't on the
 		// active roster, so he's a real asset at the position without being
-		// a lineup-slot cost the way the others are. The two can collide —
-		// a taxi-squad player good enough to start — and when they do the
-		// name stays gold (he's still not active) but the rank number itself
-		// switches to --gold-warn-text (.needs-players-promote), flagging
-		// "maybe promote him" rather than merely "here's an asset". The NFL
-		// team suffix stays its own usual muted grey regardless (see
-		// appendTeamSuffix / .team-suffix) — it isn't part of what's being
-		// called out either way.
+		// a lineup-slot cost the way the others are. Unlike every other
+		// player line on the page, a taxi-squad player's team suffix is
+		// pulled into that gold too (.needs-players-taxi .team-suffix) — he
+		// reads as one highlighted fact rather than a name with unrelated
+		// grey metadata attached. The two colors can collide — a taxi-squad
+		// player good enough to start — and when they do the name stays
+		// gold (he's still not active) but the rank number itself goes
+		// purple (.needs-players-promote, --accent): purple means "top-50"
+		// wherever it lands on this line, so a taxi-squad player who clears
+		// it gets the same signal an active-roster player would, just on
+		// his rank instead of his whole name, since his name has to stay
+		// gold for the taxi-squad fact that hasn't changed.
 		//
 		// Unlike powerPlayersLine, the rank rides inline in parens rather
 		// than in a hover title: the question this line answers ("who do I

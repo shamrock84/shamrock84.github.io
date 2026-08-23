@@ -513,7 +513,7 @@ const labelsOf = (card) =>
 	assert.ok(taxiStar.cls.includes('needs-players-taxi'), 'taxi-squad wins the name color even though rank 20 also clears the top-50 threshold');
 	assert.ok(!taxiStar.cls.includes('needs-players-top'), 'the two classes are mutually exclusive on one name');
 	assert.ok(rankSpanOf(taxiStar).cls.includes('needs-players-promote'),
-		'top-50 AND taxi-squad: the rank number flags "maybe promote him"');
+		'top-50 AND taxi-squad: the rank number goes purple (--accent) to flag "maybe promote him", same color .needs-players-top uses for an active-roster player who clears the same threshold');
 
 	assert.ok(fullText(startingBack).startsWith('Starting Back'));
 	assert.ok(startingBack.cls.includes('needs-players-top'), 'rank 34, not taxi — purple name');
