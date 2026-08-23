@@ -46,10 +46,27 @@ const SCORING_FORMATS = new Set(['PPR', 'HALF', 'STD']);
 const KEY_ORDER = [
   'id', 'franchiseId', 'name', 'type', 'provider',
   'tags', 'lineupPilot', 'rankingType', 'scoring', 'season', 'rulesUrl', 'commishContact',
+  'dues', 'payout1', 'payout2', 'payout3',
 ];
+
+// The Finances card's payout fields, in the order the Admin tab labels them.
+// Flat rather than a rank->amount table because every league here is
+// assumed to pay exactly the top 3 — see leagueFinancesSummary in
+// myffl.html, which reads these same three field names.
+const PAYOUT_FIELDS = [['payout1', '1st place payout'], ['payout2', '2nd place payout'], ['payout3', '3rd place payout']];
 
 function isNonEmptyString(v) {
   return typeof v === 'string' && v.trim() !== '';
+}
+
+// Dues and each payout are the same shape: a non-negative dollar amount, or
+// blank to mean "not entered yet." Zero is a legitimate, deliberate answer
+// (a league that pays $0 for a spot still has a real number there) and must
+// validate the same as any other amount — this only rejects negative values
+// and non-numeric text.
+function isValidMoneyField(v) {
+  if (v == null || v === '') return true;
+  return Number.isFinite(Number(v)) && Number(v) >= 0;
 }
 
 // Exported for the unit test in scripts/test-save-leagues.mjs. Vercel only ever
@@ -140,6 +157,17 @@ function validate(leagues) {
         errors.push(`${label}: rules link must start with http:// or https://.`);
       }
     }
+    // Feeds the History tab's Finances card. All four are optional and
+    // independent — a league can have dues entered with no payouts yet, or
+    // vice versa; the card renders whatever's known and dashes the rest.
+    if (!isValidMoneyField(league.dues)) {
+      errors.push(`${label}: dues must be a non-negative dollar amount, or left blank.`);
+    }
+    for (const [key, fieldLabel] of PAYOUT_FIELDS) {
+      if (!isValidMoneyField(league[key])) {
+        errors.push(`${label}: ${fieldLabel} must be a non-negative dollar amount, or left blank.`);
+      }
+    }
   });
 
   // Every lookup in this codebase is leagues.find((l) => l.id === id), so a
@@ -166,6 +194,14 @@ function validate(leagues) {
 function mergeLeague(league) {
   const out = Object.create(null);
   const put = (k, v) => { if (v !== undefined && v !== null && v !== '') out[k] = v; };
+  // Stored as a real JSON number (not a quoted string like season) — these
+  // are arithmetic inputs to leagueFinancesSummary's won - dues, not an
+  // identifier compared against a provider's own string season.
+  const putMoney = (k, v) => {
+    if (v == null || v === '') return;
+    const n = Number(v);
+    if (Number.isFinite(n)) out[k] = n;
+  };
 
   put('id', String(league.id).trim());
   put('franchiseId', league.franchiseId == null ? '' : String(league.franchiseId).trim());
@@ -179,6 +215,10 @@ function mergeLeague(league) {
   put('season', league.season == null ? '' : String(league.season).trim());
   put('rulesUrl', league.rulesUrl);
   put('commishContact', league.commishContact == null ? '' : String(league.commishContact).trim());
+  putMoney('dues', league.dues);
+  putMoney('payout1', league.payout1);
+  putMoney('payout2', league.payout2);
+  putMoney('payout3', league.payout3);
 
   for (const [k, v] of Object.entries(league)) {
     if (!KEY_ORDER.includes(k) && !RETIRED_KEYS.has(k) && v !== undefined) out[k] = v;
