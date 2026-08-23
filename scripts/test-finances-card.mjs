@@ -2,9 +2,10 @@
 // leagueFinancesSummary and renderFinancesCard in myffl.html.
 //
 // The judgement calls pinned here: Won is computed from that year's own
-// Finish (league.results[].rank) against a rank->payout table, never stored
+// Finish (league.results[].rank) against the three flat payout1/2/3 fields
+// (every league is assumed to pay exactly the top 3), never stored
 // separately; a payout of exactly $0 for a rank is distinct from that rank
-// being absent from the table (unknown), and only the latter renders as a
+// having no payout field at all (unknown), and only the latter renders as a
 // dash; Total is null unless BOTH dues and won are known for that year,
 // never a partial sum; a league's own Total is the sum of its known yearly
 // totals, and the card-head's overall Total is the sum of every league's own
@@ -97,15 +98,17 @@ function fullText(node) {
 // ---- leagueFinancesSummary ----------------------------------------------------
 
 {
-	// Both dues and payouts configured: Won reads off that year's own rank.
+	// Dues and all three payouts configured: Won reads off that year's own
+	// rank against payout1/payout2/payout3.
 	const league = {
 		name: 'A',
 		dues: 100,
-		payouts: { 1: 500, 2: 250 },
+		payout1: 500,
+		payout2: 250,
 		results: [
 			{ year: '2023', rank: 1, total: 10 },
 			{ year: '2024', rank: 2, total: 10 },
-			{ year: '2025', rank: 5, total: 10 }, // not in the payout table
+			{ year: '2025', rank: 5, total: 10 }, // outside the top 3 — no payout field exists for it
 		],
 	};
 	const summary = domCtx.leagueFinancesSummary(league);
@@ -116,7 +119,7 @@ function fullText(node) {
 	assert.equal(y2023.total, 400, '500 won - 100 dues');
 
 	const y2025 = summary.years.find((y) => y.year === '2025');
-	assert.equal(y2025.won, null, 'rank 5 is absent from the payout table — unknown, not $0');
+	assert.equal(y2025.won, null, 'rank 5 has no payout field — every league is assumed top-3-only');
 	assert.equal(y2025.total, null, 'no total without a known Won');
 
 	assert.equal(summary.total, 400 + 150, '(500-100) + (250-100), the unresolved 2025 excluded entirely');
@@ -124,12 +127,12 @@ function fullText(node) {
 
 {
 	// A payout of exactly $0 for a rank is a real, known answer — distinct
-	// from that rank being missing from the table.
+	// from that rank's field being left blank entirely.
 	const league = {
 		name: 'B',
 		dues: 50,
-		payouts: { 1: 200, 4: 0 },
-		results: [{ year: '2024', rank: 4, total: 10 }],
+		payout3: 0,
+		results: [{ year: '2024', rank: 3, total: 10 }],
 	};
 	const summary = domCtx.leagueFinancesSummary(league);
 	assert.equal(summary.years[0].won, 0, 'a configured $0 payout is known, not missing');
@@ -142,7 +145,7 @@ function fullText(node) {
 	const league = { name: 'C', dues: 100, results: [{ year: '2024', rank: 1, total: 10 }] };
 	const summary = domCtx.leagueFinancesSummary(league);
 	assert.equal(summary.years[0].dues, 100);
-	assert.equal(summary.years[0].won, null, 'no payout table at all');
+	assert.equal(summary.years[0].won, null, 'no payout fields set at all');
 	assert.equal(summary.years[0].total, null);
 	assert.equal(summary.total, null, 'nothing to sum');
 }
@@ -159,16 +162,16 @@ function fullText(node) {
 {
 	const leagues = [
 		{ id: 'D', name: 'League D', type: 'dynasty' }, // no results, no config
-		{ id: 'A', name: 'League A', type: 'dynasty', dues: 100, payouts: { 1: 500, 2: 250 }, results: [
+		{ id: 'A', name: 'League A', type: 'dynasty', dues: 100, payout1: 500, payout2: 250, results: [
 			{ year: '2024', rank: 1, total: 10 },
 			{ year: '2025', rank: 2, total: 10 },
 		] }, // total: 400 + 150 = 550
-		{ id: 'B', name: 'League B', type: 'salarycap', dues: 100, payouts: { 1: 500 }, results: [
-			{ year: '2024', rank: 8, total: 10 },
+		{ id: 'B', name: 'League B', type: 'salarycap', dues: 100, payout1: 500, results: [
+			{ year: '2024', rank: 8, total: 10 }, // outside the top 3 — no payout field for it
 			{ year: '2025', rank: 1, total: 10 },
 		] }, // total: null (2024 unresolved) + 400 = 400
-		{ id: 'C', name: 'League C', type: 'salarycap', dues: 200, payouts: { 5: 0 }, results: [
-			{ year: '2024', rank: 5, total: 10 },
+		{ id: 'C', name: 'League C', type: 'salarycap', dues: 200, payout3: 0, results: [
+			{ year: '2024', rank: 3, total: 10 },
 		] }, // total: 0 - 200 = -200, a loss
 	];
 

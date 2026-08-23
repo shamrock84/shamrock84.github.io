@@ -6337,31 +6337,30 @@
 			return `${n < 0 ? '-' : ''}$${Math.abs(n).toFixed(0)}`;
 		}
 
-		// Dues and payouts don't exist anywhere yet — no sync writes them, and
-		// nothing in config/leagues.json defines them. This reads league.dues
-		// (a flat per-season entry fee, assumed constant year over year — see
-		// the Finances card's own remit) and league.payouts (a rank -> dollar
-		// table) defensively, so every league renders exactly like a league
-		// with real results and no financial config today (which is every
-		// league, right now): the shape is ready the moment either field
-		// shows up, the same way leagueResultsSummary was ready before any
-		// league had backfilled history. Reuses league.results rather than a
-		// separate per-year money array, since Won is *defined* as a function
-		// of that year's Finish — there is nothing else for it to read.
+		// Editable from the Admin tab (see 'Dues'/'1st place'/'2nd place'/'3rd
+		// place' below) and saved through api/save-leagues.js like any other
+		// config field. league.dues is a flat per-season entry fee, assumed
+		// constant year over year — see the Finances card's own remit. Payouts
+		// are three flat fields rather than a rank -> dollar table because
+		// every league here is assumed to pay exactly the top 3 (also this
+		// card's own remit) — a 4th-place-and-below payout has nowhere to go
+		// and isn't asked for. Reuses league.results rather than a separate
+		// per-year money array, since Won is *defined* as a function of that
+		// year's Finish — there is nothing else for it to read.
+		const FINANCES_PAYOUT_FIELDS = { 1: 'payout1', 2: 'payout2', 3: 'payout3' };
 		function leagueFinancesSummary(league) {
 			const results = Array.isArray(league.results) ? league.results : [];
 			const dues = league.dues != null ? Number(league.dues) : null;
-			const payouts = league.payouts && typeof league.payouts === 'object' ? league.payouts : null;
 			const years = [...results]
 				.sort((a, b) => Number(b.year) - Number(a.year))
 				.map((r) => {
-					// payouts[rank] absent means "this rank isn't in the payout
-					// table" (unknown), which must not collapse into $0 — a
-					// league that pays only 1st-3rd genuinely has no answer for
-					// 4th until someone says so, same missing-vs-zero rule the
+					// A rank outside 1-3 never has a payout field to read, so it's
+					// unknown rather than $0 — same missing-vs-zero rule the
 					// ranking pool's team field and Top Available's `available`
-					// already use elsewhere on this page.
-					const won = payouts && Number.isFinite(r.rank) && payouts[r.rank] != null ? Number(payouts[r.rank]) : null;
+					// already use elsewhere on this page: a payout field left
+					// blank means "not entered yet," not "confirmed nothing."
+					const payoutField = FINANCES_PAYOUT_FIELDS[r.rank];
+					const won = payoutField && league[payoutField] != null ? Number(league[payoutField]) : null;
 					const total = dues != null && won != null ? won - dues : null;
 					return { year: r.year, dues, won, total };
 				});
@@ -7097,6 +7096,17 @@
 						field('Commissioner contact', adminText(league.commishContact, 'name@example.com, https://…, or slack://…', (v) => { league.commishContact = v || undefined; }), true);
 					}
 					field('Rules link', adminText(league.rulesUrl, 'https://…', (v) => { league.rulesUrl = v || undefined; }), true);
+					// Feeds the History tab's Finances card: Dues is the flat
+					// entry fee (assumed the same every year), and the three
+					// payouts assume every league here pays exactly the top 3 —
+					// see leagueFinancesSummary. Every league type gets these,
+					// not just salary-cap, since a buy-in and a payout table
+					// aren't specific to auction leagues the way a contract
+					// summary is.
+					field('Dues ($)', adminText(league.dues, 'e.g. 100', (v) => { league.dues = v || undefined; }));
+					field('1st place ($)', adminText(league.payout1, 'e.g. 500', (v) => { league.payout1 = v || undefined; }));
+					field('2nd place ($)', adminText(league.payout2, 'e.g. 250', (v) => { league.payout2 = v || undefined; }));
+					field('3rd place ($)', adminText(league.payout3, 'e.g. 100', (v) => { league.payout3 = v || undefined; }));
 					node.appendChild(fields);
 
 					// Behind the disclosure rather than on the collapsed row: at

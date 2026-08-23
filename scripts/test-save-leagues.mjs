@@ -76,6 +76,18 @@ check('allows a blank commissioner contact', validate(withField('commishContact'
 check('allows a commissioner contact on a non-salarycap league',
   validate([{ ...base(), type: 'redraft', commishContact: 'c@example.com' }]).length === 0);
 check('rejects a non-object row', validate([null]).length > 0);
+// Feeds the History tab's Finances card. Zero is a real, deliberate answer
+// (a league that pays $0 for a spot) and must validate like any amount —
+// only negative numbers and non-numeric text are rejected.
+check('rejects negative dues', validate(withField('dues', -50)).length > 0);
+check('rejects non-numeric dues', validate(withField('dues', 'fifty')).length > 0);
+check('allows a blank dues field', validate(withField('dues', '')).length === 0);
+check('allows a zero dues field', validate(withField('dues', 0)).length === 0,
+  JSON.stringify(validate(withField('dues', 0))));
+check('rejects a negative payout', validate(withField('payout2', -1)).length > 0);
+check('rejects a non-numeric payout', validate(withField('payout1', 'lots')).length > 0);
+check('allows a zero payout', validate(withField('payout3', 0)).length === 0);
+check('allows all three payouts blank', validate([base()]).length === 0);
 
 // The whole reason the endpoint checks this: every lookup in the codebase is
 // leagues.find((l) => l.id === id), so a duplicate shadows rather than errors.
@@ -129,6 +141,20 @@ check('drops an omitted name rather than stringifying it',
 check('trims whitespace', mergeLeague({ ...base(), name: '  Padded  ' }).name === 'Padded');
 check('keeps lineupPilot when on', mergeLeague({ ...base(), lineupPilot: true }).lineupPilot === true);
 check('key order is stable', Object.keys(mergeLeague(base())).join() === 'id,franchiseId,name,type');
+// Stored as real JSON numbers, not quoted strings like season — these feed
+// arithmetic (won - dues) rather than being compared as an identifier.
+check('stores dues as a number', mergeLeague({ ...base(), dues: '100' }).dues === 100,
+  JSON.stringify(mergeLeague({ ...base(), dues: '100' })));
+check('stores a payout as a number', mergeLeague({ ...base(), payout1: '500' }).payout1 === 500);
+check('drops a blank dues field', !('dues' in mergeLeague({ ...base(), dues: '' })));
+check('drops blank payout fields', !('payout1' in mergeLeague({ ...base(), payout1: '' })));
+// Zero is a real, deliberate answer and must survive — not be dropped the
+// way put()'s empty-string/null/undefined check drops a genuinely blank field.
+check('keeps a zero dues value rather than dropping it',
+  mergeLeague({ ...base(), dues: 0 }).dues === 0,
+  JSON.stringify(mergeLeague({ ...base(), dues: 0 })));
+check('keeps a zero payout value rather than dropping it',
+  mergeLeague({ ...base(), payout3: 0 }).payout3 === 0);
 
 // The Admin tab only renders the fields it knows about. Without this, any field
 // added to the config later would be wiped the first time someone pressed Save.
