@@ -1,0 +1,64 @@
+name: Probe League History (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here, the
+# same rule the other manual workflows follow. This exists to answer the
+# questions the History tab's Results card needs before any real code gets
+# written: how far back does each provider let a league's history go, and
+# does anything in a past, fully-completed season's response carry a final
+# standing/placement (as opposed to the live in-season order the sync already
+# reads)? myfantasyleague.com, ESPN, and Sleeper are all unreachable from the
+# sandbox this repo is normally edited from, so a workflow run is the only
+# place to ask.
+#
+# Read-only: TYPE=leagueStandings/playoffBracket, view=mTeam/mStandings, and
+# Sleeper's public league/bracket endpoints. Nothing is written.
+on:
+  workflow_dispatch:
+    inputs:
+      mfl_league_id:
+        description: 'MFL league ID to probe (blank to skip MFL)'
+        required: false
+        default: '26696'
+      espn_league_id:
+        description: 'ESPN league ID to probe (blank to skip ESPN)'
+        required: false
+        default: '1966972'
+      sleeper_league_id:
+        description: 'Sleeper league ID to probe (blank to skip Sleeper)'
+        required: false
+        default: '1367867592919760896'
+      past_year:
+        description: 'A past, fully-completed season to inspect standings/bracket data for (blank defaults to last year)'
+        required: false
+        default: ''
+      lookback_years:
+        description: 'How many years to walk backward when testing how far each league''s history goes'
+        required: false
+        default: '8'
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Ask each provider about a past season's history and standings
+        env:
+          MFL_USERNAME: ${{ secrets.MFL_USERNAME }}
+          MFL_PASSWORD: ${{ secrets.MFL_PASSWORD }}
+          # ESPN reads are cookie-authenticated. Without these every ESPN
+          # answer below is false/erroring regardless of year.
+          ESPN_S2: ${{ secrets.ESPN_S2 }}
+          ESPN_SWID: ${{ secrets.ESPN_SWID }}
+          PROBE_MFL_LEAGUE_ID: ${{ inputs.mfl_league_id }}
+          PROBE_ESPN_LEAGUE_ID: ${{ inputs.espn_league_id }}
+          PROBE_SLEEPER_LEAGUE_ID: ${{ inputs.sleeper_league_id }}
+          PROBE_PAST_YEAR: ${{ inputs.past_year }}
+          PROBE_LOOKBACK_YEARS: ${{ inputs.lookback_years }}
+        run: node scripts/probe-league-history.mjs
