@@ -273,4 +273,17 @@ function fullText(node) {
 	assert.equal(domCtx.renderFinancesCard('redraft', ['redraft'], leagues), null);
 }
 
+// The live-synced leagueName wins over config's own static name, same as
+// every other card on the page — this mattered for real: both ESPN
+// leagues in production carry a generic config name ("ESPN League 1")
+// that isn't what their commissioners actually named them.
+{
+	const leagues = [{ id: 'G', name: 'ESPN League 1', leagueName: 'Lincoln Hates Fantasy', type: 'redraft', results: [
+		{ year: '2025', rank: 1, total: 10 },
+	] }];
+	const card = domCtx.renderFinancesCard('redraft', ['redraft'], leagues);
+	const label = findAll(card, (c) => c.cls.includes('group-label')).map(fullText)[0];
+	assert.equal(label, 'Lincoln Hates Fantasy');
+}
+
 console.log('test-finances-card: all assertions passed');
