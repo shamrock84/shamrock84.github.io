@@ -1,5 +1,6 @@
 // Unit test for the History tab's Finances card — formatMoney,
-// leagueFinancesSummary and renderFinancesCard in myffl.html.
+// financesSignClass, leagueFinancesSummary and renderFinancesCard in
+// myffl.html.
 //
 // The judgement calls pinned here: Won is computed from that year's own
 // Finish (league.results[].rank) against the three flat payout1/2/3 fields
@@ -11,10 +12,12 @@
 // totals, and the card-head's overall Total is the sum of every league's own
 // Total — sums, not averages, since money accumulates rather than blends;
 // leagues sort by best (highest) total first, with leagues carrying no
-// total at all sorting last, in their original relative order; a negative
-// total is visually flagged wherever it appears (header, league head, and
-// the per-year Total cell); and a league with no results at all still gets
-// a row (naming it and saying why), never silently dropped.
+// total at all sorting last, in their original relative order; a total is
+// visually flagged wherever it appears (header, league head, and the
+// per-year Total cell) — green for a gain, red for a loss, and neither
+// color for a total that's exactly $0 or not yet known; and a league with
+// no results at all still gets a row (naming it and saying why), never
+// silently dropped.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -93,6 +96,15 @@ function fullText(node) {
 	assert.equal(domCtx.formatMoney(0), '$0');
 	assert.equal(domCtx.formatMoney(-50), '-$50', 'the minus sign leads, never "$-50"');
 	assert.equal(domCtx.formatMoney(99.6), '$100', 'whole dollars — no cents');
+}
+
+// ---- financesSignClass --------------------------------------------------------
+
+{
+	assert.equal(domCtx.financesSignClass(50), 'finances-positive');
+	assert.equal(domCtx.financesSignClass(-50), 'finances-negative');
+	assert.equal(domCtx.financesSignClass(0), '', 'breaking exactly even is neither a gain nor a loss');
+	assert.equal(domCtx.financesSignClass(null), '', 'nothing to total yet gets no color either');
 }
 
 // ---- leagueFinancesSummary ----------------------------------------------------
@@ -186,16 +198,20 @@ function fullText(node) {
 	assert.equal(fullText(findAll(cardHead, (c) => c.tag === 'h2')[0]), 'Finances');
 	const overall = findAll(cardHead, (c) => c.cls.includes('finances-total'))[0];
 	assert.equal(fullText(overall), 'Total $750', '550 + 400 + (-200) across the three leagues with a total');
-	assert.ok(!overall.cls.includes('finances-negative'), 'the overall figure itself is positive');
+	assert.ok(overall.cls.includes('finances-positive'), 'the overall figure itself is a gain');
+	assert.ok(!overall.cls.includes('finances-negative'));
 
-	// League C's own head carries the loss flag; League A's does not.
+	// League C's own head carries the loss flag; League A's carries the gain
+	// flag — never both, and never neither when the total is nonzero.
 	const heads = findAll(card, (c) => c.cls.includes('finances-league-head'));
 	const headFor = (name) => heads.find((h) => fullText(h).includes(name));
 	const totalSpanOf = (name) => findAll(headFor(name), (c) => c.cls.includes('finances-total') && !c.cls.includes('finances-total-overall'))[0];
 	assert.equal(fullText(totalSpanOf('League A')), '$550');
+	assert.ok(totalSpanOf('League A').cls.includes('finances-positive'), 'a gain is visually flagged too, not just a loss');
 	assert.ok(!totalSpanOf('League A').cls.includes('finances-negative'));
 	assert.equal(fullText(totalSpanOf('League C')), '-$200');
 	assert.ok(totalSpanOf('League C').cls.includes('finances-negative'), 'a loss is visually flagged');
+	assert.ok(!totalSpanOf('League C').cls.includes('finances-positive'));
 
 	// League D: no results, no config — a named message, not a silent drop.
 	assert.equal(totalSpanOf('League D'), undefined, 'nothing to total, so no figure at all');
@@ -217,6 +233,7 @@ function fullText(node) {
 	assert.deepEqual(row2024.children.map(fullText), ['2024', '-$100', '—', '—']);
 	const row2025 = rowFor('2025');
 	assert.deepEqual(row2025.children.map(fullText), ['2025', '-$100', '$500', '$400']);
+	assert.ok(row2025.children[3].cls.includes('finances-positive'));
 	assert.ok(!row2025.children[3].cls.includes('finances-negative'));
 
 	// League C's single row: a real, known $0 payout against real dues is a
@@ -225,6 +242,7 @@ function fullText(node) {
 	const rowC = rowsOf(tableC)[1];
 	assert.deepEqual(rowC.children.map(fullText), ['2024', '-$200', '$0', '-$200']);
 	assert.ok(rowC.children[3].cls.includes('finances-negative'));
+	assert.ok(!rowC.children[3].cls.includes('finances-positive'));
 
 	// Collapsed by default, one <details> per league that has years at all
 	// (D has none, so it gets the error box instead).
