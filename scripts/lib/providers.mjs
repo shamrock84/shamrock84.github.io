@@ -1073,8 +1073,10 @@ export async function fetchEspnSeasonTeams(league, season) {
 // the league's current one. `endWeek`, not `lastRegularSeasonWeek`: the
 // weekly/season high-score payout runs through a league's own playoff
 // bracket, not just its regular season — see backfillLeagueScoringRecords's
-// own comment for why the fetch window is a fixed weeks-1-through-17, capped
-// by whichever of that or `endWeek` is smaller.
+// own comment for why the fetch window is a fixed weeks-1-through-18 (a
+// weekly-high award can land on any of them), capped by whichever of that
+// or `endWeek` is smaller. The season-total award stops summing at week 17
+// regardless — that cutoff is applied later, in computeSeasonScoringRecords.
 export async function fetchMflSeasonMeta(yearLeagueId, cookie, year) {
   const data = await mflGet(`/export?TYPE=league&L=${yearLeagueId}&JSON=1`, cookie, year);
   const endWeek = Number(data?.league?.endWeek);

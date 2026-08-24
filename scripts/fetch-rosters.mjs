@@ -490,22 +490,24 @@ export async function backfillLeagueHistory(leagues, previousById, cookie) {
 // its own budget rather than sharing HISTORY_MFL_REQUEST_BUDGET: a season's
 // placement costs roughly 2 + (a few brackets) MFL requests, but its
 // weekly/season point totals need one request PER week fetched — there is no
-// bulk endpoint — which is up to SEASON_HIGH_SCORE_WEEKS (17) requests for a
+// bulk endpoint — which is up to WEEKLY_HIGH_SCORE_WEEKS (18) requests for a
 // typical season, enough on its own to blow past HISTORY_MFL_PER_LEAGUE_BUDGET
 // and starve the placement backfill of its own leagues if the two shared a
 // pool.
 //
-// The window is a fixed weeks 1-17, not the league's own regular season
-// (`lastRegularSeasonWeek`, e.g. 14 for a 10-team league running a 4-week
-// playoff bracket) — confirmed live via probe-weekly-scores.yml that these
-// payouts are meant to cover the whole fantasy season a league actually
-// plays, brackets included, not just the H2H standings portion of it: a
-// last-place team eliminated week 1 of the playoffs can still have banked
-// the league's best single week or its highest 17-week total, and several
-// real leagues here run their bracket through week 17. Only week 18 is
-// excluded — by the time the NFL's regular season expanded to 18 weeks,
-// teams with nothing left to play for rest their starters, so a fantasy
-// week 18 is generally either unplayed or not worth scoring. This also
+// The fetch window is a fixed weeks 1-18, not the league's own regular
+// season (`lastRegularSeasonWeek`, e.g. 14 for a 10-team league running a
+// 4-week playoff bracket) — confirmed live via probe-weekly-scores.yml that
+// these payouts are meant to cover the whole fantasy season a league
+// actually plays, brackets included, not just the H2H standings portion of
+// it: a last-place team eliminated week 1 of the playoffs can still have
+// banked the league's best single week, and several real leagues here run
+// their bracket through week 17 or later. The weekly-high and season-total
+// halves use DIFFERENT cutoffs within that fetched range, though (confirmed
+// directly with the user, not derived from anything providers expose): a
+// weekly-high award is paid on ANY week 1-18, but a season-total award only
+// ever counts weeks 1-`SEASON_HIGH_SCORE_WEEKS` (17) — so week 18 can win
+// the weekly-high payout but never contributes to a season sum. This also
 // rules out leagueStandings' `pf` as a shortcut for the season-total number
 // (it was seriously considered — `pf` is already fetched for free during
 // placement backfill): probe-weekly-scores.yml showed `pf` running well
@@ -531,14 +533,16 @@ export async function backfillLeagueHistory(leagues, previousById, cookie) {
 // guarantees this never runs against a season still in progress, which
 // would compute a "final" weekly high / season total that keeps changing
 // week to week.
-// Fixed, not derived from any one league's own regular-season/playoff split
-// — see this pass's own header comment for why. A season shorter than 17
-// weeks (rare; some older seasons) is capped by that season's own `endWeek`
-// instead, never padded out with weeks that were never played.
-const SEASON_HIGH_SCORE_WEEKS = 17;
+// Both fixed, not derived from any one league's own regular-season/playoff
+// split — see this pass's own header comment for why they're different
+// numbers. A season shorter than 18 weeks (rare; some older seasons) is
+// capped by that season's own `endWeek` instead, never padded out with
+// weeks that were never played.
+const WEEKLY_HIGH_SCORE_WEEKS = 18; // how far the fetch itself reaches
+const SEASON_HIGH_SCORE_WEEKS = 17; // how far the season-total SUM reaches
 const SCORING_MFL_REQUEST_BUDGET = 40;
 // A season alone can cost close to this on its own (up to
-// SEASON_HIGH_SCORE_WEEKS requests), so — unlike HISTORY_MFL_PER_LEAGUE_BUDGET,
+// WEEKLY_HIGH_SCORE_WEEKS requests), so — unlike HISTORY_MFL_PER_LEAGUE_BUDGET,
 // which mainly protects against one league's long tail of cheap bracket
 // years — this mostly just caps one league's back catalog from filling the
 // whole run before any other league gets a turn.
@@ -604,12 +608,15 @@ export async function backfillLeagueScoringRecords(leagues, previousById, cookie
       try {
         const { endWeek, nameById } = await fetchMflSeasonMeta(yearLeagueId, cookie, year);
         mflBudget--; leagueBudget--;
-        // Fixed weeks 1-17, capped by the season's own endWeek for the rare
-        // season that never reached 17 — see this pass's header comment for
+        // Fixed weeks 1-18, capped by the season's own endWeek for the rare
+        // season that never reached 18 — see this pass's header comment for
         // why this is endWeek-capped rather than lastRegularSeasonWeek-scoped.
+        // The season-total SUM stops at SEASON_HIGH_SCORE_WEEKS (17) below,
+        // via computeSeasonScoringRecords's own cutoff argument — week 18 is
+        // still fetched here because it can win the weekly-high payout.
         const weeksToFetch = Number.isFinite(endWeek) && endWeek > 0
-          ? Math.min(SEASON_HIGH_SCORE_WEEKS, endWeek)
-          : SEASON_HIGH_SCORE_WEEKS;
+          ? Math.min(WEEKLY_HIGH_SCORE_WEEKS, endWeek)
+          : WEEKLY_HIGH_SCORE_WEEKS;
 
         // Every week has to succeed for this year to be recorded at all — a
         // season half-summed from surviving weeks would silently understate
@@ -633,7 +640,7 @@ export async function backfillLeagueScoringRecords(leagues, previousById, cookie
         }
         if (!weeksOk || weeklyScoresByWeek.size !== weeksToFetch) continue; // retry the whole year next run
 
-        const { weeklyHigh, seasonHigh } = computeSeasonScoringRecords(weeklyScoresByWeek, nameById);
+        const { weeklyHigh, seasonHigh } = computeSeasonScoringRecords(weeklyScoresByWeek, nameById, SEASON_HIGH_SCORE_WEEKS);
         if (weeklyHigh || seasonHigh) {
           league.results = league.results.map((r) =>
             String(r.year) === String(year) ? { ...r, scoring: { weeklyHigh, seasonHigh } } : r

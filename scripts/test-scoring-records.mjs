@@ -50,6 +50,23 @@ import { yearsNeedingScoringBackfill } from './fetch-rosters.mjs';
   assert.equal(seasonHigh.teamName, 'Z');
 }
 
+{
+  // A weekly-high award can land on week 18; a season-total award never
+  // counts it. Franchise A's week-18 score (300) is the season's highest
+  // single week by far, but week 18 must not be added into any season sum —
+  // B's weeks-1-17 total (100+140=240) beats A's (120+90=210) even though
+  // A's raw 18-week sum (120+90+300=510) would otherwise blow B away.
+  const weeklyScoresByWeek = new Map([
+    [1, [{ franchiseId: 'A', points: 120 }, { franchiseId: 'B', points: 100 }]],
+    [17, [{ franchiseId: 'A', points: 90 }, { franchiseId: 'B', points: 140 }]],
+    [18, [{ franchiseId: 'A', points: 300 }, { franchiseId: 'B', points: 10 }]],
+  ]);
+  const nameById = new Map([['A', 'Team A'], ['B', 'Team B']]);
+  const { weeklyHigh, seasonHigh } = computeSeasonScoringRecords(weeklyScoresByWeek, nameById, 17);
+  assert.deepEqual(weeklyHigh, { franchiseId: 'A', week: 18, points: 300, teamName: 'Team A' }, 'week 18 can win weekly-high');
+  assert.deepEqual(seasonHigh, { franchiseId: 'B', points: 240, teamName: 'Team B' }, 'week 18 never counts toward the season sum');
+}
+
 // ---- yearsNeedingScoringBackfill ---------------------------------------------
 
 {

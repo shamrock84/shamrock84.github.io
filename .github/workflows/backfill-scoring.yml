@@ -3,11 +3,13 @@ name: Backfill Weekly/Season High Scores
 # On-demand only, and deliberately never wired into the regular 4-hourly
 # sync — see backfillLeagueScoringRecords in fetch-rosters.mjs for why: a
 # season's weekly totals cost roughly one MFL request PER week fetched
-# (there is no bulk endpoint) over a fixed weeks 1-17 window — not just the
+# (there is no bulk endpoint) over a fixed weeks 1-18 window — not just the
 # league's own regular season, since these payouts run through a league's
-# own playoff bracket too — up to 17 requests for a typical season, which is
-# expensive enough that folding it into a sync already brushing MFL's rate
-# limit would risk the same 429 cascade documented on backfillLeagueHistory.
+# own playoff bracket too, and a weekly-high award can land on week 18 even
+# though a season-total award only ever counts weeks 1-17 — up to 18
+# requests for a typical season, which is expensive enough that folding it
+# into a sync already brushing MFL's rate limit would risk the same 429
+# cascade documented on backfillLeagueHistory.
 # Dispatching backfill-scoring.mjs on its own gives it a cookie and MFL
 # rate-limit window with nothing else competing for it.
 #
