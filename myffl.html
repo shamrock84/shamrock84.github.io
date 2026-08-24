@@ -339,6 +339,19 @@
 			opacity: 1;
 			text-decoration: none;
 		}
+		/* Same icon, same treatment, inside the Admin tab's disclosure button
+		   instead of an h2 — see the comment where this is built for why it's
+		   a span with a click handler there rather than a nested <a>. */
+		.admin-disclosure .rules-link {
+			margin-left: 0.4rem;
+			font-size: 0.85em;
+			opacity: 0.75;
+			cursor: pointer;
+			flex-shrink: 0;
+		}
+		.admin-disclosure .rules-link:hover {
+			opacity: 1;
+		}
 		.badges {
 			display: flex;
 			flex-wrap: wrap;
@@ -6942,6 +6955,24 @@
 				toggle.appendChild(name
 					? el('span', { class: 'admin-league-name', text: name })
 					: el('span', { class: 'admin-league-name admin-name-pending', text: 'Name appears after the next sync' }));
+				// Same icon buildLeagueHeading appends to the league name on the
+				// Rosters/Standings/Scoring cards — but there it's a plain <a>
+				// inside an <h2>, and here the name sits inside a <button> (the
+				// whole head is the disclosure target). A nested <a> isn't valid
+				// inside a <button>, so this is a span with its own click
+				// handler instead, stopping propagation so a tap on the icon
+				// opens the rules link rather than toggling the card. Reads
+				// league.rulesUrl off the draft, same as the collapsed blurb's
+				// "Rules link" mention below, so an unsaved edit shows up here
+				// immediately rather than waiting for a save.
+				if (league.rulesUrl) {
+					const rulesIcon = el('span', { class: 'rules-link', title: 'League rules', text: '📝' });
+					rulesIcon.addEventListener('click', (e) => {
+						e.stopPropagation();
+						window.open(league.rulesUrl, '_blank', 'noopener');
+					});
+					toggle.appendChild(rulesIcon);
+				}
 				toggle.addEventListener('click', () => {
 					if (isOpen) adminExpanded.delete(league);
 					else adminExpanded.add(league);
