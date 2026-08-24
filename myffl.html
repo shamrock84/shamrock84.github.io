@@ -24,6 +24,14 @@
 			--taxi-text: #4c1f7a;
 			--ir-bg: #fef2f2;
 			--ir-text: #991b1b;
+			/* Green appears nowhere else on the page — the Finances card is
+			   the one place a number reads as a plain gain rather than
+			   "notable" (gold) or "needs a look" (ir-text) — so this is a
+			   fresh token rather than reusing one built for a different
+			   meaning. Picked to sit the same relative distance from --text
+			   that --ir-text does, so a red Total and a green Total read as
+			   equally weighted opposites rather than one looking louder. */
+			--gain-text: #166534;
 			--gold: #FFC62F;
 			--gold-text: #5c4300;
 			--gold-chip-bg: #fff3d1;
@@ -45,6 +53,7 @@
 				--taxi-text: #d7bdf5;
 				--ir-bg: #341313;
 				--ir-text: #fca5a5;
+				--gain-text: #86efac;
 				--gold: #FFC62F;
 				--gold-text: #3d2e00;
 				--gold-chip-bg: #3d2e05;
@@ -1315,6 +1324,9 @@
 		   whether it's paired with .finances-total alone or with
 		   .finances-total-overall too. */
 		.finances-negative { color: var(--ir-text); }
+		/* A net gain — the mirror of .finances-negative just above. A Total
+		   of exactly $0 gets neither class (see financesSignClass). */
+		.finances-positive { color: var(--gain-text); }
 		/* Sortable analytics headers. The arrow is the only affordance a header
 		   gets until you hover, since three of these tables sit on one tab and a
 		   permanent marker on every sortable column is more noise than signal —
@@ -6350,6 +6362,14 @@
 			return `${n < 0 ? '-' : ''}$${Math.abs(n).toFixed(0)}`;
 		}
 
+		// A Total genuinely broke even (exactly $0) gets neither color — it's
+		// not a gain or a loss, and flagging it as one of those would say
+		// something the number doesn't.
+		function financesSignClass(n) {
+			if (n == null || n === 0) return '';
+			return n < 0 ? 'finances-negative' : 'finances-positive';
+		}
+
 		// Editable from the Admin tab (see 'Dues'/'1st place'/'2nd place'/'3rd
 		// place' below) and saved through api/save-leagues.js like any other
 		// config field. league.dues is a flat per-season entry fee, assumed
@@ -6408,7 +6428,7 @@
 			cardHead.appendChild(el('h2', { text: 'Finances' }));
 			if (overallTotal != null) {
 				cardHead.appendChild(el('span', {
-					class: `finances-total finances-total-overall${overallTotal < 0 ? ' finances-negative' : ''}`,
+					class: `finances-total finances-total-overall ${financesSignClass(overallTotal)}`.trim(),
 					title: `Net across ${leaguesWithTotal.length} league(s)`,
 					text: `Total ${formatMoney(overallTotal)}`,
 				}));
@@ -6424,7 +6444,7 @@
 				head.appendChild(el('span', { class: 'group-label', text: league.name }));
 				if (total != null) {
 					head.appendChild(el('span', {
-						class: `finances-total${total < 0 ? ' finances-negative' : ''}`,
+						class: `finances-total ${financesSignClass(total)}`.trim(),
 						title: `Net across ${years.filter((y) => y.total != null).length} year(s)`,
 						text: formatMoney(total),
 					}));
@@ -6452,7 +6472,7 @@
 					row.appendChild(el('td', { text: y.dues != null ? formatMoney(-y.dues) : '—' }));
 					row.appendChild(el('td', { text: y.won != null ? formatMoney(y.won) : '—' }));
 					row.appendChild(el('td', {
-						class: y.total != null && y.total < 0 ? 'finances-negative' : '',
+						class: financesSignClass(y.total),
 						text: y.total != null ? formatMoney(y.total) : '—',
 					}));
 					table.appendChild(row);
