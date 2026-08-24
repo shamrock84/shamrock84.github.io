@@ -177,6 +177,19 @@ jobs:
       - name: Test the Results card
         run: node scripts/test-results-card.mjs
 
+      # The weekly/season high-score derivation: the max/sum over a season's
+      # fetched weeks, and which years still need it backfilled. Silent when
+      # wrong: a mis-derived high score renders as a perfectly plausible
+      # week and point total.
+      - name: Test weekly/season high-score derivation
+        run: node scripts/test-scoring-records.mjs
+
+      # The Finances card itself, run against myffl.html — Won as placement
+      # payout plus weekly/season high-score payout, both able to land the
+      # same year, and every contributing reason named in the Won cell.
+      - name: Test the Finances card
+        run: node scripts/test-finances-card.mjs
+
       - name: Validate config/leagues.json
         run: |
           node --input-type=module -e '

@@ -6495,6 +6495,16 @@
 		// above), so this never needs a general ordinal-suffix formula — it's
 		// the same three places, just spelled out for the Won cell's label.
 		const FINANCES_PLACE_LABELS = { 1: '1st', 2: '2nd', 3: '3rd' };
+		// Weekly/season high-score payouts are independent of a year's Finish —
+		// a last-place team can still have had the league's best week — so
+		// they're added on top of the placement payout rather than looked up
+		// by rank. r.scoring is populated by a separate, on-demand backfill
+		// (see backfillLeagueScoringRecords in fetch-rosters.mjs), so it's
+		// absent on most years for a while after this shipped: an absent
+		// `scoring` contributes $0 here, exactly like an unentered payout
+		// field, deliberately indistinguishable — "not yet backfilled" and
+		// "confirmed you didn't win it" both read the same way a league that
+		// hasn't entered its payout amount already reads as $0.
 		function leagueFinancesSummary(league) {
 			const results = Array.isArray(league.results) ? league.results : [];
 			const dues = league.dues != null ? Number(league.dues) : 0;
@@ -6502,8 +6512,22 @@
 				.sort((a, b) => Number(b.year) - Number(a.year))
 				.map((r) => {
 					const payoutField = PAYOUT_FIELDS[r.rank];
-					const won = payoutField && league[payoutField] != null ? Number(league[payoutField]) : 0;
-					return { year: r.year, dues, won, rank: r.rank, total: won - dues };
+					const placeWon = payoutField && league[payoutField] != null ? Number(league[payoutField]) : 0;
+					const labels = [];
+					if (placeWon > 0) labels.push(FINANCES_PLACE_LABELS[r.rank]);
+
+					const weeklyHigh = r.scoring?.weeklyHigh;
+					const wonWeeklyHigh = weeklyHigh && weeklyHigh.franchiseId === league.franchiseId
+						&& league.payoutWeeklyHigh != null ? Number(league.payoutWeeklyHigh) : 0;
+					if (wonWeeklyHigh > 0) labels.push(`Weekly High (Wk ${weeklyHigh.week})`);
+
+					const seasonHigh = r.scoring?.seasonHigh;
+					const wonSeasonHigh = seasonHigh && seasonHigh.franchiseId === league.franchiseId
+						&& league.payoutSeasonHigh != null ? Number(league.payoutSeasonHigh) : 0;
+					if (wonSeasonHigh > 0) labels.push('Season High');
+
+					const won = placeWon + wonWeeklyHigh + wonSeasonHigh;
+					return { year: r.year, dues, won, rank: r.rank, labels, total: won - dues };
 				});
 			const total = years.length ? years.reduce((sum, y) => sum + y.total, 0) : null;
 			return { league, years, total };
@@ -6581,10 +6605,13 @@
 					row.appendChild(el('td', { text: formatMoney(-y.dues) }));
 					// A real payout names why: the finish that earned it. Gated on
 					// the amount rather than the rank alone, since a league that
-					// pays $0 for 3rd has nothing worth explaining.
-					const placeLabel = y.won > 0 ? FINANCES_PLACE_LABELS[y.rank] : null;
-					row.appendChild(el('td', { text: formatMoney(y.won) }, placeLabel
-						? [el('span', { class: 'finances-place', text: ` (${placeLabel})` })]
+					// pays $0 for 3rd has nothing worth explaining. A year can carry
+					// more than one label at once — a placement payout and a
+					// weekly/season high-score payout are independent and can both
+					// land the same year — so every contributing reason is named,
+					// comma-joined, rather than just the first one found.
+					row.appendChild(el('td', { text: formatMoney(y.won) }, y.labels.length
+						? [el('span', { class: 'finances-place', text: ` (${y.labels.join(', ')})` })]
 						: []));
 					row.appendChild(el('td', { class: financesSignClass(y.total), text: formatMoney(y.total) }));
 					table.appendChild(row);
@@ -7283,6 +7310,13 @@
 					field('1st place ($)', adminText(league.payout1, 'e.g. 500', (v) => { league.payout1 = v || undefined; }));
 					field('2nd place ($)', adminText(league.payout2, 'e.g. 250', (v) => { league.payout2 = v || undefined; }));
 					field('3rd place ($)', adminText(league.payout3, 'e.g. 100', (v) => { league.payout3 = v || undefined; }));
+					// Independent of placement — a last-place team can still have had
+					// the league's best week. Populated on the Finances card only once
+					// the separate weekly-high-score backfill has run for a given year
+					// (see config/leagues.json's _readme); the fields here just say
+					// what the league pays if it does.
+					field('Weekly high score ($)', adminText(league.payoutWeeklyHigh, 'e.g. 25', (v) => { league.payoutWeeklyHigh = v || undefined; }));
+					field('Season high score ($)', adminText(league.payoutSeasonHigh, 'e.g. 50', (v) => { league.payoutSeasonHigh = v || undefined; }));
 					node.appendChild(fields);
 
 					// Behind the disclosure rather than on the collapsed row: at

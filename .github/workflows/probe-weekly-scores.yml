@@ -1,0 +1,42 @@
+name: Probe Weekly Scores (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here, the
+# same rule the other manual workflows follow. Answers what's needed before
+# building weekly/season high-score tracking for the History tab: does a
+# TYPE=weeklyResults franchise entry carry its own total `score` field, and
+# does TYPE=leagueStandings' `pf` match a regular-season sum of those totals.
+# See scripts/probe-weekly-scores.mjs for the full rationale.
+#
+# Read-only: TYPE=league, TYPE=leagueStandings, TYPE=weeklyResults. Nothing
+# is written.
+on:
+  workflow_dispatch:
+    inputs:
+      mfl_league_id:
+        description: 'MFL league ID to probe'
+        required: false
+        default: '26696'
+      year:
+        description: 'A past, fully-completed regular season to inspect'
+        required: false
+        default: '2025'
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Dump weekly scoring fields for a past season
+        env:
+          MFL_USERNAME: ${{ secrets.MFL_USERNAME }}
+          MFL_PASSWORD: ${{ secrets.MFL_PASSWORD }}
+          PROBE_MFL_LEAGUE_ID: ${{ inputs.mfl_league_id }}
+          PROBE_YEAR: ${{ inputs.year }}
+        run: node scripts/probe-weekly-scores.mjs

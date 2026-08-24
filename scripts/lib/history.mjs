@@ -282,6 +282,38 @@ export function computeMflSeasonPlacements({ leagueFranchiseIds, brackets, brack
   }));
 }
 
+// ---- Weekly/season high-score payouts ---------------------------------------
+// Given every regular-season week's per-franchise point totals for one
+// season (weeklyScoresByWeek: Map(week -> [{franchiseId, points}])), the two
+// facts a high-score payout needs: the single highest week, and the highest
+// season total. Unlike computeMflSeasonPlacements above, neither half is
+// ever a guess — both are a hard sum/max over data actually fetched, with no
+// gap-filling fallback, so a caller that couldn't fetch every week should
+// not call this at all rather than get a number computed from a partial
+// season (see backfillLeagueScoringRecords in fetch-rosters.mjs).
+// A tie keeps whichever franchise the provider listed first that week —
+// arbitrary but deterministic, same convention pickMainBracket above uses.
+export function computeSeasonScoringRecords(weeklyScoresByWeek, nameById) {
+  const seasonTotals = new Map();
+  let weeklyHigh = null;
+  for (const [week, totals] of weeklyScoresByWeek.entries()) {
+    for (const { franchiseId, points } of totals) {
+      seasonTotals.set(franchiseId, (seasonTotals.get(franchiseId) || 0) + points);
+      if (!weeklyHigh || points > weeklyHigh.points) {
+        weeklyHigh = { franchiseId, week, points };
+      }
+    }
+  }
+  let seasonHigh = null;
+  for (const [franchiseId, points] of seasonTotals.entries()) {
+    if (!seasonHigh || points > seasonHigh.points) {
+      seasonHigh = { franchiseId, points };
+    }
+  }
+  const withName = (rec) => (rec ? { ...rec, teamName: (nameById && nameById.get(rec.franchiseId)) || rec.franchiseId } : null);
+  return { weeklyHigh: withName(weeklyHigh), seasonHigh: withName(seasonHigh) };
+}
+
 // ESPN's own computed final standing — confirmed against real data as a
 // clean 1..N permutation across every team, independent of playoffSeed (a
 // team can enter the playoffs 9th-seeded and finish 2nd overall). Never a

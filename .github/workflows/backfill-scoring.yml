@@ -1,0 +1,63 @@
+name: Backfill Weekly/Season High Scores
+
+# On-demand only, and deliberately never wired into the regular 4-hourly
+# sync — see backfillLeagueScoringRecords in fetch-rosters.mjs for why: a
+# season's weekly totals cost roughly one MFL request PER regular-season
+# week (there is no bulk endpoint), 13-18 for a typical season, which is
+# expensive enough that folding it into a sync already brushing MFL's rate
+# limit would risk the same 429 cascade documented on backfillLeagueHistory.
+# Dispatching backfill-scoring.mjs on its own gives it a cookie and MFL
+# rate-limit window with nothing else competing for it.
+#
+# Never add a schedule trigger here — a league's full weekly-score history
+# is expected to take many runs of this to fully backfill, at zero extra
+# cost once complete, same shape as Backfill League History.
+
+on:
+  workflow_dispatch:
+    inputs:
+      league_id:
+        description: 'Optional: comma-separated league id(s) (config/leagues.json "id") to restrict the run to, skipping every other league entirely. Leave blank to run the normal round-robin pass across all leagues.'
+        type: string
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  # Shared with sync-mfl-rosters.yml and backfill-history.yml on purpose: all
+  # three write to data/rosters.json, and queuing (rather than running them
+  # side by side) is what keeps one from clobbering another's commit.
+  group: rosters-data-write
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Backfill weekly/season high scores (MFL)
+        env:
+          MFL_USERNAME: ${{ secrets.MFL_USERNAME }}
+          MFL_PASSWORD: ${{ secrets.MFL_PASSWORD }}
+          LEAGUE_ID: ${{ inputs.league_id }}
+        run: node scripts/backfill-scoring.mjs
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/rosters.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Backfill weekly/season high scores"
+            git push
+          fi

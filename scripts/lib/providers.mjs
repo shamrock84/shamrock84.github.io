@@ -1060,6 +1060,52 @@ export async function fetchEspnSeasonTeams(league, season) {
   return data?.teams || [];
 }
 
+// ---- History tab: weekly/season high-score payouts -------------------------
+// See backfillLeagueScoringRecords in fetch-rosters.mjs for the derivation
+// and its own separate budget (a season's worth of weekly totals costs far
+// more than a bracket ever does, which is why this isn't folded into the
+// placement backfill above). MFL only — every league in this config that
+// pays out on a weekly/season high score is MFL.
+
+// A past season's regular-season length and that year's own franchise names
+// — needed because a league can change id across its history (see
+// fetchMflLeagueHistory), so `yearLeagueId` must be that year's own id, not
+// the league's current one.
+export async function fetchMflSeasonMeta(yearLeagueId, cookie, year) {
+  const data = await mflGet(`/export?TYPE=league&L=${yearLeagueId}&JSON=1`, cookie, year);
+  const lastRegularSeasonWeek = Number(data?.league?.lastRegularSeasonWeek);
+  const franchises = data?.league?.franchises?.franchise ?? [];
+  const franchiseList = Array.isArray(franchises) ? franchises : [franchises];
+  const nameById = new Map(franchiseList.map((f) => [f.id, f.name]));
+  return { lastRegularSeasonWeek, nameById };
+}
+
+// One week's per-franchise point total for a past season, from
+// TYPE=weeklyResults. Summed from each franchise's own starting lineup
+// (player.status === 'starter') rather than trusted off a franchise-level
+// convenience field: a fantasy team's score for a week IS the sum of its
+// starters' scores, by definition, so this is correct regardless of
+// whichever other total field the response may or may not also carry — the
+// same player-level status field fetchMflLineup already reads off this
+// identical endpoint for the live lineup pilot.
+export async function fetchMflWeekScores(yearLeagueId, cookie, year, week) {
+  const data = await mflGet(`/export?TYPE=weeklyResults&L=${yearLeagueId}&W=${week}&JSON=1`, cookie, year);
+  const matchups = data?.weeklyResults?.matchup;
+  const matchupList = Array.isArray(matchups) ? matchups : matchups ? [matchups] : [];
+  const totals = [];
+  for (const m of matchupList) {
+    const franchises = Array.isArray(m.franchise) ? m.franchise : m.franchise ? [m.franchise] : [];
+    for (const f of franchises) {
+      const players = Array.isArray(f.player) ? f.player : f.player ? [f.player] : [];
+      const points = players
+        .filter((p) => p.status === 'starter')
+        .reduce((sum, p) => sum + (Number(p.score) || 0), 0);
+      totals.push({ franchiseId: f.id, points });
+    }
+  }
+  return totals;
+}
+
 // Fetches just the franchise-id -> name map for an MFL league (the part of
 // TYPE=league that fetchScoring needs). Callers that already have this
 // cached (e.g. the live-scoring proxy) can skip re-fetching it every poll.
