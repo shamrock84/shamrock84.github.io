@@ -45,7 +45,7 @@ const SCORING_FORMATS = new Set(['PPR', 'HALF', 'STD']);
 // appended after — see mergeLeague below for why that matters.
 const KEY_ORDER = [
   'id', 'franchiseId', 'name', 'type', 'provider',
-  'tags', 'lineupPilot', 'rankingType', 'scoring', 'season', 'rulesUrl', 'commishContact',
+  'tags', 'lineupPilot', 'rankingType', 'scoring', 'season', 'startYear', 'rulesUrl', 'commishContact',
   'dues', 'payout1', 'payout2', 'payout3', 'payoutWeeklyHigh', 'payoutSeasonHigh',
 ];
 
@@ -138,6 +138,17 @@ function validate(leagues) {
         errors.push(`${label}: season must be a four-digit year, or left blank to follow the league's own rollover.`);
       }
     }
+    // A floor on how far back this league's history is this manager's own —
+    // see yearsNeedingHistoryBackfill in fetch-rosters.mjs and
+    // isBeforeStartYear in myffl.html for how it's used. Same range-check
+    // as season, for the same reason: a typo here doesn't fail loudly, it
+    // just quietly hides or shows years nobody asked for.
+    if (league.startYear != null && league.startYear !== '') {
+      const year = Number(league.startYear);
+      if (!Number.isInteger(year) || year < 2000 || year > 2100) {
+        errors.push(`${label}: start year must be a four-digit year, or left blank if this league's whole history is yours.`);
+      }
+    }
     if (league.lineupPilot != null && typeof league.lineupPilot !== 'boolean') {
       errors.push(`${label}: lineup editor setting must be on or off.`);
     }
@@ -225,6 +236,7 @@ function mergeLeague(league) {
   put('rankingType', league.rankingType);
   put('scoring', league.scoring);
   put('season', league.season == null ? '' : String(league.season).trim());
+  put('startYear', league.startYear == null ? '' : String(league.startYear).trim());
   put('rulesUrl', league.rulesUrl);
   put('commishContact', league.commishContact == null ? '' : String(league.commishContact).trim());
   putMoney('dues', league.dues);

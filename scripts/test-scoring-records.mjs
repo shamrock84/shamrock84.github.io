@@ -107,4 +107,19 @@ import { yearsNeedingScoringBackfill } from './fetch-rosters.mjs';
   assert.deepEqual(yearsNeedingScoringBackfill(undefined), [], 'degrades like an empty array, not a crash');
 }
 
+{
+  // startYear filters defensively too — a year already recorded before a
+  // manager set startYear would otherwise still cost this pass a season's
+  // worth of MFL requests computing a high score nobody can see once the
+  // page filters it back out. Optional and undefined by default, same as
+  // yearsNeedingHistoryBackfill's own startYear argument.
+  const results = [
+    { year: '2022', rank: 3, total: 10, guessed: false }, // no scoring yet, but predates startYear
+    { year: '2023', rank: 1, total: 10, guessed: false }, // no scoring yet, at startYear
+  ];
+  assert.deepEqual(yearsNeedingScoringBackfill(results, '2023'), ['2023'], 'a year before startYear is never backfilled');
+  assert.deepEqual(yearsNeedingScoringBackfill(results, ''), ['2023', '2022'], 'a blank startYear excludes nothing');
+  assert.deepEqual(yearsNeedingScoringBackfill(results), ['2023', '2022'], 'omitting startYear excludes nothing');
+}
+
 console.log('test-scoring-records: all assertions passed');
