@@ -41,6 +41,8 @@ import {
   fetchMflLeagueHistory,
   fetchMflSeasonBracketData,
   fetchEspnSeasonTeams,
+  fetchMflSeasonMeta,
+  fetchMflWeekScores,
 } from './lib/providers.mjs';
 import {
   attachRankings,
@@ -55,7 +57,7 @@ import {
   rankingPoolKey,
   DEFAULT_POWER_SLOTS,
 } from './lib/fantasypros.mjs';
-import { computeMflSeasonPlacements, espnSeasonPlacement } from './lib/history.mjs';
+import { computeMflSeasonPlacements, espnSeasonPlacement, computeSeasonScoringRecords } from './lib/history.mjs';
 
 const USERNAME = process.env.MFL_USERNAME;
 const PASSWORD = process.env.MFL_PASSWORD;
@@ -448,8 +450,17 @@ export async function backfillLeagueHistory(leagues, previousById, cookie) {
           // A retried year may already carry a guessed entry from a prior
           // run (see yearsNeedingHistoryBackfill) — replace it rather than
           // pushing a duplicate, whether this attempt confirms it or not.
+          // That entry may also already carry a `scoring` field from the
+          // separate weekly-high-score backfill (backfillLeagueScoringRecords
+          // below) — a placement re-fetch has nothing to say about that, so
+          // it has to be carried forward explicitly or a guessed year that
+          // gets reconfirmed the same run its scoring was backfilled would
+          // silently lose that scoring data again.
+          const existing = league.results.find((r) => String(r.year) === String(year));
           league.results = league.results.filter((r) => String(r.year) !== String(year));
-          league.results.push({ year, rank: mine.rank, total: mine.total, guessed: mine.guessed });
+          const entry = { year, rank: mine.rank, total: mine.total, guessed: mine.guessed };
+          if (existing?.scoring) entry.scoring = existing.scoring;
+          league.results.push(entry);
           yearsAdded++;
           leaguesTouched++;
         }
@@ -471,6 +482,146 @@ export async function backfillLeagueHistory(leagues, previousById, cookie) {
     + `(MFL budget ${HISTORY_MFL_REQUEST_BUDGET - mflBudget}/${HISTORY_MFL_REQUEST_BUDGET}, `
     + `ESPN budget ${HISTORY_ESPN_REQUEST_BUDGET - espnBudget}/${HISTORY_ESPN_REQUEST_BUDGET})`
     + (mflRateLimited ? ' — stopped early on a 429, remaining leagues retry next sync' : '')
+  );
+}
+
+// ---- History tab: one-time backfill of weekly/season high-score payouts ---
+// A second, separate backfill pass from backfillLeagueHistory above, kept on
+// its own budget rather than sharing HISTORY_MFL_REQUEST_BUDGET: a season's
+// placement costs roughly 2 + (a few brackets) MFL requests, but its
+// weekly/season point totals need one request PER regular-season week —
+// there is no bulk endpoint — which is 13-18 requests for a typical season,
+// enough on its own to blow past HISTORY_MFL_PER_LEAGUE_BUDGET and starve
+// the placement backfill of its own leagues if the two shared a pool.
+//
+// Deliberately NOT wired into the regular 4-hourly sync's main() the way
+// backfillLeagueHistory is — that sync already brushes MFL's rate limit
+// fetching rosters/standings/scoring/lineups for every league before its own
+// (cheap) History backfill even starts, and adding a pass this much more
+// expensive on top would risk the exact 429 cascade documented on
+// backfillLeagueHistory above. backfill-scoring.mjs (dispatched via
+// backfill-scoring.yml, workflow_dispatch only) is the only way this runs,
+// with a cookie and MFL rate-limit window of its own — same shape as
+// backfill-history.yml for the identical reason.
+//
+// Gated on a season already having a results[] entry from the OTHER
+// backfill pass (guessed or confirmed — a guess still means the season
+// genuinely happened and ended, which is all this needs): that's what
+// guarantees this never runs against a season still in progress, which
+// would compute a "final" weekly high / season total that keeps changing
+// week to week.
+const SCORING_MFL_REQUEST_BUDGET = 40;
+// A season alone can cost close to this on its own (a typical
+// 13-18-week regular season), so — unlike HISTORY_MFL_PER_LEAGUE_BUDGET,
+// which mainly protects against one league's long tail of cheap bracket
+// years — this mostly just caps a short-regular-season league (8-10 weeks)
+// from filling the whole run with its own back catalog before any other
+// league gets a turn.
+const SCORING_MFL_PER_LEAGUE_BUDGET = 20;
+
+// Pure and budget-agnostic: which of a league's already-resolved seasons
+// (any results[] entry at all) still need weekly/season point totals
+// computed. No "guessed and eligible for retry" concept here, unlike
+// yearsNeedingHistoryBackfill above — every number computeSeasonScoringRecords
+// produces is a hard sum/max over data actually fetched, never a fallback
+// estimate, so once a year's `scoring` is recorded it's simply done.
+// Sorted most-recent-first, same reasoning as yearsNeedingHistoryBackfill: a
+// manager is more likely to ask about last year's high score than one from
+// a decade ago.
+export function yearsNeedingScoringBackfill(existingResults) {
+  return (existingResults || [])
+    .filter((r) => !r.scoring)
+    .map((r) => String(r.year))
+    .sort((a, b) => Number(b) - Number(a));
+}
+
+// Exported so backfill-scoring.mjs — the standalone, on-demand companion to
+// this pass (mirroring backfill-history.mjs) — can invoke exactly this logic
+// with its own uncontested cookie and budget.
+export async function backfillLeagueScoringRecords(leagues, previousById, cookie) {
+  let mflBudget = SCORING_MFL_REQUEST_BUDGET;
+  let yearsAdded = 0;
+  let leaguesTouched = 0;
+  let mflRateLimited = false;
+
+  for (const league of leagues) {
+    const prev = previousById.get(league.id);
+    // results[] is owned by backfillLeagueHistory — this pass only ever adds
+    // a `scoring` field onto an entry that pass already created, never
+    // pushes a new year of its own.
+    league.results = prev?.results ? prev.results.map((r) => ({ ...r })) : [];
+
+    if (league.provider === 'espn' || league.provider === 'sleeper') continue; // out of scope for now — see providers.mjs
+    if (!league.franchiseId) continue;
+    if (mflBudget <= 0 || mflRateLimited) continue;
+
+    // Needs each candidate year's OWN league id (an old league may have
+    // changed id — see fetchMflLeagueHistory), which costs one MFL request
+    // per league regardless of how many years end up touched this run.
+    let historyYears;
+    try {
+      historyYears = await fetchMflLeagueHistory(league, cookie, league.season);
+      mflBudget--;
+    } catch (err) {
+      if (err.status === 429) mflRateLimited = true;
+      console.error(`Scoring backfill: failed to fetch league history for ${league.name}: ${err.message}`);
+      continue;
+    }
+    const idByYear = new Map(historyYears.map((h) => [String(h.year), h.id]));
+
+    let leagueBudget = SCORING_MFL_PER_LEAGUE_BUDGET;
+    const missing = yearsNeedingScoringBackfill(league.results);
+    for (const year of missing) {
+      if (mflBudget <= 0 || mflRateLimited || leagueBudget <= 0) break;
+      const yearLeagueId = idByYear.get(String(year));
+      if (!yearLeagueId) continue; // a year results[] knows about but history.league[] doesn't — nothing to fetch against
+
+      try {
+        const { lastRegularSeasonWeek, nameById } = await fetchMflSeasonMeta(yearLeagueId, cookie, year);
+        mflBudget--; leagueBudget--;
+        if (!Number.isFinite(lastRegularSeasonWeek) || lastRegularSeasonWeek < 1) continue;
+
+        // Every week has to succeed for this year to be recorded at all — a
+        // season half-summed from surviving weeks would silently understate
+        // the season total AND could miss the real weekly high, which is
+        // worse than just trying again next run. Same all-or-nothing
+        // discipline fetchMflSeasonBracketData's caller applies to a mid-year
+        // 429 during placement backfill.
+        const weeklyScoresByWeek = new Map();
+        let weeksOk = true;
+        for (let week = 1; week <= lastRegularSeasonWeek; week++) {
+          if (mflBudget <= 0 || leagueBudget <= 0) { weeksOk = false; break; }
+          try {
+            const totals = await fetchMflWeekScores(yearLeagueId, cookie, year, week);
+            mflBudget--; leagueBudget--;
+            weeklyScoresByWeek.set(week, totals);
+          } catch (err) {
+            if (err.status === 429) mflRateLimited = true;
+            weeksOk = false;
+            break;
+          }
+        }
+        if (!weeksOk || weeklyScoresByWeek.size !== lastRegularSeasonWeek) continue; // retry the whole year next run
+
+        const { weeklyHigh, seasonHigh } = computeSeasonScoringRecords(weeklyScoresByWeek, nameById);
+        if (weeklyHigh || seasonHigh) {
+          league.results = league.results.map((r) =>
+            String(r.year) === String(year) ? { ...r, scoring: { weeklyHigh, seasonHigh } } : r
+          );
+          yearsAdded++;
+          leaguesTouched++;
+        }
+      } catch (err) {
+        if (err.status === 429) mflRateLimited = true;
+        console.error(`Scoring backfill failed for ${league.name} (${year}): ${err.message}`);
+      }
+    }
+  }
+
+  console.log(
+    `Scoring backfill: added ${yearsAdded} season(s) across ${leaguesTouched} league update(s) `
+    + `(MFL budget ${SCORING_MFL_REQUEST_BUDGET - mflBudget}/${SCORING_MFL_REQUEST_BUDGET})`
+    + (mflRateLimited ? ' — stopped early on a 429, remaining leagues retry next run' : '')
   );
 }
 

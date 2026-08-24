@@ -46,14 +46,26 @@ const SCORING_FORMATS = new Set(['PPR', 'HALF', 'STD']);
 const KEY_ORDER = [
   'id', 'franchiseId', 'name', 'type', 'provider',
   'tags', 'lineupPilot', 'rankingType', 'scoring', 'season', 'rulesUrl', 'commishContact',
-  'dues', 'payout1', 'payout2', 'payout3',
+  'dues', 'payout1', 'payout2', 'payout3', 'payoutWeeklyHigh', 'payoutSeasonHigh',
 ];
 
-// The Finances card's payout fields, in the order the Admin tab labels them.
-// Flat rather than a rank->amount table because every league here is
-// assumed to pay exactly the top 3 — see leagueFinancesSummary in
+// The Finances card's placement payout fields, in the order the Admin tab
+// labels them. Flat rather than a rank->amount table because every league
+// here is assumed to pay exactly the top 3 — see leagueFinancesSummary in
 // myffl.html, which reads these same three field names.
 const PAYOUT_FIELDS = [['payout1', '1st place payout'], ['payout2', '2nd place payout'], ['payout3', '3rd place payout']];
+
+// A second, independent pair of payouts — not tied to a finish's rank at
+// all, so kept out of PAYOUT_FIELDS rather than folded in. leagueFinancesSummary
+// adds these into Won for a year when league.franchiseId matches that
+// year's league.results[].scoring.weeklyHigh/seasonHigh (see
+// backfillLeagueScoringRecords in fetch-rosters.mjs for how that field is
+// populated — a separate, on-demand backfill, so it's expected to be absent
+// on most years for a while after this shipped).
+const SCORING_PAYOUT_FIELDS = [
+  ['payoutWeeklyHigh', 'weekly high score payout'],
+  ['payoutSeasonHigh', 'season high score payout'],
+];
 
 function isNonEmptyString(v) {
   return typeof v === 'string' && v.trim() !== '';
@@ -163,7 +175,7 @@ function validate(leagues) {
     if (!isValidMoneyField(league.dues)) {
       errors.push(`${label}: dues must be a non-negative dollar amount, or left blank.`);
     }
-    for (const [key, fieldLabel] of PAYOUT_FIELDS) {
+    for (const [key, fieldLabel] of [...PAYOUT_FIELDS, ...SCORING_PAYOUT_FIELDS]) {
       if (!isValidMoneyField(league[key])) {
         errors.push(`${label}: ${fieldLabel} must be a non-negative dollar amount, or left blank.`);
       }
@@ -219,6 +231,8 @@ function mergeLeague(league) {
   putMoney('payout1', league.payout1);
   putMoney('payout2', league.payout2);
   putMoney('payout3', league.payout3);
+  putMoney('payoutWeeklyHigh', league.payoutWeeklyHigh);
+  putMoney('payoutSeasonHigh', league.payoutSeasonHigh);
 
   for (const [k, v] of Object.entries(league)) {
     if (!KEY_ORDER.includes(k) && !RETIRED_KEYS.has(k) && v !== undefined) out[k] = v;

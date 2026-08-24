@@ -88,6 +88,13 @@ check('rejects a negative payout', validate(withField('payout2', -1)).length > 0
 check('rejects a non-numeric payout', validate(withField('payout1', 'lots')).length > 0);
 check('allows a zero payout', validate(withField('payout3', 0)).length === 0);
 check('allows all three payouts blank', validate([base()]).length === 0);
+// Weekly/season high-score payouts are a second, independent pair — not
+// tied to a finish's rank the way payout1/2/3 are — but validate the same:
+// a non-negative dollar amount, or blank.
+check('rejects a negative weekly-high payout', validate(withField('payoutWeeklyHigh', -1)).length > 0);
+check('rejects a non-numeric season-high payout', validate(withField('payoutSeasonHigh', 'lots')).length > 0);
+check('allows a zero weekly-high payout', validate(withField('payoutWeeklyHigh', 0)).length === 0);
+check('allows both high-score payouts blank', validate([base()]).length === 0);
 
 // The whole reason the endpoint checks this: every lookup in the codebase is
 // leagues.find((l) => l.id === id), so a duplicate shadows rather than errors.
@@ -146,6 +153,8 @@ check('key order is stable', Object.keys(mergeLeague(base())).join() === 'id,fra
 check('stores dues as a number', mergeLeague({ ...base(), dues: '100' }).dues === 100,
   JSON.stringify(mergeLeague({ ...base(), dues: '100' })));
 check('stores a payout as a number', mergeLeague({ ...base(), payout1: '500' }).payout1 === 500);
+check('stores a weekly-high payout as a number', mergeLeague({ ...base(), payoutWeeklyHigh: '25' }).payoutWeeklyHigh === 25);
+check('drops a blank season-high payout', !('payoutSeasonHigh' in mergeLeague({ ...base(), payoutSeasonHigh: '' })));
 check('drops a blank dues field', !('dues' in mergeLeague({ ...base(), dues: '' })));
 check('drops blank payout fields', !('payout1' in mergeLeague({ ...base(), payout1: '' })));
 // Zero is a real, deliberate answer and must survive — not be dropped the
