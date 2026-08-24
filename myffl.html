@@ -7074,7 +7074,15 @@
 				}
 
 				if (isOpen) {
-					const fields = el('div', { class: 'admin-fields' });
+					// A <form>, not a <div> — iPadOS Safari only offers Tab-to-
+					// next-field navigation for controls that are part of an
+					// actual <form> unless the user has turned on the system's
+					// Full Keyboard Access setting (which most haven't). These
+					// fields never submit for real — Save is its own button
+					// elsewhere on the card — so Enter/submit is caught and
+					// swallowed rather than reloading the page.
+					const fields = el('form', { class: 'admin-fields' });
+					fields.addEventListener('submit', (e) => e.preventDefault());
 					const field = (labelText, control, wide = false) => {
 						const wrap = el('label', { class: `admin-field${wide ? ' admin-field-wide' : ''}` });
 						wrap.appendChild(el('span', { class: 'admin-field-label', text: labelText }));
