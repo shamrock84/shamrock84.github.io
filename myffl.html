@@ -338,6 +338,20 @@
 			color: var(--accent);
 			text-decoration: underline;
 		}
+		/* Every other place a league name links to its live site — see
+		   leagueNameNode — outside an <h2>, where a bare <a> would otherwise
+		   pick up the browser's default blue-and-underlined treatment.
+		   Inherits color so it reads identically to the plain text it
+		   replaces, in whatever context it sits (a table cell, a muted
+		   exposure-legend line, a card-head label). */
+		.league-link {
+			color: inherit;
+			text-decoration: none;
+		}
+		.league-link:hover {
+			color: var(--accent);
+			text-decoration: underline;
+		}
 		.card h2 .rules-link {
 			margin-left: 0.4rem;
 			font-size: 0.85em;
@@ -3256,6 +3270,29 @@
 			return league.leagueName || league.name;
 		}
 
+		// A league name as a link to its live site — the same idiom
+		// buildLeagueHeading below has always used for the Rosters/Standings/
+		// Scoring cards, extended to every other place a league's name renders
+		// as otherwise-inert text: Power Rankings, Team Needs, the exposure and
+		// Top Available legend lines, and the Results/Finances card headers.
+		// Takes the name and url directly rather than a league object, since
+		// most of those call sites work from an aggregate row that has already
+		// flattened a league down to just the fields it needs. Falls back to a
+		// bare text node on a league with no url to link to — nothing else on
+		// the page assumes that field is always present either.
+		//
+		// Deliberately NOT used for the problems digest row or the Admin tab's
+		// disclosure name: both already put the league name inside their own
+		// more useful button (jump to the card; expand the editor), and a
+		// second, external <a> can't validly nest inside a <button> anyway —
+		// see the Admin tab's own rules-link icon for how that constraint gets
+		// worked around when it's worth working around.
+		function leagueNameNode(name, url) {
+			return url
+				? el('a', { href: url, target: '_blank', rel: 'noopener', class: 'league-link', text: name })
+				: document.createTextNode(name);
+		}
+
 		// League name link, shared by the Rosters/Standings/Scoring cards.
 		// Optionally followed by a small document-icon link straight to the
 		// league's actual rules page (config/leagues.json's rulesUrl) — one
@@ -3265,7 +3302,7 @@
 		// optional per-league field on this page.
 		function buildLeagueHeading(league) {
 			const heading = el('h2');
-			heading.appendChild(el('a', { href: league.url, target: '_blank', rel: 'noopener', text: leagueDisplayName(league) }));
+			heading.appendChild(leagueNameNode(leagueDisplayName(league), league.url));
 			if (league.rulesUrl) {
 				heading.appendChild(el('a', {
 					href: league.rulesUrl,
@@ -3934,6 +3971,7 @@
 				const ecr = ecrRanks ? ecrRanks.byFranchise.get(key) || null : null;
 				rows.push({
 					label: leagueDisplayName(league),
+					url: league.url,
 					// Identical across bases (both rank the same franchises),
 					// so whichever answered is the league's size; null when
 					// neither did, which is also when nothing prints it.
@@ -4260,7 +4298,7 @@
 			const byPlayer = new Map();
 
 			for (const league of eligible) {
-				const label = leagueDisplayName(league);
+				const label = { name: leagueDisplayName(league), url: league.url };
 				const seen = new Set();
 				for (const p of league.players || []) {
 					const key = normalizeName(p.name);
@@ -4696,7 +4734,7 @@
 			const byPlayer = new Map();
 
 			for (const league of eligible) {
-				const label = leagueDisplayName(league);
+				const label = { name: leagueDisplayName(league), url: league.url };
 				const seen = new Set();
 				for (const p of league.players || []) {
 					const key = normalizeName(p.name);
@@ -5026,7 +5064,7 @@
 					if (key && !poolByName.has(key)) poolByName.set(key, p);
 				}
 
-				const label = leagueDisplayName(league);
+				const label = { name: leagueDisplayName(league), url: league.url };
 
 				const seenFree = new Set();
 				for (const name of league.available) {
@@ -5258,11 +5296,17 @@
 				// One grey line of league names needs no label. Two do, and the
 				// labels have to survive the line wrapping onto a phone, so they
 				// live inside the line rather than in a column of their own.
-				function leagueLine(label, names) {
-					if (!names || names.length === 0) return null;
+				// Each league name is its own link (see leagueNameNode) — this is
+				// exactly the sentence "which leagues", and every name in it
+				// should lead somewhere.
+				function leagueLine(label, entries) {
+					if (!entries || entries.length === 0) return null;
 					const line = el('div', { class: 'exposure-leagues' });
 					if (label) line.appendChild(el('span', { class: 'exposure-leagues-label', text: `${label} ` }));
-					line.appendChild(document.createTextNode(names.join(', ')));
+					entries.forEach((entry, i) => {
+						if (i > 0) line.appendChild(document.createTextNode(', '));
+						line.appendChild(leagueNameNode(entry.name, entry.url));
+					});
 					return line;
 				}
 
@@ -5879,7 +5923,7 @@
 					// column can be a bare number. It also means the size shows
 					// on a league whose ranks are all TBD, where previously it
 					// had nowhere to go.
-					const nameCell = el('td', { text: r.label });
+					const nameCell = el('td', {}, [leagueNameNode(r.label, r.url)]);
 					if (r.size != null) nameCell.appendChild(el('span', { class: 'power-size', text: ` (${r.size})` }));
 					const studs = powerPlayersLine('Studs', r.studs, (p) => `Overall ECR ${p.ecr.rank}`);
 					if (studs) nameCell.appendChild(studs);
@@ -6108,7 +6152,7 @@
 
 				for (const r of sortedRows()) {
 					const row = el('tr');
-					const nameCell = el('td', { text: r.label });
+					const nameCell = el('td', {}, [leagueNameNode(r.label, r.url)]);
 					if (r.size != null) nameCell.appendChild(el('span', { class: 'power-size', text: ` (${r.size})` }));
 					row.appendChild(nameCell);
 
@@ -6320,7 +6364,7 @@
 				// that needs to survive a full renderGrid() re-render the
 				// way the Admin card's open/closed leagues do.
 				const head = el('div', { class: 'results-league-head' });
-				head.appendChild(el('span', { class: 'group-label', text: leagueDisplayName(league) }));
+				head.appendChild(el('span', { class: 'group-label' }, [leagueNameNode(leagueDisplayName(league), league.url)]));
 				if (average != null) {
 					head.appendChild(el('span', {
 						class: 'results-avg',
@@ -6456,7 +6500,7 @@
 				// headline number right, year-by-year detail collapsed under a
 				// <details> below it.
 				const head = el('div', { class: 'finances-league-head' });
-				head.appendChild(el('span', { class: 'group-label', text: leagueDisplayName(league) }));
+				head.appendChild(el('span', { class: 'group-label' }, [leagueNameNode(leagueDisplayName(league), league.url)]));
 				if (total != null) {
 					head.appendChild(el('span', {
 						class: `finances-total ${financesSignClass(total)}`.trim(),
