@@ -776,6 +776,8 @@ async function main() {
         payout1: league.payout1 ?? null,
         payout2: league.payout2 ?? null,
         payout3: league.payout3 ?? null,
+        payoutWeeklyHigh: league.payoutWeeklyHigh ?? null,
+        payoutSeasonHigh: league.payoutSeasonHigh ?? null,
         leagueName: league.name,
         franchiseId: null,
         teamName: league.name,
@@ -807,6 +809,8 @@ async function main() {
       result.payout1 = league.payout1 ?? null;
       result.payout2 = league.payout2 ?? null;
       result.payout3 = league.payout3 ?? null;
+      result.payoutWeeklyHigh = league.payoutWeeklyHigh ?? null;
+      result.payoutSeasonHigh = league.payoutSeasonHigh ?? null;
       // Recorded per league because it's what the next sync reads to decide
       // whether this league has already rolled over — see resolveSeason.
       result.season = league.season;
@@ -829,6 +833,8 @@ async function main() {
         payout1: league.payout1 ?? null,
         payout2: league.payout2 ?? null,
         payout3: league.payout3 ?? null,
+        payoutWeeklyHigh: league.payoutWeeklyHigh ?? null,
+        payoutSeasonHigh: league.payoutSeasonHigh ?? null,
         leagueName: prev?.leagueName || league.name,
         franchiseId: league.franchiseId,
         teamName: prev?.teamName || league.name,
