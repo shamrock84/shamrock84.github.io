@@ -4,11 +4,14 @@
 // runs ONLY that pass, with a cookie and MFL rate-limit window of its own.
 // Unlike backfillLeagueHistory, this pass is never invoked from the regular
 // 4-hourly sync at all: a season's weekly totals cost roughly one MFL request
-// PER regular-season week (there is no bulk endpoint), 13-18 for a typical
-// season, which is expensive enough that folding it into a sync that already
-// brushes MFL's rate limit fetching rosters/standings/scoring/lineups would
-// risk the same 429 cascade documented on backfillLeagueHistory in
-// fetch-rosters.mjs. This script is the only way it ever runs.
+// PER week fetched (there is no bulk endpoint) — a fixed weeks 1-17 window
+// rather than the league's own regular season, since these payouts run
+// through a league's own playoff bracket too (see backfillLeagueScoringRecords's
+// own comment) — up to 17 requests for a typical season, expensive enough
+// that folding it into a sync that already brushes MFL's rate limit fetching
+// rosters/standings/scoring/lineups would risk the same 429 cascade
+// documented on backfillLeagueHistory in fetch-rosters.mjs. This script is
+// the only way it ever runs.
 //
 // Deliberately reads and writes data/rosters.json directly rather than
 // re-deriving anything from config/leagues.json — mirrors backfill-history.mjs

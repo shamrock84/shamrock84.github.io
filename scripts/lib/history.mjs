@@ -283,8 +283,10 @@ export function computeMflSeasonPlacements({ leagueFranchiseIds, brackets, brack
 }
 
 // ---- Weekly/season high-score payouts ---------------------------------------
-// Given every regular-season week's per-franchise point totals for one
-// season (weeklyScoresByWeek: Map(week -> [{franchiseId, points}])), the two
+// Given every fetched week's per-franchise point totals for one season
+// (weeklyScoresByWeek: Map(week -> [{franchiseId, points}]) — a fixed weeks
+// 1-17 window chosen by the caller, not the league's own regular season; see
+// backfillLeagueScoringRecords in fetch-rosters.mjs), the two
 // facts a high-score payout needs: the single highest week, and the highest
 // season total. Unlike computeMflSeasonPlacements above, neither half is
 // ever a guess — both are a hard sum/max over data actually fetched, with no
