@@ -50,6 +50,14 @@ check('rejects a fractional season', validate(withField('season', '2027.5')).len
 check('allows a four-digit season', validate(withField('season', '2027')).length === 0,
   JSON.stringify(validate(withField('season', '2027'))));
 check('allows a blank season (follow the rollover)', validate(withField('season', '')).length === 0);
+// Same range-check as season, same reasoning: a typo here doesn't fail
+// loudly, it quietly hides or shows years nobody asked for.
+check('rejects a non-numeric startYear', validate(withField('startYear', 'a while ago')).length > 0);
+check('rejects a two-digit startYear', validate(withField('startYear', '23')).length > 0);
+check('rejects a fractional startYear', validate(withField('startYear', '2023.5')).length > 0);
+check('allows a four-digit startYear', validate(withField('startYear', '2023')).length === 0,
+  JSON.stringify(validate(withField('startYear', '2023'))));
+check('allows a blank startYear (this league\'s whole history is yours)', validate(withField('startYear', '')).length === 0);
 check('rejects a non-boolean lineup flag', validate(withField('lineupPilot', 'yes')).length > 0);
 check('rejects tags that are not a list', validate(withField('tags', 'Superflex')).length > 0);
 check('rejects a rules link with no scheme', validate(withField('rulesUrl', 'docs.google.com/x')).length > 0);
@@ -128,6 +136,8 @@ check('drops a blank commissioner contact', !('commishContact' in mergeLeague({ 
 check('trims a commissioner contact', mergeLeague({ ...base(), commishContact: '  c@e.com ' }).commishContact === 'c@e.com');
 check('drops a blank season', !('season' in mergeLeague({ ...base(), season: '' })));
 check('keeps a season pin as a string', mergeLeague({ ...base(), season: 2027 }).season === '2027');
+check('drops a blank startYear', !('startYear' in mergeLeague({ ...base(), startYear: '' })));
+check('keeps a startYear as a string', mergeLeague({ ...base(), startYear: 2023 }).startYear === '2023');
 check('keeps the required fields', merged.id === '123' && merged.name === 'Test' && merged.type === 'draftonly');
 // Retired keys are stripped rather than carried through by the unknown-field
 // passthrough — otherwise a removed field would live in the config forever.

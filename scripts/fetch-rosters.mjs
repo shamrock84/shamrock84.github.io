@@ -324,12 +324,23 @@ const ESPN_HISTORY_LOOKBACK_YEARS = 15;
 // nothing once a league's real answer has been found (a confirmed result
 // still blocks retry), and lets a bad guess correct itself the next time
 // MFL has budget to spare.
-export function yearsNeedingHistoryBackfill(historyYears, existingResults, currentSeason) {
+//
+// `startYear` (from config/leagues.json's own per-league field, blank by
+// default) is a manager-declared floor — "I didn't join this league until
+// this season" — for a league whose real MFL/ESPN history predates the
+// user's own membership. A year that predates it is never worth fetching:
+// the franchise id this backfill fetches under belonged to somebody else
+// back then, so the placement it would compute is a real answer about the
+// wrong manager, not a gap to fill. Optional and undefined by default so
+// every existing call site (and every league without one set) keeps
+// backfilling its full known history exactly as before.
+export function yearsNeedingHistoryBackfill(historyYears, existingResults, currentSeason, startYear) {
   const haveYears = new Set(
     (existingResults || []).filter((r) => r.guessed === false).map((r) => String(r.year))
   );
   return (historyYears || [])
     .filter((h) => Number(h.year) < Number(currentSeason))
+    .filter((h) => startYear == null || startYear === '' || Number(h.year) >= Number(startYear))
     .filter((h) => !haveYears.has(String(h.year)))
     .sort((a, b) => Number(b.year) - Number(a.year));
 }
@@ -378,11 +389,17 @@ export async function backfillLeagueHistory(leagues, previousById, cookie) {
       // out or a definitive absence narrows the boundary further. Anchored
       // to this league's OWN resolved season, not the sync's global target
       // — a trailing league's currently-active season is still in progress
-      // and must never be treated as a completed year to backfill.
+      // and must never be treated as a completed year to backfill. Also
+      // never walks earlier than the league's own `startYear`, if the
+      // manager has set one — see yearsNeedingHistoryBackfill's own comment
+      // for why a year before that is never worth fetching at all.
       const haveYears = new Set(league.results.map((r) => Number(r.year)));
-      const floor = league.historyBoundaryYear
-        ? Number(league.historyBoundaryYear)
-        : Number(league.season) - ESPN_HISTORY_LOOKBACK_YEARS;
+      const floor = Math.max(
+        league.historyBoundaryYear
+          ? Number(league.historyBoundaryYear)
+          : Number(league.season) - ESPN_HISTORY_LOOKBACK_YEARS,
+        league.startYear ? Number(league.startYear) : -Infinity
+      );
       for (let year = Number(league.season) - 1; year >= floor && espnBudget > 0; year--) {
         if (haveYears.has(year)) continue;
         try {
@@ -425,7 +442,7 @@ export async function backfillLeagueHistory(leagues, previousById, cookie) {
       console.error(`Failed to fetch league history for ${league.name}: ${err.message}`);
       continue;
     }
-    const missing = yearsNeedingHistoryBackfill(historyYears, league.results, league.season);
+    const missing = yearsNeedingHistoryBackfill(historyYears, league.results, league.season, league.startYear);
     for (const { year, id } of missing) {
       if (mflBudget <= 0 || mflRateLimited || leagueMflBudget <= 0) break;
       try {
@@ -559,10 +576,17 @@ const SCORING_MFL_PER_LEAGUE_BUDGET = 20;
 // estimate, so once a year's `scoring` is recorded it's simply done.
 // Sorted most-recent-first, same reasoning as yearsNeedingHistoryBackfill: a
 // manager is more likely to ask about last year's high score than one from
-// a decade ago.
-export function yearsNeedingScoringBackfill(existingResults) {
+// a decade ago. `startYear` (see yearsNeedingHistoryBackfill's own comment)
+// is filtered here too, defensively — the placement backfill never adds a
+// year older than it in the first place, but a league that already had
+// older years recorded before a manager set `startYear` would otherwise
+// still have this pass spend a season's worth of budget (up to 18 requests)
+// computing a weekly/season high nobody can see once it's filtered out on
+// the page. Optional and undefined by default, same as there.
+export function yearsNeedingScoringBackfill(existingResults, startYear) {
   return (existingResults || [])
     .filter((r) => !r.scoring)
+    .filter((r) => startYear == null || startYear === '' || Number(r.year) >= Number(startYear))
     .map((r) => String(r.year))
     .sort((a, b) => Number(b) - Number(a));
 }
@@ -602,7 +626,7 @@ export async function backfillLeagueScoringRecords(leagues, previousById, cookie
     const idByYear = new Map(historyYears.map((h) => [String(h.year), h.id]));
 
     let leagueBudget = SCORING_MFL_PER_LEAGUE_BUDGET;
-    const missing = yearsNeedingScoringBackfill(league.results);
+    const missing = yearsNeedingScoringBackfill(league.results, league.startYear);
     for (const year of missing) {
       if (mflBudget <= 0 || mflRateLimited || leagueBudget <= 0) break;
       const yearLeagueId = idByYear.get(String(year));
@@ -781,6 +805,7 @@ async function main() {
         payout3: league.payout3 ?? null,
         payoutWeeklyHigh: league.payoutWeeklyHigh ?? null,
         payoutSeasonHigh: league.payoutSeasonHigh ?? null,
+        startYear: league.startYear ?? null,
         leagueName: league.name,
         franchiseId: null,
         teamName: league.name,
@@ -814,6 +839,7 @@ async function main() {
       result.payout3 = league.payout3 ?? null;
       result.payoutWeeklyHigh = league.payoutWeeklyHigh ?? null;
       result.payoutSeasonHigh = league.payoutSeasonHigh ?? null;
+      result.startYear = league.startYear ?? null;
       // Recorded per league because it's what the next sync reads to decide
       // whether this league has already rolled over — see resolveSeason.
       result.season = league.season;
@@ -838,6 +864,7 @@ async function main() {
         payout3: league.payout3 ?? null,
         payoutWeeklyHigh: league.payoutWeeklyHigh ?? null,
         payoutSeasonHigh: league.payoutSeasonHigh ?? null,
+        startYear: league.startYear ?? null,
         leagueName: prev?.leagueName || league.name,
         franchiseId: league.franchiseId,
         teamName: prev?.teamName || league.name,

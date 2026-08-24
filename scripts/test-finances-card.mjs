@@ -231,6 +231,19 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	assert.equal(summary.total, null);
 }
 
+{
+	// startYear — same manager-declared floor Results respects, applied here
+	// too so Total never includes a payout for a year that was never this
+	// manager's finish to begin with.
+	const league = { name: 'G', startYear: '2023', dues: 50, payout1: 500, results: [
+		{ year: '2021', rank: 1, total: 10 }, // not this manager's, even though it's a 1st
+		{ year: '2023', rank: 1, total: 10 },
+	] };
+	const summary = domCtx.leagueFinancesSummary(league);
+	assert.deepEqual([...summary.years].map((y) => y.year), ['2023']);
+	assert.equal(summary.total, 450, 'only the 2023 win counts toward Total, not the excluded 2021 one');
+}
+
 // ---- leagueFinancesSummary: weekly/season high-score payouts -----------------
 
 {

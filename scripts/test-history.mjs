@@ -448,4 +448,34 @@ const ironBank2020ToiletBowl = {
   );
 }
 
+{
+  // startYear — a manager-declared floor (config/leagues.json's own field,
+  // set via the Admin tab for a league joined mid-history) — excludes any
+  // year before it, the same way the active season is always excluded.
+  // Optional and undefined by default so every call above, with no 4th
+  // argument, keeps backfilling a league's whole known history unchanged.
+  const historyYears = [
+    { year: '2021', id: '111' },
+    { year: '2022', id: '111' },
+    { year: '2023', id: '111' },
+    { year: '2024', id: '111' },
+    { year: '2025', id: '111' },
+  ];
+  assert.deepEqual(
+    yearsNeedingHistoryBackfill(historyYears, [], '2026', '2023').map((m) => m.year),
+    ['2025', '2024', '2023'],
+    'years before startYear are never fetched, even though they are otherwise unrecorded'
+  );
+  assert.deepEqual(
+    yearsNeedingHistoryBackfill(historyYears, [], '2026', '').map((m) => m.year),
+    ['2025', '2024', '2023', '2022', '2021'],
+    'a blank startYear excludes nothing — the same as omitting it entirely'
+  );
+  assert.deepEqual(
+    yearsNeedingHistoryBackfill(historyYears, [], '2026').map((m) => m.year),
+    ['2025', '2024', '2023', '2022', '2021'],
+    'omitting startYear altogether excludes nothing, matching every call site above'
+  );
+}
+
 console.log('test-history: all assertions passed');

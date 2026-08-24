@@ -6360,6 +6360,18 @@
 		// that net-of-dues framing is Finances' job, not Results'.
 		const PAYOUT_FIELDS = { 1: 'payout1', 2: 'payout2', 3: 'payout3' };
 
+		// Shared by the Results and Finances cards below — a manager-declared
+		// floor on how far back a league's history is actually THEIRS (see
+		// config/leagues.json's _readme entry for startYear). A league's
+		// results[] is keyed to league.franchiseId, but that franchise slot
+		// can predate this manager joining — someone else's roster, someone
+		// else's finish — so a year before startYear isn't a quieter version
+		// of "didn't backfill yet," it's a real answer about the wrong
+		// person, and both cards need to drop it the same way. Blank/unset
+		// excludes nothing, matching every league before this field existed.
+		const isBeforeStartYear = (league, year) =>
+			league.startYear != null && league.startYear !== '' && Number(year) < Number(league.startYear);
+
 		// One league's results ready to render: its rows most-recent-first
 		// (the natural reading order for "how have I done"), and the mean of
 		// every year's rank — never the raw fraction, which would let a
@@ -6373,7 +6385,8 @@
 		// obvious "1st"/"2nd"/"3rd" the rank already shows.
 		function leagueResultsSummary(league) {
 			const results = Array.isArray(league.results) ? league.results : [];
-			const years = [...results]
+			const years = results
+				.filter((r) => !isBeforeStartYear(league, r.year))
 				.sort((a, b) => Number(b.year) - Number(a.year))
 				.map((r) => {
 					const payoutField = PAYOUT_FIELDS[r.rank];
@@ -6564,7 +6577,8 @@
 		function leagueFinancesSummary(league) {
 			const results = Array.isArray(league.results) ? league.results : [];
 			const dues = league.dues != null ? Number(league.dues) : 0;
-			const years = [...results]
+			const years = results
+				.filter((r) => !isBeforeStartYear(league, r.year))
 				.sort((a, b) => Number(b.year) - Number(a.year))
 				.map((r) => {
 					const breakdown = [];
@@ -7405,6 +7419,15 @@
 					// specific year — not a list anyone can enumerate ahead of
 					// time. Blank is the normal state and means "follow it".
 					field('Season', adminText(league.season, 'auto', (v) => { league.season = v || undefined; }));
+					// A league's own history usually predates this manager joining
+					// it — the franchise id results[] is keyed to belonged to
+					// someone else before then, so its pre-join placements aren't
+					// this manager's to see. Blank (the normal state) means no
+					// floor; see isBeforeStartYear in the Results/Finances cards
+					// for how it's applied, and yearsNeedingHistoryBackfill in
+					// fetch-rosters.mjs for how it also keeps the backfill from
+					// spending MFL/ESPN requests on years nobody can see anyway.
+					field('Start Year', adminText(league.startYear, 'e.g. 2023', (v) => { league.startYear = v || undefined; }));
 
 					const lineupWrap = el('label', { class: 'admin-field admin-field-check' });
 					const lineupBox = el('input', { type: 'checkbox' });

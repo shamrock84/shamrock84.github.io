@@ -133,6 +133,34 @@ function fullText(node) {
 	assert.equal(wonFor('2021'), 0, 'outside the top 3 — no payout field to look up at all');
 }
 
+{
+	// startYear — a manager-declared floor for a league joined mid-history
+	// (config/leagues.json's own field, set via the Admin tab). A year
+	// before it is excluded from years AND from the average, since the
+	// franchise id these results are keyed to belonged to someone else back
+	// then — not a gap to fill, a real answer about the wrong manager.
+	const league = { name: 'E', startYear: '2023', results: [
+		{ year: '2021', rank: 9, total: 10, guessed: false }, // not this manager's
+		{ year: '2022', rank: 10, total: 10, guessed: false }, // not this manager's
+		{ year: '2023', rank: 1, total: 10, guessed: false },
+		{ year: '2024', rank: 4, total: 10, guessed: false },
+	] };
+	const summary = domCtx.leagueResultsSummary(league);
+	assert.deepEqual([...summary.years].map((y) => y.year), ['2024', '2023'], 'years before startYear are excluded entirely');
+	assert.equal(summary.average, (4 + 1) / 2, 'the average only ever counts this manager\'s own years');
+}
+
+{
+	// A blank startYear (the normal, unset state) excludes nothing — same
+	// as a league with no startYear field at all.
+	const league = { name: 'F', startYear: '', results: [
+		{ year: '2020', rank: 5, total: 10, guessed: false },
+		{ year: '2024', rank: 2, total: 10, guessed: false },
+	] };
+	const summary = domCtx.leagueResultsSummary(league);
+	assert.deepEqual([...summary.years].map((y) => y.year), ['2024', '2020']);
+}
+
 // ---- renderResultsCard ------------------------------------------------------
 
 {
