@@ -3232,7 +3232,7 @@
 			// .trim() — MFL's own league-name export has a stray trailing
 			// space on at least one league, invisible everywhere else on the
 			// page since HTML collapses whitespace, but not in a raw subject.
-			const leagueName = (league.leagueName || league.name).trim();
+			const leagueName = leagueDisplayName(league).trim();
 			const teamName = (league.teamName || league.name).trim();
 			const subject = `${year} ${leagueName} Contract Lengths for ${teamName}`;
 
@@ -3241,6 +3241,19 @@
 				class: 'contract-contact-link',
 				text: '✉ Send to Commish',
 			});
+		}
+
+		// The live-synced name from the last sync, falling back to config's
+		// own static `name` — which exists purely for a league the provider
+		// can't be reached for (see the schema note in config/leagues.json),
+		// and reads as a generic placeholder ("ESPN League 1") anywhere the
+		// real thing is available. Every card naming a league should call
+		// this rather than reading league.name directly: the Results and
+		// Finances cards missed it once already and showed both real ESPN
+		// leagues under their config placeholder instead of their actual
+		// names, live in production, until that got fixed.
+		function leagueDisplayName(league) {
+			return league.leagueName || league.name;
 		}
 
 		// League name link, shared by the Rosters/Standings/Scoring cards.
@@ -3252,7 +3265,7 @@
 		// optional per-league field on this page.
 		function buildLeagueHeading(league) {
 			const heading = el('h2');
-			heading.appendChild(el('a', { href: league.url, target: '_blank', rel: 'noopener', text: league.leagueName || league.name }));
+			heading.appendChild(el('a', { href: league.url, target: '_blank', rel: 'noopener', text: leagueDisplayName(league) }));
 			if (league.rulesUrl) {
 				heading.appendChild(el('a', {
 					href: league.rulesUrl,
@@ -3920,7 +3933,7 @@
 				const proj = projRanks ? projRanks.byFranchise.get(key) || null : null;
 				const ecr = ecrRanks ? ecrRanks.byFranchise.get(key) || null : null;
 				rows.push({
-					label: league.leagueName || league.name,
+					label: leagueDisplayName(league),
 					// Identical across bases (both rank the same franchises),
 					// so whichever answered is the league's size; null when
 					// neither did, which is also when nothing prints it.
@@ -4247,7 +4260,7 @@
 			const byPlayer = new Map();
 
 			for (const league of eligible) {
-				const label = league.leagueName || league.name;
+				const label = leagueDisplayName(league);
 				const seen = new Set();
 				for (const p of league.players || []) {
 					const key = normalizeName(p.name);
@@ -4630,7 +4643,7 @@
 						title: 'Go to this league',
 					});
 					row.appendChild(el('span', { class: 'digest-dot' }));
-					row.appendChild(el('span', { class: 'digest-league', text: league.leagueName || league.name || league.id }));
+					row.appendChild(el('span', { class: 'digest-league', text: leagueDisplayName(league) || league.id }));
 					const labelEl = el('span', { class: 'digest-label' });
 					if (problem.player) {
 						const nameEl = el('span', { class: 'digest-player', text: problem.player.name });
@@ -4683,7 +4696,7 @@
 			const byPlayer = new Map();
 
 			for (const league of eligible) {
-				const label = league.leagueName || league.name;
+				const label = leagueDisplayName(league);
 				const seen = new Set();
 				for (const p of league.players || []) {
 					const key = normalizeName(p.name);
@@ -5013,7 +5026,7 @@
 					if (key && !poolByName.has(key)) poolByName.set(key, p);
 				}
 
-				const label = league.leagueName || league.name;
+				const label = leagueDisplayName(league);
 
 				const seenFree = new Set();
 				for (const name of league.available) {
@@ -6307,7 +6320,7 @@
 				// that needs to survive a full renderGrid() re-render the
 				// way the Admin card's open/closed leagues do.
 				const head = el('div', { class: 'results-league-head' });
-				head.appendChild(el('span', { class: 'group-label', text: league.leagueName || league.name }));
+				head.appendChild(el('span', { class: 'group-label', text: leagueDisplayName(league) }));
 				if (average != null) {
 					head.appendChild(el('span', {
 						class: 'results-avg',
@@ -6443,7 +6456,7 @@
 				// headline number right, year-by-year detail collapsed under a
 				// <details> below it.
 				const head = el('div', { class: 'finances-league-head' });
-				head.appendChild(el('span', { class: 'group-label', text: league.leagueName || league.name }));
+				head.appendChild(el('span', { class: 'group-label', text: leagueDisplayName(league) }));
 				if (total != null) {
 					head.appendChild(el('span', {
 						class: `finances-total ${financesSignClass(total)}`.trim(),
