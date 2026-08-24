@@ -6779,7 +6779,12 @@
 		let adminDragFrom = null;
 
 		function adminText(value, placeholder, onChange) {
-			const input = el('input', { type: 'text', class: 'admin-input', placeholder: placeholder || '' });
+			// autocomplete off: without it, a field typed into repeatedly across
+			// many leagues (dues, payouts) starts triggering the browser's own
+			// autofill suggestion dropdown, and the first Tab press in that
+			// state dismisses the dropdown instead of moving focus — it looks
+			// like Tab silently does nothing until pressed a second time.
+			const input = el('input', { type: 'text', class: 'admin-input', placeholder: placeholder || '', autocomplete: 'off' });
 			input.value = value == null ? '' : String(value);
 			input.addEventListener('input', () => onChange(input.value));
 			return input;
