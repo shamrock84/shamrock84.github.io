@@ -285,22 +285,31 @@ export function computeMflSeasonPlacements({ leagueFranchiseIds, brackets, brack
 // ---- Weekly/season high-score payouts ---------------------------------------
 // Given every fetched week's per-franchise point totals for one season
 // (weeklyScoresByWeek: Map(week -> [{franchiseId, points}]) — a fixed weeks
-// 1-17 window chosen by the caller, not the league's own regular season; see
-// backfillLeagueScoringRecords in fetch-rosters.mjs), the two
-// facts a high-score payout needs: the single highest week, and the highest
-// season total. Unlike computeMflSeasonPlacements above, neither half is
-// ever a guess — both are a hard sum/max over data actually fetched, with no
-// gap-filling fallback, so a caller that couldn't fetch every week should
-// not call this at all rather than get a number computed from a partial
-// season (see backfillLeagueScoringRecords in fetch-rosters.mjs).
+// 1-18 window chosen by the caller, not the league's own regular season; see
+// backfillLeagueScoringRecords in fetch-rosters.mjs), the two facts a
+// high-score payout needs: the single highest week, and the highest season
+// total. The two use DIFFERENT week ranges on purpose (confirmed with the
+// user directly, not derived): a weekly-high award is paid on any week 1-18,
+// but a season-total award only ever considers weeks 1-`seasonWeekLimit`
+// (17) — week 18 counts for "best week" but never contributes to a season
+// sum. `seasonWeekLimit` defaults to Infinity (every fetched week counts)
+// only so a caller that has no reason to exclude anything doesn't have to
+// pass it; the real caller always passes 17. Unlike computeMflSeasonPlacements
+// above, neither half is ever a guess — both are a hard sum/max over data
+// actually fetched, with no gap-filling fallback, so a caller that couldn't
+// fetch every week should not call this at all rather than get a number
+// computed from a partial season (see backfillLeagueScoringRecords in
+// fetch-rosters.mjs).
 // A tie keeps whichever franchise the provider listed first that week —
 // arbitrary but deterministic, same convention pickMainBracket above uses.
-export function computeSeasonScoringRecords(weeklyScoresByWeek, nameById) {
+export function computeSeasonScoringRecords(weeklyScoresByWeek, nameById, seasonWeekLimit = Infinity) {
   const seasonTotals = new Map();
   let weeklyHigh = null;
   for (const [week, totals] of weeklyScoresByWeek.entries()) {
     for (const { franchiseId, points } of totals) {
-      seasonTotals.set(franchiseId, (seasonTotals.get(franchiseId) || 0) + points);
+      if (Number(week) <= seasonWeekLimit) {
+        seasonTotals.set(franchiseId, (seasonTotals.get(franchiseId) || 0) + points);
+      }
       if (!weeklyHigh || points > weeklyHigh.points) {
         weeklyHigh = { franchiseId, week, points };
       }
