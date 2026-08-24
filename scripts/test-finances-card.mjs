@@ -27,15 +27,20 @@
 //
 // Also pinned here: weekly/season high-score payouts (payoutWeeklyHigh/
 // payoutSeasonHigh) are a second, independent axis from Finish — a
-// last-place team can still have had the league's best week — so they add
-// into the same year's Won on top of (never instead of) the placement
-// payout, keyed off league.franchiseId matching that year's
-// results[].scoring.weeklyHigh/seasonHigh winner; a `scoring` field absent
-// (not yet backfilled — see backfillLeagueScoringRecords in
-// fetch-rosters.mjs) contributes $0, indistinguishable from "confirmed you
-// didn't win it," same as an unentered payout field already reads; and the
-// Won cell names every contributing reason it finds, comma-joined, place
-// first (e.g. "$525 (1st, Weekly High (Wk 6))"), not just the first one.
+// last-place team can still have had a league-best week — so they add into
+// the same year's Won on top of (never instead of) the placement payout.
+// weeklyHigh is NOT a once-a-season record — it's awarded fresh every week,
+// so results[].scoring.weeklyHighs is an array (one entry per week that
+// week's own top scorer won), and this franchise can appear in it more than
+// once; Won multiplies payoutWeeklyHigh by however many of those entries
+// carry this franchise's id, and the label lists every week won. seasonHigh
+// stays a single record, keyed off league.franchiseId matching it directly.
+// A `scoring` field absent (not yet backfilled — see
+// backfillLeagueScoringRecords in fetch-rosters.mjs) contributes $0,
+// indistinguishable from "confirmed you didn't win it," same as an
+// unentered payout field already reads; and the Won cell names every
+// contributing reason it finds, comma-joined, place first (e.g. "$525 (1st,
+// Weekly High (Wk 6))"), not just the first one.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -205,41 +210,52 @@ function fullText(node) {
 // ---- leagueFinancesSummary: weekly/season high-score payouts -----------------
 
 {
-	// A year with scoring data: this franchise won the weekly high, another
-	// franchise won the season high — only the weekly-high payout should land.
+	// A year with scoring data: this franchise won the weekly high once,
+	// another franchise won the season high — only the weekly-high payout
+	// should land, for the one week actually won.
 	const league = {
 		name: 'G', franchiseId: '0001', dues: 0, payoutWeeklyHigh: 25, payoutSeasonHigh: 50,
 		results: [{
 			year: '2024', rank: 5, total: 10,
 			scoring: {
-				weeklyHigh: { franchiseId: '0001', teamName: 'Mine', week: 7, points: 178.4 },
+				weeklyHighs: [
+					{ franchiseId: '0002', teamName: 'Theirs', week: 3, points: 160 },
+					{ franchiseId: '0001', teamName: 'Mine', week: 7, points: 178.4 },
+				],
 				seasonHigh: { franchiseId: '0002', teamName: 'Theirs', points: 2100 },
 			},
 		}],
 	};
 	const summary = domCtx.leagueFinancesSummary(league);
 	const y = summary.years[0];
-	assert.equal(y.won, 25, 'only the weekly-high payout, not the season-high one');
+	assert.equal(y.won, 25, 'only the one week this franchise actually won, not every week in the array');
 	assert.deepEqual([...y.labels], ['Weekly High (Wk 7)']);
 }
 
 {
-	// Same franchise wins both, and also finishes top-3 the same year — all
-	// three amounts add together, all three labels appear, place first.
+	// The SAME franchise wins the weekly high THREE separate weeks in one
+	// season — the normal shape of this award, not an edge case — plus the
+	// season high and a top-3 finish. All amounts stack; Weekly High
+	// multiplies by 3 and its label lists every week.
 	const league = {
 		name: 'H', franchiseId: '0001', dues: 0, payout2: 200, payoutWeeklyHigh: 25, payoutSeasonHigh: 50,
 		results: [{
 			year: '2024', rank: 2, total: 10,
 			scoring: {
-				weeklyHigh: { franchiseId: '0001', teamName: 'Mine', week: 3, points: 190 },
+				weeklyHighs: [
+					{ franchiseId: '0001', teamName: 'Mine', week: 3, points: 190 },
+					{ franchiseId: '0002', teamName: 'Theirs', week: 4, points: 145 },
+					{ franchiseId: '0001', teamName: 'Mine', week: 9, points: 200 },
+					{ franchiseId: '0001', teamName: 'Mine', week: 12, points: 175 },
+				],
 				seasonHigh: { franchiseId: '0001', teamName: 'Mine', points: 2300 },
 			},
 		}],
 	};
 	const summary = domCtx.leagueFinancesSummary(league);
 	const y = summary.years[0];
-	assert.equal(y.won, 200 + 25 + 50);
-	assert.deepEqual([...y.labels], ['2nd', 'Weekly High (Wk 3)', 'Season High']);
+	assert.equal(y.won, 200 + 25 * 3 + 50, 'weekly-high payout multiplies by how many weeks this franchise won');
+	assert.deepEqual([...y.labels], ['2nd', 'Weekly High (Wk 3, Wk 9, Wk 12)', 'Season High']);
 }
 
 {
@@ -248,7 +264,7 @@ function fullText(node) {
 	const league = {
 		name: 'I', franchiseId: '0001', results: [{
 			year: '2024', rank: 9, total: 10,
-			scoring: { weeklyHigh: { franchiseId: '0001', teamName: 'Mine', week: 2, points: 150 }, seasonHigh: null },
+			scoring: { weeklyHighs: [{ franchiseId: '0001', teamName: 'Mine', week: 2, points: 150 }], seasonHigh: null },
 		}],
 	};
 	const summary = domCtx.leagueFinancesSummary(league);
@@ -372,7 +388,7 @@ function fullText(node) {
 	const leagues = [
 		{ id: 'A', name: 'League A', type: 'dynasty', franchiseId: '0001', dues: 50, payout1: 500, payoutWeeklyHigh: 25, results: [
 			{ year: '2024', rank: 1, total: 10, scoring: {
-				weeklyHigh: { franchiseId: '0001', teamName: 'Mine', week: 6, points: 180 }, seasonHigh: null,
+				weeklyHighs: [{ franchiseId: '0001', teamName: 'Mine', week: 6, points: 180 }], seasonHigh: null,
 			} },
 		] },
 	];

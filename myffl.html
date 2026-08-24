@@ -6496,15 +6496,23 @@
 		// the same three places, just spelled out for the Won cell's label.
 		const FINANCES_PLACE_LABELS = { 1: '1st', 2: '2nd', 3: '3rd' };
 		// Weekly/season high-score payouts are independent of a year's Finish —
-		// a last-place team can still have had the league's best week — so
-		// they're added on top of the placement payout rather than looked up
-		// by rank. r.scoring is populated by a separate, on-demand backfill
-		// (see backfillLeagueScoringRecords in fetch-rosters.mjs), so it's
-		// absent on most years for a while after this shipped: an absent
-		// `scoring` contributes $0 here, exactly like an unentered payout
-		// field, deliberately indistinguishable — "not yet backfilled" and
-		// "confirmed you didn't win it" both read the same way a league that
-		// hasn't entered its payout amount already reads as $0.
+		// a last-place team can still have had a league-best week — so they're
+		// added on top of the placement payout rather than looked up by rank.
+		// r.scoring is populated by a separate, on-demand backfill (see
+		// backfillLeagueScoringRecords in fetch-rosters.mjs), so it's absent on
+		// most years for a while after this shipped: an absent `scoring`
+		// contributes $0 here, exactly like an unentered payout field,
+		// deliberately indistinguishable — "not yet backfilled" and "confirmed
+		// you didn't win it" both read the same way a league that hasn't
+		// entered its payout amount already reads as $0.
+		//
+		// weeklyHighs is an AWARD PER WEEK, not a single season record — an
+		// earlier version of this treated it as "the league's one best week"
+		// and was wrong (confirmed directly by the user): the same league
+		// pays this out fresh every week 1-18, so one franchise can win it
+		// several times in a season, and each win stacks — Won multiplies
+		// payoutWeeklyHigh by however many weeks this franchise's own id shows
+		// up in the array, rather than a flat one-or-nothing amount.
 		function leagueFinancesSummary(league) {
 			const results = Array.isArray(league.results) ? league.results : [];
 			const dues = league.dues != null ? Number(league.dues) : 0;
@@ -6516,10 +6524,12 @@
 					const labels = [];
 					if (placeWon > 0) labels.push(FINANCES_PLACE_LABELS[r.rank]);
 
-					const weeklyHigh = r.scoring?.weeklyHigh;
-					const wonWeeklyHigh = weeklyHigh && weeklyHigh.franchiseId === league.franchiseId
-						&& league.payoutWeeklyHigh != null ? Number(league.payoutWeeklyHigh) : 0;
-					if (wonWeeklyHigh > 0) labels.push(`Weekly High (Wk ${weeklyHigh.week})`);
+					const myWeeklyHighs = (r.scoring?.weeklyHighs || []).filter((w) => w.franchiseId === league.franchiseId);
+					const wonWeeklyHigh = myWeeklyHighs.length && league.payoutWeeklyHigh != null
+						? myWeeklyHighs.length * Number(league.payoutWeeklyHigh) : 0;
+					if (wonWeeklyHigh > 0) {
+						labels.push(`Weekly High (${myWeeklyHighs.map((w) => `Wk ${w.week}`).join(', ')})`);
+					}
 
 					const seasonHigh = r.scoring?.seasonHigh;
 					const wonSeasonHigh = seasonHigh && seasonHigh.franchiseId === league.franchiseId
