@@ -18,9 +18,12 @@
 // for any year at all (the one remaining case with no Total to show)
 // sorting last; a total is visually flagged wherever it appears (header,
 // league head, and the per-year Total cell) — green for a gain, red for a
-// loss, and neither color for a total that's exactly $0; and a league with
+// loss, and neither color for a total that's exactly $0; a league with
 // no results at all still gets a row (naming it and saying why), never
-// silently dropped.
+// silently dropped; and a year's Won cell names the finish behind a real
+// payout in parens (e.g. "$500 (1st)"), gated on the amount rather than the
+// rank alone — a rank inside the top 3 with a configured $0 payout has
+// nothing worth explaining, so it prints a bare "$0" like any other zero.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -248,15 +251,28 @@ function fullText(node) {
 	const bRows = rowsOf(tableB);
 	const rowFor = (year) => bRows.find((r) => fullText(r.children[0]) === year);
 	const row2024 = rowFor('2024');
+	// Outside the top 3: no payout field to look up, so no place label either
+	// — a bare $0, not "$0 (8th)".
 	assert.deepEqual(row2024.children.map(fullText), ['2024', '-$100', '$0', '-$100']);
 	assert.ok(row2024.children[3].cls.includes('finances-negative'), 'an entry fee paid against nothing won is a real loss');
 	const row2025 = rowFor('2025');
-	assert.deepEqual(row2025.children.map(fullText), ['2025', '-$100', '$500', '$400']);
+	// A real payout (1st, $500) names the finish behind it, in the Won cell.
+	assert.deepEqual(row2025.children.map(fullText), ['2025', '-$100', '$500 (1st)', '$400']);
 	assert.ok(row2025.children[3].cls.includes('finances-positive'));
 	assert.ok(!row2025.children[3].cls.includes('finances-negative'));
 
+	// League A: both a 1st ($500) and a 2nd ($250) place finish, each
+	// labeled in its own year's Won cell.
+	const tableA = tables[0];
+	const aRows = rowsOf(tableA);
+	const aRowFor = (year) => aRows.find((r) => fullText(r.children[0]) === year);
+	assert.equal(fullText(aRowFor('2024').children[2]), '$500 (1st)');
+	assert.equal(fullText(aRowFor('2025').children[2]), '$250 (2nd)');
+
 	// League C's single row: a real, known $0 payout against real dues is a
 	// real, known loss — flagged in the table the same way it is in the head.
+	// Rank 3 (top 3) but a configured $0 payout: no place label, since a $0
+	// payout has nothing worth explaining — not "$0 (3rd)".
 	const tableC = tables[2];
 	const rowC = rowsOf(tableC)[1];
 	assert.deepEqual(rowC.children.map(fullText), ['2024', '-$200', '$0', '-$200']);
