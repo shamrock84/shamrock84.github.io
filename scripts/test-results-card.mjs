@@ -9,10 +9,13 @@
 // results yet still gets a row (naming it and saying why), never silently
 // dropped; leagues sort by best (lowest) average finish first, with
 // leagues carrying no average at all sorting last, in their original
-// relative order (a stable sort, not an arbitrary one); and a top-3 Finish
-// names its place in parens (e.g. "2/10 (2nd)"), the same idiom the
-// Finances card's Won cell uses, muted on a confirmed finish but inheriting
-// the guessed row's red instead of its own color on an estimated one.
+// relative order (a stable sort, not an arbitrary one); and a year with a
+// real payout names the dollar amount in parens (e.g. "1/10 ($300)") —
+// never the ordinal, which the rank already spells out — muted on a
+// confirmed finish but inheriting the guessed row's red instead of its own
+// color on an estimated one. Won is looked up off the same PAYOUT_FIELDS
+// the Finances card reads, but never nets against dues — that framing is
+// Finances' job, not Results'.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -112,18 +115,36 @@ function fullText(node) {
 	assert.equal(summary.average, null);
 }
 
+{
+	// won: a real payout looked up by rank, a real $0 outside the top 3, and
+	// a real $0 for an unentered payout field — never netted against dues,
+	// unlike Finances' Won/Total.
+	const league = { name: 'D', dues: 999, payout1: 500, payout3: 0, results: [
+		{ year: '2024', rank: 1, total: 10, guessed: false }, // payout1 entered
+		{ year: '2023', rank: 2, total: 10, guessed: false }, // payout2 never entered
+		{ year: '2022', rank: 3, total: 10, guessed: false }, // payout3 entered as $0
+		{ year: '2021', rank: 8, total: 10, guessed: false }, // outside the top 3
+	] };
+	const summary = domCtx.leagueResultsSummary(league);
+	const wonFor = (year) => summary.years.find((y) => y.year === year).won;
+	assert.equal(wonFor('2024'), 500);
+	assert.equal(wonFor('2023'), 0, 'payout2 was never entered — a real $0, not unknown');
+	assert.equal(wonFor('2022'), 0, 'payout3 was entered as exactly $0');
+	assert.equal(wonFor('2021'), 0, 'outside the top 3 — no payout field to look up at all');
+}
+
 // ---- renderResultsCard ------------------------------------------------------
 
 {
 	const leagues = [
 		{ id: 'C', name: 'League C', type: 'dynasty' }, // no results at all
-		{ id: 'A', name: 'League A', type: 'dynasty', results: [
+		{ id: 'A', name: 'League A', type: 'dynasty', payout1: 500, payout3: 100, results: [
 			{ year: '2023', rank: 3, total: 12, guessed: false },
 			{ year: '2024', rank: 7, total: 12, guessed: false },
 			{ year: '2025', rank: 1, total: 12, guessed: false },
 		] },
 		{ id: 'D', name: 'League D', type: 'dynasty', results: [] }, // explicitly empty, same as C
-		{ id: 'B', name: 'League B', type: 'salarycap', results: [
+		{ id: 'B', name: 'League B', type: 'salarycap', payout2: 250, results: [
 			{ year: '2024', rank: 8, total: 10, guessed: true },
 			{ year: '2025', rank: 2, total: 10, guessed: false },
 		] },
@@ -162,8 +183,9 @@ function fullText(node) {
 	const aRows = rowsOf(tableA);
 	assert.equal(aRows.length, 4, 'header row plus 3 year rows only');
 	assert.deepEqual(aRows.slice(1, 4).map((r) => fullText(r.children[0])), ['2025', '2024', '2023']);
-	// 1st and 3rd both get a place label; 7th (outside the top 3) gets none.
-	assert.deepEqual(aRows.slice(1, 4).map((r) => fullText(r.children[1])), ['1/12 (1st)', '7/12', '3/12 (3rd)']);
+	// 1st ($500) and 3rd ($100) both get a payout amount; 7th (outside the
+	// top 3, so no payout field to look up) gets none.
+	assert.deepEqual(aRows.slice(1, 4).map((r) => fullText(r.children[1])), ['1/12 ($500)', '7/12', '3/12 ($100)']);
 
 	// League B: the guessed year's Finish cell is flagged, the confirmed
 	// year's is not — this isn't a blanket style on the whole row or table.
@@ -171,12 +193,13 @@ function fullText(node) {
 	const finishCellOf = (year) => bRows.find((r) => fullText(r.children[0]) === year)?.children[1];
 	assert.ok(finishCellOf('2024').cls.includes('results-guessed'), 'the guessed 2024 finish is flagged');
 	assert.ok(!finishCellOf('2025').cls.includes('results-guessed'), 'the confirmed 2025 finish is not');
-	assert.equal(fullText(finishCellOf('2024')), '8/10', 'outside the top 3 — no place label, guessed or not');
-	// A confirmed top-3 finish (2nd here) names its place in parens, muted —
-	// same idiom as the Finances card's Won cell.
-	assert.equal(fullText(finishCellOf('2025')), '2/10 (2nd)');
-	const placeSpanOf = (year) => findAll(finishCellOf(year), (c) => c.cls.includes('results-place'))[0];
-	assert.ok(placeSpanOf('2025'), 'the confirmed finish gets its own muted place span');
+	assert.equal(fullText(finishCellOf('2024')), '8/10', 'outside the top 3 — no payout amount, guessed or not');
+	// A confirmed top-3 finish (2nd, $250) names the amount in parens, muted
+	// — same idiom as the Finances card's Won cell, but the dollar figure
+	// rather than the redundant ordinal.
+	assert.equal(fullText(finishCellOf('2025')), '2/10 ($250)');
+	const payoutSpanOf = (year) => findAll(finishCellOf(year), (c) => c.cls.includes('results-payout'))[0];
+	assert.ok(payoutSpanOf('2025'), 'the confirmed finish gets its own muted payout span');
 
 	// Leagues C and D: no table at all, an explanatory message instead —
 	// never silently dropped from the card.
@@ -191,12 +214,12 @@ function fullText(node) {
 	assert.equal(domCtx.renderResultsCard('redraft', ['redraft'], leagues), null);
 }
 
-// A guessed top-3 finish still names its place, but the label carries no
-// muted color of its own — it inherits .results-guessed's red from the
-// parent cell, so the whole cell reads as one estimate rather than a
-// confirmed rank sitting next to an unsure label.
+// A guessed top-3 finish with a real payout still names the amount, but the
+// label carries no muted color of its own — it inherits .results-guessed's
+// red from the parent cell, so the whole cell reads as one estimate rather
+// than a confirmed rank sitting next to an unsure amount.
 {
-	const leagues = [{ id: 'H', name: 'League H', type: 'dynasty', results: [
+	const leagues = [{ id: 'H', name: 'League H', type: 'dynasty', payout1: 300, results: [
 		{ year: '2025', rank: 1, total: 10, guessed: true },
 	] }];
 	const card = domCtx.renderResultsCard('dynasty', ['dynasty'], leagues);
@@ -204,9 +227,9 @@ function fullText(node) {
 	const row = findAll(table, (c) => c.tag === 'tr')[1];
 	const finishCell = row.children[1];
 	assert.ok(finishCell.cls.includes('results-guessed'));
-	assert.equal(fullText(finishCell), '1/10 (1st)', 'the place is still named even though the finish is estimated');
-	assert.equal(findAll(finishCell, (c) => c.cls.includes('results-place')).length, 0,
-		'no separate muted class — the label inherits the cell\'s red instead');
+	assert.equal(fullText(finishCell), '1/10 ($300)', 'the amount is still named even though the finish is estimated');
+	assert.equal(findAll(finishCell, (c) => c.cls.includes('results-payout')).length, 0,
+		'no separate muted class — the amount inherits the cell\'s red instead');
 }
 
 // The live-synced leagueName wins over config's own static name, same as
