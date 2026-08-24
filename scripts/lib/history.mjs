@@ -286,34 +286,45 @@ export function computeMflSeasonPlacements({ leagueFranchiseIds, brackets, brack
 // Given every fetched week's per-franchise point totals for one season
 // (weeklyScoresByWeek: Map(week -> [{franchiseId, points}]) — a fixed weeks
 // 1-18 window chosen by the caller, not the league's own regular season; see
-// backfillLeagueScoringRecords in fetch-rosters.mjs), the two facts a
-// high-score payout needs: the single highest week, and the highest season
-// total. The two use DIFFERENT week ranges on purpose (confirmed with the
-// user directly, not derived): a weekly-high award is paid on any week 1-18,
-// but a season-total award only ever considers weeks 1-`seasonWeekLimit`
-// (17) — week 18 counts for "best week" but never contributes to a season
-// sum. `seasonWeekLimit` defaults to Infinity (every fetched week counts)
-// only so a caller that has no reason to exclude anything doesn't have to
-// pass it; the real caller always passes 17. Unlike computeMflSeasonPlacements
-// above, neither half is ever a guess — both are a hard sum/max over data
-// actually fetched, with no gap-filling fallback, so a caller that couldn't
-// fetch every week should not call this at all rather than get a number
-// computed from a partial season (see backfillLeagueScoringRecords in
-// fetch-rosters.mjs).
+// backfillLeagueScoringRecords in fetch-rosters.mjs), the facts a high-score
+// payout needs. These are two DIFFERENT kinds of award, not two versions of
+// the same one (confirmed directly with the user after an earlier version of
+// this got it wrong): the weekly-high prize is awarded fresh EVERY week —
+// week 1's highest scorer wins it, then week 2's highest scorer wins it
+// again independently, and so on through week 18, so a single season can pay
+// it out up to 18 times, possibly all to different franchises, possibly
+// several to the same one. `weeklyHighs` is therefore one entry per week
+// fetched, not a single "best week of the season" record — an earlier
+// version of this function computed exactly that single record, which is
+// the bug this shape replaces. The season-total prize, by contrast, really
+// is a single once-a-season award — highest summed total wins it once — but
+// only counts weeks 1-`seasonWeekLimit` (17): week 18 has its own weekly
+// winner but never contributes to the season sum. `seasonWeekLimit` defaults
+// to Infinity (every fetched week counts) only so a caller with no reason to
+// exclude anything doesn't have to pass it; the real caller always passes
+// 17. Unlike computeMflSeasonPlacements above, nothing here is ever a
+// guess — every number is a hard sum/max over data actually fetched, with no
+// gap-filling fallback, so a caller that couldn't fetch every week should
+// not call this at all rather than get a number computed from a partial
+// season (see backfillLeagueScoringRecords in fetch-rosters.mjs).
 // A tie keeps whichever franchise the provider listed first that week —
 // arbitrary but deterministic, same convention pickMainBracket above uses.
 export function computeSeasonScoringRecords(weeklyScoresByWeek, nameById, seasonWeekLimit = Infinity) {
   const seasonTotals = new Map();
-  let weeklyHigh = null;
-  for (const [week, totals] of weeklyScoresByWeek.entries()) {
+  const weeklyHighs = [];
+  const weeks = [...weeklyScoresByWeek.keys()].sort((a, b) => Number(a) - Number(b));
+  for (const week of weeks) {
+    const totals = weeklyScoresByWeek.get(week);
+    let best = null;
     for (const { franchiseId, points } of totals) {
       if (Number(week) <= seasonWeekLimit) {
         seasonTotals.set(franchiseId, (seasonTotals.get(franchiseId) || 0) + points);
       }
-      if (!weeklyHigh || points > weeklyHigh.points) {
-        weeklyHigh = { franchiseId, week, points };
+      if (!best || points > best.points) {
+        best = { franchiseId, week, points };
       }
     }
+    if (best) weeklyHighs.push(best);
   }
   let seasonHigh = null;
   for (const [franchiseId, points] of seasonTotals.entries()) {
@@ -322,7 +333,7 @@ export function computeSeasonScoringRecords(weeklyScoresByWeek, nameById, season
     }
   }
   const withName = (rec) => (rec ? { ...rec, teamName: (nameById && nameById.get(rec.franchiseId)) || rec.franchiseId } : null);
-  return { weeklyHigh: withName(weeklyHigh), seasonHigh: withName(seasonHigh) };
+  return { weeklyHighs: weeklyHighs.map(withName), seasonHigh: withName(seasonHigh) };
 }
 
 // ESPN's own computed final standing — confirmed against real data as a

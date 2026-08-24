@@ -501,14 +501,17 @@ export async function backfillLeagueHistory(leagues, previousById, cookie) {
 // these payouts are meant to cover the whole fantasy season a league
 // actually plays, brackets included, not just the H2H standings portion of
 // it: a last-place team eliminated week 1 of the playoffs can still have
-// banked the league's best single week, and several real leagues here run
-// their bracket through week 17 or later. The weekly-high and season-total
-// halves use DIFFERENT cutoffs within that fetched range, though (confirmed
-// directly with the user, not derived from anything providers expose): a
-// weekly-high award is paid on ANY week 1-18, but a season-total award only
-// ever counts weeks 1-`SEASON_HIGH_SCORE_WEEKS` (17) — so week 18 can win
-// the weekly-high payout but never contributes to a season sum. This also
-// rules out leagueStandings' `pf` as a shortcut for the season-total number
+// banked a weekly-high win, and several real leagues here run their bracket
+// through week 17 or later. The weekly-high and season-total halves are two
+// DIFFERENT KINDS of award, not two versions of the same one (confirmed
+// directly with the user after an earlier version of this got it wrong):
+// weekly-high is awarded fresh every week — week 1's top scorer wins it,
+// then week 2's top scorer wins it again independently, all the way through
+// week 18, so a single season can pay it out up to 18 times — while
+// season-total is a single once-a-season award that only ever sums weeks
+// 1-`SEASON_HIGH_SCORE_WEEKS` (17), so week 18 has its own weekly winner but
+// never contributes to the season sum. This also rules out leagueStandings'
+// `pf` as a shortcut for the season-total number
 // (it was seriously considered — `pf` is already fetched for free during
 // placement backfill): probe-weekly-scores.yml showed `pf` running well
 // above even just the weeks-1-14 regular-season sum for every franchise in
@@ -640,10 +643,10 @@ export async function backfillLeagueScoringRecords(leagues, previousById, cookie
         }
         if (!weeksOk || weeklyScoresByWeek.size !== weeksToFetch) continue; // retry the whole year next run
 
-        const { weeklyHigh, seasonHigh } = computeSeasonScoringRecords(weeklyScoresByWeek, nameById, SEASON_HIGH_SCORE_WEEKS);
-        if (weeklyHigh || seasonHigh) {
+        const { weeklyHighs, seasonHigh } = computeSeasonScoringRecords(weeklyScoresByWeek, nameById, SEASON_HIGH_SCORE_WEEKS);
+        if (weeklyHighs.length || seasonHigh) {
           league.results = league.results.map((r) =>
-            String(r.year) === String(year) ? { ...r, scoring: { weeklyHigh, seasonHigh } } : r
+            String(r.year) === String(year) ? { ...r, scoring: { weeklyHighs, seasonHigh } } : r
           );
           yearsAdded++;
           leaguesTouched++;
