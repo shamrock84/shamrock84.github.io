@@ -388,10 +388,16 @@ function fullText(node) {
 }
 const thNamed = (card, label) => findAll(card, (c) => c.tag === 'th').find((h) => h._text === label);
 const clickTh = (card, label) => thNamed(card, label).click();
+// The league name renders as a link (or a plain text node with no url —
+// see leagueNameNode) as the name cell's first child now, rather than
+// being set directly as the cell's own textContent — so isolating just
+// the name, ignoring the team-count/roster-line siblings appended after
+// it, means reading that first child's own text instead of the cell's.
+const cellLeagueName = (cell) => cell.children[0]?._text || '';
 const labelsOf = (card) =>
 	findAll(card, (c) => c.tag === 'tr')
 		.filter((tr) => tr.children.some((c) => c.tag === 'td'))
-		.map((tr) => tr.children[0]._text);
+		.map((tr) => cellLeagueName(tr.children[0]));
 
 {
 	// A group with no byPosition data anywhere: the card is absent entirely,
@@ -465,7 +471,7 @@ const labelsOf = (card) =>
 
 	const rowOf = (label) => findAll(card, (c) => c.tag === 'tr')
 		.filter((tr) => tr.children.some((c) => c.tag === 'td'))
-		.find((tr) => tr.children[0]._text === label);
+		.find((tr) => cellLeagueName(tr.children[0]) === label);
 	const cellsOf = (label) => rowOf(label).children.slice(1);
 
 	// Alpha: RB is 2nd (worse) of the two franchises, everything else is 1st

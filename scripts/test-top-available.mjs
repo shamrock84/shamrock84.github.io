@@ -83,6 +83,10 @@ const { computeTopAvailable, normalizeName, poolPlayerUrl } = context;
 // whichever types those are.
 const ACTIVE = ['dynasty', 'salarycap'];
 const rowFor = (rows, name) => rows.find((r) => r.name === name);
+// leagues/ownedLeagues entries now carry {name, url} rather than a bare
+// name, for the card's own league-name links — most assertions here only
+// care which leagues, not their urls.
+const names = (entries) => [...entries].map((e) => e.name);
 
 // A ranking pool entry, as the sync writes it: rank, position, NFL team, and a
 // site-relative profile path.
@@ -175,13 +179,13 @@ const YEAR = '2026';
 	const gem = rowFor(rows, 'Wire Gem');
 	assert.equal(gem.count, 3, 'free everywhere');
 	assert.equal(gem.ownedCount, 0, 'and owned nowhere');
-	assert.deepEqual([...gem.ownedLeagues], []);
+	assert.deepEqual(names(gem.ownedLeagues), []);
 
 	const half = rowFor(rows, 'Half Mine');
 	assert.equal(half.count, 1);
-	assert.deepEqual([...half.leagues], ['A'], 'free only where nobody has him');
+	assert.deepEqual(names(half.leagues), ['A'], 'free only where nobody has him');
 	assert.equal(half.ownedCount, 2);
-	assert.deepEqual([...half.ownedLeagues], ['B', 'C'], 'and ours in the two that do');
+	assert.deepEqual(names(half.ownedLeagues), ['B', 'C'], 'and ours in the two that do');
 	assert.equal(half.count + half.ownedCount, 3, 'the two counts partition the same leagues');
 
 	// A player nobody has left unrostered anywhere is not a row here however
@@ -200,8 +204,8 @@ const YEAR = '2026';
 	];
 	const { rows } = computeTopAvailable(leagues, ACTIVE, pools);
 	assert.equal(rows.length, 1);
-	assert.deepEqual([...rows[0].leagues], ['A']);
-	assert.deepEqual([...rows[0].ownedLeagues], ['B'], 'suffix and case differences still count as owned');
+	assert.deepEqual(names(rows[0].leagues), ['A']);
+	assert.deepEqual(names(rows[0].ownedLeagues), ['B'], 'suffix and case differences still count as owned');
 }
 
 // --- Top Available: ownership is only counted where availability was read -----
@@ -233,9 +237,9 @@ const YEAR = '2026';
 	const { total, rows } = computeTopAvailable(leagues, ACTIVE, pools);
 	assert.equal(total, 2);
 	assert.deepEqual([...rows].map((r) => r.name), ['Wire Gem', 'Wire Filler'], 'ordered by rank');
-	assert.deepEqual([...rowFor(rows, 'Wire Gem').leagues], ['A', 'B']);
+	assert.deepEqual(names(rowFor(rows, 'Wire Gem').leagues), ['A', 'B']);
 	assert.equal(rowFor(rows, 'Wire Gem').count, 2);
-	assert.deepEqual([...rowFor(rows, 'Wire Filler').leagues], ['A']);
+	assert.deepEqual(names(rowFor(rows, 'Wire Filler').leagues), ['A']);
 	assert.equal(rowFor(rows, 'Owned Everywhere'), undefined);
 	assert.equal(rowFor(rows, 'Wire Gem').url, 'https://www.fantasypros.com/nfl/players/5.php');
 }
@@ -252,7 +256,7 @@ const YEAR = '2026';
 	const { total, rows } = computeTopAvailable([known, unknown], ACTIVE, pools);
 	assert.equal(total, 1, 'a league that could not answer is out of the denominator');
 	assert.equal(rows[0].count, 1);
-	assert.deepEqual([...rows[0].leagues], ['A']);
+	assert.deepEqual(names(rows[0].leagues), ['A']);
 }
 {
 	// An empty array is an answer: nothing in the pool is free there. It stays

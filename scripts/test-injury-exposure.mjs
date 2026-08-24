@@ -85,6 +85,9 @@ function league(name, type, players) {
 
 const DYNASTY = ['dynasty', 'salarycap'];
 const rowFor = (rows, name) => rows.find((r) => r.name === name);
+// leagues entries now carry {name, url} rather than a bare name, for the
+// card's own league-name links — this test only cares which leagues.
+const names = (entries) => [...entries].map((e) => e.name);
 
 // --- The denominator matches Player Exposure ----------------------------------
 {
@@ -118,7 +121,7 @@ const rowFor = (rows, name) => rows.find((r) => r.name === name);
 	];
 	const { total, rows } = computeInjuryExposure(leagues, DYNASTY);
 	assert.equal(total, 2);
-	assert.deepEqual([...rowFor(rows, 'Half Flagged').leagues], ['A', 'B']);
+	assert.deepEqual(names(rowFor(rows, 'Half Flagged').leagues), ['A', 'B']);
 	assert.equal(Math.round(rowFor(rows, 'Half Flagged').exposure), 100);
 }
 

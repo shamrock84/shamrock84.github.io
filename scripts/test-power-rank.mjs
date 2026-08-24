@@ -1078,11 +1078,17 @@ function findAll(n, pred, out = []) {
 }
 const thNamed = (card, label) => findAll(card, (c) => c.tag === 'th').find((h) => h._text.startsWith(label));
 const clickTh = (card, label) => thNamed(card, label).click();
-// The league name is the first cell's own text; the team-count span is a child.
+// The league name renders as a link (or a plain text node with no url —
+// see leagueNameNode) as the name cell's first child now, rather than
+// being set directly as the cell's own textContent — so isolating just
+// the name, ignoring the team-count/studs/sleepers siblings appended
+// after it, means reading that first child's own text instead of the
+// cell's.
+const cellLeagueName = (cell) => cell.children[0]?._text || '';
 const labelsOf = (card) =>
 	findAll(card, (c) => c.tag === 'tr')
 		.filter((tr) => tr.children.some((c) => c.tag === 'td'))
-		.map((tr) => tr.children[0]._text);
+		.map((tr) => cellLeagueName(tr.children[0]));
 
 {
 	// Our franchise placed at a chosen rank among `size` franchises. Depth is
@@ -1147,7 +1153,7 @@ const labelsOf = (card) =>
 	// apart, the same way a reader would.
 	const nameCellOf = (label) => findAll(card, (c) => c.tag === 'tr')
 		.filter((tr) => tr.children.some((c) => c.tag === 'td'))
-		.find((tr) => tr.children[0]._text === label).children[0];
+		.find((tr) => cellLeagueName(tr.children[0]) === label).children[0];
 	const playerLineOf = (rowLabel, lineLabel) => nameCellOf(rowLabel).children.find(
 		(c) => c.cls.includes('power-players') && c.children[0]?._text === `${lineLabel} `
 	);
@@ -1226,7 +1232,7 @@ const labelsOf = (card) =>
 	const card = domCtx.renderPowerRankCard('dynasty', ['dynasty'], leagues, 2026);
 	const rowOf = (label) => findAll(card, (c) => c.tag === 'tr')
 		.filter((tr) => tr.children.some((c) => c.tag === 'td'))
-		.find((tr) => tr.children[0]._text === label);
+		.find((tr) => cellLeagueName(tr.children[0]) === label);
 	// Column order: League, Proj, ECR, Start, Ben, Avg — Start is index 3.
 	const startCellOf = (label) => rowOf(label).children[3];
 
