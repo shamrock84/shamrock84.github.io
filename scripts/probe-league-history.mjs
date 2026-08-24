@@ -166,6 +166,7 @@ if (MFL_LEAGUE_ID) {
       const rows = standingsData?.leagueStandings?.franchise;
       const rowList = Array.isArray(rows) ? rows : rows ? [rows] : [];
       console.log(`  franchise rows: ${rowList.length}`);
+      console.log(`  all franchise ids: ${JSON.stringify(rowList.map((r) => r.id))}`);
       if (rowList.length) dumpFields('first row, every field', rowList[0]);
       console.log('  --- searching leagueStandings for anything named *bracket*/*place*/*final*/*rank* ---');
       findKeysContaining(standingsData, 'bracket');
