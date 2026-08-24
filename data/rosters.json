@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-24T16:58:15.612Z",
+  "generatedAt": "2026-08-24T17:00:20.372Z",
   "year": "2026",
   "rankingPools": {
     "DYNASTY|PPR|ALL": {
@@ -6914,7 +6914,20 @@
           "year": "2025",
           "rank": 1,
           "total": 10,
-          "guessed": false
+          "guessed": false,
+          "scoring": {
+            "weeklyHigh": {
+              "franchiseId": "0010",
+              "week": 9,
+              "points": 218.80000000000004,
+              "teamName": "BarstoolSaints"
+            },
+            "seasonHigh": {
+              "franchiseId": "0002",
+              "points": 2432.8,
+              "teamName": "CC's Fall Guys"
+            }
+          }
         }
       ]
     },
