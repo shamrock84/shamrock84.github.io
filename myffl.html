@@ -6307,7 +6307,7 @@
 				// that needs to survive a full renderGrid() re-render the
 				// way the Admin card's open/closed leagues do.
 				const head = el('div', { class: 'results-league-head' });
-				head.appendChild(el('span', { class: 'group-label', text: league.name }));
+				head.appendChild(el('span', { class: 'group-label', text: league.leagueName || league.name }));
 				if (average != null) {
 					head.appendChild(el('span', {
 						class: 'results-avg',
@@ -6443,7 +6443,7 @@
 				// headline number right, year-by-year detail collapsed under a
 				// <details> below it.
 				const head = el('div', { class: 'finances-league-head' });
-				head.appendChild(el('span', { class: 'group-label', text: league.name }));
+				head.appendChild(el('span', { class: 'group-label', text: league.leagueName || league.name }));
 				if (total != null) {
 					head.appendChild(el('span', {
 						class: `finances-total ${financesSignClass(total)}`.trim(),
