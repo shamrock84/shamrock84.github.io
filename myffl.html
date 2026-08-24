@@ -1265,7 +1265,7 @@
 		   Same red as the rest of the page uses for "needs a look". */
 		.results-guessed { color: var(--ir-text); }
 		/* A real payout, in parens next to the Finish cell — same muted,
-		   smaller-text treatment as .power-size/.finances-place. A guessed
+		   smaller-text treatment as .power-size. A guessed
 		   finish's payout gets no class here and inherits .results-guessed's
 		   red instead, so an estimate reads as one uncertain cell rather than
 		   a confirmed rank next to an unsure amount. */
@@ -1342,12 +1342,48 @@
 			user-select: none;
 		}
 		.finances-details[open] .finances-summary { margin-bottom: 0.5rem; }
-		/* The finish behind a real payout, in the Won cell — same muted,
-		   smaller-text treatment as .power-size's team count. */
-		.finances-place {
+		/* Won-amount button and popover — same shape as .salary-link/
+		   .salary-popover (see openFinancesPopover), duplicated rather than
+		   shared since the two pop up unrelated content from unrelated
+		   tables. */
+		.finances-link {
+			background: none;
+			border: none;
+			padding: 0;
+			margin: 0;
+			font: inherit;
+			font-variant-numeric: tabular-nums;
+			color: var(--accent);
+			text-decoration: underline dotted;
+			text-underline-offset: 0.15rem;
+			cursor: pointer;
+		}
+		.finances-popover {
+			position: fixed;
+			z-index: 20;
+			background: var(--card-bg);
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+			padding: 0.5rem 0.7rem;
+			font-size: 0.85rem;
+			min-width: 10rem;
+		}
+		.finances-popover-title {
+			font-weight: 600;
 			color: var(--muted);
-			font-weight: 400;
-			font-size: 0.85em;
+			margin-bottom: 0.3rem;
+			white-space: nowrap;
+		}
+		.finances-popover-row {
+			display: flex;
+			justify-content: space-between;
+			gap: 1rem;
+			padding: 0.15rem 0;
+			font-variant-numeric: tabular-nums;
+		}
+		.finances-popover-row + .finances-popover-row {
+			border-top: 1px solid var(--border);
 		}
 		/* A net loss — the same token .salary-cap-room's negative state and
 		   Results' "guessed" flag both use for "this number needs a look".
@@ -6510,37 +6546,113 @@
 		// earlier version of this treated it as "the league's one best week"
 		// and was wrong (confirmed directly by the user): the same league
 		// pays this out fresh every week 1-18, so one franchise can win it
-		// several times in a season, and each win stacks — Won multiplies
-		// payoutWeeklyHigh by however many weeks this franchise's own id shows
-		// up in the array, rather than a flat one-or-nothing amount.
+		// several times in a season, and each win stacks — Won sums
+		// payoutWeeklyHigh once per week this franchise's own id shows up in
+		// the array, rather than a flat one-or-nothing amount.
+		//
+		// `breakdown` is a line item per contributing reason ({label, amount}),
+		// not a flat list of label strings — see openFinancesPopover, which
+		// this feeds directly. It used to be `labels`, rendered inline in the
+		// Won cell as "$525 (1st, Weekly High (Wk 6))"; with weekly-high
+		// capable of landing several times a season that line could run long
+		// (seven separate weeks isn't unheard of), so the cell now shows only
+		// the total and the breakdown moved into a popover behind it — same
+		// idiom as .salary-link's "Salary by Year," a click away rather than
+		// always on screen. One row per week won, not one combined "Weekly
+		// High (Wk 1, Wk 3, ...)" row, to keep the same per-week transparency
+		// the old inline label had.
 		function leagueFinancesSummary(league) {
 			const results = Array.isArray(league.results) ? league.results : [];
 			const dues = league.dues != null ? Number(league.dues) : 0;
 			const years = [...results]
 				.sort((a, b) => Number(b.year) - Number(a.year))
 				.map((r) => {
+					const breakdown = [];
+
 					const payoutField = PAYOUT_FIELDS[r.rank];
 					const placeWon = payoutField && league[payoutField] != null ? Number(league[payoutField]) : 0;
-					const labels = [];
-					if (placeWon > 0) labels.push(FINANCES_PLACE_LABELS[r.rank]);
+					if (placeWon > 0) breakdown.push({ label: FINANCES_PLACE_LABELS[r.rank], amount: placeWon });
 
 					const myWeeklyHighs = (r.scoring?.weeklyHighs || []).filter((w) => w.franchiseId === league.franchiseId);
-					const wonWeeklyHigh = myWeeklyHighs.length && league.payoutWeeklyHigh != null
-						? myWeeklyHighs.length * Number(league.payoutWeeklyHigh) : 0;
-					if (wonWeeklyHigh > 0) {
-						labels.push(`Weekly High (${myWeeklyHighs.map((w) => `Wk ${w.week}`).join(', ')})`);
+					if (myWeeklyHighs.length && league.payoutWeeklyHigh != null) {
+						const amount = Number(league.payoutWeeklyHigh);
+						for (const w of myWeeklyHighs) breakdown.push({ label: `Weekly High (Wk ${w.week})`, amount });
 					}
 
 					const seasonHigh = r.scoring?.seasonHigh;
 					const wonSeasonHigh = seasonHigh && seasonHigh.franchiseId === league.franchiseId
 						&& league.payoutSeasonHigh != null ? Number(league.payoutSeasonHigh) : 0;
-					if (wonSeasonHigh > 0) labels.push('Season High');
+					if (wonSeasonHigh > 0) breakdown.push({ label: 'Season High', amount: wonSeasonHigh });
 
-					const won = placeWon + wonWeeklyHigh + wonSeasonHigh;
-					return { year: r.year, dues, won, rank: r.rank, labels, total: won - dues };
+					const won = breakdown.reduce((sum, b) => sum + b.amount, 0);
+					return { year: r.year, dues, won, rank: r.rank, breakdown, total: won - dues };
 				});
 			const total = years.length ? years.reduce((sum, y) => sum + y.total, 0) : null;
 			return { league, years, total };
+		}
+
+		// Won-breakdown popover for a year's Won cell — same shape as
+		// openSalaryPopover/toggleSalaryPopover (single shared instance,
+		// position:fixed, appended to <body> so a scrolled table can't clip
+		// or misposition it) but kept as its own separate instance rather
+		// than shared code, matching this page's own convention for these:
+		// the two pop up unrelated content from unrelated tables, and there's
+		// nothing to gain from coupling them beyond the CSS shape they
+		// already duplicate on purpose.
+		let financesPopoverEl = null;
+		let financesPopoverOwner = null; // the <button> currently showing, or null
+		function closeFinancesPopover() {
+			if (!financesPopoverEl) return;
+			financesPopoverEl.classList.add('hidden');
+			financesPopoverOwner = null;
+		}
+		function positionFinancesPopover(button) {
+			const rect = button.getBoundingClientRect();
+			financesPopoverEl.style.top = `${rect.bottom + 4}px`;
+			// Anchored to the button's left edge, but pulled back from the
+			// right edge of the viewport — the Won column sits at the right
+			// of the table, so a naive left-anchor would routinely try to
+			// render most of the popover off-screen.
+			const maxLeft = window.innerWidth - financesPopoverEl.offsetWidth - 8;
+			financesPopoverEl.style.left = `${Math.max(8, Math.min(rect.left, maxLeft))}px`;
+		}
+		function openFinancesPopover(button, year, breakdown) {
+			if (!financesPopoverEl) {
+				financesPopoverEl = el('div', { class: 'finances-popover hidden' });
+				document.body.appendChild(financesPopoverEl);
+				// Closes rather than re-tracks on scroll/resize — this is a
+				// quick reference a click away again, not a pinned panel, and
+				// a stale position left behind by a scroll would be worse
+				// than it just going away.
+				window.addEventListener('scroll', closeFinancesPopover, true);
+				window.addEventListener('resize', closeFinancesPopover);
+				document.addEventListener('keydown', (e) => {
+					if (e.key === 'Escape') closeFinancesPopover();
+				});
+				document.addEventListener('click', (e) => {
+					if (!financesPopoverOwner) return;
+					if (e.target === financesPopoverOwner || financesPopoverEl.contains(e.target)) return;
+					closeFinancesPopover();
+				});
+			}
+			financesPopoverEl.innerHTML = '';
+			financesPopoverEl.appendChild(el('div', { class: 'finances-popover-title', text: `${year} — Won Breakdown` }));
+			for (const b of breakdown) {
+				const line = el('div', { class: 'finances-popover-row' });
+				line.appendChild(el('span', { text: b.label }));
+				line.appendChild(el('span', { text: formatMoney(b.amount) }));
+				financesPopoverEl.appendChild(line);
+			}
+			financesPopoverEl.classList.remove('hidden');
+			financesPopoverOwner = button;
+			positionFinancesPopover(button);
+		}
+		function toggleFinancesPopover(button, year, breakdown) {
+			if (financesPopoverOwner === button && !financesPopoverEl.classList.contains('hidden')) {
+				closeFinancesPopover();
+				return;
+			}
+			openFinancesPopover(button, year, breakdown);
 		}
 
 		function renderFinancesCard(groupKey, types, leagues) {
@@ -6613,16 +6725,30 @@
 					// leagueFinancesSummary defaults an unentered dues/payout
 					// to $0 rather than leaving it unknown.
 					row.appendChild(el('td', { text: formatMoney(-y.dues) }));
-					// A real payout names why: the finish that earned it. Gated on
-					// the amount rather than the rank alone, since a league that
-					// pays $0 for 3rd has nothing worth explaining. A year can carry
-					// more than one label at once — a placement payout and a
-					// weekly/season high-score payout are independent and can both
-					// land the same year — so every contributing reason is named,
-					// comma-joined, rather than just the first one found.
-					row.appendChild(el('td', { text: formatMoney(y.won) }, y.labels.length
-						? [el('span', { class: 'finances-place', text: ` (${y.labels.join(', ')})` })]
-						: []));
+					// A real payout names why: the finish that earned it, a weekly
+					// high, a season high — any combination can land the same
+					// year. Gated on there being a breakdown at all, since a
+					// league that pays $0 for 3rd has nothing worth explaining:
+					// with one, the amount becomes a button opening the same
+					// popover idiom .salary-link uses on the Rosters tab, rather
+					// than spelling every reason out inline — weekly-high alone
+					// can land up to 18 times a season, which made the old
+					// inline "(1st, Weekly High (Wk 1, Wk 3, ...))" text run long.
+					if (y.breakdown.length) {
+						const btn = el('button', {
+							type: 'button',
+							class: 'finances-link',
+							title: 'Won breakdown',
+							text: formatMoney(y.won),
+						});
+						btn.addEventListener('click', (e) => {
+							e.stopPropagation();
+							toggleFinancesPopover(btn, y.year, y.breakdown);
+						});
+						row.appendChild(el('td', {}, [btn]));
+					} else {
+						row.appendChild(el('td', { text: formatMoney(y.won) }));
+					}
 					row.appendChild(el('td', { class: financesSignClass(y.total), text: formatMoney(y.total) }));
 					table.appendChild(row);
 				}

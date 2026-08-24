@@ -20,10 +20,12 @@
 // league head, and the per-year Total cell) — green for a gain, red for a
 // loss, and neither color for a total that's exactly $0; a league with
 // no results at all still gets a row (naming it and saying why), never
-// silently dropped; and a year's Won cell names the finish behind a real
-// payout in parens (e.g. "$500 (1st)"), gated on the amount rather than the
-// rank alone — a rank inside the top 3 with a configured $0 payout has
-// nothing worth explaining, so it prints a bare "$0" like any other zero.
+// silently dropped; and a year's Won cell is plain text ONLY when there's
+// nothing to explain (won $0, or a rank outside the top 3 with no payout
+// field) — any real reason behind the amount turns it into a button
+// (.finances-link) opening a popover breakdown, the same idiom .salary-link
+// uses on the Rosters tab, rather than spelling every reason out inline in
+// the cell.
 //
 // Also pinned here: weekly/season high-score payouts (payoutWeeklyHigh/
 // payoutSeasonHigh) are a second, independent axis from Finish — a
@@ -32,15 +34,20 @@
 // weeklyHigh is NOT a once-a-season record — it's awarded fresh every week,
 // so results[].scoring.weeklyHighs is an array (one entry per week that
 // week's own top scorer won), and this franchise can appear in it more than
-// once; Won multiplies payoutWeeklyHigh by however many of those entries
-// carry this franchise's id, and the label lists every week won. seasonHigh
-// stays a single record, keyed off league.franchiseId matching it directly.
-// A `scoring` field absent (not yet backfilled — see
+// once; Won sums payoutWeeklyHigh once per entry that carries this
+// franchise's id, not a flat one-or-nothing amount. seasonHigh stays a
+// single record, keyed off league.franchiseId matching it directly. A
+// `scoring` field absent (not yet backfilled — see
 // backfillLeagueScoringRecords in fetch-rosters.mjs) contributes $0,
 // indistinguishable from "confirmed you didn't win it," same as an
-// unentered payout field already reads; and the Won cell names every
-// contributing reason it finds, comma-joined, place first (e.g. "$525 (1st,
-// Weekly High (Wk 6))"), not just the first one.
+// unentered payout field already reads. `leagueFinancesSummary` returns a
+// `breakdown` array ({label, amount}), one line item per contributing
+// reason — place first, then one row per weekly-high week won, then season
+// high — that the popover renders directly; it used to be a flat `labels`
+// array of strings rendered inline in the cell, replaced because a
+// franchise that wins several weekly-highs in one season (not rare — see
+// the real MNMx 2025 case that prompted this) made that inline text run
+// long.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -74,6 +81,16 @@ function domNode(tag = 'div') {
 		set innerHTML(v) { if (v === '') n.children.length = 0; },
 		get textContent() { return n._text; },
 		set textContent(v) { n._text = v; },
+		// Zeroed rect/offsets — the finances popover's own positioning math
+		// runs against these, but this suite checks that it opens with the
+		// right content, not where it lands on a real screen.
+		getBoundingClientRect: () => ({ top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0 }),
+		offsetWidth: 0,
+		offsetHeight: 0,
+		// A real click event always carries a stopPropagation a handler can
+		// call without checking; production code (see the Won-cell button)
+		// relies on that exactly like a browser would.
+		click() { (n.listeners.click || []).forEach((fn) => fn({ stopPropagation() {} })); },
 	};
 	return n;
 }
@@ -92,7 +109,7 @@ const domCtx = {
 		visibilityState: 'visible',
 		body: domNode(),
 	},
-	window: { addEventListener() {} },
+	window: { addEventListener() {}, innerWidth: 1024 },
 	fetch: async () => ({ ok: false, status: 503, json: async () => ({}) }),
 };
 vm.createContext(domCtx);
@@ -111,6 +128,13 @@ function fullText(node) {
 	if (!node.children || node.children.length === 0) return node._text || '';
 	return (node._text || '') + node.children.map(fullText).join('');
 }
+// Plain objects built inside the vm context (leagueFinancesSummary's own
+// `breakdown` entries) carry that context's Object prototype, not this
+// process's — assert.deepEqual treats that as "same structure but not
+// reference-equal" and fails even when every field matches. Round-tripping
+// through JSON strips the foreign prototype; safe here since breakdown rows
+// are only ever {label: string, amount: number}, nothing JSON would mangle.
+const plain = (x) => JSON.parse(JSON.stringify(x));
 
 // ---- formatMoney -------------------------------------------------------------
 
@@ -229,14 +253,15 @@ function fullText(node) {
 	const summary = domCtx.leagueFinancesSummary(league);
 	const y = summary.years[0];
 	assert.equal(y.won, 25, 'only the one week this franchise actually won, not every week in the array');
-	assert.deepEqual([...y.labels], ['Weekly High (Wk 7)']);
+	assert.deepEqual(plain(y.breakdown), [{ label: 'Weekly High (Wk 7)', amount: 25 }]);
 }
 
 {
 	// The SAME franchise wins the weekly high THREE separate weeks in one
 	// season — the normal shape of this award, not an edge case — plus the
-	// season high and a top-3 finish. All amounts stack; Weekly High
-	// multiplies by 3 and its label lists every week.
+	// season high and a top-3 finish. All amounts stack; the breakdown gets
+	// one row per week won, in the order the weeks appear in the array
+	// (which computeSeasonScoringRecords already sorts by week).
 	const league = {
 		name: 'H', franchiseId: '0001', dues: 0, payout2: 200, payoutWeeklyHigh: 25, payoutSeasonHigh: 50,
 		results: [{
@@ -254,8 +279,14 @@ function fullText(node) {
 	};
 	const summary = domCtx.leagueFinancesSummary(league);
 	const y = summary.years[0];
-	assert.equal(y.won, 200 + 25 * 3 + 50, 'weekly-high payout multiplies by how many weeks this franchise won');
-	assert.deepEqual([...y.labels], ['2nd', 'Weekly High (Wk 3, Wk 9, Wk 12)', 'Season High']);
+	assert.equal(y.won, 200 + 25 * 3 + 50, 'weekly-high payout sums once per week this franchise won');
+	assert.deepEqual(plain(y.breakdown), [
+		{ label: '2nd', amount: 200 },
+		{ label: 'Weekly High (Wk 3)', amount: 25 },
+		{ label: 'Weekly High (Wk 9)', amount: 25 },
+		{ label: 'Weekly High (Wk 12)', amount: 25 },
+		{ label: 'Season High', amount: 50 },
+	]);
 }
 
 {
@@ -269,7 +300,7 @@ function fullText(node) {
 	};
 	const summary = domCtx.leagueFinancesSummary(league);
 	assert.equal(summary.years[0].won, 0);
-	assert.deepEqual([...summary.years[0].labels], []);
+	assert.deepEqual([...summary.years[0].breakdown], []);
 }
 
 {
@@ -344,31 +375,53 @@ function fullText(node) {
 	const bRows = rowsOf(tableB);
 	const rowFor = (year) => bRows.find((r) => fullText(r.children[0]) === year);
 	const row2024 = rowFor('2024');
-	// Outside the top 3: no payout field to look up, so no place label either
-	// — a bare $0, not "$0 (8th)".
+	// Outside the top 3: no payout field to look up, so nothing to explain
+	// — a bare $0 as plain text, not a button with an empty popover.
 	assert.deepEqual(row2024.children.map(fullText), ['2024', '-$100', '$0', '-$100']);
+	assert.equal(findAll(row2024.children[2], (c) => c.tag === 'button').length, 0, 'no breakdown, no button');
 	assert.ok(row2024.children[3].cls.includes('finances-negative'), 'an entry fee paid against nothing won is a real loss');
 	const row2025 = rowFor('2025');
-	// A real payout (1st, $500) names the finish behind it, in the Won cell.
-	assert.deepEqual(row2025.children.map(fullText), ['2025', '-$100', '$500 (1st)', '$400']);
+	// A real payout ($500, 1st) turns the Won cell into a button rather than
+	// spelling the reason out inline — the reason lives in the popover.
+	assert.deepEqual(row2025.children.map(fullText), ['2025', '-$100', '$500', '$400']);
+	const wonBtn2025 = findAll(row2025.children[2], (c) => c.tag === 'button')[0];
+	assert.equal(wonBtn2025.cls, 'finances-link');
+	assert.ok(!row2025.children[2].cls, 'the <td> itself carries no class — only its button does');
 	assert.ok(row2025.children[3].cls.includes('finances-positive'));
 	assert.ok(!row2025.children[3].cls.includes('finances-negative'));
 
-	// League A: both a 1st ($500) and a 2nd ($250) place finish, each
-	// labeled in its own year's Won cell.
+	// Clicking the button opens a popover naming the finish behind the
+	// amount; clicking again (the same toggle idiom .salary-link uses)
+	// closes it rather than opening a second one.
+	wonBtn2025.click();
+	const popover = domCtx.document.body.children.find((c) => c.cls.includes('finances-popover'));
+	assert.ok(popover, 'a shared popover instance is appended to <body>');
+	assert.ok(!popover.cls.includes('hidden'), 'visible after the first click');
+	assert.equal(fullText(findAll(popover, (c) => c.cls.includes('finances-popover-title'))[0]), '2025 — Won Breakdown');
+	const rows = findAll(popover, (c) => c.cls.includes('finances-popover-row'));
+	assert.equal(rows.length, 1);
+	assert.deepEqual(rows[0].children.map(fullText), ['1st', '$500']);
+	wonBtn2025.click();
+	assert.ok(popover.cls.includes('hidden'), 'a second click on the same button closes it again');
+
+	// League A: both a 1st ($500) and a 2nd ($250) place finish, each its
+	// own button — plain $ text only for a year with nothing to explain.
 	const tableA = tables[0];
 	const aRows = rowsOf(tableA);
 	const aRowFor = (year) => aRows.find((r) => fullText(r.children[0]) === year);
-	assert.equal(fullText(aRowFor('2024').children[2]), '$500 (1st)');
-	assert.equal(fullText(aRowFor('2025').children[2]), '$250 (2nd)');
+	assert.equal(fullText(aRowFor('2024').children[2]), '$500');
+	assert.ok(findAll(aRowFor('2024').children[2], (c) => c.tag === 'button').length, '2024 (1st) is a button');
+	assert.equal(fullText(aRowFor('2025').children[2]), '$250');
+	assert.ok(findAll(aRowFor('2025').children[2], (c) => c.tag === 'button').length, '2025 (2nd) is a button too');
 
 	// League C's single row: a real, known $0 payout against real dues is a
 	// real, known loss — flagged in the table the same way it is in the head.
-	// Rank 3 (top 3) but a configured $0 payout: no place label, since a $0
-	// payout has nothing worth explaining — not "$0 (3rd)".
+	// Rank 3 (top 3) but a configured $0 payout: no breakdown, since a $0
+	// payout has nothing worth explaining — plain "$0", not a button.
 	const tableC = tables[2];
 	const rowC = rowsOf(tableC)[1];
 	assert.deepEqual(rowC.children.map(fullText), ['2024', '-$200', '$0', '-$200']);
+	assert.equal(findAll(rowC.children[2], (c) => c.tag === 'button').length, 0);
 	assert.ok(rowC.children[3].cls.includes('finances-negative'));
 	assert.ok(!rowC.children[3].cls.includes('finances-positive'));
 
@@ -383,7 +436,7 @@ function fullText(node) {
 }
 
 // A placement payout and a weekly-high payout landing the same year both add
-// into Won, and both reasons are named in the cell, comma-joined, place first.
+// into Won, and the popover names both reasons, place first, each its own row.
 {
 	const leagues = [
 		{ id: 'A', name: 'League A', type: 'dynasty', franchiseId: '0001', dues: 50, payout1: 500, payoutWeeklyHigh: 25, results: [
@@ -395,8 +448,15 @@ function fullText(node) {
 	const card = domCtx.renderFinancesCard('dynasty', ['dynasty'], leagues);
 	const table = findAll(card, (c) => c.tag === 'table')[0];
 	const dataRow = findAll(table, (c) => c.tag === 'tr')[1];
-	assert.equal(fullText(dataRow.children[2]), '$525 (1st, Weekly High (Wk 6))',
-		'Won: $500 place + $25 weekly high, both contributing reasons named, place first');
+	assert.equal(fullText(dataRow.children[2]), '$525', 'Won: $500 place + $25 weekly high, summed');
+	const btn = findAll(dataRow.children[2], (c) => c.tag === 'button')[0];
+	btn.click();
+	const popover = domCtx.document.body.children.find((c) => c.cls.includes('finances-popover'));
+	const rows = findAll(popover, (c) => c.cls.includes('finances-popover-row'));
+	assert.deepEqual(rows.map((r) => r.children.map(fullText)), [
+		['1st', '$500'],
+		['Weekly High (Wk 6)', '$25'],
+	], 'both contributing reasons in the popover, place first');
 }
 
 // The live-synced leagueName wins over config's own static name, same as
