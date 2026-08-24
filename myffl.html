@@ -6380,25 +6380,27 @@
 		// and isn't asked for. Reuses league.results rather than a separate
 		// per-year money array, since Won is *defined* as a function of that
 		// year's Finish — there is nothing else for it to read.
+		//
+		// Unlike the rest of this page, an unentered dollar amount here reads
+		// as $0 rather than "unknown" — a finish outside the top 3 is a real,
+		// known $0 (every league is assumed top-3-only), and a league that
+		// simply hasn't entered dues/payouts yet is the common state right
+		// after this feature shipped, not a data gap worth a dash over. The
+		// Total column is what this is really for: it goes negative the
+		// moment a real entry fee is paid against a real or assumed-zero
+		// payout, which is the whole point of a Finances card.
 		const FINANCES_PAYOUT_FIELDS = { 1: 'payout1', 2: 'payout2', 3: 'payout3' };
 		function leagueFinancesSummary(league) {
 			const results = Array.isArray(league.results) ? league.results : [];
-			const dues = league.dues != null ? Number(league.dues) : null;
+			const dues = league.dues != null ? Number(league.dues) : 0;
 			const years = [...results]
 				.sort((a, b) => Number(b.year) - Number(a.year))
 				.map((r) => {
-					// A rank outside 1-3 never has a payout field to read, so it's
-					// unknown rather than $0 — same missing-vs-zero rule the
-					// ranking pool's team field and Top Available's `available`
-					// already use elsewhere on this page: a payout field left
-					// blank means "not entered yet," not "confirmed nothing."
 					const payoutField = FINANCES_PAYOUT_FIELDS[r.rank];
-					const won = payoutField && league[payoutField] != null ? Number(league[payoutField]) : null;
-					const total = dues != null && won != null ? won - dues : null;
-					return { year: r.year, dues, won, total };
+					const won = payoutField && league[payoutField] != null ? Number(league[payoutField]) : 0;
+					return { year: r.year, dues, won, total: won - dues };
 				});
-			const totaled = years.filter((y) => y.total != null);
-			const total = totaled.length ? totaled.reduce((sum, y) => sum + y.total, 0) : null;
+			const total = years.length ? years.reduce((sum, y) => sum + y.total, 0) : null;
 			return { league, years, total };
 		}
 
@@ -6409,8 +6411,8 @@
 			const summaries = inGroup.map(leagueFinancesSummary);
 			// Best net result first — highest total, the money equivalent of
 			// Results' lowest-average-finish-first. A league with nothing to
-			// total (no dues/payouts configured yet) sorts last rather than
-			// vanishing, same as a league with no backfilled history there.
+			// total (no backfilled Finish for any year yet) sorts last rather
+			// than vanishing, same as a league with no history on that card.
 			summaries.sort((a, b) => {
 				if (a.total == null && b.total == null) return 0;
 				if (a.total == null) return 1;
@@ -6445,14 +6447,14 @@
 				if (total != null) {
 					head.appendChild(el('span', {
 						class: `finances-total ${financesSignClass(total)}`.trim(),
-						title: `Net across ${years.filter((y) => y.total != null).length} year(s)`,
+						title: `Net across ${years.length} year(s)`,
 						text: formatMoney(total),
 					}));
 				}
 				card.appendChild(head);
 
 				if (years.length === 0) {
-					card.appendChild(el('div', { class: 'error-box', text: 'No financial data yet — dues and payouts haven\'t been set up for this league.' }));
+					card.appendChild(el('div', { class: 'error-box', text: 'No financial data yet — this league has no backfilled results to compute a Total from.' }));
 					continue;
 				}
 
@@ -6468,13 +6470,12 @@
 					const row = el('tr');
 					row.appendChild(el('td', { text: y.year }));
 					// Dues is stored as the positive entry fee; shown as the
-					// outflow it is.
-					row.appendChild(el('td', { text: y.dues != null ? formatMoney(-y.dues) : '—' }));
-					row.appendChild(el('td', { text: y.won != null ? formatMoney(y.won) : '—' }));
-					row.appendChild(el('td', {
-						class: financesSignClass(y.total),
-						text: y.total != null ? formatMoney(y.total) : '—',
-					}));
+					// outflow it is. Every cell here is a real number now —
+					// leagueFinancesSummary defaults an unentered dues/payout
+					// to $0 rather than leaving it unknown.
+					row.appendChild(el('td', { text: formatMoney(-y.dues) }));
+					row.appendChild(el('td', { text: formatMoney(y.won) }));
+					row.appendChild(el('td', { class: financesSignClass(y.total), text: formatMoney(y.total) }));
 					table.appendChild(row);
 				}
 

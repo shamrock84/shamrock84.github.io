@@ -5,17 +5,20 @@
 // The judgement calls pinned here: Won is computed from that year's own
 // Finish (league.results[].rank) against the three flat payout1/2/3 fields
 // (every league is assumed to pay exactly the top 3), never stored
-// separately; a payout of exactly $0 for a rank is distinct from that rank
-// having no payout field at all (unknown), and only the latter renders as a
-// dash; Total is null unless BOTH dues and won are known for that year,
-// never a partial sum; a league's own Total is the sum of its known yearly
-// totals, and the card-head's overall Total is the sum of every league's own
-// Total — sums, not averages, since money accumulates rather than blends;
-// leagues sort by best (highest) total first, with leagues carrying no
-// total at all sorting last, in their original relative order; a total is
-// visually flagged wherever it appears (header, league head, and the
-// per-year Total cell) — green for a gain, red for a loss, and neither
-// color for a total that's exactly $0 or not yet known; and a league with
+// separately; unlike most of this page, an unentered dollar amount here
+// (dues, or a rank's payout — whether because the rank is outside the top 3
+// or the field just hasn't been filled in) reads as $0 rather than
+// "unknown," so every Dues/Won/Total cell for a year with a backfilled
+// Finish is always a real number — no dashes; Total therefore goes negative
+// the moment dues outweigh whatever was won, which is the point of the
+// card; a league's own Total is the sum of its yearly totals, and the
+// card-head's overall Total is the sum of every league's own Total — sums,
+// not averages, since money accumulates rather than blends; leagues sort by
+// best (highest) total first, with a league that has no backfilled Finish
+// for any year at all (the one remaining case with no Total to show)
+// sorting last; a total is visually flagged wherever it appears (header,
+// league head, and the per-year Total cell) — green for a gain, red for a
+// loss, and neither color for a total that's exactly $0; and a league with
 // no results at all still gets a row (naming it and saying why), never
 // silently dropped.
 
@@ -110,8 +113,10 @@ function fullText(node) {
 // ---- leagueFinancesSummary ----------------------------------------------------
 
 {
-	// Dues and all three payouts configured: Won reads off that year's own
-	// rank against payout1/payout2/payout3.
+	// Dues and two of three payouts configured: Won reads off that year's
+	// own rank against payout1/payout2/payout3. A rank outside the top 3
+	// (2025, rank 5) is a real, known $0 — not unknown — given the top-3-
+	// only assumption, so it still contributes a real Total.
 	const league = {
 		name: 'A',
 		dues: 100,
@@ -120,7 +125,7 @@ function fullText(node) {
 		results: [
 			{ year: '2023', rank: 1, total: 10 },
 			{ year: '2024', rank: 2, total: 10 },
-			{ year: '2025', rank: 5, total: 10 }, // outside the top 3 — no payout field exists for it
+			{ year: '2025', rank: 5, total: 10 },
 		],
 	};
 	const summary = domCtx.leagueFinancesSummary(league);
@@ -131,15 +136,16 @@ function fullText(node) {
 	assert.equal(y2023.total, 400, '500 won - 100 dues');
 
 	const y2025 = summary.years.find((y) => y.year === '2025');
-	assert.equal(y2025.won, null, 'rank 5 has no payout field — every league is assumed top-3-only');
-	assert.equal(y2025.total, null, 'no total without a known Won');
+	assert.equal(y2025.won, 0, 'rank 5 has no payout field, so it defaults to a real $0 — not unknown');
+	assert.equal(y2025.total, -100, '0 won - 100 dues, a real loss');
 
-	assert.equal(summary.total, 400 + 150, '(500-100) + (250-100), the unresolved 2025 excluded entirely');
+	assert.equal(summary.total, 400 + 150 - 100, 'every year counts now, including the outside-the-money one');
 }
 
 {
-	// A payout of exactly $0 for a rank is a real, known answer — distinct
-	// from that rank's field being left blank entirely.
+	// An explicit $0 payout behaves identically to a rank with no payout
+	// field at all — this card no longer distinguishes "entered as zero"
+	// from "never entered."
 	const league = {
 		name: 'B',
 		dues: 50,
@@ -147,24 +153,36 @@ function fullText(node) {
 		results: [{ year: '2024', rank: 3, total: 10 }],
 	};
 	const summary = domCtx.leagueFinancesSummary(league);
-	assert.equal(summary.years[0].won, 0, 'a configured $0 payout is known, not missing');
+	assert.equal(summary.years[0].won, 0);
 	assert.equal(summary.years[0].total, -50, '0 won - 50 dues');
 }
 
 {
-	// Dues configured, payouts not (or vice versa): each cell stays
-	// independently null rather than the whole year vanishing.
+	// Dues configured, no payouts entered at all: Won defaults to $0 for
+	// every year rather than leaving Total blank — the Total column's whole
+	// job is to show the loss of a paid entry fee against nothing won.
 	const league = { name: 'C', dues: 100, results: [{ year: '2024', rank: 1, total: 10 }] };
 	const summary = domCtx.leagueFinancesSummary(league);
 	assert.equal(summary.years[0].dues, 100);
-	assert.equal(summary.years[0].won, null, 'no payout fields set at all');
-	assert.equal(summary.years[0].total, null);
-	assert.equal(summary.total, null, 'nothing to sum');
+	assert.equal(summary.years[0].won, 0, 'no payout fields set at all — defaults to $0, not unknown');
+	assert.equal(summary.years[0].total, -100);
+	assert.equal(summary.total, -100);
 }
 
 {
-	// No results at all — today's actual state for every real league.
-	const summary = domCtx.leagueFinancesSummary({ name: 'D' });
+	// Payouts configured, no dues entered: dues defaults to $0 too, so a
+	// real payout nets to a real gain rather than an unknown Total.
+	const league = { name: 'E', payout1: 300, results: [{ year: '2024', rank: 1, total: 10 }] };
+	const summary = domCtx.leagueFinancesSummary(league);
+	assert.equal(summary.years[0].dues, 0, 'no dues entered — defaults to $0, not unknown');
+	assert.equal(summary.years[0].won, 300);
+	assert.equal(summary.years[0].total, 300);
+}
+
+{
+	// No results at all — the one remaining case where nothing can be
+	// computed, since there's no Finish to look a payout up against.
+	const summary = domCtx.leagueFinancesSummary({ name: 'F' });
 	assert.deepEqual([...summary.years], []);
 	assert.equal(summary.total, null);
 }
@@ -173,15 +191,15 @@ function fullText(node) {
 
 {
 	const leagues = [
-		{ id: 'D', name: 'League D', type: 'dynasty' }, // no results, no config
+		{ id: 'D', name: 'League D', type: 'dynasty' }, // no results at all
 		{ id: 'A', name: 'League A', type: 'dynasty', dues: 100, payout1: 500, payout2: 250, results: [
 			{ year: '2024', rank: 1, total: 10 },
 			{ year: '2025', rank: 2, total: 10 },
 		] }, // total: 400 + 150 = 550
 		{ id: 'B', name: 'League B', type: 'salarycap', dues: 100, payout1: 500, results: [
-			{ year: '2024', rank: 8, total: 10 }, // outside the top 3 — no payout field for it
+			{ year: '2024', rank: 8, total: 10 }, // outside the top 3 — a real $0, not unknown
 			{ year: '2025', rank: 1, total: 10 },
-		] }, // total: null (2024 unresolved) + 400 = 400
+		] }, // total: -100 + 400 = 300
 		{ id: 'C', name: 'League C', type: 'salarycap', dues: 200, payout3: 0, results: [
 			{ year: '2024', rank: 3, total: 10 },
 		] }, // total: 0 - 200 = -200, a loss
@@ -192,12 +210,12 @@ function fullText(node) {
 
 	const labels = findAll(card, (c) => c.cls.includes('group-label')).map(fullText);
 	assert.deepEqual(labels, ['League A', 'League B', 'League C', 'League D'],
-		'best (highest) total first — A: 550, B: 400, C: -200 — then the league with no total at all');
+		'best (highest) total first — A: 550, B: 300, C: -200 — then the league with no total at all');
 
 	const cardHead = findAll(card, (c) => c.cls.includes('card-head'))[0];
 	assert.equal(fullText(findAll(cardHead, (c) => c.tag === 'h2')[0]), 'Finances');
 	const overall = findAll(cardHead, (c) => c.cls.includes('finances-total'))[0];
-	assert.equal(fullText(overall), 'Total $750', '550 + 400 + (-200) across the three leagues with a total');
+	assert.equal(fullText(overall), 'Total $650', '550 + 300 + (-200) across the three leagues with a total');
 	assert.ok(overall.cls.includes('finances-positive'), 'the overall figure itself is a gain');
 	assert.ok(!overall.cls.includes('finances-negative'));
 
@@ -213,14 +231,14 @@ function fullText(node) {
 	assert.ok(totalSpanOf('League C').cls.includes('finances-negative'), 'a loss is visually flagged');
 	assert.ok(!totalSpanOf('League C').cls.includes('finances-positive'));
 
-	// League D: no results, no config — a named message, not a silent drop.
+	// League D: no results at all — a named message, not a silent drop.
 	assert.equal(totalSpanOf('League D'), undefined, 'nothing to total, so no figure at all');
 	const errorBoxes = findAll(card, (c) => c.cls.includes('error-box'));
 	assert.equal(errorBoxes.length, 1);
 	assert.ok(fullText(errorBoxes[0]).includes('No financial data yet'));
 
-	// League B's table: the unresolved 2024 row shows dashes, not a
-	// fabricated partial total; 2025 shows real figures.
+	// League B's table: 2024 (outside the top 3) shows a real $0 Won and a
+	// real negative Total — never a dash — and 2025 shows the real payout.
 	const tables = findAll(card, (c) => c.tag === 'table');
 	const rowsOf = (table) => findAll(table, (c) => c.tag === 'tr');
 	const headerOf = (table) => rowsOf(table)[0];
@@ -230,7 +248,8 @@ function fullText(node) {
 	const bRows = rowsOf(tableB);
 	const rowFor = (year) => bRows.find((r) => fullText(r.children[0]) === year);
 	const row2024 = rowFor('2024');
-	assert.deepEqual(row2024.children.map(fullText), ['2024', '-$100', '—', '—']);
+	assert.deepEqual(row2024.children.map(fullText), ['2024', '-$100', '$0', '-$100']);
+	assert.ok(row2024.children[3].cls.includes('finances-negative'), 'an entry fee paid against nothing won is a real loss');
 	const row2025 = rowFor('2025');
 	assert.deepEqual(row2025.children.map(fullText), ['2025', '-$100', '$500', '$400']);
 	assert.ok(row2025.children[3].cls.includes('finances-positive'));
