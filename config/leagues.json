@@ -41,7 +41,7 @@
     { "id": "30196", "franchiseId": "0004", "name": "July Fantasy Football for Dummies", "type": "draftonly", "tags": ["Superflex"], "rulesUrl": "https://www45.myfantasyleague.com/2026/options?L=30196&O=09" },
     { "id": "26222", "franchiseId": "0003", "type": "draftonly", "tags": ["Superflex", "Terminator"], "rulesUrl": "https://www45.myfantasyleague.com/2026/options?L=26222&O=09" },
     { "id": "1367867592919760896", "franchiseId": "4", "name": "SFB16 Cloud Strife", "type": "redraft", "provider": "sleeper", "tags": ["Superflex", "SFB"], "lineupPilot": true, "rulesUrl": "https://scottfishbowl.com/rules2026.php" },
-    { "id": "1966972", "franchiseId": "10", "name": "ESPN League 2", "type": "redraft", "provider": "espn", "rulesUrl": "https://fantasy.espn.com/football/league/settings?leagueId=1966972" },
+    { "id": "1966972", "franchiseId": "10", "name": "ESPN League 2", "type": "redraft", "provider": "espn", "rulesUrl": "https://fantasy.espn.com/football/league/settings?leagueId=1966972", "dues": 50, "payout1": 200, "payout2": 150, "payout3": 100 },
     { "id": "421871710", "franchiseId": "5", "name": "ESPN League 1", "type": "redraft", "provider": "espn", "rulesUrl": "https://fantasy.espn.com/football/league/settings?leagueId=421871710" }
   ]
 }
