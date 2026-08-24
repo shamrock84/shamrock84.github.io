@@ -7,9 +7,12 @@
 // a `guessed` year's Finish cell is visually distinct so an estimate is
 // never presented as identical to a confirmed result; a league with no
 // results yet still gets a row (naming it and saying why), never silently
-// dropped; and leagues sort by best (lowest) average finish first, with
+// dropped; leagues sort by best (lowest) average finish first, with
 // leagues carrying no average at all sorting last, in their original
-// relative order (a stable sort, not an arbitrary one).
+// relative order (a stable sort, not an arbitrary one); and a top-3 Finish
+// names its place in parens (e.g. "2/10 (2nd)"), the same idiom the
+// Finances card's Won cell uses, muted on a confirmed finish but inheriting
+// the guessed row's red instead of its own color on an estimated one.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -159,6 +162,8 @@ function fullText(node) {
 	const aRows = rowsOf(tableA);
 	assert.equal(aRows.length, 4, 'header row plus 3 year rows only');
 	assert.deepEqual(aRows.slice(1, 4).map((r) => fullText(r.children[0])), ['2025', '2024', '2023']);
+	// 1st and 3rd both get a place label; 7th (outside the top 3) gets none.
+	assert.deepEqual(aRows.slice(1, 4).map((r) => fullText(r.children[1])), ['1/12 (1st)', '7/12', '3/12 (3rd)']);
 
 	// League B: the guessed year's Finish cell is flagged, the confirmed
 	// year's is not — this isn't a blanket style on the whole row or table.
@@ -166,8 +171,12 @@ function fullText(node) {
 	const finishCellOf = (year) => bRows.find((r) => fullText(r.children[0]) === year)?.children[1];
 	assert.ok(finishCellOf('2024').cls.includes('results-guessed'), 'the guessed 2024 finish is flagged');
 	assert.ok(!finishCellOf('2025').cls.includes('results-guessed'), 'the confirmed 2025 finish is not');
-	assert.equal(fullText(finishCellOf('2024')), '8/10');
-	assert.equal(fullText(finishCellOf('2025')), '2/10');
+	assert.equal(fullText(finishCellOf('2024')), '8/10', 'outside the top 3 — no place label, guessed or not');
+	// A confirmed top-3 finish (2nd here) names its place in parens, muted —
+	// same idiom as the Finances card's Won cell.
+	assert.equal(fullText(finishCellOf('2025')), '2/10 (2nd)');
+	const placeSpanOf = (year) => findAll(finishCellOf(year), (c) => c.cls.includes('results-place'))[0];
+	assert.ok(placeSpanOf('2025'), 'the confirmed finish gets its own muted place span');
 
 	// Leagues C and D: no table at all, an explanatory message instead —
 	// never silently dropped from the card.
@@ -180,6 +189,24 @@ function fullText(node) {
 	// A group with none of its types present renders no card at all, the
 	// same way every other Analytics/History card behaves.
 	assert.equal(domCtx.renderResultsCard('redraft', ['redraft'], leagues), null);
+}
+
+// A guessed top-3 finish still names its place, but the label carries no
+// muted color of its own — it inherits .results-guessed's red from the
+// parent cell, so the whole cell reads as one estimate rather than a
+// confirmed rank sitting next to an unsure label.
+{
+	const leagues = [{ id: 'H', name: 'League H', type: 'dynasty', results: [
+		{ year: '2025', rank: 1, total: 10, guessed: true },
+	] }];
+	const card = domCtx.renderResultsCard('dynasty', ['dynasty'], leagues);
+	const table = findAll(card, (c) => c.tag === 'table')[0];
+	const row = findAll(table, (c) => c.tag === 'tr')[1];
+	const finishCell = row.children[1];
+	assert.ok(finishCell.cls.includes('results-guessed'));
+	assert.equal(fullText(finishCell), '1/10 (1st)', 'the place is still named even though the finish is estimated');
+	assert.equal(findAll(finishCell, (c) => c.cls.includes('results-place')).length, 0,
+		'no separate muted class — the label inherits the cell\'s red instead');
 }
 
 // The live-synced leagueName wins over config's own static name, same as
