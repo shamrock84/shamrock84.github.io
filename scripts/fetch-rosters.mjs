@@ -489,10 +489,31 @@ export async function backfillLeagueHistory(leagues, previousById, cookie) {
 // A second, separate backfill pass from backfillLeagueHistory above, kept on
 // its own budget rather than sharing HISTORY_MFL_REQUEST_BUDGET: a season's
 // placement costs roughly 2 + (a few brackets) MFL requests, but its
-// weekly/season point totals need one request PER regular-season week —
-// there is no bulk endpoint — which is 13-18 requests for a typical season,
-// enough on its own to blow past HISTORY_MFL_PER_LEAGUE_BUDGET and starve
-// the placement backfill of its own leagues if the two shared a pool.
+// weekly/season point totals need one request PER week fetched — there is no
+// bulk endpoint — which is up to SEASON_HIGH_SCORE_WEEKS (17) requests for a
+// typical season, enough on its own to blow past HISTORY_MFL_PER_LEAGUE_BUDGET
+// and starve the placement backfill of its own leagues if the two shared a
+// pool.
+//
+// The window is a fixed weeks 1-17, not the league's own regular season
+// (`lastRegularSeasonWeek`, e.g. 14 for a 10-team league running a 4-week
+// playoff bracket) — confirmed live via probe-weekly-scores.yml that these
+// payouts are meant to cover the whole fantasy season a league actually
+// plays, brackets included, not just the H2H standings portion of it: a
+// last-place team eliminated week 1 of the playoffs can still have banked
+// the league's best single week or its highest 17-week total, and several
+// real leagues here run their bracket through week 17. Only week 18 is
+// excluded — by the time the NFL's regular season expanded to 18 weeks,
+// teams with nothing left to play for rest their starters, so a fantasy
+// week 18 is generally either unplayed or not worth scoring. This also
+// rules out leagueStandings' `pf` as a shortcut for the season-total number
+// (it was seriously considered — `pf` is already fetched for free during
+// placement backfill): probe-weekly-scores.yml showed `pf` running well
+// above even just the weeks-1-14 regular-season sum for every franchise in
+// a real league (e.g. one franchise: 1960.10 summed vs. 2424.00 on `pf`),
+// meaning it folds in playoff weeks with no fixed cutoff this feature could
+// rely on — so the season-total number is always summed from weeks fetched
+// here, never read off `pf`.
 //
 // Deliberately NOT wired into the regular 4-hourly sync's main() the way
 // backfillLeagueHistory is — that sync already brushes MFL's rate limit
@@ -510,13 +531,17 @@ export async function backfillLeagueHistory(leagues, previousById, cookie) {
 // guarantees this never runs against a season still in progress, which
 // would compute a "final" weekly high / season total that keeps changing
 // week to week.
+// Fixed, not derived from any one league's own regular-season/playoff split
+// — see this pass's own header comment for why. A season shorter than 17
+// weeks (rare; some older seasons) is capped by that season's own `endWeek`
+// instead, never padded out with weeks that were never played.
+const SEASON_HIGH_SCORE_WEEKS = 17;
 const SCORING_MFL_REQUEST_BUDGET = 40;
-// A season alone can cost close to this on its own (a typical
-// 13-18-week regular season), so — unlike HISTORY_MFL_PER_LEAGUE_BUDGET,
+// A season alone can cost close to this on its own (up to
+// SEASON_HIGH_SCORE_WEEKS requests), so — unlike HISTORY_MFL_PER_LEAGUE_BUDGET,
 // which mainly protects against one league's long tail of cheap bracket
-// years — this mostly just caps a short-regular-season league (8-10 weeks)
-// from filling the whole run with its own back catalog before any other
-// league gets a turn.
+// years — this mostly just caps one league's back catalog from filling the
+// whole run before any other league gets a turn.
 const SCORING_MFL_PER_LEAGUE_BUDGET = 20;
 
 // Pure and budget-agnostic: which of a league's already-resolved seasons
@@ -577,9 +602,14 @@ export async function backfillLeagueScoringRecords(leagues, previousById, cookie
       if (!yearLeagueId) continue; // a year results[] knows about but history.league[] doesn't — nothing to fetch against
 
       try {
-        const { lastRegularSeasonWeek, nameById } = await fetchMflSeasonMeta(yearLeagueId, cookie, year);
+        const { endWeek, nameById } = await fetchMflSeasonMeta(yearLeagueId, cookie, year);
         mflBudget--; leagueBudget--;
-        if (!Number.isFinite(lastRegularSeasonWeek) || lastRegularSeasonWeek < 1) continue;
+        // Fixed weeks 1-17, capped by the season's own endWeek for the rare
+        // season that never reached 17 — see this pass's header comment for
+        // why this is endWeek-capped rather than lastRegularSeasonWeek-scoped.
+        const weeksToFetch = Number.isFinite(endWeek) && endWeek > 0
+          ? Math.min(SEASON_HIGH_SCORE_WEEKS, endWeek)
+          : SEASON_HIGH_SCORE_WEEKS;
 
         // Every week has to succeed for this year to be recorded at all — a
         // season half-summed from surviving weeks would silently understate
@@ -589,7 +619,7 @@ export async function backfillLeagueScoringRecords(leagues, previousById, cookie
         // 429 during placement backfill.
         const weeklyScoresByWeek = new Map();
         let weeksOk = true;
-        for (let week = 1; week <= lastRegularSeasonWeek; week++) {
+        for (let week = 1; week <= weeksToFetch; week++) {
           if (mflBudget <= 0 || leagueBudget <= 0) { weeksOk = false; break; }
           try {
             const totals = await fetchMflWeekScores(yearLeagueId, cookie, year, week);
@@ -601,7 +631,7 @@ export async function backfillLeagueScoringRecords(leagues, previousById, cookie
             break;
           }
         }
-        if (!weeksOk || weeklyScoresByWeek.size !== lastRegularSeasonWeek) continue; // retry the whole year next run
+        if (!weeksOk || weeklyScoresByWeek.size !== weeksToFetch) continue; // retry the whole year next run
 
         const { weeklyHigh, seasonHigh } = computeSeasonScoringRecords(weeklyScoresByWeek, nameById);
         if (weeklyHigh || seasonHigh) {

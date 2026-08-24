@@ -1067,17 +1067,21 @@ export async function fetchEspnSeasonTeams(league, season) {
 // placement backfill above). MFL only — every league in this config that
 // pays out on a weekly/season high score is MFL.
 
-// A past season's regular-season length and that year's own franchise names
-// — needed because a league can change id across its history (see
+// A past season's final week and that year's own franchise names — needed
+// because a league can change id across its history (see
 // fetchMflLeagueHistory), so `yearLeagueId` must be that year's own id, not
-// the league's current one.
+// the league's current one. `endWeek`, not `lastRegularSeasonWeek`: the
+// weekly/season high-score payout runs through a league's own playoff
+// bracket, not just its regular season — see backfillLeagueScoringRecords's
+// own comment for why the fetch window is a fixed weeks-1-through-17, capped
+// by whichever of that or `endWeek` is smaller.
 export async function fetchMflSeasonMeta(yearLeagueId, cookie, year) {
   const data = await mflGet(`/export?TYPE=league&L=${yearLeagueId}&JSON=1`, cookie, year);
-  const lastRegularSeasonWeek = Number(data?.league?.lastRegularSeasonWeek);
+  const endWeek = Number(data?.league?.endWeek);
   const franchises = data?.league?.franchises?.franchise ?? [];
   const franchiseList = Array.isArray(franchises) ? franchises : [franchises];
   const nameById = new Map(franchiseList.map((f) => [f.id, f.name]));
-  return { lastRegularSeasonWeek, nameById };
+  return { endWeek, nameById };
 }
 
 // One week's per-franchise point total for a past season, from
