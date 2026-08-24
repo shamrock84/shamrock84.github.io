@@ -1264,12 +1264,12 @@
 		   the "guessed" flag) is never shown identically to a confirmed one.
 		   Same red as the rest of the page uses for "needs a look". */
 		.results-guessed { color: var(--ir-text); }
-		/* A confirmed top-3 finish, in parens next to the Finish cell — same
-		   muted, smaller-text treatment as .finances-place. A guessed finish's
-		   place gets no class here and inherits .results-guessed's red
-		   instead, so an estimate reads as one uncertain cell rather than a
-		   confirmed rank next to an unsure label. */
-		.results-place {
+		/* A real payout, in parens next to the Finish cell — same muted,
+		   smaller-text treatment as .power-size/.finances-place. A guessed
+		   finish's payout gets no class here and inherits .results-guessed's
+		   red instead, so an estimate reads as one uncertain cell rather than
+		   a confirmed rank next to an unsure amount. */
+		.results-payout {
 			color: var(--muted);
 			font-weight: 400;
 			font-size: 0.85em;
@@ -6316,10 +6316,13 @@
 		// History-specific sub-tab logic to write or maintain. Finances is
 		// still a placeholder — no design for it yet.
 
-		// Shared by the Results and Finances cards below — both name a
-		// top-3 finish in parens next to the Finish/Won cell it belongs to,
-		// and there's only one way to spell "1st".
-		const PLACE_LABELS = { 1: '1st', 2: '2nd', 3: '3rd' };
+		// Shared by the Results and Finances cards below — both look up a
+		// year's payout off the same three flat fields by that year's rank
+		// (every league is assumed to pay exactly the top 3). Finances uses
+		// it to compute Won/Total; Results uses it only to annotate a
+		// year's Finish with the dollar amount, never subtracting dues —
+		// that net-of-dues framing is Finances' job, not Results'.
+		const PAYOUT_FIELDS = { 1: 'payout1', 2: 'payout2', 3: 'payout3' };
 
 		// One league's results ready to render: its rows most-recent-first
 		// (the natural reading order for "how have I done"), and the mean of
@@ -6328,9 +6331,19 @@
 		// average. A league with no `results` yet (not backfilled, or
 		// genuinely has none) gets an empty years list and a null average
 		// rather than being skipped — the card still names it, saying so.
+		// Each year also carries `won` — the raw payout for that finish, $0
+		// when the rank fell outside the top 3 or the field's unentered —
+		// so the Finish cell can name the amount without restating the
+		// obvious "1st"/"2nd"/"3rd" the rank already shows.
 		function leagueResultsSummary(league) {
 			const results = Array.isArray(league.results) ? league.results : [];
-			const years = [...results].sort((a, b) => Number(b.year) - Number(a.year));
+			const years = [...results]
+				.sort((a, b) => Number(b.year) - Number(a.year))
+				.map((r) => {
+					const payoutField = PAYOUT_FIELDS[r.rank];
+					const won = payoutField && league[payoutField] != null ? Number(league[payoutField]) : 0;
+					return { ...r, won };
+				});
 			const ranked = years.filter((r) => Number.isFinite(r.rank));
 			const average = ranked.length ? ranked.reduce((sum, r) => sum + r.rank, 0) / ranked.length : null;
 			return { league, years, average };
@@ -6416,18 +6429,20 @@
 					// regular-season order — see computeMflSeasonPlacements) is
 					// never presented as identical to a confirmed result: red,
 					// same token the rest of the page uses for "needs a look".
-					const placeLabel = Number.isFinite(r.rank) ? PLACE_LABELS[r.rank] : null;
+					// A real payout is named in the cell too — the dollar amount,
+					// not the ordinal the rank already spells out ("1/10 ($300)",
+					// never the redundant "1/10 (1st)").
 					row.appendChild(el('td', {
 						class: r.guessed ? 'results-guessed' : '',
 						title: r.guessed ? 'Estimated — no bracket data settled this year\'s exact finish' : '',
 						text: Number.isFinite(r.rank) ? `${r.rank}/${r.total}` : '—',
-					}, placeLabel
-						// A guessed finish's place is exactly as uncertain as the
+					}, r.won > 0
+						// A guessed finish's payout is exactly as uncertain as the
 						// finish itself, so it inherits the cell's red rather than
 						// getting its own muted color — the whole cell should read
 						// as one estimate, not a confirmed rank next to an unsure
-						// label.
-						? [el('span', { class: r.guessed ? '' : 'results-place', text: ` (${placeLabel})` })]
+						// amount.
+						? [el('span', { class: r.guessed ? '' : 'results-payout', text: ` (${formatMoney(r.won)})` })]
 						: []));
 					table.appendChild(row);
 				}
@@ -6476,14 +6491,17 @@
 		// Total column is what this is really for: it goes negative the
 		// moment a real entry fee is paid against a real or assumed-zero
 		// payout, which is the whole point of a Finances card.
-		const FINANCES_PAYOUT_FIELDS = { 1: 'payout1', 2: 'payout2', 3: 'payout3' };
+		// Only ranks 1-3 ever have a payout field to begin with (PAYOUT_FIELDS
+		// above), so this never needs a general ordinal-suffix formula — it's
+		// the same three places, just spelled out for the Won cell's label.
+		const FINANCES_PLACE_LABELS = { 1: '1st', 2: '2nd', 3: '3rd' };
 		function leagueFinancesSummary(league) {
 			const results = Array.isArray(league.results) ? league.results : [];
 			const dues = league.dues != null ? Number(league.dues) : 0;
 			const years = [...results]
 				.sort((a, b) => Number(b.year) - Number(a.year))
 				.map((r) => {
-					const payoutField = FINANCES_PAYOUT_FIELDS[r.rank];
+					const payoutField = PAYOUT_FIELDS[r.rank];
 					const won = payoutField && league[payoutField] != null ? Number(league[payoutField]) : 0;
 					return { year: r.year, dues, won, rank: r.rank, total: won - dues };
 				});
@@ -6564,7 +6582,7 @@
 					// A real payout names why: the finish that earned it. Gated on
 					// the amount rather than the rank alone, since a league that
 					// pays $0 for 3rd has nothing worth explaining.
-					const placeLabel = y.won > 0 ? PLACE_LABELS[y.rank] : null;
+					const placeLabel = y.won > 0 ? FINANCES_PLACE_LABELS[y.rank] : null;
 					row.appendChild(el('td', { text: formatMoney(y.won) }, placeLabel
 						? [el('span', { class: 'finances-place', text: ` (${placeLabel})` })]
 						: []));
