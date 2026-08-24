@@ -584,6 +584,10 @@ async function main() {
         rulesUrl: league.rulesUrl || null,
         commishContact: league.commishContact || null,
         cutdownRosterSize: league.cutdownRosterSize || null,
+        dues: league.dues ?? null,
+        payout1: league.payout1 ?? null,
+        payout2: league.payout2 ?? null,
+        payout3: league.payout3 ?? null,
         leagueName: league.name,
         franchiseId: null,
         teamName: league.name,
@@ -607,6 +611,14 @@ async function main() {
       result.rulesUrl = league.rulesUrl || null;
       result.commishContact = league.commishContact || null;
       result.cutdownRosterSize = league.cutdownRosterSize || null;
+      // ?? rather than || — a real, deliberate $0 dues or payout must survive,
+      // not collapse into null the way an empty string legitimately would for
+      // the string fields above. See leagueFinancesSummary's own missing-vs-
+      // zero rule in myffl.html, which this is feeding.
+      result.dues = league.dues ?? null;
+      result.payout1 = league.payout1 ?? null;
+      result.payout2 = league.payout2 ?? null;
+      result.payout3 = league.payout3 ?? null;
       // Recorded per league because it's what the next sync reads to decide
       // whether this league has already rolled over — see resolveSeason.
       result.season = league.season;
@@ -625,6 +637,10 @@ async function main() {
         rulesUrl: league.rulesUrl || null,
         commishContact: league.commishContact || null,
         cutdownRosterSize: league.cutdownRosterSize || null,
+        dues: league.dues ?? null,
+        payout1: league.payout1 ?? null,
+        payout2: league.payout2 ?? null,
+        payout3: league.payout3 ?? null,
         leagueName: prev?.leagueName || league.name,
         franchiseId: league.franchiseId,
         teamName: prev?.teamName || league.name,
