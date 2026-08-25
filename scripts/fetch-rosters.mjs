@@ -57,7 +57,12 @@ import {
   rankingPoolKey,
   DEFAULT_POWER_SLOTS,
 } from './lib/fantasypros.mjs';
-import { computeMflSeasonPlacements, espnSeasonPlacement, computeSeasonScoringRecords } from './lib/history.mjs';
+import {
+  computeMflSeasonPlacements,
+  computeMflSeasonPlacementsByPoints,
+  espnSeasonPlacement,
+  computeSeasonScoringRecords,
+} from './lib/history.mjs';
 
 const USERNAME = process.env.MFL_USERNAME;
 const PASSWORD = process.env.MFL_PASSWORD;
@@ -296,6 +301,20 @@ const HISTORY_ESPN_REQUEST_BUDGET = 8;
 // league's own backfill speed — it still needs the same number of runs to
 // fully clear — it only stops it from starving every league behind it.
 const HISTORY_MFL_PER_LEAGUE_BUDGET = 8;
+// A draftonly-type league's placement isn't a bracket walk at all (see
+// computeMflSeasonPlacementsByPoints in scripts/lib/history.mjs) — it costs
+// one TYPE=league request plus one TYPE=weeklyResults request PER WEEK
+// through week 17, up to 18 requests for a single year, which
+// HISTORY_MFL_PER_LEAGUE_BUDGET (8) can never cover even once. Without a
+// bigger allowance a draftonly league would spend its whole per-league
+// budget fetching a handful of weeks, hit the wall, and (by the same
+// all-or-nothing discipline fetchMflSeasonBracketData's caller already
+// applies) discard that partial year and retry from week 1 next run —
+// forever, never completing a single season. Sized to comfortably cover one
+// season (18) with a little room to spare, not to cover a league's whole
+// back catalog in one run — same "several runs to fully backfill" shape
+// every other league here already has.
+const HISTORY_MFL_DRAFTONLY_PER_LEAGUE_BUDGET = 20;
 // MFL answers "how far back does this go" from its own history.league[]
 // field (see fetchMflLeagueHistory) — always exact, never a guess. ESPN has
 // no equivalent, so this is a cap on how far back it's ever walked, not a
@@ -431,7 +450,13 @@ export async function backfillLeagueHistory(leagues, previousById, cookie) {
 
     // MFL
     if (mflBudget <= 0 || mflRateLimited) continue;
-    let leagueMflBudget = perLeagueMflBudget;
+    // Draftonly leagues cost far more per year than a bracket walk does
+    // (see HISTORY_MFL_DRAFTONLY_PER_LEAGUE_BUDGET) — Math.max rather than a
+    // straight override so the existing single-league full-budget case
+    // (perLeagueMflBudget already 24 there) is never shrunk back down to 20.
+    let leagueMflBudget = league.type === 'draftonly'
+      ? Math.max(perLeagueMflBudget, HISTORY_MFL_DRAFTONLY_PER_LEAGUE_BUDGET)
+      : perLeagueMflBudget;
     let historyYears;
     try {
       historyYears = await fetchMflLeagueHistory(league, cookie, league.season);
@@ -446,23 +471,71 @@ export async function backfillLeagueHistory(leagues, previousById, cookie) {
     for (const { year, id } of missing) {
       if (mflBudget <= 0 || mflRateLimited || leagueMflBudget <= 0) break;
       try {
-        const { leagueFranchiseIds, regularSeasonOrder, brackets, bracketDataById } =
-          await fetchMflSeasonBracketData(id, cookie, year);
-        // Two calls up front (standings, the bracket listing) plus one per
-        // bracket actually fetched — an honest count of what this year just
-        // spent, so a deep-bracket league can't quietly blow the budget in
-        // one iteration.
-        const spent = 2 + bracketDataById.size;
-        mflBudget -= spent;
-        leagueMflBudget -= spent;
-        if (leagueFranchiseIds.length === 0) continue; // try again next sync
-        const placements = computeMflSeasonPlacements({
-          leagueFranchiseIds,
-          brackets,
-          bracketDataById,
-          regularSeasonOrder,
-        });
-        const mine = placements.find((p) => p.franchiseId === league.franchiseId);
+        let mine;
+        if (league.type === 'draftonly') {
+          // No bracket to walk at all — see computeMflSeasonPlacementsByPoints
+          // in scripts/lib/history.mjs. `nameById`'s keys are that season's
+          // own franchise ids, the same role fetchMflSeasonBracketData's
+          // leagueStandings read fills for the bracket path, at no extra
+          // request since fetchMflSeasonMeta already fetches TYPE=league for
+          // endWeek/nameById.
+          const { endWeek, nameById } = await fetchMflSeasonMeta(id, cookie, year);
+          mflBudget -= 1;
+          leagueMflBudget -= 1;
+          const leagueFranchiseIds = [...nameById.keys()];
+          if (leagueFranchiseIds.length === 0) continue; // try again next sync
+
+          // Through week 17, same cutoff and reasoning as the season-total
+          // high-score award (SEASON_HIGH_SCORE_WEEKS below) — capped by the
+          // season's own endWeek for the rare season that never reached it.
+          const weeksToFetch = Number.isFinite(endWeek) && endWeek > 0
+            ? Math.min(SEASON_HIGH_SCORE_WEEKS, endWeek)
+            : SEASON_HIGH_SCORE_WEEKS;
+
+          // Every week has to succeed for this year to be recorded — a
+          // placement computed from a partial set of weeks would misrank
+          // whoever it happened to miss, which is worse than retrying the
+          // whole year next run. Same all-or-nothing discipline
+          // backfillLeagueScoringRecords already applies to this identical
+          // per-week fetch.
+          const weeklyScoresByWeek = new Map();
+          let weeksOk = true;
+          for (let week = 1; week <= weeksToFetch; week++) {
+            if (mflBudget <= 0 || leagueMflBudget <= 0) { weeksOk = false; break; }
+            try {
+              const totals = await fetchMflWeekScores(id, cookie, year, week);
+              mflBudget--;
+              leagueMflBudget--;
+              weeklyScoresByWeek.set(week, totals);
+            } catch (err) {
+              if (err.status === 429) mflRateLimited = true;
+              weeksOk = false;
+              break;
+            }
+          }
+          if (!weeksOk || weeklyScoresByWeek.size !== weeksToFetch) continue; // retry the whole year next run
+
+          const placements = computeMflSeasonPlacementsByPoints(leagueFranchiseIds, weeklyScoresByWeek, weeksToFetch);
+          mine = placements.find((p) => p.franchiseId === league.franchiseId);
+        } else {
+          const { leagueFranchiseIds, regularSeasonOrder, brackets, bracketDataById } =
+            await fetchMflSeasonBracketData(id, cookie, year);
+          // Two calls up front (standings, the bracket listing) plus one per
+          // bracket actually fetched — an honest count of what this year just
+          // spent, so a deep-bracket league can't quietly blow the budget in
+          // one iteration.
+          const spent = 2 + bracketDataById.size;
+          mflBudget -= spent;
+          leagueMflBudget -= spent;
+          if (leagueFranchiseIds.length === 0) continue; // try again next sync
+          const placements = computeMflSeasonPlacements({
+            leagueFranchiseIds,
+            brackets,
+            bracketDataById,
+            regularSeasonOrder,
+          });
+          mine = placements.find((p) => p.franchiseId === league.franchiseId);
+        }
         if (mine && mine.rank != null) {
           // A retried year may already carry a guessed entry from a prior
           // run (see yearsNeedingHistoryBackfill) — replace it rather than
