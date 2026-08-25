@@ -1095,22 +1095,51 @@ export async function fetchMflSeasonMeta(yearLeagueId, cookie, year) {
 // whichever other total field the response may or may not also carry — the
 // same player-level status field fetchMflLineup already reads off this
 // identical endpoint for the live lineup pilot.
-export async function fetchMflWeekScores(yearLeagueId, cookie, year, week) {
-  const data = await mflGet(`/export?TYPE=weeklyResults&L=${yearLeagueId}&W=${week}&JSON=1`, cookie, year);
+//
+// A franchise with no active head-to-head game that week — a bye, an
+// eliminated team with no consolation game, anything past its bracket's own
+// final — does NOT appear inside weeklyResults.matchup at all. Confirmed
+// against real data via probe-weekly-scores.yml (league 26696, 2021, week
+// 15): that franchise instead appears as a flat entry directly under
+// weeklyResults.franchise, sibling to matchup rather than nested in it, and
+// it carries a completely real, valid score (its lineup still counts even
+// with nobody to play). Reading matchup alone silently drops that
+// franchise's week from computeSeasonScoringRecords entirely — invisible
+// even though the score is real, which is a live bug: that same week, the
+// true weekly-high winner (142.5) was one of the flat entries, while the
+// bugged computation crowned a matchup entry at 90.3. Both shapes can
+// appear in the same response at once (some franchises still have a live
+// game, others don't), so both are read and merged.
+export function parseMflWeekScores(data) {
+  const sumStarters = (f) => {
+    const players = Array.isArray(f.player) ? f.player : f.player ? [f.player] : [];
+    return players
+      .filter((p) => p.status === 'starter')
+      .reduce((sum, p) => sum + (Number(p.score) || 0), 0);
+  };
+
   const matchups = data?.weeklyResults?.matchup;
   const matchupList = Array.isArray(matchups) ? matchups : matchups ? [matchups] : [];
   const totals = [];
   for (const m of matchupList) {
     const franchises = Array.isArray(m.franchise) ? m.franchise : m.franchise ? [m.franchise] : [];
     for (const f of franchises) {
-      const players = Array.isArray(f.player) ? f.player : f.player ? [f.player] : [];
-      const points = players
-        .filter((p) => p.status === 'starter')
-        .reduce((sum, p) => sum + (Number(p.score) || 0), 0);
-      totals.push({ franchiseId: f.id, points });
+      totals.push({ franchiseId: f.id, points: sumStarters(f) });
     }
   }
+
+  const flat = data?.weeklyResults?.franchise;
+  const flatList = Array.isArray(flat) ? flat : flat ? [flat] : [];
+  for (const f of flatList) {
+    totals.push({ franchiseId: f.id, points: sumStarters(f) });
+  }
+
   return totals;
+}
+
+export async function fetchMflWeekScores(yearLeagueId, cookie, year, week) {
+  const data = await mflGet(`/export?TYPE=weeklyResults&L=${yearLeagueId}&W=${week}&JSON=1`, cookie, year);
+  return parseMflWeekScores(data);
 }
 
 // Fetches just the franchise-id -> name map for an MFL league (the part of

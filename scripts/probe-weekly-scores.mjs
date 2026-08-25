@@ -26,17 +26,24 @@
 // weekly-high win is most likely to land on — round-1 byes, consolation
 // games, and any week where not every franchise has a "real" matchup.
 //
-// Round 2 (this one) fetches the SAME fixed weeks-1-18 window
-// backfillLeagueScoringRecords does (capped by the season's own endWeek),
-// counts how many distinct franchises actually appear in each week's
-// matchup list against the league's real franchise count (a silent gap
-// there — a bye team simply missing from TYPE=weeklyResults — would mean
-// that team's real score for the week is invisible to computeSeasonScoringRecords
-// even though it's real and could be the actual weekly high), and then runs
-// the exact same computeSeasonScoringRecords function production calls, on
-// data fetched the exact same way (summed-starters), so its output can be
-// compared directly against a manual read of the real MFL site rather than
-// against another guess.
+// Round 2 fetched the SAME fixed weeks-1-18 window backfillLeagueScoringRecords
+// does and counted how many distinct franchises actually appeared in each
+// week against the league's real franchise count — and round 3 confirmed
+// exactly the gap round 2 worried about was real: MNMx's 2021 week 15 had
+// six of ten franchises missing from fetchMflWeekScores entirely. The raw
+// body (dumped below whenever a week comes up short) showed why —
+// weeklyResults.matchup only ever carries a franchise with an active
+// head-to-head game that week; a bye, an eliminated team, or anything past
+// its own bracket's final appears as a flat entry directly under
+// weeklyResults.franchise instead, sibling to matchup rather than nested in
+// it, still carrying a completely real score. fetchMflWeekScores only ever
+// read matchup, so that franchise's week vanished — and that week, one of
+// the missing flat entries (142.5) was the actual weekly high, silently
+// replaced by a matchup entry at 90.3. Fixed in parseMflWeekScores, pinned
+// with this exact fixture in scripts/test-weekly-scores.mjs. The
+// missing-franchise check below still runs on every future probe as a
+// regression guard — a week that comes up short again after this fix is
+// worth investigating as a third shape, not assumed away.
 //
 // Read-only. Run from the Actions tab (probe-weekly-scores.yml).
 import { mflLogin, mflGet, fetchMflWeekScores, fetchMflSeasonMeta } from './lib/providers.mjs';
