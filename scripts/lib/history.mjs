@@ -398,3 +398,33 @@ export function espnSeasonPlacement(team, totalTeams) {
   if (!Number.isFinite(rank) || rank < 1) return null;
   return { rank, total: totalTeams, guessed: false };
 }
+
+// ---- "Division Winner" payout: best regular-season record -----------------
+// A second payout some leagues pay independent of final placement — for the
+// team with the best record BEFORE the playoffs, not after. This is exactly
+// the fact computeMflSeasonPlacements' own regularSeasonOrder/playoffSeed
+// inputs already carry and exists to NOT use for final placement (the whole
+// point of that function is that regular-season order and the eventual
+// bracket winner can differ), so it's read straight off them here rather
+// than recomputed — no extra request either way.
+
+// MFL's TYPE=leagueStandings rows arrive pre-sorted by MFL's own
+// tiebreakers (see fetchStandings/fetchMflSeasonBracketData in
+// providers.mjs), so the first id in regularSeasonOrder IS the best
+// regular-season record, full stop.
+export function mflDivisionWinner(regularSeasonOrder) {
+  return (regularSeasonOrder && regularSeasonOrder[0]) || null;
+}
+
+// ESPN's own playoffSeed already encodes each team's regular-season rank
+// entering the postseason — confirmed real via probe-league-history.yml
+// (scripts/probe-league-history.mjs), though unused there since it isn't
+// what decides final placement (rankCalculatedFinal is independent of it: a
+// 9th seed finished 2nd in the probed data). Seed 1 is exactly the
+// best-regular-season-record team this payout is for. Rides the same
+// view=mTeam&view=mStandings response fetchEspnSeasonTeams already fetches
+// for rankCalculatedFinal — no new request.
+export function espnDivisionWinner(teams) {
+  const winner = (teams || []).find((t) => Number(t?.playoffSeed) === 1);
+  return winner ? String(winner.id) : null;
+}

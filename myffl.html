@@ -6619,6 +6619,22 @@
 					const placeWon = payoutField && league[payoutField] != null ? Number(league[payoutField]) : 0;
 					if (placeWon > 0) breakdown.push({ label: FINANCES_PLACE_LABELS[r.rank], amount: placeWon });
 
+					// Division Winner — best REGULAR-SEASON record, not the
+					// eventual bracket winner (see computeMflSeasonPlacements'
+					// own header for why those two routinely differ). Reads
+					// r.divisionWinnerFranchiseId, stamped alongside rank by
+					// the same placement backfill pass at no extra request
+					// (mflDivisionWinner/espnDivisionWinner in
+					// scripts/lib/history.mjs) — absent on a year backfilled
+					// before this shipped, or a draftonly league (ranked by
+					// total points, no head-to-head standings to read a
+					// "best record" off), which reads exactly like "didn't
+					// win it", same as an absent `scoring` already does for
+					// the weekly/season-high payouts below.
+					const wonDivision = r.divisionWinnerFranchiseId === league.franchiseId
+						&& league.payoutDivisionWinner != null ? Number(league.payoutDivisionWinner) : 0;
+					if (wonDivision > 0) breakdown.push({ label: 'Division Winner', amount: wonDivision });
+
 					const myWeeklyHighs = (r.scoring?.weeklyHighs || []).filter((w) => w.franchiseId === league.franchiseId);
 					if (myWeeklyHighs.length && league.payoutWeeklyHigh != null) {
 						const amount = Number(league.payoutWeeklyHigh);
@@ -7489,6 +7505,14 @@
 					field('1st place ($)', adminText(league.payout1, 'e.g. 500', (v) => { league.payout1 = v || undefined; }));
 					field('2nd place ($)', adminText(league.payout2, 'e.g. 250', (v) => { league.payout2 = v || undefined; }));
 					field('3rd place ($)', adminText(league.payout3, 'e.g. 100', (v) => { league.payout3 = v || undefined; }));
+					// Independent of final placement — the best REGULAR-SEASON
+					// record, not the eventual bracket winner (a team can enter
+					// the playoffs as the top seed and still lose the final).
+					// Populated on the Finances card by the same placement
+					// backfill that fills Finish, once it's run for a given
+					// year (see config/leagues.json's _readme); blank pays
+					// nothing, same as an unentered placement payout.
+					field('Division winner ($)', adminText(league.payoutDivisionWinner, 'e.g. 50', (v) => { league.payoutDivisionWinner = v || undefined; }));
 					// Independent of placement — a last-place team can still have had
 					// the league's best week. Populated on the Finances card only once
 					// the separate weekly-high-score backfill has run for a given year
