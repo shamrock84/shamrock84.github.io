@@ -152,7 +152,7 @@ function fullText(node) {
 	// by league type the way every other tab does.
 	const leagues = [
 		{ id: 'C', name: 'League C', type: 'dynasty' }, // no results at all
-		{ id: 'A', name: 'League A', type: 'dynasty', results: [
+		{ id: 'A', name: 'League A', type: 'dynasty', provider: 'espn', results: [
 			{ year: '2023', rank: 3, total: 12, guessed: false },
 			{ year: '2024', rank: 7, total: 12, guessed: false },
 			{ year: '2025', rank: 1, total: 12, guessed: false },
@@ -188,6 +188,18 @@ function fullText(node) {
 	const detailsEls = findAll(card, (c) => c.tag === 'details');
 	assert.equal(detailsEls.length, 2, 'one <details> per league that has results');
 	assert.ok(detailsEls.every((d) => d.attrs.open === undefined), 'hidden by default, not pre-expanded');
+
+	// Each league name carries exactly two badges underneath it — provider
+	// and type, the same two-badge subset historyBadgesNode builds for both
+	// History cards — never the full Rosters-card strip (season, tags).
+	const nameCols = findAll(card, (c) => c.cls.includes('results-league-name'));
+	assert.equal(nameCols.length, 2, 'one per shown league');
+	const badgeTextsOf = (nameCol) => findAll(nameCol, (c) => c.cls.split(/\s+/).includes('badge')).map(fullText);
+	assert.deepEqual(badgeTextsOf(nameCols[0]), ['ESPN', 'Dynasty'], 'League A: its own provider, then its type');
+	assert.deepEqual(badgeTextsOf(nameCols[1]), ['MFL', 'Salary Cap'], 'League B: provider defaults to MFL when unset');
+	const providerBadge = findAll(nameCols[0], (c) => c.cls.includes('badge-provider'))[0];
+	assert.ok(providerBadge, 'the provider badge carries the gold badge-provider class, same as on the Rosters cards');
+	assert.equal(fullText(providerBadge), 'ESPN');
 
 	// League A's table: rows most-recent-first, no average row mixed in.
 	const tables = findAll(card, (c) => c.tag === 'table');

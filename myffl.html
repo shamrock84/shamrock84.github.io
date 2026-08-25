@@ -388,6 +388,14 @@
 		.badges.badges-wrap {
 			max-width: 12.5rem;
 		}
+		/* History tab (Results/Finances): the two-badge strip sits under the
+		   league name, not beside a title — .badges' own right-alignment and
+		   flex-shrink:0 are for the opposite layout (badges hugging the right
+		   edge next to a card-head h2), so both are undone here. */
+		.history-badges {
+			justify-content: flex-start;
+			flex-shrink: 1;
+		}
 		.badge {
 			display: inline-block;
 			background: var(--chip-bg);
@@ -1276,6 +1284,16 @@
 		}
 		.results-league-head .group-label { margin: 0; }
 		.results-league-head:first-of-type { margin-top: 0; }
+		/* Name and its two-badge strip (provider, type — see
+		   historyBadgesNode) stack as a column so the badges sit directly
+		   under the name rather than crowding the average finish over on
+		   the right. */
+		.results-league-name {
+			display: flex;
+			flex-direction: column;
+			gap: 0.25rem;
+			min-width: 0;
+		}
 		.results-avg {
 			font-weight: 700;
 			font-size: 0.85rem;
@@ -1314,6 +1332,14 @@
 		}
 		.finances-league-head .group-label { margin: 0; }
 		.finances-league-head:first-of-type { margin-top: 0; }
+		/* Same stacked name/badges shape as .results-league-name — see that
+		   comment. */
+		.finances-league-name {
+			display: flex;
+			flex-direction: column;
+			gap: 0.25rem;
+			min-width: 0;
+		}
 		.finances-total {
 			font-weight: 700;
 			font-size: 0.85rem;
@@ -3399,6 +3425,22 @@
 		// legitimately be a season behind the rest — and a stale roster renders
 		// exactly like a fresh one. Stating it outright on every card is what
 		// makes the odd one out obvious without having to know to look.
+		// History tab (Results/Finances): a two-badge subset of the Rosters
+		// cards' strip — provider and type only, never season or tags. Those
+		// two are what's relevant to reading a past finish or payout (who
+		// hosted the league, what kind of league it was); season is a
+		// current-snapshot concept, tags are already implied by these cards'
+		// own combined-across-types layout. Placed under the league name
+		// rather than beside it the way buildCardHead does, because these
+		// cards' name sits beside a headline number of its own (Avg Finish /
+		// Total) with no room to its right for a badge strip too.
+		function historyBadgesNode(league) {
+			const badgesEl = el('div', { class: 'badges history-badges' });
+			badgesEl.appendChild(el('span', { class: 'badge badge-provider', text: providerBadgeLabel(league) }));
+			badgesEl.appendChild(el('span', { class: 'badge', text: LEAGUE_TYPE_LABELS[league.type] || league.type || '?' }));
+			return badgesEl;
+		}
+
 		function seasonBadgeLabel(league) {
 			const season = league.season ?? pageData?.year;
 			return season == null ? null : String(season);
@@ -6442,7 +6484,10 @@
 				// that needs to survive a full renderGrid() re-render the
 				// way the Admin card's open/closed leagues do.
 				const head = el('div', { class: 'results-league-head' });
-				head.appendChild(el('span', { class: 'group-label' }, [leagueNameNode(leagueDisplayName(league), league.url)]));
+				head.appendChild(el('div', { class: 'results-league-name' }, [
+					el('span', { class: 'group-label' }, [leagueNameNode(leagueDisplayName(league), league.url)]),
+					historyBadgesNode(league),
+				]));
 				if (average != null) {
 					head.appendChild(el('span', {
 						class: 'results-avg',
@@ -6679,7 +6724,10 @@
 				// headline number right, year-by-year detail collapsed under a
 				// <details> below it.
 				const head = el('div', { class: 'finances-league-head' });
-				head.appendChild(el('span', { class: 'group-label' }, [leagueNameNode(leagueDisplayName(league), league.url)]));
+				head.appendChild(el('div', { class: 'finances-league-name' }, [
+					el('span', { class: 'group-label' }, [leagueNameNode(leagueDisplayName(league), league.url)]),
+					historyBadgesNode(league),
+				]));
 				head.appendChild(el('span', {
 					class: `finances-total ${financesSignClass(total)}`.trim(),
 					title: `Net across ${years.length} year(s)`,

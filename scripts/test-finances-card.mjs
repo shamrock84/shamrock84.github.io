@@ -337,7 +337,7 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	// type the way every other tab does.
 	const leagues = [
 		{ id: 'D', name: 'League D', type: 'draftonly' }, // no results at all
-		{ id: 'A', name: 'League A', type: 'dynasty', dues: 100, payout1: 500, payout2: 250, results: [
+		{ id: 'A', name: 'League A', type: 'dynasty', provider: 'sleeper', dues: 100, payout1: 500, payout2: 250, results: [
 			{ year: '2024', rank: 1, total: 10 },
 			{ year: '2025', rank: 2, total: 10 },
 		] }, // total: 400 + 150 = 550
@@ -375,6 +375,17 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	assert.equal(fullText(totalSpanOf('League C')), '-$200');
 	assert.ok(totalSpanOf('League C').cls.includes('finances-negative'), 'a loss is visually flagged');
 	assert.ok(!totalSpanOf('League C').cls.includes('finances-positive'));
+
+	// Each league name carries exactly two badges underneath it — provider
+	// and type, the same two-badge subset historyBadgesNode builds for both
+	// History cards — never the full Rosters-card strip (season, tags).
+	const nameColFor = (name) => findAll(headFor(name), (c) => c.cls.includes('finances-league-name'))[0];
+	const badgeTextsOf = (nameCol) => findAll(nameCol, (c) => c.cls.split(/\s+/).includes('badge')).map(fullText);
+	assert.deepEqual(badgeTextsOf(nameColFor('League A')), ['Sleeper', 'Dynasty'], 'League A: its own provider, then its type');
+	assert.deepEqual(badgeTextsOf(nameColFor('League B')), ['MFL', 'Salary Cap'], 'League B: provider defaults to MFL when unset');
+	const providerBadge = findAll(nameColFor('League A'), (c) => c.cls.includes('badge-provider'))[0];
+	assert.ok(providerBadge, 'the provider badge carries the gold badge-provider class, same as on the Rosters cards');
+	assert.equal(fullText(providerBadge), 'Sleeper');
 
 	// League D: no backfilled years — excluded from the card entirely, no
 	// error-box row standing in for it.
