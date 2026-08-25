@@ -17,6 +17,7 @@ import {
   isConsolationBracket,
   franchisesInBracket,
   computeMflSeasonPlacements,
+  computeMflSeasonPlacementsByPoints,
   espnSeasonPlacement,
 } from './lib/history.mjs';
 import { yearsNeedingHistoryBackfill } from './fetch-rosters.mjs';
@@ -497,6 +498,79 @@ const mnmx2006Losers = {
   assert.equal(espnSeasonPlacement({ rankCalculatedFinal: 0 }, 10), null, 'zero is not a real rank');
   assert.equal(espnSeasonPlacement({ rankCalculatedFinal: null }, 10), null);
   assert.equal(espnSeasonPlacement({}, 10), null, 'missing entirely — an old snapshot, or a season ESPN never resolved');
+}
+
+// ---- computeMflSeasonPlacementsByPoints ------------------------------------
+// Draftonly leagues run no playoff bracket at all — placement is decided by
+// total points through week 17, not a bracket walk.
+
+{
+  const leagueFranchiseIds = ['A', 'B', 'C'];
+  const weeklyScoresByWeek = new Map([
+    [1, [{ franchiseId: 'A', points: 100 }, { franchiseId: 'B', points: 90 }, { franchiseId: 'C', points: 80 }]],
+    [2, [{ franchiseId: 'A', points: 50 }, { franchiseId: 'B', points: 95 }, { franchiseId: 'C', points: 200 }]],
+  ]);
+  // A: 150, B: 185, C: 280 — ranked purely by the sum, nothing bracket-shaped.
+  const result = computeMflSeasonPlacementsByPoints(leagueFranchiseIds, weeklyScoresByWeek);
+  const byId = Object.fromEntries(result.map((r) => [r.franchiseId, r]));
+  assert.equal(byId['C'].rank, 1);
+  assert.equal(byId['B'].rank, 2);
+  assert.equal(byId['A'].rank, 3);
+  assert.ok(result.every((r) => r.guessed === false), 'a hard sum over real data is never a guess, unlike the bracket path');
+  assert.ok(result.every((r) => r.total === 3));
+}
+
+{
+  // seasonWeekLimit excludes anything past it — week 3 here would flip the
+  // ranking if counted, so this pins that it genuinely isn't.
+  const leagueFranchiseIds = ['A', 'B'];
+  const weeklyScoresByWeek = new Map([
+    [1, [{ franchiseId: 'A', points: 100 }, { franchiseId: 'B', points: 90 }]],
+    [2, [{ franchiseId: 'A', points: 100 }, { franchiseId: 'B', points: 90 }]],
+    [3, [{ franchiseId: 'A', points: 0 }, { franchiseId: 'B', points: 500 }]],
+  ]);
+  const result = computeMflSeasonPlacementsByPoints(leagueFranchiseIds, weeklyScoresByWeek, 2);
+  const byId = Object.fromEntries(result.map((r) => [r.franchiseId, r]));
+  assert.equal(byId['A'].rank, 1, 'A leads 200-180 through week 2 — week 3 must not count');
+  assert.equal(byId['B'].rank, 2);
+}
+
+{
+  // A franchise absent from every fetched week (a genuine possibility the
+  // weekly-results shapes elsewhere in this file already have to handle)
+  // still gets ranked, at a real 0 rather than vanishing from the list.
+  const leagueFranchiseIds = ['A', 'B', 'C'];
+  const weeklyScoresByWeek = new Map([
+    [1, [{ franchiseId: 'A', points: 100 }, { franchiseId: 'B', points: 50 }]],
+  ]);
+  const result = computeMflSeasonPlacementsByPoints(leagueFranchiseIds, weeklyScoresByWeek);
+  const byId = Object.fromEntries(result.map((r) => [r.franchiseId, r]));
+  assert.equal(byId['A'].rank, 1);
+  assert.equal(byId['B'].rank, 2);
+  assert.equal(byId['C'].rank, 3, 'never fetched a single point, but still ranked last rather than dropped');
+}
+
+{
+  // A tie keeps whichever franchise appears first in leagueFranchiseIds —
+  // same deterministic-but-arbitrary convention as pickMainBracket and
+  // computeSeasonScoringRecords.
+  const leagueFranchiseIds = ['B', 'A'];
+  const weeklyScoresByWeek = new Map([
+    [1, [{ franchiseId: 'A', points: 100 }, { franchiseId: 'B', points: 100 }]],
+  ]);
+  const result = computeMflSeasonPlacementsByPoints(leagueFranchiseIds, weeklyScoresByWeek);
+  const byId = Object.fromEntries(result.map((r) => [r.franchiseId, r]));
+  assert.equal(byId['B'].rank, 1, 'tied at 100 — B listed first in leagueFranchiseIds wins the tie');
+  assert.equal(byId['A'].rank, 2);
+}
+
+{
+  // No weeks at all — every franchise ties at 0 and falls back to
+  // leagueFranchiseIds order, same as any other tie.
+  const result = computeMflSeasonPlacementsByPoints(['A', 'B'], new Map());
+  const byId = Object.fromEntries(result.map((r) => [r.franchiseId, r]));
+  assert.equal(byId['A'].rank, 1);
+  assert.equal(byId['B'].rank, 2);
 }
 
 // ---- yearsNeedingHistoryBackfill --------------------------------------------

@@ -344,6 +344,50 @@ export function computeSeasonScoringRecords(weeklyScoresByWeek, nameById, season
   return { weeklyHighs: weeklyHighs.map(withName), seasonHigh: withName(seasonHigh) };
 }
 
+// Draft-only leagues run no playoff bracket at all — final placement is
+// decided by total points scored through week 17, not a bracket
+// (confirmed directly by the user after every draftonly league in this
+// config's config/leagues.json backfilled as an unbroken string of
+// `guessed: true` years: computeMflSeasonPlacements above found no bracket
+// to walk for any of them, so every single year fell through to its
+// regular-season-order fallback). This is the alternate deriver for that
+// case: rank every franchise by the same weekly point totals
+// computeSeasonScoringRecords above already sums for the season-high
+// award — `weeklyScoresByWeek` and `seasonWeekLimit` are the identical
+// shape and cutoff (17) so a caller fetching one season's weeks can feed
+// the same data to both functions. Unlike computeMflSeasonPlacements,
+// nothing here is ever a guess: every rank is a hard sum over real
+// fetched data, never a regular-season-order fallback, so `guessed` is
+// always false. `leagueFranchiseIds` is passed in (rather than derived
+// from the score data itself) so a franchise that scored zero across
+// every fetched week — a bye week's worth of nothing is still a real
+// score, but a franchise absent from every week's response would
+// otherwise silently vanish from the ranking — still gets a rank. A tie
+// keeps whichever franchise appears first in `leagueFranchiseIds` — same
+// deterministic-but-arbitrary convention pickMainBracket and
+// computeSeasonScoringRecords above both already use.
+export function computeMflSeasonPlacementsByPoints(leagueFranchiseIds, weeklyScoresByWeek, seasonWeekLimit = Infinity) {
+  const totals = new Map(leagueFranchiseIds.map((id) => [id, 0]));
+  for (const [week, rows] of weeklyScoresByWeek.entries()) {
+    if (Number(week) > seasonWeekLimit) continue;
+    for (const { franchiseId, points } of rows) {
+      if (!totals.has(franchiseId)) continue; // not a franchise in this league's own list
+      totals.set(franchiseId, totals.get(franchiseId) + points);
+    }
+  }
+  const n = leagueFranchiseIds.length;
+  const ranked = leagueFranchiseIds
+    .map((id, i) => ({ id, points: totals.get(id), i }))
+    .sort((a, b) => b.points - a.points || a.i - b.i);
+  const rankById = new Map(ranked.map((r, i) => [r.id, i + 1]));
+  return leagueFranchiseIds.map((id) => ({
+    franchiseId: id,
+    rank: rankById.get(id) ?? null,
+    total: n,
+    guessed: false,
+  }));
+}
+
 // ESPN's own computed final standing — confirmed against real data as a
 // clean 1..N permutation across every team, independent of playoffSeed (a
 // team can enter the playoffs 9th-seeded and finish 2nd overall). Never a
