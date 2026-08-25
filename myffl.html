@@ -442,6 +442,14 @@
 			.badges.badges-wrap {
 				max-width: 6.5rem;
 			}
+			/* .history-badges is a .badges too, but it isn't competing with a
+			   title for width — it sits on its own row under the league name
+			   (see the rule above) with the full card width to itself, so
+			   the same 6.5rem cap that protects a title here just wraps
+			   "ESPN"/"REDRAFT" onto two lines for no reason. */
+			.history-badges {
+				max-width: none;
+			}
 		}
 		.card .team {
 			color: var(--muted);
