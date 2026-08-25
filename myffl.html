@@ -6331,15 +6331,21 @@
 		}
 
 		// ---- History tab ---------------------------------------------------
-		// Results and Finances are wired into the tab/sub-tab machinery the
-		// same way every other tab is, gated behind login the same way
-		// Analytics is (both read as strategy: dues owed, payouts, past
-		// finishes). data-view: 'history' plus data-league-type: groupKey is
-		// the whole mechanism: renderSubTabs derives the sub-tab strip from
-		// whatever data-league-type values are actually present on the cards
-		// under the current view, so History gets the same Dynasty/Salary
-		// Cap, Redraft, Draft Only split as every other tab for free, with no
-		// History-specific sub-tab logic to write or maintain. Finances is
+		// Results and Finances are gated behind login the same way Analytics
+		// is (both read as strategy: dues owed, payouts, past finishes), but
+		// unlike every other tab they don't split by league type — one
+		// Results card and one Finances card, spanning every league at
+		// once, no data-league-type on either and no sub-tab strip. A
+		// dynasty league's finish and a draft-only league's finish are the
+		// same kind of fact (where did this roster place that year), so
+		// splitting by type here would just be more clicks to see the same
+		// leagues the Rosters tab already keeps together within a type for a
+		// different reason — there, a dynasty roster and a draft-only one
+		// aren't comparable at all. Both cards also only ever show a league
+		// that has at least one backfilled year — a league still waiting on
+		// its first backfill doesn't get a row promising one is coming, it
+		// simply isn't listed yet, the same way an absent card elsewhere on
+		// this page means "nothing here" rather than "not yet". Finances is
 		// still a placeholder — no design for it yet.
 
 		// Shared by the Results and Finances cards below — both look up a
@@ -6383,11 +6389,14 @@
 			return { league, years, average };
 		}
 
-		function renderResultsCard(groupKey, types, leagues) {
-			const inGroup = (leagues || []).filter((l) => types.includes(l.type));
-			if (inGroup.length === 0) return null;
+		function renderResultsCard(leagues) {
+			// Only a league with at least one backfilled year gets a row —
+			// see the History tab comment above for why the alternative (a
+			// row saying "still gathering data") is gone rather than kept
+			// per-league.
+			const summaries = (leagues || []).map(leagueResultsSummary).filter((s) => s.years.length > 0);
+			if (summaries.length === 0) return null;
 
-			const summaries = inGroup.map(leagueResultsSummary);
 			// Best average finish first — a lower mean rank is a better finish,
 			// same convention every other ranked card on this page uses. A
 			// league with nothing to average sorts last rather than vanishing.
@@ -6410,7 +6419,7 @@
 				? leaguesWithAverage.reduce((sum, s) => sum + s.average, 0) / leaguesWithAverage.length
 				: null;
 
-			const card = el('div', { class: 'card', 'data-view': 'history', 'data-league-type': groupKey });
+			const card = el('div', { class: 'card', 'data-view': 'history' });
 			const cardHead = el('div', { class: 'card-head' });
 			cardHead.appendChild(el('h2', { text: 'Results' }));
 			if (overallAverage != null) {
@@ -6421,7 +6430,7 @@
 				}));
 			}
 			card.appendChild(cardHead);
-			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(inGroup.length)}` }));
+			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(summaries.length)}` }));
 
 			for (const { league, years, average } of summaries) {
 				// The average used to sit as a footer row inside the yearly
@@ -6442,11 +6451,6 @@
 					}));
 				}
 				card.appendChild(head);
-
-				if (years.length === 0) {
-					card.appendChild(el('div', { class: 'error-box', text: 'No results yet — historical data is still being gathered.' }));
-					continue;
-				}
 
 				const details = el('details', { class: 'results-details' });
 				details.appendChild(el('summary', { class: 'results-summary', text: `Yearly breakdown (${years.length})` }));
@@ -6644,39 +6648,31 @@
 			openFinancesPopover(button, year, breakdown);
 		}
 
-		function renderFinancesCard(groupKey, types, leagues) {
-			const inGroup = (leagues || []).filter((l) => types.includes(l.type));
-			if (inGroup.length === 0) return null;
+		function renderFinancesCard(leagues) {
+			// Only a league with at least one backfilled year gets a row —
+			// same gate Results applies, and for the same reason (see the
+			// History tab comment above).
+			const summaries = (leagues || []).map(leagueFinancesSummary).filter((s) => s.years.length > 0);
+			if (summaries.length === 0) return null;
 
-			const summaries = inGroup.map(leagueFinancesSummary);
 			// Best net result first — highest total, the money equivalent of
-			// Results' lowest-average-finish-first. A league with nothing to
-			// total (no backfilled Finish for any year yet) sorts last rather
-			// than vanishing, same as a league with no history on that card.
-			summaries.sort((a, b) => {
-				if (a.total == null && b.total == null) return 0;
-				if (a.total == null) return 1;
-				if (b.total == null) return -1;
-				return b.total - a.total;
-			});
+			// Results' lowest-average-finish-first. Every summary here has a
+			// real total, never null — that only happens with zero years,
+			// already filtered out above.
+			summaries.sort((a, b) => b.total - a.total);
 
-			const leaguesWithTotal = summaries.filter((s) => s.total != null);
-			const overallTotal = leaguesWithTotal.length
-				? leaguesWithTotal.reduce((sum, s) => sum + s.total, 0)
-				: null;
+			const overallTotal = summaries.reduce((sum, s) => sum + s.total, 0);
 
-			const card = el('div', { class: 'card', 'data-view': 'history', 'data-league-type': groupKey });
+			const card = el('div', { class: 'card', 'data-view': 'history' });
 			const cardHead = el('div', { class: 'card-head' });
 			cardHead.appendChild(el('h2', { text: 'Finances' }));
-			if (overallTotal != null) {
-				cardHead.appendChild(el('span', {
-					class: `finances-total finances-total-overall ${financesSignClass(overallTotal)}`.trim(),
-					title: `Net across ${leaguesWithTotal.length} league(s)`,
-					text: `Total ${formatMoney(overallTotal)}`,
-				}));
-			}
+			cardHead.appendChild(el('span', {
+				class: `finances-total finances-total-overall ${financesSignClass(overallTotal)}`.trim(),
+				title: `Net across ${summaries.length} league(s)`,
+				text: `Total ${formatMoney(overallTotal)}`,
+			}));
 			card.appendChild(cardHead);
-			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(inGroup.length)}` }));
+			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(summaries.length)}` }));
 
 			for (const { league, years, total } of summaries) {
 				// Same shape as the Results card's per-league head: name left,
@@ -6684,19 +6680,12 @@
 				// <details> below it.
 				const head = el('div', { class: 'finances-league-head' });
 				head.appendChild(el('span', { class: 'group-label' }, [leagueNameNode(leagueDisplayName(league), league.url)]));
-				if (total != null) {
-					head.appendChild(el('span', {
-						class: `finances-total ${financesSignClass(total)}`.trim(),
-						title: `Net across ${years.length} year(s)`,
-						text: formatMoney(total),
-					}));
-				}
+				head.appendChild(el('span', {
+					class: `finances-total ${financesSignClass(total)}`.trim(),
+					title: `Net across ${years.length} year(s)`,
+					text: formatMoney(total),
+				}));
 				card.appendChild(head);
-
-				if (years.length === 0) {
-					card.appendChild(el('div', { class: 'error-box', text: 'No financial data yet — this league has no backfilled results to compute a Total from.' }));
-					continue;
-				}
 
 				const details = el('details', { class: 'finances-details' });
 				details.appendChild(el('summary', { class: 'finances-summary', text: `Yearly breakdown (${years.length})` }));
@@ -7724,20 +7713,17 @@
 			}
 
 			// History: gated behind login the same way and for the same reason
-			// as the Analytics cards above — a separate loop over SUBTAB_ORDER
-			// rather than folded into the one above, since these are a
-			// different top-level tab, not more Analytics cards. Both cards
-			// read real backfilled data; Finances' Dues/Won columns are just
-			// waiting on league.dues/league.payouts to be configured anywhere.
+			// as the Analytics cards above, but unlike Analytics it doesn't
+			// loop over SUBTAB_ORDER — one Results card and one Finances
+			// card across every league type at once (see the History tab
+			// comment above). Both cards read real backfilled data;
+			// Finances' Dues/Won columns are just waiting on
+			// league.dues/league.payouts to be configured anywhere.
 			if (isLoggedIn()) {
-				for (const groupKey of SUBTAB_ORDER) {
-					const types = typesInSubtabGroup(groupKey);
-					if (!data.leagues.some((l) => types.includes(l.type))) continue;
-					const resultsCard = renderResultsCard(groupKey, types, data.leagues);
-					if (resultsCard) gridEl.appendChild(resultsCard);
-					const financesCard = renderFinancesCard(groupKey, types, data.leagues);
-					if (financesCard) gridEl.appendChild(financesCard);
-				}
+				const resultsCard = renderResultsCard(data.leagues);
+				if (resultsCard) gridEl.appendChild(resultsCard);
+				const financesCard = renderFinancesCard(data.leagues);
+				if (financesCard) gridEl.appendChild(financesCard);
 			}
 
 			// Logged-out visitors never get this card, so 'admin' never makes it

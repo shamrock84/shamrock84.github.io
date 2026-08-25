@@ -144,6 +144,12 @@ function fullText(node) {
 // ---- renderResultsCard ------------------------------------------------------
 
 {
+	// League C and D have no backfilled years at all — with the "at least
+	// one year of history" gate, they don't get a row (not even one saying
+	// "still gathering data"), they simply aren't in the card. Leagues A and
+	// B span two different types (dynasty and salarycap) and are combined
+	// into the one card without any type filtering — History doesn't split
+	// by league type the way every other tab does.
 	const leagues = [
 		{ id: 'C', name: 'League C', type: 'dynasty' }, // no results at all
 		{ id: 'A', name: 'League A', type: 'dynasty', results: [
@@ -151,19 +157,19 @@ function fullText(node) {
 			{ year: '2024', rank: 7, total: 12, guessed: false },
 			{ year: '2025', rank: 1, total: 12, guessed: false },
 		] },
-		{ id: 'D', name: 'League D', type: 'dynasty', results: [] }, // explicitly empty, same as C
+		{ id: 'D', name: 'League D', type: 'draftonly', results: [] }, // explicitly empty, same as C
 		{ id: 'B', name: 'League B', type: 'salarycap', results: [
 			{ year: '2024', rank: 8, total: 10, guessed: true },
 			{ year: '2025', rank: 2, total: 10, guessed: false },
 		] },
 	];
 
-	const card = domCtx.renderResultsCard('dynasty', ['dynasty', 'salarycap'], leagues);
+	const card = domCtx.renderResultsCard(leagues);
 	assert.notEqual(card, null);
 
 	const labels = findAll(card, (c) => c.cls.includes('group-label')).map(fullText);
-	assert.deepEqual(labels, ['League A', 'League B', 'League C', 'League D'],
-		'best average first (A: 3.67, B: 5.0), then leagues with no average, in their original relative order');
+	assert.deepEqual(labels, ['League A', 'League B'],
+		'best average first (A: 3.67, B: 5.0) — leagues C and D have no history and are not listed at all');
 
 	// The average now sits beside the league name, not as a footer row in
 	// the table, and the year-by-year rows live inside a collapsed-by-
@@ -203,17 +209,17 @@ function fullText(node) {
 	assert.equal(fullText(finishCellOf('2024')), '8/10');
 	assert.equal(fullText(finishCellOf('2025')), '2/10');
 
-	// Leagues C and D: no table at all, an explanatory message instead —
-	// never silently dropped from the card.
-	const errorBoxes = findAll(card, (c) => c.cls.includes('error-box'));
-	assert.equal(errorBoxes.length, 2, 'both C and D get the message, not just one');
-	for (const box of errorBoxes) {
-		assert.ok(fullText(box).includes('No results yet'));
-	}
+	// Leagues C and D have no backfilled years — they're excluded from the
+	// card entirely, no error-box row standing in for them.
+	assert.equal(findAll(card, (c) => c.cls.includes('error-box')).length, 0);
 
-	// A group with none of its types present renders no card at all, the
-	// same way every other Analytics/History card behaves.
-	assert.equal(domCtx.renderResultsCard('redraft', ['redraft'], leagues), null);
+	// No league anywhere has a backfilled year: no card at all, the same way
+	// every other Analytics/History card behaves when there's nothing to show.
+	const noHistory = [
+		{ id: 'X', name: 'League X', type: 'dynasty' },
+		{ id: 'Y', name: 'League Y', type: 'redraft', results: [] },
+	];
+	assert.equal(domCtx.renderResultsCard(noHistory), null);
 }
 
 // The live-synced leagueName wins over config's own static name, same as
@@ -227,20 +233,22 @@ function fullText(node) {
 	const leagues = [{ id: 'G', name: 'ESPN League 1', leagueName: 'Lincoln Hates Fantasy', type: 'redraft', results: [
 		{ year: '2025', rank: 3, total: 10, guessed: false },
 	] }];
-	const card = domCtx.renderResultsCard('redraft', ['redraft'], leagues);
+	const card = domCtx.renderResultsCard(leagues);
 	const label = findAll(card, (c) => c.cls.includes('group-label')).map(fullText)[0];
 	assert.equal(label, 'Lincoln Hates Fantasy');
 }
 
-// A group where nothing has an average yet gets no overall figure — an
-// empty mean would be worse than no number at all, and there's nothing
-// here for "Avg Finish" to summarize.
+// A league with a backfilled year but no resolvable rank on it (still
+// passes the "at least one year of history" gate — it has a year, just not
+// a ranked one) gets no average, and when it's the only league in the card
+// the card-head carries no overall figure either — an empty mean would be
+// worse than no number at all.
 {
 	const leagues = [
-		{ id: 'E', name: 'League E', type: 'dynasty' },
-		{ id: 'F', name: 'League F', type: 'dynasty', results: [] },
+		{ id: 'F', name: 'League F', type: 'dynasty', results: [{ year: '2024', total: 10, guessed: true }] },
 	];
-	const card = domCtx.renderResultsCard('dynasty', ['dynasty'], leagues);
+	const card = domCtx.renderResultsCard(leagues);
+	assert.notEqual(card, null, 'still shown — it has a year, even without a resolvable rank');
 	const cardHead = findAll(card, (c) => c.cls.includes('card-head'))[0];
 	assert.equal(findAll(cardHead, (c) => c.cls.includes('results-avg')).length, 0,
 		'no leagues have an average, so the card-head carries none either');

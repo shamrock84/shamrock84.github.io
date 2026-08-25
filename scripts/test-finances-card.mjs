@@ -330,8 +330,13 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 // ---- renderFinancesCard -------------------------------------------------------
 
 {
+	// League D has no backfilled years at all — with the "at least one year
+	// of history" gate, it doesn't get a row. Leagues A, B and C span two
+	// different types (dynasty and salarycap) and are combined into the one
+	// card without any type filtering — History doesn't split by league
+	// type the way every other tab does.
 	const leagues = [
-		{ id: 'D', name: 'League D', type: 'dynasty' }, // no results at all
+		{ id: 'D', name: 'League D', type: 'draftonly' }, // no results at all
 		{ id: 'A', name: 'League A', type: 'dynasty', dues: 100, payout1: 500, payout2: 250, results: [
 			{ year: '2024', rank: 1, total: 10 },
 			{ year: '2025', rank: 2, total: 10 },
@@ -345,12 +350,12 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 		] }, // total: 0 - 200 = -200, a loss
 	];
 
-	const card = domCtx.renderFinancesCard('dynasty', ['dynasty', 'salarycap'], leagues);
+	const card = domCtx.renderFinancesCard(leagues);
 	assert.notEqual(card, null);
 
 	const labels = findAll(card, (c) => c.cls.includes('group-label')).map(fullText);
-	assert.deepEqual(labels, ['League A', 'League B', 'League C', 'League D'],
-		'best (highest) total first — A: 550, B: 300, C: -200 — then the league with no total at all');
+	assert.deepEqual(labels, ['League A', 'League B', 'League C'],
+		'best (highest) total first — A: 550, B: 300, C: -200 — League D has no history and is not listed at all');
 
 	const cardHead = findAll(card, (c) => c.cls.includes('card-head'))[0];
 	assert.equal(fullText(findAll(cardHead, (c) => c.tag === 'h2')[0]), 'Finances');
@@ -371,11 +376,10 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	assert.ok(totalSpanOf('League C').cls.includes('finances-negative'), 'a loss is visually flagged');
 	assert.ok(!totalSpanOf('League C').cls.includes('finances-positive'));
 
-	// League D: no results at all — a named message, not a silent drop.
-	assert.equal(totalSpanOf('League D'), undefined, 'nothing to total, so no figure at all');
-	const errorBoxes = findAll(card, (c) => c.cls.includes('error-box'));
-	assert.equal(errorBoxes.length, 1);
-	assert.ok(fullText(errorBoxes[0]).includes('No financial data yet'));
+	// League D: no backfilled years — excluded from the card entirely, no
+	// error-box row standing in for it.
+	assert.equal(headFor('League D'), undefined, 'not listed at all');
+	assert.equal(findAll(card, (c) => c.cls.includes('error-box')).length, 0);
 
 	// League B's table: 2024 (outside the top 3) shows a real $0 Won and a
 	// real negative Total — never a dash — and 2025 shows the real payout.
@@ -438,14 +442,18 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	assert.ok(rowC.children[3].cls.includes('finances-negative'));
 	assert.ok(!rowC.children[3].cls.includes('finances-positive'));
 
-	// Collapsed by default, one <details> per league that has years at all
-	// (D has none, so it gets the error box instead).
+	// Collapsed by default, one <details> per league shown (D isn't shown
+	// at all, so there's no fourth one).
 	const detailsEls = findAll(card, (c) => c.tag === 'details');
 	assert.equal(detailsEls.length, 3);
 	assert.ok(detailsEls.every((d) => d.attrs.open === undefined));
 
-	// A group with none of its types present renders no card at all.
-	assert.equal(domCtx.renderFinancesCard('redraft', ['redraft'], leagues), null);
+	// No league anywhere has a backfilled year: no card at all.
+	const noHistory = [
+		{ id: 'X', name: 'League X', type: 'dynasty' },
+		{ id: 'Y', name: 'League Y', type: 'redraft', results: [] },
+	];
+	assert.equal(domCtx.renderFinancesCard(noHistory), null);
 }
 
 // A placement payout and a weekly-high payout landing the same year both add
@@ -458,7 +466,7 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 			} },
 		] },
 	];
-	const card = domCtx.renderFinancesCard('dynasty', ['dynasty'], leagues);
+	const card = domCtx.renderFinancesCard(leagues);
 	const table = findAll(card, (c) => c.tag === 'table')[0];
 	const dataRow = findAll(table, (c) => c.tag === 'tr')[1];
 	assert.equal(fullText(dataRow.children[2]), '$525', 'Won: $500 place + $25 weekly high, summed');
@@ -480,7 +488,7 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	const leagues = [{ id: 'G', name: 'ESPN League 1', leagueName: 'Lincoln Hates Fantasy', type: 'redraft', results: [
 		{ year: '2025', rank: 1, total: 10 },
 	] }];
-	const card = domCtx.renderFinancesCard('redraft', ['redraft'], leagues);
+	const card = domCtx.renderFinancesCard(leagues);
 	const label = findAll(card, (c) => c.cls.includes('group-label')).map(fullText)[0];
 	assert.equal(label, 'Lincoln Hates Fantasy');
 }
