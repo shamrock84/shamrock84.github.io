@@ -82,6 +82,7 @@ const weeksToFetch = Number.isFinite(metaEndWeek) && metaEndWeek > 0
 console.log(`\n--- fetching weeks 1..${weeksToFetch} (the production window, via fetchMflWeekScores) ---`);
 
 const weeklyScoresByWeek = new Map();
+const rawResponses = new Map();
 for (let week = 1; week <= weeksToFetch; week++) {
   const totals = await fetchMflWeekScores(MFL_LEAGUE_ID, cookie, YEAR, week);
   weeklyScoresByWeek.set(week, totals);
@@ -95,6 +96,22 @@ for (let week = 1; week <= weeksToFetch; week++) {
   );
   if (totals.length) {
     console.log(`    all: ${totals.map((t) => `${nameById.get(t.franchiseId) || t.franchiseId}=${t.points.toFixed(2)}`).join(', ')}`);
+  }
+  // Raw body for any week with a gap, or any week past the regular season —
+  // a missing franchise there is either a genuine bye/eliminated team (no
+  // real score to compare) or a structural gap (their real matchup exists
+  // but isn't showing up the way this parses it), and the only way to tell
+  // the two apart is to look at exactly what MFL actually sent back.
+  if (missing.length || (Number.isFinite(lastRegWeek) && week > lastRegWeek)) {
+    const raw = await mflGet(`/export?TYPE=weeklyResults&L=${MFL_LEAGUE_ID}&W=${week}&JSON=1`, cookie, YEAR);
+    rawResponses.set(week, raw);
+  }
+}
+
+if (rawResponses.size) {
+  console.log('\n--- raw TYPE=weeklyResults body for every week probed above (gap or post-regular-season) ---');
+  for (const [week, raw] of rawResponses.entries()) {
+    console.log(`  week ${week}: ${JSON.stringify(raw)}`);
   }
 }
 
