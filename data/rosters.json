@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-25T04:56:01.606Z",
+  "generatedAt": "2026-08-25T09:02:11.695Z",
   "year": "2026",
   "rankingPools": {
     "DYNASTY|PPR|ALL": {
@@ -2264,18 +2264,18 @@
           "url": "/nfl/players/harold-fannin-jr.php"
         },
         {
-          "name": "Chris Godwin Jr.",
-          "position": "WR",
-          "team": "TB",
-          "rank": 72,
-          "url": "/nfl/players/chris-godwin.php"
-        },
-        {
           "name": "Jaylen Warren",
           "position": "RB",
           "team": "PIT",
-          "rank": 73,
+          "rank": 72,
           "url": "/nfl/players/jaylen-warren.php"
+        },
+        {
+          "name": "Chris Godwin Jr.",
+          "position": "WR",
+          "team": "TB",
+          "rank": 73,
+          "url": "/nfl/players/chris-godwin.php"
         },
         {
           "name": "Tucker Kraft",
@@ -3258,18 +3258,18 @@
           "url": "/nfl/players/jakobi-lane.php"
         },
         {
-          "name": "Ollie Gordon II",
-          "position": "RB",
-          "team": "MIA",
-          "rank": 243,
-          "url": "/nfl/players/ollie-gordon.php"
-        },
-        {
           "name": "George Holani",
           "position": "RB",
           "team": "SEA",
-          "rank": 244,
+          "rank": 243,
           "url": "/nfl/players/george-holani.php"
+        },
+        {
+          "name": "Ollie Gordon II",
+          "position": "RB",
+          "team": "MIA",
+          "rank": 244,
+          "url": "/nfl/players/ollie-gordon.php"
         },
         {
           "name": "Fernando Mendoza",
@@ -3433,18 +3433,18 @@
           "url": "/nfl/players/jordan-james.php"
         },
         {
-          "name": "Mason Taylor",
-          "position": "TE",
-          "team": "NYJ",
-          "rank": 272,
-          "url": "/nfl/players/mason-taylor.php"
-        },
-        {
           "name": "Tyquan Thornton",
           "position": "WR",
           "team": "KC",
-          "rank": 273,
+          "rank": 272,
           "url": "/nfl/players/tyquan-thornton.php"
+        },
+        {
+          "name": "Mason Taylor",
+          "position": "TE",
+          "team": "NYJ",
+          "rank": 273,
+          "url": "/nfl/players/mason-taylor.php"
         },
         {
           "name": "Chris Brooks",
@@ -5445,7 +5445,7 @@
           "contractYear": null,
           "injuryStatus": "Q",
           "injuryDetail": {
-            "part": null,
+            "part": "Lower Body",
             "until": "Aug 28, 2026"
           },
           "pts": 0,
@@ -5976,7 +5976,7 @@
             "rank": 303,
             "posRank": "K8",
             "tier": 12,
-            "delta": -5,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/will-reichard.php"
           }
         },
@@ -6063,7 +6063,7 @@
           }
         ]
       },
-      "updatedAt": "2026-08-25T04:55:05.504Z",
+      "updatedAt": "2026-08-25T09:01:24.234Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -7722,7 +7722,7 @@
             "rank": 319,
             "posRank": "K11",
             "tier": 13,
-            "delta": -5,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/jake-bates.php"
           }
         },
@@ -7743,7 +7743,7 @@
             "rank": 303,
             "posRank": "K8",
             "tier": 12,
-            "delta": -5,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/will-reichard.php"
           }
         },
@@ -7830,7 +7830,7 @@
           }
         ]
       },
-      "updatedAt": "2026-08-25T04:55:06.684Z",
+      "updatedAt": "2026-08-25T09:01:25.376Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -9372,7 +9372,7 @@
             "rank": 334,
             "posRank": "K13",
             "tier": 13,
-            "delta": -3,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/tyler-loop.php"
           }
         },
@@ -9465,7 +9465,7 @@
           }
         ]
       },
-      "updatedAt": "2026-08-25T04:55:07.178Z",
+      "updatedAt": "2026-08-25T09:01:26.624Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -10456,7 +10456,7 @@
             "rank": 39,
             "posRank": "RB13",
             "tier": 5,
-            "delta": 2,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/breece-hall.php"
           }
         },
@@ -10891,7 +10891,7 @@
             "rank": 276,
             "posRank": "TE34",
             "tier": 12,
-            "delta": null,
+            "delta": 4,
             "url": "https://www.fantasypros.com/nfl/players/theo-johnson.php"
           }
         },
@@ -10943,7 +10943,7 @@
           }
         ]
       },
-      "updatedAt": "2026-08-25T04:55:07.839Z",
+      "updatedAt": "2026-08-25T09:01:28.162Z",
       "error": null,
       "tags": [
         "Best Ball"
@@ -12180,7 +12180,7 @@
           "contractYear": "",
           "injuryStatus": "Q",
           "injuryDetail": {
-            "part": "Calf",
+            "part": "Hamstring",
             "until": "Aug 28, 2026"
           },
           "pts": 0,
@@ -12566,7 +12566,7 @@
         "ir": 50,
         "position": []
       },
-      "updatedAt": "2026-08-25T04:55:08.461Z",
+      "updatedAt": "2026-08-25T09:01:29.363Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -13642,7 +13642,7 @@
           "contractYear": "0",
           "injuryStatus": "Q",
           "injuryDetail": {
-            "part": "Calf",
+            "part": "Hamstring",
             "until": "Aug 28, 2026"
           },
           "pts": 0,
@@ -14057,7 +14057,7 @@
         "ir": 50,
         "position": []
       },
-      "updatedAt": "2026-08-25T04:55:09.201Z",
+      "updatedAt": "2026-08-25T09:01:31.252Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -15196,7 +15196,7 @@
             "rank": 17,
             "posRank": "RB3",
             "tier": 2,
-            "delta": 1,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/jonathan-taylor.php"
           }
         },
@@ -15564,7 +15564,7 @@
         "ir": 15,
         "position": []
       },
-      "updatedAt": "2026-08-25T04:55:10.294Z",
+      "updatedAt": "2026-08-25T09:01:32.631Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -16583,7 +16583,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-25T04:55:10.560Z",
+      "updatedAt": "2026-08-25T09:01:33.329Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -16748,7 +16748,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-25T04:55:10.899Z",
+      "updatedAt": "2026-08-25T09:01:33.685Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -17356,7 +17356,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-25T04:55:11.650Z",
+      "updatedAt": "2026-08-25T09:01:34.749Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -18346,7 +18346,7 @@
             "rank": 151,
             "posRank": "RB49",
             "tier": 7,
-            "delta": -5,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/tyrone-tracy-jr.php"
           }
         },
@@ -18582,7 +18582,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-25T04:55:12.191Z",
+      "updatedAt": "2026-08-25T09:01:35.672Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -19629,7 +19629,7 @@
             "rank": 18,
             "posRank": "RB4",
             "tier": 2,
-            "delta": -1,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/christian-mccaffrey.php"
           }
         },
@@ -19821,7 +19821,7 @@
             "rank": 151,
             "posRank": "RB49",
             "tier": 7,
-            "delta": -5,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/tyrone-tracy-jr.php"
           }
         },
@@ -19949,7 +19949,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-25T04:55:12.649Z",
+      "updatedAt": "2026-08-25T09:01:36.356Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -21017,7 +21017,7 @@
             "rank": 151,
             "posRank": "RB49",
             "tier": 7,
-            "delta": -5,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/tyrone-tracy-jr.php"
           }
         },
@@ -21214,7 +21214,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-25T04:55:12.961Z",
+      "updatedAt": "2026-08-25T09:01:37.224Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -22497,7 +22497,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-25T04:55:13.329Z",
+      "updatedAt": "2026-08-25T09:01:38.300Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -23468,7 +23468,7 @@
             "rank": 18,
             "posRank": "RB4",
             "tier": 2,
-            "delta": -1,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/christian-mccaffrey.php"
           }
         },
@@ -23516,7 +23516,7 @@
             "rank": 122,
             "posRank": "RB39",
             "tier": 7,
-            "delta": -5,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/kyle-monangai.php"
           }
         },
@@ -23531,7 +23531,7 @@
           "contractYear": null,
           "injuryStatus": "Q",
           "injuryDetail": {
-            "part": "Calf",
+            "part": "Hamstring",
             "until": "Aug 28, 2026"
           },
           "pts": 0,
@@ -23561,7 +23561,7 @@
             "rank": 151,
             "posRank": "RB49",
             "tier": 7,
-            "delta": -5,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/tyrone-tracy-jr.php"
           }
         },
@@ -23785,7 +23785,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-25T04:55:13.639Z",
+      "updatedAt": "2026-08-25T09:01:38.977Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -24863,7 +24863,7 @@
           "injuryStatus": "Q",
           "injuryDetail": {
             "part": "Hamstring",
-            "until": "Aug 23, 2026"
+            "until": "Aug 28, 2026"
           },
           "ecr": {
             "rank": 206,
@@ -24941,7 +24941,7 @@
             "rank": 151,
             "posRank": "RB49",
             "tier": 7,
-            "delta": -5,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/tyrone-tracy-jr.php"
           }
         },
@@ -25088,7 +25088,7 @@
         }
       ],
       "draftInProgress": false,
-      "updatedAt": "2026-08-25T04:55:13.722Z",
+      "updatedAt": "2026-08-25T09:01:39.217Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -25360,7 +25360,7 @@
         "Devin Neal"
       ],
       "power": {
-        "computedAt": "2026-08-25T04:55:03.804Z",
+        "computedAt": "2026-08-25T09:01:21.090Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -25373,7 +25373,7 @@
             {
               "franchiseId": "4",
               "score": 2232.9,
-              "depth": 1073.3,
+              "depth": 1073,
               "filled": 10,
               "slotCount": 10,
               "byPosition": {
@@ -25383,7 +25383,7 @@
                 },
                 "RB": {
                   "score": 1086,
-                  "depth": 250.9
+                  "depth": 250.6
                 },
                 "WR": {
                   "score": 447.5,
@@ -25439,8 +25439,8 @@
             },
             {
               "franchiseId": "6",
-              "score": 2225.6,
-              "depth": 1140.7,
+              "score": 2225.8,
+              "depth": 1139.3,
               "filled": 10,
               "slotCount": 10,
               "byPosition": {
@@ -25449,12 +25449,12 @@
                   "depth": 223.5
                 },
                 "RB": {
-                  "score": 862.3,
+                  "score": 862.5,
                   "depth": 0
                 },
                 "WR": {
                   "score": 471.9,
-                  "depth": 723.1
+                  "depth": 721.7
                 },
                 "TE": {
                   "score": 291.2,
@@ -25464,8 +25464,8 @@
             },
             {
               "franchiseId": "1",
-              "score": 2176.1,
-              "depth": 1052.5,
+              "score": 2171.9,
+              "depth": 1052.7,
               "filled": 10,
               "slotCount": 10,
               "byPosition": {
@@ -25478,19 +25478,19 @@
                   "depth": 324.7
                 },
                 "WR": {
-                  "score": 925.8,
+                  "score": 921.6,
                   "depth": 430.1
                 },
                 "TE": {
                   "score": 0,
-                  "depth": 36.8
+                  "depth": 37.1
                 }
               }
             },
             {
               "franchiseId": "5",
-              "score": 2162.7,
-              "depth": 1048.5,
+              "score": 2162.9,
+              "depth": 1047.3,
               "filled": 10,
               "slotCount": 10,
               "byPosition": {
@@ -25499,12 +25499,12 @@
                   "depth": 279
                 },
                 "RB": {
-                  "score": 1257.8,
+                  "score": 1258,
                   "depth": 202.8
                 },
                 "WR": {
                   "score": 276.2,
-                  "depth": 357.2
+                  "depth": 356
                 },
                 "TE": {
                   "score": 0,
@@ -25515,7 +25515,7 @@
             {
               "franchiseId": "10",
               "score": 2132.1,
-              "depth": 1014.4,
+              "depth": 1012.7,
               "filled": 10,
               "slotCount": 10,
               "byPosition": {
@@ -25529,7 +25529,7 @@
                 },
                 "WR": {
                   "score": 583.3,
-                  "depth": 722.3
+                  "depth": 720.7
                 },
                 "TE": {
                   "score": 324.2,
@@ -25539,8 +25539,8 @@
             },
             {
               "franchiseId": "7",
-              "score": 2116,
-              "depth": 872,
+              "score": 2115.6,
+              "depth": 870.8,
               "filled": 10,
               "slotCount": 10,
               "byPosition": {
@@ -25549,7 +25549,7 @@
                   "depth": 0
                 },
                 "RB": {
-                  "score": 979.3,
+                  "score": 978.9,
                   "depth": 140.8
                 },
                 "WR": {
@@ -25558,7 +25558,7 @@
                 },
                 "TE": {
                   "score": 0,
-                  "depth": 502.3
+                  "depth": 501.1
                 }
               }
             },
@@ -25589,7 +25589,7 @@
             },
             {
               "franchiseId": "3",
-              "score": 2084.4,
+              "score": 2085.4,
               "depth": 1102.7,
               "filled": 10,
               "slotCount": 10,
@@ -25603,7 +25603,7 @@
                   "depth": 0
                 },
                 "WR": {
-                  "score": 1369.4,
+                  "score": 1370.4,
                   "depth": 677.3
                 },
                 "TE": {
@@ -25640,7 +25640,7 @@
             {
               "franchiseId": "9",
               "score": 2041.3,
-              "depth": 738.4,
+              "depth": 746.8,
               "filled": 10,
               "slotCount": 10,
               "byPosition": {
@@ -25654,18 +25654,18 @@
                 },
                 "WR": {
                   "score": 804.7,
-                  "depth": 331.7
+                  "depth": 332.2
                 },
                 "TE": {
                   "score": 0,
-                  "depth": 291.6
+                  "depth": 299.5
                 }
               }
             },
             {
               "franchiseId": "2",
               "score": 2021.3,
-              "depth": 811.9,
+              "depth": 821.7,
               "filled": 10,
               "slotCount": 10,
               "byPosition": {
@@ -25675,7 +25675,7 @@
                 },
                 "RB": {
                   "score": 164.4,
-                  "depth": 266.4
+                  "depth": 276.3
                 },
                 "WR": {
                   "score": 980.6,
@@ -25690,7 +25690,7 @@
             {
               "franchiseId": "12",
               "score": 1963.5,
-              "depth": 789,
+              "depth": 785,
               "filled": 10,
               "slotCount": 10,
               "byPosition": {
@@ -25700,7 +25700,7 @@
                 },
                 "RB": {
                   "score": 347,
-                  "depth": 172.9
+                  "depth": 168.9
                 },
                 "WR": {
                   "score": 501.7,
@@ -26069,7 +26069,7 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-08-25T04:55:03.804Z",
+      "availableAt": "2026-08-25T09:01:21.090Z",
       "results": []
     },
     {
@@ -26081,7 +26081,7 @@
       "teamName": "Big Dart Energy",
       "url": "https://fantasy.espn.com/football/team?leagueId=1966972&teamId=10",
       "players": [],
-      "updatedAt": "2026-08-25T04:55:13.909Z",
+      "updatedAt": "2026-08-25T09:01:39.455Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -26317,7 +26317,7 @@
       "teamName": "Jeffer Justinson",
       "url": "https://fantasy.espn.com/football/team?leagueId=421871710&teamId=5",
       "players": [],
-      "updatedAt": "2026-08-25T04:55:13.977Z",
+      "updatedAt": "2026-08-25T09:01:39.543Z",
       "error": null,
       "tags": [],
       "provider": "espn",
