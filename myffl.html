@@ -1264,16 +1264,6 @@
 		   the "guessed" flag) is never shown identically to a confirmed one.
 		   Same red as the rest of the page uses for "needs a look". */
 		.results-guessed { color: var(--ir-text); }
-		/* A real payout, in parens next to the Finish cell — same muted,
-		   smaller-text treatment as .power-size. A guessed
-		   finish's payout gets no class here and inherits .results-guessed's
-		   red instead, so an estimate reads as one uncertain cell rather than
-		   a confirmed rank next to an unsure amount. */
-		.results-payout {
-			color: var(--muted);
-			font-weight: 400;
-			font-size: 0.85em;
-		}
 		/* League name and average finish share one row, name left / average
 		   right, so the headline number reads immediately without opening
 		   the yearly breakdown below it. */
@@ -6387,12 +6377,7 @@
 			const results = Array.isArray(league.results) ? league.results : [];
 			const years = results
 				.filter((r) => !isBeforeStartYear(league, r.year))
-				.sort((a, b) => Number(b.year) - Number(a.year))
-				.map((r) => {
-					const payoutField = PAYOUT_FIELDS[r.rank];
-					const won = payoutField && league[payoutField] != null ? Number(league[payoutField]) : 0;
-					return { ...r, won };
-				});
+				.sort((a, b) => Number(b.year) - Number(a.year));
 			const ranked = years.filter((r) => Number.isFinite(r.rank));
 			const average = ranked.length ? ranked.reduce((sum, r) => sum + r.rank, 0) / ranked.length : null;
 			return { league, years, average };
@@ -6478,21 +6463,11 @@
 					// regular-season order — see computeMflSeasonPlacements) is
 					// never presented as identical to a confirmed result: red,
 					// same token the rest of the page uses for "needs a look".
-					// A real payout is named in the cell too — the dollar amount,
-					// not the ordinal the rank already spells out ("1/10 ($300)",
-					// never the redundant "1/10 (1st)").
 					row.appendChild(el('td', {
 						class: r.guessed ? 'results-guessed' : '',
 						title: r.guessed ? 'Estimated — no bracket data settled this year\'s exact finish' : '',
 						text: Number.isFinite(r.rank) ? `${r.rank}/${r.total}` : '—',
-					}, r.won > 0
-						// A guessed finish's payout is exactly as uncertain as the
-						// finish itself, so it inherits the cell's red rather than
-						// getting its own muted color — the whole cell should read
-						// as one estimate, not a confirmed rank next to an unsure
-						// amount.
-						? [el('span', { class: r.guessed ? '' : 'results-payout', text: ` (${formatMoney(r.won)})` })]
-						: []));
+					}));
 					table.appendChild(row);
 				}
 
