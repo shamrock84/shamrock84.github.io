@@ -2,7 +2,8 @@
 // week-by-week scoring — the History tab wants two new numbers per season
 // (highest single-week score, highest season point total) for leagues that
 // pay out on them, and nothing in this codebase has ever parsed a
-// franchise-level total score off TYPE=weeklyResults. Two open questions:
+// franchise-level total score off TYPE=weeklyResults. Two open questions
+// from the first round:
 //
 //   1. Does a franchise entry in TYPE=weeklyResults carry its own total
 //      `score` field directly, or does it have to be summed from each
@@ -16,11 +17,35 @@
 //      request cost) instead of something that has to be summed from
 //      per-week fetches.
 //
+// First round confirmed both: every franchise's own `score` field matched
+// its summed-starters total exactly, every matchup, every week — but only
+// checked weeks 1..lastRegularSeasonWeek. That's a real gap: the shipped
+// feature fetches a fixed weeks 1-18 window specifically BECAUSE payouts
+// run through the playoff bracket too (see backfillLeagueScoringRecords in
+// fetch-rosters.mjs), so the untested weeks are exactly the ones a real
+// weekly-high win is most likely to land on — round-1 byes, consolation
+// games, and any week where not every franchise has a "real" matchup.
+//
+// Round 2 (this one) fetches the SAME fixed weeks-1-18 window
+// backfillLeagueScoringRecords does (capped by the season's own endWeek),
+// counts how many distinct franchises actually appear in each week's
+// matchup list against the league's real franchise count (a silent gap
+// there — a bye team simply missing from TYPE=weeklyResults — would mean
+// that team's real score for the week is invisible to computeSeasonScoringRecords
+// even though it's real and could be the actual weekly high), and then runs
+// the exact same computeSeasonScoringRecords function production calls, on
+// data fetched the exact same way (summed-starters), so its output can be
+// compared directly against a manual read of the real MFL site rather than
+// against another guess.
+//
 // Read-only. Run from the Actions tab (probe-weekly-scores.yml).
-import { mflLogin, mflGet } from './lib/providers.mjs';
+import { mflLogin, mflGet, fetchMflWeekScores, fetchMflSeasonMeta } from './lib/providers.mjs';
+import { computeSeasonScoringRecords } from './lib/history.mjs';
 
 const MFL_LEAGUE_ID = process.env.PROBE_MFL_LEAGUE_ID;
 const YEAR = process.env.PROBE_YEAR;
+const WEEKLY_HIGH_SCORE_WEEKS = 18;
+const SEASON_HIGH_SCORE_WEEKS = 17;
 
 if (!MFL_LEAGUE_ID || !YEAR) {
   console.log('PROBE_MFL_LEAGUE_ID and PROBE_YEAR are both required.');
@@ -38,7 +63,7 @@ console.log(`  lastRegularSeasonWeek=${lastRegWeek} endWeek=${endWeek}`);
 const franchises = leagueData?.league?.franchises?.franchise ?? [];
 const franchiseList = Array.isArray(franchises) ? franchises : [franchises];
 const nameById = new Map(franchiseList.map((f) => [f.id, f.name]));
-console.log(`  franchises: ${franchiseList.length}`);
+console.log(`  franchises: ${franchiseList.length} — ${franchiseList.map((f) => f.id).join(', ')}`);
 
 console.log('\n--- TYPE=leagueStandings (pf/pa per franchise, full first row) ---');
 const standingsData = await mflGet(`/export?TYPE=leagueStandings&L=${MFL_LEAGUE_ID}&JSON=1`, cookie, YEAR);
@@ -48,63 +73,53 @@ console.log(`  rows: ${standingsRows.length}`);
 if (standingsRows.length) console.log(`  first row (every field): ${JSON.stringify(standingsRows[0])}`);
 const pfById = new Map(standingsRows.map((r) => [r.id, Number(r.pf ?? NaN)]));
 
-if (!Number.isFinite(lastRegWeek) || lastRegWeek < 1) {
-  console.log('\n  lastRegularSeasonWeek not resolved — cannot probe weekly totals. Stopping.');
-  process.exit(0);
-}
+// The exact window backfillLeagueScoringRecords fetches — fixed 1-18,
+// capped by the season's own endWeek for a season that never reached 18.
+const { endWeek: metaEndWeek } = await fetchMflSeasonMeta(MFL_LEAGUE_ID, cookie, YEAR);
+const weeksToFetch = Number.isFinite(metaEndWeek) && metaEndWeek > 0
+  ? Math.min(WEEKLY_HIGH_SCORE_WEEKS, metaEndWeek)
+  : WEEKLY_HIGH_SCORE_WEEKS;
+console.log(`\n--- fetching weeks 1..${weeksToFetch} (the production window, via fetchMflWeekScores) ---`);
 
-console.log(`\n--- TYPE=weeklyResults for weeks 1..${lastRegWeek} (regular season) ---`);
-// franchiseId -> array of that week's total, indexed by week number (1-based
-// entries at index week-1) so a missing week is visibly `undefined` rather
-// than silently absent from a sum.
-const weeklyTotalsById = new Map();
-let sawOwnScoreField = null; // true/false/'mixed' once we've seen at least one franchise entry
-
-for (let week = 1; week <= lastRegWeek; week++) {
-  const data = await mflGet(`/export?TYPE=weeklyResults&L=${MFL_LEAGUE_ID}&W=${week}&JSON=1`, cookie, YEAR);
-  const matchups = data?.weeklyResults?.matchup;
-  const matchupList = Array.isArray(matchups) ? matchups : matchups ? [matchups] : [];
-  const seenThisWeek = [];
-  for (const m of matchupList) {
-    const franchisesInMatchup = Array.isArray(m.franchise) ? m.franchise : m.franchise ? [m.franchise] : [];
-    for (const f of franchisesInMatchup) {
-      const hasOwnScore = f.score !== undefined && f.score !== null && f.score !== '';
-      if (sawOwnScoreField === null) sawOwnScoreField = hasOwnScore;
-      else if (sawOwnScoreField !== hasOwnScore) sawOwnScoreField = 'mixed';
-
-      const players = Array.isArray(f.player) ? f.player : f.player ? [f.player] : [];
-      const summedStarters = players
-        .filter((p) => p.status === 'starter')
-        .reduce((sum, p) => sum + (Number(p.score) || 0), 0);
-
-      if (!weeklyTotalsById.has(f.id)) weeklyTotalsById.set(f.id, []);
-      weeklyTotalsById.get(f.id)[week - 1] = { ownScore: f.score, summedStarters };
-      seenThisWeek.push(`id=${f.id} own=${f.score ?? '(none)'} summed=${summedStarters.toFixed(2)}`);
-    }
-  }
-  console.log(`  week ${week}: ${matchupList.length} matchup(s) — ${seenThisWeek.join(' | ')}`);
-}
-
-console.log(`\n--- own-score-field presence across every franchise entry seen: ${sawOwnScoreField} ---`);
-
-console.log('\n--- per-franchise: own-score sum vs summed-starters sum vs standings pf ---');
-let maxOwnWeek = null;
-for (const [fid, weeks] of weeklyTotalsById.entries()) {
-  const ownSum = weeks.reduce((s, w) => s + (Number(w?.ownScore) || 0), 0);
-  const starterSum = weeks.reduce((s, w) => s + (w?.summedStarters || 0), 0);
-  const pf = pfById.get(fid);
-  const name = nameById.get(fid) || fid;
+const weeklyScoresByWeek = new Map();
+for (let week = 1; week <= weeksToFetch; week++) {
+  const totals = await fetchMflWeekScores(MFL_LEAGUE_ID, cookie, YEAR, week);
+  weeklyScoresByWeek.set(week, totals);
+  const seenIds = totals.map((t) => t.franchiseId);
+  const missing = franchiseList.map((f) => f.id).filter((id) => !seenIds.includes(id));
+  const best = totals.reduce((b, t) => (!b || t.points > b.points ? t : b), null);
   console.log(
-    `  ${name} (${fid}): ownSum=${ownSum.toFixed(2)} starterSum=${starterSum.toFixed(2)} ` +
-    `standings.pf=${Number.isFinite(pf) ? pf.toFixed(2) : '(missing)'} ` +
-    `ownSum==pf? ${Number.isFinite(pf) ? (Math.abs(ownSum - pf) < 0.05) : 'n/a'}`
+    `  week ${week}: ${totals.length}/${franchiseList.length} franchise(s) seen` +
+    (missing.length ? ` — MISSING: ${missing.join(', ')}` : '') +
+    (best ? ` — high: ${nameById.get(best.franchiseId) || best.franchiseId} (${best.points.toFixed(2)})` : '')
   );
-  weeks.forEach((w, i) => {
-    const own = Number(w?.ownScore) || 0;
-    if (!maxOwnWeek || own > maxOwnWeek.own) maxOwnWeek = { name, fid, week: i + 1, own };
-  });
+  if (totals.length) {
+    console.log(`    all: ${totals.map((t) => `${nameById.get(t.franchiseId) || t.franchiseId}=${t.points.toFixed(2)}`).join(', ')}`);
+  }
 }
 
-console.log(`\n--- highest single regular-season week (by own-score field): ${JSON.stringify(maxOwnWeek)} ---`);
+console.log('\n--- per-franchise: fetchMflWeekScores sum (weeks 1-17) vs standings pf ---');
+const sumsById = new Map();
+for (const [week, totals] of weeklyScoresByWeek.entries()) {
+  if (week > SEASON_HIGH_SCORE_WEEKS) continue;
+  for (const { franchiseId, points } of totals) {
+    sumsById.set(franchiseId, (sumsById.get(franchiseId) || 0) + points);
+  }
+}
+for (const [fid, sum] of sumsById.entries()) {
+  const pf = pfById.get(fid);
+  console.log(
+    `  ${nameById.get(fid) || fid} (${fid}): weeks1-17Sum=${sum.toFixed(2)} standings.pf=${Number.isFinite(pf) ? pf.toFixed(2) : '(missing)'} ` +
+    `match? ${Number.isFinite(pf) ? (Math.abs(sum - pf) < 0.05) : 'n/a'}`
+  );
+}
+
+console.log('\n--- computeSeasonScoringRecords, run on this exact fetched data (production logic, real inputs) ---');
+const { weeklyHighs, seasonHigh } = computeSeasonScoringRecords(weeklyScoresByWeek, nameById, SEASON_HIGH_SCORE_WEEKS);
+console.log('  weeklyHighs:');
+for (const w of weeklyHighs) {
+  console.log(`    week ${w.week}: ${w.teamName} (${w.franchiseId}) — ${w.points.toFixed(2)}`);
+}
+console.log(`  seasonHigh: ${seasonHigh ? `${seasonHigh.teamName} (${seasonHigh.franchiseId}) — ${seasonHigh.points.toFixed(2)}` : 'null'}`);
 
 console.log('\n=== done ===');
