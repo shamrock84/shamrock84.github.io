@@ -48,6 +48,15 @@
 // franchise that wins several weekly-highs in one season (not rare — see
 // the real MNMx 2025 case that prompted this) made that inline text run
 // long.
+//
+// Also pinned here: payoutDivisionWinner is a third independent axis, for
+// the best REGULAR-SEASON record rather than final Finish (those two can
+// differ — see computeMflSeasonPlacements). It reads
+// results[].divisionWinnerFranchiseId against league.franchiseId, same
+// $0-when-unmatched-or-unentered convention as every other payout here, and
+// stacks into the breakdown right after Place (before the weekly/season
+// high rows) since it's stamped by the same placement backfill that fills
+// Finish rather than the separate on-demand scoring backfill.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -242,6 +251,79 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	const summary = domCtx.leagueFinancesSummary(league);
 	assert.deepEqual([...summary.years].map((y) => y.year), ['2023']);
 	assert.equal(summary.total, 450, 'only the 2023 win counts toward Total, not the excluded 2021 one');
+}
+
+// ---- leagueFinancesSummary: division winner payout ----------------------------
+
+{
+	// Best regular-season record, independent of Finish — this franchise
+	// finished 4th (missed the money on placement) but still had the best
+	// record, and the league pays for that separately.
+	const league = {
+		name: 'K', franchiseId: '0001', dues: 0, payoutDivisionWinner: 75,
+		results: [{ year: '2024', rank: 4, total: 10, divisionWinnerFranchiseId: '0001' }],
+	};
+	const summary = domCtx.leagueFinancesSummary(league);
+	const y = summary.years[0];
+	assert.equal(y.won, 75);
+	assert.deepEqual(plain(y.breakdown), [{ label: 'Division Winner', amount: 75 }]);
+}
+
+{
+	// Another franchise had the best record — no payout, no breakdown row.
+	const league = {
+		name: 'L', franchiseId: '0001', payoutDivisionWinner: 75,
+		results: [{ year: '2024', rank: 1, total: 10, payout: 0, divisionWinnerFranchiseId: '0002' }],
+	};
+	const summary = domCtx.leagueFinancesSummary(league);
+	assert.deepEqual([...summary.years[0].breakdown], []);
+}
+
+{
+	// Won the division but the payout field isn't entered — reads as $0,
+	// same as an unentered placement payout.
+	const league = {
+		name: 'M', franchiseId: '0001',
+		results: [{ year: '2024', rank: 4, total: 10, divisionWinnerFranchiseId: '0001' }],
+	};
+	const summary = domCtx.leagueFinancesSummary(league);
+	assert.equal(summary.years[0].won, 0);
+}
+
+{
+	// A year with no divisionWinnerFranchiseId at all (backfilled before this
+	// shipped, or a draftonly league) never throws and contributes $0.
+	const league = {
+		name: 'N', franchiseId: '0001', payoutDivisionWinner: 75,
+		results: [{ year: '2024', rank: 4, total: 10 }],
+	};
+	const summary = domCtx.leagueFinancesSummary(league);
+	assert.equal(summary.years[0].won, 0);
+}
+
+{
+	// Division winner stacks with placement and weekly/season high, in that
+	// order — every award this franchise earned in one year, all at once.
+	const league = {
+		name: 'O', franchiseId: '0001', dues: 0,
+		payout1: 300, payoutDivisionWinner: 75, payoutWeeklyHigh: 25, payoutSeasonHigh: 50,
+		results: [{
+			year: '2024', rank: 1, total: 10, divisionWinnerFranchiseId: '0001',
+			scoring: {
+				weeklyHighs: [{ franchiseId: '0001', teamName: 'Mine', week: 5, points: 180 }],
+				seasonHigh: { franchiseId: '0001', teamName: 'Mine', points: 2200 },
+			},
+		}],
+	};
+	const summary = domCtx.leagueFinancesSummary(league);
+	const y = summary.years[0];
+	assert.equal(y.won, 300 + 75 + 25 + 50);
+	assert.deepEqual(plain(y.breakdown), [
+		{ label: '1st', amount: 300 },
+		{ label: 'Division Winner', amount: 75 },
+		{ label: 'Weekly High (Wk 5)', amount: 25 },
+		{ label: 'Season High', amount: 50 },
+	]);
 }
 
 // ---- leagueFinancesSummary: weekly/season high-score payouts -----------------

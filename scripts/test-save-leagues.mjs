@@ -103,6 +103,13 @@ check('rejects a negative weekly-high payout', validate(withField('payoutWeeklyH
 check('rejects a non-numeric season-high payout', validate(withField('payoutSeasonHigh', 'lots')).length > 0);
 check('allows a zero weekly-high payout', validate(withField('payoutWeeklyHigh', 0)).length === 0);
 check('allows both high-score payouts blank', validate([base()]).length === 0);
+// Division winner payout — independent of Finish (best regular-season
+// record, not necessarily the eventual bracket winner), same non-negative
+// dollar-amount-or-blank validation as every other payout field.
+check('rejects a negative division-winner payout', validate(withField('payoutDivisionWinner', -1)).length > 0);
+check('rejects a non-numeric division-winner payout', validate(withField('payoutDivisionWinner', 'lots')).length > 0);
+check('allows a zero division-winner payout', validate(withField('payoutDivisionWinner', 0)).length === 0);
+check('allows a blank division-winner payout', validate([base()]).length === 0);
 
 // The whole reason the endpoint checks this: every lookup in the codebase is
 // leagues.find((l) => l.id === id), so a duplicate shadows rather than errors.
@@ -165,6 +172,8 @@ check('stores dues as a number', mergeLeague({ ...base(), dues: '100' }).dues ==
 check('stores a payout as a number', mergeLeague({ ...base(), payout1: '500' }).payout1 === 500);
 check('stores a weekly-high payout as a number', mergeLeague({ ...base(), payoutWeeklyHigh: '25' }).payoutWeeklyHigh === 25);
 check('drops a blank season-high payout', !('payoutSeasonHigh' in mergeLeague({ ...base(), payoutSeasonHigh: '' })));
+check('stores a division-winner payout as a number', mergeLeague({ ...base(), payoutDivisionWinner: '75' }).payoutDivisionWinner === 75);
+check('drops a blank division-winner payout', !('payoutDivisionWinner' in mergeLeague({ ...base(), payoutDivisionWinner: '' })));
 check('drops a blank dues field', !('dues' in mergeLeague({ ...base(), dues: '' })));
 check('drops blank payout fields', !('payout1' in mergeLeague({ ...base(), payout1: '' })));
 // Zero is a real, deliberate answer and must survive — not be dropped the

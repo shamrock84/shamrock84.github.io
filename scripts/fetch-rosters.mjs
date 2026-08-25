@@ -62,6 +62,8 @@ import {
   computeMflSeasonPlacementsByPoints,
   espnSeasonPlacement,
   computeSeasonScoringRecords,
+  mflDivisionWinner,
+  espnDivisionWinner,
 } from './lib/history.mjs';
 
 const USERNAME = process.env.MFL_USERNAME;
@@ -436,7 +438,10 @@ export async function backfillLeagueHistory(leagues, previousById, cookie) {
           const mine = teams.find((t) => String(t.id) === String(league.franchiseId));
           const placement = mine ? espnSeasonPlacement(mine, teams.length) : null;
           if (placement) {
-            league.results.push({ year: String(year), ...placement });
+            const entry = { year: String(year), ...placement };
+            const divisionWinnerFranchiseId = espnDivisionWinner(teams);
+            if (divisionWinnerFranchiseId) entry.divisionWinnerFranchiseId = divisionWinnerFranchiseId;
+            league.results.push(entry);
             yearsAdded++;
             leaguesTouched++;
           }
@@ -472,6 +477,11 @@ export async function backfillLeagueHistory(leagues, previousById, cookie) {
       if (mflBudget <= 0 || mflRateLimited || leagueMflBudget <= 0) break;
       try {
         let mine;
+        // Only the bracket path (below) ever fetches a regular-season order
+        // to read a "division winner" off — draftonly leagues rank by total
+        // points and never fetch leagueStandings at all, so this stays null
+        // for them, same as any other award that doesn't apply.
+        let divisionWinnerFranchiseId = null;
         if (league.type === 'draftonly') {
           // No bracket to walk at all — see computeMflSeasonPlacementsByPoints
           // in scripts/lib/history.mjs. `nameById`'s keys are that season's
@@ -535,6 +545,7 @@ export async function backfillLeagueHistory(leagues, previousById, cookie) {
             regularSeasonOrder,
           });
           mine = placements.find((p) => p.franchiseId === league.franchiseId);
+          divisionWinnerFranchiseId = mflDivisionWinner(regularSeasonOrder);
         }
         if (mine && mine.rank != null) {
           // A retried year may already carry a guessed entry from a prior
@@ -549,6 +560,7 @@ export async function backfillLeagueHistory(leagues, previousById, cookie) {
           const existing = league.results.find((r) => String(r.year) === String(year));
           league.results = league.results.filter((r) => String(r.year) !== String(year));
           const entry = { year, rank: mine.rank, total: mine.total, guessed: mine.guessed };
+          if (divisionWinnerFranchiseId) entry.divisionWinnerFranchiseId = divisionWinnerFranchiseId;
           if (existing?.scoring) entry.scoring = existing.scoring;
           league.results.push(entry);
           yearsAdded++;

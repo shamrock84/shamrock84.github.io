@@ -46,7 +46,7 @@ const SCORING_FORMATS = new Set(['PPR', 'HALF', 'STD']);
 const KEY_ORDER = [
   'id', 'franchiseId', 'name', 'type', 'provider',
   'tags', 'lineupPilot', 'rankingType', 'scoring', 'season', 'startYear', 'rulesUrl', 'commishContact',
-  'dues', 'payout1', 'payout2', 'payout3', 'payoutWeeklyHigh', 'payoutSeasonHigh',
+  'dues', 'payout1', 'payout2', 'payout3', 'payoutDivisionWinner', 'payoutWeeklyHigh', 'payoutSeasonHigh',
 ];
 
 // The Finances card's placement payout fields, in the order the Admin tab
@@ -54,6 +54,17 @@ const KEY_ORDER = [
 // here is assumed to pay exactly the top 3 — see leagueFinancesSummary in
 // myffl.html, which reads these same three field names.
 const PAYOUT_FIELDS = [['payout1', '1st place payout'], ['payout2', '2nd place payout'], ['payout3', '3rd place payout']];
+
+// A third, independent payout — not tied to final placement at all (a team
+// can have the league's best regular-season record and still lose the
+// bracket final), so kept out of PAYOUT_FIELDS. leagueFinancesSummary adds
+// it into Won for a year when league.franchiseId matches that year's
+// league.results[].divisionWinnerFranchiseId — stamped by the SAME
+// placement backfill that fills rank/total/guessed (mflDivisionWinner/
+// espnDivisionWinner in scripts/lib/history.mjs, no separate pass or extra
+// request), so unlike SCORING_PAYOUT_FIELDS below it's expected to be
+// populated as soon as a year's Finish is, not lag behind it.
+const DIVISION_PAYOUT_FIELDS = [['payoutDivisionWinner', 'division winner payout']];
 
 // A second, independent pair of payouts — not tied to a finish's rank at
 // all, so kept out of PAYOUT_FIELDS rather than folded in. leagueFinancesSummary
@@ -180,13 +191,13 @@ function validate(leagues) {
         errors.push(`${label}: rules link must start with http:// or https://.`);
       }
     }
-    // Feeds the History tab's Finances card. All four are optional and
+    // Feeds the History tab's Finances card. All six are optional and
     // independent — a league can have dues entered with no payouts yet, or
     // vice versa; the card renders whatever's known and dashes the rest.
     if (!isValidMoneyField(league.dues)) {
       errors.push(`${label}: dues must be a non-negative dollar amount, or left blank.`);
     }
-    for (const [key, fieldLabel] of [...PAYOUT_FIELDS, ...SCORING_PAYOUT_FIELDS]) {
+    for (const [key, fieldLabel] of [...PAYOUT_FIELDS, ...DIVISION_PAYOUT_FIELDS, ...SCORING_PAYOUT_FIELDS]) {
       if (!isValidMoneyField(league[key])) {
         errors.push(`${label}: ${fieldLabel} must be a non-negative dollar amount, or left blank.`);
       }
@@ -243,6 +254,7 @@ function mergeLeague(league) {
   putMoney('payout1', league.payout1);
   putMoney('payout2', league.payout2);
   putMoney('payout3', league.payout3);
+  putMoney('payoutDivisionWinner', league.payoutDivisionWinner);
   putMoney('payoutWeeklyHigh', league.payoutWeeklyHigh);
   putMoney('payoutSeasonHigh', league.payoutSeasonHigh);
 

@@ -19,6 +19,8 @@ import {
   computeMflSeasonPlacements,
   computeMflSeasonPlacementsByPoints,
   espnSeasonPlacement,
+  mflDivisionWinner,
+  espnDivisionWinner,
 } from './lib/history.mjs';
 import { yearsNeedingHistoryBackfill } from './fetch-rosters.mjs';
 
@@ -498,6 +500,33 @@ const mnmx2006Losers = {
   assert.equal(espnSeasonPlacement({ rankCalculatedFinal: 0 }, 10), null, 'zero is not a real rank');
   assert.equal(espnSeasonPlacement({ rankCalculatedFinal: null }, 10), null);
   assert.equal(espnSeasonPlacement({}, 10), null, 'missing entirely — an old snapshot, or a season ESPN never resolved');
+}
+
+// ---- "Division Winner" payout: best regular-season record -----------------
+// Independent of computeMflSeasonPlacements/espnSeasonPlacement above — those
+// derive FINAL placement, which is deliberately not the same thing (the
+// whole point of the bracket walk is that regular-season order and the
+// eventual champion can differ).
+
+{
+  // MFL's leagueStandings rows arrive pre-sorted by MFL's own tiebreakers,
+  // so index 0 is simply the best regular-season record.
+  assert.equal(mflDivisionWinner(['0010', '0001', '0009', '0002', '0008']), '0010');
+  assert.equal(mflDivisionWinner([]), null, 'no standings rows — nothing to report');
+  assert.equal(mflDivisionWinner(null), null, 'a sync inconsistency should never throw');
+}
+
+{
+  // ESPN's playoffSeed already encodes the regular-season rank a team
+  // entered the postseason with — seed 1 is the "division winner."
+  const teams = [
+    { id: '3', playoffSeed: 2, rankCalculatedFinal: 1 },
+    { id: '7', playoffSeed: 1, rankCalculatedFinal: 4 },
+    { id: '9', playoffSeed: 3, rankCalculatedFinal: 2 },
+  ];
+  assert.equal(espnDivisionWinner(teams), '7', 'seed 1, independent of who actually won the bracket (id 3)');
+  assert.equal(espnDivisionWinner([]), null);
+  assert.equal(espnDivisionWinner([{ id: '1', playoffSeed: 2 }]), null, 'no team seeded 1 in this data');
 }
 
 // ---- computeMflSeasonPlacementsByPoints ------------------------------------
