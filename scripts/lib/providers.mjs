@@ -1017,7 +1017,7 @@ export async function fetchMflSeasonBracketData(yearLeagueId, cookie, year) {
 
   const rawBrackets = bracketsData?.playoffBrackets?.playoffBracket;
   const brackets = (Array.isArray(rawBrackets) ? rawBrackets : rawBrackets ? [rawBrackets] : [])
-    .map((b) => ({ id: String(b.id), name: b.name, teamsInvolved: b.teamsInvolved }));
+    .map((b) => ({ id: String(b.id), name: b.name, teamsInvolved: b.teamsInvolved, bracketWinnerTitle: b.bracketWinnerTitle }));
 
   const bracketDataById = new Map();
   for (const b of brackets) {

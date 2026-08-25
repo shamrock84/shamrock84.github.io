@@ -78,8 +78,16 @@
 const TOILET_BOWL_RE = /toilet/i;
 const CONSOLATION_RE = /consolation/i;
 
-export function bracketFamily(name) {
-  return TOILET_BOWL_RE.test(name || '') ? 'bottom' : 'top';
+// winnerTitle is optional and checked alongside name — a real season (MNMx
+// 2006) ran a second bracket named "MNMx Dynasty Losers Bracket" with no
+// "toilet" in the name at all, so it was misclassified as 'top': lumped into
+// the same family as the winners bracket, then dropped entirely once its
+// five franchises (a disjoint set, not a subset of the winners bracket's
+// own) failed the secondary-bracket subset test in groupBracketsByFamily's
+// caller. Its own bracketWinnerTitle — "Toilet Bowl Champion" — says exactly
+// what name doesn't, and MFL provides it on every bracket alongside name.
+export function bracketFamily(name, winnerTitle) {
+  return TOILET_BOWL_RE.test(name || '') || TOILET_BOWL_RE.test(winnerTitle || '') ? 'bottom' : 'top';
 }
 
 export function isConsolationBracket(name) {
@@ -139,7 +147,7 @@ function resolveGame(game) {
 
 function groupBracketsByFamily(brackets) {
   const groups = { top: [], bottom: [] };
-  for (const b of brackets || []) groups[bracketFamily(b.name)].push(b);
+  for (const b of brackets || []) groups[bracketFamily(b.name, b.bracketWinnerTitle)].push(b);
   return groups;
 }
 

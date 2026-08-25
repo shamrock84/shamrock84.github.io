@@ -35,6 +35,13 @@ import { yearsNeedingHistoryBackfill } from './fetch-rosters.mjs';
   assert.equal(isConsolationBracket('Fantasy Bowl Consolation'), true);
   assert.equal(isConsolationBracket('Toilet Bowl Consolation'), true);
   assert.equal(isConsolationBracket('Fantasy Bowl'), false);
+
+  // bracketWinnerTitle is checked alongside name, not instead of it — a
+  // bracket can be identified as the bottom family by either field.
+  assert.equal(bracketFamily('MNMx Dynasty Losers Bracket', 'Toilet Bowl Champion'), 'bottom', 'name alone gives no hint, but bracketWinnerTitle does');
+  assert.equal(bracketFamily('Toilet Bowl', 'League Champion'), 'bottom', 'name alone is still enough');
+  assert.equal(bracketFamily('Fantasy Bowl', 'League Champion'), 'top', 'neither field mentions toilet');
+  assert.equal(bracketFamily('Fantasy Bowl', undefined), 'top', 'a missing winnerTitle behaves like the old one-argument form');
 }
 
 // ---- Real MFL bracket data: league 26696, year 2025 ------------------------
@@ -381,6 +388,95 @@ const ironBank2020ToiletBowl = {
   );
   for (const id of ['0005', '0006', '0008', '0012']) {
     assert.equal(byId[id].guessed, true, `${id} has no secondary bracket to catch it — still a guess`);
+  }
+}
+
+// ---- Real MFL bracket data: league 80522 (MNMx Dynasty), year 2006 --------
+// Verbatim from probe-league-history.yml. This is the case that exposed the
+// bracketWinnerTitle gap: the league ran two same-size (5-team) brackets,
+// "MNMx Dynasty Playoffs" and "MNMx Dynasty Losers Bracket" — the second
+// contains no "toilet"/"consolation" keyword in its name at all, so before
+// this fix it was misclassified as 'top' (the same family as the winners
+// bracket), then discarded outright once its five franchises — a disjoint
+// set, not a subset of the winners bracket's own five — failed the
+// secondary-bracket subset test. Only its bracketWinnerTitle, "Toilet Bowl
+// Champion", said what it actually was. The user's own franchise (0001) sits
+// in the WINNERS bracket and is unaffected either way (it was already
+// correctly, if partially, guessed) — this fixture pins the other five
+// franchises, who were silently getting a plain regular-season-order guess
+// instead of their real, bracket-determined placement.
+const mnmx2006Winners = {
+  playoffRound: [
+    { week: '14', playoffGame: { home: { points: '127.5', franchise_id: '0001', seed: '4' }, away: { points: '123.7', franchise_id: '0003', seed: '5' }, game_id: '1' } },
+    {
+      week: '15',
+      playoffGame: [
+        { home: { points: '125.6', franchise_id: '0007', seed: '1' }, away: { franchise_id: '0001', winner_of_game: '1', points: '120.6' }, game_id: '2' },
+        { home: { seed: '2', points: '132', franchise_id: '0008' }, away: { franchise_id: '0002', points: '97.9', seed: '3' }, game_id: '3' },
+      ],
+    },
+    { week: '16', playoffGame: { away: { points: '86.9', winner_of_game: '2', franchise_id: '0007' }, home: { franchise_id: '0008', winner_of_game: '3', points: '94' }, game_id: '4' } },
+  ],
+};
+const mnmx2006Losers = {
+  playoffRound: [
+    { week: '14', playoffGame: { home: { seed: '4', points: '106.9', franchise_id: '0009' }, away: { franchise_id: '0005', points: '90.4', seed: '5' }, game_id: '1' } },
+    {
+      week: '15',
+      playoffGame: [
+        { away: { franchise_id: '0009', winner_of_game: '1', points: '78' }, home: { franchise_id: '0006', points: '93', seed: '1' }, game_id: '2' },
+        { away: { seed: '3', franchise_id: '0010', points: '97.6' }, home: { seed: '2', franchise_id: '0004', points: '132' }, game_id: '3' },
+      ],
+    },
+    { week: '16', playoffGame: { home: { points: '123.4', winner_of_game: '3', franchise_id: '0004' }, away: { points: '106.6', winner_of_game: '2', franchise_id: '0006' }, game_id: '4' } },
+  ],
+};
+
+{
+  const brackets = [
+    { id: '1', name: 'MNMx Dynasty Playoffs', teamsInvolved: '5', bracketWinnerTitle: 'MNMx Dynasty Champion' },
+    { id: '2', name: 'MNMx Dynasty Losers Bracket', teamsInvolved: '5', bracketWinnerTitle: 'Toilet Bowl Champion' },
+  ];
+  const bracketDataById = new Map([
+    ['1', mnmx2006Winners],
+    ['2', mnmx2006Losers],
+  ]);
+  const leagueFranchiseIds = ['0007', '0008', '0001', '0002', '0006', '0003', '0004', '0010', '0009', '0005'];
+  const regularSeasonOrder = leagueFranchiseIds;
+
+  const result = computeMflSeasonPlacements({ leagueFranchiseIds, brackets, bracketDataById, regularSeasonOrder });
+  const byId = Object.fromEntries(result.map((r) => [r.franchiseId, r]));
+
+  assert.equal(byId['0008'].rank, 1, 'winners bracket final winner');
+  assert.equal(byId['0007'].rank, 2, 'winners bracket final loser');
+  assert.ok(!byId['0008'].guessed && !byId['0007'].guessed);
+
+  // 0001, 0002, 0003 all lost before the winners final and there's no 3rd-
+  // place game — a genuine gap, ordered by regular-season standing.
+  assert.deepEqual(
+    ['0001', '0002', '0003'].map((id) => byId[id].rank).sort((a, b) => a - b),
+    [3, 4, 5]
+  );
+  for (const id of ['0001', '0002', '0003']) {
+    assert.equal(byId[id].guessed, true, `${id} has no game to settle it against the other two`);
+  }
+
+  // The losers bracket ("Toilet Bowl") is now correctly recognized as its
+  // own bottom family via bracketWinnerTitle, so its final is a real,
+  // fully-determined result — not scored backwards from the top family.
+  assert.equal(byId['0004'].rank, 6, 'Toilet Bowl final winner — best open rank in the bottom family');
+  assert.equal(byId['0006'].rank, 7, 'Toilet Bowl final loser');
+  assert.ok(!byId['0004'].guessed && !byId['0006'].guessed, 'settled by an actual game, not a guess');
+
+  // 0009, 0005, 0010 all lost before the Toilet Bowl final with no 3rd-place
+  // game of their own — the same kind of gap as the top family's three.
+  assert.deepEqual(
+    ['0009', '0005', '0010'].map((id) => byId[id].rank).sort((a, b) => a - b),
+    [8, 9, 10]
+  );
+  for (const id of ['0009', '0005', '0010']) {
+    assert.equal(byId[id].guessed, true, `${id} has no game to settle it against the other two`);
+    assert.equal(byId[id].total, 10);
   }
 }
 
