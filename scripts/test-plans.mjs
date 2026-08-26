@@ -50,9 +50,12 @@ check('rejects too many entries in one league', validatePlans({
 check('ignores unknown top-level keys', validatePlans({ somethingElse: 5 }).length === 0);
 
 check('rejects a non-object cutPlans kind', validatePlans({ cutPlans: 'nope' }).length === 1);
+check('accepts a well-formed resultOverrides document',
+  validatePlans({ resultOverrides: { 30641: { 2024: '2' } } }).length === 0);
+check('rejects a non-object resultOverrides kind', validatePlans({ resultOverrides: 'nope' }).length === 1);
 
 console.log('emptyDocument');
-eq('carries all three plan kinds', emptyDocument(), { contractPlans: {}, salaryPlans: {}, cutPlans: {}, updatedAt: null });
+eq('carries all four plan kinds', emptyDocument(), { contractPlans: {}, salaryPlans: {}, cutPlans: {}, resultOverrides: {}, updatedAt: null });
 
 console.log('mergePlans');
 // The case this endpoint exists for: a phone that has never synced posts an
@@ -81,12 +84,12 @@ eq('stored wins a conflict — it synced more recently than an unpushed local',
     { contractPlans: { 30641: { 1: '1' } } },
   ).contractPlans,
   { 30641: { 1: '3' } });
-eq('all three kinds merge independently',
+eq('all four kinds merge independently',
   mergePlans(
-    { contractPlans: { 30641: { 1: '1' } }, salaryPlans: { 30641: { 9: '50' } }, cutPlans: { 30641: { 2: '1' } } },
+    { contractPlans: { 30641: { 1: '1' } }, salaryPlans: { 30641: { 9: '50' } }, cutPlans: { 30641: { 2: '1' } }, resultOverrides: { 30641: { 2024: '3' } } },
     { salaryPlans: { 30641: { 8: '25' } } },
   ),
-  { contractPlans: { 30641: { 1: '1' } }, salaryPlans: { 30641: { 8: '25', 9: '50' } }, cutPlans: { 30641: { 2: '1' } }, updatedAt: null });
+  { contractPlans: { 30641: { 1: '1' } }, salaryPlans: { 30641: { 8: '25', 9: '50' } }, cutPlans: { 30641: { 2: '1' } }, resultOverrides: { 30641: { 2024: '3' } }, updatedAt: null });
 eq('numbers are normalised to strings',
   mergePlans(emptyDocument(), { contractPlans: { 30641: { 1: 2 } } }).contractPlans,
   { 30641: { 1: '2' } });
