@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-26T13:20:25.151Z",
+  "generatedAt": "2026-08-26T15:58:39.155Z",
   "year": "2026",
   "rankingPools": {
     "DYNASTY|PPR|ALL": {
@@ -12550,6 +12550,27 @@
       "availableAt": "2026-08-26T13:18:15.855Z",
       "results": [
         {
+          "year": "2012",
+          "rank": 12,
+          "total": 12,
+          "guessed": true,
+          "divisionWinnerFranchiseId": "0009"
+        },
+        {
+          "year": "2013",
+          "rank": 8,
+          "total": 12,
+          "guessed": false,
+          "divisionWinnerFranchiseId": "0002"
+        },
+        {
+          "year": "2014",
+          "rank": 11,
+          "total": 12,
+          "guessed": true,
+          "divisionWinnerFranchiseId": "0004"
+        },
+        {
           "year": "2015",
           "rank": 12,
           "total": 12,
@@ -12626,7 +12647,15 @@
           "guessed": false,
           "divisionWinnerFranchiseId": "0005"
         }
-      ]
+      ],
+      "historyLeagueIds": {
+        "2010": "34034",
+        "2011": "12728",
+        "2012": "11728",
+        "2013": "38277",
+        "2014": "39105",
+        "2015": "39564"
+      }
     },
     {
       "id": "35217",
