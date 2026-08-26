@@ -5477,6 +5477,10 @@
 			return `${n} league${n === 1 ? '' : 's'}`;
 		}
 
+		function seasonCount(n) {
+			return `${n} season${n === 1 ? '' : 's'}`;
+		}
+
 		// Neither analytics card carries a footnote. Both used to explain their own
 		// workings under the table — the median ECR being drawn from leagues that
 		// can rank off different FantasyPros lists, and where an injury designation
@@ -6480,7 +6484,8 @@
 				}));
 			}
 			card.appendChild(cardHead);
-			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(summaries.length)}` }));
+			const totalSeasons = summaries.reduce((sum, s) => sum + s.years.length, 0);
+			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(summaries.length)}, ${seasonCount(totalSeasons)}` }));
 
 			for (const { league, years, average } of summaries) {
 				// The average used to sit as a footer row inside the yearly
@@ -6741,7 +6746,8 @@
 				text: `Total ${formatMoney(overallTotal)}`,
 			}));
 			card.appendChild(cardHead);
-			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(summaries.length)}` }));
+			const totalSeasons = summaries.reduce((sum, s) => sum + s.years.length, 0);
+			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(summaries.length)}, ${seasonCount(totalSeasons)}` }));
 
 			for (const { league, years, total } of summaries) {
 				// Same shape as the Results card's per-league head: name left,
