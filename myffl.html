@@ -6511,7 +6511,14 @@
 				card.appendChild(head);
 
 				const details = el('details', { class: 'results-details' });
-				details.appendChild(el('summary', { class: 'results-summary', text: `Yearly breakdown (${years.length})` }));
+				const hasGuessed = years.some((r) => r.guessed);
+				details.appendChild(el('summary', { class: 'results-summary', text: `Yearly breakdown (${years.length})` }, hasGuessed ? [
+					el('span', {
+						class: 'results-guessed',
+						title: 'Includes an estimated finish — no bracket data settled that year\'s exact placement',
+						text: ' *',
+					}),
+				] : []));
 
 				const table = el('table', { class: 'standings results-table' });
 				const headRow = el('tr');
