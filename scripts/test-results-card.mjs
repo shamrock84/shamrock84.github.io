@@ -141,6 +141,117 @@ function fullText(node) {
 	assert.deepEqual([...summary.years].map((y) => y.year), ['2024', '2020']);
 }
 
+// ---- leagueResultsTrend / the trending arrow --------------------------------
+//
+// Compares the oldest to the newest of the most recent RESULTS_TREND_SEASONS
+// (3) ranked years. A lower rank is a better finish, so a newest rank lower
+// than the oldest is "up"; higher is "down". Guessed ranks count the same as
+// confirmed ones. Fewer than two ranked years in the window, or an unchanged
+// rank across it, is "not enough signal" and returns null rather than
+// guessing at a direction.
+
+{
+	// Improving: 7th three years ago -> 1st most recently.
+	const league = { name: 'A', results: [
+		{ year: '2023', rank: 7, total: 12, guessed: false },
+		{ year: '2024', rank: 4, total: 12, guessed: false },
+		{ year: '2025', rank: 1, total: 12, guessed: false },
+	] };
+	assert.equal(domCtx.leagueResultsSummary(league).trend, 'up', 'newest rank is better than oldest -> up');
+}
+
+{
+	// Declining: 1st three years ago -> 7th most recently.
+	const league = { name: 'B', results: [
+		{ year: '2023', rank: 1, total: 12, guessed: false },
+		{ year: '2024', rank: 4, total: 12, guessed: false },
+		{ year: '2025', rank: 7, total: 12, guessed: false },
+	] };
+	assert.equal(domCtx.leagueResultsSummary(league).trend, 'down', 'newest rank is worse than oldest -> down');
+}
+
+{
+	// Only the oldest and newest of the window matter — the middle year is
+	// not averaged in, so a dip in the middle doesn't cancel a real gain.
+	const league = { name: 'C', results: [
+		{ year: '2023', rank: 5, total: 12, guessed: false },
+		{ year: '2024', rank: 12, total: 12, guessed: false },
+		{ year: '2025', rank: 2, total: 12, guessed: false },
+	] };
+	assert.equal(domCtx.leagueResultsSummary(league).trend, 'up', 'endpoints only: 5th -> 2nd is up regardless of a worse middle year');
+}
+
+{
+	// A 4th, older ranked year exists but falls outside the 3-season window,
+	// so it must not be the one compared against.
+	const league = { name: 'D', results: [
+		{ year: '2022', rank: 1, total: 12, guessed: false }, // outside the window
+		{ year: '2023', rank: 9, total: 12, guessed: false },
+		{ year: '2024', rank: 5, total: 12, guessed: false },
+		{ year: '2025', rank: 1, total: 12, guessed: false },
+	] };
+	assert.equal(domCtx.leagueResultsSummary(league).trend, 'up', 'window is the 3 most recent ranked years, 2022 excluded');
+}
+
+{
+	// Exactly one ranked year: no direction to compare, no arrow.
+	const league = { name: 'E', results: [
+		{ year: '2025', rank: 4, total: 12, guessed: false },
+	] };
+	assert.equal(domCtx.leagueResultsSummary(league).trend, null, 'fewer than 2 ranked years -> null');
+}
+
+{
+	// Unchanged rank across the window: flat, not a guessed direction.
+	const league = { name: 'F', results: [
+		{ year: '2023', rank: 4, total: 12, guessed: false },
+		{ year: '2024', rank: 4, total: 12, guessed: false },
+		{ year: '2025', rank: 4, total: 12, guessed: false },
+	] };
+	assert.equal(domCtx.leagueResultsSummary(league).trend, null, 'oldest === newest -> null, not an arbitrary direction');
+}
+
+{
+	// A guessed rank counts exactly like a confirmed one for trend purposes.
+	const league = { name: 'G', results: [
+		{ year: '2024', rank: 9, total: 12, guessed: true },
+		{ year: '2025', rank: 2, total: 12, guessed: false },
+	] };
+	assert.equal(domCtx.leagueResultsSummary(league).trend, 'up', 'a guess is still the best answer on record');
+}
+
+{
+	// An unranked (still-guessing, no rank at all) year in the window is
+	// skipped rather than breaking the comparison — it never enters `ranked`.
+	const league = { name: 'H', results: [
+		{ year: '2023', rank: 8, total: 12, guessed: false },
+		{ year: '2024', total: 12, guessed: true }, // no rank yet
+		{ year: '2025', rank: 3, total: 12, guessed: false },
+	] };
+	assert.equal(domCtx.leagueResultsSummary(league).trend, 'up', 'unranked year has no rank field and is skipped');
+}
+
+// The rendered arrow: color-coded span next to Avg Finish, only when there's
+// a direction to show.
+{
+	const leagues = [
+		{ id: 'A', name: 'League A', type: 'dynasty', results: [
+			{ year: '2023', rank: 7, total: 12, guessed: false },
+			{ year: '2024', rank: 4, total: 12, guessed: false },
+			{ year: '2025', rank: 1, total: 12, guessed: false },
+		] },
+		{ id: 'B', name: 'League B', type: 'dynasty', results: [
+			{ year: '2025', rank: 4, total: 12, guessed: false }, // only one ranked year
+		] },
+	];
+	const card = domCtx.renderResultsCard(leagues);
+	const trends = findAll(card, (c) => c.cls.split(/\s+/).includes('results-trend'));
+	assert.equal(trends.length, 1, 'only League A has enough ranked seasons for a trend');
+	assert.ok(trends[0].cls.includes('results-trend-up'), 'improving finish renders the up variant');
+	assert.equal(fullText(trends[0]), '▲');
+	assert.match(trends[0].attrs.title, /Trending up/);
+}
+
 // ---- renderResultsCard ------------------------------------------------------
 
 {

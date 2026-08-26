@@ -1354,6 +1354,16 @@
 		.results-avg-overall {
 			font-size: 1.15rem;
 		}
+		/* Sits right after Avg Finish, reusing the gain/loss colors Finances
+		   already established (--gain-text / --ir-text) rather than a third
+		   meaning for green and red on this page. */
+		.results-trend {
+			font-weight: 700;
+			font-size: 0.85rem;
+			flex-shrink: 0;
+		}
+		.results-trend-up { color: var(--gain-text); }
+		.results-trend-down { color: var(--ir-text); }
 		/* Hidden by default — native <details>, so no toggle state has to be
 		   tracked across renderGrid() re-renders the way the Admin card's
 		   open/closed leagues are. */
@@ -6534,6 +6544,31 @@
 		// when the rank fell outside the top 3 or the field's unentered —
 		// so the Finish cell can name the amount without restating the
 		// obvious "1st"/"2nd"/"3rd" the rank already shows.
+		// How many ranked seasons the trending arrow looks back across — its
+		// own constant rather than tied to any other threshold on the page,
+		// since it's purely a display choice about how far back "recent
+		// form" should reach.
+		const RESULTS_TREND_SEASONS = 3;
+
+		// Whether a league's finish is trending up or down: compares the
+		// oldest to the newest of its most recent RESULTS_TREND_SEASONS
+		// ranked years. `ranked` arrives sorted most-recent-first, the same
+		// order leagueResultsSummary sorts years in. Same as the average
+		// above, a guessed rank counts exactly like a confirmed one — see
+		// the "guessed" comment on buildResultRankCell, a guess is still the
+		// best answer on record, only its provenance differs. Fewer than two
+		// ranked years in that window, or an unchanged rank across it, is
+		// "not enough signal" rather than a guess at a direction, so it
+		// returns null and no arrow renders.
+		function leagueResultsTrend(ranked) {
+			const recent = ranked.slice(0, RESULTS_TREND_SEASONS);
+			if (recent.length < 2) return null;
+			const newest = recent[0].rank;
+			const oldest = recent[recent.length - 1].rank;
+			if (newest === oldest) return null;
+			return newest < oldest ? 'up' : 'down';
+		}
+
 		function leagueResultsSummary(league) {
 			const results = effectiveResults(league);
 			const years = results
@@ -6541,7 +6576,8 @@
 				.sort((a, b) => Number(b.year) - Number(a.year));
 			const ranked = years.filter((r) => Number.isFinite(r.rank));
 			const average = ranked.length ? ranked.reduce((sum, r) => sum + r.rank, 0) / ranked.length : null;
-			return { league, years, average };
+			const trend = leagueResultsTrend(ranked);
+			return { league, years, average, trend };
 		}
 
 		// A guess (a gap no bracket data could settle, filled in from
@@ -6674,7 +6710,7 @@
 			const totalSeasons = summaries.reduce((sum, s) => sum + s.years.length, 0);
 			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(summaries.length)}, ${seasonCount(totalSeasons)}` }));
 
-			for (const { league, years, average } of summaries) {
+			for (const { league, years, average, trend } of summaries) {
 				// The average used to sit as a footer row inside the yearly
 				// table, which put a league's headline number below a block
 				// of detail nobody opened yet. It now sits beside the league
@@ -6693,6 +6729,14 @@
 						class: 'results-avg',
 						title: `Average finish across ${years.filter((r) => Number.isFinite(r.rank)).length} year(s)`,
 						text: `Avg Finish ${average.toFixed(1)}`,
+					}));
+				}
+				if (trend) {
+					const trendSeasons = Math.min(RESULTS_TREND_SEASONS, years.filter((r) => Number.isFinite(r.rank)).length);
+					head.appendChild(el('span', {
+						class: `results-trend results-trend-${trend}`,
+						title: `Trending ${trend} over the last ${trendSeasons} ranked season(s)`,
+						text: trend === 'up' ? '▲' : '▼',
 					}));
 				}
 				card.appendChild(head);
