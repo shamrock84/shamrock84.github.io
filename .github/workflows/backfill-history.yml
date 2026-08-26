@@ -52,7 +52,6 @@ jobs:
           ESPN_S2: ${{ secrets.ESPN_S2 }}
           ESPN_SWID: ${{ secrets.ESPN_SWID }}
           LEAGUE_ID: ${{ inputs.league_id }}
-          DEBUG_HISTORY_LEAGUE_ID: ${{ inputs.league_id }}
         run: node scripts/backfill-history.mjs
 
       - name: Commit and push if changed
