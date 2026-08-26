@@ -386,6 +386,33 @@ export function yearsNeedingHistoryBackfill(historyYears, existingResults, curre
     .sort((a, b) => Number(b.year) - Number(a.year));
 }
 
+// A manual, hand-edited escape hatch for when MFL's own history.league[]
+// chain (fetchMflLeagueHistory) is broken or missing for a season — see
+// config/leagues.json's _readme for historyLeagueIds. Confirmed real and
+// necessary for Survivor (23545, per probe-league-history.yml): its own
+// chain lists "2015: id=23545", but querying THAT id for 2015 returns zero
+// leagueStandings rows and an auth error on every playoffBracket call — a
+// completely different, genuinely real MFL league (id 39564) is what
+// actually returns 2015's real season (12 teams, real Fantasy Bowl/3rd
+// Place/5th Place/Toilet Bowl brackets). id 39564's OWN history.league[] is
+// empty, so there's no automatic way to walk further back from it either —
+// MFL simply doesn't expose the connecting thread between the two ids. This
+// lets a manager supply the correct id for a specific year by hand once
+// they've tracked it down (an old bookmarked league URL, MFL's own site),
+// the same escape-hatch role startYear/season already play for other MFL
+// quirks this codebase can't resolve on its own. An override WINS outright,
+// even over a year the automatic chain already lists — a wrong id is worse
+// than no id at all, which is exactly the 2015 case above (the automatic
+// chain's own self-referencing entry was the wrong one).
+export function applyHistoryLeagueIdOverrides(historyYears, overrides) {
+  if (!overrides) return historyYears;
+  const byYear = new Map((historyYears || []).map((h) => [String(h.year), h]));
+  for (const [year, id] of Object.entries(overrides)) {
+    byYear.set(String(year), { year: String(year), id: String(id) });
+  }
+  return [...byYear.values()];
+}
+
 // Exported so backfill-history.mjs — the on-demand, standalone companion to
 // this pass (see that file's header) — can invoke exactly this logic with
 // its own uncontested cookie and budget, instead of duplicating it.
@@ -492,6 +519,7 @@ export async function backfillLeagueHistory(leagues, previousById, cookie) {
       console.error(`Failed to fetch league history for ${league.name}: ${err.message}`);
       continue;
     }
+    historyYears = applyHistoryLeagueIdOverrides(historyYears, league.historyLeagueIds);
     const missing = yearsNeedingHistoryBackfill(historyYears, league.results, league.season, league.startYear, league.type);
     for (const { year, id } of missing) {
       if (mflBudget <= 0 || mflRateLimited || leagueMflBudget <= 0) break;

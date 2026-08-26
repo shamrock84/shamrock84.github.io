@@ -22,7 +22,7 @@ import {
   mflDivisionWinner,
   espnDivisionWinner,
 } from './lib/history.mjs';
-import { yearsNeedingHistoryBackfill } from './fetch-rosters.mjs';
+import { yearsNeedingHistoryBackfill, applyHistoryLeagueIdOverrides } from './fetch-rosters.mjs';
 
 // ---- Bracket name classification -------------------------------------------
 
@@ -707,6 +707,54 @@ const mnmx2006Losers = {
     ['2025', '2024', '2023', '2022', '2021'],
     'omitting startYear altogether excludes nothing, matching every call site above'
   );
+}
+
+// ---- applyHistoryLeagueIdOverrides -----------------------------------------
+// A manual escape hatch for when MFL's own history.league[] chain is broken
+// or missing for a season — confirmed real for Survivor (23545), whose own
+// chain self-lists "2015: id=23545" even though that id returns broken/empty
+// data for 2015; the real season lives under a completely different id
+// (39564) the chain never mentions.
+
+{
+  const historyYears = [
+    { year: '2023', id: '111' },
+    { year: '2024', id: '111' },
+  ];
+  assert.equal(applyHistoryLeagueIdOverrides(historyYears, null), historyYears,
+    'no overrides configured — the automatic chain passes through unchanged');
+  assert.equal(applyHistoryLeagueIdOverrides(historyYears, undefined), historyYears);
+}
+
+{
+  // An override for a year the automatic chain never knew about at all adds
+  // it — this is how 2010-2014 get discovered for a league whose real
+  // history predates anything MFL's own chain can find.
+  const historyYears = [{ year: '2023', id: '111' }];
+  const result = applyHistoryLeagueIdOverrides(historyYears, { '2020': '222' });
+  assert.deepEqual(
+    [...result].sort((a, b) => a.year - b.year),
+    [{ year: '2020', id: '222' }, { year: '2023', id: '111' }]
+  );
+}
+
+{
+  // An override WINS outright over a year the chain already lists — a wrong
+  // id (the automatic chain's own self-referencing "2015: id=23545") is
+  // worse than no id, so the manual entry replaces it rather than being
+  // skipped as redundant.
+  const historyYears = [{ year: '2015', id: '23545' }];
+  const result = applyHistoryLeagueIdOverrides(historyYears, { '2015': '39564' });
+  assert.deepEqual(result, [{ year: '2015', id: '39564' }]);
+}
+
+{
+  // Numeric override values are coerced to strings — historyYears entries
+  // are always {year, id} strings elsewhere in this pipeline, and a raw
+  // config value (JSON keys/values are already strings from leagues.json,
+  // but this stays robust either way) shouldn't produce a mixed-type entry.
+  const result = applyHistoryLeagueIdOverrides([], { 2010: 34034 });
+  assert.deepEqual(result, [{ year: '2010', id: '34034' }]);
 }
 
 console.log('test-history: all assertions passed');

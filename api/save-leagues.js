@@ -160,6 +160,33 @@ function validate(leagues) {
         errors.push(`${label}: start year must be a four-digit year, or left blank if this league's whole history is yours.`);
       }
     }
+    // A manual escape hatch for when MFL's own history.league[] chain is
+    // broken or missing for a season (see historyLeagueIds in
+    // fetch-rosters.mjs's applyHistoryLeagueIdOverrides and this file's own
+    // _readme entry) — a year -> league-id map, hand-provided once a manager
+    // has tracked the real id down. There's deliberately no Admin tab field
+    // for this: it's rare enough, and specific enough per-league, that a
+    // form wouldn't earn its keep — hand-editing config/leagues.json is the
+    // only way in, same as this endpoint's own unknown-key passthrough
+    // already assumes for fields the tab doesn't know about. Still
+    // validated here like every other field, so a malformed hand-edit fails
+    // loudly instead of quietly corrupting a sync.
+    if (league.historyLeagueIds != null) {
+      const overrides = league.historyLeagueIds;
+      if (typeof overrides !== 'object' || Array.isArray(overrides)) {
+        errors.push(`${label}: historyLeagueIds must be an object mapping year to league ID.`);
+      } else {
+        for (const [year, id] of Object.entries(overrides)) {
+          const y = Number(year);
+          if (!Number.isInteger(y) || y < 2000 || y > 2100) {
+            errors.push(`${label}: historyLeagueIds key "${year}" must be a four-digit year.`);
+          }
+          if (!isNonEmptyString(id)) {
+            errors.push(`${label}: historyLeagueIds["${year}"] must be a non-empty league ID.`);
+          }
+        }
+      }
+    }
     if (league.lineupPilot != null && typeof league.lineupPilot !== 'boolean') {
       errors.push(`${label}: lineup editor setting must be on or off.`);
     }
@@ -270,6 +297,14 @@ function mergeLeague(league) {
 // churn; with it, saving an unchanged config is a genuine no-op.
 function formatValue(value) {
   if (Array.isArray(value)) return `[${value.map((v) => JSON.stringify(v)).join(', ')}]`;
+  // A plain object (currently only historyLeagueIds) — same spaced-out
+  // convention formatLeague itself uses for a whole league (`{ "a": 1 }`,
+  // not JSON.stringify's cramped `{"a":1}`), so a hand-edit written in that
+  // readable style round-trips through a save byte-for-byte.
+  if (value !== null && typeof value === 'object') {
+    const pairs = Object.entries(value).map(([k, v]) => `${JSON.stringify(k)}: ${formatValue(v)}`);
+    return `{ ${pairs.join(', ')} }`;
+  }
   return JSON.stringify(value);
 }
 

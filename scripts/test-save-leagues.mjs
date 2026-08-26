@@ -110,6 +110,21 @@ check('rejects a negative division-winner payout', validate(withField('payoutDiv
 check('rejects a non-numeric division-winner payout', validate(withField('payoutDivisionWinner', 'lots')).length > 0);
 check('allows a zero division-winner payout', validate(withField('payoutDivisionWinner', 0)).length === 0);
 check('allows a blank division-winner payout', validate([base()]).length === 0);
+// historyLeagueIds — a manual escape hatch for a broken/missing MFL
+// history.league[] chain (see fetch-rosters.mjs's
+// applyHistoryLeagueIdOverrides and config/leagues.json's own _readme
+// entry). No Admin tab field for it; validated here so a malformed
+// hand-edit fails loudly instead of quietly corrupting a sync.
+check('allows a league with no historyLeagueIds', validate([base()]).length === 0);
+check('allows a valid historyLeagueIds map',
+  validate(withField('historyLeagueIds', { '2010': '34034', '2015': '39564' })).length === 0,
+  JSON.stringify(validate(withField('historyLeagueIds', { '2010': '34034', '2015': '39564' }))));
+check('rejects a historyLeagueIds that is an array', validate(withField('historyLeagueIds', ['34034'])).length > 0);
+check('rejects a historyLeagueIds that is a string', validate(withField('historyLeagueIds', 'nope')).length > 0);
+check('rejects a historyLeagueIds key that is not a four-digit year',
+  validate(withField('historyLeagueIds', { '15': '39564' })).length > 0);
+check('rejects a historyLeagueIds value that is blank',
+  validate(withField('historyLeagueIds', { '2015': '' })).length > 0);
 
 // The whole reason the endpoint checks this: every lookup in the codebase is
 // leagues.find((l) => l.id === id), so a duplicate shadows rather than errors.
