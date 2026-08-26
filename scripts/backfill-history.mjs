@@ -44,6 +44,7 @@ import { backfillLeagueHistory } from './fetch-rosters.mjs';
 const USERNAME = process.env.MFL_USERNAME;
 const PASSWORD = process.env.MFL_PASSWORD;
 const OUTPUT_PATH = fileURLToPath(new URL('../data/rosters.json', import.meta.url));
+const CONFIG_PATH = fileURLToPath(new URL('../config/leagues.json', import.meta.url));
 
 const targetLeagueIds = (process.env.LEAGUE_ID || '')
   .split(',')
@@ -62,6 +63,27 @@ async function main() {
   // league (rosters, standings, scoring, lineups, power, ...) must pass
   // through untouched.
   const allLeagues = previous.leagues.map((l) => ({ ...l }));
+
+  // historyLeagueIds (see applyHistoryLeagueIdOverrides in fetch-rosters.mjs)
+  // lives only in config/leagues.json — never written into data/rosters.json's
+  // own leagues[], since this script otherwise deliberately avoids
+  // re-deriving anything from the config (see this file's own header). But
+  // that field is an INPUT this exact pass needs, and nothing else here
+  // reads config/leagues.json at all, so without this one targeted lookup a
+  // freshly hand-added override would silently do nothing the first time
+  // backfill-history.yml runs after it's added — confirmed live: Survivor's
+  // 2010-2015 override sat in config for a full run and changed nothing,
+  // because the league object backfillLeagueHistory actually received here
+  // had no historyLeagueIds on it at all.
+  const configLeagues = JSON.parse(await readFile(CONFIG_PATH, 'utf8')).leagues;
+  const historyLeagueIdsById = new Map(
+    configLeagues.filter((l) => l.historyLeagueIds).map((l) => [l.id, l.historyLeagueIds])
+  );
+  for (const league of allLeagues) {
+    const overrides = historyLeagueIdsById.get(league.id);
+    if (overrides) league.historyLeagueIds = overrides;
+  }
+
   const leagues = targetLeagueIds.length
     ? allLeagues.filter((l) => targetLeagueIds.includes(String(l.id)))
     : allLeagues;
