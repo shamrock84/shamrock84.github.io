@@ -355,9 +355,29 @@ const ESPN_HISTORY_LOOKBACK_YEARS = 15;
 // wrong manager, not a gap to fill. Optional and undefined by default so
 // every existing call site (and every league without one set) keeps
 // backfilling its full known history exactly as before.
-export function yearsNeedingHistoryBackfill(historyYears, existingResults, currentSeason, startYear) {
+//
+// One deliberate exception to "confirmed is permanent": `divisionWinnerFranchiseId`
+// was added to this same entry shape well after most leagues' history was
+// already confirmed (see the "Division Winner" payout in CLAUDE.md), so a
+// confirmed year missing it isn't a gap the normal retry rule was ever
+// meant to catch — without this, most of a league's real history would
+// simply never get the field, since a confirmed rank is otherwise never
+// re-fetched. `leagueType` gates it: a `draftonly` league never fetches a
+// regular-season order at all (computeMflSeasonPlacementsByPoints), so
+// treating a missing field as a gap there would retry every single year
+// forever rather than just the ones genuinely missing something. Once a
+// year IS re-fetched through this path, `divisionWinnerFranchiseId` is
+// always set (it rides the same regularSeasonOrder that had to be
+// non-empty for `rank` to have been computed at all — see
+// fetchMflSeasonBracketData), so this never becomes a permanent retry loop
+// of its own.
+export function yearsNeedingHistoryBackfill(historyYears, existingResults, currentSeason, startYear, leagueType) {
+  const canBackfillDivisionWinner = leagueType !== 'draftonly';
   const haveYears = new Set(
-    (existingResults || []).filter((r) => r.guessed === false).map((r) => String(r.year))
+    (existingResults || [])
+      .filter((r) => r.guessed === false)
+      .filter((r) => !canBackfillDivisionWinner || r.divisionWinnerFranchiseId != null)
+      .map((r) => String(r.year))
   );
   return (historyYears || [])
     .filter((h) => Number(h.year) < Number(currentSeason))
@@ -472,7 +492,7 @@ export async function backfillLeagueHistory(leagues, previousById, cookie) {
       console.error(`Failed to fetch league history for ${league.name}: ${err.message}`);
       continue;
     }
-    const missing = yearsNeedingHistoryBackfill(historyYears, league.results, league.season, league.startYear);
+    const missing = yearsNeedingHistoryBackfill(historyYears, league.results, league.season, league.startYear, league.type);
     for (const { year, id } of missing) {
       if (mflBudget <= 0 || mflRateLimited || leagueMflBudget <= 0) break;
       try {
