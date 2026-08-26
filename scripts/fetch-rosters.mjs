@@ -521,11 +521,6 @@ export async function backfillLeagueHistory(leagues, previousById, cookie) {
     }
     historyYears = applyHistoryLeagueIdOverrides(historyYears, league.historyLeagueIds);
     const missing = yearsNeedingHistoryBackfill(historyYears, league.results, league.season, league.startYear, league.type);
-    if (process.env.DEBUG_HISTORY_LEAGUE_ID && league.id === process.env.DEBUG_HISTORY_LEAGUE_ID) {
-      console.log('DEBUG league.historyLeagueIds:', JSON.stringify(league.historyLeagueIds));
-      console.log('DEBUG historyYears (post-override):', JSON.stringify(historyYears));
-      console.log('DEBUG missing:', JSON.stringify(missing));
-    }
     for (const { year, id } of missing) {
       if (mflBudget <= 0 || mflRateLimited || leagueMflBudget <= 0) break;
       try {
