@@ -1,23 +1,37 @@
 name: Backfill Weekly/Season High Scores
 
-# On-demand only, and deliberately never wired into the regular 4-hourly
-# sync — see backfillLeagueScoringRecords in fetch-rosters.mjs for why: a
-# season's weekly totals cost roughly one MFL request PER week fetched
-# (there is no bulk endpoint) over a fixed weeks 1-18 window — not just the
-# league's own regular season, since these payouts run through a league's
-# own playoff bracket too, and a weekly-high award can land on week 18 even
-# though a season-total award only ever counts weeks 1-17 — up to 18
-# requests for a typical season, which is expensive enough that folding it
-# into a sync already brushing MFL's rate limit would risk the same 429
-# cascade documented on backfillLeagueHistory.
+# Deliberately never wired into the regular 4-hourly sync itself — see
+# backfillLeagueScoringRecords in fetch-rosters.mjs for why: a season's
+# weekly totals cost roughly one MFL request PER week fetched (there is no
+# bulk endpoint) over a fixed weeks 1-18 window — not just the league's own
+# regular season, since these payouts run through a league's own playoff
+# bracket too, and a weekly-high award can land on week 18 even though a
+# season-total award only ever counts weeks 1-17 — up to 18 requests for a
+# typical season, which is expensive enough that folding it into a sync
+# already brushing MFL's rate limit would risk the same 429 cascade
+# documented on backfillLeagueHistory.
 # Dispatching backfill-scoring.mjs on its own gives it a cookie and MFL
 # rate-limit window with nothing else competing for it.
 #
-# Never add a schedule trigger here — a league's full weekly-score history
-# is expected to take many runs of this to fully backfill, at zero extra
-# cost once complete, same shape as Backfill League History.
+# The scheduled run below exists so a league added or edited from the Admin
+# tab picks up weekly/season-high scoring on its own over time, rather than
+# needing another manual round of this workflow every time. It is timed to
+# stay clear of sync-mfl-rosters.yml's own '17 */4 * * *' cadence (00:17,
+# 04:17, 08:17, ...) rather than landing right after it — MFL's rate limit
+# is a short window, not a long-lived daily budget (see the 37s-clean vs.
+# 87s-with-429s comparison on the availability pass in CLAUDE.md), so 02:17
+# UTC, exactly 2 hours clear of the nearest sync run on either side, gives
+# it the most recovery room available in a 4-hour cycle. One run a day is
+# a small, steady spend (comparable to a single manual dispatch) against
+# what could be a long tail of missing seasons across many leagues, which
+# is exactly the "several runs to fully backfill, zero cost once complete"
+# shape backfillLeagueHistory already uses. A backlog beyond that pace, or
+# a specific league that needs to catch up now, is still what the
+# workflow_dispatch `league_id` input below is for.
 
 on:
+  schedule:
+    - cron: '17 2 * * *'
   workflow_dispatch:
     inputs:
       league_id:
