@@ -1280,6 +1280,45 @@
 		   the "guessed" flag) is never shown identically to a confirmed one.
 		   Same red as the rest of the page uses for "needs a look". */
 		.results-guessed { color: var(--ir-text); }
+		/* A guessed rank's edit controls (see buildResultRankCell) stay in
+		   that same red — still unconfirmed, editable or not — rather than
+		   borrowing the gold ".years-select-unset" chip the rest of the page
+		   uses for "not yet set": a guess is never wrong here, it's real
+		   regular-season-order data, just not the exact bracket-settled
+		   finish, so "needs a look" is still the right read until it's
+		   confirmed. Confirming drops the class and the controls together
+		   (see confirmResultRank) — there is no way back to this state from
+		   the UI. */
+		.results-rank-input {
+			font: inherit;
+			font-size: 0.82rem;
+			width: 2.4rem;
+			color: var(--ir-text);
+			background: var(--ir-bg);
+			border: 1px solid color-mix(in srgb, var(--ir-text) 35%, var(--border));
+			border-radius: 4px;
+			padding: 0.05rem 0.15rem;
+			text-align: right;
+			font-variant-numeric: tabular-nums;
+		}
+		.results-rank-input.results-rank-input-invalid {
+			outline: 2px solid var(--ir-text);
+			outline-offset: 1px;
+		}
+		.results-confirm-btn {
+			background: none;
+			border: none;
+			padding: 0;
+			margin-left: 0.3rem;
+			font: inherit;
+			font-size: 0.9rem;
+			line-height: 1;
+			color: var(--ir-text);
+			cursor: pointer;
+		}
+		.results-confirm-btn:hover {
+			color: var(--accent);
+		}
 		/* League name and average finish share one row, name left / average
 		   right, so the headline number reads immediately without opening
 		   the yearly breakdown below it. */
@@ -2075,6 +2114,40 @@
 			schedulePlanPush();
 		}
 
+		// A manager's own correction to a guessed Results-tab finish (see
+		// computeMflSeasonPlacements's 'guessed: true' — a regular-season-order
+		// fallback used when no bracket data settled a year's exact placement).
+		// Same leagueId -> key -> string-value shape as the three plans above,
+		// just keyed by year instead of player id, and read back by
+		// effectiveResults below rather than by a roster table. Unlike the
+		// three plans above, there is no "unset" value a manager would ever
+		// choose deliberately — a confirmed finish is meant to stick — so
+		// setResultOverride is only ever called with a real rank (see
+		// buildResultRankCell/confirmResultRank); the delete branch below
+		// exists only for shape-parity with the others and isn't reachable
+		// from the UI.
+		const RESULT_OVERRIDE_STORAGE_KEY = 'myfflResultOverrides';
+		function loadResultOverrides() {
+			try {
+				return JSON.parse(localStorage.getItem(RESULT_OVERRIDE_STORAGE_KEY) || '{}');
+			} catch {
+				return {};
+			}
+		}
+		function setResultOverride(leagueId, year, value) {
+			const overrides = loadResultOverrides();
+			if (!value) {
+				delete overrides[leagueId]?.[year];
+				if (overrides[leagueId] && Object.keys(overrides[leagueId]).length === 0) delete overrides[leagueId];
+			} else {
+				overrides[leagueId] = overrides[leagueId] || {};
+				overrides[leagueId][year] = value;
+			}
+			localStorage.setItem(RESULT_OVERRIDE_STORAGE_KEY, JSON.stringify(overrides));
+			recordPlanEdit('resultOverrides', leagueId, year, value);
+			schedulePlanPush();
+		}
+
 		// --- Plan sync -------------------------------------------------------
 		//
 		// localStorage is per browser per device, so an iPad and a phone kept
@@ -2113,13 +2186,14 @@
 		let planPushGeneration = 0;
 
 		function localPlansDocument() {
-			return { contractPlans: loadContractPlans(), salaryPlans: loadSalaryPlans(), cutPlans: loadCutPlans() };
+			return { contractPlans: loadContractPlans(), salaryPlans: loadSalaryPlans(), cutPlans: loadCutPlans(), resultOverrides: loadResultOverrides() };
 		}
 
 		function writePlansLocal(doc) {
 			localStorage.setItem(CONTRACT_PLAN_STORAGE_KEY, JSON.stringify(doc.contractPlans || {}));
 			localStorage.setItem(SALARY_PLAN_STORAGE_KEY, JSON.stringify(doc.salaryPlans || {}));
 			localStorage.setItem(CUT_PLAN_STORAGE_KEY, JSON.stringify(doc.cutPlans || {}));
+			localStorage.setItem(RESULT_OVERRIDE_STORAGE_KEY, JSON.stringify(doc.resultOverrides || {}));
 		}
 
 		// Edits this device has made but not yet confirmed in the store, in the
@@ -2139,10 +2213,10 @@
 		// can tell a plan another device deleted apart from one this device
 		// simply hasn't been told about yet.
 		const PLAN_PENDING_KEY = 'myfflPlanPending';
-		const PLAN_KINDS = ['contractPlans', 'salaryPlans', 'cutPlans'];
+		const PLAN_KINDS = ['contractPlans', 'salaryPlans', 'cutPlans', 'resultOverrides'];
 
 		function emptyPlanEdits() {
-			return { contractPlans: {}, salaryPlans: {}, cutPlans: {} };
+			return { contractPlans: {}, salaryPlans: {}, cutPlans: {}, resultOverrides: {} };
 		}
 
 		function loadPendingPlanEdits() {
@@ -6422,6 +6496,33 @@
 		const isBeforeStartYear = (league, year) =>
 			league.startYear != null && league.startYear !== '' && Number(year) < Number(league.startYear);
 
+		// A guessed year's rank (computeMflSeasonPlacements's regular-season-
+		// order fallback, flagged `guessed: true`) can be corrected once, by
+		// hand, from the Results card — see setResultOverride/
+		// buildResultRankCell. Applying it here, the one place both Results
+		// and Finances read `results` from, is what keeps a confirmed finish
+		// from staying guessed in one card while corrected in the other —
+		// Finances looks up a year's payout by rank too (see
+		// leagueFinancesSummary), so a wrong rank there would silently
+		// misprice a payout the manager just fixed on the Results card.
+		// Presence of an override for a year IS its confirmation — there is
+		// no separate confirmed flag — so once set, that year's `guessed`
+		// reads false for good; a bad or out-of-range override is ignored
+		// rather than trusted, same as any other malformed local value on
+		// this page.
+		function effectiveResults(league) {
+			const results = Array.isArray(league.results) ? league.results : [];
+			const overrides = isLoggedIn() ? loadResultOverrides()[league.id] : null;
+			if (!overrides) return results;
+			return results.map((r) => {
+				const raw = overrides[r.year];
+				if (raw == null || raw === '') return r;
+				const rank = Number(raw);
+				if (!Number.isInteger(rank) || rank < 1 || (Number.isFinite(r.total) && rank > r.total)) return r;
+				return { ...r, rank, guessed: false };
+			});
+		}
+
 		// One league's results ready to render: its rows most-recent-first
 		// (the natural reading order for "how have I done"), and the mean of
 		// every year's rank — never the raw fraction, which would let a
@@ -6434,13 +6535,99 @@
 		// so the Finish cell can name the amount without restating the
 		// obvious "1st"/"2nd"/"3rd" the rank already shows.
 		function leagueResultsSummary(league) {
-			const results = Array.isArray(league.results) ? league.results : [];
+			const results = effectiveResults(league);
 			const years = results
 				.filter((r) => !isBeforeStartYear(league, r.year))
 				.sort((a, b) => Number(b.year) - Number(a.year));
 			const ranked = years.filter((r) => Number.isFinite(r.rank));
 			const average = ranked.length ? ranked.reduce((sum, r) => sum + r.rank, 0) / ranked.length : null;
 			return { league, years, average };
+		}
+
+		// A guess (a gap no bracket data could settle, filled in from
+		// regular-season order — see computeMflSeasonPlacements) is never
+		// presented as identical to a confirmed result: red, same token the
+		// rest of the page uses for "needs a look" — AND, unlike a confirmed
+		// finish, editable in place, so a manager who knows the real bracket
+		// result can settle it by hand rather than living with a permanent
+		// guess. Confirming (see confirmResultRank) is what makes it
+		// permanent: effectiveResults treats the presence of an override as
+		// the confirmation itself, so a confirmed year can never render red
+		// or editable again on any future render.
+		function buildResultRankCell(league, r) {
+			// Same gate plannedSalary/getContractPlan use for their own local
+			// planning data: the Results/Finances tab already renders only
+			// when logged in (see VIEW_LABELS/VIEW_ORDER's own comment), so
+			// this never actually fires for a logged-out viewer in practice —
+			// it's here so the fallback doesn't depend on that outer gate
+			// alone, the same defensive habit every other local-plan reader
+			// on this page follows.
+			if (!r.guessed || !isLoggedIn()) {
+				return el('td', {
+					class: r.guessed ? 'results-guessed' : '',
+					title: r.guessed ? 'Estimated — no bracket data settled this year\'s exact finish' : '',
+					text: Number.isFinite(r.rank) ? `${r.rank}/${r.total}` : '—',
+				});
+			}
+			const td = el('td', {
+				class: 'results-guessed results-edit-cell',
+				title: 'Estimated — no bracket data settled this year\'s exact finish. Enter the real finish and confirm to fix it for good.',
+			});
+			const input = el('input', {
+				type: 'number',
+				class: 'results-rank-input',
+				min: '1',
+				max: String(r.total),
+				value: Number.isFinite(r.rank) ? String(r.rank) : '',
+			});
+			const confirmBtn = el('button', {
+				type: 'button',
+				class: 'results-confirm-btn',
+				text: '✓',
+				title: 'Confirm this finish — becomes permanent and no longer editable',
+			});
+			const confirm = () => {
+				const value = Number(input.value);
+				if (!Number.isInteger(value) || value < 1 || value > Number(r.total)) {
+					input.classList.add('results-rank-input-invalid');
+					return;
+				}
+				confirmResultRank(league, r, value);
+			};
+			input.addEventListener('input', () => input.classList.remove('results-rank-input-invalid'));
+			input.addEventListener('keydown', (e) => {
+				if (e.key === 'Enter') {
+					e.preventDefault();
+					confirm();
+				}
+			});
+			confirmBtn.addEventListener('click', confirm);
+			td.appendChild(input);
+			td.appendChild(el('span', { text: `/${r.total}` }));
+			td.appendChild(confirmBtn);
+			return td;
+		}
+
+		// Saves a manual correction and rebuilds the page — a full
+		// renderGrid() rather than a surgical DOM patch (same pattern login
+		// already uses) because the change ripples past this one cell: this
+		// league's average finish, the card-level overall average, the
+		// guessed-year count in the <summary>, and — since Finances looks up
+		// a year's payout by rank too — that card's Won column all have to
+		// agree with the corrected number. The one thing a full rebuild
+		// would otherwise cost is preserved explicitly instead: a manager
+		// confirming several guessed years in one sitting would find the
+		// yearly breakdown snapping shut after every single one, which is
+		// exactly the friction that discourages fixing the rest.
+		function confirmResultRank(league, r, rank) {
+			setResultOverride(league.id, r.year, String(rank));
+			const openIds = new Set(
+				[...document.querySelectorAll('.results-details[open]')].map((d) => d.dataset.leagueId)
+			);
+			renderGrid();
+			for (const details of document.querySelectorAll('.results-details')) {
+				if (openIds.has(details.dataset.leagueId)) details.open = true;
+			}
 		}
 
 		function renderResultsCard(leagues) {
@@ -6510,7 +6697,7 @@
 				}
 				card.appendChild(head);
 
-				const details = el('details', { class: 'results-details' });
+				const details = el('details', { class: 'results-details', 'data-league-id': league.id });
 				const guessedCount = years.filter((r) => r.guessed).length;
 				details.appendChild(el('summary', { class: 'results-summary', text: `Yearly breakdown (${years.length})` }, guessedCount > 0 ? [
 					el('span', {
@@ -6528,15 +6715,7 @@
 				for (const r of years) {
 					const row = el('tr');
 					row.appendChild(el('td', { text: r.year }));
-					// A guess (a gap no bracket data could settle, filled in from
-					// regular-season order — see computeMflSeasonPlacements) is
-					// never presented as identical to a confirmed result: red,
-					// same token the rest of the page uses for "needs a look".
-					row.appendChild(el('td', {
-						class: r.guessed ? 'results-guessed' : '',
-						title: r.guessed ? 'Estimated — no bracket data settled this year\'s exact finish' : '',
-						text: Number.isFinite(r.rank) ? `${r.rank}/${r.total}` : '—',
-					}));
+					row.appendChild(buildResultRankCell(league, r));
 					table.appendChild(row);
 				}
 
@@ -6619,7 +6798,7 @@
 		// High (Wk 1, Wk 3, ...)" row, to keep the same per-week transparency
 		// the old inline label had.
 		function leagueFinancesSummary(league) {
-			const results = Array.isArray(league.results) ? league.results : [];
+			const results = effectiveResults(league);
 			const dues = league.dues != null ? Number(league.dues) : 0;
 			const years = results
 				.filter((r) => !isBeforeStartYear(league, r.year))

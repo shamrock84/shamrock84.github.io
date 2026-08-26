@@ -266,4 +266,111 @@ function fullText(node) {
 		'no leagues have an average, so the card-head carries none either');
 }
 
+// ---- editable guessed ranks (buildResultRankCell / setResultOverride / -----
+// ---- effectiveResults) ------------------------------------------------------
+//
+// A guessed year's Finish cell is editable only when logged in — the tab
+// itself is already gated behind login, but this mirrors the same
+// defensive habit plannedSalary/getContractPlan follow for their own local
+// plan data, so it's worth pinning independently of that outer gate.
+// A fresh vm context, seeded with a token under the same key isLoggedIn()
+// reads (AUTH_TOKEN_KEY in myffl.html), and a real Map-backed localStorage
+// so setResultOverride's write is actually visible to a later read — the
+// logged-out domCtx above always answers localStorage.getItem with null,
+// which is right for pinning the logged-out fallback but can't exercise
+// anything this feature actually stores.
+const AUTH_TOKEN_KEY = 'mflAuthToken';
+function loggedInContext() {
+	const disk = new Map([[AUTH_TOKEN_KEY, 'test-token']]);
+	const ctx = {
+		console,
+		localStorage: {
+			getItem: (k) => (disk.has(k) ? disk.get(k) : null),
+			setItem: (k, v) => disk.set(k, String(v)),
+			removeItem: (k) => disk.delete(k),
+		},
+		setTimeout, clearTimeout, setInterval, clearInterval,
+		document: {
+			addEventListener() {},
+			getElementById: () => domNode(),
+			createElement: (t) => domNode(t),
+			createTextNode: (t) => { const n = domNode('#text'); n.textContent = t; return n; },
+			querySelector: () => null,
+			querySelectorAll: () => [],
+			visibilityState: 'visible',
+			body: domNode(),
+		},
+		window: { addEventListener() {} },
+		// Rejects every plan-store request — schedulePlanPush's fire-and-
+		// forget push (triggered by setResultOverride below) is left to fail
+		// quietly, exactly as it does with the store unreachable.
+		fetch: async () => ({ ok: false, status: 503, json: async () => ({}) }),
+	};
+	vm.createContext(ctx);
+	vm.runInContext(scriptSource, ctx);
+	return ctx;
+}
+
+{
+	const ctx = loggedInContext();
+	const leagues = [
+		{ id: 'B', name: 'League B', type: 'salarycap', results: [
+			{ year: '2024', rank: 8, total: 10, guessed: true },
+			{ year: '2025', rank: 2, total: 10, guessed: false },
+		] },
+	];
+	const card = ctx.renderResultsCard(leagues);
+	const table = findAll(card, (c) => c.tag === 'table')[0];
+	const rows = findAll(table, (c) => c.tag === 'tr');
+	const finishCellOf = (year) => rows.find((r) => fullText(r.children[0]) === year)?.children[1];
+
+	const guessedCell = finishCellOf('2024');
+	assert.ok(guessedCell.cls.includes('results-guessed'), 'still flagged red while unconfirmed');
+	const input = findAll(guessedCell, (c) => c.tag === 'input')[0];
+	assert.ok(input, 'a guessed year gets an editable input once logged in');
+	assert.equal(input.attrs.value, '8', 'pre-filled with the guessed rank');
+	assert.ok(findAll(guessedCell, (c) => c.tag === 'button')[0], 'and a confirm button');
+
+	const confirmedCell = finishCellOf('2025');
+	assert.equal(findAll(confirmedCell, (c) => c.tag === 'input').length, 0, 'a confirmed year is never made editable');
+	assert.equal(fullText(confirmedCell), '2/10');
+}
+
+{
+	// The override itself: setResultOverride persists locally, and
+	// effectiveResults (read through leagueResultsSummary) is what un-
+	// guesses that year everywhere Results/Finances read `results` from.
+	const ctx = loggedInContext();
+	const league = { id: 'B', name: 'League B', results: [
+		{ year: '2024', rank: 8, total: 10, guessed: true },
+	] };
+
+	ctx.setResultOverride('B', '2024', '3');
+	const summary = ctx.leagueResultsSummary(league);
+	const year = summary.years.find((y) => y.year === '2024');
+	assert.equal(year.rank, 3, 'the confirmed rank replaces the guess');
+	assert.equal(year.guessed, false, 'and the year is no longer flagged guessed');
+	assert.equal(summary.average, 3, 'the average reflects the corrected rank, not the original guess');
+}
+
+{
+	// An out-of-range or malformed override is ignored rather than trusted —
+	// same rule every other locally-stored value on this page follows for
+	// bad input (see plannedSalary/contractYearsRemaining's own `> 0` guards).
+	const ctx = loggedInContext();
+	const league = { id: 'B', name: 'League B', results: [
+		{ year: '2024', rank: 8, total: 10, guessed: true },
+	] };
+
+	ctx.setResultOverride('B', '2024', '11'); // out of range for a 10-team league
+	let year = ctx.leagueResultsSummary(league).years[0];
+	assert.equal(year.rank, 8, 'an out-of-range override is ignored');
+	assert.equal(year.guessed, true);
+
+	ctx.setResultOverride('B', '2024', 'nope');
+	year = ctx.leagueResultsSummary(league).years[0];
+	assert.equal(year.rank, 8, 'a non-numeric override is ignored');
+	assert.equal(year.guessed, true);
+}
+
 console.log('test-results-card: all assertions passed');

@@ -1,7 +1,7 @@
 // Vercel serverless function: stores the roster planning values — planned
-// contract lengths, planned salaries, and planned cuts — server-side so they
-// follow the manager between devices instead of living in one browser's
-// localStorage.
+// contract lengths, planned salaries, planned cuts, and manually-confirmed
+// Results corrections — server-side so they follow the manager between
+// devices instead of living in one browser's localStorage.
 //
 // Why this exists: plans were browser-local from the start, which meant an
 // iPad and a phone kept entirely separate copies and neither knew about the
@@ -44,7 +44,11 @@ const MAX_ENTRIES_PER_LEAGUE = 400;
 const MAX_VALUE_LENGTH = 8;
 const MAX_BODY_BYTES = 256 * 1024;
 
-const PLAN_KINDS = ['contractPlans', 'salaryPlans', 'cutPlans'];
+// resultOverrides is keyed leagueId -> year -> the manager's confirmed rank
+// (a string, same shape as every other plan kind — see setResultOverride in
+// myffl.html). Presence of an entry IS its confirmation; there is no
+// separate confirmed flag to validate here.
+const PLAN_KINDS = ['contractPlans', 'salaryPlans', 'cutPlans', 'resultOverrides'];
 
 // Exported for the unit test in scripts/test-plans.mjs. Vercel only ever
 // invokes the default export, so extra named exports cost nothing at runtime.
@@ -69,7 +73,7 @@ function resolveStore(env) {
 }
 
 function emptyDocument() {
-  return { contractPlans: {}, salaryPlans: {}, cutPlans: {}, updatedAt: null };
+  return { contractPlans: {}, salaryPlans: {}, cutPlans: {}, resultOverrides: {}, updatedAt: null };
 }
 
 // Returns an array of human-readable problems — empty means valid.
