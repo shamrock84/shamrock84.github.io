@@ -611,7 +611,7 @@ const mnmx2006Losers = {
     { year: '2025', id: '111' },
     { year: '2026', id: '111' }, // the currently active season
   ];
-  const existingResults = [{ year: '2024', rank: 3, total: 10, guessed: false }];
+  const existingResults = [{ year: '2024', rank: 3, total: 10, guessed: false, divisionWinnerFranchiseId: '0001' }];
 
   const missing = yearsNeedingHistoryBackfill(historyYears, existingResults, '2026');
   assert.deepEqual(
@@ -637,13 +637,45 @@ const mnmx2006Losers = {
   // "a season once recorded is never re-fetched" made it permanent. Only a
   // confirmed result may retire a year for good.
   const mixedResults = [
-    { year: '2024', rank: 3, total: 10, guessed: false }, // confirmed — must stay retired
+    { year: '2024', rank: 3, total: 10, guessed: false, divisionWinnerFranchiseId: '0001' }, // confirmed — must stay retired
     { year: '2025', rank: 8, total: 10, guessed: true }, // a guess — must remain eligible for retry
   ];
   assert.deepEqual(
     yearsNeedingHistoryBackfill(historyYears, mixedResults, '2026').map((m) => m.year),
     ['2025', '2023'],
     'a guessed year is retried alongside a genuinely missing one; a confirmed year is not'
+  );
+}
+
+// A confirmed year missing divisionWinnerFranchiseId is a one-time
+// migration gap, not a permanent retirement — that field was added after
+// most seasons were already confirmed, and a confirmed rank is otherwise
+// never re-fetched, so without this exception most of a league's real
+// history would simply never get it.
+{
+  const historyYears = [
+    { year: '2023', id: '111' },
+    { year: '2024', id: '111' },
+    { year: '2026', id: '111' }, // the currently active season
+  ];
+  const results = [
+    { year: '2023', rank: 3, total: 10, guessed: false, divisionWinnerFranchiseId: '0002' }, // fully done — skip
+    { year: '2024', rank: 1, total: 10, guessed: false }, // confirmed, but predates this field — retry
+  ];
+  assert.deepEqual(
+    yearsNeedingHistoryBackfill(historyYears, results, '2026', undefined, 'salarycap').map((m) => m.year),
+    ['2024'],
+    'a confirmed year missing divisionWinnerFranchiseId is retried; one that already has it is not'
+  );
+
+  // Draftonly leagues never fetch a regular-season order at all
+  // (computeMflSeasonPlacementsByPoints) — divisionWinnerFranchiseId can
+  // never be set for them, so treating its absence as a gap would retry
+  // every confirmed year forever instead of leaving them retired.
+  assert.deepEqual(
+    yearsNeedingHistoryBackfill(historyYears, results, '2026', undefined, 'draftonly').map((m) => m.year),
+    [],
+    'draftonly leagues never retry a confirmed year over the missing field'
   );
 }
 
