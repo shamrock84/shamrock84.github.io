@@ -147,8 +147,9 @@ function fullText(node) {
 // (3) ranked years. A lower rank is a better finish, so a newest rank lower
 // than the oldest is "up"; higher is "down". Guessed ranks count the same as
 // confirmed ones. Fewer than two ranked years in the window, or an unchanged
-// rank across it, is "not enough signal" and returns null rather than
-// guessing at a direction.
+// rank across it, is "flat" (rendered as a dash) rather than a guessed-at
+// direction — not the same as null, which means no ranked years at all,
+// i.e. no Avg Finish to sit the dash beside either.
 
 {
 	// Improving: 7th three years ago -> 1st most recently.
@@ -194,11 +195,12 @@ function fullText(node) {
 }
 
 {
-	// Exactly one ranked year: no direction to compare, no arrow.
+	// Exactly one ranked year: no direction to compare -> flat, not null,
+	// since there's still an Avg Finish shown for the dash to sit beside.
 	const league = { name: 'E', results: [
 		{ year: '2025', rank: 4, total: 12, guessed: false },
 	] };
-	assert.equal(domCtx.leagueResultsSummary(league).trend, null, 'fewer than 2 ranked years -> null');
+	assert.equal(domCtx.leagueResultsSummary(league).trend, 'flat', 'fewer than 2 ranked years -> flat');
 }
 
 {
@@ -208,7 +210,18 @@ function fullText(node) {
 		{ year: '2024', rank: 4, total: 12, guessed: false },
 		{ year: '2025', rank: 4, total: 12, guessed: false },
 	] };
-	assert.equal(domCtx.leagueResultsSummary(league).trend, null, 'oldest === newest -> null, not an arbitrary direction');
+	assert.equal(domCtx.leagueResultsSummary(league).trend, 'flat', 'oldest === newest -> flat, not an arbitrary direction');
+}
+
+{
+	// No ranked years at all: null, not flat — there's no Avg Finish either,
+	// so there's nothing for a dash to sit beside.
+	const league = { name: 'I', results: [
+		{ year: '2025', total: 12, guessed: true }, // no rank yet
+	] };
+	const summary = domCtx.leagueResultsSummary(league);
+	assert.equal(summary.average, null);
+	assert.equal(summary.trend, null, 'no ranked years at all -> null, distinct from flat');
 }
 
 {
@@ -231,8 +244,10 @@ function fullText(node) {
 	assert.equal(domCtx.leagueResultsSummary(league).trend, 'up', 'unranked year has no rank field and is skipped');
 }
 
-// The rendered arrow: color-coded span next to Avg Finish, only when there's
-// a direction to show.
+// The rendered arrow: a color-coded span grouped tightly with Avg Finish —
+// up/down when there's a real direction, a muted dash when there isn't (too
+// few ranked seasons, or an unchanged rank), never absent as long as there's
+// an Avg Finish to sit beside.
 {
 	const leagues = [
 		{ id: 'A', name: 'League A', type: 'dynasty', results: [
@@ -246,10 +261,42 @@ function fullText(node) {
 	];
 	const card = domCtx.renderResultsCard(leagues);
 	const trends = findAll(card, (c) => c.cls.split(/\s+/).includes('results-trend'));
-	assert.equal(trends.length, 1, 'only League A has enough ranked seasons for a trend');
+	assert.equal(trends.length, 2, 'both leagues have an Avg Finish, so both get a trend indicator');
+
 	assert.ok(trends[0].cls.includes('results-trend-up'), 'improving finish renders the up variant');
 	assert.equal(fullText(trends[0]), '▲');
 	assert.match(trends[0].attrs.title, /Trending up/);
+
+	assert.ok(trends[1].cls.includes('results-trend-flat'), 'a single ranked year has nothing to compare -> flat');
+	assert.equal(fullText(trends[1]), '—', 'flat renders the same em dash used elsewhere for a missing value');
+	assert.match(trends[1].attrs.title, /Not enough ranked seasons/);
+
+	// The average and its trend are one flex group, not two loose siblings
+	// of the head — that's what keeps .results-league-head's own
+	// space-between from stretching a gap between them.
+	const groups = findAll(card, (c) => c.cls.split(/\s+/).includes('results-avg-group'));
+	assert.equal(groups.length, 2);
+	for (const group of groups) {
+		assert.equal(findAll(group, (c) => c.cls.split(/\s+/).includes('results-avg')).length, 1);
+		assert.equal(findAll(group, (c) => c.cls.split(/\s+/).includes('results-trend')).length, 1);
+	}
+}
+
+// The flat dash's title distinguishes "not enough seasons yet" from
+// "finish genuinely unchanged" — both render identically but mean different
+// things, and a manager glancing at the tooltip should get the real reason.
+{
+	const leagues = [
+		{ id: 'F', name: 'League F', type: 'dynasty', results: [
+			{ year: '2023', rank: 4, total: 12, guessed: false },
+			{ year: '2024', rank: 4, total: 12, guessed: false },
+			{ year: '2025', rank: 4, total: 12, guessed: false },
+		] },
+	];
+	const card = domCtx.renderResultsCard(leagues);
+	const trend = findAll(card, (c) => c.cls.split(/\s+/).includes('results-trend'))[0];
+	assert.ok(trend.cls.includes('results-trend-flat'));
+	assert.match(trend.attrs.title, /unchanged over the last 3 ranked season/);
 }
 
 // ---- renderResultsCard ------------------------------------------------------
@@ -284,8 +331,9 @@ function fullText(node) {
 
 	// The average now sits beside the league name, not as a footer row in
 	// the table, and the year-by-year rows live inside a collapsed-by-
-	// default <details> underneath it.
-	const avgs = findAll(card, (c) => c.cls.includes('results-avg')).map(fullText);
+	// default <details> underneath it. Exact class match, not substring —
+	// .results-avg-group's own name would otherwise also match "results-avg".
+	const avgs = findAll(card, (c) => c.cls.split(/\s+/).includes('results-avg')).map(fullText);
 	assert.deepEqual(avgs, ['Avg Finish 4.3', 'Avg Finish 3.7', 'Avg Finish 5.0'],
 		'card-head carries the overall mean first (3.67 and 5.0 -> 4.33 -> 4.3), then each league\'s own');
 

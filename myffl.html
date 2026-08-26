@@ -1341,12 +1341,21 @@
 			gap: 0.25rem;
 			min-width: 0;
 		}
+		/* Avg Finish and its trend arrow as one flex item — see the render-
+		   side comment in renderResultsCard for why this grouping exists:
+		   .results-league-head's own space-between only ever sees this pair
+		   and the name column, never the arrow on its own. */
+		.results-avg-group {
+			display: flex;
+			align-items: baseline;
+			gap: 0.3rem;
+			flex-shrink: 0;
+		}
 		.results-avg {
 			font-weight: 700;
 			font-size: 0.85rem;
 			color: var(--text);
 			white-space: nowrap;
-			flex-shrink: 0;
 		}
 		/* The card-level figure sits beside the "Results" h2 itself, so it
 		   reads as a peer of the title rather than a smaller annotation —
@@ -1354,16 +1363,18 @@
 		.results-avg-overall {
 			font-size: 1.15rem;
 		}
-		/* Sits right after Avg Finish, reusing the gain/loss colors Finances
-		   already established (--gain-text / --ir-text) rather than a third
-		   meaning for green and red on this page. */
+		/* Reuses the gain/loss colors Finances already established
+		   (--gain-text / --ir-text) rather than a third meaning for green
+		   and red on this page. Flat gets neither — it's not a gain or a
+		   loss, just nothing to compare yet or no change, so it stays the
+		   same muted tone the page already uses for "nothing to report". */
 		.results-trend {
 			font-weight: 700;
 			font-size: 0.85rem;
-			flex-shrink: 0;
 		}
 		.results-trend-up { color: var(--gain-text); }
 		.results-trend-down { color: var(--ir-text); }
+		.results-trend-flat { color: var(--muted); }
 		/* Hidden by default — native <details>, so no toggle state has to be
 		   tracked across renderGrid() re-renders the way the Admin card's
 		   open/closed leagues are. */
@@ -6550,22 +6561,26 @@
 		// form" should reach.
 		const RESULTS_TREND_SEASONS = 3;
 
-		// Whether a league's finish is trending up or down: compares the
-		// oldest to the newest of its most recent RESULTS_TREND_SEASONS
+		// Whether a league's finish is trending up, down, or flat: compares
+		// the oldest to the newest of its most recent RESULTS_TREND_SEASONS
 		// ranked years. `ranked` arrives sorted most-recent-first, the same
 		// order leagueResultsSummary sorts years in. Same as the average
 		// above, a guessed rank counts exactly like a confirmed one — see
 		// the "guessed" comment on buildResultRankCell, a guess is still the
-		// best answer on record, only its provenance differs. Fewer than two
-		// ranked years in that window, or an unchanged rank across it, is
-		// "not enough signal" rather than a guess at a direction, so it
-		// returns null and no arrow renders.
+		// best answer on record, only its provenance differs. 'flat' covers
+		// two distinct cases the caller re-derives for its tooltip (fewer
+		// than two ranked years in the window to compare, or an unchanged
+		// rank across it) — both render the same neutral dash rather than a
+		// guessed-at direction. Returns null only when there's nothing
+		// ranked at all, i.e. no Avg Finish is shown either — a dash next to
+		// no average would have nothing to sit beside.
 		function leagueResultsTrend(ranked) {
+			if (!ranked.length) return null;
 			const recent = ranked.slice(0, RESULTS_TREND_SEASONS);
-			if (recent.length < 2) return null;
+			if (recent.length < 2) return 'flat';
 			const newest = recent[0].rank;
 			const oldest = recent[recent.length - 1].rank;
-			if (newest === oldest) return null;
+			if (newest === oldest) return 'flat';
 			return newest < oldest ? 'up' : 'down';
 		}
 
@@ -6725,19 +6740,34 @@
 					historyBadgesNode(league),
 				]));
 				if (average != null) {
-					head.appendChild(el('span', {
+					// Avg Finish and the trend arrow are grouped into one flex
+					// item — .results-league-head's own justify-content:
+					// space-between spreads its *direct* children apart, and
+					// with three of them (name, avg, trend) that put a huge
+					// gap between the number and its own arrow. Grouped, the
+					// head only ever sees two children again and the pair's
+					// own small gap is what sits between them.
+					const avgGroup = el('span', { class: 'results-avg-group' });
+					avgGroup.appendChild(el('span', {
 						class: 'results-avg',
 						title: `Average finish across ${years.filter((r) => Number.isFinite(r.rank)).length} year(s)`,
 						text: `Avg Finish ${average.toFixed(1)}`,
 					}));
-				}
-				if (trend) {
+					// trend is never null here — null only means no ranked
+					// years at all, which is exactly what average != null
+					// already rules out (see leagueResultsTrend).
 					const trendSeasons = Math.min(RESULTS_TREND_SEASONS, years.filter((r) => Number.isFinite(r.rank)).length);
-					head.appendChild(el('span', {
+					const trendTitle = trend === 'flat'
+						? (trendSeasons < 2
+							? 'Not enough ranked seasons yet to show a trend'
+							: `Finish unchanged over the last ${trendSeasons} ranked season(s)`)
+						: `Trending ${trend} over the last ${trendSeasons} ranked season(s)`;
+					avgGroup.appendChild(el('span', {
 						class: `results-trend results-trend-${trend}`,
-						title: `Trending ${trend} over the last ${trendSeasons} ranked season(s)`,
-						text: trend === 'up' ? '▲' : '▼',
+						title: trendTitle,
+						text: trend === 'up' ? '▲' : trend === 'down' ? '▼' : '—',
 					}));
+					head.appendChild(avgGroup);
 				}
 				card.appendChild(head);
 
