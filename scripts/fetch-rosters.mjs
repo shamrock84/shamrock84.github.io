@@ -371,7 +371,24 @@ const ESPN_HISTORY_LOOKBACK_YEARS = 15;
 // non-empty for `rank` to have been computed at all — see
 // fetchMflSeasonBracketData), so this never becomes a permanent retry loop
 // of its own.
-export function yearsNeedingHistoryBackfill(historyYears, existingResults, currentSeason, startYear, leagueType) {
+//
+// `overrideYears` (the league's own historyLeagueIds — see
+// applyHistoryLeagueIdOverrides above) jump the most-recent-first queue
+// entirely, ahead of every naturally-discovered year regardless of how
+// recent that year is. Confirmed live and necessary for Survivor (23545):
+// three OTHER guessed years (2019/2021/2022, unrelated to any override —
+// re-fetching them repeatedly reproduced byte-identical results, meaning
+// they're a genuine bracket-data gap, not a rate-limit blip) sit closer to
+// the present than the override-covered 2010-2015, so a plain most-recent-
+// first sort spent this pass's entire budget re-confirming those three
+// (and 2015) every single run and never got a request to spare for 2014
+// and earlier — not slow, just permanently starved, since none of those
+// three years is ever going to resolve into `guessed: false` and stop
+// occupying the front of the queue. A manually-provided id is a deliberate,
+// high-confidence directive — the same reason `LEAGUE_ID` already lets
+// explicit intent skip the normal per-league queue — so it earns first
+// crack at the budget rather than losing to years nobody chose to prioritize.
+export function yearsNeedingHistoryBackfill(historyYears, existingResults, currentSeason, startYear, leagueType, overrideYears) {
   const canBackfillDivisionWinner = leagueType !== 'draftonly';
   const haveYears = new Set(
     (existingResults || [])
@@ -379,11 +396,17 @@ export function yearsNeedingHistoryBackfill(historyYears, existingResults, curre
       .filter((r) => !canBackfillDivisionWinner || r.divisionWinnerFranchiseId != null)
       .map((r) => String(r.year))
   );
+  const overrideYearSet = new Set(Object.keys(overrideYears || {}));
   return (historyYears || [])
     .filter((h) => Number(h.year) < Number(currentSeason))
     .filter((h) => startYear == null || startYear === '' || Number(h.year) >= Number(startYear))
     .filter((h) => !haveYears.has(String(h.year)))
-    .sort((a, b) => Number(b.year) - Number(a.year));
+    .sort((a, b) => {
+      const aOverride = overrideYearSet.has(String(a.year));
+      const bOverride = overrideYearSet.has(String(b.year));
+      if (aOverride !== bOverride) return aOverride ? -1 : 1;
+      return Number(b.year) - Number(a.year);
+    });
 }
 
 // A manual, hand-edited escape hatch for when MFL's own history.league[]
@@ -520,7 +543,7 @@ export async function backfillLeagueHistory(leagues, previousById, cookie) {
       continue;
     }
     historyYears = applyHistoryLeagueIdOverrides(historyYears, league.historyLeagueIds);
-    const missing = yearsNeedingHistoryBackfill(historyYears, league.results, league.season, league.startYear, league.type);
+    const missing = yearsNeedingHistoryBackfill(historyYears, league.results, league.season, league.startYear, league.type, league.historyLeagueIds);
     for (const { year, id } of missing) {
       if (mflBudget <= 0 || mflRateLimited || leagueMflBudget <= 0) break;
       try {

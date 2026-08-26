@@ -647,6 +647,59 @@ const mnmx2006Losers = {
   );
 }
 
+// overrideYears (historyLeagueIds) jump the queue entirely, ahead of every
+// naturally-discovered year regardless of recency — see this codebase's
+// real Survivor case: three unrelated guessed years (2019/2021/2022, a
+// genuine bracket-data gap, not fixable by an id override) sat closer to
+// the present than the override-covered 2010-2015, so a plain most-recent-
+// first sort spent every run's entire budget re-confirming those three and
+// never got a request to spare for the override years at all.
+{
+  const historyYears = [
+    { year: '2019', id: '999' },
+    { year: '2021', id: '999' },
+    { year: '2022', id: '999' },
+    { year: '2015', id: '39564' },
+    { year: '2014', id: '39105' },
+    { year: '2026', id: '999' }, // the currently active season
+  ];
+  const results = [
+    { year: '2019', rank: 12, total: 12, guessed: true },
+    { year: '2021', rank: 11, total: 12, guessed: true },
+    { year: '2022', rank: 9, total: 12, guessed: true },
+    { year: '2015', rank: 12, total: 12, guessed: true },
+  ]; // 2014 has no results entry at all — never backfilled
+
+  // Without an override, plain most-recent-first order — this is the
+  // starvation case: 2019/2021/2022 (no override) always sort ahead of
+  // 2015/2014 (would-be override years), permanently occupying every slot
+  // a budget-limited run can afford.
+  assert.deepEqual(
+    yearsNeedingHistoryBackfill(historyYears, results, '2026').map((m) => m.year),
+    ['2022', '2021', '2019', '2015', '2014']
+  );
+
+  // With 2014/2015 in overrideYears, they jump to the front — still most-
+  // recent-first WITHIN the override group, then the naturally-discovered
+  // years keep their own most-recent-first order after.
+  const overrideYears = { '2014': '39105', '2015': '39564' };
+  assert.deepEqual(
+    yearsNeedingHistoryBackfill(historyYears, results, '2026', undefined, undefined, overrideYears).map((m) => m.year),
+    ['2015', '2014', '2022', '2021', '2019'],
+    'override years (2015, 2014) go first, most-recent-first among themselves, ahead of the naturally-discovered years'
+  );
+
+  // An override id for a year that isn't otherwise missing (already
+  // confirmed) has nothing to prioritize — the set membership check alone
+  // doesn't resurrect a permanently-retired year.
+  const confirmedResults = [...results, { year: '2014', rank: 4, total: 12, guessed: false, divisionWinnerFranchiseId: '0001' }];
+  assert.deepEqual(
+    yearsNeedingHistoryBackfill(historyYears, confirmedResults, '2026', undefined, undefined, overrideYears).map((m) => m.year),
+    ['2015', '2022', '2021', '2019'],
+    '2014 is already confirmed and stays retired even though it has an override entry'
+  );
+}
+
 // A confirmed year missing divisionWinnerFranchiseId is a one-time
 // migration gap, not a permanent retirement — that field was added after
 // most seasons were already confirmed, and a confirmed rank is otherwise
