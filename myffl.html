@@ -6511,12 +6511,12 @@
 				card.appendChild(head);
 
 				const details = el('details', { class: 'results-details' });
-				const hasGuessed = years.some((r) => r.guessed);
-				details.appendChild(el('summary', { class: 'results-summary', text: `Yearly breakdown (${years.length})` }, hasGuessed ? [
+				const guessedCount = years.filter((r) => r.guessed).length;
+				details.appendChild(el('summary', { class: 'results-summary', text: `Yearly breakdown (${years.length})` }, guessedCount > 0 ? [
 					el('span', {
 						class: 'results-guessed',
-						title: 'Includes an estimated finish — no bracket data settled that year\'s exact placement',
-						text: ' *',
+						title: 'Estimated finishes — no bracket data settled that year\'s exact placement',
+						text: ` (${guessedCount})`,
 					}),
 				] : []));
 
