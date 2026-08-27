@@ -184,6 +184,22 @@ jobs:
       - name: Test weekly/season high-score derivation
         run: node scripts/test-scoring-records.mjs
 
+      # The parsing step feeding the derivation above: a franchise with no
+      # head-to-head game that week is a flat entry under weeklyResults
+      # .franchise rather than inside .matchup, and reading only .matchup
+      # silently drops it. That is a real bug this fixture is copied from —
+      # MNMx 2021 week 15, where the dropped franchise held the true weekly
+      # high — and nothing on screen says a weekly high went to the wrong team.
+      - name: Test weekly score parsing
+        run: node scripts/test-weekly-scores.mjs
+
+      # The Sleepers sub-line's own join. type=SLEEPERS is served back as the
+      # Draft list if the literal is ever mistyped (FantasyPros does not 4xx an
+      # unrecognised type), so a break here ships a line that quietly means
+      # something else rather than failing loudly.
+      - name: Test the Sleepers join
+        run: node scripts/test-sleepers.mjs
+
       # The Finances card itself, run against myffl.html — Won as placement
       # payout plus weekly/season high-score payout, both able to land the
       # same year, and every contributing reason named in the Won cell.
