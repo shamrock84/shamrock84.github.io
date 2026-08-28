@@ -1,0 +1,31 @@
+name: Probe FantasyPros Depth Charts (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here, the
+# same rule the other manual workflows follow.
+#
+# Asks whether the partner API can answer anything depth-chart-shaped —
+# starter/backup ordering per NFL team — before a Depth Charts tab is
+# designed around data that might not exist behind this key.
+# api.fantasypros.com is unreachable from a sandbox and the key is a secret,
+# so a workflow run is the only place to ask.
+#
+# Read-only: a handful of GETs.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Probe depth-chart endpoints
+        env:
+          FANTASYPROS_API_KEY: ${{ secrets.FANTASYPROS_API_KEY }}
+        run: node scripts/probe-fantasypros-depth-charts.mjs
