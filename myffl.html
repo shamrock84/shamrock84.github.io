@@ -300,6 +300,45 @@
 		.grid[data-view="scoring"] {
 			grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
 		}
+		/* A team card holds up to four position mini-tables side by side —
+		   wider than the 440px default floor needs to go, or every card would
+		   wrap down to one column on anything short of a very wide desktop.
+		   The mini-tables themselves flex-wrap inside the card (see
+		   .depth-chart-positions), which is what actually handles narrower
+		   viewports — this floor is about giving the wrap somewhere to start
+		   from at two-or-more-per-row rather than one. */
+		.grid[data-view="depthcharts"] {
+			grid-template-columns: repeat(auto-fill, minmax(min(640px, 100%), 1fr));
+		}
+		.depth-chart-positions {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 1rem;
+		}
+		.depth-chart-position {
+			flex: 1 1 220px;
+			min-width: 0;
+		}
+		.depth-chart-table th:first-child,
+		.depth-chart-table td:first-child {
+			text-align: left;
+		}
+		/* Merged position-name header row spans all three columns — the same
+		   table.standings rule that right-aligns every column but the first
+		   would otherwise center a colspan'd header oddly. */
+		.depth-chart-table thead tr:first-child th {
+			text-align: left;
+			font-size: 0.72rem;
+			color: var(--text);
+			padding-bottom: 0.3rem;
+		}
+		/* WR's alignment role (X/Z/S) — a display tag, not a status, so it
+		   gets the muted treatment rather than either .player-name's weight
+		   or .injury-badge's red. */
+		.depth-chart-role {
+			color: var(--muted);
+			font-size: 0.85em;
+		}
 		.card {
 			background: var(--card-bg);
 			border: 1px solid var(--border);
@@ -625,7 +664,11 @@
 		   font: inherit lets a flagged cell's bold (.needs-weakest) carry
 		   through to the button inside it rather than a <button>'s own UA
 		   styling resetting it. */
-		.needs-link {
+		/* .depth-chart-link (Depth Charts' "Own In" count) shares this exact
+		   rule set — same idiom, different card, own class hook per the
+		   established pattern (see the comment where it's built). */
+		.needs-link,
+		.depth-chart-link {
 			background: none;
 			border: none;
 			padding: 0;
@@ -1881,8 +1924,11 @@
 		// logged in — renderGrid simply doesn't build the cards otherwise, and
 		// the tab list is derived from the cards that exist, so logging out
 		// removes the tab with no extra work.
-		const VIEW_LABELS = { rosters: 'Rosters', standings: 'Standings', scoring: 'Scores', analytics: 'Analytics', history: 'History', admin: 'Admin' };
-		const VIEW_ORDER = ['rosters', 'scoring', 'standings', 'analytics', 'history', 'admin'];
+		// depthcharts is deliberately ungated (see renderGrid) — the tab shows
+		// even logged out, unlike analytics/history/admin, which is why it's
+		// listed here with those but built outside the isLoggedIn() blocks.
+		const VIEW_LABELS = { rosters: 'Rosters', standings: 'Standings', scoring: 'Scores', depthcharts: 'Depth Charts', analytics: 'Analytics', history: 'History', admin: 'Admin' };
+		const VIEW_ORDER = ['rosters', 'scoring', 'standings', 'depthcharts', 'analytics', 'history', 'admin'];
 		// Per-league type — still what individual Rosters cards badge
 		// themselves with (a Salary Cap league's card says "Salary Cap", not
 		// "Dynasty/Salary Cap"), just no longer what any sub-tab is named
@@ -1922,6 +1968,35 @@
 		// for the sub-tab only; that wording is now the type label itself, so
 		// the override would be a no-op and is gone.
 		const SUBTAB_LABEL_OVERRIDES = { dynasty: 'Dynasty/Salary Cap' };
+
+		// The Depth Charts view's sub-tab strip reuses this exact same
+		// mechanism, repurposed for NFL divisions instead of league types —
+		// renderSubTabs only ever asks "what distinct data-league-type values
+		// are on the cards in the current view", so a card's data-league-type
+		// can just as well hold a division key as a league type, and the two
+		// never collide because a division key never appears on a Rosters/
+		// Analytics/etc. card and vice versa. Real, stable NFL alignment
+		// (unchanged since the 2002 realignment); not sourced from ESPN's API,
+		// since nothing this project has probed has needed it.
+		const DEPTH_CHART_DIVISIONS = {
+			BUF: 'afc-east', MIA: 'afc-east', NE: 'afc-east', NYJ: 'afc-east',
+			BAL: 'afc-north', CIN: 'afc-north', CLE: 'afc-north', PIT: 'afc-north',
+			HOU: 'afc-south', IND: 'afc-south', JAX: 'afc-south', TEN: 'afc-south',
+			DEN: 'afc-west', KC: 'afc-west', LV: 'afc-west', LAC: 'afc-west',
+			DAL: 'nfc-east', NYG: 'nfc-east', PHI: 'nfc-east', WSH: 'nfc-east',
+			CHI: 'nfc-north', DET: 'nfc-north', GB: 'nfc-north', MIN: 'nfc-north',
+			ATL: 'nfc-south', CAR: 'nfc-south', NO: 'nfc-south', TB: 'nfc-south',
+			ARI: 'nfc-west', LAR: 'nfc-west', SF: 'nfc-west', SEA: 'nfc-west',
+		};
+		const DEPTH_CHART_DIVISION_ORDER = [
+			'afc-east', 'afc-north', 'afc-south', 'afc-west',
+			'nfc-east', 'nfc-north', 'nfc-south', 'nfc-west',
+		];
+		SUBTAB_ORDER.push(...DEPTH_CHART_DIVISION_ORDER);
+		Object.assign(SUBTAB_LABEL_OVERRIDES, {
+			'afc-east': 'AFC East', 'afc-north': 'AFC North', 'afc-south': 'AFC South', 'afc-west': 'AFC West',
+			'nfc-east': 'NFC East', 'nfc-north': 'NFC North', 'nfc-south': 'NFC South', 'nfc-west': 'NFC West',
+		});
 
 		function subtabType(league) {
 			return SUBTAB_GROUP[league.type] || league.type;
@@ -6364,6 +6439,198 @@
 			return card;
 		}
 
+		// ---- Depth Charts tab -----------------------------------------------
+		// Ungated, unlike every card above — see renderGrid, where these cards
+		// are built outside the isLoggedIn() blocks. The "Own In" column does
+		// read your own roster data, the same category of data Analytics is
+		// gated over, but the design decision here (recorded once, rather
+		// than re-litigated per card) is that the deterrent isn't worth
+		// spending on a view whose main content — real NFL depth charts — has
+		// nothing private about it at all, and the underlying roster data is
+		// already public in data/rosters.json regardless (see the History tab
+		// comment above on that same point). If a future card here reads
+		// finance or planning data, gate it; ownership counts alone don't
+		// earn the gate on their own.
+		//
+		// One card per NFL team (32 total), grouped into division sub-tabs via
+		// DEPTH_CHART_DIVISIONS — see that constant's own comment for how it
+		// reuses the league-type sub-tab mechanism for a division instead.
+		//
+		// Order within a position is ESPN's own depth-chart rank, exactly as
+		// synced — never re-sorted by ECR, which is the entire reason this
+		// tab exists over an ECR-sorted list FantasyPros' own depth-chart
+		// page already is. See probe-espn-depth-chart-slot.mjs: `rank` is a
+		// clean 1..N ladder confirmed across every sampled team, and for WR
+		// specifically interleaves three alignment roles (X/Z/S) rather than
+		// one straight ladder — `role` is a display tag only, never a sort key.
+		//
+		// A player with no ECR match is dropped from the tab entirely, per
+		// probe-fantasypros-ecr-depth.yml: every position's real list runs
+		// 93-255 deep against a depth chart's 14-deep maximum, so this only
+		// ever catches a genuine practice-squad body FantasyPros doesn't rank
+		// at all — never a real contributor.
+		const DEPTH_CHART_POSITION_LABELS = { QB: 'QB', RB: 'RB', WR: 'WR', TE: 'TE' };
+
+		// One league-agnostic ECR pool per position, built once per render
+		// rather than once per team — reused across all 32 teams. Absent
+		// entirely (empty Maps) when depthChartEcrType is null, which the
+		// caller reads as "no ECR pool this run" and every player is dropped,
+		// same as a player who just doesn't have a match.
+		function buildDepthChartEcrPools(pools, ecrType) {
+			const byPosition = {};
+			for (const position of Object.keys(DEPTH_CHART_POSITION_LABELS)) {
+				const pool = ecrType ? pools?.[`${ecrType}|PPR|${position}`] : null;
+				const byName = new Map();
+				if (pool && Array.isArray(pool.players)) {
+					for (const p of pool.players) {
+						const key = normalizeName(p.name);
+						if (key && !byName.has(key)) byName.set(key, p);
+					}
+				}
+				byPosition[position] = byName;
+			}
+			return byPosition;
+		}
+
+		// Every rostered player across every league, once — Depth Charts spans
+		// the whole page at once (no sub-tab scoping by league type the way
+		// Analytics has), so unlike computeTopAvailable's exposureLeagues this
+		// draws no distinction by type at all.
+		function buildDepthChartOwnership(leagues) {
+			const byName = new Map();
+			for (const league of leagues || []) {
+				for (const p of league.players || []) {
+					const key = normalizeName(p.name);
+					if (!key) continue;
+					if (!byName.has(key)) byName.set(key, []);
+					byName.get(key).push({ name: leagueDisplayName(league), url: league.url });
+				}
+			}
+			return byName;
+		}
+
+		// One team's depth chart, ECR-joined and ownership-joined, ready to
+		// render — {QB: [{name, role, injuryStatus, ecr:{rank,url}, ownedLeagues}], ...},
+		// a position key omitted when nothing on it survived the ECR filter.
+		function computeDepthChartTeamRows(team, ecrPools, ownership) {
+			const positions = {};
+			for (const position of Object.keys(DEPTH_CHART_POSITION_LABELS)) {
+				const entries = team[position];
+				if (!Array.isArray(entries) || entries.length === 0) continue;
+				const byName = ecrPools[position];
+				const rows = [];
+				for (const e of entries) {
+					const key = normalizeName(e.name);
+					const poolPlayer = byName.get(key);
+					if (!poolPlayer) continue; // no ECR match -> excluded, see the tab's own comment above
+					rows.push({
+						name: e.name,
+						role: e.role,
+						injuryStatus: e.injuryStatus,
+						ecr: { rank: poolPlayer.rank, url: poolPlayerUrl(poolPlayer.url) },
+						ownedLeagues: ownership.get(key) || [],
+					});
+				}
+				// Order preserved from `entries`, which is already ESPN's own rank
+				// order — filtering out no-ECR players can only remove rows, never
+				// reorder the ones that remain.
+				if (rows.length > 0) positions[position] = rows;
+			}
+			return positions;
+		}
+
+		// "Own In" for a Depth Charts row — its own instance and its own class
+		// hook (.depth-chart-link) per the established idiom (.salary-link,
+		// .needs-link, .starters-link, .finances-link), even though the CSS it
+		// wears is identical to .needs-link's.
+		const depthChartsPopover = makePopover('depthcharts');
+
+		function buildDepthChartOwnCell(row) {
+			const cell = el('td', { class: 'depth-chart-own' });
+			if (row.ownedLeagues.length === 0) {
+				cell.textContent = '0';
+				return cell;
+			}
+			const btn = el('button', { type: 'button', class: 'depth-chart-link', text: String(row.ownedLeagues.length) });
+			btn.addEventListener('click', () => {
+				depthChartsPopover.toggle(btn, `Own In — ${row.name}`, row.ownedLeagues.map((l) => ({ left: l.name, right: '' })));
+			});
+			cell.appendChild(btn);
+			return cell;
+		}
+
+		// One position's mini-table within a team card — Player/ECR/Own In,
+		// grouped under one merged header naming the position. playerNameNode
+		// and buildInjuryBadge are the same functions the Rosters tab uses;
+		// row.ecr/row.injuryStatus are shaped to match on purpose so nothing
+		// about either needed to change for a player who may not be rostered
+		// anywhere at all.
+		function buildDepthChartPositionTable(position, rows) {
+			const wrap = el('div', { class: 'depth-chart-position' });
+			const table = el('table', { class: 'standings depth-chart-table' });
+			const thead = el('thead');
+			thead.appendChild(el('tr', {}, [el('th', { colspan: '3', text: DEPTH_CHART_POSITION_LABELS[position] })]));
+			thead.appendChild(el('tr', {}, [
+				el('th', { text: 'Player' }),
+				el('th', { text: 'ECR' }),
+				el('th', { text: 'Own In' }),
+			]));
+			table.appendChild(thead);
+			const tbody = el('tbody');
+			for (const row of rows) {
+				const tr = el('tr');
+				const nameCell = el('td', { class: 'player-name' });
+				nameCell.appendChild(playerNameNode(row));
+				if (row.role) nameCell.appendChild(el('span', { class: 'depth-chart-role', text: ` (${row.role})` }));
+				const injuryBadge = buildInjuryBadge(row);
+				if (injuryBadge) nameCell.appendChild(injuryBadge);
+				tr.appendChild(nameCell);
+				tr.appendChild(el('td', { text: row.ecr.rank != null ? String(row.ecr.rank) : '—' }));
+				tr.appendChild(buildDepthChartOwnCell(row));
+				tbody.appendChild(tr);
+			}
+			table.appendChild(tbody);
+			wrap.appendChild(table);
+			return wrap;
+		}
+
+		// One team card — QB/RB/WR/TE mini-tables side by side (CSS handles
+		// the wrap down to one column on a phone), division as the
+		// data-league-type for the sub-tab strip. Returns null when every
+		// position on this team got filtered down to nothing, rather than an
+		// empty card with a name and no tables.
+		function renderDepthChartTeamCard(abbr, team, ecrPools, ownership) {
+			const positions = computeDepthChartTeamRows(team, ecrPools, ownership);
+			if (Object.keys(positions).length === 0) return null;
+
+			const division = DEPTH_CHART_DIVISIONS[abbr] || null;
+			const card = el('div', { class: 'card', 'data-view': 'depthcharts' });
+			if (division) card.dataset.leagueType = division;
+			card.appendChild(el('h2', { text: team.name || abbr }));
+
+			const positionsWrap = el('div', { class: 'depth-chart-positions' });
+			for (const position of Object.keys(DEPTH_CHART_POSITION_LABELS)) {
+				const rows = positions[position];
+				if (rows) positionsWrap.appendChild(buildDepthChartPositionTable(position, rows));
+			}
+			card.appendChild(positionsWrap);
+			return card;
+		}
+
+		// Every team card for the tab — called unconditionally from renderGrid,
+		// no isLoggedIn() gate. Absent data.depthCharts (a snapshot from
+		// before this existed, or a sync that never got a clean run) renders
+		// nothing rather than an empty tab full of blank cards.
+		function renderDepthChartCards(gridEl, data) {
+			if (!data.depthCharts?.teams) return;
+			const ecrPools = buildDepthChartEcrPools(data.rankingPools, data.depthChartEcrType);
+			const ownership = buildDepthChartOwnership(data.leagues);
+			for (const [abbr, team] of Object.entries(data.depthCharts.teams)) {
+				const card = renderDepthChartTeamCard(abbr, team, ecrPools, ownership);
+				if (card) gridEl.appendChild(card);
+			}
+		}
+
 		// ---- History tab ---------------------------------------------------
 		// Results and Finances are gated behind login the same way Analytics
 		// is, and that gate is deliberate — dues owed, payouts and past
@@ -7883,6 +8150,9 @@
 					gridEl.appendChild(renderScoringCard(league));
 				}
 			}
+
+			// Ungated — see the Depth Charts tab's own comment above for why.
+			renderDepthChartCards(gridEl, data);
 
 			// Logged-out visitors never get any analytics card, so 'analytics'
 			// never makes it into presentViews below and the tab simply isn't

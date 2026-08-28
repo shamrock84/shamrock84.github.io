@@ -56,7 +56,10 @@ import {
   rankingSpecForLeague,
   rankingPoolKey,
   DEFAULT_POWER_SLOTS,
+  createRankingsProvider,
+  automaticRankingType,
 } from './lib/fantasypros.mjs';
+import { fetchAllDepthCharts, DEPTH_CHART_POSITIONS } from './lib/espn-depth-chart.mjs';
 import {
   computeMflSeasonPlacements,
   computeMflSeasonPlacementsByPoints,
@@ -1236,6 +1239,10 @@ async function main() {
   // — every league keeps its roster whether or not rankings came through.
   const fpApiKey = fantasyProsApiKey();
   let rankingPools = {};
+  // Which ranking type the Depth Charts tab's extra per-position pools were
+  // fetched under (see below) — null when there's no key to fetch them
+  // with at all, which the page reads as "no ECR column available".
+  let depthChartEcrType = null;
   if (!fpApiKey) {
     console.log('Skipping FantasyPros rankings: FANTASYPROS_API_KEY not set');
   } else {
@@ -1257,6 +1264,47 @@ async function main() {
       }
     } catch (err) {
       console.error(`Failed to attach FantasyPros rankings: ${err.message}`);
+    }
+
+    // Four more ranking pools, one per position, for the Depth Charts tab's
+    // ECR column — deliberately NOT reused from the ALL-position pools
+    // above. probe-fantasypros-ecr-depth.yml found position=ALL is a
+    // shallower COMBINED list, not the union of each position's own list
+    // (518 total vs. 734 querying QB/RB/WR/TE separately), so the ALL pools
+    // above under-cover any single position relative to querying it
+    // directly. A depth chart's deepest position group tops out around 14
+    // players; a direct per-position query runs 93-255 deep, comfortably
+    // covering every real depth-chart slot with room to spare.
+    //
+    // No league-specific type/scoring choice here — this isn't tied to any
+    // one league. `redraft` is a synthetic league object purely to make
+    // automaticRankingType pick ROS in season and DRAFT (never DYNASTY)
+    // out of season, which is the broadly useful default for a whole-league
+    // browsing feature; league.rankingType overrides don't apply since
+    // there's no real league here to have one. Written onto depthCharts
+    // itself (ecrRankingType) so the page can build the pool key without a
+    // third copy of this same seasonal rule.
+    depthChartEcrType = automaticRankingType({ type: 'redraft' }, now);
+    try {
+      const provider = createRankingsProvider(fpApiKey, season);
+      for (const posKey of DEPTH_CHART_POSITIONS) {
+        const position = posKey.toUpperCase();
+        const key = rankingPoolKey({ type: depthChartEcrType, scoring: 'PPR', position });
+        if (rankingPools[key]) continue; // already covered (e.g. a superflex OP pool won't collide, but don't overwrite either way)
+        const set = await provider.getRankings(depthChartEcrType, 'PPR', position);
+        if (set?.list?.length > 0) {
+          rankingPools[key] = {
+            type: depthChartEcrType,
+            scoring: 'PPR',
+            position,
+            lastUpdated: set.lastUpdated ?? null,
+            players: set.list,
+          };
+          console.log(`FantasyPros — pool ${key}: ${set.list.length} players (Depth Charts ECR)`);
+        }
+      }
+    } catch (err) {
+      console.error(`Failed to fetch per-position ranking pools for Depth Charts: ${err.message}`);
     }
 
     // Sleepers: a second, independent FantasyPros list layered on the same
@@ -1417,6 +1465,27 @@ async function main() {
     }
   }
 
+  // NFL team depth charts (starter/backup ordering), from ESPN's public site
+  // API — a completely separate, no-key host from everything above, so this
+  // runs regardless of whether FANTASYPROS_API_KEY is set. NFL-wide rather
+  // than per-league: fetched once for the whole sync. See
+  // scripts/lib/espn-depth-chart.mjs for how the undocumented shape is
+  // parsed, and probe-espn-depth-chart*.mjs for what confirmed it.
+  //
+  // Never allowed to fail the run, same as every other enrichment here —
+  // and never allowed to compete with MFL's rate limit either, since it
+  // doesn't touch MFL at all.
+  let depthCharts = null;
+  try {
+    depthCharts = await fetchAllDepthCharts({ season: process.env.MFL_YEAR || String(targetSeason) });
+    console.log(
+      `Depth charts — ${Object.keys(depthCharts.teams).length}/${depthCharts.teamCount} team(s)`
+      + `${depthCharts.failureCount > 0 ? `, ${depthCharts.failureCount} failed` : ''}`
+    );
+  } catch (err) {
+    console.error(`Failed to fetch depth charts: ${err.message}`);
+  }
+
   // Degrade the same way everything else here does: a league that couldn't be
   // read keeps the availability it last had, and a run with no rankings at all
   // keeps the previous pools rather than emptying the two cards that need
@@ -1476,6 +1545,19 @@ async function main() {
   if (Object.keys(rankingPools).length === 0 && previous?.rankingPools) {
     rankingPools = previous.rankingPools;
   }
+  // A team-level failure inside fetchAllDepthCharts already degrades on its
+  // own (that team just carries no entry); this is only for the whole pass
+  // throwing (e.g. the team-list fetch itself failing), which would
+  // otherwise write depthCharts: null and blank the tab for one bad sync.
+  if (!depthCharts && previous?.depthCharts) {
+    depthCharts = previous.depthCharts;
+  }
+  // Carried alongside depthCharts specifically when THIS run had no key to
+  // fetch fresh per-position pools with — matches whichever pools actually
+  // ended up in rankingPools (either fresh above, or carried forward too).
+  if (!depthChartEcrType && previous?.depthChartEcrType) {
+    depthChartEcrType = previous.depthChartEcrType;
+  }
 
   // Last, deliberately — this is bonus historical data for the History tab,
   // never allowed to compete with the season-critical fetches above for
@@ -1497,6 +1579,11 @@ async function main() {
     // since a dozen leagues typically draw on the same two or three lists —
     // see rankingPoolKey, which is how a league finds its own.
     rankingPools,
+    // NFL-wide, not per-league — the Depth Charts tab's data. ecrRankingType
+    // is null exactly when depthCharts.teams has no ECR column to offer
+    // (no FANTASYPROS_API_KEY this run and no carried-forward type either).
+    depthCharts,
+    depthChartEcrType,
     leagues,
   };
 
