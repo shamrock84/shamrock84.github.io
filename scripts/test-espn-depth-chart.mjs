@@ -5,7 +5,7 @@
 // QB and WR groups), not invented shapes.
 
 import assert from 'node:assert/strict';
-import { extractDepthChartEntries } from './lib/espn-depth-chart.mjs';
+import { extractDepthChartEntries, buildRosterIndex } from './lib/espn-depth-chart.mjs';
 
 const athleteRef = (id) => ({ $ref: `http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/athletes/${id}?lang=en&region=us` });
 const roster = (entries) => new Map(entries.map(([id, name, injuryStatus = null]) => [id, { name, injuryStatus }]));
@@ -124,13 +124,44 @@ const roster = (entries) => new Map(entries.map(([id, name, injuryStatus = null]
 
 {
   // Injury status carries through from the roster join — free on the same
-  // request already needed for the name, per probe-espn-depth-chart-slot.mjs.
+  // request already needed for the name, per probe-espn-depth-chart-slot.mjs
+  // — and abbreviated via normalizeInjuryStatus (providers.mjs), the same
+  // function every other provider's injury designation already goes
+  // through, rather than a second map. 'Out' is ESPN's real spelling,
+  // confirmed by a live sync; extractDepthChartEntries never sees the raw
+  // string, only what buildRosterIndex already normalized it to.
   const depthChart = {
     items: [{ name: '3WR 1TE', positions: { rb: { athletes: [{ slot: 11, rank: 1, athlete: athleteRef('301') }] } } }],
   };
-  const rosterById = roster([['301', 'Banged Up Guy', 'Out']]);
+  const rosterById = roster([['301', 'Banged Up Guy', 'O']]);
   const entries = extractDepthChartEntries(depthChart, 'rb', rosterById);
-  assert.equal(entries[0].injuryStatus, 'Out');
+  assert.equal(entries[0].injuryStatus, 'O');
+}
+
+{
+  // buildRosterIndex abbreviates via normalizeInjuryStatus (providers.mjs)
+  // rather than storing the raw string — these five are the exact values a
+  // live sync confirmed ESPN's site API actually returns (909 depth-chart
+  // players checked, 142 carrying a status). A healthy player (no
+  // `injuries` entries) gets null, not an empty-string badge.
+  const rosterData = {
+    athletes: [
+      { position: 'offense', items: [
+        { id: '1', displayName: 'Q Guy', injuries: [{ status: 'Questionable' }] },
+        { id: '2', displayName: 'D Guy', injuries: [{ status: 'Doubtful' }] },
+        { id: '3', displayName: 'O Guy', injuries: [{ status: 'Out' }] },
+        { id: '4', displayName: 'IR Guy', injuries: [{ status: 'Injured Reserve' }] },
+        { id: '5', displayName: 'Susp Guy', injuries: [{ status: 'Suspension' }] },
+        { id: '6', displayName: 'Healthy Guy', injuries: [] },
+      ] },
+    ],
+  };
+  const byId = buildRosterIndex(rosterData);
+  assert.deepEqual(
+    [...byId.values()].map((p) => p.injuryStatus),
+    ['Q', 'D', 'O', 'IR', 'SUSP', null],
+    'every real ESPN depth-chart injury status abbreviates via the shared normalizeInjuryStatus'
+  );
 }
 
 {

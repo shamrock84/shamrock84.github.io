@@ -1,3 +1,5 @@
+import { normalizeInjuryStatus } from './providers.mjs';
+
 // NFL team depth charts (starter/backup ordering per position), read from
 // ESPN's PUBLIC site API — a completely different, unauthenticated surface
 // from the cookie-gated fantasy-league API providers.mjs talks to, and from
@@ -85,7 +87,16 @@ export async function fetchTeamList() {
 // fetches needed. `injuryStatus` is the roster response's own `injuries`
 // field (confirmed present, e.g. `{"status":"Out","date":"..."}`, by that
 // same probe) — free on this one request, no separate injury fetch.
-function buildRosterIndex(rosterData) {
+//
+// Run through normalizeInjuryStatus (providers.mjs) rather than a second
+// abbreviation map: that function already exists precisely to reconcile
+// every provider's own spelling into one vocabulary (MFL "Out", ESPN
+// fantasy "OUT"/"INJURY_RESERVE", Sleeper "IR"/"Sus"), and a real sync
+// confirmed this fourth source's values — Questionable, Doubtful, Out,
+// Injured Reserve, Suspension — all already map through it cleanly (Q, D,
+// O, IR, SUSP). A designation it doesn't recognize falls through to its
+// own generic length-based abbreviation rather than the full string.
+export function buildRosterIndex(rosterData) {
   const byId = new Map();
   for (const group of rosterData?.athletes || []) {
     for (const item of group.items || []) {
@@ -93,7 +104,7 @@ function buildRosterIndex(rosterData) {
       const injuries = Array.isArray(item.injuries) ? item.injuries : [];
       byId.set(String(item.id), {
         name: item.displayName || item.fullName || null,
-        injuryStatus: injuries[0]?.status || null,
+        injuryStatus: normalizeInjuryStatus(injuries[0]?.status || null),
       });
     }
   }
