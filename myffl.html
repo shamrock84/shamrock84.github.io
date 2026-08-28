@@ -6464,25 +6464,44 @@
 		// specifically interleaves three alignment roles (X/Z/S) rather than
 		// one straight ladder — `role` is a display tag only, never a sort key.
 		//
-		// A player with no ECR match is dropped from the tab entirely, per
-		// probe-fantasypros-ecr-depth.yml: every position's real list runs
-		// 93-255 deep against a depth chart's 14-deep maximum, so this only
-		// ever catches a genuine practice-squad body FantasyPros doesn't rank
-		// at all — never a real contributor.
+		// A player is dropped from the tab entirely for either of two reasons:
+		// no ECR at all (per probe-fantasypros-ecr-depth.yml, every position's
+		// real list runs 93-255 deep against a depth chart's 14-deep maximum,
+		// so this alone only ever catches a genuine practice-squad body), or
+		// ranked deeper than DEPTH_CHART_ECR_CAP for that position -- added
+		// after looking at the tab with every ranked player showing: the raw
+		// ECR-exists filter let through plenty of fantasy-irrelevant depth the
+		// cap trims. See that constant's own comment for why it's a judgment
+		// call rather than a measured line.
 		const DEPTH_CHART_POSITION_LABELS = { QB: 'QB', RB: 'RB', WR: 'WR', TE: 'TE' };
+
+		// A second, tighter cutoff on top of "has an ECR at all" — chosen after
+		// looking at the tab with the full 93-255-deep lists rendered: FantasyPros
+		// still ranks plenty of fantasy-irrelevant depth (deep-roster backups
+		// nobody would ever stream), and a straight ECR-existence filter alone
+		// doesn't trim that. These are a judgment call, not derived from
+		// anything measured — unlike RANKING_POOL_SIZE, there's no clean "the
+		// real list stops here" line for what still counts as rosterable, so
+		// revisit by eye rather than by re-running a probe.
+		const DEPTH_CHART_ECR_CAP = { QB: 100, RB: 150, WR: 200, TE: 100 };
 
 		// One league-agnostic ECR pool per position, built once per render
 		// rather than once per team — reused across all 32 teams. Absent
 		// entirely (empty Maps) when depthChartEcrType is null, which the
 		// caller reads as "no ECR pool this run" and every player is dropped,
-		// same as a player who just doesn't have a match.
+		// same as a player who just doesn't have a match. A pool entry ranked
+		// beyond DEPTH_CHART_ECR_CAP for its position is left out of the index
+		// entirely, so it fails the exact same "no ECR match" lookup a genuine
+		// no-rank player already fails — one exclusion reason, not two.
 		function buildDepthChartEcrPools(pools, ecrType) {
 			const byPosition = {};
 			for (const position of Object.keys(DEPTH_CHART_POSITION_LABELS)) {
 				const pool = ecrType ? pools?.[`${ecrType}|PPR|${position}`] : null;
+				const cap = DEPTH_CHART_ECR_CAP[position];
 				const byName = new Map();
 				if (pool && Array.isArray(pool.players)) {
 					for (const p of pool.players) {
+						if (cap != null && !(Number(p.rank) <= cap)) continue;
 						const key = normalizeName(p.name);
 						if (key && !byName.has(key)) byName.set(key, p);
 					}
