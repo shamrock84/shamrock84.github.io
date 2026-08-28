@@ -1,0 +1,35 @@
+name: Probe ESPN Depth Chart Slot Semantics (manual, read-only, no secrets needed)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here, the
+# same rule the other manual workflows follow.
+#
+# Settles whether ESPN's core-API `slot` field actually means depth order
+# (1 = starter, 2 = backup, ...) — the Depth Charts tab design orders players
+# by this field specifically INSTEAD OF by ECR rank, so if it doesn't mean
+# what it looks like it means, that design breaks. Checks QB/RB/WR/TE (the
+# positions this project's leagues roster) across several teams for a clean
+# 1..N slot ladder, since team 12's defensive line data looked suspicious
+# (six entries all at slot 1) when probe-espn-depth-chart-athletes.mjs
+# happened to print it.
+#
+# No API key, no cookies: unreachable from the sandbox this repo is normally
+# edited from, so a workflow run is the only place to ask.
+#
+# Read-only: two GETs per sample team (depth chart + roster).
+on:
+  workflow_dispatch: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Probe slot semantics across sample teams
+        run: node scripts/probe-espn-depth-chart-slot.mjs
