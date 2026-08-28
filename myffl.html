@@ -315,22 +315,51 @@
 			flex-wrap: wrap;
 			gap: 1rem;
 		}
+		/* Each position its own bounded box, not just a gap between them —
+		   plain adjacent tables with no border read as one continuous block on
+		   a team card that's carrying four of them, which is exactly the
+		   "blends together" problem this exists to fix. */
 		.depth-chart-position {
 			flex: 1 1 220px;
 			min-width: 0;
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			overflow: hidden;
 		}
 		.depth-chart-table th:first-child,
 		.depth-chart-table td:first-child {
 			text-align: left;
 		}
-		/* Merged position-name header row spans all three columns — the same
-		   table.standings rule that right-aligns every column but the first
-		   would otherwise center a colspan'd header oddly. */
+		.depth-chart-table td:not(:first-child) {
+			font-variant-numeric: tabular-nums;
+		}
+		/* The one strong visual anchor per position group: a solid --chip-bg
+		   banner in --accent, the exact pairing .pos-chip already uses
+		   elsewhere for a position badge — reused here rather than a new
+		   color, so "this band means position" reads the same way it already
+		   does on the Rosters tab. Spans the box edge-to-edge (the box's own
+		   overflow:hidden keeps its corners rounded to match), which is what
+		   actually stops the eye sliding from one position into the next —
+		   far more than the small muted label this replaced ever did. */
 		.depth-chart-table thead tr:first-child th {
 			text-align: left;
-			font-size: 0.72rem;
-			color: var(--text);
-			padding-bottom: 0.3rem;
+			font-size: 0.78rem;
+			font-weight: 700;
+			color: var(--accent);
+			background: var(--chip-bg);
+			padding: 0.35rem 0.5rem;
+		}
+		.depth-chart-table thead tr:nth-child(2) th {
+			padding: 0.3rem 0.5rem 0.25rem;
+		}
+		/* table.standings.depth-chart-table (both classes on the same element,
+		   see buildDepthChartPositionTable) rather than plain .depth-chart-table
+		   here specifically — table.standings td's own padding shorthand is
+		   declared later in this file and would otherwise win the tie on
+		   equal specificity and silently swallow this override. */
+		table.standings.depth-chart-table tbody td {
+			padding-left: 0.5rem;
+			padding-right: 0.5rem;
 		}
 		/* WR's alignment role (X/Z/S) — a display tag, not a status, so it
 		   gets the muted treatment rather than either .player-name's weight
