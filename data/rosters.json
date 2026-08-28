@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-28T23:14:11.204Z",
+  "generatedAt": "2026-08-28T23:23:04.357Z",
   "year": "2026",
   "rankingPools": {
     "DYNASTY|PPR|ALL": {
@@ -1928,39 +1928,39 @@
           "url": "/nfl/players/malik-nabers.php"
         },
         {
+          "name": "Ashton Jeanty",
+          "position": "RB",
+          "team": "LV",
+          "rank": 24,
+          "url": "/nfl/players/ashton-jeanty.php"
+        },
+        {
           "name": "Rashee Rice",
           "position": "WR",
           "team": "KC",
-          "rank": 24,
+          "rank": 25,
           "url": "/nfl/players/rashee-rice.php"
         },
         {
           "name": "Kenneth Walker III",
           "position": "RB",
           "team": "KC",
-          "rank": 25,
+          "rank": 26,
           "url": "/nfl/players/kenneth-walker-rb.php"
         },
         {
           "name": "Omarion Hampton",
           "position": "RB",
           "team": "LAC",
-          "rank": 26,
+          "rank": 27,
           "url": "/nfl/players/omarion-hampton.php"
         },
         {
           "name": "Josh Allen",
           "position": "QB",
           "team": "BUF",
-          "rank": 27,
-          "url": "/nfl/players/josh-allen-qb.php"
-        },
-        {
-          "name": "Ashton Jeanty",
-          "position": "RB",
-          "team": "LV",
           "rank": 28,
-          "url": "/nfl/players/ashton-jeanty.php"
+          "url": "/nfl/players/josh-allen-qb.php"
         },
         {
           "name": "Garrett Wilson",
@@ -2677,18 +2677,18 @@
           "url": "/nfl/players/mark-andrews.php"
         },
         {
-          "name": "Juwan Johnson",
-          "position": "TE",
-          "team": "NO",
-          "rank": 131,
-          "url": "/nfl/players/juwan-johnson.php"
-        },
-        {
           "name": "Jordyn Tyson",
           "position": "WR",
           "team": "NO",
-          "rank": 132,
+          "rank": 131,
           "url": "/nfl/players/jordyn-tyson.php"
+        },
+        {
+          "name": "Juwan Johnson",
+          "position": "TE",
+          "team": "NO",
+          "rank": 132,
+          "url": "/nfl/players/juwan-johnson.php"
         },
         {
           "name": "Woody Marks",
@@ -2887,32 +2887,32 @@
           "url": "/nfl/players/jerry-jeudy.php"
         },
         {
-          "name": "Mike Washington Jr.",
-          "position": "RB",
-          "team": "LV",
-          "rank": 162,
-          "url": "/nfl/players/mike-washington-jr.php"
-        },
-        {
           "name": "MarShawn Lloyd",
           "position": "RB",
           "team": "GB",
-          "rank": 163,
+          "rank": 162,
           "url": "/nfl/players/marshawn-lloyd.php"
         },
         {
           "name": "Jauan Jennings",
           "position": "WR",
           "team": "MIN",
-          "rank": 164,
+          "rank": 163,
           "url": "/nfl/players/jauan-jennings.php"
         },
         {
           "name": "Jalen McMillan",
           "position": "WR",
           "team": "TB",
-          "rank": 165,
+          "rank": 164,
           "url": "/nfl/players/jalen-mcmillan.php"
+        },
+        {
+          "name": "Mike Washington Jr.",
+          "position": "RB",
+          "team": "LV",
+          "rank": 165,
+          "url": "/nfl/players/mike-washington-jr.php"
         },
         {
           "name": "Braelon Allen",
@@ -6082,25 +6082,25 @@
           "url": "/nfl/players/saquon-barkley.php"
         },
         {
+          "name": "Ashton Jeanty",
+          "position": "RB",
+          "team": "LV",
+          "rank": 9,
+          "url": "/nfl/players/ashton-jeanty.php"
+        },
+        {
           "name": "Kenneth Walker III",
           "position": "RB",
           "team": "KC",
-          "rank": 9,
+          "rank": 10,
           "url": "/nfl/players/kenneth-walker-rb.php"
         },
         {
           "name": "Omarion Hampton",
           "position": "RB",
           "team": "LAC",
-          "rank": 10,
-          "url": "/nfl/players/omarion-hampton.php"
-        },
-        {
-          "name": "Ashton Jeanty",
-          "position": "RB",
-          "team": "LV",
           "rank": 11,
-          "url": "/nfl/players/ashton-jeanty.php"
+          "url": "/nfl/players/omarion-hampton.php"
         },
         {
           "name": "Derrick Henry",
@@ -8871,7 +8871,7 @@
         {
           "name": "Jakobie Keeney-James",
           "position": "WR",
-          "team": "PIT",
+          "team": "FA",
           "rank": 210,
           "url": "/nfl/players/jakobie-keeney-james.php"
         },
@@ -9964,7 +9964,7 @@
         {
           "name": "Jaheim Bell",
           "position": "TE",
-          "team": "PIT",
+          "team": "FA",
           "rank": 115,
           "url": "/nfl/players/jaheim-bell.php"
         },
@@ -10413,7 +10413,7 @@
     }
   },
   "depthCharts": {
-    "generatedAt": "2026-08-28T23:14:01.644Z",
+    "generatedAt": "2026-08-28T23:22:52.913Z",
     "teams": {
       "ARI": {
         "name": "Arizona Cardinals",
@@ -10437,7 +10437,7 @@
             "name": "Carson Beck",
             "rank": 3,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4428512",
@@ -10453,7 +10453,7 @@
             "name": "Jeremiyah Love",
             "rank": 1,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4373626",
@@ -10467,7 +10467,7 @@
             "name": "James Conner",
             "rank": 3,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4427728",
@@ -10502,7 +10502,7 @@
             "name": "Trey Benson",
             "rank": 8,
             "role": null,
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ],
         "WR": [
@@ -10574,7 +10574,7 @@
             "name": "Xavier Weaver",
             "rank": 10,
             "role": "X",
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ],
         "TE": [
@@ -10590,14 +10590,14 @@
             "name": "Tip Reiman",
             "rank": 2,
             "role": null,
-            "injuryStatus": "Out"
+            "injuryStatus": "O"
           },
           {
             "id": "4426844",
             "name": "Elijah Higgins",
             "rank": 3,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4374045",
@@ -10625,7 +10625,7 @@
             "name": "Jameson Geers",
             "rank": 7,
             "role": null,
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ]
       },
@@ -10644,7 +10644,7 @@
             "name": "Michael Penix Jr.",
             "rank": 2,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "2972515",
@@ -10702,7 +10702,7 @@
             "name": "Trey Sermon",
             "rank": 6,
             "role": null,
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ],
         "WR": [
@@ -10858,7 +10858,7 @@
             "name": "Skylar Thompson",
             "rank": 5,
             "role": null,
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ],
         "RB": [
@@ -10888,7 +10888,7 @@
             "name": "Adam Randall",
             "rank": 4,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4876311",
@@ -10918,7 +10918,7 @@
             "name": "Zay Flowers",
             "rank": 1,
             "role": "X",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4360939",
@@ -10967,7 +10967,7 @@
             "name": "Dayton Wade",
             "rank": 8,
             "role": "Z",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4426479",
@@ -11081,7 +11081,7 @@
             "name": "Ty Johnson",
             "rank": 3,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4429805",
@@ -11111,14 +11111,14 @@
             "name": "Khalil Shakir",
             "rank": 2,
             "role": "Z",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4635008",
             "name": "Keon Coleman",
             "rank": 3,
             "role": "S",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4242433",
@@ -11146,7 +11146,7 @@
             "name": "Tyrell Shavers",
             "rank": 7,
             "role": "X",
-            "injuryStatus": "Out"
+            "injuryStatus": "O"
           },
           {
             "id": "3122168",
@@ -11251,7 +11251,7 @@
             "name": "Haynes King",
             "rank": 3,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4034946",
@@ -11267,7 +11267,7 @@
             "name": "Chuba Hubbard",
             "rank": 1,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4678008",
@@ -11325,7 +11325,7 @@
             "name": "Xavier Legette",
             "rank": 3,
             "role": "S",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4708486",
@@ -11388,14 +11388,14 @@
             "name": "Chris Brazzell II",
             "rank": 12,
             "role": "S",
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           },
           {
             "id": "3929637",
             "name": "Dan Chisena",
             "rank": 13,
             "role": "X",
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ],
         "TE": [
@@ -11495,7 +11495,7 @@
             "name": "Kyle Monangai",
             "rank": 2,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4426386",
@@ -11532,7 +11532,7 @@
             "name": "Luther Burden III",
             "rank": 2,
             "role": "Z",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "2973405",
@@ -11646,7 +11646,7 @@
             "name": "Nikola Kalinic",
             "rank": 7,
             "role": null,
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ]
       },
@@ -11739,7 +11739,7 @@
             "name": "Ja'Marr Chase",
             "rank": 1,
             "role": "X",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4239993",
@@ -12009,7 +12009,7 @@
             "name": "Jamari Thrash",
             "rank": 10,
             "role": "X",
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ],
         "TE": [
@@ -12039,7 +12039,7 @@
             "name": "Joe Royer",
             "rank": 4,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           }
         ]
       },
@@ -12225,14 +12225,14 @@
             "name": "Michael Trigg",
             "rank": 4,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4710711",
             "name": "DJ Rogers",
             "rank": 5,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4361417",
@@ -12253,7 +12253,7 @@
             "name": "Princeton Fant",
             "rank": 8,
             "role": null,
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ]
       },
@@ -12453,7 +12453,7 @@
             "name": "Caleb Lohner",
             "rank": 6,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "5159802",
@@ -12502,14 +12502,14 @@
             "name": "Isiah Pacheco",
             "rank": 2,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4912274",
             "name": "Sione Vaki",
             "rank": 3,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4383429",
@@ -12523,7 +12523,7 @@
             "name": "Jabari Small",
             "rank": 5,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4035222",
@@ -12616,7 +12616,7 @@
             "name": "Kendrick Law",
             "rank": 11,
             "role": "Z",
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ],
         "TE": [
@@ -12625,7 +12625,7 @@
             "name": "Sam LaPorta",
             "rank": 1,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4242392",
@@ -12695,7 +12695,7 @@
             "name": "Josh Jacobs",
             "rank": 1,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4429023",
@@ -12795,7 +12795,7 @@
             "name": "J. Michael Sturdivant",
             "rank": 9,
             "role": "S",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4431509",
@@ -12825,7 +12825,7 @@
             "name": "Tucker Kraft",
             "rank": 1,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "3054212",
@@ -12839,7 +12839,7 @@
             "name": "Luke Musgrave",
             "rank": 3,
             "role": null,
-            "injuryStatus": "Out"
+            "injuryStatus": "O"
           },
           {
             "id": "4360086",
@@ -12907,7 +12907,7 @@
             "name": "Graham Mertz",
             "rank": 4,
             "role": null,
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ],
         "RB": [
@@ -12930,21 +12930,21 @@
             "name": "Jawhar Jordan",
             "rank": 3,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4373273",
             "name": "British Brooks",
             "rank": 4,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4432631",
             "name": "Noah Whittington",
             "rank": 5,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4249616",
@@ -12981,7 +12981,7 @@
             "name": "Jaylin Noel",
             "rank": 3,
             "role": "S",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4429022",
@@ -12995,7 +12995,7 @@
             "name": "Tank Dell",
             "rank": 5,
             "role": "Z",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "3118892",
@@ -13058,7 +13058,7 @@
             "name": "Jayden Higgins",
             "rank": 14,
             "role": "Z",
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ],
         "TE": [
@@ -13088,7 +13088,7 @@
             "name": "Brevin Jordan",
             "rank": 4,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4695705",
@@ -13188,14 +13188,14 @@
             "name": "Alec Pierce",
             "rank": 1,
             "role": "X",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4688813",
             "name": "Josh Downs",
             "rank": 2,
             "role": "Z",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "15818",
@@ -13223,7 +13223,7 @@
             "name": "Anthony Gould",
             "rank": 6,
             "role": "S",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "3051889",
@@ -13281,7 +13281,7 @@
             "name": "Tyler Warren",
             "rank": 1,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "2998565",
@@ -13302,7 +13302,7 @@
             "name": "Will Mallory",
             "rank": 4,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "2971281",
@@ -13330,7 +13330,7 @@
             "name": "Carson Towt",
             "rank": 8,
             "role": null,
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ]
       },
@@ -13386,7 +13386,7 @@
             "name": "LeQuint Allen Jr.",
             "rank": 3,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "2576336",
@@ -13416,7 +13416,7 @@
             "name": "Brian Thomas Jr.",
             "rank": 1,
             "role": "X",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4432620",
@@ -13430,7 +13430,7 @@
             "name": "Jakobi Meyers",
             "rank": 3,
             "role": "S",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4685415",
@@ -13549,7 +13549,7 @@
             "name": "Patrick Mahomes",
             "rank": 1,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4362887",
@@ -13579,7 +13579,7 @@
             "name": "Kenneth Walker III",
             "rank": 1,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4362478",
@@ -13630,7 +13630,7 @@
             "name": "Xavier Worthy",
             "rank": 2,
             "role": "Z",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4362921",
@@ -13714,7 +13714,7 @@
             "name": "Jeff Caldwell",
             "rank": 14,
             "role": "Z",
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ],
         "TE": [
@@ -13765,7 +13765,7 @@
             "name": "John Michael Gyllenborg",
             "rank": 7,
             "role": null,
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ]
       },
@@ -13807,7 +13807,7 @@
             "name": "Ashton Jeanty",
             "rank": 1,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4686658",
@@ -13842,7 +13842,7 @@
             "name": "Chris Collier",
             "rank": 6,
             "role": null,
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ],
         "WR": [
@@ -13879,7 +13879,7 @@
             "name": "Dont'e Thornton Jr.",
             "rank": 5,
             "role": "Z",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4401805",
@@ -13935,14 +13935,14 @@
             "name": "Justin Shorter",
             "rank": 13,
             "role": "X",
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           },
           {
             "id": "4433901",
             "name": "Corey Rucker",
             "rank": 14,
             "role": "Z",
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ],
         "TE": [
@@ -14028,7 +14028,7 @@
             "name": "Keaton Mitchell",
             "rank": 2,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4430968",
@@ -14079,14 +14079,14 @@
             "name": "Tre' Harris",
             "rank": 3,
             "role": "S",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4685553",
             "name": "Brenen Thompson",
             "rank": 4,
             "role": "X",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4430870",
@@ -14265,7 +14265,7 @@
             "name": "Puka Nacua",
             "rank": 1,
             "role": "X",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "16800",
@@ -14358,7 +14358,7 @@
             "name": "Terrance Ferguson",
             "rank": 3,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4833029",
@@ -14372,7 +14372,7 @@
             "name": "Davis Allen",
             "rank": 5,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4431346",
@@ -14449,7 +14449,7 @@
             "name": "Ollie Gordon II",
             "rank": 3,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4710341",
@@ -14600,7 +14600,7 @@
             "name": "Cole Turner",
             "rank": 6,
             "role": null,
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ]
       },
@@ -14619,7 +14619,7 @@
             "name": "J.J. McCarthy",
             "rank": 2,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "2573079",
@@ -14714,7 +14714,7 @@
             "name": "Jeshaun Jones",
             "rank": 6,
             "role": "S",
-            "injuryStatus": "Suspension"
+            "injuryStatus": "SUSP"
           },
           {
             "id": "4712579",
@@ -14849,7 +14849,7 @@
             "name": "TreVeyon Henderson",
             "rank": 2,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4698253",
@@ -14884,7 +14884,7 @@
             "name": "Myles Montgomery",
             "rank": 7,
             "role": null,
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ],
         "WR": [
@@ -14963,14 +14963,14 @@
             "name": "Jeremiah Webb",
             "rank": 11,
             "role": "Z",
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           },
           {
             "id": "4832914",
             "name": "Jimmy Kibble",
             "rank": 12,
             "role": "S",
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ],
         "TE": [
@@ -15014,7 +15014,7 @@
             "name": "Julian Hill",
             "rank": 6,
             "role": null,
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ]
       },
@@ -15063,7 +15063,7 @@
             "name": "Alvin Kamara",
             "rank": 2,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4599739",
@@ -15077,7 +15077,7 @@
             "name": "Devin Neal",
             "rank": 4,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4569682",
@@ -15105,7 +15105,7 @@
             "name": "Ty Chandler",
             "rank": 8,
             "role": null,
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ],
         "WR": [
@@ -15121,7 +15121,7 @@
             "name": "Jordyn Tyson",
             "rank": 2,
             "role": "Z",
-            "injuryStatus": "Doubtful"
+            "injuryStatus": "D"
           },
           {
             "id": "4569559",
@@ -15149,7 +15149,7 @@
             "name": "Mason Tipton",
             "rank": 6,
             "role": "S",
-            "injuryStatus": "Out"
+            "injuryStatus": "O"
           },
           {
             "id": "4372758",
@@ -15191,7 +15191,7 @@
             "name": "Brock Rechsteiner",
             "rank": 12,
             "role": "S",
-            "injuryStatus": "Suspension"
+            "injuryStatus": "SUSP"
           }
         ],
         "TE": [
@@ -15214,7 +15214,7 @@
             "name": "Oscar Delp",
             "rank": 3,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4876006",
@@ -15242,7 +15242,7 @@
             "name": "Moliki Matavao",
             "rank": 7,
             "role": null,
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ]
       },
@@ -15328,7 +15328,7 @@
             "name": "Malik Nabers",
             "rank": 1,
             "role": "X",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "3916945",
@@ -15363,14 +15363,14 @@
             "name": "Braxton Berrios",
             "rank": 6,
             "role": "S",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4692590",
             "name": "Jalin Hyatt",
             "rank": 7,
             "role": "X",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4242540",
@@ -15405,14 +15405,14 @@
             "name": "Calvin Austin III",
             "rank": 12,
             "role": "S",
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           },
           {
             "id": "4424106",
             "name": "Gunner Olszewski",
             "rank": 13,
             "role": "X",
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ],
         "TE": [
@@ -15428,7 +15428,7 @@
             "name": "Theo Johnson",
             "rank": 2,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "2531358",
@@ -15498,7 +15498,7 @@
             "name": "Breece Hall",
             "rank": 1,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4685247",
@@ -15512,7 +15512,7 @@
             "name": "Isaiah Davis",
             "rank": 3,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4035537",
@@ -15628,7 +15628,7 @@
             "name": "Kenyon Sadiq",
             "rank": 2,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4361372",
@@ -15649,7 +15649,7 @@
             "name": "Chase Curtis",
             "rank": 5,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4893748",
@@ -15740,7 +15740,7 @@
             "name": "Ja'Quinden Jackson",
             "rank": 7,
             "role": null,
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ],
         "WR": [
@@ -15791,7 +15791,7 @@
             "name": "Britain Covey",
             "rank": 7,
             "role": "X",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4050373",
@@ -15812,7 +15812,7 @@
             "name": "Danny Gray",
             "rank": 10,
             "role": "X",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4362186",
@@ -15833,7 +15833,7 @@
             "name": "Johnny Wilson",
             "rank": 13,
             "role": "X",
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ],
         "TE": [
@@ -15856,14 +15856,14 @@
             "name": "Eli Stowers",
             "rank": 3,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4241374",
             "name": "Grant Calcaterra",
             "rank": 4,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4372026",
@@ -15910,7 +15910,7 @@
             "name": "Will Howard",
             "rank": 3,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4714771",
@@ -15970,14 +15970,14 @@
             "name": "DK Metcalf",
             "rank": 1,
             "role": "X",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4035687",
             "name": "Michael Pittman Jr.",
             "rank": 2,
             "role": "Z",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4431492",
@@ -16019,7 +16019,7 @@
             "name": "Brandon Smith",
             "rank": 8,
             "role": "Z",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4613132",
@@ -16033,7 +16033,7 @@
             "name": "Cole Burgess",
             "rank": 10,
             "role": "X",
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ],
         "TE": [
@@ -16096,7 +16096,7 @@
             "name": "Kurtis Rourke",
             "rank": 3,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4361182",
@@ -16112,7 +16112,7 @@
             "name": "Christian McCaffrey",
             "rank": 1,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4696044",
@@ -16133,7 +16133,7 @@
             "name": "Isaac Guerendo",
             "rank": 4,
             "role": null,
-            "injuryStatus": "Out"
+            "injuryStatus": "O"
           },
           {
             "id": "4430104",
@@ -16156,7 +16156,7 @@
             "name": "Mike Evans",
             "rank": 1,
             "role": "X",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "3126486",
@@ -16170,14 +16170,14 @@
             "name": "De'Zhaun Stribling",
             "rank": 3,
             "role": "S",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "3895856",
             "name": "Christian Kirk",
             "rank": 4,
             "role": "X",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "3043116",
@@ -16198,7 +16198,7 @@
             "name": "Jacob Cowing",
             "rank": 7,
             "role": "X",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "3115928",
@@ -16240,14 +16240,14 @@
             "name": "Brandon Aiyuk",
             "rank": 13,
             "role": "X",
-            "injuryStatus": "Out"
+            "injuryStatus": "O"
           },
           {
             "id": "4428209",
             "name": "Ricky Pearsall",
             "rank": 14,
             "role": "Z",
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ],
         "TE": [
@@ -16256,7 +16256,7 @@
             "name": "George Kittle",
             "rank": 1,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4259147",
@@ -16277,7 +16277,7 @@
             "name": "Brayden Willis",
             "rank": 4,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4428396",
@@ -16326,7 +16326,7 @@
             "name": "Zach Charbonnet",
             "rank": 1,
             "role": null,
-            "injuryStatus": "Out"
+            "injuryStatus": "O"
           },
           {
             "id": "4685512",
@@ -16347,7 +16347,7 @@
             "name": "Emanuel Wilson",
             "rank": 4,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4035693",
@@ -16398,7 +16398,7 @@
             "name": "Tory Horton",
             "rank": 4,
             "role": "X",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "3929636",
@@ -16454,7 +16454,7 @@
             "name": "Jake Bobo",
             "rank": 12,
             "role": "S",
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ],
         "TE": [
@@ -16570,7 +16570,7 @@
             "name": "Emeka Egbuka",
             "rank": 1,
             "role": "X",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "3116165",
@@ -16584,7 +16584,7 @@
             "name": "Jalen McMillan",
             "rank": 3,
             "role": "S",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "5220680",
@@ -16598,7 +16598,7 @@
             "name": "Tez Johnson",
             "rank": 5,
             "role": "Z",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "3871102",
@@ -16654,7 +16654,7 @@
             "name": "Dennis Houston",
             "rank": 13,
             "role": "X",
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ],
         "TE": [
@@ -16717,7 +16717,7 @@
             "name": "Mitchell Trubisky",
             "rank": 2,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4361418",
@@ -16768,7 +16768,7 @@
             "name": "Kalel Mullings",
             "rank": 5,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4367567",
@@ -16798,7 +16798,7 @@
             "name": "Wan'Dale Robinson",
             "rank": 2,
             "role": "Z",
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "3925357",
@@ -16919,7 +16919,7 @@
             "name": "Jaren Kanak",
             "rank": 6,
             "role": null,
-            "injuryStatus": "Injured Reserve"
+            "injuryStatus": "IR"
           }
         ]
       },
@@ -16938,7 +16938,7 @@
             "name": "Marcus Mariota",
             "rank": 2,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4361994",
@@ -16961,14 +16961,14 @@
             "name": "Jacory Croskey-Merritt",
             "rank": 1,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4697815",
             "name": "Rachaad White",
             "rank": 2,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4685246",
@@ -16982,7 +16982,7 @@
             "name": "Jeremy McNichols",
             "rank": 4,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "5151317",
@@ -17091,14 +17091,14 @@
             "name": "John Bates",
             "rank": 2,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4690923",
             "name": "Ben Sinnott",
             "rank": 3,
             "role": null,
-            "injuryStatus": "Questionable"
+            "injuryStatus": "Q"
           },
           {
             "id": "4361088",
@@ -17936,7 +17936,7 @@
           }
         ]
       },
-      "updatedAt": "2026-08-28T23:13:39.697Z",
+      "updatedAt": "2026-08-28T23:22:19.956Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -21848,7 +21848,7 @@
           }
         ]
       },
-      "updatedAt": "2026-08-28T23:13:40.636Z",
+      "updatedAt": "2026-08-28T23:22:20.577Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -25700,7 +25700,7 @@
           }
         ]
       },
-      "updatedAt": "2026-08-28T23:13:41.664Z",
+      "updatedAt": "2026-08-28T23:22:21.170Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -28636,8 +28636,8 @@
           "pts": 0,
           "priorYearPts": 176.6,
           "ecr": {
-            "rank": 25,
-            "posRank": "RB9",
+            "rank": 26,
+            "posRank": "RB10",
             "tier": 4,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/kenneth-walker-rb.php"
@@ -28912,7 +28912,7 @@
           "pts": 0,
           "priorYearPts": 151.1,
           "ecr": {
-            "rank": 24,
+            "rank": 25,
             "posRank": "WR14",
             "tier": 4,
             "delta": -2,
@@ -29033,7 +29033,7 @@
           }
         ]
       },
-      "updatedAt": "2026-08-28T23:13:42.162Z",
+      "updatedAt": "2026-08-28T23:22:21.884Z",
       "error": null,
       "tags": [
         "Best Ball"
@@ -32225,7 +32225,7 @@
         "ir": 50,
         "position": []
       },
-      "updatedAt": "2026-08-28T23:13:42.822Z",
+      "updatedAt": "2026-08-28T23:22:22.365Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -34407,7 +34407,7 @@
         "ir": 50,
         "position": []
       },
-      "updatedAt": "2026-08-28T23:13:43.447Z",
+      "updatedAt": "2026-08-28T23:22:23.206Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -36258,7 +36258,7 @@
         "ir": 15,
         "position": []
       },
-      "updatedAt": "2026-08-28T23:13:44.196Z",
+      "updatedAt": "2026-08-28T23:22:23.851Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -37521,7 +37521,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-28T23:13:44.705Z",
+      "updatedAt": "2026-08-28T23:22:24.749Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -37779,7 +37779,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-28T23:13:45.164Z",
+      "updatedAt": "2026-08-28T23:22:25.192Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -38473,7 +38473,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-28T23:13:45.543Z",
+      "updatedAt": "2026-08-28T23:22:25.640Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -39699,7 +39699,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-28T23:13:46.052Z",
+      "updatedAt": "2026-08-28T23:22:26.003Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -41066,7 +41066,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-28T23:13:46.469Z",
+      "updatedAt": "2026-08-28T23:22:26.310Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -41189,7 +41189,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet",
+      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=54458&JSON=1 (year 2026)",
       "draftInProgress": false,
       "available": [
         "Stefon Diggs",
@@ -42340,7 +42340,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-28T23:13:46.883Z",
+      "updatedAt": "2026-08-28T23:22:26.761Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -43620,7 +43620,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-28T23:13:47.191Z",
+      "updatedAt": "2026-08-28T23:22:27.045Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -44911,7 +44911,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-28T23:13:47.664Z",
+      "updatedAt": "2026-08-28T23:22:27.588Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -46218,7 +46218,7 @@
         }
       ],
       "draftInProgress": false,
-      "updatedAt": "2026-08-28T23:13:47.762Z",
+      "updatedAt": "2026-08-28T23:22:27.686Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -46491,7 +46491,7 @@
         "Marvin Mims Jr."
       ],
       "power": {
-        "computedAt": "2026-08-28T23:13:38.475Z",
+        "computedAt": "2026-08-28T23:22:18.455Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -47200,7 +47200,7 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-08-28T23:13:38.475Z",
+      "availableAt": "2026-08-28T23:22:18.455Z",
       "results": []
     },
     {
@@ -47212,7 +47212,7 @@
       "teamName": "Big Dart Energy",
       "url": "https://fantasy.espn.com/football/team?leagueId=1966972&teamId=10",
       "players": [],
-      "updatedAt": "2026-08-28T23:13:47.941Z",
+      "updatedAt": "2026-08-28T23:22:27.752Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -47448,7 +47448,7 @@
       "teamName": "Jeffer Justinson",
       "url": "https://fantasy.espn.com/football/team?leagueId=421871710&teamId=5",
       "players": [],
-      "updatedAt": "2026-08-28T23:13:47.993Z",
+      "updatedAt": "2026-08-28T23:22:27.798Z",
       "error": null,
       "tags": [],
       "provider": "espn",
