@@ -28,6 +28,17 @@
 //     depth-chart position or starter rank, since a partial answer could be
 //     riding along on a request the sync already makes rather than needing
 //     its own endpoint at all.
+//
+// First run, 2026-08 (workflow run 33211878439): the control succeeded (HTTP
+// 200) but all six depth-chart candidates came back HTTP 403 "Missing
+// Authentication Token" — API Gateway's stock answer for a route that isn't
+// wired up at all, the 403-flavored sibling of the 404s the power-rank probe
+// got for the same reason. /nfl/players (8,534 entries) carries only ECR/ADP
+// rank fields (rank_ecr, rank_adp, rank_ecr_ppr, rank_adp_ppr, rank_ecr_half)
+// and nothing depth-chart-shaped. Conclusion: the partner API does not expose
+// depth-chart data under this key, under any of the spellings tried — a
+// Depth Charts tab would need a different data source entirely, not this
+// one.
 
 import { fantasyProsApiKey, nflSeasonPhase } from './lib/fantasypros.mjs';
 
