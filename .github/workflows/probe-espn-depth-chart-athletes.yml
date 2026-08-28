@@ -1,0 +1,33 @@
+name: Probe ESPN Depth Chart Athlete Join (manual, read-only, no secrets needed)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here, the
+# same rule the other manual workflows follow.
+#
+# Follow-up to probe-espn-depth-chart.yml, which found ESPN's public core API
+# exposes depth charts but only as athlete $ref links, not embedded names.
+# This checks whether those refs' numeric ids join against the (already
+# fetched) team roster response for free, or whether a per-athlete fetch is
+# really needed — the answer decides the request budget a Depth Charts sync
+# would actually cost.
+#
+# No API key, no cookies: unreachable from the sandbox this repo is normally
+# edited from, so a workflow run is the only place to ask.
+#
+# Read-only: a small, bounded number of GETs for one sample team.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Probe the athlete-ref-to-roster join
+        run: node scripts/probe-espn-depth-chart-athletes.mjs
