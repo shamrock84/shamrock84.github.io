@@ -17,7 +17,7 @@
 // `results` / `historyBoundaryYear` on top of it is what keeps this from
 // clobbering roster data a concurrently-running scheduled sync might be
 // writing — the other half of that guarantee is backfill-history.yml and
-// sync-mfl-rosters.yml sharing one concurrency group, so GitHub Actions
+// sync-fantasy-rosters.yml sharing one concurrency group, so GitHub Actions
 // queues them instead of letting both commit to the same file at once.
 //
 // One consequence worth knowing: this trusts whatever `season` a league is

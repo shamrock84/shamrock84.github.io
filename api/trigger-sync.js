@@ -13,7 +13,7 @@ import { applyCors } from './lib/cors.mjs';
 
 const OWNER = 'shamrock84';
 const REPO = 'shamrock84.github.io';
-const WORKFLOW = 'sync-mfl-rosters.yml';
+const WORKFLOW = 'sync-fantasy-rosters.yml';
 const REF = 'main';
 
 const COOLDOWN_MS = 2 * 60 * 1000; // 2 min

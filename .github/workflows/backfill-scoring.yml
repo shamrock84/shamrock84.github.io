@@ -16,7 +16,7 @@ name: Backfill Weekly/Season High Scores
 # The scheduled run below exists so a league added or edited from the Admin
 # tab picks up weekly/season-high scoring on its own over time, rather than
 # needing another manual round of this workflow every time. It is timed to
-# stay clear of sync-mfl-rosters.yml's own '17 */4 * * *' cadence (00:17,
+# stay clear of sync-fantasy-rosters.yml's own '17 */4 * * *' cadence (00:17,
 # 04:17, 08:17, ...) rather than landing right after it — MFL's rate limit
 # is a short window, not a long-lived daily budget (see the 37s-clean vs.
 # 87s-with-429s comparison on the availability pass in CLAUDE.md), so 02:17
@@ -43,7 +43,7 @@ permissions:
   contents: write
 
 concurrency:
-  # Shared with sync-mfl-rosters.yml and backfill-history.yml on purpose: all
+  # Shared with sync-fantasy-rosters.yml and backfill-history.yml on purpose: all
   # three write to data/rosters.json, and queuing (rather than running them
   # side by side) is what keeps one from clobbering another's commit.
   group: rosters-data-write
