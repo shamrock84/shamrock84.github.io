@@ -1,0 +1,33 @@
+name: Probe FantasyPros ECR Depth (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here, the
+# same rule the other manual workflows follow.
+#
+# Asks how deep FantasyPros actually ranks each position (QB/RB/WR/TE),
+# unbounded by our own RANKING_POOL_SIZE=250 cap, which the committed
+# data/rosters.json shows every stored pool is already hitting. Decides how
+# much the Depth Charts tab's planned "exclude players with no ECR" filter
+# actually cuts per position — a few inactive-squad names versus whole
+# position groups.
+#
+# api.fantasypros.com is unreachable from a sandbox and the key is a secret,
+# so a workflow run is the only place to ask. Read-only: 9 GETs total.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Probe ECR depth per position
+        env:
+          FANTASYPROS_API_KEY: ${{ secrets.FANTASYPROS_API_KEY }}
+        run: node scripts/probe-fantasypros-ecr-depth.mjs
