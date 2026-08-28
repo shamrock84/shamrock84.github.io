@@ -1,0 +1,33 @@
+name: Probe ESPN Depth Chart (manual, read-only, no secrets needed)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here, the
+# same rule the other manual workflows follow.
+#
+# Asks ESPN's PUBLIC site API (site.api.espn.com / sports.core.api.espn.com)
+# whether it exposes NFL team depth charts — a different, unauthenticated
+# surface from the cookie-gated fantasy-league API providers.mjs already
+# talks to. Follows up on probe-fantasypros-depth-charts.yml, which found the
+# FantasyPros partner API doesn't have this data at all.
+#
+# No API key, no cookies: this host is unreachable from the sandbox this repo
+# is normally edited from (confirmed by a rejected direct curl), so a
+# workflow run is the only place to ask.
+#
+# Read-only: a handful of GETs.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Probe ESPN's public depth-chart endpoints
+        run: node scripts/probe-espn-depth-chart.mjs
