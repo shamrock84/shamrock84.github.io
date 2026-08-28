@@ -34,6 +34,21 @@
 //   - the full shape of one resolved athlete `$ref`, so a fallback fetch
 //     (for whatever doesn't join) is at least a known cost rather than a
 //     guess.
+//
+// First run, 2026-08 (workflow run 33213351656, team 12 / Kansas City):
+// 105 total athlete slots across 3 depth charts (offense/defense/special
+// teams presumably), deduping to 95 distinct athlete ids — the same starter
+// shows up in more than one formation. ALL 95 matched the team roster
+// response by id: a 100% join rate, zero fallback fetches needed. The one
+// directly-resolved athlete confirmed the same shape the roster join
+// already gives (displayName, position.abbreviation) as a sanity check —
+// it also carries an `injuries` field, unused here since this project's
+// existing convention (see attachInjuryDetail) is to source designations
+// from MFL/ESPN's own roster data rather than reach for a second source.
+// Conclusion: a Depth Charts sync costs exactly 2 requests per team (roster
+// + depthcharts) x 32 teams = 64 total requests, with NO per-athlete fetch
+// needed — the athlete `$ref`'s numeric id is ESPN's universal athlete id
+// and joins directly against the site API roster response.
 
 const SITE_BASE = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
 const CORE_BASE = 'https://sports.core.api.espn.com/v2/sports/football/leagues/nfl';
