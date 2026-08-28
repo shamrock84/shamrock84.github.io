@@ -3186,17 +3186,18 @@
 		// start, then Submit Lineup sends the checked ids to MFL via TYPE=lineup.
 		//
 		// This page has no viewer-level access control — anyone with the URL
-		// sees it logged out, including league mates. Logged out, the checkbox
-		// column isn't just disabled, it's omitted entirely: nothing on the
-		// *page* reveals starter/bench status, only the Submit Lineup button
-		// and its actions disappear.
+		// sees it logged out, including league mates — so who's starting is
+		// deliberately kept off the page for them ahead of game time. Logged
+		// out the checkbox column isn't merely disabled, it's omitted
+		// entirely: nothing on the page reveals starter/bench status, and only
+		// the Submit Lineup button and its actions disappear on top of that.
+		// Keep both halves of that if this table is reworked.
 		//
-		// That tidies the page; it does not hide a lineup. The starter ids ride
-		// in data/rosters.json, which is committed to a public repo and served
-		// openly, so anyone who wants a pilot league's lineup can read it there
-		// before kickoff. Accepted deliberately — see the History tab comment
-		// below for the same trade — so don't write anything here that depends
-		// on a logged-out viewer not knowing who's starting.
+		// Worth knowing where it stops: the starter ids themselves ride in
+		// data/rosters.json, which is public, so this deters a casual look
+		// rather than sealing a lineup. Accepted on purpose (see the History
+		// tab comment below) — the thing not to do is write anything that
+		// *depends* on a logged-out viewer being unable to find out.
 		//
 		// `visible` (login) and `writable` (login AND a provider that can
 		// actually accept a write) are separate gates, not one. Sleeper
@@ -6365,14 +6366,19 @@
 
 		// ---- History tab ---------------------------------------------------
 		// Results and Finances are gated behind login the same way Analytics
-		// is — to keep the page uncluttered for a visitor who isn't the
-		// manager, not to protect anything. Dues, payouts and past finishes
-		// are in config/leagues.json and data/rosters.json, both committed to
-		// a public repo and served openly, so this gate hides them from the
-		// page and from nobody else. That's a deliberate trade, not an
-		// oversight: none of it is sensitive enough to be worth a server
-		// round-trip. Plans are the one thing genuinely withheld, and they
-		// are withheld by living outside the repo rather than by this gate.
+		// is, and that gate is deliberate — dues owed, payouts and past
+		// finishes aren't for a league mate who happens to open the URL. Keep
+		// it on any card added here.
+		//
+		// It is a deterrent rather than a hard boundary, and worth knowing
+		// which: the same numbers ride in config/leagues.json and
+		// data/rosters.json, both committed to a public repo and served
+		// openly, so someone determined can read them there. Accepted on
+		// purpose — none of it is worth a server round-trip — so don't move
+		// this data behind api/ over it, and equally don't put anything that
+		// genuinely must not leak behind this gate alone. Plans are where
+		// that bar is met, by living outside the repo entirely.
+		//
 		// Unlike every other tab these two don't split by league type — one
 		// Results card and one Finances card, spanning every league at
 		// once, no data-league-type on either and no sub-tab strip. A
@@ -7879,11 +7885,12 @@
 			// offered — the same mechanism that hides the Admin tab. These
 			// cards are a portfolio view across every league at once (who you're
 			// exposed to, who's hurt, who's free, how your teams rank), which is
-			// noise for anyone who isn't the manager; unlike a planned contract
-			// length there was no per-field gate to fall back on, so the whole
-			// set is gated at once. Note this hides the cards, not the data —
-			// everything they read is in the public data/rosters.json. See the
-			// History tab comment above for why that's a deliberate trade.
+			// not a league mate's to read; unlike a planned contract length
+			// there was no per-field gate to fall back on, so the whole set is
+			// gated at once, and a new card here should be too. The gate is a
+			// deterrent rather than a hard boundary — what these cards read is
+			// in the public data/rosters.json — which is accepted deliberately;
+			// see the History tab comment above.
 			if (isLoggedIn()) {
 				for (const groupKey of SUBTAB_ORDER) {
 					const types = typesInSubtabGroup(groupKey);
