@@ -1,33 +1,32 @@
 // Settles the one open question the Depth Charts tab design actually rests
-// on: does ESPN's core-API `slot` field mean depth rank (1 = starter, 2 =
-// backup, ...), or something else entirely?
+// on: what does ESPN's core-API data actually encode as depth order?
 //
-// probe-espn-depth-chart-athletes.mjs dumped team 12's (Kansas City) full
-// depth chart and the raw output was suspicious for this: the defensive
-// line position "lde" carried SIX entries all at slot 1, which doesn't fit
-// a starter/backup/third-string ladder at all. That probe wasn't looking at
-// this question, so it wasn't investigated further at the time. It matters
-// now because the tab's whole reason to exist over an ECR-sorted list is
-// that its player ORDER comes from the real depth chart, not from rank —
-// if `slot` isn't actually depth order, that promise is false.
+// FIRST RUN (see below) already answered part of this and disproved the
+// original premise: `slot` is NOT depth rank. It's a fixed formation-role
+// code — every QB entry on every team is slot 9, every RB is slot 11, every
+// TE is slot 10, and WR splits into three role slots (1/2/8, almost
+// certainly outside-X / outside-Z / slot receiver). That's why the first
+// version of this probe (which tested `slot` for a dense 1..N ladder) found
+// nothing dense anywhere — it was testing the wrong field.
 //
-// QB is the position to test it on: nobody splits QB reps across a
-// personnel-package rotation the way a defensive line does, so if `slot`
-// means depth rank anywhere, it means it there. This checks QB (and, as a
-// second look, RB/WR/TE — the other positions this project's leages
-// actually roster) across several teams, for:
-//   - are slot numbers within one position UNIQUE and DENSE (1, 2, 3, ...
-//     no gaps, no repeats)?
-//   - does the position appear on exactly one of the team's depth charts
-//     (an "Offense" chart), not scattered across several the way "lde" was?
-//   - does the FULL raw entry carry any field besides {slot, athlete} that
-//     might be the real depth indicator instead?
+// The real signal was sitting on every entry the whole time, just not
+// dumped by the first run: a `rank` field, e.g.
+// {"slot":9,"athlete":{...},"rank":1}. The first athlete in every group
+// checked was rank 1, and array order matched real-world depth for all 16
+// team/position samples (Mahomes/Fields/Nussmeier/Oladokun at KC QB, Josh
+// Allen/Kyle Allen/Buechele at BUF QB, etc.) — but that first run only
+// dumped ONE entry's raw fields per group, so "rank forms a clean sequence"
+// was confirmed for rank 1 only, not verified across a whole group. THIS
+// run checks `rank` densely (1, 2, 3, ... no gaps or repeats) across every
+// entry, grouped by `slot` since that's a real dimension (WR's three roles
+// each need their own depth ladder, not one combined into WR1..WR14).
 //
-// As a free side-check (already paid for by the roster fetch this needs for
-// readable names anyway): whether a roster item carries its own injury
-// field, which would answer probe-espn-depth-chart-athletes.mjs's other
-// open question — whether injury status can ride along on the same request
-// that's already required for the name join, or needs its own fetch.
+// Also confirmed by the first run and worth restating: a roster item DOES
+// carry its own `injuries` field (San Francisco's roster had a real,
+// non-empty one) — so injury status rides free on the same roster fetch
+// already required for the id join, no separate request needed. That part
+// of probe-espn-depth-chart-athletes.mjs's open question is settled; this
+// run's roster-item check is left in only as a sanity re-confirmation.
 //
 // No API key, no cookies: unreachable from the sandbox this repo is
 // normally edited from, so a workflow run is the only place to ask.
@@ -118,43 +117,59 @@ for (const team of SAMPLE_TEAMS) {
     console.log(`\n  position "${posKey}": appears on ${occurrences.length} chart(s) — ${occurrences.map((o) => o.chartName).join(', ')}`);
     for (const { chartName, posVal } of occurrences) {
       const athletes = posVal.athletes || [];
-      const slots = athletes.map((a) => a.slot);
-      const uniqueSlots = new Set(slots);
-      const isDenseLadder =
-        uniqueSlots.size === slots.length && [...uniqueSlots].sort((a, b) => a - b).every((s, i) => s === i + 1);
-      console.log(
-        `    [${chartName}] ${athletes.length} athlete(s), slots=[${slots.join(',')}] ${
-          isDenseLadder ? '-> DENSE 1..N LADDER (looks like real depth order)' : '-> NOT a dense ladder (duplicates or gaps)'
-        }`
-      );
-      // Full raw shape of the first entry, unfiltered — in case there's a
-      // field besides {slot, athlete} that's the real depth signal.
-      if (athletes[0]) {
-        console.log(`    first entry, full raw fields: ${JSON.stringify(athletes[0])}`);
-      }
-      // Readable names in slot order, so a human can eyeball plausibility.
-      const named = athletes
-        .map((a) => {
-          const m = (a.athlete?.$ref || '').match(ID_FROM_REF);
-          const player = m ? rosterById.get(m[1]) : null;
-          return `slot ${a.slot}: ${player?.displayName ?? `(unmatched id ${m?.[1] ?? '?'})`}`;
-        })
-        .join('  |  ');
-      console.log(`    ${named}`);
 
-      overallFindings.push({ team: team.name, position: posKey, chart: chartName, count: athletes.length, isDenseLadder });
+      // `slot` is a formation-role code (WR splits into 3 role slots), not
+      // depth order — so `rank` density is checked WITHIN each role group,
+      // which is what actually decides whether `rank` is usable as depth.
+      const bySlot = new Map();
+      for (const a of athletes) {
+        if (!bySlot.has(a.slot)) bySlot.set(a.slot, []);
+        bySlot.get(a.slot).push(a);
+      }
+
+      for (const [slotValue, group] of bySlot) {
+        const ranks = group.map((a) => a.rank);
+        const uniqueRanks = new Set(ranks);
+        const isDenseLadder =
+          uniqueRanks.size === ranks.length && [...uniqueRanks].sort((a, b) => a - b).every((r, i) => r === i + 1);
+        console.log(
+          `    [${chartName}] slot=${slotValue}: ${group.length} athlete(s), ranks=[${ranks.join(',')}] ${
+            isDenseLadder ? '-> DENSE 1..N (rank looks like real depth order)' : '-> NOT dense (duplicates or gaps in rank)'
+          }`
+        );
+        // Readable names in rank order, so a human can eyeball plausibility.
+        const named = group
+          .slice()
+          .sort((a, b) => a.rank - b.rank)
+          .map((a) => {
+            const m = (a.athlete?.$ref || '').match(ID_FROM_REF);
+            const player = m ? rosterById.get(m[1]) : null;
+            return `rank ${a.rank}: ${player?.displayName ?? `(unmatched id ${m?.[1] ?? '?'})`}`;
+          })
+          .join('  |  ');
+        console.log(`      ${named}`);
+
+        overallFindings.push({
+          team: team.name,
+          position: posKey,
+          chart: chartName,
+          slot: slotValue,
+          count: group.length,
+          isDenseLadder,
+        });
+      }
     }
   }
 }
 
 console.log('\n\n=== SUMMARY ===');
 for (const f of overallFindings) {
-  console.log(`  ${f.team.padEnd(14)} ${f.position.padEnd(4)} [${f.chart}] n=${f.count} ${f.isDenseLadder ? 'DENSE' : 'NOT DENSE'}`);
+  console.log(`  ${f.team.padEnd(14)} ${f.position.padEnd(4)} slot=${String(f.slot).padEnd(2)} [${f.chart}] n=${f.count} ${f.isDenseLadder ? 'DENSE' : 'NOT DENSE'}`);
 }
 const denseCount = overallFindings.filter((f) => f.isDenseLadder).length;
 console.log(
-  `\n${denseCount}/${overallFindings.length} position-occurrences form a dense 1..N slot ladder. ` +
+  `\n${denseCount}/${overallFindings.length} (position, role-slot) groups have a dense 1..N \`rank\` ladder. ` +
     (denseCount === overallFindings.length
-      ? 'Every one does — `slot` looks safe to treat as depth order for these positions.'
-      : 'Not all of them do — `slot` cannot be trusted as depth order without more work; see which rows say NOT DENSE above.')
+      ? 'Every one does — `rank`, grouped by `slot` as the role dimension, is safe to treat as depth order.'
+      : '`rank` cannot be trusted as depth order without more work; see which rows say NOT DENSE above.')
 );
