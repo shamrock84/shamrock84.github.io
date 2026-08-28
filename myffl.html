@@ -1933,6 +1933,15 @@
 		function typesInSubtabGroup(groupKey) {
 			return Object.keys(SUBTAB_GROUP).filter((t) => SUBTAB_GROUP[t] === groupKey);
 		}
+		// Deliberately SHORTER than POSITION_ORDER in scripts/lib/providers.mjs,
+		// which also carries the IDP positions (PN, Off, DL, DE, DT, LB, CB, S,
+		// DB). No league in this config rosters one, so every position that
+		// actually reaches the page is listed here. The consequence if that ever
+		// changes: an unlisted position falls to the same rank at the end, so a
+		// whole defensive roster would sort as one undifferentiated block rather
+		// than erroring — safe, but wrong-looking. Add the positions here if an
+		// IDP league is ever added, and note that this list and the sync's are
+		// two separate copies that no test compares.
 		const POSITION_ORDER = ['QB', 'RB', 'WR', 'TE', 'PK', 'Def'];
 		function positionRank(pos) {
 			const idx = POSITION_ORDER.indexOf(pos);
@@ -5123,7 +5132,7 @@
 		// halves live on opposite sides of the sync boundary. Deliberately a
 		// second copy rather than a shared module: the page has no build step and
 		// no imports, so the only alternative would be shipping the name of every
-		// player twice in data/rosters.json. scripts/test-top-players.mjs runs
+		// player twice in data/rosters.json. scripts/test-top-available.mjs runs
 		// both implementations over the same corpus so they can't drift apart
 		// unnoticed — a drift here doesn't break anything visibly, it just quietly
 		// stops recognising a player you own.
