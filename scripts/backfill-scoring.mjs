@@ -21,7 +21,7 @@
 // carries what's needed, and touching only `results[].scoring` is what keeps
 // this from clobbering roster data a concurrently-running scheduled sync
 // might be writing; the other half of that guarantee is this workflow
-// sharing sync-mfl-rosters.yml's concurrency group).
+// sharing sync-fantasy-rosters.yml's concurrency group).
 //
 // LEAGUE_ID (optional, comma-separated) restricts the run to just those
 // league ids — the direct answer to "backfill THIS league's high scores now"

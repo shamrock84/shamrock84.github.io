@@ -26,7 +26,7 @@ permissions:
   contents: write
 
 concurrency:
-  # Shared with sync-mfl-rosters.yml on purpose: both write to
+  # Shared with sync-fantasy-rosters.yml on purpose: both write to
   # data/rosters.json, and queuing (rather than running them side by side)
   # is what keeps one from clobbering the other's commit — simpler and more
   # complete than trying to merge two concurrent writes to the same file.

@@ -1,5 +1,5 @@
 // Vercel serverless function: lets the "Last synced" link on the page kick
-// off a fresh run of the Sync MFL Rosters GitHub Action on demand, instead
+// off a fresh run of the Sync Fantasy Rosters GitHub Action on demand, instead
 // of waiting for the next scheduled run (every 4 hours).
 //
 // This is a public, unauthenticated endpoint (same as live-scoring.js), so
@@ -13,7 +13,7 @@ import { applyCors } from './lib/cors.mjs';
 
 const OWNER = 'shamrock84';
 const REPO = 'shamrock84.github.io';
-const WORKFLOW = 'sync-mfl-rosters.yml';
+const WORKFLOW = 'sync-fantasy-rosters.yml';
 const REF = 'main';
 
 const COOLDOWN_MS = 2 * 60 * 1000; // 2 min
