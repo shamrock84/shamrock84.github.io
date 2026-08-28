@@ -637,14 +637,15 @@
 			text-underline-offset: 0.15rem;
 			cursor: pointer;
 		}
-		/* Starters/Bench popover for a Team Needs rank — same shape as
-		   .salary-popover (single shared instance, position:fixed, appended
-		   to <body> so a horizontally-scrolled table can't clip or
-		   misposition it) but named separately rather than shared: the two
-		   pop up different content from different tables, and duplicating
-		   this little CSS costs less than coupling two unrelated features
-		   to one shared class. */
-		.needs-popover {
+		/* Every popover on this page (Salary by Year, Starters, Team Needs,
+		   Won Breakdown) is a makePopover instance and wears these rules: a
+		   title over a list of two-column rows, position:fixed and appended
+		   to <body> so a horizontally-scrolled table can't clip or misposition
+		   it. Each instance also carries its own .<name>-popover class — no
+		   rules hang off those here, they're the hook for styling or finding a
+		   single popover without touching the other three. These four blocks
+		   were byte-identical when they were written out per popover. */
+		.popover {
 			position: fixed;
 			z-index: 20;
 			background: var(--card-bg);
@@ -655,20 +656,20 @@
 			font-size: 0.85rem;
 			min-width: 10rem;
 		}
-		.needs-popover-title {
+		.popover-title {
 			font-weight: 600;
 			color: var(--muted);
 			margin-bottom: 0.3rem;
 			white-space: nowrap;
 		}
-		.needs-popover-row {
+		.popover-row {
 			display: flex;
 			justify-content: space-between;
 			gap: 1rem;
 			padding: 0.15rem 0;
 			font-variant-numeric: tabular-nums;
 		}
-		.needs-popover-row + .needs-popover-row {
+		.popover-row + .popover-row {
 			border-top: 1px solid var(--border);
 		}
 		/* Power Rankings' Start column: same clickable-number idiom as
@@ -686,33 +687,6 @@
 			text-decoration: underline dotted;
 			text-underline-offset: 0.15rem;
 			cursor: pointer;
-		}
-		.starters-popover {
-			position: fixed;
-			z-index: 20;
-			background: var(--card-bg);
-			border: 1px solid var(--border);
-			border-radius: 8px;
-			box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-			padding: 0.5rem 0.7rem;
-			font-size: 0.85rem;
-			min-width: 10rem;
-		}
-		.starters-popover-title {
-			font-weight: 600;
-			color: var(--muted);
-			margin-bottom: 0.3rem;
-			white-space: nowrap;
-		}
-		.starters-popover-row {
-			display: flex;
-			justify-content: space-between;
-			gap: 1rem;
-			padding: 0.15rem 0;
-			font-variant-numeric: tabular-nums;
-		}
-		.starters-popover-row + .starters-popover-row {
-			border-top: 1px solid var(--border);
 		}
 		.group-label {
 			font-size: 0.72rem;
@@ -957,33 +931,6 @@
 		   than the table it was opened from, since it's detached from the
 		   table (appended to <body>) precisely so a narrow phone's
 		   horizontally-scrolled roster table can't clip or misposition it. */
-		.salary-popover {
-			position: fixed;
-			z-index: 20;
-			background: var(--card-bg);
-			border: 1px solid var(--border);
-			border-radius: 8px;
-			box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-			padding: 0.5rem 0.7rem;
-			font-size: 0.85rem;
-			min-width: 10rem;
-		}
-		.salary-popover-title {
-			font-weight: 600;
-			color: var(--muted);
-			margin-bottom: 0.3rem;
-			white-space: nowrap;
-		}
-		.salary-popover-row {
-			display: flex;
-			justify-content: space-between;
-			gap: 1rem;
-			padding: 0.15rem 0;
-			font-variant-numeric: tabular-nums;
-		}
-		.salary-popover-row + .salary-popover-row {
-			border-top: 1px solid var(--border);
-		}
 		.pos-chip {
 			display: inline-block;
 			min-width: 2rem;
@@ -1387,10 +1334,12 @@
 		}
 		.results-details[open] .results-summary { margin-bottom: 0.5rem; }
 		/* Finances tab: same shapes as Results just above, kept as their own
-		   declarations rather than reusing .results-* — two features sharing
-		   a visual form get separate classes throughout this file (see
-		   .needs-popover vs .salary-popover), since there's nothing to gain
-		   from coupling them beyond the shape they duplicate on purpose. */
+		   declarations rather than reusing .results-* — two features sharing a
+		   visual form get separate classes throughout this file, since there's
+		   nothing to gain from coupling them beyond the shape they duplicate
+		   on purpose. (The popovers are the one place that rule was relaxed:
+		   four byte-identical blocks became .popover, with each instance
+		   keeping its own name as a hook. See .popover above.) */
 		.finances-league-head {
 			display: flex;
 			justify-content: space-between;
@@ -1426,10 +1375,10 @@
 			user-select: none;
 		}
 		.finances-details[open] .finances-summary { margin-bottom: 0.5rem; }
-		/* Won-amount button and popover — same shape as .salary-link/
-		   .salary-popover (see openFinancesPopover), duplicated rather than
-		   shared since the two pop up unrelated content from unrelated
-		   tables. */
+		/* Won-amount button — same shape as .salary-link. The popover it opens
+		   is a makePopover instance like every other one on this page; the
+		   shared .popover rules carry its look, and .finances-popover stays as
+		   this instance's own hook. */
 		.finances-link {
 			background: none;
 			border: none;
@@ -1441,33 +1390,6 @@
 			text-decoration: underline dotted;
 			text-underline-offset: 0.15rem;
 			cursor: pointer;
-		}
-		.finances-popover {
-			position: fixed;
-			z-index: 20;
-			background: var(--card-bg);
-			border: 1px solid var(--border);
-			border-radius: 8px;
-			box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-			padding: 0.5rem 0.7rem;
-			font-size: 0.85rem;
-			min-width: 10rem;
-		}
-		.finances-popover-title {
-			font-weight: 600;
-			color: var(--muted);
-			margin-bottom: 0.3rem;
-			white-space: nowrap;
-		}
-		.finances-popover-row {
-			display: flex;
-			justify-content: space-between;
-			gap: 1rem;
-			padding: 0.15rem 0;
-			font-variant-numeric: tabular-nums;
-		}
-		.finances-popover-row + .finances-popover-row {
-			border-top: 1px solid var(--border);
 		}
 		/* A net loss — the same token .salary-cap-room's negative state and
 		   Results' "guessed" flag both use for "this number needs a look".
@@ -2011,6 +1933,15 @@
 		function typesInSubtabGroup(groupKey) {
 			return Object.keys(SUBTAB_GROUP).filter((t) => SUBTAB_GROUP[t] === groupKey);
 		}
+		// Deliberately SHORTER than POSITION_ORDER in scripts/lib/providers.mjs,
+		// which also carries the IDP positions (PN, Off, DL, DE, DT, LB, CB, S,
+		// DB). No league in this config rosters one, so every position that
+		// actually reaches the page is listed here. The consequence if that ever
+		// changes: an unlisted position falls to the same rank at the end, so a
+		// whole defensive roster would sort as one undifferentiated block rather
+		// than erroring — safe, but wrong-looking. Add the positions here if an
+		// IDP league is ever added, and note that this list and the sync's are
+		// two separate copies that no test compares.
 		const POSITION_ORDER = ['QB', 'RB', 'WR', 'TE', 'PK', 'Def'];
 		function positionRank(pos) {
 			const idx = POSITION_ORDER.indexOf(pos);
@@ -2617,69 +2548,139 @@
 		// strategy, and this page has no viewer-level access control — logged
 		// out, an unset value renders as a plain "—" instead of the dropdown.
 		//
-		// Shared "Salary by Year" popover for the real-salary cell below — one
-		// instance reused across every click rather than a node per player,
-		// since only one can ever be open, and appended to <body> rather than
-		// nested in the table so its position:fixed coordinates are measured
-		// against the viewport, not a potentially-scrolling ancestor
-		// (.roster-scroll's own horizontal scroll on a phone would otherwise
-		// clip or misplace it). Built lazily on first use rather than at page
-		// load, since most page loads never open it.
-		let salaryPopoverEl = null;
-		let salaryPopoverOwner = null; // the <button> currently showing, or null
-		function closeSalaryPopover() {
-			if (!salaryPopoverEl) return;
-			salaryPopoverEl.classList.add('hidden');
-			salaryPopoverOwner = null;
-		}
-		function positionSalaryPopover(button) {
-			const rect = button.getBoundingClientRect();
-			salaryPopoverEl.style.top = `${rect.bottom + 4}px`;
-			// Anchored to the button's left edge, but pulled back from the
-			// right edge of the viewport — the Sal column sits at the right
-			// of a wide roster table, so a naive left-anchor would routinely
-			// try to render most of the popover off-screen.
-			const maxLeft = window.innerWidth - salaryPopoverEl.offsetWidth - 8;
-			salaryPopoverEl.style.left = `${Math.max(8, Math.min(rect.left, maxLeft))}px`;
-		}
-		function openSalaryPopover(button, playerName, rows) {
-			if (!salaryPopoverEl) {
-				salaryPopoverEl = el('div', { class: 'salary-popover hidden' });
-				document.body.appendChild(salaryPopoverEl);
-				// Closes rather than re-tracks on scroll/resize — this is a
-				// quick reference a click away again, not a pinned panel, and
-				// a stale position left behind by a scroll would be worse
-				// than it just going away.
-				window.addEventListener('scroll', closeSalaryPopover, true);
-				window.addEventListener('resize', closeSalaryPopover);
-				document.addEventListener('keydown', (e) => {
-					if (e.key === 'Escape') closeSalaryPopover();
-				});
-				document.addEventListener('click', (e) => {
-					if (!salaryPopoverOwner) return;
-					if (e.target === salaryPopoverOwner || salaryPopoverEl.contains(e.target)) return;
-					closeSalaryPopover();
-				});
+		// Every popover on this page is the same object: a title, then a list of
+		// two-column rows, anchored under the button that opened it. Four of
+		// them exist (Salary by Year, Starters, Team Needs, Won Breakdown) and
+		// each keeps its OWN instance and its own element — they show unrelated
+		// content pulled from unrelated tables, and nothing is gained by having
+		// one of them re-render into another's node. What they never needed was
+		// four copies of the show/hide/anchor/dismiss machinery, which is what
+		// this factory holds; the content stays at the call site, where it
+		// belongs, as the {title, rows} the caller hands to open().
+		//
+		// Each instance is appended to <body> rather than nested in its table,
+		// so its position:fixed coordinates are measured against the viewport
+		// and not a potentially-scrolling ancestor (.roster-scroll's own
+		// horizontal scroll on a phone would otherwise clip or misplace it),
+		// and built lazily on first use, since most page loads open none of
+		// them. `name` gives the instance its own class hooks alongside the
+		// shared .popover ones — the CSS lives on the shared classes, but a
+		// single popover can still be styled or found by its own name.
+		function makePopover(name) {
+			let popoverEl = null;
+			let owner = null; // the <button> currently showing, or null
+			// Suppresses the scroll/resize dismissal from the moment a popover is
+			// shown until the frame after. See the note in show() — the scroll
+			// this guards against is fired asynchronously, so a synchronous flag
+			// around the DOM work is not enough on its own.
+			let opening = false;
+
+			// Deliberate dismissal: the toggle, Escape, or a click outside.
+			// Never suppressed — the reader asked for it.
+			function close() {
+				if (!popoverEl) return;
+				popoverEl.classList.add('hidden');
+				owner = null;
 			}
-			salaryPopoverEl.innerHTML = '';
-			salaryPopoverEl.appendChild(el('div', { class: 'salary-popover-title', text: `${playerName} — Salary by Year` }));
-			for (const row of rows) {
-				const line = el('div', { class: 'salary-popover-row' });
-				line.appendChild(el('span', { text: String(row.year) }));
-				line.appendChild(el('span', { text: `$${row.amount.toFixed(2)}` }));
-				salaryPopoverEl.appendChild(line);
+
+			// Incidental dismissal: the viewport moved under it. This is the
+			// one that has to yield while a popover is being shown, since
+			// showing it can itself provoke the scroll.
+			function closeOnViewportChange() {
+				if (opening) return;
+				close();
 			}
-			salaryPopoverEl.classList.remove('hidden');
-			salaryPopoverOwner = button;
-			positionSalaryPopover(button);
-		}
-		function toggleSalaryPopover(button, playerName, rows) {
-			if (salaryPopoverOwner === button && !salaryPopoverEl.classList.contains('hidden')) {
-				closeSalaryPopover();
-				return;
+
+			function position(button) {
+				const rect = button.getBoundingClientRect();
+				popoverEl.style.top = `${rect.bottom + 4}px`;
+				// Anchored to the button's left edge, but pulled back from the
+				// right edge of the viewport — these buttons sit in the right-
+				// hand columns of wide tables (Sal, Won), so a naive
+				// left-anchor would routinely try to render most of the
+				// popover off-screen.
+				const maxLeft = window.innerWidth - popoverEl.offsetWidth - 8;
+				popoverEl.style.left = `${Math.max(8, Math.min(rect.left, maxLeft))}px`;
 			}
-			openSalaryPopover(button, playerName, rows);
+
+			// rows: [{ left, right }] — both already formatted as strings by
+			// the caller, since only the caller knows whether a number is a
+			// year, a rank, or dollars.
+			function open(button, title, rows) {
+				build(button, title, rows);
+				show(button);
+			}
+
+			// Two positioning passes, and the order is the whole point. A fixed
+			// element with no top/left set falls back to its static position —
+			// the end of <body> — so showing it before positioning it can
+			// lengthen the page, and a longer page fires a scroll, and the
+			// scroll handler above dismisses on exactly that. That is why the
+			// FIRST click on a popover button used to do nothing at all: it
+			// opened and shut inside the one gesture, and only the second click
+			// stuck, by which point top/left were already set from the first and
+			// the page no longer grew. Positioning while still hidden pins it to
+			// the viewport before it can affect layout; the second pass refines
+			// the right-edge clamp, which needs a real offsetWidth and so has to
+			// wait until it is visible. The `opening` guard is belt-and-braces
+			// over both: the browser fires that scroll asynchronously, so it can
+			// land after this function has already returned.
+			function show(button) {
+				opening = true;
+				position(button);
+				popoverEl.classList.remove('hidden');
+				position(button);
+				// rAF lands after the browser has dispatched any scroll the show
+				// provoked; setTimeout is the fallback for the DOM stub the
+				// card tests run in, which has no rAF.
+				const release = () => { opening = false; };
+				if (typeof requestAnimationFrame === 'function') requestAnimationFrame(release);
+				else setTimeout(release, 0);
+			}
+
+			function build(button, title, rows) {
+				if (!popoverEl) {
+					popoverEl = el('div', { class: `popover ${name}-popover hidden` });
+					document.body.appendChild(popoverEl);
+					// Closes rather than re-tracks on scroll/resize — this is a
+					// quick reference a click away again, not a pinned panel,
+					// and a stale position left behind by a scroll would be
+					// worse than it just going away.
+					window.addEventListener('scroll', closeOnViewportChange, true);
+					window.addEventListener('resize', closeOnViewportChange);
+					document.addEventListener('keydown', (e) => {
+						if (e.key === 'Escape') close();
+					});
+					document.addEventListener('click', (e) => {
+						if (!owner) return;
+						if (e.target === owner || popoverEl.contains(e.target)) return;
+						close();
+					});
+				}
+				popoverEl.innerHTML = '';
+				popoverEl.appendChild(el('div', { class: `popover-title ${name}-popover-title`, text: title }));
+				for (const row of rows) {
+					const line = el('div', { class: `popover-row ${name}-popover-row` });
+					line.appendChild(el('span', { text: row.left }));
+					line.appendChild(el('span', { text: row.right }));
+					popoverEl.appendChild(line);
+				}
+				owner = button;
+			}
+
+			function toggle(button, title, rows) {
+				if (owner === button && !popoverEl.classList.contains('hidden')) {
+					close();
+					return;
+				}
+				open(button, title, rows);
+			}
+
+			return { open, close, toggle };
 		}
+
+		// "Salary by Year" for the real-salary cell below.
+		const salaryPopover = makePopover('salary');
 		function buildSalaryCell(p, league, onSalaryChange) {
 			if (Number(p.salary) > 0) {
 				const text = `$${Number(p.salary).toFixed(2)}`;
@@ -2699,7 +2700,11 @@
 				});
 				btn.addEventListener('click', (e) => {
 					e.stopPropagation();
-					toggleSalaryPopover(btn, p.name, breakdown);
+					salaryPopover.toggle(
+						btn,
+						`${p.name} — Salary by Year`,
+						breakdown.map((row) => ({ left: String(row.year), right: `$${row.amount.toFixed(2)}` }))
+					);
 				});
 				return el('td', { class: 'salary-cell' }, [btn]);
 			}
@@ -3182,10 +3187,17 @@
 		//
 		// This page has no viewer-level access control — anyone with the URL
 		// sees it logged out, including league mates — so who's starting is
-		// exactly the kind of thing that shouldn't leak to them ahead of
-		// game time. Logged out, the checkbox column isn't just disabled,
-		// it's omitted entirely: nothing on the page reveals starter/bench
-		// status, only the Submit Lineup button and its actions disappear.
+		// deliberately kept off the page for them ahead of game time. Logged
+		// out the checkbox column isn't merely disabled, it's omitted
+		// entirely: nothing on the page reveals starter/bench status, and only
+		// the Submit Lineup button and its actions disappear on top of that.
+		// Keep both halves of that if this table is reworked.
+		//
+		// Worth knowing where it stops: the starter ids themselves ride in
+		// data/rosters.json, which is public, so this deters a casual look
+		// rather than sealing a lineup. Accepted on purpose (see the History
+		// tab comment below) — the thing not to do is write anything that
+		// *depends* on a logged-out viewer being unable to find out.
 		//
 		// `visible` (login) and `writable` (login AND a provider that can
 		// actually accept a write) are separate gates, not one. Sleeper
@@ -5127,7 +5139,7 @@
 		// halves live on opposite sides of the sync boundary. Deliberately a
 		// second copy rather than a shared module: the page has no build step and
 		// no imports, so the only alternative would be shipping the name of every
-		// player twice in data/rosters.json. scripts/test-top-players.mjs runs
+		// player twice in data/rosters.json. scripts/test-top-available.mjs runs
 		// both implementations over the same corpus so they can't drift apart
 		// unnoticed — a drift here doesn't break anything visibly, it just quietly
 		// stops recognising a player you own.
@@ -5348,6 +5360,91 @@
 		//                  leagues you already hold this free agent in. Both
 		//                  sub-lines get a label once there are two of them,
 		//                  since two identical grey lines would be a guess.
+		// Click-to-sort, shared by the three tables that have it: the Analytics
+		// cards' shared table, Power Rankings, and Team Needs. Each keeps its
+		// own SORTS map and its own rendering — the rows are players on one and
+		// leagues on the others — but the state machine below is the same on
+		// all three, and used to be written out three times.
+		//
+		// Three rules, and every one of them is silent when it breaks:
+		//
+		//  - The card's own order is a fourth state, not something the first
+		//    click destroys: each header cycles its natural direction, the
+		//    reverse, then back to the default. That matters most on Injury
+		//    Exposure, whose default order encodes the live/settled split — a
+		//    two-state toggle would strand a reader in a sort with no way back
+		//    except reloading the page.
+		//  - Ties fall back to the card's own order rather than to nothing,
+		//    which is what keeps a Pos sort from scrambling players within a
+		//    position: under it they stay in exposure order, or wire order, or
+		//    whatever that card sorted by.
+		//  - `missingLast` holds a missing value at the bottom in BOTH
+		//    directions. The obvious "treat it as worst" treatment reads
+		//    correctly ascending and then hands it the top row on the reverse
+		//    click — and no ECR means the rankings didn't have that player, not
+		//    that he is the worst in the league.
+		//
+		// Sorting is per card and per visit: no localStorage, since the default
+		// order is the considered one and a sort set last Tuesday silently
+		// overriding it is worse than clicking again.
+		//
+		// onChange is what the card does after a click — the two rank cards
+		// just re-render their body, while the paginated table also has to
+		// return to page 1, since staying on page 4 of a re-sorted table shows
+		// rows that have nothing to do with the header just clicked.
+		//
+		// Pinned by test-analytics-sort.mjs, test-power-rank.mjs and
+		// test-team-needs.mjs, each driving its own card through a DOM stub —
+		// the state lives in this closure rather than in a pure function.
+		function makeTableSort(rows, SORTS, onChange) {
+			const defaultIndex = new Map(rows.map((r, i) => [r, i]));
+			let sortKey = null;
+			let sortDir = 0;
+
+			function sortedRows() {
+				if (!sortKey) return rows;
+				const { value, missingLast } = SORTS[sortKey];
+				const byDefault = (a, b) => defaultIndex.get(a) - defaultIndex.get(b);
+				return [...rows].sort((a, b) => {
+					const av = value(a);
+					const bv = value(b);
+					if (missingLast && (av == null || bv == null)) {
+						if (av == null && bv == null) return byDefault(a, b);
+						return av == null ? 1 : -1;
+					}
+					return (av === bv ? 0 : av < bv ? -1 : 1) * sortDir || byDefault(a, b);
+				});
+			}
+
+			function cycleSort(key) {
+				if (sortKey !== key) {
+					sortKey = key;
+					sortDir = SORTS[key].dir;
+				} else if (sortDir === SORTS[key].dir) {
+					sortDir = -sortDir;
+				} else {
+					sortKey = null;
+					sortDir = 0;
+				}
+				onChange();
+			}
+
+			// `attrs` is an attribute object, or a plain string as shorthand for
+			// a title — most callers only want the tooltip, and el() already
+			// setAttribute's anything it doesn't recognise.
+			function sortableHeader(label, key, attrs = {}) {
+				const opts = typeof attrs === 'string' ? { title: attrs } : attrs;
+				const th = el('th', { ...opts, class: `${opts.class || ''} sortable`.trim(), text: label });
+				if (sortKey === key) {
+					th.appendChild(el('span', { class: 'sort-arrow', text: sortDir === 1 ? ' ▲' : ' ▼' }));
+				}
+				th.addEventListener('click', () => cycleSort(key));
+				return th;
+			}
+
+			return { sortedRows, cycleSort, sortableHeader };
+		}
+
 		function appendAnalyticsTable(card, rows, total, {
 			showStatus = false,
 			showExposure = true,
@@ -5358,23 +5455,10 @@
 			const table = el('table', { class: 'standings' });
 			card.appendChild(table);
 
-			// Click-to-sort on every column but the player's name. The card's own
-			// order is a fourth state rather than something you lose on the first
-			// click: each header cycles through its natural direction, the
-			// reverse, and then back to the default. That matters most on Injury
-			// Exposure, whose default order encodes the live/settled split — a
-			// two-state toggle would strand you in a sort with no way back except
-			// reloading the page.
-			//
-			// Sorting is per card and per visit: no localStorage, since the
-			// default order is the considered one and a sort you set last Tuesday
-			// silently overriding it is worse than clicking again.
-			//
-			// Ties fall back to the card's own order rather than to nothing, which
-			// is what keeps a Pos sort from scrambling players within a position —
-			// under it they stay in exposure order, or wire order, or whatever
-			// that card sorted by.
-			const defaultIndex = new Map(rows.map((r, i) => [r, i]));
+			// Click-to-sort on every column but the player's name. See
+			// makeTableSort for the three rules this shares with the two rank
+			// cards; what's local to this table is the column set below and
+			// the return to page 1 on every click.
 			const SORTS = {
 				// Fantasy order (QB, RB, WR, TE, PK, Def), not alphabetical, which
 				// would open with Def and bury the quarterbacks in the middle.
@@ -5401,47 +5485,13 @@
 				// how many leagues you already hold a free agent in.
 				owned: { dir: -1, value: (r) => r.ownedCount },
 			};
-			let sortKey = null;
-			let sortDir = 0;
-
-			function sortedRows() {
-				if (!sortKey) return rows;
-				const { value, missingLast } = SORTS[sortKey];
-				const byDefault = (a, b) => defaultIndex.get(a) - defaultIndex.get(b);
-				return [...rows].sort((a, b) => {
-					const av = value(a);
-					const bv = value(b);
-					if (missingLast && (av == null || bv == null)) {
-						if (av == null && bv == null) return byDefault(a, b);
-						return av == null ? 1 : -1;
-					}
-					return (av === bv ? 0 : av < bv ? -1 : 1) * sortDir || byDefault(a, b);
-				});
-			}
-
-			// Natural direction, then its reverse, then back to the card's order.
-			function cycleSort(key) {
-				if (sortKey !== key) {
-					sortKey = key;
-					sortDir = SORTS[key].dir;
-				} else if (sortDir === SORTS[key].dir) {
-					sortDir = -sortDir;
-				} else {
-					sortKey = null;
-					sortDir = 0;
-				}
+			// Back to page 1 on every sort: staying on page 4 of a table that
+			// just re-sorted shows rows with nothing to do with the header
+			// that was clicked.
+			const { sortedRows, sortableHeader } = makeTableSort(rows, SORTS, () => {
 				page = 0;
 				renderPage();
-			}
-
-			function sortableHeader(label, key, attrs = {}) {
-				const th = el('th', { ...attrs, class: `${attrs.class || ''} sortable`.trim(), text: label });
-				if (sortKey === key) {
-					th.appendChild(el('span', { class: 'sort-arrow', text: sortDir === 1 ? ' ▲' : ' ▼' }));
-				}
-				th.addEventListener('click', () => cycleSort(key));
-				return th;
-			}
+			});
 
 			const pageCount = Math.ceil(rows.length / pageSize);
 			let page = 0;
@@ -5916,61 +5966,21 @@
 			return line;
 		}
 
-		// Shared "who are the starters" popover for Power Rankings' Start
-		// column — same shape as needsPopover/openSalaryPopover (one instance,
-		// built lazily, position:fixed, appended to <body>, dismissed on
-		// scroll/resize/Escape/outside-click), kept as its own instance for
-		// the same reason those two are separate from each other: unrelated
-		// content from an unrelated table.
-		let startersPopoverEl = null;
-		let startersPopoverOwner = null;
-		function closeStartersPopover() {
-			if (!startersPopoverEl) return;
-			startersPopoverEl.classList.add('hidden');
-			startersPopoverOwner = null;
-		}
-		function positionStartersPopover(button) {
-			const rect = button.getBoundingClientRect();
-			startersPopoverEl.style.top = `${rect.bottom + 4}px`;
-			const maxLeft = window.innerWidth - startersPopoverEl.offsetWidth - 8;
-			startersPopoverEl.style.left = `${Math.max(8, Math.min(rect.left, maxLeft))}px`;
-		}
+		// "Who are the starters" for Power Rankings' Start column — its own
+		// instance, for the same reason every popover here gets one: unrelated
+		// content from an unrelated table. See makePopover for the machinery
+		// the four of them share.
+		const startersPopover = makePopover('starters');
+
 		// `players` is the same [{name, position}] list the clicked button's
 		// own count came from — no second lookup, so the popover can never
 		// disagree with the cell that opened it.
-		function openStartersPopover(button, label, players) {
-			if (!startersPopoverEl) {
-				startersPopoverEl = el('div', { class: 'starters-popover hidden' });
-				document.body.appendChild(startersPopoverEl);
-				window.addEventListener('scroll', closeStartersPopover, true);
-				window.addEventListener('resize', closeStartersPopover);
-				document.addEventListener('keydown', (e) => {
-					if (e.key === 'Escape') closeStartersPopover();
-				});
-				document.addEventListener('click', (e) => {
-					if (!startersPopoverOwner) return;
-					if (e.target === startersPopoverOwner || startersPopoverEl.contains(e.target)) return;
-					closeStartersPopover();
-				});
-			}
-			startersPopoverEl.innerHTML = '';
-			startersPopoverEl.appendChild(el('div', { class: 'starters-popover-title', text: `${label} — Starters` }));
-			for (const p of players) {
-				const line = el('div', { class: 'starters-popover-row' });
-				line.appendChild(el('span', { text: p.name }));
-				line.appendChild(el('span', { text: p.position }));
-				startersPopoverEl.appendChild(line);
-			}
-			startersPopoverEl.classList.remove('hidden');
-			startersPopoverOwner = button;
-			positionStartersPopover(button);
-		}
-		function toggleStartersPopover(button, label, players) {
-			if (startersPopoverOwner === button && !startersPopoverEl.classList.contains('hidden')) {
-				closeStartersPopover();
-				return;
-			}
-			openStartersPopover(button, label, players);
+		function showStartersPopover(button, label, players) {
+			startersPopover.toggle(
+				button,
+				`${label} — Starters`,
+				players.map((p) => ({ left: p.name, right: p.position }))
+			);
 		}
 
 		function renderPowerRankCard(groupKey, types, leagues, year) {
@@ -6046,47 +6056,7 @@
 				},
 				avg: { dir: 1, value: (r) => (r.avg == null ? null : r.avg), missingLast: true },
 			};
-			let sortKey = null;
-			let sortDir = 0;
-			const defaultIndex = new Map(rows.map((r, i) => [r, i]));
-
-			function sortedRows() {
-				if (!sortKey) return rows;
-				const { value, missingLast } = SORTS[sortKey];
-				const byDefault = (a, b) => defaultIndex.get(a) - defaultIndex.get(b);
-				return [...rows].sort((a, b) => {
-					const av = value(a);
-					const bv = value(b);
-					if (missingLast && (av == null || bv == null)) {
-						if (av == null && bv == null) return byDefault(a, b);
-						return av == null ? 1 : -1;
-					}
-					return (av === bv ? 0 : av < bv ? -1 : 1) * sortDir || byDefault(a, b);
-				});
-			}
-
-			function cycleSort(key) {
-				if (sortKey !== key) {
-					sortKey = key;
-					sortDir = SORTS[key].dir;
-				} else if (sortDir === SORTS[key].dir) {
-					sortDir = -sortDir;
-				} else {
-					sortKey = null;
-					sortDir = 0;
-				}
-				renderBody();
-			}
-
-			function sortableHeader(label, key, title) {
-				const th = el('th', { class: 'sortable', text: label });
-				if (title) th.setAttribute('title', title);
-				if (sortKey === key) {
-					th.appendChild(el('span', { class: 'sort-arrow', text: sortDir === 1 ? ' ▲' : ' ▼' }));
-				}
-				th.addEventListener('click', () => cycleSort(key));
-				return th;
-			}
+			const { sortedRows, sortableHeader } = makeTableSort(rows, SORTS, () => renderBody());
 
 			// TBD rather than a dash: the number isn't missing, it isn't
 			// computable yet, and it will be. A dash reads as "nothing here".
@@ -6147,7 +6117,7 @@
 						});
 						btn.addEventListener('click', (e) => {
 							e.stopPropagation();
-							toggleStartersPopover(btn, r.label, detail.starterPlayers);
+							showStartersPopover(btn, r.label, detail.starterPlayers);
 						});
 						const startCell = el('td');
 						startCell.appendChild(btn);
@@ -6173,65 +6143,20 @@
 			return card;
 		}
 
-		// Shared "Starters vs Bench" popover for Team Needs' per-position rank
-		// buttons — mirrors openSalaryPopover/toggleSalaryPopover on the
-		// Rosters tab exactly (one instance reused across every click, built
-		// lazily, appended to <body> so its position:fixed coordinates are
-		// measured against the viewport rather than a scrolling ancestor,
-		// dismissed on scroll/resize/Escape/outside-click). A separate
-		// instance rather than a shared one: the two pop up different content
-		// from different tables, and there is nothing to be gained by coupling
-		// them beyond the CSS shape they already duplicate on purpose (see
-		// .needs-popover).
-		let needsPopoverEl = null;
-		let needsPopoverOwner = null;
-		function closeNeedsPopover() {
-			if (!needsPopoverEl) return;
-			needsPopoverEl.classList.add('hidden');
-			needsPopoverOwner = null;
-		}
-		function positionNeedsPopover(button) {
-			const rect = button.getBoundingClientRect();
-			needsPopoverEl.style.top = `${rect.bottom + 4}px`;
-			const maxLeft = window.innerWidth - needsPopoverEl.offsetWidth - 8;
-			needsPopoverEl.style.left = `${Math.max(8, Math.min(rect.left, maxLeft))}px`;
-		}
+		// "Starters vs Bench" for Team Needs' per-position rank buttons — its
+		// own instance rather than a shared one, since it pops up different
+		// content from a different table than the Rosters tab's salary
+		// popover. See makePopover for the machinery the four of them share.
+		const needsPopover = makePopover('needs');
+
 		// `entry` is the same {overall, starters, depth} object the clicked
 		// button's own number came from — no second lookup, so the popover
 		// can never disagree with the cell that opened it.
-		function openNeedsPopover(button, label, pos, entry) {
-			if (!needsPopoverEl) {
-				needsPopoverEl = el('div', { class: 'needs-popover hidden' });
-				document.body.appendChild(needsPopoverEl);
-				window.addEventListener('scroll', closeNeedsPopover, true);
-				window.addEventListener('resize', closeNeedsPopover);
-				document.addEventListener('keydown', (e) => {
-					if (e.key === 'Escape') closeNeedsPopover();
-				});
-				document.addEventListener('click', (e) => {
-					if (!needsPopoverOwner) return;
-					if (e.target === needsPopoverOwner || needsPopoverEl.contains(e.target)) return;
-					closeNeedsPopover();
-				});
-			}
-			needsPopoverEl.innerHTML = '';
-			needsPopoverEl.appendChild(el('div', { class: 'needs-popover-title', text: `${label} — ${pos}` }));
-			for (const [rowLabel, rank] of [['Starters', entry.starters], ['Bench', entry.depth]]) {
-				const line = el('div', { class: 'needs-popover-row' });
-				line.appendChild(el('span', { text: rowLabel }));
-				line.appendChild(el('span', { text: String(rank) }));
-				needsPopoverEl.appendChild(line);
-			}
-			needsPopoverEl.classList.remove('hidden');
-			needsPopoverOwner = button;
-			positionNeedsPopover(button);
-		}
-		function toggleNeedsPopover(button, label, pos, entry) {
-			if (needsPopoverOwner === button && !needsPopoverEl.classList.contains('hidden')) {
-				closeNeedsPopover();
-				return;
-			}
-			openNeedsPopover(button, label, pos, entry);
+		function showNeedsPopover(button, label, pos, entry) {
+			needsPopover.toggle(button, `${label} — ${pos}`, [
+				{ left: 'Starters', right: String(entry.starters) },
+				{ left: 'Bench', right: String(entry.depth) },
+			]);
 		}
 
 		// Team Needs: the same per-franchise valuation Power Rankings already
@@ -6291,47 +6216,7 @@
 					},
 				])),
 			};
-			let sortKey = null;
-			let sortDir = 0;
-			const defaultIndex = new Map(rows.map((r, i) => [r, i]));
-
-			function sortedRows() {
-				if (!sortKey) return rows;
-				const { value, missingLast } = SORTS[sortKey];
-				const byDefault = (a, b) => defaultIndex.get(a) - defaultIndex.get(b);
-				return [...rows].sort((a, b) => {
-					const av = value(a);
-					const bv = value(b);
-					if (missingLast && (av == null || bv == null)) {
-						if (av == null && bv == null) return byDefault(a, b);
-						return av == null ? 1 : -1;
-					}
-					return (av === bv ? 0 : av < bv ? -1 : 1) * sortDir || byDefault(a, b);
-				});
-			}
-
-			function cycleSort(key) {
-				if (sortKey !== key) {
-					sortKey = key;
-					sortDir = SORTS[key].dir;
-				} else if (sortDir === SORTS[key].dir) {
-					sortDir = -sortDir;
-				} else {
-					sortKey = null;
-					sortDir = 0;
-				}
-				renderBody();
-			}
-
-			function sortableHeader(label, key, title) {
-				const th = el('th', { class: 'sortable', text: label });
-				if (title) th.setAttribute('title', title);
-				if (sortKey === key) {
-					th.appendChild(el('span', { class: 'sort-arrow', text: sortDir === 1 ? ' ▲' : ' ▼' }));
-				}
-				th.addEventListener('click', () => cycleSort(key));
-				return th;
-			}
+			const { sortedRows, sortableHeader } = makeTableSort(rows, SORTS, () => renderBody());
 
 			function renderBody() {
 				table.innerHTML = '';
@@ -6416,7 +6301,7 @@
 							});
 							btn.addEventListener('click', (e) => {
 								e.stopPropagation();
-								toggleNeedsPopover(btn, r.label, pos, entry);
+								showNeedsPopover(btn, r.label, pos, entry);
 							});
 							const cell = el('td', { class: needPositions.includes(pos) ? 'needs-weakest' : '' });
 							cell.appendChild(btn);
@@ -6481,8 +6366,20 @@
 
 		// ---- History tab ---------------------------------------------------
 		// Results and Finances are gated behind login the same way Analytics
-		// is (both read as strategy: dues owed, payouts, past finishes), but
-		// unlike every other tab they don't split by league type — one
+		// is, and that gate is deliberate — dues owed, payouts and past
+		// finishes aren't for a league mate who happens to open the URL. Keep
+		// it on any card added here.
+		//
+		// It is a deterrent rather than a hard boundary, and worth knowing
+		// which: the same numbers ride in config/leagues.json and
+		// data/rosters.json, both committed to a public repo and served
+		// openly, so someone determined can read them there. Accepted on
+		// purpose — none of it is worth a server round-trip — so don't move
+		// this data behind api/ over it, and equally don't put anything that
+		// genuinely must not leak behind this gate alone. Plans are where
+		// that bar is met, by living outside the repo entirely.
+		//
+		// Unlike every other tab these two don't split by league type — one
 		// Results card and one Finances card, spanning every league at
 		// once, no data-league-type on either and no sub-tab strip. A
 		// dynasty league's finish and a draft-only league's finish are the
@@ -6861,7 +6758,7 @@
 		// the array, rather than a flat one-or-nothing amount.
 		//
 		// `breakdown` is a line item per contributing reason ({label, amount}),
-		// not a flat list of label strings — see openFinancesPopover, which
+		// not a flat list of label strings — see showFinancesPopover, which
 		// this feeds directly. It used to be `labels`, rendered inline in the
 		// Won cell as "$525 (1st, Weekly High (Wk 6))"; with weekly-high
 		// capable of landing several times a season that line could run long
@@ -6918,68 +6815,17 @@
 			return { league, years, total };
 		}
 
-		// Won-breakdown popover for a year's Won cell — same shape as
-		// openSalaryPopover/toggleSalaryPopover (single shared instance,
-		// position:fixed, appended to <body> so a scrolled table can't clip
-		// or misposition it) but kept as its own separate instance rather
-		// than shared code, matching this page's own convention for these:
-		// the two pop up unrelated content from unrelated tables, and there's
-		// nothing to gain from coupling them beyond the CSS shape they
-		// already duplicate on purpose.
-		let financesPopoverEl = null;
-		let financesPopoverOwner = null; // the <button> currently showing, or null
-		function closeFinancesPopover() {
-			if (!financesPopoverEl) return;
-			financesPopoverEl.classList.add('hidden');
-			financesPopoverOwner = null;
-		}
-		function positionFinancesPopover(button) {
-			const rect = button.getBoundingClientRect();
-			financesPopoverEl.style.top = `${rect.bottom + 4}px`;
-			// Anchored to the button's left edge, but pulled back from the
-			// right edge of the viewport — the Won column sits at the right
-			// of the table, so a naive left-anchor would routinely try to
-			// render most of the popover off-screen.
-			const maxLeft = window.innerWidth - financesPopoverEl.offsetWidth - 8;
-			financesPopoverEl.style.left = `${Math.max(8, Math.min(rect.left, maxLeft))}px`;
-		}
-		function openFinancesPopover(button, year, breakdown) {
-			if (!financesPopoverEl) {
-				financesPopoverEl = el('div', { class: 'finances-popover hidden' });
-				document.body.appendChild(financesPopoverEl);
-				// Closes rather than re-tracks on scroll/resize — this is a
-				// quick reference a click away again, not a pinned panel, and
-				// a stale position left behind by a scroll would be worse
-				// than it just going away.
-				window.addEventListener('scroll', closeFinancesPopover, true);
-				window.addEventListener('resize', closeFinancesPopover);
-				document.addEventListener('keydown', (e) => {
-					if (e.key === 'Escape') closeFinancesPopover();
-				});
-				document.addEventListener('click', (e) => {
-					if (!financesPopoverOwner) return;
-					if (e.target === financesPopoverOwner || financesPopoverEl.contains(e.target)) return;
-					closeFinancesPopover();
-				});
-			}
-			financesPopoverEl.innerHTML = '';
-			financesPopoverEl.appendChild(el('div', { class: 'finances-popover-title', text: `${year} — Won Breakdown` }));
-			for (const b of breakdown) {
-				const line = el('div', { class: 'finances-popover-row' });
-				line.appendChild(el('span', { text: b.label }));
-				line.appendChild(el('span', { text: formatMoney(b.amount) }));
-				financesPopoverEl.appendChild(line);
-			}
-			financesPopoverEl.classList.remove('hidden');
-			financesPopoverOwner = button;
-			positionFinancesPopover(button);
-		}
-		function toggleFinancesPopover(button, year, breakdown) {
-			if (financesPopoverOwner === button && !financesPopoverEl.classList.contains('hidden')) {
-				closeFinancesPopover();
-				return;
-			}
-			openFinancesPopover(button, year, breakdown);
+		// Won-breakdown for a year's Won cell — its own instance, matching this
+		// page's convention for these: unrelated content from an unrelated
+		// table. See makePopover for the machinery the four of them share.
+		const financesPopover = makePopover('finances');
+
+		function showFinancesPopover(button, year, breakdown) {
+			financesPopover.toggle(
+				button,
+				`${year} — Won Breakdown`,
+				breakdown.map((b) => ({ left: b.label, right: formatMoney(b.amount) }))
+			);
 		}
 
 		function renderFinancesCard(leagues) {
@@ -7059,7 +6905,7 @@
 						});
 						btn.addEventListener('click', (e) => {
 							e.stopPropagation();
-							toggleFinancesPopover(btn, y.year, y.breakdown);
+							showFinancesPopover(btn, y.year, y.breakdown);
 						});
 						row.appendChild(el('td', {}, [btn]));
 					} else {
@@ -8038,10 +7884,13 @@
 			// never makes it into presentViews below and the tab simply isn't
 			// offered — the same mechanism that hides the Admin tab. These
 			// cards are a portfolio view across every league at once (who you're
-			// exposed to, who's hurt, who's free, how your teams rank), which
-			// reads as strategy the same way a planned contract length or salary
-			// does; unlike those two, there was no per-field gate to fall back
-			// on, so the whole set is gated at once.
+			// exposed to, who's hurt, who's free, how your teams rank), which is
+			// not a league mate's to read; unlike a planned contract length
+			// there was no per-field gate to fall back on, so the whole set is
+			// gated at once, and a new card here should be too. The gate is a
+			// deterrent rather than a hard boundary — what these cards read is
+			// in the public data/rosters.json — which is accepted deliberately;
+			// see the History tab comment above.
 			if (isLoggedIn()) {
 				for (const groupKey of SUBTAB_ORDER) {
 					const types = typesInSubtabGroup(groupKey);
