@@ -216,6 +216,14 @@ jobs:
       - name: Test the Finances card
         run: node scripts/test-finances-card.mjs
 
+      # The Depth Charts tab's ESPN parsing: rank vs. slot semantics (order
+      # comes from rank, WR's slot is a role tag, never a depth group), the
+      # roster-id join, and graceful handling of a missing/unresolvable
+      # entry. Pinned against fixtures shaped exactly like the real
+      # responses probe-espn-depth-chart-slot.mjs captured.
+      - name: Test the ESPN depth-chart parsing
+        run: node scripts/test-espn-depth-chart.mjs
+
       - name: Validate config/leagues.json
         run: |
           node --input-type=module -e '
