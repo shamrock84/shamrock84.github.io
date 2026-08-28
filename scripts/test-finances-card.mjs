@@ -321,7 +321,7 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	assert.deepEqual(plain(y.breakdown), [
 		{ label: '1st', amount: 300 },
 		{ label: 'Division Winner', amount: 75 },
-		{ label: 'Weekly High (Wk 5)', amount: 25 },
+		{ label: 'High Score (Wk 5)', amount: 25 },
 		{ label: 'Season High', amount: 50 },
 	]);
 }
@@ -348,7 +348,7 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	const summary = domCtx.leagueFinancesSummary(league);
 	const y = summary.years[0];
 	assert.equal(y.won, 25, 'only the one week this franchise actually won, not every week in the array');
-	assert.deepEqual(plain(y.breakdown), [{ label: 'Weekly High (Wk 7)', amount: 25 }]);
+	assert.deepEqual(plain(y.breakdown), [{ label: 'High Score (Wk 7)', amount: 25 }]);
 }
 
 {
@@ -377,9 +377,9 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	assert.equal(y.won, 200 + 25 * 3 + 50, 'weekly-high payout sums once per week this franchise won');
 	assert.deepEqual(plain(y.breakdown), [
 		{ label: '2nd', amount: 200 },
-		{ label: 'Weekly High (Wk 3)', amount: 25 },
-		{ label: 'Weekly High (Wk 9)', amount: 25 },
-		{ label: 'Weekly High (Wk 12)', amount: 25 },
+		{ label: 'High Score (Wk 3)', amount: 25 },
+		{ label: 'High Score (Wk 9)', amount: 25 },
+		{ label: 'High Score (Wk 12)', amount: 25 },
 		{ label: 'Season High', amount: 50 },
 	]);
 }
@@ -569,7 +569,7 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	const rows = findAll(popover, (c) => c.cls.includes('finances-popover-row'));
 	assert.deepEqual(rows.map((r) => r.children.map(fullText)), [
 		['1st', '$500'],
-		['Weekly High (Wk 6)', '$25'],
+		['High Score (Wk 6)', '$25'],
 	], 'both contributing reasons in the popover, place first');
 }
 

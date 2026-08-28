@@ -6760,14 +6760,18 @@
 		// `breakdown` is a line item per contributing reason ({label, amount}),
 		// not a flat list of label strings — see showFinancesPopover, which
 		// this feeds directly. It used to be `labels`, rendered inline in the
-		// Won cell as "$525 (1st, Weekly High (Wk 6))"; with weekly-high
+		// Won cell as "$525 (1st, High Score (Wk 6))"; with weekly-high
 		// capable of landing several times a season that line could run long
 		// (seven separate weeks isn't unheard of), so the cell now shows only
 		// the total and the breakdown moved into a popover behind it — same
 		// idiom as .salary-link's "Salary by Year," a click away rather than
-		// always on screen. One row per week won, not one combined "Weekly
-		// High (Wk 1, Wk 3, ...)" row, to keep the same per-week transparency
+		// always on screen. One row per week won, not one combined "High
+		// Score (Wk 1, Wk 3, ...)" row, to keep the same per-week transparency
 		// the old inline label had.
+		//
+		// Labeled "High Score", not "Weekly High" — the (Wk N) suffix already
+		// says which week, so "Weekly" on top of it repeated the same fact
+		// twice in one line.
 		function leagueFinancesSummary(league) {
 			const results = effectiveResults(league);
 			const dues = league.dues != null ? Number(league.dues) : 0;
@@ -6800,7 +6804,7 @@
 					const myWeeklyHighs = (r.scoring?.weeklyHighs || []).filter((w) => w.franchiseId === league.franchiseId);
 					if (myWeeklyHighs.length && league.payoutWeeklyHigh != null) {
 						const amount = Number(league.payoutWeeklyHigh);
-						for (const w of myWeeklyHighs) breakdown.push({ label: `Weekly High (Wk ${w.week})`, amount });
+						for (const w of myWeeklyHighs) breakdown.push({ label: `High Score (Wk ${w.week})`, amount });
 					}
 
 					const seasonHigh = r.scoring?.seasonHigh;
@@ -6895,7 +6899,7 @@
 					// popover idiom .salary-link uses on the Rosters tab, rather
 					// than spelling every reason out inline — weekly-high alone
 					// can land up to 18 times a season, which made the old
-					// inline "(1st, Weekly High (Wk 1, Wk 3, ...))" text run long.
+					// inline "(1st, High Score (Wk 1, Wk 3, ...))" text run long.
 					if (y.breakdown.length) {
 						const btn = el('button', {
 							type: 'button',
