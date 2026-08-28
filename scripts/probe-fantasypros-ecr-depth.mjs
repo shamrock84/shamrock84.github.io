@@ -28,6 +28,28 @@
 // understates things (it should show FantasyPros' combined list going
 // past 250, and combined depth should roughly match summing the
 // per-position deepest ranks).
+//
+// First run, 2026-08 (7 of 9 requests before hitting a 429 — DYNASTY/TE and
+// DYNASTY/ALL missing, plenty already answered without them): every single
+// response was 100% ranked — no player in any position/type query lacked
+// rank_ecr, so "exclude players with no ECR" never means "drop a null
+// field," only "no join match at all" for a name the response never
+// contained. DRAFT depth: QB 105, RB 196, WR 255, TE 178. DYNASTY (partial):
+// QB 93, RB 142, WR 191. The deepest depth-chart position group seen
+// anywhere in probe-espn-depth-chart-slot.mjs's samples was 14 (WR), so
+// these lists run 7-18x deeper than anything a depth chart could need —
+// the exclusion filter is safe to build as planned; it will only ever catch
+// a genuine practice-squad body FantasyPros doesn't rank at all.
+//
+// Side-finding, unrelated to that question but worth recording: DRAFT/ALL
+// totaled only 518 players — noticeably less than QB+RB+WR+TE queried
+// separately would sum to (734). position=ALL is not the union of each
+// position's own list; it's a shallower combined ranking. This means the
+// already-synced rankingPools (built from position=ALL, RANKING_POOL_SIZE=
+// 250) under-covers any single position compared to querying that position
+// directly — not a problem for Depth Charts (whose needs are far shallower
+// than either list), but worth knowing before assuming rankingPools' depth
+// for anything else.
 
 import { fantasyProsApiKey, nflSeasonPhase } from './lib/fantasypros.mjs';
 
