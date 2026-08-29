@@ -432,6 +432,53 @@
 			justify-content: space-between;
 			gap: 0.4rem 0.5rem;
 		}
+		/* The one element every render*Card function marks as its own
+		   title/head row — a bare h2 for most cards, buildCardHead's own
+		   .card-head div for Rosters/Standings/Scoring, and the local
+		   cardHead div Results/Finances build themselves. The collapse rule
+		   below hides every OTHER direct child of a collapsed .card, no
+		   matter where in the DOM it was appended — Rosters' contract/cut
+		   banners land BEFORE this element, everything else lands after it
+		   — so this class, not DOM order, is what that rule keys off.
+		   position:relative + padding-right carve out a corner for the
+		   toggle button (see makeCollapsible) without disturbing the flex
+		   layout the badges strip or an avg/total span already use inside
+		   a .card-head. */
+		.card-heading {
+			position: relative;
+			padding-right: 1.5rem;
+		}
+		.card-collapse-toggle {
+			position: absolute;
+			top: 0;
+			right: 0;
+			background: none;
+			border: none;
+			padding: 0.05rem 0.15rem;
+			margin: 0;
+			color: var(--muted);
+			cursor: pointer;
+			font-size: 0.95rem;
+			line-height: 1.3;
+			transition: transform 0.15s ease;
+		}
+		.card-collapse-toggle:hover {
+			color: var(--text);
+		}
+		/* Rotated rather than swapped for a different glyph — same node, so
+		   there's nothing to keep in sync between the icon and the class
+		   below driving it. */
+		.card.card-collapsed .card-collapse-toggle {
+			transform: rotate(-90deg);
+		}
+		/* Everything but the heading disappears — badges, error boxes,
+		   banners appended before the heading, tables, pagers, all of it.
+		   Keying off .card-heading rather than nth-child or a wrapper
+		   around "the rest" means no render*Card function has to agree on
+		   where in the card its own content gets appended. */
+		.card.card-collapsed > *:not(.card-heading) {
+			display: none;
+		}
 		.card h2 {
 			margin: 0;
 			font-size: 1.15rem;
@@ -3756,8 +3803,75 @@
 			return Number(season) < Number(pageData?.year);
 		}
 
-		function buildCardHead(league, extraLabels = []) {
-			const cardHead = el('div', { class: 'card-head' });
+		// Same max-width: 600px cutoff every other narrow-screen rule in this
+		// file uses (see .badges' own comment) rather than a new constant —
+		// this is the file's one existing definition of "mobile", and
+		// reusing it is what lets a card collapsed on a phone stay collapsed
+		// there without also collapsing the same browser's desktop-width
+		// view. Read fresh on every call, never cached: a window resized
+		// past the breakpoint mid-session should immediately start reading
+		// and writing the other bucket's state, not the one it opened with.
+		function cardCollapseStorageKey(key) {
+			const bucket = window.matchMedia('(max-width: 600px)').matches ? 'mobile' : 'desktop';
+			return `myfflCardCollapsed:${bucket}:${key}`;
+		}
+
+		function isCardCollapsed(key) {
+			try {
+				return localStorage.getItem(cardCollapseStorageKey(key)) === '1';
+			} catch {
+				return false;
+			}
+		}
+
+		function setCardCollapsed(key, collapsed) {
+			try {
+				// Absence is the default (expanded), so a card nobody ever
+				// touched costs nothing in storage and a stale key doesn't
+				// linger once someone expands it back.
+				if (collapsed) localStorage.setItem(cardCollapseStorageKey(key), '1');
+				else localStorage.removeItem(cardCollapseStorageKey(key));
+			} catch {
+				// Private browsing or a full quota — the toggle still works
+				// for this render, it just won't survive a reload.
+			}
+		}
+
+		// Makes any card collapsible at its title. `heading` is the element
+		// every render*Card function already marks with the 'card-heading'
+		// class (see that class's own CSS comment for why collapsing keys
+		// off it rather than DOM order); the toggle button is appended into
+		// it so it survives the collapse rule that hides everything else. Key
+		// must be stable and unique per card across renders — a league id, a
+		// groupKey, or a fixed name for the one-off cards — since renderGrid()
+		// tears down and rebuilds every card from scratch on every data
+		// refresh, tab switch, and login/logout, and this is what lets the
+		// new node remember whether the old one was collapsed.
+		function makeCollapsible(card, heading, key) {
+			const collapsed = isCardCollapsed(key);
+			card.classList.toggle('card-collapsed', collapsed);
+			const toggle = el('button', {
+				type: 'button',
+				class: 'card-collapse-toggle',
+				'aria-expanded': String(!collapsed),
+				title: collapsed ? 'Expand' : 'Collapse',
+				'aria-label': collapsed ? 'Expand' : 'Collapse',
+				text: '▾',
+			});
+			toggle.addEventListener('click', (e) => {
+				e.stopPropagation();
+				const next = !card.classList.contains('card-collapsed');
+				card.classList.toggle('card-collapsed', next);
+				toggle.setAttribute('aria-expanded', String(!next));
+				toggle.title = next ? 'Expand' : 'Collapse';
+				toggle.setAttribute('aria-label', next ? 'Expand' : 'Collapse');
+				setCardCollapsed(key, next);
+			});
+			heading.appendChild(toggle);
+		}
+
+		function buildCardHead(card, league, extraLabels = []) {
+			const cardHead = el('div', { class: 'card-head card-heading' });
 			cardHead.appendChild(buildLeagueHeading(league));
 			const season = seasonBadgeLabel(league);
 			// Gold leads: where it's hosted, then which season. The purple chips
@@ -3773,6 +3887,11 @@
 				badgesEl.appendChild(el('span', { class: cls, text: label.text }));
 			}
 			cardHead.appendChild(badgesEl);
+			// data-view is set by the caller before this runs — see each of
+			// the three call sites — so the same league gets an independent
+			// collapse state on its Rosters/Standings/Scoring card rather
+			// than one that moves all three together.
+			makeCollapsible(card, cardHead, `${card.dataset.view}:${league.id}`);
 			return cardHead;
 		}
 
@@ -3972,7 +4091,7 @@
 				refreshCutBanner();
 			}
 
-			card.appendChild(buildCardHead(league, formatBadgeLabels(league)));
+			card.appendChild(buildCardHead(card, league, formatBadgeLabels(league)));
 			card.appendChild(el('div', { class: 'team', text: league.teamName || '' }));
 
 			if (league.error && (!league.players || league.players.length === 0)) {
@@ -4505,7 +4624,7 @@
 
 		function renderStandingsCard(league) {
 			const card = el('div', { class: 'card', 'data-view': 'standings', 'data-league-type': subtabType(league) || '' });
-			card.appendChild(buildCardHead(league, formatBadgeLabels(league)));
+			card.appendChild(buildCardHead(card, league, formatBadgeLabels(league)));
 
 			if (league.standingsError && (!league.standings || league.standings.length === 0)) {
 				card.appendChild(el('div', { class: 'error-box', text: `Couldn't load standings: ${league.standingsError}` }));
@@ -4542,7 +4661,7 @@
 
 		function renderScoringCard(league) {
 			const card = el('div', { class: 'card', 'data-view': 'scoring', 'data-league-type': subtabType(league) || '' });
-			card.appendChild(buildCardHead(league, formatBadgeLabels(league)));
+			card.appendChild(buildCardHead(card, league, formatBadgeLabels(league)));
 
 			const teams = league.scoring?.teams || [];
 
@@ -5817,7 +5936,9 @@
 		// computeInjuryExposure, which is where anyone changing them will be.
 		function renderAnalyticsCard(groupKey, types, leagues) {
 			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
-			card.appendChild(el('h2', { text: 'Player Exposure' }));
+			const heading = el('h2', { class: 'card-heading', text: 'Player Exposure' });
+			card.appendChild(heading);
+			makeCollapsible(card, heading, `exposure:${groupKey}`);
 
 			const { total, rows } = computePlayerExposure(leagues, types);
 
@@ -5862,7 +5983,9 @@
 			const { total, rows } = computeInjuryExposure(leagues, types);
 
 			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
-			card.appendChild(el('h2', { text: 'Injury Exposure' }));
+			const heading = el('h2', { class: 'card-heading', text: 'Injury Exposure' });
+			card.appendChild(heading);
+			makeCollapsible(card, heading, `injury:${groupKey}`);
 
 			if (total < 2) {
 				card.appendChild(el('div', {
@@ -5968,7 +6091,9 @@
 		function renderByeWeeksCard(groupKey, types, leagues) {
 			const { total, rows, currentWeek } = computeByeWeeks(leagues, types);
 			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
-			card.appendChild(el('h2', { text: 'Bye Weeks' }));
+			const heading = el('h2', { class: 'card-heading', text: 'Bye Weeks' });
+			card.appendChild(heading);
+			makeCollapsible(card, heading, `byeweeks:${groupKey}`);
 
 			if (total === 0) {
 				card.appendChild(el('div', { class: 'error-box', text: 'No leagues here have roster data yet.' }));
@@ -6177,7 +6302,9 @@
 			if (!rows.some((r) => r.proj || r.ecr)) return null;
 
 			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
-			card.appendChild(el('h2', { text: 'Power Rankings' }));
+			const heading = el('h2', { class: 'card-heading', text: 'Power Rankings' });
+			card.appendChild(heading);
+			makeCollapsible(card, heading, `power:${groupKey}`);
 			// Word for word what the other four cards say, same reasoning.
 			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(rows.length)}` }));
 
@@ -6378,7 +6505,9 @@
 			if (!rows.some((r) => detailOf(r) && detailOf(r).byPosition)) return null;
 
 			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
-			card.appendChild(el('h2', { text: 'Team Needs' }));
+			const heading = el('h2', { class: 'card-heading', text: 'Team Needs' });
+			card.appendChild(heading);
+			makeCollapsible(card, heading, `needs:${groupKey}`);
 			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(rows.length)}` }));
 
 			const detailLabel = detailBasis === 'projections' ? 'projections' : 'consensus rankings';
@@ -6506,7 +6635,9 @@
 			if (total === 0 && drafting === 0 && awaiting === 0) return null;
 
 			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
-			card.appendChild(el('h2', { text: 'Top Available' }));
+			const heading = el('h2', { class: 'card-heading', text: 'Top Available' });
+			card.appendChild(heading);
+			makeCollapsible(card, heading, `available:${groupKey}`);
 			// Word for word what the two exposure cards say, so the three read as
 			// one set rather than three dialects. This card's denominator is the
 			// narrower one — it counts only leagues that could answer the
@@ -6769,7 +6900,9 @@
 			const division = DEPTH_CHART_DIVISIONS[abbr] || null;
 			const card = el('div', { class: 'card', 'data-view': 'depthcharts' });
 			if (division) card.dataset.leagueType = division;
-			card.appendChild(el('h2', { text: team.name || abbr }));
+			const heading = el('h2', { class: 'card-heading', text: team.name || abbr });
+			card.appendChild(heading);
+			makeCollapsible(card, heading, `depthchart:${abbr}`);
 
 			const positionsWrap = el('div', { class: 'depth-chart-positions' });
 			for (const position of Object.keys(DEPTH_CHART_POSITION_LABELS)) {
@@ -7039,7 +7172,7 @@
 				: null;
 
 			const card = el('div', { class: 'card', 'data-view': 'history' });
-			const cardHead = el('div', { class: 'card-head' });
+			const cardHead = el('div', { class: 'card-head card-heading' });
 			cardHead.appendChild(el('h2', { text: 'Results' }));
 			if (overallAverage != null) {
 				cardHead.appendChild(el('span', {
@@ -7049,6 +7182,7 @@
 				}));
 			}
 			card.appendChild(cardHead);
+			makeCollapsible(card, cardHead, 'results');
 			const totalSeasons = summaries.reduce((sum, s) => sum + s.years.length, 0);
 			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(summaries.length)}, ${seasonCount(totalSeasons)}` }));
 
@@ -7278,7 +7412,7 @@
 			const overallTotal = summaries.reduce((sum, s) => sum + s.total, 0);
 
 			const card = el('div', { class: 'card', 'data-view': 'history' });
-			const cardHead = el('div', { class: 'card-head' });
+			const cardHead = el('div', { class: 'card-head card-heading' });
 			cardHead.appendChild(el('h2', { text: 'Finances' }));
 			cardHead.appendChild(el('span', {
 				class: `finances-total finances-total-overall ${financesSignClass(overallTotal)}`.trim(),
@@ -7286,6 +7420,7 @@
 				text: `Total ${formatMoney(overallTotal)}`,
 			}));
 			card.appendChild(cardHead);
+			makeCollapsible(card, cardHead, 'finances');
 			const totalSeasons = summaries.reduce((sum, s) => sum + s.years.length, 0);
 			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(summaries.length)}, ${seasonCount(totalSeasons)}` }));
 
@@ -7782,7 +7917,9 @@
 
 		function renderAdminCard() {
 			const card = el('div', { class: 'card admin-card', 'data-view': 'admin', 'data-league-type': '' });
-			card.appendChild(el('h2', { text: 'Leagues' }));
+			const heading = el('h2', { class: 'card-heading', text: 'Leagues' });
+			card.appendChild(heading);
+			makeCollapsible(card, heading, 'admin');
 
 			if (leagueConfigError) {
 				card.appendChild(el('div', { class: 'error-box', text: `Couldn't load the league list: ${leagueConfigError}` }));
