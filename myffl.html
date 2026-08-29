@@ -436,30 +436,34 @@
 		   title/head row — a bare h2 for most cards, buildCardHead's own
 		   .card-head div for Rosters/Standings/Scoring, and the local
 		   cardHead div Results/Finances build themselves. The collapse rule
-		   below hides every OTHER direct child of a collapsed .card, no
-		   matter where in the DOM it was appended — Rosters' contract/cut
-		   banners land BEFORE this element, everything else lands after it
-		   — so this class, not DOM order, is what that rule keys off.
-		   position:relative + padding-right carve out a corner for the
+		   further down hides every other direct child of a collapsed .card
+		   EXCEPT one also marked .card-collapse-visible (Rosters' contract/
+		   cut banners — see renderCard) — a to-do banner like "0/5 contracts
+		   set" is easy to forget entirely once the roster table collapses
+		   out from under it, so those two stay pinned above the title. Both
+		   classes, not DOM order, are what that rule keys off: the banners
+		   land BEFORE this element in the DOM, everything else lands after
+		   it. position:relative + padding-right carve out a corner for the
 		   toggle button (see makeCollapsible) without disturbing the flex
 		   layout the badges strip or an avg/total span already use inside
 		   a .card-head. */
 		.card-heading {
 			position: relative;
-			padding-right: 1.5rem;
+			padding-right: 2.3rem;
 		}
 		.card-collapse-toggle {
 			position: absolute;
-			top: 0;
+			top: 50%;
 			right: 0;
+			transform: translateY(-50%);
 			background: none;
 			border: none;
-			padding: 0.05rem 0.15rem;
+			padding: 0.15rem 0.3rem;
 			margin: 0;
 			color: var(--muted);
 			cursor: pointer;
-			font-size: 0.95rem;
-			line-height: 1.3;
+			font-size: 1.5rem;
+			line-height: 1;
 			transition: transform 0.15s ease;
 		}
 		.card-collapse-toggle:hover {
@@ -467,16 +471,21 @@
 		}
 		/* Rotated rather than swapped for a different glyph — same node, so
 		   there's nothing to keep in sync between the icon and the class
-		   below driving it. */
+		   below driving it. The translateY keeps it vertically centered on
+		   the heading through the rotation, rather than pinned to its top
+		   edge, which read off-kilter once the glyph got large enough to
+		   notice. */
 		.card.card-collapsed .card-collapse-toggle {
-			transform: rotate(-90deg);
+			transform: translateY(-50%) rotate(-90deg);
 		}
-		/* Everything but the heading disappears — badges, error boxes,
-		   banners appended before the heading, tables, pagers, all of it.
-		   Keying off .card-heading rather than nth-child or a wrapper
-		   around "the rest" means no render*Card function has to agree on
-		   where in the card its own content gets appended. */
-		.card.card-collapsed > *:not(.card-heading) {
+		/* Everything but the heading (and a .card-collapse-visible banner —
+		   see the comment above) disappears: badges, error boxes, tables,
+		   pagers, all of it. Keying off classes rather than nth-child or a
+		   wrapper around "the rest" means no render*Card function has to
+		   agree on where in the card its own content gets appended, and an
+		   exempted element keeps whatever display it already had (the
+		   banners are flex rows) instead of this rule forcing one. */
+		.card.card-collapsed > *:not(.card-heading):not(.card-collapse-visible) {
 			display: none;
 		}
 		.card h2 {
@@ -4012,7 +4021,7 @@
 			// a to-do list with no way to act on it, counting work a viewer
 			// can't see and can't do.
 			if (isAuction && isLoggedIn() && contractsMissing().length > 0) {
-				const banner = el('div', { class: 'needs-contract-banner' });
+				const banner = el('div', { class: 'needs-contract-banner card-collapse-visible' });
 				contractBannerEl = banner;
 				contractBannerTextEl = el('span', {});
 				banner.appendChild(contractBannerTextEl);
@@ -4083,7 +4092,7 @@
 			// rather than shown with nothing to count, since a league that
 			// isn't over its limit has no cuts to plan yet.
 			if (showCutPlanning && cutsNeeded() > 0) {
-				const banner = el('div', { class: 'needs-cut-banner' });
+				const banner = el('div', { class: 'needs-cut-banner card-collapse-visible' });
 				cutBannerEl = banner;
 				cutBannerTextEl = el('span', {});
 				banner.appendChild(cutBannerTextEl);
