@@ -46,7 +46,7 @@ const SCORING_FORMATS = new Set(['PPR', 'HALF', 'STD']);
 const KEY_ORDER = [
   'id', 'franchiseId', 'name', 'type', 'provider',
   'tags', 'lineupPilot', 'rankingType', 'scoring', 'season', 'startYear', 'rulesUrl', 'commishContact',
-  'nickname', 'toolbarOrder',
+  'nickname',
   'dues', 'payout1', 'payout2', 'payout3', 'payoutDivisionWinner', 'payoutWeeklyHigh', 'payoutSeasonHigh',
 ];
 
@@ -224,18 +224,6 @@ function validate(leagues) {
     if (league.nickname != null && typeof league.nickname !== 'string') {
       errors.push(`${label}: nickname must be text.`);
     }
-    // This league's position in that same toolbar, independent of the row's
-    // own position in the array (which stays authoritative for Rosters/
-    // Standings/Scoring). Only ever written by the Admin tab's drag-to-reorder
-    // Quick Links card, which always stamps a whole 0..n-1 run, but a hand-edit
-    // is checked the same as everywhere else in this file: a negative or
-    // fractional value wouldn't sort visibly wrong so much as unpredictably.
-    if (league.toolbarOrder != null && league.toolbarOrder !== '') {
-      const order = Number(league.toolbarOrder);
-      if (!Number.isInteger(order) || order < 0) {
-        errors.push(`${label}: toolbar order must be a non-negative whole number, or left blank.`);
-      }
-    }
     // Feeds the History tab's Finances card. All six are optional and
     // independent — a league can have dues entered with no payouts yet, or
     // vice versa; the card renders whatever's known and dashes the rest.
@@ -281,15 +269,6 @@ function mergeLeague(league) {
     const n = Number(v);
     if (Number.isFinite(n)) out[k] = n;
   };
-  // Same real-JSON-number shape as putMoney (toolbarOrder feeds a sort
-  // comparison, not string identity like season), but 0 is a legitimate,
-  // meaningful position — first in the toolbar — not an unset value, so the
-  // v == null / v === '' guard is all that's allowed to drop it.
-  const putInt = (k, v) => {
-    if (v == null || v === '') return;
-    const n = Number(v);
-    if (Number.isInteger(n)) out[k] = n;
-  };
 
   put('id', String(league.id).trim());
   put('franchiseId', league.franchiseId == null ? '' : String(league.franchiseId).trim());
@@ -305,7 +284,6 @@ function mergeLeague(league) {
   put('rulesUrl', league.rulesUrl);
   put('commishContact', league.commishContact == null ? '' : String(league.commishContact).trim());
   put('nickname', league.nickname == null ? '' : String(league.nickname).trim());
-  putInt('toolbarOrder', league.toolbarOrder);
   putMoney('dues', league.dues);
   putMoney('payout1', league.payout1);
   putMoney('payout2', league.payout2);
