@@ -6501,7 +6501,10 @@
 		// after looking at the tab with every ranked player showing: the raw
 		// ECR-exists filter let through plenty of fantasy-irrelevant depth the
 		// cap trims. See that constant's own comment for why it's a judgment
-		// call rather than a measured line.
+		// call rather than a measured line. DEPTH_CHART_MIN_COUNT then overrides
+		// both reasons for a team whose real depth chart doesn't have enough
+		// ECR-capped players to reach a sane floor on its own (the Browns' WR
+		// corps was down to 4) -- see that constant's own comment.
 		const DEPTH_CHART_POSITION_LABELS = { QB: 'QB', RB: 'RB', WR: 'WR', TE: 'TE' };
 
 		// A second, tighter cutoff on top of "has an ECR at all" — chosen after
@@ -6513,6 +6516,17 @@
 		// real list stops here" line for what still counts as rosterable, so
 		// revisit by eye rather than by re-running a probe.
 		const DEPTH_CHART_ECR_CAP = { QB: 100, RB: 150, WR: 200, TE: 100 };
+
+		// A floor under the cap above, not a second, looser cap: some teams'
+		// real depth chart is thin enough at ECR-relevant talent (the Browns'
+		// WR corps, for one) that DEPTH_CHART_ECR_CAP alone left as few as 4
+		// WRs on screen. These minimums guarantee at least this many rows per
+		// position by depth-chart order — the true starter down through the
+		// Nth backup — even past the cap when a team doesn't have enough
+		// ECR-capped players to reach it on its own. A backfilled player still
+		// has to actually exist on the depth chart; a team with only 3 real
+		// WRs shows 3, not 5 padded with nothing.
+		const DEPTH_CHART_MIN_COUNT = { QB: 2, RB: 4, WR: 5, TE: 2 };
 
 		// One league-agnostic ECR pool per position, built once per render
 		// rather than once per team — reused across all 32 teams. Absent
@@ -6571,22 +6585,32 @@
 				const entries = team[position];
 				if (!Array.isArray(entries) || entries.length === 0) continue;
 				const byName = ecrPools[position];
+				const minCount = DEPTH_CHART_MIN_COUNT[position] || 0;
 				const rows = [];
 				for (const e of entries) {
 					const key = normalizeName(e.name);
 					const poolPlayer = byName.get(key);
-					if (!poolPlayer) continue; // no ECR match -> excluded, see the tab's own comment above
+					// No ECR match (or capped out) -> excluded, UNLESS the floor isn't
+					// met yet: rows.length only ever counts what this loop has already
+					// kept, so a floor-backfilled player never bumps a later real-ECR
+					// one off the list, and the loop stops backfilling the moment the
+					// floor is reached while still taking every further ECR match.
+					if (!poolPlayer && rows.length >= minCount) continue;
 					rows.push({
 						name: e.name,
 						role: e.role,
 						injuryStatus: e.injuryStatus,
-						ecr: { rank: poolPlayer.rank, url: poolPlayerUrl(poolPlayer.url) },
+						// A backfilled player has no pool entry, hence no rank and no
+						// FantasyPros URL — rendered exactly like any other missing ECR
+						// (an em dash, and playerNameNode already falls back to plain
+						// text with no url), so nothing downstream needed to change.
+						ecr: poolPlayer ? { rank: poolPlayer.rank, url: poolPlayerUrl(poolPlayer.url) } : { rank: null, url: null },
 						ownedLeagues: ownership.get(key) || [],
 					});
 				}
 				// Order preserved from `entries`, which is already ESPN's own rank
-				// order — filtering out no-ECR players can only remove rows, never
-				// reorder the ones that remain.
+				// order — filtering out no-ECR players (past the floor) can only
+				// remove rows, never reorder the ones that remain.
 				if (rows.length > 0) positions[position] = rows;
 			}
 			return positions;
