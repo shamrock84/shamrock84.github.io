@@ -6543,10 +6543,15 @@
 		// Every rostered player across every league, once — Depth Charts spans
 		// the whole page at once (no sub-tab scoping by league type the way
 		// Analytics has), so unlike computeTopAvailable's exposureLeagues this
-		// draws no distinction by type at all.
+		// draws no distinction by type EXCEPT this one: draftonly leagues are
+		// excluded by request. A draftonly roster is fixed the moment the draft
+		// ends — nothing to add, drop, or trade — so "Own In" there answers a
+		// question with no action behind it, unlike a dynasty/salary-cap/redraft
+		// league where holding a depth-chart player is actionable information.
 		function buildDepthChartOwnership(leagues) {
 			const byName = new Map();
 			for (const league of leagues || []) {
+				if (league.type === 'draftonly') continue;
 				for (const p of league.players || []) {
 					const key = normalizeName(p.name);
 					if (!key) continue;
