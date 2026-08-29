@@ -965,6 +965,8 @@ async function main() {
         payoutWeeklyHigh: league.payoutWeeklyHigh ?? null,
         payoutSeasonHigh: league.payoutSeasonHigh ?? null,
         startYear: league.startYear ?? null,
+        nickname: league.nickname || null,
+        toolbarOrder: league.toolbarOrder ?? null,
         leagueName: league.name,
         franchiseId: null,
         teamName: league.name,
@@ -999,6 +1001,8 @@ async function main() {
       result.payoutWeeklyHigh = league.payoutWeeklyHigh ?? null;
       result.payoutSeasonHigh = league.payoutSeasonHigh ?? null;
       result.startYear = league.startYear ?? null;
+      result.nickname = league.nickname || null;
+      result.toolbarOrder = league.toolbarOrder ?? null;
       // Recorded per league because it's what the next sync reads to decide
       // whether this league has already rolled over — see resolveSeason.
       result.season = league.season;
@@ -1024,6 +1028,8 @@ async function main() {
         payoutWeeklyHigh: league.payoutWeeklyHigh ?? null,
         payoutSeasonHigh: league.payoutSeasonHigh ?? null,
         startYear: league.startYear ?? null,
+        nickname: league.nickname || null,
+        toolbarOrder: league.toolbarOrder ?? null,
         leagueName: prev?.leagueName || league.name,
         franchiseId: league.franchiseId,
         teamName: prev?.teamName || league.name,

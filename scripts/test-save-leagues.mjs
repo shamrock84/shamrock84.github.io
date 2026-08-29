@@ -61,6 +61,21 @@ check('allows a blank startYear (this league\'s whole history is yours)', valida
 check('rejects a non-boolean lineup flag', validate(withField('lineupPilot', 'yes')).length > 0);
 check('rejects tags that are not a list', validate(withField('tags', 'Superflex')).length > 0);
 check('rejects a rules link with no scheme', validate(withField('rulesUrl', 'docs.google.com/x')).length > 0);
+// nickname — free text shown in the header's quick-link toolbar instead of
+// the full league name.
+check('rejects a non-text nickname', validate(withField('nickname', { oops: 1 })).length > 0);
+check('allows a blank nickname', validate(withField('nickname', '')).length === 0);
+check('allows a short nickname', validate(withField('nickname', 'MNMx')).length === 0);
+// toolbarOrder — this league's position in that same toolbar, independent
+// of the row's own position in the array. Only ever integers, only ever
+// non-negative — same reasoning as season/startYear: a bad value here
+// doesn't fail loudly, it just sorts unpredictably.
+check('rejects a non-numeric toolbarOrder', validate(withField('toolbarOrder', 'first')).length > 0);
+check('rejects a negative toolbarOrder', validate(withField('toolbarOrder', -1)).length > 0);
+check('rejects a fractional toolbarOrder', validate(withField('toolbarOrder', 1.5)).length > 0);
+check('allows a zero toolbarOrder', validate(withField('toolbarOrder', 0)).length === 0,
+  JSON.stringify(validate(withField('toolbarOrder', 0))));
+check('allows a blank toolbarOrder', validate(withField('toolbarOrder', '')).length === 0);
 // The contract-length summary is addressed with this, and a malformed one fails
 // silently: the mailto still opens, it just reaches nobody.
 check('rejects a commissioner contact with no @ and no scheme', validate(withField('commishContact', 'not-an-email')).length > 0);
@@ -156,6 +171,16 @@ check('drops lineupPilot when off', !('lineupPilot' in merged));
 check('drops a blank rules link', !('rulesUrl' in merged));
 check('drops a blank commissioner contact', !('commishContact' in mergeLeague({ ...base(), commishContact: '' })));
 check('trims a commissioner contact', mergeLeague({ ...base(), commishContact: '  c@e.com ' }).commishContact === 'c@e.com');
+check('drops a blank nickname', !('nickname' in mergeLeague({ ...base(), nickname: '' })));
+check('trims a nickname', mergeLeague({ ...base(), nickname: '  MNMx  ' }).nickname === 'MNMx');
+check('drops a blank toolbarOrder', !('toolbarOrder' in mergeLeague({ ...base(), toolbarOrder: '' })));
+check('stores toolbarOrder as a number', mergeLeague({ ...base(), toolbarOrder: '3' }).toolbarOrder === 3,
+  JSON.stringify(mergeLeague({ ...base(), toolbarOrder: '3' })));
+// Zero is a real, meaningful position (first in the toolbar), not an unset
+// value — must survive the same way a zero dues/payout does.
+check('keeps a zero toolbarOrder rather than dropping it',
+  mergeLeague({ ...base(), toolbarOrder: 0 }).toolbarOrder === 0,
+  JSON.stringify(mergeLeague({ ...base(), toolbarOrder: 0 })));
 check('drops a blank season', !('season' in mergeLeague({ ...base(), season: '' })));
 check('keeps a season pin as a string', mergeLeague({ ...base(), season: 2027 }).season === '2027');
 check('drops a blank startYear', !('startYear' in mergeLeague({ ...base(), startYear: '' })));

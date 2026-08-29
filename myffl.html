@@ -80,6 +80,55 @@
 			background: var(--bg);
 			color: var(--text);
 		}
+		/* The header quick-link toolbar — a sticky replacement for keeping
+		   every league bookmarked in Safari's own bookmarks bar, styled to
+		   sit that low-weight: plain text, no chip background, a thin
+		   divider between entries rather than borders around them. Sticky
+		   rather than fixed so it still scrolls out with the rest of the
+		   page on a phone before the first card, instead of permanently
+		   eating a slice of a small screen. z-index above .popover's own 20
+		   — a popover is position:fixed and could otherwise render under a
+		   sticky bar it scrolls past. Empty (no leagues yet, or none synced)
+		   collapses to nothing rather than showing an empty strip. */
+		#quicklinks {
+			position: sticky;
+			top: 0;
+			z-index: 30;
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			justify-content: center;
+			gap: 0.4rem;
+			background: var(--card-bg);
+			border-bottom: 1px solid var(--border);
+		}
+		#quicklinks:not(:empty) {
+			padding: 0.4rem 1rem;
+		}
+		#quicklinks a {
+			color: var(--muted);
+			text-decoration: none;
+			font-size: 0.8rem;
+			font-weight: 600;
+			padding: 0.15rem 0;
+			white-space: nowrap;
+		}
+		#quicklinks a:hover,
+		#quicklinks a:focus-visible {
+			color: var(--accent);
+		}
+		#quicklinks a::after {
+			content: '';
+			display: inline-block;
+			width: 1px;
+			height: 0.7rem;
+			background: var(--border);
+			margin-left: 0.4rem;
+			vertical-align: middle;
+		}
+		#quicklinks a:last-child::after {
+			display: none;
+		}
 		header {
 			padding: 1.5rem 1rem 1rem;
 			text-align: center;
@@ -1820,6 +1869,52 @@
 			color: var(--muted);
 			font-style: italic;
 		}
+		/* Quick Links card: one compact row per toolbar-eligible league, same
+		   drag-handle-plus-arrows reorder idiom as the Leagues card below it,
+		   but a single row instead of a whole disclosure card — there's
+		   nothing here to expand. */
+		.quicklink-list {
+			display: flex;
+			flex-direction: column;
+			gap: 0.4rem;
+		}
+		.quicklink-row {
+			display: flex;
+			align-items: center;
+			gap: 0.5rem;
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			padding: 0.4rem 0.6rem;
+		}
+		.quicklink-name {
+			flex: 1 1 auto;
+			min-width: 0;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			font-size: 0.85rem;
+		}
+		.quicklink-row .admin-input {
+			flex: 1 1 auto;
+			min-width: 6rem;
+		}
+		.quicklink-row.admin-dragging {
+			opacity: 0.4;
+		}
+		.quicklink-row.admin-drop-before {
+			box-shadow: inset 0 3px 0 0 var(--accent);
+		}
+		.quicklink-row.admin-drop-after {
+			box-shadow: inset 0 -3px 0 0 var(--accent);
+		}
+		@media (max-width: 480px) {
+			.quicklink-name {
+				display: none;
+			}
+			.admin-grip {
+				display: none;
+			}
+		}
 		.admin-move {
 			display: flex;
 			gap: 0.2rem;
@@ -1883,6 +1978,7 @@
 	</style>
 </head>
 <body>
+	<div id="quicklinks" aria-label="League quick links"></div>
 	<header>
 		<h1 class="site-title">
 			<span class="site-logo-prefix">my</span>
@@ -3602,6 +3698,51 @@
 				}));
 			}
 			return heading;
+		}
+
+		// Shared by the header's quick-link toolbar and its Admin tab editor.
+		// Draft Only leagues never appear in the toolbar, full stop; everything
+		// else sorts by toolbarOrder, with a league carrying none sorting after
+		// every league that has one, in its own normal array position (a
+		// stable sort, so ties resolve deterministically) — the same
+		// "unset falls to the back" convention startYear/season use elsewhere
+		// in this file. That's what lets a newly added league simply appear at
+		// the end of the toolbar until someone drags it into place, instead of
+		// needing a value stamped on it up front.
+		function toolbarLeagues(leagues) {
+			return leagues
+				.map((league, naturalIndex) => ({ league, naturalIndex }))
+				.filter(({ league }) => league.type !== 'draftonly')
+				.sort((a, b) => {
+					const ao = a.league.toolbarOrder == null || a.league.toolbarOrder === '' ? Infinity : Number(a.league.toolbarOrder);
+					const bo = b.league.toolbarOrder == null || b.league.toolbarOrder === '' ? Infinity : Number(b.league.toolbarOrder);
+					return ao !== bo ? ao - bo : a.naturalIndex - b.naturalIndex;
+				})
+				.map(({ league }) => league);
+		}
+
+		// The sticky bar pinned above the header — a replacement for keeping
+		// every league bookmarked in the browser's own toolbar, so it links
+		// straight out to each league's live site rather than to anything on
+		// this page. Reads data.leagues (the synced snapshot), not the Admin
+		// tab's live config, so a nickname or reorder saved there shows up
+		// here after the next sync — same lag as every other config field the
+		// sync round-trips (tags, rulesUrl, dues, ...), and consistent with the
+		// "Saved but not synced yet" notice the Admin tab already shows for
+		// those. Renders unconditionally, logged in or not: the login gate
+		// protects roster/ranking/finance/lineup data, and a league's name,
+		// type and URL are already public in config/leagues.json.
+		function renderQuickLinks() {
+			const bar = document.getElementById('quicklinks');
+			if (!bar) return;
+			const leagues = toolbarLeagues(pageData?.leagues || []);
+			bar.innerHTML = '';
+			for (const league of leagues) {
+				const label = league.nickname || leagueDisplayName(league) || league.id;
+				const link = el('a', { href: league.url, target: '_blank', rel: 'noopener', text: label });
+				link.title = leagueDisplayName(league) || label;
+				bar.appendChild(link);
+			}
 		}
 
 		// Every league has exactly one hosting provider — MFL is the default
@@ -7595,6 +7736,10 @@
 		// dragover/drop fire on the card being dragged *over*, which has no other
 		// way to know what started the drag.
 		let adminDragFrom = null;
+		// Same idea, for the Quick Links card's own drag-to-reorder — kept
+		// separate from adminDragFrom since the two lists' indices don't mean
+		// the same thing and a drag can only ever be happening in one of them.
+		let adminToolbarDragFrom = null;
 
 		function adminText(value, placeholder, onChange) {
 			// autocomplete off: without it, a field typed into repeatedly across
@@ -7637,7 +7782,27 @@
 			if (!adminDraft || from === to || to < 0 || to >= adminDraft.length) return;
 			const [moved] = adminDraft.splice(from, 1);
 			adminDraft.splice(to, 0, moved);
-			refreshAdminCard();
+			refreshAdminCards();
+		}
+
+		// Reorders the Quick Links card's own list (the toolbar-eligible
+		// subset, already sorted) and immediately stamps a fresh 0..n-1 run of
+		// toolbarOrder into every league it holds — including any that had
+		// none yet, which is what "heals" a league added since this card was
+		// last touched. `list` holds direct references into adminDraft, so
+		// mutating the field here is all saving needs.
+		function moveToolbarLeague(list, from, to) {
+			if (from === to || to < 0 || to >= list.length) return;
+			const [moved] = list.splice(from, 1);
+			list.splice(to, 0, moved);
+			list.forEach((league, i) => { league.toolbarOrder = i; });
+			refreshAdminCards();
+		}
+
+		function clearToolbarDropMarks() {
+			for (const node of document.querySelectorAll('.quicklink-row')) {
+				node.classList.remove('admin-drop-before', 'admin-drop-after');
+			}
 		}
 
 		function clearDropMarks() {
@@ -7673,10 +7838,17 @@
 			return Boolean(a.lineupPilot) === Boolean(b.lineupPilot);
 		}
 
-		function refreshAdminCard() {
-			const existing = document.querySelector('.card[data-view="admin"]');
-			if (!existing) return;
-			existing.replaceWith(renderAdminCard());
+		// Two cards share adminDraft (Quick Links above, Leagues below), so a
+		// change made in either one — a reorder, a nickname edit, adding or
+		// removing a league — has to refresh both: reordering the main list
+		// shifts the Quick Links card's own fallback order for any league that
+		// has no explicit toolbarOrder yet, and adding/removing a league
+		// changes what the Quick Links card even has to show.
+		function refreshAdminCards() {
+			const quicklinks = document.querySelector('.admin-quicklinks-card');
+			if (quicklinks) quicklinks.replaceWith(renderQuickLinksAdminCard());
+			const leagues = document.querySelector('.admin-leagues-card');
+			if (leagues) leagues.replaceWith(renderAdminCard());
 			updateVisibility();
 		}
 
@@ -7694,8 +7866,119 @@
 			}
 		}
 
+		// Sits above the Leagues card and shares its adminDraft/Save flow —
+		// there's no separate Save button here. Only reordering (drag or the
+		// arrow buttons) writes anything: it stamps a fresh 0..n-1 run of
+		// toolbarOrder into every row shown, in the new order. Draft Only
+		// leagues are filtered out entirely rather than shown disabled —
+		// there's nothing to configure for a league that can never appear in
+		// the toolbar, and a row with no controls would just be confusing.
+		function renderQuickLinksAdminCard() {
+			const card = el('div', { class: 'card admin-card admin-quicklinks-card', 'data-view': 'admin', 'data-league-type': '' });
+			card.appendChild(el('h2', { text: 'Quick Links' }));
+
+			if (leagueConfigError) {
+				card.appendChild(el('div', { class: 'error-box', text: `Couldn't load the league list: ${leagueConfigError}` }));
+				return card;
+			}
+			if (!leagueConfig) {
+				card.appendChild(el('div', { class: 'admin-note', text: 'Loading the league list…' }));
+				// renderAdminCard races this same load on first render (both
+				// cards appear in the same renderGrid pass) — the flag keeps
+				// only one fetch in flight regardless of which card checks it
+				// first.
+				if (!adminConfigLoading) {
+					adminConfigLoading = true;
+					loadLeagueConfig().then(() => {
+						adminConfigLoading = false;
+						refreshAdminCards();
+					});
+				}
+				return card;
+			}
+			if (!adminDraft) adminDraft = JSON.parse(JSON.stringify(leagueConfig.leagues || []));
+
+			card.appendChild(el('div', {
+				class: 'admin-note',
+				text: 'Sets the order and label for the header’s quick-link toolbar. Draft Only leagues never appear there. Saved together with the Leagues list below.',
+			}));
+
+			const eligible = toolbarLeagues(adminDraft);
+			if (eligible.length === 0) {
+				card.appendChild(el('div', { class: 'admin-note', text: 'No eligible leagues yet — every league below is Draft Only.' }));
+				return card;
+			}
+
+			const list = el('div', { class: 'quicklink-list' });
+			eligible.forEach((league, i) => {
+				const live = (pageData?.leagues || []).find((l) => l.id === league.id);
+				const name = live?.leagueName || league.name || league.id || 'Untitled league';
+
+				const row = el('div', { class: 'quicklink-row' });
+				row.draggable = true;
+				row.appendChild(el('span', { class: 'admin-grip', title: 'Drag to reorder', 'aria-hidden': 'true', text: '⠿' }));
+				row.appendChild(el('span', { class: 'quicklink-name', text: name, title: name }));
+				row.appendChild(adminText(league.nickname, name, (v) => { league.nickname = v || undefined; }));
+
+				// Touch devices don't fire HTML5 drag events, and neither does a
+				// keyboard — same reasoning as the Leagues card's own up/down
+				// buttons below.
+				const moves = el('div', { class: 'admin-move' });
+				const up = el('button', { type: 'button', class: 'admin-icon-btn', title: 'Move up', text: '↑' });
+				const down = el('button', { type: 'button', class: 'admin-icon-btn', title: 'Move down', text: '↓' });
+				up.disabled = i === 0;
+				down.disabled = i === eligible.length - 1;
+				up.addEventListener('click', () => moveToolbarLeague(eligible, i, i - 1));
+				down.addEventListener('click', () => moveToolbarLeague(eligible, i, i + 1));
+				moves.appendChild(up);
+				moves.appendChild(down);
+				row.appendChild(moves);
+
+				const dropsAfter = (e) => {
+					const box = row.getBoundingClientRect();
+					return e.clientY > box.top + box.height / 2;
+				};
+				row.addEventListener('dragstart', (e) => {
+					adminToolbarDragFrom = i;
+					e.dataTransfer.effectAllowed = 'move';
+					e.dataTransfer.setData('text/plain', String(i));
+					e.dataTransfer.setDragImage(row, 16, 16);
+					setTimeout(() => row.classList.add('admin-dragging'), 0);
+				});
+				row.addEventListener('dragend', () => {
+					adminToolbarDragFrom = null;
+					row.classList.remove('admin-dragging');
+					clearToolbarDropMarks();
+				});
+				row.addEventListener('dragover', (e) => {
+					if (adminToolbarDragFrom === null || adminToolbarDragFrom === i) return;
+					e.preventDefault();
+					e.dataTransfer.dropEffect = 'move';
+					clearToolbarDropMarks();
+					row.classList.add(dropsAfter(e) ? 'admin-drop-after' : 'admin-drop-before');
+				});
+				row.addEventListener('dragleave', () => {
+					row.classList.remove('admin-drop-before', 'admin-drop-after');
+				});
+				row.addEventListener('drop', (e) => {
+					if (adminToolbarDragFrom === null) return;
+					e.preventDefault();
+					const from = adminToolbarDragFrom;
+					adminToolbarDragFrom = null;
+					clearToolbarDropMarks();
+					let insertAt = i + (dropsAfter(e) ? 1 : 0);
+					if (from < insertAt) insertAt--;
+					moveToolbarLeague(eligible, from, insertAt);
+				});
+
+				list.appendChild(row);
+			});
+			card.appendChild(list);
+			return card;
+		}
+
 		function renderAdminCard() {
-			const card = el('div', { class: 'card admin-card', 'data-view': 'admin', 'data-league-type': '' });
+			const card = el('div', { class: 'card admin-card admin-leagues-card', 'data-view': 'admin', 'data-league-type': '' });
 			card.appendChild(el('h2', { text: 'Leagues' }));
 
 			if (leagueConfigError) {
@@ -7704,7 +7987,7 @@
 				retry.addEventListener('click', async () => {
 					retry.disabled = true;
 					await loadLeagueConfig();
-					refreshAdminCard();
+					refreshAdminCards();
 				});
 				card.appendChild(el('div', { class: 'lineup-editor-actions' }, [retry]));
 				return card;
@@ -7720,7 +8003,7 @@
 					adminConfigLoading = true;
 					loadLeagueConfig().then(() => {
 						adminConfigLoading = false;
-						refreshAdminCard();
+						refreshAdminCards();
 					});
 				}
 				return card;
@@ -7781,7 +8064,7 @@
 				toggle.addEventListener('click', () => {
 					if (isOpen) adminExpanded.delete(league);
 					else adminExpanded.add(league);
-					refreshAdminCard();
+					refreshAdminCards();
 				});
 				head.appendChild(toggle);
 
@@ -7899,7 +8182,7 @@
 					// whose value is already committed when they fire — doing it
 					// on a text input's every keystroke would throw away focus
 					// mid-word.
-					const changed = (apply) => (v) => { apply(v); refreshAdminCard(); };
+					const changed = (apply) => (v) => { apply(v); refreshAdminCards(); };
 
 					field('League ID', adminText(league.id, 'e.g. 26696', (v) => { league.id = v; }));
 					field('My team ID', adminText(league.franchiseId, 'e.g. 0001', (v) => { league.franchiseId = v; }));
@@ -7930,7 +8213,7 @@
 					lineupBox.checked = league.lineupPilot === true;
 					lineupBox.addEventListener('change', () => {
 						league.lineupPilot = lineupBox.checked ? true : undefined;
-						refreshAdminCard();
+						refreshAdminCards();
 					});
 					lineupWrap.appendChild(lineupBox);
 					lineupWrap.appendChild(el('span', { class: 'admin-field-label', text: 'Lineup editor' }));
@@ -7991,7 +8274,7 @@
 						if (!window.confirm(`Remove ${label} from the site?\n\nNothing is deleted at MFL, ESPN, or Sleeper — it just stops showing up here.`)) return;
 						adminExpanded.delete(league);
 						adminDraft.splice(i, 1);
-						refreshAdminCard();
+						refreshAdminCards();
 					});
 					node.appendChild(el('div', { class: 'admin-league-actions' }, [removeBtn]));
 				}
@@ -8058,7 +8341,7 @@
 				// Opened straight away: collapsed it would be a blank card with
 				// nothing to say and no obvious next step.
 				adminExpanded.add(fresh);
-				refreshAdminCard();
+				refreshAdminCards();
 				const nodes = document.querySelectorAll('.admin-league');
 				const last = nodes[nodes.length - 1];
 				if (last) {
@@ -8087,7 +8370,7 @@
 				await loadLeagueConfig();
 				adminDraft = null;
 				adminExpanded.clear();
-				refreshAdminCard();
+				refreshAdminCards();
 			});
 			card.appendChild(actions);
 
@@ -8119,7 +8402,7 @@
 				if (!window.confirm('Throw away every change you\'ve made since the last save?')) return;
 				adminDraft = null;
 				adminExpanded.clear();
-				refreshAdminCard();
+				refreshAdminCards();
 			});
 
 			saveBtn.addEventListener('click', async () => {
@@ -8200,6 +8483,7 @@
 			const data = pageData;
 			if (!data) return;
 
+			renderQuickLinks();
 			renderAuthControl();
 			renderProblemsDigest();
 			statusEl.textContent = '';
@@ -8211,6 +8495,7 @@
 				// it still renders here — otherwise the one screen that could
 				// fix this state would be the one screen unreachable from it.
 				if (isLoggedIn()) {
+					gridEl.appendChild(renderQuickLinksAdminCard());
 					gridEl.appendChild(renderAdminCard());
 					renderViewTabs(new Set(['admin']));
 					updateVisibility();
@@ -8272,9 +8557,15 @@
 				if (financesCard) gridEl.appendChild(financesCard);
 			}
 
-			// Logged-out visitors never get this card, so 'admin' never makes it
-			// into presentViews below and the tab simply isn't offered.
-			if (isLoggedIn()) gridEl.appendChild(renderAdminCard());
+			// Logged-out visitors never get these cards, so 'admin' never makes
+			// it into presentViews below and the tab simply isn't offered.
+			// Quick Links first, per its own name — it's the one setting on
+			// this tab that's about what shows up before you've even picked a
+			// tab.
+			if (isLoggedIn()) {
+				gridEl.appendChild(renderQuickLinksAdminCard());
+				gridEl.appendChild(renderAdminCard());
+			}
 
 			const presentViews = new Set([...gridEl.querySelectorAll('.card')].map((c) => c.dataset.view).filter(Boolean));
 			renderViewTabs(presentViews);
