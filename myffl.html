@@ -6720,16 +6720,24 @@
 		// row.ecr/row.injuryStatus are shaped to match on purpose so nothing
 		// about either needed to change for a player who may not be rostered
 		// anywhere at all.
+		//
+		// ECR is the one column gated behind login here, unlike the rest of
+		// this tab (see the Depth Charts tab's own comment above for why the
+		// tab as a whole is ungated) — it's the same ECR gate every other
+		// card on the page applies (Rosters/Standings/the lineup editor), so
+		// a logged-out viewer seeing it here and nowhere else would be the
+		// inconsistency, not the reverse. Column count drops from 3 to 2 when
+		// it's hidden, so the merged position header's colspan follows it.
 		function buildDepthChartPositionTable(position, rows) {
+			const showEcr = isLoggedIn();
 			const wrap = el('div', { class: 'depth-chart-position' });
 			const table = el('table', { class: 'standings depth-chart-table' });
 			const thead = el('thead');
-			thead.appendChild(el('tr', {}, [el('th', { colspan: '3', text: DEPTH_CHART_POSITION_LABELS[position] })]));
-			thead.appendChild(el('tr', {}, [
-				el('th', { text: 'Player' }),
-				el('th', { text: 'ECR' }),
-				el('th', { text: 'Own In' }),
-			]));
+			thead.appendChild(el('tr', {}, [el('th', { colspan: showEcr ? '3' : '2', text: DEPTH_CHART_POSITION_LABELS[position] })]));
+			const headRow = el('tr', {}, [el('th', { text: 'Player' })]);
+			if (showEcr) headRow.appendChild(el('th', { text: 'ECR' }));
+			headRow.appendChild(el('th', { text: 'Own In' }));
+			thead.appendChild(headRow);
 			table.appendChild(thead);
 			const tbody = el('tbody');
 			for (const row of rows) {
@@ -6740,7 +6748,7 @@
 				const injuryBadge = buildInjuryBadge(row);
 				if (injuryBadge) nameCell.appendChild(injuryBadge);
 				tr.appendChild(nameCell);
-				tr.appendChild(el('td', { text: row.ecr.rank != null ? String(row.ecr.rank) : '—' }));
+				if (showEcr) tr.appendChild(el('td', { text: row.ecr.rank != null ? String(row.ecr.rank) : '—' }));
 				tr.appendChild(buildDepthChartOwnCell(row));
 				tbody.appendChild(tr);
 			}
