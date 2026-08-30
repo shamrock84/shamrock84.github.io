@@ -451,6 +451,16 @@
 			position: relative;
 			padding-right: 2.3rem;
 		}
+		/* Disambiguates same-titled Analytics cards (e.g. two "Player
+		   Exposure" cards, one per league-type group) while a search spans
+		   every group at once — see appendGroupLabel/updateVisibility. Muted
+		   and smaller so it reads as metadata, not part of the title itself;
+		   hidden outside a cross-group search via the shared .hidden class. */
+		.card-group-label {
+			color: var(--muted);
+			font-weight: 400;
+			font-size: 0.85em;
+		}
 		.card-collapse-toggle {
 			position: absolute;
 			top: 50%;
@@ -7619,18 +7629,34 @@
 				lastSearchQuery = q;
 				searchAwareRefreshers.forEach((fn) => fn());
 			}
-			// Depth Charts' sub-tabs are NFL divisions, purely organizational —
-			// unlike Analytics' Dynasty/Redraft split, which changes what's
-			// computed, a division is just a filter over the same 32 team
-			// cards. So a search there spans every division at once: "Williams"
-			// should surface both the Patriots (AFC East) and the Lions (NFC
-			// North), not just whichever division sub-tab happens to be
-			// selected. The sub-tab strip's own selection is untouched —
-			// clearing the search returns to it exactly as it was.
-			const ignoreLeagueType = q && currentView === 'depthcharts';
+			// Depth Charts' sub-tabs are NFL divisions and Rosters'/Analytics'
+			// are league-type groups (Dynasty/Salary Cap, Redraft, Draft
+			// Only), but on all three the sub-tab is purely organizational —
+			// it filters which of the same underlying cards are on screen, it
+			// doesn't change what any one card computes (contrast Analytics'
+			// own ANALYTICS_GROUP prohibition below, which is about *merging*
+			// two groups' rows into one card — this never does that). So a
+			// search on any of the three spans every group at once: searching
+			// "Williams" on Depth Charts surfaces both the Patriots (AFC
+			// East) and the Lions (NFC North); on Rosters, a Dynasty league
+			// and a Redraft league holding a Williams both show. The sub-tab
+			// strip's own selection is untouched — clearing the search
+			// returns to exactly what it was.
+			const ignoreLeagueType = q && (currentView === 'depthcharts' || currentView === 'rosters' || currentView === 'analytics');
+			// Rosters/Depth Charts cards are already uniquely titled (a
+			// league name, a team name), so two shown together during a
+			// cross-group search read fine as-is. Analytics cards are not —
+			// "Player Exposure" is the same heading in every group — so
+			// appendGroupLabel (see the Analytics card loop in renderGrid)
+			// gave each one an extra `.card-group-label` span up front,
+			// hidden until a search actually puts more than one group's
+			// same-titled card on screen at once.
+			const showAnalyticsGroupLabel = q && currentView === 'analytics';
 			document.querySelectorAll('.card').forEach((card) => {
 				const viewMatch = card.dataset.view === currentView;
 				const typeMatch = ignoreLeagueType || !currentLeagueType || card.dataset.leagueType === currentLeagueType;
+				const groupLabel = card.querySelector('.card-group-label');
+				if (groupLabel) groupLabel.classList.toggle('hidden', !showAnalyticsGroupLabel);
 				const rows = card.querySelectorAll('tr.player-row');
 				let searchMatch = true;
 				if (q && rows.length > 0) {
@@ -8566,6 +8592,28 @@
 			return card;
 		}
 
+		// A search on the Analytics tab shows every league-type group's cards
+		// at once (see updateVisibility) rather than just the selected
+		// sub-tab's — but unlike Rosters/Depth Charts cards, which are
+		// already titled by league or team name, every Analytics card in
+		// every group carries the exact same heading ("Player Exposure" for
+		// Dynasty and for Redraft alike). Two identically-titled cards
+		// stacked with no way to tell them apart would read as a rendering
+		// bug, not two groups' worth of results — so every card gets this
+		// span appended to its heading up front, reusing the same label
+		// renderSubTabs shows on the sub-tab pill itself. It starts hidden;
+		// updateVisibility shows it only while a search is actually
+		// spanning groups, since on an ordinary visit the sub-tab strip
+		// already says which one group is on screen and the label would
+		// just be noise.
+		function appendGroupLabel(card, groupKey) {
+			if (!card) return;
+			const heading = card.querySelector('.card-heading');
+			if (!heading) return;
+			const label = SUBTAB_LABEL_OVERRIDES[groupKey] || LEAGUE_TYPE_LABELS[groupKey] || groupKey;
+			heading.appendChild(el('span', { class: 'card-group-label hidden', text: ` — ${label}` }));
+		}
+
 		// Safe to call more than once (e.g. after a manual sync completes) —
 		// clears the grid before repopulating instead of appending duplicates.
 		// Pure render from the already-loaded pageData — no network call.
@@ -8631,13 +8679,22 @@
 					if (!data.leagues.some((l) => types.includes(l.type))) continue;
 					const powerCard = renderPowerRankCard(groupKey, types, data.leagues, data.year);
 					if (powerCard) gridEl.appendChild(powerCard);
+					appendGroupLabel(powerCard, groupKey);
 					const needsCard = renderTeamNeedsCard(groupKey, types, data.leagues, data.year);
 					if (needsCard) gridEl.appendChild(needsCard);
-					gridEl.appendChild(renderByeWeeksCard(groupKey, types, data.leagues));
+					appendGroupLabel(needsCard, groupKey);
+					const byeCard = renderByeWeeksCard(groupKey, types, data.leagues);
+					gridEl.appendChild(byeCard);
+					appendGroupLabel(byeCard, groupKey);
 					const availableCard = renderTopAvailableCard(groupKey, types, data.leagues, data.rankingPools, data.year);
 					if (availableCard) gridEl.appendChild(availableCard);
-					gridEl.appendChild(renderAnalyticsCard(groupKey, types, data.leagues));
-					gridEl.appendChild(renderInjuryExposureCard(groupKey, types, data.leagues));
+					appendGroupLabel(availableCard, groupKey);
+					const exposureCard = renderAnalyticsCard(groupKey, types, data.leagues);
+					gridEl.appendChild(exposureCard);
+					appendGroupLabel(exposureCard, groupKey);
+					const injuryCard = renderInjuryExposureCard(groupKey, types, data.leagues);
+					gridEl.appendChild(injuryCard);
+					appendGroupLabel(injuryCard, groupKey);
 				}
 			}
 
