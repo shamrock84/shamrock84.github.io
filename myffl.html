@@ -3746,12 +3746,17 @@
 		// bare text node on a league with no url to link to — nothing else on
 		// the page assumes that field is always present either.
 		//
-		// Deliberately NOT used for the problems digest row or the Admin tab's
-		// disclosure name: both already put the league name inside their own
-		// more useful button (jump to the card; expand the editor), and a
-		// second, external <a> can't validly nest inside a <button> anyway —
-		// see the Admin tab's own rules-link icon for how that constraint gets
-		// worked around when it's worth working around.
+		// Deliberately NOT used for the problems digest row: that already puts
+		// the league name inside its own more useful button (jump to the
+		// card), and a second, external <a> can't validly nest inside a
+		// <button> anyway — the row's click already gets you there, an
+		// external link would just be a second, less useful way to do it.
+		// The Admin tab's disclosure name sits inside a <button> too (the
+		// whole head is the expand/collapse target) and hits the exact same
+		// nested-<a> constraint, but there the button's own action doesn't
+		// substitute for opening the league, so it's worth the workaround —
+		// see where it's built for how (a span with its own click handler,
+		// the same one its rules-link icon already used for this).
 		function leagueNameNode(name, url) {
 			return url
 				? el('a', { href: url, target: '_blank', rel: 'noopener', class: 'league-link', text: name })
@@ -8219,9 +8224,31 @@
 
 				const toggle = el('button', { type: 'button', class: 'admin-disclosure', 'aria-expanded': isOpen ? 'true' : 'false' });
 				toggle.appendChild(el('span', { class: 'admin-caret', 'aria-hidden': 'true', text: isOpen ? '▾' : '▸' }));
-				toggle.appendChild(name
-					? el('span', { class: 'admin-league-name', text: name })
-					: el('span', { class: 'admin-league-name admin-name-pending', text: 'Name appears after the next sync' }));
+				// Same link every other tab's leagueNameNode gives the name —
+				// but there it's a plain <a>, and here the name sits inside a
+				// <button> (the whole head is the disclosure target), where a
+				// nested <a> isn't valid HTML. So this is a span with its own
+				// click handler instead, stopping propagation so a tap on the
+				// name opens the league rather than toggling the card — the
+				// same workaround the rules-link icon just below already
+				// uses for the identical constraint. `.league-link` is the
+				// shared hover treatment every other league-name link on the
+				// page gets; it's only added when there's a URL to open, so
+				// a league with no live.url yet (no sync) doesn't look
+				// clickable and isn't. Reads live.url, not league.url — the
+				// league's own site is synced data, never a config field, so
+				// there is no draft value to prefer here the way rulesUrl has one.
+				const nameSpan = name
+					? el('span', { class: `admin-league-name${live?.url ? ' league-link' : ''}`, text: name })
+					: el('span', { class: 'admin-league-name admin-name-pending', text: 'Name appears after the next sync' });
+				if (name && live?.url) {
+					nameSpan.title = 'Open league';
+					nameSpan.addEventListener('click', (e) => {
+						e.stopPropagation();
+						window.open(live.url, '_blank', 'noopener');
+					});
+				}
+				toggle.appendChild(nameSpan);
 				// Same icon buildLeagueHeading appends to the league name on the
 				// Rosters/Standings/Scoring cards — but there it's a plain <a>
 				// inside an <h2>, and here the name sits inside a <button> (the
