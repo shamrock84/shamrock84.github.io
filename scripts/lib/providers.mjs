@@ -1248,6 +1248,12 @@ export const ESPN_PRO_TEAM_MAP = {
   30: 'JAX', 33: 'BAL', 34: 'HOU',
 };
 const ESPN_IR_SLOT_ID = 21;
+// Community-documented (not yet probed against a real league of ours, see
+// probe-espn-lineup-slots.mjs): 20 is the bench slot. Everything that is
+// neither bench nor IR is presumed a starter for fetchEspnLineup below —
+// there's no need to know which slot maps to which position, only whether
+// a player is one of the two "not playing this week" states.
+const ESPN_BENCH_SLOT_ID = 20;
 
 export function espnTeamName(team) {
   return team?.name || [team?.location, team?.nickname].filter(Boolean).join(' ').trim() || String(team?.id ?? '');
@@ -1421,6 +1427,38 @@ export async function fetchEspnScoring(league) {
     .map((t) => ({ ...t, score: t.score.toFixed(2) }));
 
   return { week: currentPeriod ?? null, teams };
+}
+
+// Read-only: which of the franchise's currently-rostered players are set as
+// starters, for the same lineup-pilot table fetchMflLineup and
+// fetchSleeperLineup feed. Unlike fetchMflLineup this is never paired with
+// a submit function — see submit-lineup.js's comment for why ESPN stays
+// off the write allowlist; myffl.html renders this for display only.
+//
+// Two requests, not one: mRoster only populates roster.entries when scoped
+// to a specific scoringPeriodId (see fetchEspnLeagueRoster's comment), and
+// the period that actually reflects "this week's lineup" is the league's
+// current matchup period, not the scoringPeriodId=1 preseason default that
+// function uses for its own (period-agnostic) purpose. So the current
+// period is read first, off the same mScoreboard view fetchEspnScoring
+// uses, then the roster is re-fetched scoped to it.
+export async function fetchEspnLineup(league) {
+  const scoreboard = await espnGet(league, 'view=mScoreboard');
+  const period = scoreboard.status?.currentMatchupPeriod || 1;
+
+  const data = await espnGet(
+    league,
+    `view=mRoster&rosterForTeamId=${league.franchiseId}&scoringPeriodId=${period}`
+  );
+  const team = (data.teams || []).find((t) => String(t.id) === String(league.franchiseId));
+  if (!team) {
+    throw new Error(`No team ${league.franchiseId} found in ESPN league ${league.id}`);
+  }
+
+  const starterIds = (team.roster?.entries || [])
+    .filter((e) => e.lineupSlotId !== ESPN_BENCH_SLOT_ID && e.lineupSlotId !== ESPN_IR_SLOT_ID)
+    .map((e) => String(e.playerId));
+  return { week: String(period), starterIds };
 }
 
 // --- Sleeper ---

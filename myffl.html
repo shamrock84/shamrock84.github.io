@@ -3481,12 +3481,13 @@
 		// *depends* on a logged-out viewer being unable to find out.
 		//
 		// `visible` (login) and `writable` (login AND a provider that can
-		// actually accept a write) are separate gates, not one. Sleeper
-		// leagues can carry lineupPilot too, but Sleeper's public API has no
-		// lineup-write endpoint at all — visible when logged in (same privacy
-		// gate as MFL), but permanently read-only: checkboxes render disabled,
-		// for reference, and no Submit control ever appears regardless of
-		// login state.
+		// actually accept a write) are separate gates, not one. Sleeper and
+		// ESPN leagues can carry lineupPilot too, but neither is on
+		// submit-lineup.js's write allowlist (Sleeper's public API has no
+		// lineup-write endpoint at all; ESPN's isn't wired up) — visible when
+		// logged in (same privacy gate as MFL), but permanently read-only:
+		// checkboxes render disabled, for reference, and no Submit control
+		// ever appears regardless of login state.
 		function buildLineupEditor(league, players, starterIdSet, showCutColumn, onCutChange) {
 			const visible = isLoggedIn();
 			const writable = visible && (!league.provider || league.provider === 'mfl');
@@ -3567,10 +3568,10 @@
 			}
 
 			if (!writable) {
-				wrap.appendChild(el('div', {
-					class: 'lineup-editor-note',
-					text: "Sleeper doesn't support setting lineups through their API — set this one directly in the Sleeper app.",
-				}));
+				const note = league.provider === 'sleeper'
+					? "Sleeper doesn't support setting lineups through their API — set this one directly in the Sleeper app."
+					: `Setting lineups through ${providerBadgeLabel(league)} isn't supported here — set this one directly in the ${providerBadgeLabel(league)} app.`;
+				wrap.appendChild(el('div', { class: 'lineup-editor-note', text: note }));
 				return wrap;
 			}
 

@@ -25,6 +25,7 @@ import {
   fetchScoring,
   fetchMflLineup,
   fetchSleeperLineup,
+  fetchEspnLineup,
   fetchEspnLeagueRoster,
   fetchEspnStandings,
   fetchEspnScoring,
@@ -1085,18 +1086,19 @@ async function main() {
 
   // Pilot: current-week starters/bench, only for leagues flagged
   // lineupPilot in config/leagues.json. See fetchMflLineup's comment for why
-  // this can't affect any other league's data. Sleeper leagues get the same
-  // read-only starters fetch (fetchSleeperLineup) — myffl.html renders it
-  // without a Submit control for those, since Sleeper's API has no write
-  // endpoint. ESPN isn't included: no read (or write) lineup fetch exists
-  // for it yet.
+  // this can't affect any other league's data. Sleeper and ESPN leagues get
+  // the same read-only starters fetch (fetchSleeperLineup / fetchEspnLineup)
+  // — myffl.html renders it without a Submit control for those, since
+  // neither provider is on submit-lineup.js's write allowlist.
   for (const league of LEAGUES) {
-    if (!league.lineupPilot || (league.provider && league.provider !== 'mfl' && league.provider !== 'sleeper')) continue;
+    if (!league.lineupPilot || (league.provider && league.provider !== 'mfl' && league.provider !== 'sleeper' && league.provider !== 'espn')) continue;
     const target = leagues.find((l) => l.id === league.id);
     if (!target || !league.franchiseId) continue;
     try {
       const { week, starterIds } = league.provider === 'sleeper'
         ? await fetchSleeperLineup(league)
+        : league.provider === 'espn'
+        ? await fetchEspnLineup(league)
         : await fetchMflLineup(league, cookie);
       target.lineupWeek = week;
       target.starters = starterIds;

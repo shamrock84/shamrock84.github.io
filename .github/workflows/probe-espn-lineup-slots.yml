@@ -1,0 +1,30 @@
+name: Probe ESPN Lineup Slots (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here, the
+# same rule the other manual workflows follow.
+#
+# Confirms fetchEspnLineup's assumption that lineupSlotId 20 is always the
+# bench slot before trusting it to decide who renders as a starter on the
+# lineup pilot table. See scripts/probe-espn-lineup-slots.mjs.
+#
+# Read-only: view=mScoreboard and view=mRoster per ESPN league.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Dump each ESPN league's lineup slot ids
+        env:
+          ESPN_S2: ${{ secrets.ESPN_S2 }}
+          ESPN_SWID: ${{ secrets.ESPN_SWID }}
+        run: node scripts/probe-espn-lineup-slots.mjs
