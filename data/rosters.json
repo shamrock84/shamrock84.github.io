@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-30T23:49:12.127Z",
+  "generatedAt": "2026-08-30T23:53:31.141Z",
   "year": "2026",
   "rankingPools": {
     "DYNASTY|PPR|ALL": {
@@ -10427,7 +10427,7 @@
     }
   },
   "depthCharts": {
-    "generatedAt": "2026-08-30T23:49:02.547Z",
+    "generatedAt": "2026-08-30T23:53:19.852Z",
     "teams": {
       "ARI": {
         "name": "Arizona Cardinals",
@@ -11057,7 +11057,7 @@
             "name": "Trevor Etienne",
             "rank": 3,
             "role": null,
-            "injuryStatus": "Q"
+            "injuryStatus": "IR"
           },
           {
             "id": "4239934",
@@ -12610,20 +12610,6 @@
             "rank": 4,
             "role": null,
             "injuryStatus": null
-          },
-          {
-            "id": "4240631",
-            "name": "DeeJay Dallas",
-            "rank": 5,
-            "role": null,
-            "injuryStatus": null
-          },
-          {
-            "id": "4713118",
-            "name": "J'Mari Taylor",
-            "rank": 6,
-            "role": null,
-            "injuryStatus": null
           }
         ],
         "WR": [
@@ -12668,34 +12654,6 @@
             "rank": 6,
             "role": "S",
             "injuryStatus": null
-          },
-          {
-            "id": "4245131",
-            "name": "Tim Jones",
-            "rank": 7,
-            "role": "X",
-            "injuryStatus": null
-          },
-          {
-            "id": "4244856",
-            "name": "Austin Trammell",
-            "rank": 8,
-            "role": "Z",
-            "injuryStatus": null
-          },
-          {
-            "id": "4573243",
-            "name": "Chandler Brayboy",
-            "rank": 9,
-            "role": "S",
-            "injuryStatus": null
-          },
-          {
-            "id": "5152117",
-            "name": "Michael Wortham",
-            "rank": 10,
-            "role": "X",
-            "injuryStatus": null
           }
         ],
         "TE": [
@@ -12724,13 +12682,6 @@
             "id": "4244049",
             "name": "Quintin Morris",
             "rank": 4,
-            "role": null,
-            "injuryStatus": null
-          },
-          {
-            "id": "4429811",
-            "name": "Patrick Herbert",
-            "rank": 5,
             "role": null,
             "injuryStatus": null
           }
@@ -13923,13 +13874,6 @@
             "rank": 3,
             "role": null,
             "injuryStatus": null
-          },
-          {
-            "id": "4682652",
-            "name": "Devin Neal",
-            "rank": 4,
-            "role": null,
-            "injuryStatus": "Q"
           },
           {
             "id": "4569682",
@@ -16204,7 +16148,7 @@
           }
         ]
       },
-      "updatedAt": "2026-08-30T23:48:13.253Z",
+      "updatedAt": "2026-08-30T23:52:01.560Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -20131,7 +20075,7 @@
           }
         ]
       },
-      "updatedAt": "2026-08-30T23:48:13.719Z",
+      "updatedAt": "2026-08-30T23:52:02.133Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -23986,7 +23930,7 @@
           }
         ]
       },
-      "updatedAt": "2026-08-30T23:48:14.373Z",
+      "updatedAt": "2026-08-30T23:52:02.680Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -27351,7 +27295,7 @@
           }
         ]
       },
-      "updatedAt": "2026-08-30T23:48:14.914Z",
+      "updatedAt": "2026-08-30T23:52:03.324Z",
       "error": null,
       "tags": [
         "Best Ball"
@@ -30548,7 +30492,7 @@
         "ir": 50,
         "position": []
       },
-      "updatedAt": "2026-08-30T23:48:15.806Z",
+      "updatedAt": "2026-08-30T23:52:04.106Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -32732,7 +32676,7 @@
         "ir": 50,
         "position": []
       },
-      "updatedAt": "2026-08-30T23:48:16.454Z",
+      "updatedAt": "2026-08-30T23:52:04.784Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -32876,7 +32820,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet",
+      "scoringError": "MFL request failed (429): /export?TYPE=league&L=30641&JSON=1 (year 2026)",
       "draftInProgress": false,
       "available": [
         "Kenny Gainwell",
@@ -34556,7 +34500,7 @@
         "ir": 15,
         "position": []
       },
-      "updatedAt": "2026-08-30T23:48:17.143Z",
+      "updatedAt": "2026-08-30T23:52:05.405Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -35789,7 +35733,7 @@
       "teamName": "Jeffers Justinson",
       "url": "https://fantasy.espn.com/football/team?leagueId=1966972&teamId=10",
       "players": [],
-      "updatedAt": "2026-08-30T23:48:17.246Z",
+      "updatedAt": "2026-08-30T23:52:05.593Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -35975,6 +35919,9 @@
         ]
       },
       "scoringError": null,
+      "lineupWeek": "1",
+      "starters": [],
+      "lineupError": null,
       "available": null,
       "availableAt": null,
       "power": null,
@@ -36287,7 +36234,7 @@
           "injuryStatus": null
         }
       ],
-      "updatedAt": "2026-08-30T23:48:17.314Z",
+      "updatedAt": "2026-08-30T23:52:05.646Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -36473,6 +36420,18 @@
         ]
       },
       "scoringError": null,
+      "lineupWeek": "1",
+      "starters": [
+        "4241389",
+        "4379399",
+        "4361370",
+        "4430737",
+        "4431452",
+        "4248528",
+        "-16030",
+        "4697745"
+      ],
+      "lineupError": null,
       "available": [
         "Jayden Reed",
         "Dalton Kincaid",
@@ -37531,7 +37490,7 @@
         }
       ],
       "draftInProgress": false,
-      "updatedAt": "2026-08-30T23:48:17.468Z",
+      "updatedAt": "2026-08-30T23:52:05.690Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -37805,7 +37764,7 @@
         "Devin Neal"
       ],
       "power": {
-        "computedAt": "2026-08-30T23:48:12.065Z",
+        "computedAt": "2026-08-30T23:52:00.350Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -38514,7 +38473,7 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-08-30T23:48:12.065Z",
+      "availableAt": "2026-08-30T23:52:00.350Z",
       "results": []
     },
     {
@@ -38650,7 +38609,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-30T23:48:17.940Z",
+      "updatedAt": "2026-08-30T23:52:06.210Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -39278,7 +39237,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-30T23:48:18.420Z",
+      "updatedAt": "2026-08-30T23:52:06.702Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -39973,7 +39932,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-30T23:48:18.912Z",
+      "updatedAt": "2026-08-30T23:52:07.164Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -41203,7 +41162,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-30T23:48:19.331Z",
+      "updatedAt": "2026-08-30T23:52:07.642Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -41346,7 +41305,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet",
+      "scoringError": "MFL request failed (429): /export?TYPE=league&L=54766&JSON=1 (year 2026)",
       "draftInProgress": false,
       "available": [
         "Stefon Diggs",
@@ -42574,7 +42533,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-30T23:48:19.619Z",
+      "updatedAt": "2026-08-30T23:52:08.016Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -43852,7 +43811,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-30T23:48:19.999Z",
+      "updatedAt": "2026-08-30T23:52:08.405Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -43986,7 +43945,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet",
+      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=61777&JSON=1 (year 2026)",
       "draftInProgress": false,
       "available": [
         "Stefon Diggs",
@@ -45133,7 +45092,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-30T23:48:20.375Z",
+      "updatedAt": "2026-08-30T23:52:08.815Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -46428,7 +46387,7 @@
         "ir": 0,
         "position": []
       },
-      "updatedAt": "2026-08-30T23:48:20.644Z",
+      "updatedAt": "2026-08-30T23:52:09.100Z",
       "error": null,
       "tags": [
         "Superflex",
