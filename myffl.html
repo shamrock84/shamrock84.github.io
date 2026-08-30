@@ -7619,9 +7619,18 @@
 				lastSearchQuery = q;
 				searchAwareRefreshers.forEach((fn) => fn());
 			}
+			// Depth Charts' sub-tabs are NFL divisions, purely organizational —
+			// unlike Analytics' Dynasty/Redraft split, which changes what's
+			// computed, a division is just a filter over the same 32 team
+			// cards. So a search there spans every division at once: "Williams"
+			// should surface both the Patriots (AFC East) and the Lions (NFC
+			// North), not just whichever division sub-tab happens to be
+			// selected. The sub-tab strip's own selection is untouched —
+			// clearing the search returns to it exactly as it was.
+			const ignoreLeagueType = q && currentView === 'depthcharts';
 			document.querySelectorAll('.card').forEach((card) => {
 				const viewMatch = card.dataset.view === currentView;
-				const typeMatch = !currentLeagueType || card.dataset.leagueType === currentLeagueType;
+				const typeMatch = ignoreLeagueType || !currentLeagueType || card.dataset.leagueType === currentLeagueType;
 				const rows = card.querySelectorAll('tr.player-row');
 				let searchMatch = true;
 				if (q && rows.length > 0) {
