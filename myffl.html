@@ -2168,6 +2168,28 @@
 		let currentView = localStorage.getItem(VIEW_STORAGE_KEY) || 'rosters';
 		let currentLeagueType = localStorage.getItem(LEAGUE_TYPE_STORAGE_KEY) || null;
 
+		// The player search box's rows-are-in-the-DOM-already assumption (see
+		// updateVisibility) holds for Rosters and Depth Charts, but not for the
+		// paginated Analytics tables (Player/Injury Exposure, Top Available):
+		// their rows exist a page at a time, so hiding non-matching rows on the
+		// current page can't surface a match sitting on page 2. Those tables
+		// register a refresher here instead, which re-filters their full row
+		// set and re-paginates from page 1. Reset on every renderGrid() rebuild
+		// since the closures it held are for cards that no longer exist.
+		let searchAwareRefreshers = [];
+		// Only re-run the refreshers when the query text itself changed —
+		// updateVisibility() runs on every tab/sub-tab click too, and doing a
+		// full re-page on those would silently bounce a reader back to page 1
+		// of Top Available every time they switched sub-tabs.
+		let lastSearchQuery = null;
+
+		function getSearchQuery() {
+			// The `|| ''` guards a DOM stub that hands back a bare node with no
+			// `.value` (test-analytics-sort.mjs and friends) — the real #search
+			// input always has one, even when empty.
+			return (document.getElementById('search').value || '').trim().toLowerCase();
+		}
+
 		// Locally-planned contract length (1/2/3 years) for a Salary Cap roster
 		// spot that doesn't have a real one from MFL yet — a personal planning
 		// aid, never sent anywhere. Keyed by league id then player id, since
@@ -5803,6 +5825,11 @@
 				renderPage();
 			});
 
+			// The pager is created (or not) off the full, unfiltered row count:
+			// a search query only ever narrows rows, so a table that never
+			// needed pagination unfiltered never needs it filtered either. What
+			// *does* change per-query is whether the pager is currently needed
+			// — see the filteredPageCount handling inside renderPage.
 			const pageCount = Math.ceil(rows.length / pageSize);
 			let page = 0;
 			let pager = null;
@@ -5820,8 +5847,27 @@
 				card.appendChild(pager);
 			}
 
+			// This table's rows live in the DOM only a page at a time, unlike
+			// the plain player-row tables (Rosters, Depth Charts) that the
+			// global search filter hides row-by-row in place. So the search
+			// query is applied here, before pagination, rather than left to
+			// updateVisibility() — otherwise a match sitting on page 2 could
+			// never be found while page 1 is on screen. searchEmpty is read
+			// back by updateVisibility() to decide whether the whole card
+			// should hide when a query matches nothing at all.
+			function filteredSortedRows() {
+				const q = getSearchQuery();
+				const all = sortedRows();
+				if (!q) return all;
+				return all.filter((r) => r.name.toLowerCase().includes(q));
+			}
+
 			function renderPage() {
 				table.innerHTML = '';
+				const filteredRows = filteredSortedRows();
+				const filteredPageCount = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+				if (page >= filteredPageCount) page = 0;
+				card.dataset.searchEmpty = filteredRows.length === 0 ? 'true' : 'false';
 				const headRow = el('tr');
 				// ECR follows the roster cards: logged-out visitors don't get the
 				// column. The sort uses it either way — best-player-first is the
@@ -5859,7 +5905,7 @@
 				}
 
 				const start = page * pageSize;
-				for (const r of sortedRows().slice(start, start + pageSize)) {
+				for (const r of filteredRows.slice(start, start + pageSize)) {
 					const row = el('tr');
 					const nameCell = el('td');
 					// Same link as the roster cards, from the same captured URL —
@@ -5906,9 +5952,14 @@
 				}
 
 				if (pager) {
-					pageLabel.textContent = `Page ${page + 1} of ${pageCount}`;
+					// A query can shrink the pager's own page count below what
+					// its Prev/Next handlers below were bounds-checked against
+					// at pageCount — hide it entirely once there's nothing left
+					// to page through, same as a card with no pager at all.
+					pager.classList.toggle('hidden', filteredPageCount <= 1);
+					pageLabel.textContent = `Page ${page + 1} of ${filteredPageCount}`;
 					prevBtn.disabled = page === 0;
-					nextBtn.disabled = page >= pageCount - 1;
+					nextBtn.disabled = page >= filteredPageCount - 1;
 				}
 			}
 
@@ -5917,9 +5968,19 @@
 					if (page > 0) { page--; renderPage(); }
 				});
 				nextBtn.addEventListener('click', () => {
-					if (page < pageCount - 1) { page++; renderPage(); }
+					const filteredPageCount = Math.max(1, Math.ceil(filteredSortedRows().length / pageSize));
+					if (page < filteredPageCount - 1) { page++; renderPage(); }
 				});
 			}
+
+			// Re-entering the search-aware refresh path resets to page 1: a
+			// stale page 3 from before the query would otherwise render
+			// whatever the filtered set's third page happens to be, not the
+			// best matches — same rule the sort headers' onChange follows.
+			searchAwareRefreshers.push(() => {
+				page = 0;
+				renderPage();
+			});
 
 			renderPage();
 		}
@@ -6881,7 +6942,7 @@
 			table.appendChild(thead);
 			const tbody = el('tbody');
 			for (const row of rows) {
-				const tr = el('tr');
+				const tr = el('tr', { class: 'player-row', 'data-name': row.name.toLowerCase() });
 				const nameCell = el('td', { class: 'player-name' });
 				nameCell.appendChild(playerNameNode(row));
 				if (row.role) nameCell.appendChild(el('span', { class: 'depth-chart-role', text: ` (${row.role})` }));
@@ -7502,7 +7563,11 @@
 
 		function updateVisibility() {
 			document.getElementById('grid').dataset.view = currentView;
-			const q = document.getElementById('search').value.trim().toLowerCase();
+			const q = getSearchQuery();
+			if (q !== lastSearchQuery) {
+				lastSearchQuery = q;
+				searchAwareRefreshers.forEach((fn) => fn());
+			}
 			document.querySelectorAll('.card').forEach((card) => {
 				const viewMatch = card.dataset.view === currentView;
 				const typeMatch = !currentLeagueType || card.dataset.leagueType === currentLeagueType;
@@ -7519,6 +7584,10 @@
 				} else {
 					rows.forEach((row) => row.classList.remove('hidden'));
 				}
+				// Set by appendAnalyticsTable's own re-filter — see the
+				// searchAwareRefreshers comment above for why those tables
+				// can't be judged by their currently-rendered rows alone.
+				if (q && card.dataset.searchEmpty === 'true') searchMatch = false;
 				card.classList.toggle('hidden', !viewMatch || !typeMatch || !searchMatch);
 			});
 		}
@@ -7570,8 +7639,15 @@
 			}
 		}
 
+		// Player search applies to Rosters, Depth Charts, and the three
+		// player-listing Analytics tables (Player/Injury Exposure, Top
+		// Available) — every card with real player-row tables. It's left off
+		// Scoring, Standings, History and the team-level Analytics cards
+		// (Power Rankings, Team Needs, Bye Weeks), none of which are a list
+		// of players a name filter could narrow.
+		const SEARCHABLE_VIEWS = new Set(['rosters', 'depthcharts', 'analytics']);
 		function updateSearchVisibility() {
-			document.querySelector('.controls').classList.toggle('hidden', currentView !== 'rosters');
+			document.querySelector('.controls').classList.toggle('hidden', !SEARCHABLE_VIEWS.has(currentView));
 		}
 
 		function setLiveStatus(text, isError) {
@@ -8440,6 +8516,11 @@
 			const gridEl = document.getElementById('grid');
 			const data = pageData;
 			if (!data) return;
+
+			// Every card is about to be rebuilt from scratch (gridEl.innerHTML
+			// below), so any refresher registered by the previous render is a
+			// closure over a table that no longer exists.
+			searchAwareRefreshers = [];
 
 			renderQuickLinks();
 			renderAuthControl();
