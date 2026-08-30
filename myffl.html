@@ -2017,7 +2017,7 @@
 		<div id="auth-control" class="auth-control"></div>
 	</header>
 	<div class="tabs" id="tabs" role="tablist"></div>
-	<div class="tabs subtabs" id="subtabs" role="tablist"></div>
+	<div class="tabs subtabs" id="subtabs" role="group" aria-label="League type filters"></div>
 	<div id="live-status" class="hidden"></div>
 	<div class="controls">
 		<div class="search-wrap">
@@ -2167,16 +2167,55 @@
 			const idx = POSITION_ORDER.indexOf(pos);
 			return idx === -1 ? POSITION_ORDER.length : idx;
 		}
-		// Remember the last tab/sub-tab a visitor picked across reloads. Only
-		// written on an actual click (see renderViewTabs/renderSubTabs below),
-		// never when a stored value gets silently corrected because this
-		// session's data doesn't currently have that view/sub-tab — a
-		// transient gap (e.g. one sync with an empty Redraft) shouldn't
-		// overwrite a real saved preference.
+		// Remember the last tab a visitor picked across reloads. Only written
+		// on an actual click (see renderViewTabs below), never when a stored
+		// value gets silently corrected because this session's data doesn't
+		// currently have that view — a transient gap (e.g. one sync with an
+		// empty Redraft) shouldn't overwrite a real saved preference.
 		const VIEW_STORAGE_KEY = 'myfflView';
-		const LEAGUE_TYPE_STORAGE_KEY = 'myfflLeagueType';
 		let currentView = localStorage.getItem(VIEW_STORAGE_KEY) || 'rosters';
-		let currentLeagueType = localStorage.getItem(LEAGUE_TYPE_STORAGE_KEY) || null;
+
+		// Sub-tabs are filters, not a single selection: Rosters/Standings/
+		// Scoring/Analytics can have any combination of Dynasty/Salary Cap,
+		// Redraft and Draft Only checked at once, and Depth Charts the same
+		// for NFL divisions. Each top-level view keeps its own independent
+		// set — checking two pills on Rosters doesn't touch what's checked
+		// on Analytics — which is why this is keyed by view rather than
+		// being one global value the way the single-select version was.
+		// Selecting nothing is a legal, if useless, state: every card in
+		// the view goes blank rather than falling back to "show
+		// everything", so the pills always mean exactly what they show.
+		const LEAGUE_TYPE_STORAGE_KEY = 'myfflLeagueTypesByView';
+		function loadSelectedLeagueTypes() {
+			try {
+				const raw = localStorage.getItem(LEAGUE_TYPE_STORAGE_KEY);
+				if (!raw) return {};
+				const parsed = JSON.parse(raw);
+				if (!parsed || typeof parsed !== 'object') return {};
+				const result = {};
+				for (const [view, arr] of Object.entries(parsed)) {
+					if (Array.isArray(arr)) result[view] = new Set(arr);
+				}
+				return result;
+			} catch {
+				return {};
+			}
+		}
+		function saveSelectedLeagueTypes() {
+			try {
+				const obj = {};
+				for (const [view, set] of Object.entries(selectedLeagueTypesByView)) obj[view] = [...set];
+				localStorage.setItem(LEAGUE_TYPE_STORAGE_KEY, JSON.stringify(obj));
+			} catch {
+				// Private browsing or a full quota — the pills still work for
+				// this render, they just won't survive a reload.
+			}
+		}
+		// view -> Set<groupKey>, populated lazily per view the first time its
+		// sub-tab strip renders (see selectedTypesForView) rather than all at
+		// once up front, since a view's own present groups aren't known
+		// until its cards exist.
+		let selectedLeagueTypesByView = loadSelectedLeagueTypes();
 
 		// The player search box's rows-are-in-the-DOM-already assumption (see
 		// updateVisibility) holds for Rosters and Depth Charts, but not for the
@@ -5250,9 +5289,13 @@
 			currentView = 'rosters';
 			localStorage.setItem(VIEW_STORAGE_KEY, currentView);
 			const group = subtabType(league);
+			// Replaces Rosters' whole selection rather than adding to it —
+			// this is "take me to this league", not "also show its group",
+			// so whatever else was checked stops competing for the screen
+			// with the card the reader actually asked to jump to.
 			if (group) {
-				currentLeagueType = group;
-				localStorage.setItem(LEAGUE_TYPE_STORAGE_KEY, currentLeagueType);
+				selectedLeagueTypesByView.rosters = new Set([group]);
+				saveSelectedLeagueTypes();
 			}
 			renderGrid();
 			const card = document.querySelector(`.card[data-view="rosters"][data-league-id="${league.id}"]`);
@@ -7629,32 +7672,28 @@
 				lastSearchQuery = q;
 				searchAwareRefreshers.forEach((fn) => fn());
 			}
-			// Depth Charts' sub-tabs are NFL divisions and Rosters'/Analytics'
-			// are league-type groups (Dynasty/Salary Cap, Redraft, Draft
-			// Only), but on all three the sub-tab is purely organizational —
-			// it filters which of the same underlying cards are on screen, it
-			// doesn't change what any one card computes (contrast Analytics'
-			// own ANALYTICS_GROUP prohibition below, which is about *merging*
-			// two groups' rows into one card — this never does that). So a
-			// search on any of the three spans every group at once: searching
-			// "Williams" on Depth Charts surfaces both the Patriots (AFC
-			// East) and the Lions (NFC North); on Rosters, a Dynasty league
-			// and a Redraft league holding a Williams both show. The sub-tab
-			// strip's own selection is untouched — clearing the search
-			// returns to exactly what it was.
-			const ignoreLeagueType = q && (currentView === 'depthcharts' || currentView === 'rosters' || currentView === 'analytics');
+			// A card with no data-league-type (History, Admin — anything
+			// without a sub-tab strip) is never filtered by selection; one
+			// that has it is shown exactly when its group is checked for
+			// this view. Selecting nothing for a view is legal and means
+			// "show none of them", not "show everything" — see the
+			// LEAGUE_TYPE_STORAGE_KEY comment above.
+			const selectedTypes = selectedLeagueTypesByView[currentView];
 			// Rosters/Depth Charts cards are already uniquely titled (a
-			// league name, a team name), so two shown together during a
-			// cross-group search read fine as-is. Analytics cards are not —
-			// "Player Exposure" is the same heading in every group — so
-			// appendGroupLabel (see the Analytics card loop in renderGrid)
-			// gave each one an extra `.card-group-label` span up front,
-			// hidden until a search actually puts more than one group's
-			// same-titled card on screen at once.
-			const showAnalyticsGroupLabel = q && currentView === 'analytics';
+			// league name, a team name), so two different groups' cards
+			// checked at once read fine side by side with no extra label.
+			// Analytics cards are not — "Player Exposure" is the identical
+			// heading in every group — so appendGroupLabel (see the
+			// Analytics card loop in renderGrid) gave each one an extra
+			// `.card-group-label` span up front, shown only once checking
+			// more than one pill actually puts same-titled cards on screen
+			// together; with just one group checked (the common case) it
+			// stays hidden, same as an ordinary visit always looked.
+			const showAnalyticsGroupLabel = currentView === 'analytics' && selectedTypes && selectedTypes.size > 1;
 			document.querySelectorAll('.card').forEach((card) => {
 				const viewMatch = card.dataset.view === currentView;
-				const typeMatch = ignoreLeagueType || !currentLeagueType || card.dataset.leagueType === currentLeagueType;
+				const cardType = card.dataset.leagueType;
+				const typeMatch = !cardType || (selectedTypes ? selectedTypes.has(cardType) : true);
 				const groupLabel = card.querySelector('.card-group-label');
 				if (groupLabel) groupLabel.classList.toggle('hidden', !showAnalyticsGroupLabel);
 				const rows = card.querySelectorAll('tr.player-row');
@@ -7684,6 +7723,28 @@
 		// built from the data-league-type of the cards actually in this view, so
 		// its Active/Draft Only pair and the other views' Dynasty/Salary
 		// Cap/Redraft/Draft Only never have to know about each other.
+		//
+		// Returns this view's selection, creating a default the first time
+		// it's ever rendered (this session, or ever if nothing was
+		// persisted): exactly the first present group, the same single
+		// group the old single-select strip always opened on — not "every
+		// group checked", which would be a bigger surprise for a returning
+		// visitor than picking up where the single-select version left off.
+		// A selection already on record survives untouched except for
+		// pruning any group that's no longer present (a league that
+		// finished its draft and changed groups, say), so a stale saved
+		// value can't wedge the view permanently blank.
+		function selectedTypesForView(view, present) {
+			let set = selectedLeagueTypesByView[view];
+			if (set) {
+				for (const type of [...set]) if (!present.includes(type)) set.delete(type);
+				return set;
+			}
+			set = new Set(present.length ? [present[0]] : []);
+			selectedLeagueTypesByView[view] = set;
+			return set;
+		}
+
 		function renderSubTabs() {
 			const subtabsEl = document.getElementById('subtabs');
 			subtabsEl.innerHTML = '';
@@ -7699,26 +7760,33 @@
 
 			if (present.length <= 1) {
 				subtabsEl.classList.add('hidden');
-				currentLeagueType = present[0] || null;
+				// Nothing to filter, so nothing to hide behind an unchecked
+				// pill either — nothing to persist here, and no view is ever
+				// stuck on a stale set later widening to more than one group.
+				selectedLeagueTypesByView[currentView] = new Set(present);
 				return;
 			}
 
 			subtabsEl.classList.remove('hidden');
-			if (!currentLeagueType || !present.includes(currentLeagueType)) {
-				currentLeagueType = present[0];
-			}
+			const selected = selectedTypesForView(currentView, present);
 			for (const type of present) {
 				const label = SUBTAB_LABEL_OVERRIDES[type] || LEAGUE_TYPE_LABELS[type] || type;
 				const btn = el('button', {
-					class: `tab-btn${type === currentLeagueType ? ' active' : ''}`,
+					class: `tab-btn${selected.has(type) ? ' active' : ''}`,
 					type: 'button',
-					role: 'tab',
+					'aria-pressed': String(selected.has(type)),
 					text: label,
 				});
+				// A filter checkbox, not a single-selection tab: toggles this
+				// one group in or out of the current view's set rather than
+				// replacing it, so any combination — including none — is
+				// reachable, and every other pill's state is untouched.
 				btn.addEventListener('click', () => {
-					currentLeagueType = type;
-					localStorage.setItem(LEAGUE_TYPE_STORAGE_KEY, currentLeagueType);
-					subtabsEl.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b === btn));
+					if (selected.has(type)) selected.delete(type);
+					else selected.add(type);
+					saveSelectedLeagueTypes();
+					btn.classList.toggle('active', selected.has(type));
+					btn.setAttribute('aria-pressed', String(selected.has(type)));
 					updateVisibility();
 				});
 				subtabsEl.appendChild(btn);
