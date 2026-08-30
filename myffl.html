@@ -6197,10 +6197,26 @@
 				card.appendChild(pager);
 			}
 
+			// Same problem the paginated Analytics tables have (see
+			// appendAnalyticsTable): a week's players only exist in the DOM
+			// while that week's page is on screen, so a plain row-hide can't
+			// surface a match sitting on another page. Filtered here, before
+			// pagination, and re-driven by a searchAwareRefreshers entry
+			// below whenever the query changes.
+			function filteredRows() {
+				const q = getSearchQuery();
+				if (!q) return rows;
+				return rows.filter((r) => (r.players || []).some((p) => p.name.toLowerCase().includes(q)));
+			}
+
 			function renderPage() {
 				table.innerHTML = '';
+				const filtered = filteredRows();
+				const filteredPageCount = Math.max(1, Math.ceil(filtered.length / BYE_WEEKS_PAGE_SIZE));
+				if (page >= filteredPageCount) page = 0;
+				card.dataset.searchEmpty = filtered.length === 0 ? 'true' : 'false';
 				const start = page * BYE_WEEKS_PAGE_SIZE;
-				for (const r of rows.slice(start, start + BYE_WEEKS_PAGE_SIZE)) {
+				for (const r of filtered.slice(start, start + BYE_WEEKS_PAGE_SIZE)) {
 					const row = el('tr', r.week === currentWeek ? { class: 'bye-week-current' } : {});
 					const cell = el('td');
 					cell.appendChild(el('div', { text: `Week ${r.week}` }));
@@ -6212,9 +6228,10 @@
 					table.appendChild(row);
 				}
 				if (pager) {
-					pageLabel.textContent = `Page ${page + 1} of ${pageCount}`;
+					pager.classList.toggle('hidden', filteredPageCount <= 1);
+					pageLabel.textContent = `Page ${page + 1} of ${filteredPageCount}`;
 					prevBtn.disabled = page === 0;
-					nextBtn.disabled = page >= pageCount - 1;
+					nextBtn.disabled = page >= filteredPageCount - 1;
 				}
 			}
 
@@ -6223,9 +6240,20 @@
 					if (page > 0) { page--; renderPage(); }
 				});
 				nextBtn.addEventListener('click', () => {
-					if (page < pageCount - 1) { page++; renderPage(); }
+					const filteredPageCount = Math.max(1, Math.ceil(filteredRows().length / BYE_WEEKS_PAGE_SIZE));
+					if (page < filteredPageCount - 1) { page++; renderPage(); }
 				});
 			}
+
+			// A search resets to the filtered set's first page — the best way
+			// to see what matched. Clearing it goes back to initialByePage's
+			// own pick (the current week) rather than page 1, so dismissing a
+			// search doesn't strand the reader on Week 1 mid-November.
+			searchAwareRefreshers.push(() => {
+				const q = getSearchQuery();
+				page = q ? 0 : initialByePage(rows, currentWeek, BYE_WEEKS_PAGE_SIZE);
+				renderPage();
+			});
 
 			renderPage();
 			return card;
@@ -6459,7 +6487,17 @@
 				table.appendChild(headRow);
 
 				for (const r of sortedRows()) {
-					const row = el('tr');
+					// The only player names this card ever shows are the ones
+					// in the Studs/Sleepers sub-lines below — reusing the
+					// player-row/data-name convention updateVisibility()
+					// already filters on (see Rosters/Depth Charts) means a
+					// league row hides itself the moment neither list
+					// mentions the searched name, with no new filtering code.
+					// Every row gets the class, even one with nothing to
+					// search: an empty data-name simply never matches a
+					// non-empty query, which is the row this card should hide.
+					const searchNames = [...(r.studs || []), ...(r.sleepers || [])].map((p) => p.name.toLowerCase()).join(', ');
+					const row = el('tr', { class: 'player-row', 'data-name': searchNames });
 					// The league size rides with the name now, so every rank
 					// column can be a bare number. It also means the size shows
 					// on a league whose ranks are all TBD, where previously it
@@ -6660,10 +6698,23 @@
 					// keeps every position cell a plain, aligned number. One
 					// line per flagged position, each labeled with its own
 					// position, same as a single flag would be.
+					// The only player names this card ever shows are the ones
+					// in these flagged-position lines — a bench player at a
+					// position that isn't the league's weak spot is never
+					// printed here at all — so that's the full extent of what
+					// a search can find. searchNames feeds the same
+					// player-row/data-name convention Rosters and Power
+					// Rankings use, so updateVisibility()'s existing filter
+					// covers this card with no new code there.
+					const searchNames = [];
 					for (const pos of needPositions) {
-						const roster = needsRosterLine(pos, r.rosterByPosition ? r.rosterByPosition[pos] : null);
+						const posPlayers = r.rosterByPosition ? r.rosterByPosition[pos] : null;
+						if (posPlayers) searchNames.push(...posPlayers.map((p) => p.name.toLowerCase()));
+						const roster = needsRosterLine(pos, posPlayers);
 						if (roster) nameCell.appendChild(roster);
 					}
+					row.classList.add('player-row');
+					row.dataset.name = searchNames.join(', ');
 					for (const pos of POWER_POSITIONS) {
 						const entry = byPos ? byPos[pos] : null;
 						if (entry == null) {
