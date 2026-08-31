@@ -470,6 +470,7 @@
 		.card-heading {
 			position: relative;
 			padding-right: 2.3rem;
+			cursor: pointer;
 		}
 		/* Disambiguates same-titled Analytics cards (e.g. two "Player
 		   Exposure" cards, one per league-type group) while a search spans
@@ -3989,6 +3990,14 @@
 		// tears down and rebuilds every card from scratch on every data
 		// refresh, tab switch, and login/logout, and this is what lets the
 		// new node remember whether the old one was collapsed.
+		//
+		// The whole heading is the toggle target, not just the chevron — the
+		// same "mis-aimed tap still hits it" idiom the Admin tab's
+		// .admin-disclosure button already uses (see its own comment), and
+		// worth far more here on a phone or tablet than at a mouse cursor's
+		// pixel precision. A click landing on an <a> inside the heading (the
+		// league name, the rules-link icon) is left alone so it still
+		// navigates instead of also collapsing the card out from under it.
 		function makeCollapsible(card, heading, key) {
 			const collapsed = isCardCollapsed(key);
 			card.classList.toggle('card-collapsed', collapsed);
@@ -4000,16 +4009,23 @@
 				'aria-label': collapsed ? 'Expand' : 'Collapse',
 				text: '▾',
 			});
-			toggle.addEventListener('click', (e) => {
-				e.stopPropagation();
+			const toggleCollapse = () => {
 				const next = !card.classList.contains('card-collapsed');
 				card.classList.toggle('card-collapsed', next);
 				toggle.setAttribute('aria-expanded', String(!next));
 				toggle.title = next ? 'Expand' : 'Collapse';
 				toggle.setAttribute('aria-label', next ? 'Expand' : 'Collapse');
 				setCardCollapsed(key, next);
+			};
+			toggle.addEventListener('click', (e) => {
+				e.stopPropagation();
+				toggleCollapse();
 			});
 			heading.appendChild(toggle);
+			heading.addEventListener('click', (e) => {
+				if (e.target.closest('a')) return;
+				toggleCollapse();
+			});
 		}
 
 		function buildCardHead(card, league, extraLabels = []) {
