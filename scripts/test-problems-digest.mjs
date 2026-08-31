@@ -19,8 +19,10 @@
 //   - RET is flagged via INJURY_SETTLED even though it is deliberately absent
 //     from INJURY_SEVERITY;
 //   - absence of lineup data reads as "not asked", never as an empty lineup;
-//   - a mid-draft league and a league still on last season get no lineup
-//     checks at all — a true answer about a nonsense lineup is still noise;
+//   - a mid-draft league, a league still on last season, and a league with
+//     no rostered players at all get no lineup checks — a true answer about
+//     a nonsense lineup is still noise, and an empty roster is how a
+//     pre-draft ESPN league shows up, since ESPN never sets draftInProgress;
 //   - each starter yields at most one row, worst problem first: the slot
 //     beats the injury beats the bye;
 //   - the required-starters check uses the *minimum* implied by the
@@ -210,10 +212,23 @@ const kinds = (problems) => [...problems].map((p) => p.kind);
 
 {
 	// An actually-empty lineup where the fetch succeeded IS a row — red, not
-	// gold — and the short check doesn't stack on top of it.
-	const problems = computeLeagueProblems(league({ starters: [] }), YEAR);
+	// gold — and the short check doesn't stack on top of it. A rostered
+	// player who simply wasn't started is what makes this "empty", not
+	// "nothing to start" (see the empty-roster case below).
+	const roster = [player('1', { injury: null })];
+	const problems = computeLeagueProblems(league({ starters: [], players: roster }), YEAR);
 	assert.deepEqual(kinds(problems), ['empty']);
 	assert.match(problems[0].label, /No starters set for week 1/);
+}
+
+{
+	// A league with no rostered players at all gets no lineup checks either
+	// — the pre-draft case, most visible on ESPN, whose draftInProgress is
+	// never set at all (only MFL and Sleeper populate it), so a startup
+	// league sitting on an empty roster would otherwise be flagged "No
+	// starters set" for a lineup there's nothing yet to fill.
+	const empty = league({ starters: [], players: [] });
+	assert.equal(computeLeagueProblems(empty, YEAR).length, 0, 'no rostered players: nothing to start, so no lineup problems');
 }
 
 // ---- Mid-draft and last-season leagues get no lineup checks ---------------
