@@ -6149,6 +6149,12 @@
 						? 'Only one league here has rosters so far — exposure needs at least two to compare.'
 						: 'No leagues here have roster data yet.',
 				}));
+				// No appendAnalyticsTable call on this path, so nothing else
+				// ever sets searchEmpty — updateVisibility reads it as "not
+				// searched yet" and shows the card for every query otherwise.
+				// It's an unconditional 'true' rather than a rows.length
+				// check because this branch has no rows at all.
+				card.dataset.searchEmpty = 'true';
 				return card;
 			}
 
@@ -6156,6 +6162,7 @@
 
 			if (rows.length === 0) {
 				card.appendChild(el('div', { class: 'error-box', text: 'No players owned in more than one league yet.' }));
+				card.dataset.searchEmpty = 'true';
 				return card;
 			}
 
@@ -6189,6 +6196,10 @@
 						? 'Only one league here has rosters so far — exposure needs at least two to compare.'
 						: 'No leagues here have roster data yet.',
 				}));
+				// See renderAnalyticsCard's identical branch: no
+				// appendAnalyticsTable call here, so searchEmpty has to be
+				// set explicitly or the card survives every search.
+				card.dataset.searchEmpty = 'true';
 				return card;
 			}
 
@@ -6196,6 +6207,7 @@
 
 			if (rows.length === 0) {
 				card.appendChild(el('div', { class: 'error-box', text: 'Nobody on these rosters is carrying an injury designation right now.' }));
+				card.dataset.searchEmpty = 'true';
 				return card;
 			}
 
@@ -6292,6 +6304,10 @@
 
 			if (total === 0) {
 				card.appendChild(el('div', { class: 'error-box', text: 'No leagues here have roster data yet.' }));
+				// Neither renderPage() nor its searchAwareRefreshers entry
+				// ever runs on this path, so nothing else sets searchEmpty —
+				// without this the card survives every search unfiltered.
+				card.dataset.searchEmpty = 'true';
 				return card;
 			}
 
@@ -6299,6 +6315,7 @@
 
 			if (rows.length === 0) {
 				card.appendChild(el('div', { class: 'error-box', text: 'No bye week data available yet.' }));
+				card.dataset.searchEmpty = 'true';
 				return card;
 			}
 
@@ -6903,6 +6920,10 @@
 				if (drafting > 0) held.push('mid-draft');
 				if (awaiting > 0) held.push('waiting on next season');
 				card.appendChild(el('div', { class: 'error-box', text: `Every league here is ${held.join(' or ')}.` }));
+				// No appendAnalyticsTable call on this path, so nothing else
+				// ever sets searchEmpty — without this the card survives
+				// every search unfiltered.
+				card.dataset.searchEmpty = 'true';
 				return card;
 			}
 
@@ -6911,6 +6932,7 @@
 				// dynasty group this is the expected answer, and an absent card
 				// looks like missing data instead of a picked-over wire.
 				card.appendChild(el('div', { class: 'error-box', text: 'Everybody in the top of the rankings is already rostered here.' }));
+				card.dataset.searchEmpty = 'true';
 				return card;
 			}
 
