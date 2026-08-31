@@ -7205,7 +7205,15 @@
 			const division = DEPTH_CHART_DIVISIONS[abbr] || null;
 			const card = el('div', { class: 'card', 'data-view': 'depthcharts' });
 			if (division) card.dataset.leagueType = division;
-			const heading = el('h2', { class: 'card-heading', text: team.name || abbr });
+			const teamLabel = team.name || abbr;
+			// Read back in updateVisibility() so a search for the team itself
+			// ("Chiefs", or the abbreviation "KC") shows the whole card,
+			// exactly as a league name now does on Analytics — see the
+			// positionBoxes branch there. Kept as its own dataset field
+			// rather than read off the heading node, since the abbreviation
+			// isn't otherwise printed anywhere on the card.
+			card.dataset.teamName = `${teamLabel} ${abbr}`.toLowerCase();
+			const heading = el('h2', { class: 'card-heading', text: teamLabel });
 			card.appendChild(heading);
 			makeCollapsible(card, heading, `depthchart:${abbr}`);
 
@@ -7839,10 +7847,18 @@
 					// player-row filtering further below (Analytics' team-level
 					// cards) narrows down to matching rows.
 					if (q) {
+						// A query matching the team itself — full name or
+						// abbreviation, see card.dataset.teamName — is the
+						// Depth Charts equivalent of a league-name match on
+						// Analytics: the whole card is what's relevant, so
+						// every position box on it stays up rather than being
+						// narrowed to whichever one happens to also have a
+						// name match.
+						const teamMatch = (card.dataset.teamName || '').includes(q);
 						let anyVisible = false;
 						positionBoxes.forEach((box) => {
 							const boxRows = box.querySelectorAll('tr.player-row');
-							let boxMatch = false;
+							let boxMatch = teamMatch;
 							boxRows.forEach((row) => {
 								const match = row.dataset.name.includes(q);
 								row.classList.remove('hidden');
@@ -8044,20 +8060,32 @@
 		// Scoring, Standings and History, none of which are a list of players
 		// a name filter could narrow.
 		//
-		// On Analytics specifically the same box also matches a league name —
-		// see filteredSortedRows (Player/Injury Exposure, Top Available) and
-		// the searchNames built into Power Rankings/Team Needs' own rows — so
-		// a query like "MNMx" narrows every card down to that one league, not
-		// just the players on it. The placeholder swaps to say so only there;
-		// elsewhere a league name would silently match nothing, so it stays
-		// unmentioned rather than promising a filter those tabs don't offer.
+		// Two of those three also match a second, card-level thing, each read
+		// off a dataset field rather than re-derived from the rendered text:
+		// Analytics matches a league name — see filteredSortedRows
+		// (Player/Injury Exposure, Top Available) and the searchNames built
+		// into Power Rankings/Team Needs' own rows — so a query like "MNMx"
+		// narrows every card down to that one league, not just the players on
+		// it. Depth Charts matches the NFL team itself — full name or
+		// abbreviation, card.dataset.teamName, set in
+		// renderDepthChartTeamCard and read back in updateVisibility's
+		// positionBoxes branch — so "Chiefs" or "KC" keeps every position box
+		// on that one team's card up rather than narrowing to whichever box
+		// also happens to have a name match. The placeholder swaps to say so
+		// only on the tab where it applies; elsewhere the second thing would
+		// silently match nothing, so it stays unmentioned rather than
+		// promising a filter that tab doesn't offer.
 		const SEARCHABLE_VIEWS = new Set(['rosters', 'depthcharts', 'analytics']);
 		const DEFAULT_SEARCH_PLACEHOLDER = 'Filter by player name…';
+		const DEPTHCHARTS_SEARCH_PLACEHOLDER = 'Filter by player or NFL team…';
 		const ANALYTICS_SEARCH_PLACEHOLDER = 'Filter by player or league name…';
+		const SEARCH_PLACEHOLDERS = {
+			depthcharts: DEPTHCHARTS_SEARCH_PLACEHOLDER,
+			analytics: ANALYTICS_SEARCH_PLACEHOLDER,
+		};
 		function updateSearchVisibility() {
 			document.querySelector('.controls').classList.toggle('hidden', !SEARCHABLE_VIEWS.has(currentView));
-			document.getElementById('search').placeholder =
-				currentView === 'analytics' ? ANALYTICS_SEARCH_PLACEHOLDER : DEFAULT_SEARCH_PLACEHOLDER;
+			document.getElementById('search').placeholder = SEARCH_PLACEHOLDERS[currentView] || DEFAULT_SEARCH_PLACEHOLDER;
 		}
 
 		function setLiveStatus(text, isError) {
