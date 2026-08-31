@@ -257,21 +257,23 @@
 		.subtabs-bar {
 			display: flex;
 			align-items: center;
-			gap: 0.6rem;
+			justify-content: center;
+			flex-wrap: wrap;
+			gap: 0.4rem;
 			margin-top: 0.6rem;
 			padding: 0 1rem;
 		}
 		.subtabs-bar .subtabs {
-			flex: 1;
 			margin-top: 0;
 			padding: 0;
 		}
 		.subtab-link {
-			font-size: 0.78rem;
+			font-size: 0.62rem;
+			line-height: 1.15;
 			font-weight: 600;
 			color: var(--muted);
 			text-decoration: none;
-			white-space: nowrap;
+			text-align: center;
 		}
 		.subtab-link:hover {
 			color: var(--accent);
@@ -2038,9 +2040,9 @@
 	</header>
 	<div class="tabs" id="tabs" role="tablist"></div>
 	<div class="subtabs-bar hidden" id="subtabs-bar">
-		<a href="#" class="subtab-link" id="subtabs-select-all">Select all</a>
+		<a href="#" class="subtab-link" id="subtabs-select-all">Select<br>all</a>
 		<div class="tabs subtabs" id="subtabs" role="group" aria-label="League type filters"></div>
-		<a href="#" class="subtab-link" id="subtabs-unselect-all">Unselect all</a>
+		<a href="#" class="subtab-link" id="subtabs-unselect-all">Unselect<br>all</a>
 	</div>
 	<div id="live-status" class="hidden"></div>
 	<div class="controls">
