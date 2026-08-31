@@ -7726,35 +7726,46 @@
 				const typeMatch = !cardType || (selectedTypes ? selectedTypes.has(cardType) : true);
 				const groupLabel = card.querySelector('.card-group-label');
 				if (groupLabel) groupLabel.classList.toggle('hidden', !showAnalyticsGroupLabel);
-				const rows = card.querySelectorAll('tr.player-row');
 				let searchMatch = true;
-				if (q && rows.length > 0) {
-					let anyVisible = false;
-					rows.forEach((row) => {
-						const match = row.dataset.name.includes(q);
-						row.classList.toggle('hidden', !match);
-						if (match) anyVisible = true;
-					});
-					searchMatch = anyVisible;
-				} else {
-					rows.forEach((row) => row.classList.remove('hidden'));
-				}
-				// Depth Charts groups its player rows into a QB/RB/WR/TE table
-				// per position (see buildDepthChartPositionTable) rather than
-				// one flat list — the row-hiding above leaves a position box
-				// on screen with a header and no rows once a search filters
-				// every one of its players out. Hide the box itself in that
-				// case; a card with no query, or no boxes at all, leaves this
-				// untouched the same way the row loop above does.
 				const positionBoxes = card.querySelectorAll('.depth-chart-position');
 				if (positionBoxes.length > 0) {
-					positionBoxes.forEach((box) => {
-						if (!q) {
+					// A Depth Charts box is the actual NFL depth chart for that
+					// position, not a flat player list — a hit inside it means
+					// "this box is relevant", not "hide this box down to just
+					// the player who matched". Filtering rows out would leave a
+					// backup on screen with no starter above him for context, so
+					// the whole box is kept-or-dropped as one unit; only the
+					// player-row filtering below (Rosters, Analytics) narrows
+					// down to matching rows.
+					if (q) {
+						let anyVisible = false;
+						positionBoxes.forEach((box) => {
+							const boxRows = box.querySelectorAll('tr.player-row');
+							const boxMatch = [...boxRows].some((row) => row.dataset.name.includes(q));
+							boxRows.forEach((row) => row.classList.remove('hidden'));
+							box.classList.toggle('hidden', !boxMatch);
+							if (boxMatch) anyVisible = true;
+						});
+						searchMatch = anyVisible;
+					} else {
+						positionBoxes.forEach((box) => {
 							box.classList.remove('hidden');
-							return;
-						}
-						box.classList.toggle('hidden', !box.querySelector('tr.player-row:not(.hidden)'));
-					});
+							box.querySelectorAll('tr.player-row').forEach((row) => row.classList.remove('hidden'));
+						});
+					}
+				} else {
+					const rows = card.querySelectorAll('tr.player-row');
+					if (q && rows.length > 0) {
+						let anyVisible = false;
+						rows.forEach((row) => {
+							const match = row.dataset.name.includes(q);
+							row.classList.toggle('hidden', !match);
+							if (match) anyVisible = true;
+						});
+						searchMatch = anyVisible;
+					} else {
+						rows.forEach((row) => row.classList.remove('hidden'));
+					}
 				}
 				// Set by appendAnalyticsTable's own re-filter — see the
 				// searchAwareRefreshers comment above for why those tables
