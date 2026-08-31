@@ -7739,6 +7739,23 @@
 				} else {
 					rows.forEach((row) => row.classList.remove('hidden'));
 				}
+				// Depth Charts groups its player rows into a QB/RB/WR/TE table
+				// per position (see buildDepthChartPositionTable) rather than
+				// one flat list — the row-hiding above leaves a position box
+				// on screen with a header and no rows once a search filters
+				// every one of its players out. Hide the box itself in that
+				// case; a card with no query, or no boxes at all, leaves this
+				// untouched the same way the row loop above does.
+				const positionBoxes = card.querySelectorAll('.depth-chart-position');
+				if (positionBoxes.length > 0) {
+					positionBoxes.forEach((box) => {
+						if (!q) {
+							box.classList.remove('hidden');
+							return;
+						}
+						box.classList.toggle('hidden', !box.querySelector('tr.player-row:not(.hidden)'));
+					});
+				}
 				// Set by appendAnalyticsTable's own re-filter — see the
 				// searchAwareRefreshers comment above for why those tables
 				// can't be judged by their currently-rendered rows alone.
