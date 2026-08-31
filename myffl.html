@@ -7763,8 +7763,8 @@
 					// the player who matched". Filtering rows out would leave a
 					// backup on screen with no starter above him for context, so
 					// the whole box is kept-or-dropped as one unit; only the
-					// player-row filtering below (Rosters, Analytics) narrows
-					// down to matching rows.
+					// player-row filtering further below (Analytics' team-level
+					// cards) narrows down to matching rows.
 					if (q) {
 						let anyVisible = false;
 						positionBoxes.forEach((box) => {
@@ -7794,18 +7794,46 @@
 							});
 						});
 					}
+				} else if (card.dataset.view === 'rosters') {
+					// A Rosters card can hold several tables — Active Roster,
+					// Taxi Squad, IR — but they're one manager's roster, not
+					// independent lists, so a hit anywhere in the card means
+					// the whole roster is relevant, the same reasoning Depth
+					// Charts applies at the box level just scoped one level
+					// up: filtering every other table down to nothing would
+					// hide a bench spot's real depth for the sake of the one
+					// row that matched. Every row across every table in the
+					// card is therefore kept-or-dropped together.
+					const rows = card.querySelectorAll('tr.player-row');
+					if (q && rows.length > 0) {
+						let anyVisible = false;
+						rows.forEach((row) => {
+							const match = row.dataset.name.includes(q);
+							row.classList.remove('hidden');
+							row.classList.toggle('search-hit', match);
+							if (match) anyVisible = true;
+						});
+						searchMatch = anyVisible;
+					} else {
+						rows.forEach((row) => {
+							row.classList.remove('hidden');
+							row.classList.remove('search-hit');
+						});
+					}
 				} else {
+					// Analytics' team-level cards (Power Rankings, Team Needs)
+					// reuse the player-row/data-name convention on a row that
+					// represents a whole league, not a player — see the
+					// comment where that row is built — so unlike Rosters and
+					// Depth Charts, narrowing down to just the matching rows
+					// here is narrowing down to just the matching leagues,
+					// which is the right behavior for that card.
 					const rows = card.querySelectorAll('tr.player-row');
 					if (q && rows.length > 0) {
 						let anyVisible = false;
 						rows.forEach((row) => {
 							const match = row.dataset.name.includes(q);
 							row.classList.toggle('hidden', !match);
-							// A visible row here is a match by definition — this
-							// table narrows down to matches rather than keeping
-							// the group intact the way Depth Charts does — but
-							// it's marked the same way so a search reads the
-							// same wherever it turns up.
 							row.classList.toggle('search-hit', match);
 							if (match) anyVisible = true;
 						});
