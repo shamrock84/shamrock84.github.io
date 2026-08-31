@@ -1170,6 +1170,20 @@
 			color: var(--accent);
 			font-weight: 700;
 		}
+		/* Bold+accent alone reads fine when a search hit is the only row
+		   left standing, but Rosters and Depth Charts now keep the whole
+		   group on screen for context (see updateVisibility), so the match
+		   needs to stand out from a full table, not just from itself. Same
+		   gold wash tr.player-row.cut-planned-ir uses, and the same
+		   gold-chip tokens the contract/cut banners use — gold already
+		   means "this is what needs your attention" everywhere else on the
+		   page, not a status of its own, so it reads correctly here too.
+		   The tr.search-hit specificity (tag + class) beats the plain-class
+		   .status-taxi_squad/.status-injured_reserve row tints regardless
+		   of source order, so a search hit wins over either. */
+		tr.search-hit {
+			background: var(--gold-chip-bg);
+		}
 		/* A name that links to FantasyPros still has to read as a name first —
 		   a roster of blue underlines would be unreadable — so it takes the
 		   surrounding colour and only underlines on hover, the same treatment
