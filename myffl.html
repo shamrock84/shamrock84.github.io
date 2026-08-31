@@ -1152,6 +1152,16 @@
 		.player-name {
 			font-weight: 500;
 		}
+		/* Depth Charts shows a search hit's whole position box for context
+		   (see updateVisibility), so the matching player no longer stands
+		   out just by being the only row left — this is what marks them
+		   inside a box full of teammates who didn't match. Same accent +
+		   bold pairing .needs-players-promote uses for "notable" on a
+		   player line. */
+		tr.search-hit .player-name {
+			color: var(--accent);
+			font-weight: 700;
+		}
 		/* A name that links to FantasyPros still has to read as a name first —
 		   a roster of blue underlines would be unreadable — so it takes the
 		   surrounding colour and only underlines on hover, the same treatment
@@ -7741,8 +7751,18 @@
 						let anyVisible = false;
 						positionBoxes.forEach((box) => {
 							const boxRows = box.querySelectorAll('tr.player-row');
-							const boxMatch = [...boxRows].some((row) => row.dataset.name.includes(q));
-							boxRows.forEach((row) => row.classList.remove('hidden'));
+							let boxMatch = false;
+							boxRows.forEach((row) => {
+								const match = row.dataset.name.includes(q);
+								row.classList.remove('hidden');
+								// Every row in the box stays visible for context
+								// (see the box comment above), so the match itself
+								// is marked on the row instead — otherwise a hit
+								// buried among teammates would be indistinguishable
+								// from the reason the box is even showing.
+								row.classList.toggle('search-hit', match);
+								if (match) boxMatch = true;
+							});
 							box.classList.toggle('hidden', !boxMatch);
 							if (boxMatch) anyVisible = true;
 						});
@@ -7750,7 +7770,10 @@
 					} else {
 						positionBoxes.forEach((box) => {
 							box.classList.remove('hidden');
-							box.querySelectorAll('tr.player-row').forEach((row) => row.classList.remove('hidden'));
+							box.querySelectorAll('tr.player-row').forEach((row) => {
+								row.classList.remove('hidden');
+								row.classList.remove('search-hit');
+							});
 						});
 					}
 				} else {
