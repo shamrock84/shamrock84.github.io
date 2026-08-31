@@ -254,8 +254,28 @@
 			border-color: var(--accent);
 			color: #fff;
 		}
-		.subtabs {
+		.subtabs-bar {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			flex-wrap: wrap;
+			gap: 0.4rem;
 			margin-top: 0.6rem;
+			padding: 0 1rem;
+		}
+		.subtabs-bar .subtabs {
+			margin-top: 0;
+			padding: 0;
+		}
+		.subtab-link {
+			font-size: 0.72rem;
+			font-weight: 600;
+			color: var(--muted);
+			text-decoration: none;
+		}
+		.subtab-link:hover {
+			color: var(--accent);
+			text-decoration: underline;
 		}
 		.subtabs .tab-btn {
 			padding: 0.3rem 0.8rem;
@@ -2017,7 +2037,11 @@
 		<div id="auth-control" class="auth-control"></div>
 	</header>
 	<div class="tabs" id="tabs" role="tablist"></div>
-	<div class="tabs subtabs" id="subtabs" role="group" aria-label="League type filters"></div>
+	<div class="subtabs-bar hidden" id="subtabs-bar">
+		<a href="#" class="subtab-link" id="subtabs-select-all">All</a>
+		<div class="tabs subtabs" id="subtabs" role="group" aria-label="League type filters"></div>
+		<a href="#" class="subtab-link" id="subtabs-unselect-all">None</a>
+	</div>
 	<div id="live-status" class="hidden"></div>
 	<div class="controls">
 		<div class="search-wrap">
@@ -7752,6 +7776,7 @@
 		}
 
 		function renderSubTabs() {
+			const subtabsBar = document.getElementById('subtabs-bar');
 			const subtabsEl = document.getElementById('subtabs');
 			subtabsEl.innerHTML = '';
 
@@ -7765,7 +7790,7 @@
 			);
 
 			if (present.length <= 1) {
-				subtabsEl.classList.add('hidden');
+				subtabsBar.classList.add('hidden');
 				// Nothing to filter, so nothing to hide behind an unchecked
 				// pill either — nothing to persist here, and no view is ever
 				// stuck on a stale set later widening to more than one group.
@@ -7773,8 +7798,9 @@
 				return;
 			}
 
-			subtabsEl.classList.remove('hidden');
+			subtabsBar.classList.remove('hidden');
 			const selected = selectedTypesForView(currentView, present);
+			const buttons = [];
 			for (const type of present) {
 				const label = SUBTAB_LABEL_OVERRIDES[type] || LEAGUE_TYPE_LABELS[type] || type;
 				const btn = el('button', {
@@ -7795,8 +7821,35 @@
 					btn.setAttribute('aria-pressed', String(selected.has(type)));
 					updateVisibility();
 				});
+				buttons.push(btn);
 				subtabsEl.appendChild(btn);
 			}
+
+			// Select all / unselect all act on the same set the pills above
+			// toggle one at a time — plain links rather than pills, since
+			// they act on the whole group instead of holding a state of
+			// their own. Reassigned via onclick (not addEventListener) so a
+			// re-render can't stack a second handler from the last one.
+			document.getElementById('subtabs-select-all').onclick = (e) => {
+				e.preventDefault();
+				for (const type of present) selected.add(type);
+				saveSelectedLeagueTypes();
+				for (const btn of buttons) {
+					btn.classList.add('active');
+					btn.setAttribute('aria-pressed', 'true');
+				}
+				updateVisibility();
+			};
+			document.getElementById('subtabs-unselect-all').onclick = (e) => {
+				e.preventDefault();
+				selected.clear();
+				saveSelectedLeagueTypes();
+				for (const btn of buttons) {
+					btn.classList.remove('active');
+					btn.setAttribute('aria-pressed', 'false');
+				}
+				updateVisibility();
+			};
 		}
 
 		// Player search applies to Rosters, Depth Charts, and the three
