@@ -7819,7 +7819,14 @@
 					// row that matched. Every row across every table in the
 					// card is therefore kept-or-dropped together.
 					const rows = card.querySelectorAll('tr.player-row');
-					if (q && rows.length > 0) {
+					// No `rows.length > 0` guard here, unlike the generic
+					// branch below — every card in this view is a roster, so
+					// zero player-row rows means an empty roster (or one that
+					// failed to load), not a non-player card the search
+					// shouldn't touch. A query can't match a player who isn't
+					// there, so that card hides rather than showing an empty
+					// "No players found" box for every league in the search.
+					if (q) {
 						let anyVisible = false;
 						rows.forEach((row) => {
 							const match = row.dataset.name.includes(q);
