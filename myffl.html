@@ -6000,7 +6000,14 @@
 				const q = getSearchQuery();
 				const all = sortedRows();
 				if (!q) return all;
-				return all.filter((r) => r.name.toLowerCase().includes(q));
+				// A query matches the player's own name, same as before, or the
+				// name of any league in either league line under it — "Free in"
+				// (r.leagues) and, on Top Available, "Own in" (r.ownedLeagues)
+				// too. That lets a league name like "MNMx" surface every player
+				// whose row mentions that league, the same way it already
+				// surfaces the matching league row on Power Rankings/Team Needs.
+				const leagueMatch = (entries) => (entries || []).some((lg) => lg.name.toLowerCase().includes(q));
+				return all.filter((r) => r.name.toLowerCase().includes(q) || leagueMatch(r.leagues) || leagueMatch(r.ownedLeagues));
 			}
 
 			function renderPage() {
@@ -6655,16 +6662,19 @@
 				table.appendChild(headRow);
 
 				for (const r of sortedRows()) {
-					// The only player names this card ever shows are the ones
-					// in the Studs/Sleepers sub-lines below — reusing the
+					// A search on this card matches either the league itself or
+					// the only player names it ever shows — the Studs/Sleepers
+					// sub-lines below. Folding the league name into the same
+					// data-name string means a query like "MNMx" surfaces the
+					// league row exactly as a player name would, reusing the
 					// player-row/data-name convention updateVisibility()
-					// already filters on (see Rosters/Depth Charts) means a
-					// league row hides itself the moment neither list
-					// mentions the searched name, with no new filtering code.
-					// Every row gets the class, even one with nothing to
-					// search: an empty data-name simply never matches a
-					// non-empty query, which is the row this card should hide.
-					const searchNames = [...(r.studs || []), ...(r.sleepers || [])].map((p) => p.name.toLowerCase()).join(', ');
+					// already filters on (see Rosters/Depth Charts) with no
+					// new filtering code. Every row gets the class, even one
+					// with nothing else to search: an empty data-name still
+					// carries the league name, so this only ever adds matches.
+					const searchNames = [r.label, ...(r.studs || []).map((p) => p.name), ...(r.sleepers || []).map((p) => p.name)]
+						.join(', ')
+						.toLowerCase();
 					const row = el('tr', { class: 'player-row', 'data-name': searchNames });
 					// The league size rides with the name now, so every rank
 					// column can be a bare number. It also means the size shows
@@ -6866,15 +6876,16 @@
 					// keeps every position cell a plain, aligned number. One
 					// line per flagged position, each labeled with its own
 					// position, same as a single flag would be.
-					// The only player names this card ever shows are the ones
-					// in these flagged-position lines — a bench player at a
-					// position that isn't the league's weak spot is never
-					// printed here at all — so that's the full extent of what
-					// a search can find. searchNames feeds the same
-					// player-row/data-name convention Rosters and Power
-					// Rankings use, so updateVisibility()'s existing filter
-					// covers this card with no new code there.
-					const searchNames = [];
+					// The league name matches a search the same way it does on
+					// Power Rankings, plus the only player names this card
+					// ever shows — the ones in these flagged-position lines. A
+					// bench player at a position that isn't the league's weak
+					// spot is never printed here at all, so that's the full
+					// extent of what a player-name search can find. searchNames
+					// feeds the same player-row/data-name convention Rosters
+					// and Power Rankings use, so updateVisibility()'s existing
+					// filter covers this card with no new code there.
+					const searchNames = [r.label.toLowerCase()];
 					for (const pos of needPositions) {
 						const posPlayers = r.rosterByPosition ? r.rosterByPosition[pos] : null;
 						if (posPlayers) searchNames.push(...posPlayers.map((p) => p.name.toLowerCase()));
@@ -8030,12 +8041,23 @@
 		// Player search applies to Rosters, Depth Charts, and the three
 		// player-listing Analytics tables (Player/Injury Exposure, Top
 		// Available) — every card with real player-row tables. It's left off
-		// Scoring, Standings, History and the team-level Analytics cards
-		// (Power Rankings, Team Needs, Bye Weeks), none of which are a list
-		// of players a name filter could narrow.
+		// Scoring, Standings and History, none of which are a list of players
+		// a name filter could narrow.
+		//
+		// On Analytics specifically the same box also matches a league name —
+		// see filteredSortedRows (Player/Injury Exposure, Top Available) and
+		// the searchNames built into Power Rankings/Team Needs' own rows — so
+		// a query like "MNMx" narrows every card down to that one league, not
+		// just the players on it. The placeholder swaps to say so only there;
+		// elsewhere a league name would silently match nothing, so it stays
+		// unmentioned rather than promising a filter those tabs don't offer.
 		const SEARCHABLE_VIEWS = new Set(['rosters', 'depthcharts', 'analytics']);
+		const DEFAULT_SEARCH_PLACEHOLDER = 'Filter by player name…';
+		const ANALYTICS_SEARCH_PLACEHOLDER = 'Filter by player or league name…';
 		function updateSearchVisibility() {
 			document.querySelector('.controls').classList.toggle('hidden', !SEARCHABLE_VIEWS.has(currentView));
+			document.getElementById('search').placeholder =
+				currentView === 'analytics' ? ANALYTICS_SEARCH_PLACEHOLDER : DEFAULT_SEARCH_PLACEHOLDER;
 		}
 
 		function setLiveStatus(text, isError) {
