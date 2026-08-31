@@ -1157,8 +1157,16 @@
 		   out just by being the only row left — this is what marks them
 		   inside a box full of teammates who didn't match. Same accent +
 		   bold pairing .needs-players-promote uses for "notable" on a
-		   player line. */
-		tr.search-hit .player-name {
+		   player line. Rosters and the paginated Analytics tables (Player/
+		   Injury Exposure, Top Available) already filter down to matches
+		   only, but get the same treatment for one visual language across
+		   every searchable tab — see updateVisibility and
+		   appendAnalyticsTable's renderPage. .exposure-player-name is the
+		   Analytics tables' own name-line class, not the shared
+		   .player-name those tables never used, since this rule is the
+		   only weight/color it should ever carry. */
+		tr.search-hit .player-name,
+		tr.search-hit .exposure-player-name {
 			color: var(--accent);
 			font-weight: 700;
 		}
@@ -5957,6 +5965,7 @@
 
 			function renderPage() {
 				table.innerHTML = '';
+				const q = getSearchQuery();
 				const filteredRows = filteredSortedRows();
 				const filteredPageCount = Math.max(1, Math.ceil(filteredRows.length / pageSize));
 				if (page >= filteredPageCount) page = 0;
@@ -5999,12 +6008,21 @@
 
 				const start = page * pageSize;
 				for (const r of filteredRows.slice(start, start + pageSize)) {
-					const row = el('tr');
+					// Every row on screen here already matched the query — see
+					// filteredSortedRows — so a live search marks every one of
+					// them, the same as it marks every visible row on Rosters.
+					// It's only a no-op with no query, since q is empty then.
+					const row = el('tr', q ? { class: 'search-hit' } : {});
 					const nameCell = el('td');
 					// Same link as the roster cards, from the same captured URL —
 					// see playerNameNode, which this mirrors on a row that has no
-					// player object behind it, only the aggregate.
-					const nameLine = el('div', {}, [playerNameNode({ name: r.name, ecr: { url: r.url } })]);
+					// player object behind it, only the aggregate. The
+					// .exposure-player-name (not the shared .player-name — this
+					// table has no baseline weight of its own to preserve) is
+					// what tr.search-hit targets below, kept on this inner
+					// line rather than nameCell itself so the highlight can't
+					// spill onto the detail/league lines under it.
+					const nameLine = el('div', { class: 'exposure-player-name' }, [playerNameNode({ name: r.name, ecr: { url: r.url } })]);
 					// The same NFL-team suffix the roster and lineup tables carry,
 					// so a name reads identically wherever it appears. `undefined`
 					// is the one value that prints nothing: every provider and the
@@ -7783,11 +7801,20 @@
 						rows.forEach((row) => {
 							const match = row.dataset.name.includes(q);
 							row.classList.toggle('hidden', !match);
+							// A visible row here is a match by definition — this
+							// table narrows down to matches rather than keeping
+							// the group intact the way Depth Charts does — but
+							// it's marked the same way so a search reads the
+							// same wherever it turns up.
+							row.classList.toggle('search-hit', match);
 							if (match) anyVisible = true;
 						});
 						searchMatch = anyVisible;
 					} else {
-						rows.forEach((row) => row.classList.remove('hidden'));
+						rows.forEach((row) => {
+							row.classList.remove('hidden');
+							row.classList.remove('search-hit');
+						});
 					}
 				}
 				// Set by appendAnalyticsTable's own re-filter — see the
