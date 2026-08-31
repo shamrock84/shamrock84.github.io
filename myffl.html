@@ -5236,14 +5236,23 @@
 		// Lineup checks run only where lineup data exists (starters is an
 		// array AND lineupWeek is set — for every other league the absence of
 		// data must read as "not asked", never as an empty lineup), and are
-		// suppressed for two states where a true answer would still be noise:
-		// a league mid-draft (its week-1 lineup is nonsense until the roster
-		// exists) and a league still on last season (its lineup is for a week
-		// that has already been played — same season comparison as
+		// suppressed for three states where a true answer would still be
+		// noise: a league mid-draft (its week-1 lineup is nonsense until the
+		// roster exists), a league still on last season (its lineup is for a
+		// week that has already been played — same season comparison as
 		// awaitingRollover, but not type-gated: a stale lineup is stale
-		// whatever the league type does with rosters). Both halves of that
-		// comparison must be present to mean anything; NaN < year is false,
-		// so a pre-`season` snapshot keeps its checks.
+		// whatever the league type does with rosters), and a league with no
+		// rostered players at all. That last one is what actually catches a
+		// pre-draft ESPN league: `draftInProgress` is an MFL/Sleeper signal
+		// (see fetch-rosters.mjs's free-agent pass, which explicitly skips
+		// ESPN) and is never set for ESPN at all, so a startup league that
+		// hasn't drafted yet would otherwise sail past the draftInProgress
+		// check and get flagged "No starters set" for a roster that has
+		// nothing to start. An empty `players` list is a fact rather than a
+		// provider-specific guess, and there's nothing left this check could
+		// usefully flag once it's true. Both halves of the season comparison
+		// must be present to mean anything; NaN < year is false, so a
+		// pre-`season` snapshot keeps its checks.
 		//
 		// Each starter gets at most one row, worst problem first: an IR-slot
 		// player who is also on the injury report is one problem (the slot),
@@ -5265,6 +5274,7 @@
 			if (!Array.isArray(league.starters) || league.lineupWeek == null) return problems;
 			if (league.draftInProgress === true) return problems;
 			if (Number(league.season) < Number(year)) return problems;
+			if ((league.players || []).length === 0) return problems;
 
 			const wk = league.lineupWeek;
 			const byId = new Map((league.players || []).map((p) => [String(p.id), p]));
