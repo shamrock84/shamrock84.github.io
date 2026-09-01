@@ -2029,8 +2029,14 @@
 		}
 		/* Quick Links section, below the league list — same bordered-off
 		   treatment as .admin-legend's own h3, so it reads as a distinct
-		   subsection of the one card rather than a stray heading. */
+		   subsection of the one card rather than a stray heading.
+		   position:relative + padding-right carve out the same corner for a
+		   .card-collapse-toggle that .card-heading does, and cursor:pointer
+		   matches it too — the whole heading is the collapse target, same
+		   "mis-aimed tap still hits it" idiom as everywhere else this exists. */
 		.admin-subheading {
+			position: relative;
+			padding-right: 2.3rem;
 			margin: 1.1rem 0 0.5rem;
 			padding-top: 0.7rem;
 			border-top: 1px solid var(--border);
@@ -2039,6 +2045,13 @@
 			letter-spacing: 0.04em;
 			font-weight: 600;
 			color: var(--accent);
+			cursor: pointer;
+		}
+		/* Same rotate .card.card-collapsed .card-collapse-toggle uses, but
+		   keyed off this heading's own modifier class instead of a .card
+		   ancestor — this section isn't one, so that selector can't reach it. */
+		.admin-subheading.admin-subheading-collapsed .card-collapse-toggle {
+			transform: translateY(-50%) rotate(-90deg);
 		}
 		.admin-links-list {
 			display: flex;
@@ -8934,8 +8947,33 @@
 			// to lean on the way a league's own nickname has, so both are
 			// required. Saved together with the league list above through the
 			// same Save button, since both live in the one config file.
-			card.appendChild(el('h3', { class: 'admin-subheading', text: 'Quick Links' }));
-			card.appendChild(el('div', { class: 'admin-note', text: 'Extra links shown in the header toolbar after the leagues above, in purple.' }));
+			//
+			// Collapsible like every other card (click the heading, arrow
+			// rotates, state survives a reload) — but it's a subsection of the
+			// Leagues card rather than a card of its own, and
+			// .card.card-collapsed's CSS only reaches a .card's direct
+			// children, so this can't just call makeCollapsible on it. Reuses
+			// the same persisted-collapse storage (isCardCollapsed/
+			// setCardCollapsed) under its own key instead, wiring the same
+			// toggle behaviour by hand.
+			const linksCollapsed = isCardCollapsed('admin-quicklinks');
+			const linksHeading = el('h3', {
+				class: `admin-subheading${linksCollapsed ? ' admin-subheading-collapsed' : ''}`,
+				text: 'Quick Links',
+			});
+			const linksToggle = el('button', {
+				type: 'button',
+				class: 'card-collapse-toggle',
+				'aria-expanded': String(!linksCollapsed),
+				title: linksCollapsed ? 'Expand' : 'Collapse',
+				'aria-label': linksCollapsed ? 'Expand' : 'Collapse',
+				text: '▾',
+			});
+			linksHeading.appendChild(linksToggle);
+			card.appendChild(linksHeading);
+
+			const linksBody = el('div', { class: `admin-links-body${linksCollapsed ? ' hidden' : ''}` });
+			linksBody.appendChild(el('div', { class: 'admin-note', text: 'Extra links shown in the header toolbar after the leagues above, in purple.' }));
 			const linksList = el('div', { class: 'admin-links-list' });
 			adminLinksDraft.forEach((link, i) => {
 				const row = el('div', { class: 'admin-link-row' });
@@ -8955,7 +8993,7 @@
 				row.appendChild(removeLinkBtn);
 				linksList.appendChild(row);
 			});
-			card.appendChild(linksList);
+			linksBody.appendChild(linksList);
 			const addLinkBtn = el('button', { type: 'button', class: 'admin-add-btn', text: '+ Add a link' });
 			addLinkBtn.addEventListener('click', () => {
 				adminLinksDraft.push({ url: '', nickname: '' });
@@ -8964,7 +9002,23 @@
 				const last = rows[rows.length - 1];
 				if (last) last.querySelector('input')?.focus();
 			});
-			card.appendChild(el('div', { class: 'admin-add-row' }, [addLinkBtn]));
+			linksBody.appendChild(el('div', { class: 'admin-add-row' }, [addLinkBtn]));
+			card.appendChild(linksBody);
+
+			const toggleLinksCollapse = () => {
+				const next = !linksBody.classList.contains('hidden');
+				linksBody.classList.toggle('hidden', next);
+				linksHeading.classList.toggle('admin-subheading-collapsed', next);
+				linksToggle.setAttribute('aria-expanded', String(!next));
+				linksToggle.title = next ? 'Expand' : 'Collapse';
+				linksToggle.setAttribute('aria-label', next ? 'Expand' : 'Collapse');
+				setCardCollapsed('admin-quicklinks', next);
+			};
+			linksToggle.addEventListener('click', (e) => {
+				e.stopPropagation();
+				toggleLinksCollapse();
+			});
+			linksHeading.addEventListener('click', () => toggleLinksCollapse());
 
 			const actions = el('div', { class: 'lineup-editor-actions' });
 			const saveBtn = el('button', { type: 'button', class: 'lineup-save-btn', text: 'Save changes' });
