@@ -1407,10 +1407,17 @@ export async function fetchEspnScoring(league) {
   const currentPeriod = data.status?.currentMatchupPeriod;
   const schedule = (data.schedule || []).filter((m) => m.matchupPeriodId === currentPeriod);
 
+  // The head-to-head pairing is already sitting right here in `schedule` —
+  // each entry IS one week's matchup (home vs away) — so it's captured
+  // alongside `rows` rather than reconstructed later from a flattened list.
+  // A bye (a team with no opponent that week) has only one side present.
   const rows = [];
+  const matchups = [];
   for (const m of schedule) {
-    if (m.home) rows.push({ teamId: m.home.teamId, score: m.home.totalPoints ?? 0 });
-    if (m.away) rows.push({ teamId: m.away.teamId, score: m.away.totalPoints ?? 0 });
+    const teamIds = [];
+    if (m.home) { rows.push({ teamId: m.home.teamId, score: m.home.totalPoints ?? 0 }); teamIds.push(String(m.home.teamId)); }
+    if (m.away) { rows.push({ teamId: m.away.teamId, score: m.away.totalPoints ?? 0 }); teamIds.push(String(m.away.teamId)); }
+    if (teamIds.length) matchups.push({ teamIds });
   }
   if (rows.length === 0) {
     throw new Error('No live scoring available yet');
@@ -1426,7 +1433,7 @@ export async function fetchEspnScoring(league) {
     .sort((a, b) => b.score - a.score)
     .map((t) => ({ ...t, score: t.score.toFixed(2) }));
 
-  return { week: currentPeriod ?? null, teams };
+  return { week: currentPeriod ?? null, teams, matchups };
 }
 
 // Read-only: which of the franchise's currently-rostered players are set as
@@ -1656,12 +1663,12 @@ export async function fetchSleeperScoring(league) {
     throw new Error('No live scoring available yet');
   }
 
-  const matchups = await sleeperGet(`/league/${league.id}/matchups/${week}`);
-  if (!matchups || matchups.length === 0) {
+  const rawMatchups = await sleeperGet(`/league/${league.id}/matchups/${week}`);
+  if (!rawMatchups || rawMatchups.length === 0) {
     throw new Error('No live scoring available yet');
   }
 
-  const teams = matchups
+  const teams = rawMatchups
     .map((m) => ({
       franchiseId: String(m.roster_id),
       teamName: names.get(String(m.roster_id)) || `Team ${m.roster_id}`,
@@ -1671,7 +1678,20 @@ export async function fetchSleeperScoring(league) {
     .sort((a, b) => b.score - a.score)
     .map((t) => ({ ...t, score: t.score.toFixed(2) }));
 
-  return { week, teams };
+  // Sleeper pairs opponents by a shared matchup_id — group by it rather than
+  // assuming exactly two rosters share each id, since a missing id (a bye,
+  // in a league with an odd team count) has to stand alone rather than get
+  // lumped in with every other unpaired roster under the same `null`/`undefined` key.
+  const groups = new Map();
+  let byeCounter = 0;
+  for (const m of rawMatchups) {
+    const key = m.matchup_id != null ? `m${m.matchup_id}` : `bye${byeCounter++}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(String(m.roster_id));
+  }
+  const matchups = [...groups.values()].map((teamIds) => ({ teamIds }));
+
+  return { week, teams, matchups };
 }
 
 // Read-only: which of the franchise's players are currently set as
