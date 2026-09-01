@@ -2027,18 +2027,12 @@
 		.admin-add-row {
 			margin-top: 0.7rem;
 		}
-		/* Quick Links section, below the league list — same bordered-off
-		   treatment as .admin-legend's own h3, so it reads as a distinct
-		   subsection of the one card rather than a stray heading. */
-		.admin-subheading {
-			margin: 1.1rem 0 0.5rem;
-			padding-top: 0.7rem;
-			border-top: 1px solid var(--border);
-			font-size: 0.7rem;
-			text-transform: uppercase;
-			letter-spacing: 0.04em;
-			font-weight: 600;
-			color: var(--accent);
+		/* Quick Links — its own card below Leagues, same full-width treatment
+		   as .admin-card. Collapses through the ordinary makeCollapsible
+		   mechanism (a plain .card-heading), so it needs nothing of its own
+		   beyond that. */
+		.admin-quicklinks-card {
+			grid-column: 1 / -1;
 		}
 		.admin-links-list {
 			display: flex;
@@ -8499,7 +8493,9 @@
 		}
 
 		function refreshAdminCard() {
-			const existing = document.querySelector('.card[data-view="admin"]');
+			// .admin-card rather than the broader [data-view="admin"], which
+			// the Quick Links card below shares — see refreshQuickLinksCard.
+			const existing = document.querySelector('.admin-card');
 			if (!existing) return;
 			existing.replaceWith(renderAdminCard());
 			updateVisibility();
@@ -8532,6 +8528,10 @@
 					retry.disabled = true;
 					await loadLeagueConfig();
 					refreshAdminCard();
+					// The Quick Links card doesn't exist yet while loading has
+					// failed (renderQuickLinksCard returns null) — this is what
+					// makes it appear the first time the retry succeeds.
+					refreshQuickLinksCard();
 				});
 				card.appendChild(el('div', { class: 'lineup-editor-actions' }, [retry]));
 				return card;
@@ -8548,6 +8548,9 @@
 					loadLeagueConfig().then(() => {
 						adminConfigLoading = false;
 						refreshAdminCard();
+						// Same reason as the retry button above: this is the
+						// Quick Links card's first chance to exist.
+						refreshQuickLinksCard();
 					});
 				}
 				return card;
@@ -8927,45 +8930,6 @@
 			});
 			card.appendChild(el('div', { class: 'admin-add-row' }, [addBtn]));
 
-			// Extra external links appended to the header's quick-link toolbar
-			// after every league link, styled purple there to set them apart
-			// (see renderQuickLinks and .quicklink-extra). Deliberately just
-			// two text boxes — a link and a nickname — with no fallback name
-			// to lean on the way a league's own nickname has, so both are
-			// required. Saved together with the league list above through the
-			// same Save button, since both live in the one config file.
-			card.appendChild(el('h3', { class: 'admin-subheading', text: 'Quick Links' }));
-			card.appendChild(el('div', { class: 'admin-note', text: 'Extra links shown in the header toolbar after the leagues above, in purple.' }));
-			const linksList = el('div', { class: 'admin-links-list' });
-			adminLinksDraft.forEach((link, i) => {
-				const row = el('div', { class: 'admin-link-row' });
-				const urlWrap = el('label', { class: 'admin-field' });
-				urlWrap.appendChild(el('span', { class: 'admin-field-label', text: 'Link' }));
-				urlWrap.appendChild(adminText(link.url, 'https://…', (v) => { link.url = v; }));
-				row.appendChild(urlWrap);
-				const nickWrap = el('label', { class: 'admin-field' });
-				nickWrap.appendChild(el('span', { class: 'admin-field-label', text: 'Nickname' }));
-				nickWrap.appendChild(adminText(link.nickname, 'e.g. Sleeper App', (v) => { link.nickname = v; }));
-				row.appendChild(nickWrap);
-				const removeLinkBtn = el('button', { type: 'button', class: 'admin-icon-btn admin-remove-btn', title: 'Remove this link', text: '✕' });
-				removeLinkBtn.addEventListener('click', () => {
-					adminLinksDraft.splice(i, 1);
-					refreshAdminCard();
-				});
-				row.appendChild(removeLinkBtn);
-				linksList.appendChild(row);
-			});
-			card.appendChild(linksList);
-			const addLinkBtn = el('button', { type: 'button', class: 'admin-add-btn', text: '+ Add a link' });
-			addLinkBtn.addEventListener('click', () => {
-				adminLinksDraft.push({ url: '', nickname: '' });
-				refreshAdminCard();
-				const rows = document.querySelectorAll('.admin-link-row');
-				const last = rows[rows.length - 1];
-				if (last) last.querySelector('input')?.focus();
-			});
-			card.appendChild(el('div', { class: 'admin-add-row' }, [addLinkBtn]));
-
 			const actions = el('div', { class: 'lineup-editor-actions' });
 			const saveBtn = el('button', { type: 'button', class: 'lineup-save-btn', text: 'Save changes' });
 			const revertBtn = el('button', { type: 'button', class: 'admin-revert-btn', text: 'Discard edits' });
@@ -8987,6 +8951,10 @@
 				adminLinksDraft = null;
 				adminExpanded.clear();
 				refreshAdminCard();
+				// The Quick Links card is a separate DOM node refreshAdminCard
+				// never touches — without this it would keep showing whatever
+				// was on screen before the reload.
+				refreshQuickLinksCard();
 			});
 			card.appendChild(actions);
 
@@ -9005,7 +8973,7 @@
 				'Scoring on Automatic is read from the league\'s own settings — whatever a reception is worth there. It only picks which FantasyPros list the ECR column uses; it changes no points, standings or lineups.',
 				'Lineups puts a lineup editor on the Rosters tab — MFL submits from here, Sleeper is view-only.',
 				'Season follows each league\'s own rollover — leave it blank and the sync stays on the old season until the new one exists, which is why a league can show a season chip in the spring. Fill it in only to pin one.',
-				'Quick Links (below) adds purple entries to the header toolbar after the leagues above — both a link and a nickname are required, since there\'s no live league name to fall back to.',
+				'Quick Links, in its own card below, adds purple entries to the header toolbar after the leagues above — both a link and a nickname are required, since there\'s no live league name to fall back to. Saved by this same Save button.',
 				// The one setting on this screen that changes without being touched,
 				// so it says what it resolves to today as well as what it does.
 				`Rankings on Automatic tracks the NFL calendar: rest-of-season in season, dynasty or draft otherwise (right now: ${nflInSeason() ? 'rest-of-season' : 'dynasty or draft'}). Any other choice pins that league year-round.`,
@@ -9021,6 +8989,7 @@
 				adminLinksDraft = null;
 				adminExpanded.clear();
 				refreshAdminCard();
+				refreshQuickLinksCard();
 			});
 
 			saveBtn.addEventListener('click', async () => {
@@ -9092,6 +9061,98 @@
 			return card;
 		}
 
+		function refreshQuickLinksCard() {
+			const existing = document.querySelector('.admin-quicklinks-card');
+			const rendered = renderQuickLinksCard();
+			if (existing && rendered) {
+				existing.replaceWith(rendered);
+			} else if (existing && !rendered) {
+				// Config isn't loaded (or failed) any more — shouldn't happen in
+				// practice since the Leagues card above owns the fetch and
+				// nothing un-loads it, but dropping the card rather than leaving
+				// a stale one is the safe response if it ever does.
+				existing.remove();
+			} else if (!existing && rendered) {
+				// First successful load: the card didn't exist yet. Slot it in
+				// right after the Leagues card so the on-screen order matches
+				// how they're always appended together.
+				const leaguesCard = document.querySelector('.admin-card');
+				if (leaguesCard) leaguesCard.after(rendered);
+			}
+			updateVisibility();
+		}
+
+		// Extra external links appended to the header's quick-link toolbar
+		// after every league link, styled purple there to set them apart (see
+		// renderQuickLinks and .quicklink-extra). Deliberately just two text
+		// boxes — a link and a nickname — with no fallback name to lean on
+		// the way a league's own nickname has, so both are required.
+		//
+		// Its own card, collapsible the ordinary way (makeCollapsible), but
+		// saved through the Leagues card's Save button below it rather than a
+		// button of its own — the two are always written to the same config
+		// file in the one request (api/save-leagues.js has no partial-save
+		// path), and adminDraft/adminLinksDraft are the same shared draft
+		// state either way, so a second "Discard edits" here would discard
+		// the other card's unsaved league edits too, silently. One save
+		// surface avoids that trap.
+		//
+		// Returns null (nothing to render yet) while leagueConfig hasn't
+		// loaded or failed to — the Leagues card already shows that state
+		// and owns retrying, so this card simply doesn't exist until there's
+		// real quickLinks data to edit.
+		function renderQuickLinksCard() {
+			if (leagueConfigError || !leagueConfig) return null;
+			if (!adminLinksDraft) adminLinksDraft = JSON.parse(JSON.stringify(leagueConfig.quickLinks || []));
+
+			const card = el('div', { class: 'card admin-quicklinks-card', 'data-view': 'admin', 'data-league-type': '' });
+			const heading = el('h2', { class: 'card-heading', text: 'Quick Links' });
+			card.appendChild(heading);
+			makeCollapsible(card, heading, 'admin-quicklinks');
+
+			card.appendChild(el('div', { class: 'admin-note', text: 'Extra links shown in the header toolbar after the leagues above, in purple. Saved by the Leagues card\'s Save button.' }));
+			const linksList = el('div', { class: 'admin-links-list' });
+			adminLinksDraft.forEach((link, i) => {
+				const row = el('div', { class: 'admin-link-row' });
+				const urlWrap = el('label', { class: 'admin-field' });
+				urlWrap.appendChild(el('span', { class: 'admin-field-label', text: 'Link' }));
+				urlWrap.appendChild(adminText(link.url, 'https://…', (v) => { link.url = v; }));
+				row.appendChild(urlWrap);
+				const nickWrap = el('label', { class: 'admin-field' });
+				nickWrap.appendChild(el('span', { class: 'admin-field-label', text: 'Nickname' }));
+				nickWrap.appendChild(adminText(link.nickname, 'e.g. Sleeper App', (v) => { link.nickname = v; }));
+				row.appendChild(nickWrap);
+				const removeLinkBtn = el('button', { type: 'button', class: 'admin-icon-btn admin-remove-btn', title: 'Remove this link', text: '✕' });
+				removeLinkBtn.addEventListener('click', () => {
+					adminLinksDraft.splice(i, 1);
+					refreshQuickLinksCard();
+				});
+				row.appendChild(removeLinkBtn);
+				linksList.appendChild(row);
+			});
+			card.appendChild(linksList);
+			const addLinkBtn = el('button', { type: 'button', class: 'admin-add-btn', text: '+ Add a link' });
+			addLinkBtn.addEventListener('click', () => {
+				adminLinksDraft.push({ url: '', nickname: '' });
+				refreshQuickLinksCard();
+				const rows = document.querySelectorAll('.admin-link-row');
+				const last = rows[rows.length - 1];
+				if (last) last.querySelector('input')?.focus();
+			});
+			card.appendChild(el('div', { class: 'admin-add-row' }, [addLinkBtn]));
+
+			return card;
+		}
+
+		// Both Admin cards are always appended together, in this order — see
+		// renderQuickLinksCard for why Quick Links doesn't render at all
+		// until leagueConfig has loaded.
+		function appendAdminCards(gridEl) {
+			gridEl.appendChild(renderAdminCard());
+			const linksCard = renderQuickLinksCard();
+			if (linksCard) gridEl.appendChild(linksCard);
+		}
+
 		// A search on the Analytics tab shows every league-type group's cards
 		// at once (see updateVisibility) rather than just the selected
 		// sub-tab's — but unlike Rosters/Depth Charts cards, which are
@@ -9142,7 +9203,7 @@
 				// it still renders here — otherwise the one screen that could
 				// fix this state would be the one screen unreachable from it.
 				if (isLoggedIn()) {
-					gridEl.appendChild(renderAdminCard());
+					appendAdminCards(gridEl);
 					renderViewTabs(new Set(['admin']));
 					updateVisibility();
 				}
@@ -9214,7 +9275,7 @@
 
 			// Logged-out visitors never get this card, so 'admin' never makes it
 			// into presentViews below and the tab simply isn't offered.
-			if (isLoggedIn()) gridEl.appendChild(renderAdminCard());
+			if (isLoggedIn()) appendAdminCards(gridEl);
 
 			const presentViews = new Set([...gridEl.querySelectorAll('.card')].map((c) => c.dataset.view).filter(Boolean));
 			renderViewTabs(presentViews);
