@@ -79,6 +79,13 @@ const SCORING_PAYOUT_FIELDS = [
   ['payoutSeasonHigh', 'season high score payout'],
 ];
 
+// quickLinks entries: a top-level array of extra header-toolbar links, a
+// sibling of leagues rather than a field on one — see config/leagues.json's
+// own _readme entry for the schema and why both fields are required (unlike
+// a league's own nickname, there's no live name for a plain external link
+// to fall back to).
+const LINK_KEY_ORDER = ['url', 'nickname'];
+
 function isNonEmptyString(v) {
   return typeof v === 'string' && v.trim() !== '';
 }
@@ -95,7 +102,7 @@ function isValidMoneyField(v) {
 
 // Exported for the unit test in scripts/test-save-leagues.mjs. Vercel only ever
 // invokes the default export, so extra named exports cost nothing at runtime.
-export { validate, mergeLeague, serialize };
+export { validate, validateQuickLinks, mergeLeague, mergeLink, serialize };
 
 // Returns an array of human-readable problems — empty means valid. Phrased for
 // someone reading them in a browser, not a stack trace.
@@ -246,6 +253,30 @@ function validate(leagues) {
   return errors;
 }
 
+// quickLinks is optional at the top level — an omitted or empty array is a
+// config with no extra links, not an error. Unlike a league's own nickname
+// (which falls back to the live league name), a plain external link has
+// nothing to fall back to, so both fields are required here.
+function validateQuickLinks(links) {
+  if (links == null) return [];
+  const errors = [];
+  if (!Array.isArray(links)) return ['Quick links: expected a list.'];
+
+  links.forEach((link, i) => {
+    const where = `Quick link ${i + 1}`;
+    if (!link || typeof link !== 'object' || Array.isArray(link)) {
+      errors.push(`${where}: not a valid entry.`);
+      return;
+    }
+    if (!isNonEmptyString(link.nickname)) errors.push(`${where}: nickname is required.`);
+    if (!isNonEmptyString(link.url) || !/^https?:\/\//i.test(link.url)) {
+      errors.push(`${where}: link must start with http:// or https://.`);
+    }
+  });
+
+  return errors;
+}
+
 // Drops blank optional fields, trims strings, and — importantly — carries
 // through any key this endpoint doesn't know about. The Admin tab only renders
 // the fields in KEY_ORDER, so without this a field added to the config later
@@ -298,6 +329,22 @@ function mergeLeague(league) {
   return out;
 }
 
+// Same shape as mergeLeague, much smaller schema: a quick link is just a url
+// and a nickname, both required (validateQuickLinks already rejected a save
+// missing either), so there's no dropped-if-blank logic to mirror here. Still
+// passes through unknown keys the same way, for the same reason — a field
+// added to this schema later shouldn't be erased by an Admin-tab save that
+// predates it knowing about that field.
+function mergeLink(link) {
+  const out = Object.create(null);
+  out.url = String(link.url).trim();
+  out.nickname = String(link.nickname).trim();
+  for (const [k, v] of Object.entries(link)) {
+    if (!LINK_KEY_ORDER.includes(k) && v !== undefined) out[k] = v;
+  }
+  return out;
+}
+
 // Matches the file's existing hand-written spacing exactly — `{ "a": 1, "b": 2 }`
 // and `["x", "y"]`, not JSON.stringify's compact form. Without this, the first
 // save would reformat all 18 lines and bury the one real change in whitespace
@@ -305,9 +352,9 @@ function mergeLeague(league) {
 function formatValue(value) {
   if (Array.isArray(value)) return `[${value.map((v) => JSON.stringify(v)).join(', ')}]`;
   // A plain object (currently only historyLeagueIds) — same spaced-out
-  // convention formatLeague itself uses for a whole league (`{ "a": 1 }`,
-  // not JSON.stringify's cramped `{"a":1}`), so a hand-edit written in that
-  // readable style round-trips through a save byte-for-byte.
+  // convention formatEntry itself uses for a whole league or link
+  // (`{ "a": 1 }`, not JSON.stringify's cramped `{"a":1}`), so a hand-edit
+  // written in that readable style round-trips through a save byte-for-byte.
   if (value !== null && typeof value === 'object') {
     const pairs = Object.entries(value).map(([k, v]) => `${JSON.stringify(k)}: ${formatValue(v)}`);
     return `{ ${pairs.join(', ')} }`;
@@ -315,16 +362,18 @@ function formatValue(value) {
   return JSON.stringify(value);
 }
 
-function formatLeague(league) {
-  const pairs = Object.entries(league).map(([k, v]) => `${JSON.stringify(k)}: ${formatValue(v)}`);
+// One line per entry — shared by leagues and quickLinks, since both are
+// flat objects serialized the same spaced-out way.
+function formatEntry(entry) {
+  const pairs = Object.entries(entry).map(([k, v]) => `${JSON.stringify(k)}: ${formatValue(v)}`);
   return `{ ${pairs.join(', ')} }`;
 }
 
-// Hand-rolled rather than JSON.stringify(obj, null, 2) so each league stays on
-// one line, matching how the file is already written. That keeps a one-league
+// Hand-rolled rather than JSON.stringify(obj, null, 2) so each league/link stays
+// on one line, matching how the file is already written. That keeps a one-league
 // edit to a one-line diff, which is the difference between being able to eyeball
 // what the Admin tab did and having to read a 200-line reshuffle.
-function serialize(readme, leagues) {
+function serialize(readme, leagues, quickLinks = []) {
   const lines = ['{'];
   if (readme !== undefined) {
     lines.push('  "_readme": [');
@@ -336,7 +385,12 @@ function serialize(readme, leagues) {
   }
   lines.push('  "leagues": [');
   leagues.forEach((league, i) => {
-    lines.push(`    ${formatLeague(league)}${i === leagues.length - 1 ? '' : ','}`);
+    lines.push(`    ${formatEntry(league)}${i === leagues.length - 1 ? '' : ','}`);
+  });
+  lines.push('  ],');
+  lines.push('  "quickLinks": [');
+  quickLinks.forEach((link, i) => {
+    lines.push(`    ${formatEntry(link)}${i === quickLinks.length - 1 ? '' : ','}`);
   });
   lines.push('  ]');
   lines.push('}');
@@ -392,8 +446,8 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { leagues } = req.body || {};
-  const errors = validate(leagues);
+  const { leagues, quickLinks } = req.body || {};
+  const errors = [...validate(leagues), ...validateQuickLinks(quickLinks)];
   if (errors.length) {
     res.status(400).json({ error: 'Nothing was saved — please fix these first:', details: errors });
     return;
@@ -404,7 +458,7 @@ export default async function handler(req, res) {
     // check, and _readme is taken from the file rather than the browser so the
     // schema notes can never be edited or dropped from the Admin tab.
     const { sha, parsed } = await githubGet(token);
-    const content = serialize(parsed._readme, leagues.map(mergeLeague));
+    const content = serialize(parsed._readme, leagues.map(mergeLeague), (quickLinks || []).map(mergeLink));
 
     const putRes = await fetch(
       `https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`,
