@@ -8515,6 +8515,122 @@
 			}
 		}
 
+		// Save/Discard/Reload — appended to both Admin cards (Leagues and
+		// Quick Links). There's really only one save operation underneath:
+		// api/save-leagues.js writes the whole config file in a single
+		// request with no partial-save path, and adminDraft/adminLinksDraft
+		// are the same shared draft state either way — so a click on either
+		// card's buttons does the exact same thing to both leagues and quick
+		// links at once, deliberately, redundancy included. Each card gets
+		// its own instance of the row (own buttons, own status line, own
+		// problems list), so the one you clicked is the one that updates —
+		// the other doesn't reflect a save/discard/reload until something
+		// else refreshes it.
+		function buildAdminSaveActions(card) {
+			const actions = el('div', { class: 'lineup-editor-actions' });
+			const saveBtn = el('button', { type: 'button', class: 'lineup-save-btn', text: 'Save changes' });
+			const revertBtn = el('button', { type: 'button', class: 'admin-revert-btn', text: 'Discard edits' });
+			// Re-read the served config without a full page reload, so "is the page
+			// showing me stale values?" is answerable in one click.
+			const reloadBtn = el('button', { type: 'button', class: 'admin-revert-btn', text: 'Reload from site' });
+			const statusEl = el('span', { class: 'lineup-editor-status' });
+			actions.appendChild(saveBtn);
+			actions.appendChild(revertBtn);
+			actions.appendChild(reloadBtn);
+			actions.appendChild(statusEl);
+			card.appendChild(actions);
+
+			const problemsEl = el('ul', { class: 'admin-problems hidden' });
+			card.appendChild(problemsEl);
+
+			reloadBtn.addEventListener('click', async () => {
+				if (adminDraft && !window.confirm('Reload the league list from the site?\n\nAny unsaved edits here are discarded.')) return;
+				reloadBtn.disabled = true;
+				statusEl.textContent = 'Reloading…';
+				await loadLeagueConfig();
+				adminDraft = null;
+				adminLinksDraft = null;
+				adminExpanded.clear();
+				refreshAdminCard();
+				refreshQuickLinksCard();
+			});
+
+			revertBtn.addEventListener('click', () => {
+				if (!window.confirm('Throw away every change you\'ve made since the last save?')) return;
+				adminDraft = null;
+				adminLinksDraft = null;
+				adminExpanded.clear();
+				refreshAdminCard();
+				refreshQuickLinksCard();
+			});
+
+			saveBtn.addEventListener('click', async () => {
+				saveBtn.disabled = true;
+				revertBtn.disabled = true;
+				statusEl.textContent = 'Saving…';
+				problemsEl.innerHTML = '';
+				problemsEl.classList.add('hidden');
+				try {
+					const res = await fetch(SAVE_LEAGUES_URL, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+						body: JSON.stringify({ leagues: adminDraft, quickLinks: adminLinksDraft }),
+					});
+					const body = await res.json().catch(() => ({}));
+					if (res.status === 401) {
+						doLogout();
+						return;
+					}
+					if (!res.ok) {
+						// The server sends back one line per problem; showing them
+						// as a list beats collapsing them into a single sentence.
+						if (Array.isArray(body.details) && body.details.length) {
+							problemsEl.classList.remove('hidden');
+							for (const detail of body.details) problemsEl.appendChild(el('li', { text: detail }));
+						}
+						throw new Error(body.error || `HTTP ${res.status}`);
+					}
+					leagueConfig.leagues = JSON.parse(JSON.stringify(adminDraft));
+					leagueConfig.quickLinks = JSON.parse(JSON.stringify(adminLinksDraft));
+					adminDraft = null;
+					adminLinksDraft = null;
+					adminExpanded.clear();
+					// Saving commits to the repository, but this page reads
+					// config/leagues.json through GitHub Pages, which keeps serving the
+					// previous copy until it redeploys. Reloading inside that window
+					// shows the pre-save values and is indistinguishable from the save
+					// having silently reverted — so confirm rather than assume.
+					const savedLeagues = leagueConfig.leagues;
+					statusEl.textContent = `Saved ${body.count} leagues. Confirming…`;
+					setTimeout(async () => {
+						try {
+							const check = await fetch(`${LEAGUES_CONFIG_URL}?t=${Date.now()}`, { cache: 'no-store' });
+							const served = (await check.json()).leagues || [];
+							const live = served.length === savedLeagues.length
+								&& savedLeagues.every((l, i) => sameLeagueConfig(l, served[i]));
+							statusEl.textContent = live
+								? `Saved ${body.count} leagues — confirmed live.`
+								: `Saved ${body.count} leagues. The site is still serving the previous copy; it usually catches up within a minute. Your change is committed either way.`;
+						} catch {
+							statusEl.textContent = `Saved ${body.count} leagues.`;
+						}
+					}, 5000);
+					const syncNow = el('button', { type: 'button', class: 'admin-revert-btn', text: 'Sync now' });
+					syncNow.addEventListener('click', () => {
+						statusEl.textContent = 'Syncing — watch the header for progress.';
+						syncNow.disabled = true;
+						triggerManualSync();
+					});
+					actions.appendChild(syncNow);
+					revertBtn.remove();
+				} catch (err) {
+					statusEl.textContent = err.message;
+					saveBtn.disabled = false;
+					revertBtn.disabled = false;
+				}
+			});
+		}
+
 		function renderAdminCard() {
 			const card = el('div', { class: 'card admin-card', 'data-view': 'admin', 'data-league-type': '' });
 			const heading = el('h2', { class: 'card-heading', text: 'Leagues' });
@@ -8930,36 +9046,7 @@
 			});
 			card.appendChild(el('div', { class: 'admin-add-row' }, [addBtn]));
 
-			const actions = el('div', { class: 'lineup-editor-actions' });
-			const saveBtn = el('button', { type: 'button', class: 'lineup-save-btn', text: 'Save changes' });
-			const revertBtn = el('button', { type: 'button', class: 'admin-revert-btn', text: 'Discard edits' });
-			// Re-read the served config without a full page reload, so "is the page
-			// showing me stale values?" is answerable in one click.
-			const reloadBtn = el('button', { type: 'button', class: 'admin-revert-btn', text: 'Reload from site' });
-			const statusEl = el('span', { class: 'lineup-editor-status' });
-			actions.appendChild(saveBtn);
-			actions.appendChild(revertBtn);
-			actions.appendChild(reloadBtn);
-			actions.appendChild(statusEl);
-
-			reloadBtn.addEventListener('click', async () => {
-				if (adminDraft && !window.confirm('Reload the league list from the site?\n\nAny unsaved edits here are discarded.')) return;
-				reloadBtn.disabled = true;
-				statusEl.textContent = 'Reloading…';
-				await loadLeagueConfig();
-				adminDraft = null;
-				adminLinksDraft = null;
-				adminExpanded.clear();
-				refreshAdminCard();
-				// The Quick Links card is a separate DOM node refreshAdminCard
-				// never touches — without this it would keep showing whatever
-				// was on screen before the reload.
-				refreshQuickLinksCard();
-			});
-			card.appendChild(actions);
-
-			const problemsEl = el('ul', { class: 'admin-problems hidden' });
-			card.appendChild(problemsEl);
+			buildAdminSaveActions(card);
 
 			// Last thing in the card, after the Save row and the validation errors
 			// that answer it. Only the non-obvious columns get a line — anything you
@@ -8973,7 +9060,7 @@
 				'Scoring on Automatic is read from the league\'s own settings — whatever a reception is worth there. It only picks which FantasyPros list the ECR column uses; it changes no points, standings or lineups.',
 				'Lineups puts a lineup editor on the Rosters tab — MFL submits from here, Sleeper is view-only.',
 				'Season follows each league\'s own rollover — leave it blank and the sync stays on the old season until the new one exists, which is why a league can show a season chip in the spring. Fill it in only to pin one.',
-				'Quick Links, in its own card below, adds purple entries to the header toolbar after the leagues above — both a link and a nickname are required, since there\'s no live league name to fall back to. Saved by this same Save button.',
+				'Quick Links, in its own card below, adds purple entries to the header toolbar after the leagues above — both a link and a nickname are required, since there\'s no live league name to fall back to. Its Save/Discard/Reload buttons do the exact same thing as these — both cards write to the same file at once.',
 				// The one setting on this screen that changes without being touched,
 				// so it says what it resolves to today as well as what it does.
 				`Rankings on Automatic tracks the NFL calendar: rest-of-season in season, dynasty or draft otherwise (right now: ${nflInSeason() ? 'rest-of-season' : 'dynasty or draft'}). Any other choice pins that league year-round.`,
@@ -8982,81 +9069,6 @@
 			}
 			legend.appendChild(legendList);
 			card.appendChild(legend);
-
-			revertBtn.addEventListener('click', () => {
-				if (!window.confirm('Throw away every change you\'ve made since the last save?')) return;
-				adminDraft = null;
-				adminLinksDraft = null;
-				adminExpanded.clear();
-				refreshAdminCard();
-				refreshQuickLinksCard();
-			});
-
-			saveBtn.addEventListener('click', async () => {
-				saveBtn.disabled = true;
-				revertBtn.disabled = true;
-				statusEl.textContent = 'Saving…';
-				problemsEl.innerHTML = '';
-				problemsEl.classList.add('hidden');
-				try {
-					const res = await fetch(SAVE_LEAGUES_URL, {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
-						body: JSON.stringify({ leagues: adminDraft, quickLinks: adminLinksDraft }),
-					});
-					const body = await res.json().catch(() => ({}));
-					if (res.status === 401) {
-						doLogout();
-						return;
-					}
-					if (!res.ok) {
-						// The server sends back one line per problem; showing them
-						// as a list beats collapsing them into a single sentence.
-						if (Array.isArray(body.details) && body.details.length) {
-							problemsEl.classList.remove('hidden');
-							for (const detail of body.details) problemsEl.appendChild(el('li', { text: detail }));
-						}
-						throw new Error(body.error || `HTTP ${res.status}`);
-					}
-					leagueConfig.leagues = JSON.parse(JSON.stringify(adminDraft));
-					leagueConfig.quickLinks = JSON.parse(JSON.stringify(adminLinksDraft));
-					adminDraft = null;
-					adminLinksDraft = null;
-					adminExpanded.clear();
-					// Saving commits to the repository, but this page reads
-					// config/leagues.json through GitHub Pages, which keeps serving the
-					// previous copy until it redeploys. Reloading inside that window
-					// shows the pre-save values and is indistinguishable from the save
-					// having silently reverted — so confirm rather than assume.
-					const savedLeagues = leagueConfig.leagues;
-					statusEl.textContent = `Saved ${body.count} leagues. Confirming…`;
-					setTimeout(async () => {
-						try {
-							const check = await fetch(`${LEAGUES_CONFIG_URL}?t=${Date.now()}`, { cache: 'no-store' });
-							const served = (await check.json()).leagues || [];
-							const live = served.length === savedLeagues.length
-								&& savedLeagues.every((l, i) => sameLeagueConfig(l, served[i]));
-							statusEl.textContent = live
-								? `Saved ${body.count} leagues — confirmed live.`
-								: `Saved ${body.count} leagues. The site is still serving the previous copy; it usually catches up within a minute. Your change is committed either way.`;
-						} catch {
-							statusEl.textContent = `Saved ${body.count} leagues.`;
-						}
-					}, 5000);
-					const syncNow = el('button', { type: 'button', class: 'admin-revert-btn', text: 'Sync now' });
-					syncNow.addEventListener('click', () => {
-						statusEl.textContent = 'Syncing — watch the header for progress.';
-						syncNow.disabled = true;
-						triggerManualSync();
-					});
-					actions.appendChild(syncNow);
-					revertBtn.remove();
-				} catch (err) {
-					statusEl.textContent = err.message;
-					saveBtn.disabled = false;
-					revertBtn.disabled = false;
-				}
-			});
 
 			return card;
 		}
@@ -9088,14 +9100,15 @@
 		// boxes — a link and a nickname — with no fallback name to lean on
 		// the way a league's own nickname has, so both are required.
 		//
-		// Its own card, collapsible the ordinary way (makeCollapsible), but
-		// saved through the Leagues card's Save button below it rather than a
-		// button of its own — the two are always written to the same config
-		// file in the one request (api/save-leagues.js has no partial-save
-		// path), and adminDraft/adminLinksDraft are the same shared draft
-		// state either way, so a second "Discard edits" here would discard
-		// the other card's unsaved league edits too, silently. One save
-		// surface avoids that trap.
+		// Its own card, collapsible the ordinary way (makeCollapsible), with
+		// its own Save/Discard/Reload row (buildAdminSaveActions) — genuinely
+		// redundant with the Leagues card's identical row below, since both
+		// write to the same config file in the one request and share the
+		// same adminDraft/adminLinksDraft state (api/save-leagues.js has no
+		// partial-save path). Kept anyway: having the controls on the card
+		// you're actually editing reads as more obviously correct than
+		// scrolling to the other one for something that looks like it should
+		// be self-contained.
 		//
 		// Returns null (nothing to render yet) while leagueConfig hasn't
 		// loaded or failed to — the Leagues card already shows that state
@@ -9110,7 +9123,7 @@
 			card.appendChild(heading);
 			makeCollapsible(card, heading, 'admin-quicklinks');
 
-			card.appendChild(el('div', { class: 'admin-note', text: 'Extra links shown in the header toolbar after the leagues above, in purple. Saved by the Leagues card\'s Save button.' }));
+			card.appendChild(el('div', { class: 'admin-note', text: 'Extra links shown in the header toolbar after the leagues above, in purple.' }));
 			const linksList = el('div', { class: 'admin-links-list' });
 			adminLinksDraft.forEach((link, i) => {
 				const row = el('div', { class: 'admin-link-row' });
@@ -9140,6 +9153,8 @@
 				if (last) last.querySelector('input')?.focus();
 			});
 			card.appendChild(el('div', { class: 'admin-add-row' }, [addLinkBtn]));
+
+			buildAdminSaveActions(card);
 
 			return card;
 		}
