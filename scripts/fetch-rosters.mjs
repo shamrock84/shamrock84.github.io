@@ -77,13 +77,20 @@ const CONFIG_PATH = fileURLToPath(new URL('../config/leagues.json', import.meta.
 
 // League/franchise IDs live in config/leagues.json, not here — edit that file
 // each offseason instead of this script. See its _readme field for the schema.
+//
+// quickLinks is a top-level sibling of leagues — extra header-toolbar links
+// with no live provider to sync from, so this just carries the array through
+// verbatim into data/rosters.json (see the output object below) the same way
+// every other config field the sync round-trips does. Defaults to [] rather
+// than requiring the key, so a hand-edited config predating this field still
+// loads.
 async function loadLeagueConfig() {
   const raw = await readFile(CONFIG_PATH, 'utf8');
   const parsed = JSON.parse(raw);
   if (!Array.isArray(parsed.leagues) || parsed.leagues.length === 0) {
     throw new Error(`${CONFIG_PATH} has no leagues configured`);
   }
-  return parsed.leagues;
+  return { leagues: parsed.leagues, quickLinks: Array.isArray(parsed.quickLinks) ? parsed.quickLinks : [] };
 }
 
 async function loadPreviousOutput() {
@@ -854,7 +861,7 @@ async function main() {
     throw new Error('MFL_USERNAME and MFL_PASSWORD environment variables are required.');
   }
 
-  const LEAGUES = await loadLeagueConfig();
+  const { leagues: LEAGUES, quickLinks: QUICK_LINKS } = await loadLeagueConfig();
   const previous = await loadPreviousOutput();
   const previousById = new Map((previous?.leagues ?? []).map((l) => [l.id, l]));
 
@@ -1590,6 +1597,10 @@ async function main() {
     depthCharts,
     depthChartEcrType,
     leagues,
+    // Extra header-toolbar links, carried through from config/leagues.json
+    // verbatim — see loadLeagueConfig above and renderQuickLinks in
+    // myffl.html, which appends these after every league link.
+    quickLinks: QUICK_LINKS,
   };
 
   await writeFile(OUTPUT_PATH, JSON.stringify(output, null, 2) + '\n');

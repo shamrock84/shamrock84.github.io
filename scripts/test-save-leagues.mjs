@@ -11,7 +11,7 @@
 
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { validate, mergeLeague, serialize } from '../api/save-leagues.js';
+import { validate, validateQuickLinks, mergeLeague, mergeLink, serialize } from '../api/save-leagues.js';
 
 let failures = 0;
 function check(name, pass, detail = '') {
@@ -136,6 +136,31 @@ check('rejects a historyLeagueIds value that is blank',
 const dupes = validate([base(), { ...base(), name: 'Other' }]);
 check('rejects duplicate ids', dupes.length === 1 && dupes[0].includes('123'), JSON.stringify(dupes));
 
+// ---- validateQuickLinks: the happy path is the real config ----
+check('the live config\'s quickLinks validates', validateQuickLinks(real.quickLinks).length === 0,
+  JSON.stringify(validateQuickLinks(real.quickLinks)));
+check('an omitted quickLinks is valid (no extra links configured)', validateQuickLinks(undefined).length === 0);
+check('an empty quickLinks list is valid', validateQuickLinks([]).length === 0);
+check('a valid quick link is valid',
+  validateQuickLinks([{ url: 'https://example.com', nickname: 'Example' }]).length === 0,
+  JSON.stringify(validateQuickLinks([{ url: 'https://example.com', nickname: 'Example' }])));
+check('rejects a quickLinks that is not a list', validateQuickLinks('nope').length === 1);
+check('rejects a non-object quick link entry', validateQuickLinks([null]).length > 0);
+check('rejects a quick link missing a nickname',
+  validateQuickLinks([{ url: 'https://example.com' }]).length > 0);
+check('rejects a quick link missing a url', validateQuickLinks([{ nickname: 'Example' }]).length > 0);
+check('rejects a quick link whose url has no scheme',
+  validateQuickLinks([{ url: 'example.com', nickname: 'Example' }]).length > 0);
+check('allows an http quick link', validateQuickLinks([{ url: 'http://example.com', nickname: 'Example' }]).length === 0);
+
+// ---- mergeLink ----
+const mergedLink = mergeLink({ url: '  https://example.com  ', nickname: '  Example  ' });
+check('trims a quick link url', mergedLink.url === 'https://example.com', JSON.stringify(mergedLink));
+check('trims a quick link nickname', mergedLink.nickname === 'Example', JSON.stringify(mergedLink));
+check('key order is stable for a quick link', Object.keys(mergedLink).join() === 'url,nickname');
+check('preserves unknown fields on a quick link',
+  mergeLink({ url: 'https://example.com', nickname: 'Example', someFutureField: 1 }).someFutureField === 1);
+
 // ---- validate: things that must be allowed ----
 // Regression: an empty team ID used to be rejected, which made it impossible to
 // add a league before looking up your own franchise id inside it.
@@ -212,12 +237,13 @@ const preserved = mergeLeague({ ...base(), someFutureField: { nested: true } });
 check('preserves unknown fields', JSON.stringify(preserved.someFutureField) === '{"nested":true}', JSON.stringify(preserved));
 
 // ---- serialize ----
-const out = serialize(real._readme, real.leagues.map(mergeLeague));
+const out = serialize(real._readme, real.leagues.map(mergeLeague), (real.quickLinks || []).map(mergeLink));
 const reparsed = JSON.parse(out);
 check('output is valid JSON', Array.isArray(reparsed.leagues));
 check('round-trips every league', reparsed.leagues.length === real.leagues.length);
 check('preserves the _readme notes', JSON.stringify(reparsed._readme) === JSON.stringify(real._readme));
 check('round-trip is lossless', JSON.stringify(reparsed.leagues) === JSON.stringify(real.leagues.map(mergeLeague)));
+check('round-trips quickLinks', Array.isArray(reparsed.quickLinks) && reparsed.quickLinks.length === (real.quickLinks || []).length);
 // One line per league keeps a one-league edit to a one-line diff, which is what
 // makes an Admin-tab commit reviewable at a glance in the repo history.
 const leagueLines = out.split('\n').filter((l) => l.trim().startsWith('{ "id"'));
@@ -232,6 +258,10 @@ check('an unedited save is a byte-for-byte no-op', out === onDisk,
   out === onDisk ? '' : 'serialize() no longer matches the file\'s hand-written spacing');
 check('array spacing matches the existing style', serialize(undefined, [{ tags: ['a', 'b'] }]).includes('["a", "b"]'));
 check('handles a config with no _readme', JSON.parse(serialize(undefined, [mergeLeague(base())])).leagues.length === 1);
+check('defaults quickLinks to an empty array when omitted',
+  JSON.parse(serialize(undefined, [mergeLeague(base())])).quickLinks.length === 0);
+check('serializes a quick link one per line', serialize(undefined, [], [mergeLink({ url: 'https://example.com', nickname: 'Example' })])
+  .includes('{ "url": "https://example.com", "nickname": "Example" }'));
 
 console.log(failures === 0 ? '\nAll save-leagues checks passed.' : `\n${failures} check(s) failed.`);
 process.exit(failures === 0 ? 0 : 1);
