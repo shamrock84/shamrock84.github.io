@@ -1495,14 +1495,16 @@
 			flex-direction: column;
 			gap: 0.45rem;
 		}
-		/* No fill, no color signal — .card's own treatment (plain background,
-		   1px --border) is what draws each pill, so it reads as "one more
-		   small card" rather than something the page invented a new visual
-		   language for. A --chip-bg tint was tried in between (dropped on
-		   user feedback — this reads cleaner). */
+		/* No fill, no color signal — .card's own plain background is what
+		   draws each pill, so it reads as "one more small card" rather than
+		   something the page invented a new visual language for. A --chip-bg
+		   tint was tried in between (dropped on user feedback — this reads
+		   cleaner). The border is thicker than .card's own 1px, though: at
+		   1px it didn't read as distinct enough from the surrounding card to
+		   carry the "these two are paired" job on its own. */
 		.scoring-matchup-pill {
 			background: var(--card-bg);
-			border: 1px solid var(--border);
+			border: 2px solid var(--border);
 			border-radius: 12px;
 			overflow: hidden;
 		}
