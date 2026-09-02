@@ -1474,6 +1474,13 @@
 		   last gets a heavier rule so a group of two (or a lone bye) reads as
 		   one game rather than blurring into the next team's row. */
 		tr.scoring-matchup-gap td { border-bottom: 2px solid var(--border); }
+		/* ...and every other matchup gets a light purple wash — --chip-bg,
+		   the same "this band is one group" tint the Depth Charts position
+		   header already uses, rather than --accent itself (which means
+		   "notable" elsewhere on this page, not "grouped"). Banding by
+		   matchup rather than by row lets the eye tell where one game ends
+		   and the next begins without reading every score. */
+		tr.scoring-matchup-shaded td { background: var(--chip-bg); }
 		table.standings th:not(:first-child),
 		table.standings td:not(:first-child) {
 			text-align: right;
@@ -4924,7 +4931,11 @@
 						.sort((a, b) => Number(b.score) - Number(a.score));
 					group.forEach((t, ti) => {
 						const isGroupEnd = ti === group.length - 1 && gi < matchups.length - 1;
-						const classes = [t.isMe ? 'me-row' : '', isGroupEnd ? 'scoring-matchup-gap' : ''].filter(Boolean).join(' ');
+						const classes = [
+							t.isMe ? 'me-row' : '',
+							isGroupEnd ? 'scoring-matchup-gap' : '',
+							gi % 2 === 0 ? 'scoring-matchup-shaded' : '',
+						].filter(Boolean).join(' ');
 						const row = el('tr', { class: classes });
 						row.appendChild(el('td', { text: t.teamName }));
 						row.appendChild(el('td', { text: t.score }));
