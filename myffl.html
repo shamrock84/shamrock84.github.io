@@ -1495,12 +1495,14 @@
 			flex-direction: column;
 			gap: 0.45rem;
 		}
-		/* --chip-bg is the same soft purple tint the Provider/Season badges use
-		   above every card — a fill, not an outline (no --border stroke here),
-		   since the tint against the plain --card-bg it sits on is already
-		   enough contrast to read as its own shape without one. */
+		/* No fill, no color signal — .card's own treatment (plain background,
+		   1px --border) is what draws each pill, so it reads as "one more
+		   small card" rather than something the page invented a new visual
+		   language for. A --chip-bg tint was tried in between (dropped on
+		   user feedback — this reads cleaner). */
 		.scoring-matchup-pill {
-			background: var(--chip-bg);
+			background: var(--card-bg);
+			border: 1px solid var(--border);
 			border-radius: 12px;
 			overflow: hidden;
 		}
@@ -4954,29 +4956,22 @@
 			// available (MFL — see scripts/probe-live-scoring-matchup.mjs — or an
 			// older cached sync that predates this field).
 			//
-			// Rendered as a stack of small cards, not a table. Earlier attempts,
-			// in order: a plain white/dark pill with a colored stroke (dropped —
-			// read as harsh next to a page that never strokes anything); the
-			// same stroke rounded into a softer pill, still dropped for the same
-			// reason; then a plain pill with NO tint at all, just .card's own
-			// border (dropped on user feedback — with no fill and only a hairline
-			// border, the pills didn't read as visually distinct from the
-			// surrounding card). This — a single, uniform --chip-bg tint on
-			// every pill, no alternation, no border — is what actually stuck.
-			// Reusing "a background fill" after the first attempt used one might
-			// look like the same mistake twice, but it isn't: the alternating
-			// version's real bug was two different background declarations
-			// landing on the SAME element (the row that was both shaded and
-			// me-row); here the tint lives on the pill div, one level up from
-			// the row div me-row paints, so me-row's opaque gold simply covers
-			// its own row and never has to contend with anything underneath it.
-			// No alternation between pills either: the tint plus the divider
-			// between a pill's two rows plus the gap to the next pill already
-			// say "these two belong together" on their own — a second color
-			// alternating on top wouldn't add pairing information, only invite
-			// the question of what the color difference means, on a page that
-			// already uses color to mean specific things elsewhere (gold, the
-			// badges above every card).
+			// Rendered as a stack of small cards, not a table. This has swung
+			// back and forth on user review — in order: a colored stroke around
+			// each pill (dropped, harsh next to a page that never strokes
+			// anything); the same stroke rounded into a softer pill (dropped,
+			// same reason); a uniform --chip-bg tint fill instead of a stroke
+			// (dropped, the user later preferred the plainer look below); and
+			// this — .card's own plain background + 1px --border, nothing else
+			// — which is where it's landed twice now. No alternating color
+			// between pills was tried in between either (a second tone that
+			// encodes nothing besides "next pill" just invites the question of
+			// what it means, on a page that uses color to mean specific things
+			// elsewhere — gold, the badges above every card) and it wasn't
+			// preferred when tried. The border + the divider between a pill's
+			// two rows + the gap to the next pill are what actually establish
+			// "these two belong together"; nothing about that argument changed
+			// across any of these attempts, only which visual layer carried it.
 			if (matchups && matchups.length) {
 				const teamById = new Map(teams.map((t) => [t.franchiseId, t]));
 
