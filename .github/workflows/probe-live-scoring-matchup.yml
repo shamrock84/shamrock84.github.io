@@ -1,0 +1,41 @@
+name: Probe Live Scoring Matchup (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here, the
+# same rule the other manual workflows follow. Answers whether MFL exposes
+# head-to-head opponent pairing anywhere reachable from what the Scoring tab
+# already fetches, before writing any parsing code for it. See
+# scripts/probe-live-scoring-matchup.mjs for the full rationale.
+#
+# Read-only: TYPE=liveScoring, TYPE=league, TYPE=weeklyResults. Nothing is
+# written.
+on:
+  workflow_dispatch:
+    inputs:
+      mfl_league_id:
+        description: 'MFL league ID to probe'
+        required: false
+        default: '26696'
+      week:
+        description: 'Week to probe'
+        required: false
+        default: '1'
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Dump liveScoring / league / weeklyResults shapes
+        env:
+          MFL_USERNAME: ${{ secrets.MFL_USERNAME }}
+          MFL_PASSWORD: ${{ secrets.MFL_PASSWORD }}
+          PROBE_MFL_LEAGUE_ID: ${{ inputs.mfl_league_id }}
+          PROBE_WEEK: ${{ inputs.week }}
+        run: node scripts/probe-live-scoring-matchup.mjs

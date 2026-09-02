@@ -1470,6 +1470,10 @@
 			border-bottom: 1px solid var(--border);
 		}
 		table.standings tr:last-child td { border-bottom: none; }
+		/* Scoring tab, matchup view: the closing row of every matchup but the
+		   last gets a heavier rule so a group of two (or a lone bye) reads as
+		   one game rather than blurring into the next team's row. */
+		tr.scoring-matchup-gap td { border-bottom: 2px solid var(--border); }
 		table.standings th:not(:first-child),
 		table.standings td:not(:first-child) {
 			text-align: right;
@@ -4899,17 +4903,47 @@
 			}
 
 			const table = el('table', { class: 'standings' });
-			const headRow = el('tr');
-			['#', 'Team', 'Score'].forEach((h) => headRow.appendChild(el('th', { text: h })));
-			table.appendChild(headRow);
+			const matchups = league.scoring?.matchups;
 
-			teams.forEach((t, i) => {
-				const row = el('tr', { class: t.isMe ? 'me-row' : '' });
-				row.appendChild(el('td', { text: String(i + 1) }));
-				row.appendChild(el('td', { text: t.teamName }));
-				row.appendChild(el('td', { text: t.score }));
-				table.appendChild(row);
-			});
+			// Head-to-head pairing when the provider exposes it (ESPN, Sleeper) —
+			// groups teams by who's actually playing whom, which is what a manager
+			// checking the Scoring tab mid-week wants, rather than one whole-league
+			// leaderboard. Falls back to the flat leaderboard when pairing isn't
+			// available (MFL — see scripts/probe-live-scoring-matchup.mjs — or an
+			// older cached sync that predates this field).
+			if (matchups && matchups.length) {
+				const teamById = new Map(teams.map((t) => [t.franchiseId, t]));
+				const headRow = el('tr');
+				['Team', 'Score'].forEach((h) => headRow.appendChild(el('th', { text: h })));
+				table.appendChild(headRow);
+
+				matchups.forEach((m, gi) => {
+					const group = m.teamIds
+						.map((id) => teamById.get(id))
+						.filter(Boolean)
+						.sort((a, b) => Number(b.score) - Number(a.score));
+					group.forEach((t, ti) => {
+						const isGroupEnd = ti === group.length - 1 && gi < matchups.length - 1;
+						const classes = [t.isMe ? 'me-row' : '', isGroupEnd ? 'scoring-matchup-gap' : ''].filter(Boolean).join(' ');
+						const row = el('tr', { class: classes });
+						row.appendChild(el('td', { text: t.teamName }));
+						row.appendChild(el('td', { text: t.score }));
+						table.appendChild(row);
+					});
+				});
+			} else {
+				const headRow = el('tr');
+				['#', 'Team', 'Score'].forEach((h) => headRow.appendChild(el('th', { text: h })));
+				table.appendChild(headRow);
+
+				teams.forEach((t, i) => {
+					const row = el('tr', { class: t.isMe ? 'me-row' : '' });
+					row.appendChild(el('td', { text: String(i + 1) }));
+					row.appendChild(el('td', { text: t.teamName }));
+					row.appendChild(el('td', { text: t.score }));
+					table.appendChild(row);
+				});
+			}
 			card.appendChild(table);
 			return card;
 		}
