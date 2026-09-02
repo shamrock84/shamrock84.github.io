@@ -932,6 +932,46 @@
 			margin: 0.75rem 0 0.35rem;
 		}
 		.group-label:first-of-type { margin-top: 0; }
+		/* Each Rosters status group (Active Roster/Taxi Squad/Practice
+		   Squad/Injured Reserve — see renderCard's STATUS_GROUPS loop
+		   and makeGroupCollapsible) is wrapped in one of these, holding
+		   the clickable label plus everything that belongs to the group.
+		   The 0.75rem gap between groups lives here rather than on
+		   .group-label itself, because nesting the label inside its own
+		   wrapper makes it structurally the first same-tag sibling under
+		   THAT parent, which would otherwise satisfy .group-label:first-
+		   of-type (see the override just below) and zero out the gap
+		   above every group, not just the first one. */
+		.roster-group {
+			margin-top: 0.75rem;
+		}
+		.group-label.roster-group-label {
+			margin-top: 0;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			gap: 0.3rem;
+			user-select: none;
+		}
+		.roster-group-chevron {
+			display: inline-block;
+			font-size: 0.85em;
+			transition: transform 0.15s ease;
+		}
+		.roster-group.roster-group-collapsed .roster-group-chevron {
+			transform: rotate(-90deg);
+		}
+		.roster-group.roster-group-collapsed .roster-group-content {
+			display: none;
+		}
+		/* A search match inside a collapsed group (see the rosters branch
+		   of updateVisibility) still needs to be visible — search doesn't
+		   filter rows in this view, it only marks .search-hit, so without
+		   this the row would exist but sit behind a collapsed section
+		   with nothing telling the visitor it's there. */
+		.roster-group.roster-group-collapsed .roster-group-content:has(.search-hit) {
+			display: block;
+		}
 		.lineup-login {
 			margin-top: 0.6rem;
 		}
@@ -1143,6 +1183,26 @@
 		table.contract-expiration-summary td:first-child {
 			color: var(--muted);
 			font-weight: normal;
+		}
+		/* Draft Picks group (buildDraftPicksList) — one line per pick rather
+		   than a table: three columns (year/round/via) for what's really one
+		   fact ("2027 3rd from The FOOKING Hand of the King") was more
+		   structure than the content needed, and a table header row is a lot
+		   of chrome for a list that's often four or eight short lines. */
+		.draft-pick-row {
+			padding: 0.3rem 0.2rem;
+			border-bottom: 1px solid var(--border);
+			font-size: 0.9rem;
+			font-variant-numeric: tabular-nums;
+		}
+		.draft-pick-row:last-child {
+			border-bottom: none;
+		}
+		/* "from <team>" for a pick acquired via trade — muted so the trade
+		   provenance reads as metadata trailing the fact (see
+		   buildDraftPicksList), not as prominent as the year/round themselves. */
+		.draft-pick-via {
+			color: var(--muted);
 		}
 		/* A real salary that has a known contract length (see
 		   salaryByYearBreakdown) renders as this instead of plain text — a
@@ -3334,6 +3394,46 @@
 			return table;
 		}
 
+		// A real ordinal-suffix formula, unlike FINANCES_PLACE_LABELS — that
+		// one gets away with hardcoding 1st/2nd/3rd because only three ranks
+		// ever have a payout field to label; a draft round has no such
+		// ceiling (a real league here already runs 4 rounds deep and nothing
+		// stops a deeper one), so this needs the general 11th/12th/13th
+		// exception and the 1st/2nd/3rd/4th... cycle for everything else.
+		function ordinal(n) {
+			const rem100 = n % 100;
+			if (rem100 >= 11 && rem100 <= 13) return `${n}th`;
+			switch (n % 10) {
+				case 1: return `${n}st`;
+				case 2: return `${n}nd`;
+				case 3: return `${n}rd`;
+				default: return `${n}th`;
+			}
+		}
+
+		// Draft Picks group (renderCard, after Injured Reserve). picks is
+		// league.draftPicks — already sorted by year then round and already
+		// resolved to our current ownership by the sync (see
+		// parseFutureDraftPicks in providers.mjs: a pick traded away simply
+		// isn't in the list, so there's nothing here to reconcile). One line
+		// per pick rather than a table — "2027 3rd" or "2027 3rd from The
+		// FOOKING Hand of the King" reads as a single fact, not three
+		// columns' worth. No pick-number/slot: MFL's own futureDraftPicks
+		// response doesn't carry one, because draft order isn't set this
+		// many months out — year and round are genuinely all there is.
+		function buildDraftPicksList(picks) {
+			const wrap = el('div', { class: 'draft-picks' });
+			for (const pick of picks) {
+				const row = el('div', { class: 'draft-pick-row', text: `${pick.year} ${ordinal(pick.round)}` });
+				if (pick.originalTeamName) {
+					row.appendChild(document.createTextNode(' '));
+					row.appendChild(el('span', { class: 'draft-pick-via', text: `from ${pick.originalTeamName}` }));
+				}
+				wrap.appendChild(row);
+			}
+			return wrap;
+		}
+
 		// The manager's own locally-planned salary for a still-unset roster
 		// spot, or null if there isn't one — or the viewer isn't logged in.
 		// A plan is exactly the kind of strategy that shouldn't leak to a
@@ -4074,26 +4174,30 @@
 		// view. Read fresh on every call, never cached: a window resized
 		// past the breakpoint mid-session should immediately start reading
 		// and writing the other bucket's state, not the one it opened with.
-		function cardCollapseStorageKey(key) {
+		// namespace lets the same storage/lookup logic back a second,
+		// independent collapse system — the roster-group toggles below
+		// (see makeGroupCollapsible) — without a second copy of this
+		// try/catch machinery to drift out of sync with this one.
+		function cardCollapseStorageKey(key, namespace = 'myfflCardCollapsed') {
 			const bucket = window.matchMedia('(max-width: 600px)').matches ? 'mobile' : 'desktop';
-			return `myfflCardCollapsed:${bucket}:${key}`;
+			return `${namespace}:${bucket}:${key}`;
 		}
 
-		function isCardCollapsed(key) {
+		function isCardCollapsed(key, namespace = 'myfflCardCollapsed') {
 			try {
-				return localStorage.getItem(cardCollapseStorageKey(key)) === '1';
+				return localStorage.getItem(cardCollapseStorageKey(key, namespace)) === '1';
 			} catch {
 				return false;
 			}
 		}
 
-		function setCardCollapsed(key, collapsed) {
+		function setCardCollapsed(key, collapsed, namespace = 'myfflCardCollapsed') {
 			try {
 				// Absence is the default (expanded), so a card nobody ever
 				// touched costs nothing in storage and a stale key doesn't
 				// linger once someone expands it back.
-				if (collapsed) localStorage.setItem(cardCollapseStorageKey(key), '1');
-				else localStorage.removeItem(cardCollapseStorageKey(key));
+				if (collapsed) localStorage.setItem(cardCollapseStorageKey(key, namespace), '1');
+				else localStorage.removeItem(cardCollapseStorageKey(key, namespace));
 			} catch {
 				// Private browsing or a full quota — the toggle still works
 				// for this render, it just won't survive a reload.
@@ -4144,6 +4248,55 @@
 			heading.appendChild(toggle);
 			heading.addEventListener('click', (e) => {
 				if (e.target.closest('a')) return;
+				toggleCollapse();
+			});
+		}
+
+		// Same idiom as makeCollapsible, one level down: each status group
+		// within a Rosters card (Active Roster, Taxi Squad, Practice Squad,
+		// Injured Reserve) collapses independently instead of the whole card
+		// doing it, since a manager checking on IR has no reason to also lose
+		// the active roster. `wrap` holds the clickable label plus everything
+		// that belongs to the group — the table, and (for Active Roster/Taxi
+		// Squad) the salary/contract summaries built alongside it — see
+		// renderCard, which appends all of it into `wrap`'s own content node
+		// rather than the card directly. `label` is the whole clickable
+		// target, the same "no small tap zone" reasoning as makeCollapsible,
+		// so there's no separate toggle button to keep in sync with it. A
+		// second, `myfflGroupCollapsed`-namespaced key space (see
+		// cardCollapseStorageKey) keeps this from colliding with the
+		// whole-card collapse state keyed the same way. `key` must be unique
+		// per league+group across renders (`${league.id}:${group.key}` at
+		// the call site) for the same reason makeCollapsible's key must.
+		function makeGroupCollapsible(wrap, label, key) {
+			const collapsed = isCardCollapsed(key, 'myfflGroupCollapsed');
+			wrap.classList.toggle('roster-group-collapsed', collapsed);
+			label.classList.add('roster-group-label');
+			label.setAttribute('role', 'button');
+			label.setAttribute('tabindex', '0');
+			label.setAttribute('aria-expanded', String(!collapsed));
+			// Prepended, not appended: label's own text node is already
+			// there (set via el()'s `text` option at the call site), and a
+			// leading disclosure triangle reads naturally as "this line
+			// opens something" the way a folder icon would, unlike
+			// card-collapse-toggle's glyph, which sits at the heading's far
+			// right because that heading is a whole badge-strip row with no
+			// open space at its start.
+			label.insertBefore(el('span', { class: 'roster-group-chevron', 'aria-hidden': 'true', text: '▾' }), label.firstChild);
+			const toggleCollapse = () => {
+				const next = !wrap.classList.contains('roster-group-collapsed');
+				wrap.classList.toggle('roster-group-collapsed', next);
+				label.setAttribute('aria-expanded', String(!next));
+				setCardCollapsed(key, next, 'myfflGroupCollapsed');
+			};
+			label.addEventListener('click', toggleCollapse);
+			// Keyboard parity with the mouse target: role="button" doesn't
+			// get Enter/Space activation for free the way a real <button>
+			// does, since this is a <div> (matching group-label's existing
+			// tag, not the <button> makeCollapsible's toggle uses).
+			label.addEventListener('keydown', (e) => {
+				if (e.key !== 'Enter' && e.key !== ' ') return;
+				e.preventDefault();
 				toggleCollapse();
 			});
 		}
@@ -4407,7 +4560,17 @@
 				const players = byStatus[group.key];
 				if (!players || players.length === 0) continue;
 
-				card.appendChild(el('div', { class: 'group-label', text: `${group.label} (${players.length})` }));
+				// groupContent, not card, is what every append below this point
+				// targets — see makeGroupCollapsible's own comment for why the
+				// table and its summaries live inside it rather than as direct
+				// children of the card.
+				const groupWrap = el('div', { class: 'roster-group' });
+				const groupLabel = el('div', { class: 'group-label', text: `${group.label} (${players.length})` });
+				const groupContent = el('div', { class: 'roster-group-content' });
+				makeGroupCollapsible(groupWrap, groupLabel, `${league.id}:${group.key}`);
+				groupWrap.appendChild(groupLabel);
+				groupWrap.appendChild(groupContent);
+				card.appendChild(groupWrap);
 
 				// The cap summary reads these players' salaries, so a planned-
 				// salary pick inside the table needs to rebuild it live rather
@@ -4439,7 +4602,7 @@
 					&& (group.key === 'ROSTER' || (group.key === 'INJURED_RESERVE' && duringIrClearingWindow()));
 
 				if (group.key === 'ROSTER' && starterIdSet) {
-					card.appendChild(buildLineupEditor(league, players, starterIdSet, showCutColumn, refreshCutBanner));
+					groupContent.appendChild(buildLineupEditor(league, players, starterIdSet, showCutColumn, refreshCutBanner));
 				} else {
 					const onSalaryChange = needsCapSummary
 						? () => {
@@ -4453,21 +4616,47 @@
 								refreshTaxiExpirationSummary();
 							}
 							: undefined;
-					card.appendChild(buildRosterTable(players, isAuction, group.key.toLowerCase(), league, onSalaryChange, onContractChange, showCutColumn, refreshCutBanner));
+					groupContent.appendChild(buildRosterTable(players, isAuction, group.key.toLowerCase(), league, onSalaryChange, onContractChange, showCutColumn, refreshCutBanner));
 				}
 
-				if (summaryEl) card.appendChild(summaryEl);
+				if (summaryEl) groupContent.appendChild(summaryEl);
 				// Scoped to the ROSTER iteration like summaryEl above — appendChild
 				// on a node already in the DOM *moves* it, so without this gate the
 				// still-truthy outer expirationSummaryEl would get relocated to the
-				// end of the card on every later status group's iteration too,
-				// landing it after Taxi Squad/IR instead of right below Salary
-				// Summary where it belongs.
-				if (group.key === 'ROSTER' && expirationSummaryEl) card.appendChild(expirationSummaryEl);
+				// end of the current group's content on every later status group's
+				// iteration too, landing it after Taxi Squad/IR instead of right
+				// below Salary Summary where it belongs.
+				if (group.key === 'ROSTER' && expirationSummaryEl) groupContent.appendChild(expirationSummaryEl);
 				// Same move-not-duplicate caveat, scoped to the TAXI_SQUAD
 				// iteration instead.
-				if (group.key === 'TAXI_SQUAD' && taxiSalaryTotalEl) card.appendChild(taxiSalaryTotalEl);
-				if (group.key === 'TAXI_SQUAD' && taxiExpirationSummaryEl) card.appendChild(taxiExpirationSummaryEl);
+				if (group.key === 'TAXI_SQUAD' && taxiSalaryTotalEl) groupContent.appendChild(taxiSalaryTotalEl);
+				if (group.key === 'TAXI_SQUAD' && taxiExpirationSummaryEl) groupContent.appendChild(taxiExpirationSummaryEl);
+			}
+
+			// Dynasty/Salary Cap only, after Injured Reserve — a draft-only or
+			// redraft league re-drafts from scratch every year, so a future pick
+			// isn't a thing to plan around there. Not part of STATUS_GROUPS/
+			// byStatus above: a draft pick isn't a player and carries none of the
+			// fields (position, bye, ECR, salary) every other group's table
+			// renders, so it gets its own table rather than being forced through
+			// buildRosterTable. league.draftPicks comes off MFL's
+			// TYPE=futureDraftPicks (see fetchLeagueRoster in providers.mjs) —
+			// null means "couldn't tell" (not fetched, or the fetch failed) and
+			// stays hidden same as an empty list, since there's nothing to show
+			// either way; only a non-empty confirmed list renders, same
+			// "omitted rather than printed empty" idiom every other group here
+			// already follows.
+			const showDraftPicks = (league.type === 'dynasty' || league.type === 'salarycap')
+				&& Array.isArray(league.draftPicks) && league.draftPicks.length > 0;
+			if (showDraftPicks) {
+				const groupWrap = el('div', { class: 'roster-group' });
+				const groupLabel = el('div', { class: 'group-label', text: `Draft Picks (${league.draftPicks.length})` });
+				const groupContent = el('div', { class: 'roster-group-content' });
+				makeGroupCollapsible(groupWrap, groupLabel, `${league.id}:DRAFT_PICKS`);
+				groupWrap.appendChild(groupLabel);
+				groupContent.appendChild(buildDraftPicksList(league.draftPicks));
+				groupWrap.appendChild(groupContent);
+				card.appendChild(groupWrap);
 			}
 
 			if (!league.players || league.players.length === 0) {

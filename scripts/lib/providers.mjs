@@ -817,16 +817,94 @@ export function sleeperDraftInProgress(status) {
   return SLEEPER_UNDRAFTED.has(String(status));
 }
 
+// Future (unmade) draft picks a franchise currently owns — MFL's
+// TYPE=futureDraftPicks, confirmed for real via probe-future-draft-picks.yml
+// (2026-09, two leagues: MNMx Dynasty and Iron Bank). Findings that shaped
+// this:
+//   - One call returns EVERY franchise's future picks at once, keyed by
+//     franchise id — FRANCHISE= is accepted but silently ignored (identical
+//     body with or without it). So this is never re-fetched per franchise;
+//     fetchLeagueRoster below picks our own id out of the list it already
+//     has.
+//   - Each pick is just {year, round, originalPickFor} — no pick-number or
+//     slot field exists anywhere in the response, because draft order isn't
+//     set this many months out. Year + round is genuinely all there is.
+//   - originalPickFor is the franchise that would have picked in that slot
+//     absent any trade — it equals the *owning* franchise's own id for a
+//     natural pick, and names a different franchise when the pick was
+//     acquired via trade. A pick traded away simply isn't in the owning
+//     franchise's list any more (it moved to whoever holds it now), so this
+//     list is already "what I currently own" with no reconciliation needed.
+//   - TYPE=assets returns a similar pick list with a human-readable
+//     "Round 1 Draft Pick from <team>" description, but failed with a
+//     "requires logged in user" error for one of the two probed leagues and
+//     not the other — inconsistent enough to skip. futureDraftPicks worked
+//     cleanly both times.
+export function parseFutureDraftPicks(picksData, franchiseId, nameById) {
+  const raw = picksData?.futureDraftPicks?.franchise;
+  const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
+  const mine = list.find((f) => f.id === franchiseId);
+  if (!mine) return [];
+  const rawPicks = mine.futureDraftPick;
+  const picks = Array.isArray(rawPicks) ? rawPicks : rawPicks ? [rawPicks] : [];
+  return picks
+    .map((p) => ({
+      year: Number(p.year),
+      round: Number(p.round),
+      // null for a natural pick — see the function comment — so the Rosters
+      // card can leave the "via" column blank rather than printing our own
+      // team name back at us.
+      originalTeamName: p.originalPickFor === franchiseId ? null : (nameById.get(p.originalPickFor) || p.originalPickFor),
+    }))
+    .sort((a, b) => a.year - b.year || a.round - b.round);
+}
+
 export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, injuries) {
-  const [leagueData, rostersData] = await Promise.all([
+  // Dynasty/Salary Cap only — a draft-only or redraft league has no future
+  // picks worth showing (draft-only re-drafts from scratch every year;
+  // redraft the same), so this is one extra request only for the league
+  // types that can actually use it.
+  const needsDraftPicks = league.type === 'dynasty' || league.type === 'salarycap';
+  // .catch, not a bare call inside Promise.all: a futureDraftPicks failure
+  // (a 429, say) must not take the roster/league fetch down with it — this
+  // section is much lower stakes than the roster itself. Isolating it here
+  // keeps the request parallel with the other two instead of paying a
+  // second round trip just to wrap it in its own try/catch afterward.
+  const draftPicksPromise = needsDraftPicks
+    ? mflGet(`/export?TYPE=futureDraftPicks&L=${league.id}&JSON=1`, cookie, seasonOf(league)).catch((err) => {
+        console.error(`Failed to fetch future draft picks for ${league.name}: ${err.message}`);
+        return null;
+      })
+    : Promise.resolve(null);
+  const [leagueData, rostersData, futureDraftPicksData] = await Promise.all([
     mflGet(`/export?TYPE=league&L=${league.id}&JSON=1`, cookie, seasonOf(league)),
     mflGet(`/export?TYPE=rosters&L=${league.id}&FRANCHISE=${league.franchiseId}&JSON=1`, cookie, seasonOf(league)),
+    draftPicksPromise,
   ]);
 
   const franchises = leagueData?.league?.franchises?.franchise ?? [];
-  const franchiseInfo = Array.isArray(franchises)
-    ? franchises.find((f) => f.id === league.franchiseId)
-    : franchises;
+  const franchiseList = Array.isArray(franchises) ? franchises : [franchises];
+  const franchiseInfo = franchiseList.find((f) => f.id === league.franchiseId);
+  // Built here rather than inline in parseFutureDraftPicks so a "via"
+  // team name resolves off the same TYPE=league response fetchStandings
+  // already builds this exact map from — no second request just to name a
+  // trade partner.
+  const nameById = new Map(franchiseList.map((f) => [f.id, f.name]));
+
+  // null means "couldn't tell" (not fetched, or the fetch failed) and is
+  // left alone rather than coerced to [] — same distinction `available`
+  // draws elsewhere in this codebase, and for the same reason: a real,
+  // confirmed empty list (every pick traded away) is worth showing as
+  // "nothing," but a failed fetch is not the same fact and must not render
+  // as one.
+  let draftPicks = null;
+  if (needsDraftPicks && futureDraftPicksData) {
+    try {
+      draftPicks = parseFutureDraftPicks(futureDraftPicksData, league.franchiseId, nameById);
+    } catch (err) {
+      console.error(`Failed to parse future draft picks for ${league.name}: ${err.message}`);
+    }
+  }
 
   const rosterFranchise = Array.isArray(rostersData?.rosters?.franchise)
     ? rostersData.rosters.franchise[0]
@@ -936,6 +1014,7 @@ export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, inj
     startingLineup,
     lineupSlots,
     rosterLimits,
+    draftPicks,
     updatedAt: new Date().toISOString(),
     error: null,
   };

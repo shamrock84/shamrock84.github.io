@@ -224,6 +224,14 @@ jobs:
       - name: Test the ESPN depth-chart parsing
         run: node scripts/test-espn-depth-chart.mjs
 
+      # The Rosters card's Draft Picks section: MFL's futureDraftPicks
+      # response is undocumented and unreachable from CI, so these fixtures
+      # are copied from what probe-future-draft-picks.yml actually printed.
+      # Silent when wrong: a leaked franchise's pick or a lost trade
+      # provenance both render as a perfectly plausible pick list.
+      - name: Test future draft picks parsing
+        run: node scripts/test-future-draft-picks.mjs
+
       - name: Validate config/leagues.json
         run: |
           node --input-type=module -e '
