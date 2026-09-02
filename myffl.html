@@ -19,6 +19,12 @@
 			--muted: #6b6478;
 			--border: #e3daf0;
 			--accent: #4F2683;
+			/* The Scoring tab's matchup pills alternate this with full --accent
+			   rather than reaching for gold (already spoken for — see
+			   me-row) — a lighter tint of the same purple, not a new hue,
+			   so alternating pills read as "same family, different pill"
+			   rather than introducing a second meaning to track. */
+			--accent-soft: #a793c1;
 			--chip-bg: #ede3f8;
 			--taxi-bg: #ddc9f5;
 			--taxi-text: #4c1f7a;
@@ -48,6 +54,7 @@
 				--muted: #a79bc2;
 				--border: #362a4a;
 				--accent: #b48ee0;
+				--accent-soft: #695388;
 				--chip-bg: #2c2145;
 				--taxi-bg: #472f6e;
 				--taxi-text: #d7bdf5;
@@ -1470,20 +1477,45 @@
 			border-bottom: 1px solid var(--border);
 		}
 		table.standings tr:last-child td { border-bottom: none; }
-		/* Scoring tab, matchup view: a purple box drawn around each two-team
-		   (or lone bye) matchup, rather than a background wash — a wash
-		   fought with me-row's own gold background on any row that was both
-		   "mine" and in a shaded group, muddying the one highlight that
-		   actually matters. A border can't collide with it the same way.
-		   Every row gets the left/right edges; only a group's first row gets
-		   the top edge, so the next group's top edge doubles as this one's
-		   bottom (border-collapse merges them into a single dividing line);
-		   the very last row needs its own bottom edge since table.standings
-		   above just zeroed it out. */
-		table.standings.matchup-scoring td:first-child { border-left: 2px solid var(--accent); }
-		table.standings.matchup-scoring td:last-child { border-right: 2px solid var(--accent); }
-		table.standings.matchup-scoring tr.scoring-matchup-top td { border-top: 2px solid var(--accent); }
-		table.standings.matchup-scoring tr.scoring-matchup-bottom td { border-bottom: 2px solid var(--accent); }
+		/* Scoring tab, matchup view: a soft, rounded pill around each two-team
+		   (or lone bye) matchup — the sharp rectangular box tried first read
+		   as harsh against a page that rounds every other card, chip and
+		   button. border-collapse: separate is what lets an interior table
+		   cell take a border-radius at all (browsers drop radius entirely on
+		   cells under the default collapsed model), and a real spacer row
+		   between groups (rather than border-spacing, which would just as
+		   easily pry the two rows of ONE matchup apart) is what makes each
+		   pill read as its own card. Alternates full --accent with
+		   --accent-soft, a second purple tone added for this — not gold:
+		   gold already means one specific thing on this exact card
+		   (me-row's "this is your team"), and a pill that merely landed on
+		   the gold turn would look like it held your team when it might
+		   not. */
+		table.standings.matchup-scoring {
+			border-collapse: separate;
+			border-spacing: 0;
+		}
+		table.standings.matchup-scoring tr:not(.scoring-matchup-spacer) td:first-child {
+			border-left: 1.5px solid var(--matchup-color, var(--accent));
+		}
+		table.standings.matchup-scoring tr:not(.scoring-matchup-spacer) td:last-child {
+			border-right: 1.5px solid var(--matchup-color, var(--accent));
+		}
+		table.standings.matchup-scoring tr.scoring-matchup-top td {
+			border-top: 1.5px solid var(--matchup-color, var(--accent));
+		}
+		table.standings.matchup-scoring tr.scoring-matchup-top td:first-child { border-top-left-radius: 10px; }
+		table.standings.matchup-scoring tr.scoring-matchup-top td:last-child { border-top-right-radius: 10px; }
+		table.standings.matchup-scoring tr.scoring-matchup-bottom td {
+			border-bottom: 1.5px solid var(--matchup-color, var(--accent));
+		}
+		table.standings.matchup-scoring tr.scoring-matchup-bottom td:first-child { border-bottom-left-radius: 10px; }
+		table.standings.matchup-scoring tr.scoring-matchup-bottom td:last-child { border-bottom-right-radius: 10px; }
+		table.standings.matchup-scoring tr.scoring-matchup-alt { --matchup-color: var(--accent-soft); }
+		table.standings.matchup-scoring tr.scoring-matchup-spacer td {
+			border: none;
+			padding: 0.35rem 0 0;
+		}
 		table.standings th:not(:first-child),
 		table.standings td:not(:first-child) {
 			text-align: right;
@@ -4933,17 +4965,26 @@
 						.filter(Boolean)
 						.sort((a, b) => Number(b.score) - Number(a.score));
 					group.forEach((t, ti) => {
-						const isLastRow = gi === matchups.length - 1 && ti === group.length - 1;
 						const classes = [
 							t.isMe ? 'me-row' : '',
 							ti === 0 ? 'scoring-matchup-top' : '',
-							isLastRow ? 'scoring-matchup-bottom' : '',
+							ti === group.length - 1 ? 'scoring-matchup-bottom' : '',
+							gi % 2 === 1 ? 'scoring-matchup-alt' : '',
 						].filter(Boolean).join(' ');
 						const row = el('tr', { class: classes });
 						row.appendChild(el('td', { text: t.teamName }));
 						row.appendChild(el('td', { text: t.score }));
 						table.appendChild(row);
 					});
+					// A gap row between pills, not a background or border, is what
+					// makes each matchup read as its own card — border-spacing would
+					// do this too, but it can't put space between GROUPS without
+					// also prying the two rows of one matchup apart from each other.
+					if (gi < matchups.length - 1) {
+						const spacer = el('tr', { class: 'scoring-matchup-spacer' });
+						spacer.appendChild(el('td', { colspan: '2' }));
+						table.appendChild(spacer);
+					}
 				});
 			} else {
 				const headRow = el('tr');
