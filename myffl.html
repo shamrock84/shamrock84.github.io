@@ -136,16 +136,25 @@
 		   the page ("notable"). The gold-chip pill behind it is the same
 		   treatment as the Provider/Year badges (--gold-chip-*, see
 		   .badge-provider/.badge-season) so it reads as its own highlighted
-		   chip among the plain-text league links, not just bolder text. */
+		   chip among the plain-text league links, not just bolder text. The
+		   pill itself lives on an inner span rather than the <a> — the divider
+		   above is a ::after on the <a>, so putting the pill's background
+		   there too would paint it behind the divider, making the divider read
+		   as swallowed into the pill instead of sitting between this pill and
+		   its neighbor. */
 		#quicklinks a.quicklink-extra {
 			color: var(--accent);
-			background: var(--gold-chip-bg);
-			border-radius: 999px;
-			padding: 0.15rem 0.55rem;
+			padding: 0;
 		}
 		#quicklinks a.quicklink-extra:hover,
 		#quicklinks a.quicklink-extra:focus-visible {
 			color: var(--text);
+		}
+		#quicklinks a.quicklink-extra span {
+			display: inline-block;
+			background: var(--gold-chip-bg);
+			border-radius: 999px;
+			padding: 0.15rem 0.55rem;
 		}
 		header {
 			padding: 1.5rem 1rem 1rem;
@@ -3959,9 +3968,11 @@
 		// link, in the same synced-not-live order set from the Admin tab's
 		// Quick Links section. Styled with .quicklink-extra (purple text on a
 		// gold-chip pill) so they read as "not a league" at a glance; unlike
-		// a league link, there's no
-		// live name to fall back to, so both url and nickname are required at
-		// save time (see validateQuickLinks in api/save-leagues.js).
+		// a league link, there's no live name to fall back to, so both url
+		// and nickname are required at save time (see validateQuickLinks in
+		// api/save-leagues.js). The nickname is wrapped in its own <span> so
+		// the pill's background sits behind just the text, not the divider
+		// the shared #quicklinks a::after rule appends after it.
 		function renderQuickLinks() {
 			const bar = document.getElementById('quicklinks');
 			if (!bar) return;
@@ -3974,7 +3985,10 @@
 				bar.appendChild(link);
 			}
 			for (const extra of pageData?.quickLinks || []) {
-				bar.appendChild(el('a', { href: extra.url, target: '_blank', rel: 'noopener', class: 'quicklink-extra', text: extra.nickname }));
+				const link = el('a', { href: extra.url, target: '_blank', rel: 'noopener', class: 'quicklink-extra' }, [
+					el('span', { text: extra.nickname }),
+				]);
+				bar.appendChild(link);
 			}
 		}
 
