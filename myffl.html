@@ -19,12 +19,6 @@
 			--muted: #6b6478;
 			--border: #e3daf0;
 			--accent: #4F2683;
-			/* The Scoring tab's matchup pills alternate this with full --accent
-			   rather than reaching for gold (already spoken for — see
-			   me-row) — a lighter tint of the same purple, not a new hue,
-			   so alternating pills read as "same family, different pill"
-			   rather than introducing a second meaning to track. */
-			--accent-soft: #a793c1;
 			--chip-bg: #ede3f8;
 			--taxi-bg: #ddc9f5;
 			--taxi-text: #4c1f7a;
@@ -54,7 +48,6 @@
 				--muted: #a79bc2;
 				--border: #362a4a;
 				--accent: #b48ee0;
-				--accent-soft: #695388;
 				--chip-bg: #2c2145;
 				--taxi-bg: #472f6e;
 				--taxi-text: #d7bdf5;
@@ -1477,44 +1470,46 @@
 			border-bottom: 1px solid var(--border);
 		}
 		table.standings tr:last-child td { border-bottom: none; }
-		/* Scoring tab, matchup view: a soft, rounded pill around each two-team
-		   (or lone bye) matchup — the sharp rectangular box tried first read
-		   as harsh against a page that rounds every other card, chip and
-		   button. border-collapse: separate is what lets an interior table
-		   cell take a border-radius at all (browsers drop radius entirely on
-		   cells under the default collapsed model), and a real spacer row
-		   between groups (rather than border-spacing, which would just as
-		   easily pry the two rows of ONE matchup apart) is what makes each
-		   pill read as its own card. Alternates full --accent with
-		   --accent-soft, a second purple tone added for this — not gold:
-		   gold already means one specific thing on this exact card
-		   (me-row's "this is your team"), and a pill that merely landed on
-		   the gold turn would look like it held your team when it might
-		   not. */
-		table.standings.matchup-scoring {
-			border-collapse: separate;
-			border-spacing: 0;
+		/* Scoring tab, matchup view: each two-team (or lone bye) matchup is its
+		   own small card — the exact border/radius/background .card already
+		   uses everywhere else, not a table row carrying a colored border or
+		   background. Two earlier attempts (a background tint that fought
+		   with me-row's own background, then a colored stroke that read as
+		   harsh against a page that never strokes anything) both tried to
+		   make the grouping cue carry a second job. The border, the divider
+		   between the two rows, and the gap to the next pill already say
+		   "these two belong together" without it; no alternating tone
+		   between pills either, on the same reasoning — a color difference
+		   that encodes nothing still invites the question of what it means. */
+		.scoring-matchup-header {
+			display: flex;
+			justify-content: space-between;
+			font-size: 0.68rem;
+			text-transform: uppercase;
+			letter-spacing: 0.04em;
+			color: var(--muted);
+			padding: 0 0.7rem 0.35rem;
 		}
-		table.standings.matchup-scoring tr:not(.scoring-matchup-spacer) td:first-child {
-			border-left: 1.5px solid var(--matchup-color, var(--accent));
+		.scoring-matchup-pills {
+			display: flex;
+			flex-direction: column;
+			gap: 0.45rem;
 		}
-		table.standings.matchup-scoring tr:not(.scoring-matchup-spacer) td:last-child {
-			border-right: 1.5px solid var(--matchup-color, var(--accent));
+		.scoring-matchup-pill {
+			background: var(--card-bg);
+			border: 1px solid var(--border);
+			border-radius: 12px;
+			overflow: hidden;
 		}
-		table.standings.matchup-scoring tr.scoring-matchup-top td {
-			border-top: 1.5px solid var(--matchup-color, var(--accent));
+		.scoring-matchup-row {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding: 0.4rem 0.7rem;
+			font-size: 0.9rem;
 		}
-		table.standings.matchup-scoring tr.scoring-matchup-top td:first-child { border-top-left-radius: 10px; }
-		table.standings.matchup-scoring tr.scoring-matchup-top td:last-child { border-top-right-radius: 10px; }
-		table.standings.matchup-scoring tr.scoring-matchup-bottom td {
-			border-bottom: 1.5px solid var(--matchup-color, var(--accent));
-		}
-		table.standings.matchup-scoring tr.scoring-matchup-bottom td:first-child { border-bottom-left-radius: 10px; }
-		table.standings.matchup-scoring tr.scoring-matchup-bottom td:last-child { border-bottom-right-radius: 10px; }
-		table.standings.matchup-scoring tr.scoring-matchup-alt { --matchup-color: var(--accent-soft); }
-		table.standings.matchup-scoring tr.scoring-matchup-spacer td {
-			border: none;
-			padding: 0.35rem 0 0;
+		.scoring-matchup-row + .scoring-matchup-row {
+			border-top: 1px solid var(--border);
 		}
 		table.standings th:not(:first-child),
 		table.standings td:not(:first-child) {
@@ -1715,7 +1710,10 @@
 			font-size: 0.85em;
 			opacity: 0.85;
 		}
-		tr.me-row td {
+		/* .scoring-matchup-row.me-row is the Scoring tab's matchup pill —
+		   a div, not a table row — getting the identical treatment below. */
+		tr.me-row td,
+		.scoring-matchup-row.me-row {
 			font-weight: 700;
 			/* Same light yellow as the Provider/Year badges (--gold-chip-*)
 			   rather than the full-strength --gold used for warning states
@@ -4945,7 +4943,6 @@
 			}
 
 			const matchups = league.scoring?.matchups;
-			const table = el('table', { class: matchups && matchups.length ? 'standings matchup-scoring' : 'standings' });
 
 			// Head-to-head pairing when the provider exposes it (ESPN, Sleeper) —
 			// groups teams by who's actually playing whom, which is what a manager
@@ -4953,40 +4950,45 @@
 			// leaderboard. Falls back to the flat leaderboard when pairing isn't
 			// available (MFL — see scripts/probe-live-scoring-matchup.mjs — or an
 			// older cached sync that predates this field).
+			//
+			// Rendered as a stack of small cards, not a table: two earlier attempts
+			// (a background tint that fought with me-row's own background, then a
+			// colored stroke that read as harsh next to a page that never strokes
+			// anything) both tried to make the grouping cue carry a second job. A
+			// plain .scoring-matchup-pill — the same border/radius/background every
+			// .card on the page already uses — plus the divider between its two
+			// rows and the gap to the next pill already say "these two belong
+			// together" on their own; a color doing that job too just invites the
+			// question of whether the color means something else. That's also why
+			// there's no alternating tone between pills: it would encode nothing,
+			// same as here, but a page that alternates colors elsewhere to mean
+			// something trains people to look for a meaning that isn't there.
 			if (matchups && matchups.length) {
 				const teamById = new Map(teams.map((t) => [t.franchiseId, t]));
-				const headRow = el('tr');
-				['Team', 'Score'].forEach((h) => headRow.appendChild(el('th', { text: h })));
-				table.appendChild(headRow);
 
-				matchups.forEach((m, gi) => {
+				const header = el('div', { class: 'scoring-matchup-header' });
+				header.appendChild(el('span', { text: 'Team' }));
+				header.appendChild(el('span', { text: 'Score' }));
+				card.appendChild(header);
+
+				const pills = el('div', { class: 'scoring-matchup-pills' });
+				matchups.forEach((m) => {
 					const group = m.teamIds
 						.map((id) => teamById.get(id))
 						.filter(Boolean)
 						.sort((a, b) => Number(b.score) - Number(a.score));
-					group.forEach((t, ti) => {
-						const classes = [
-							t.isMe ? 'me-row' : '',
-							ti === 0 ? 'scoring-matchup-top' : '',
-							ti === group.length - 1 ? 'scoring-matchup-bottom' : '',
-							gi % 2 === 1 ? 'scoring-matchup-alt' : '',
-						].filter(Boolean).join(' ');
-						const row = el('tr', { class: classes });
-						row.appendChild(el('td', { text: t.teamName }));
-						row.appendChild(el('td', { text: t.score }));
-						table.appendChild(row);
+					const pill = el('div', { class: 'scoring-matchup-pill' });
+					group.forEach((t) => {
+						const row = el('div', { class: `scoring-matchup-row${t.isMe ? ' me-row' : ''}` });
+						row.appendChild(el('span', { text: t.teamName }));
+						row.appendChild(el('span', { text: t.score }));
+						pill.appendChild(row);
 					});
-					// A gap row between pills, not a background or border, is what
-					// makes each matchup read as its own card — border-spacing would
-					// do this too, but it can't put space between GROUPS without
-					// also prying the two rows of one matchup apart from each other.
-					if (gi < matchups.length - 1) {
-						const spacer = el('tr', { class: 'scoring-matchup-spacer' });
-						spacer.appendChild(el('td', { colspan: '2' }));
-						table.appendChild(spacer);
-					}
+					pills.appendChild(pill);
 				});
+				card.appendChild(pills);
 			} else {
+				const table = el('table', { class: 'standings' });
 				const headRow = el('tr');
 				['#', 'Team', 'Score'].forEach((h) => headRow.appendChild(el('th', { text: h })));
 				table.appendChild(headRow);
@@ -4998,8 +5000,8 @@
 					row.appendChild(el('td', { text: t.score }));
 					table.appendChild(row);
 				});
+				card.appendChild(table);
 			}
-			card.appendChild(table);
 			return card;
 		}
 
