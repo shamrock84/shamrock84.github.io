@@ -1470,17 +1470,20 @@
 			border-bottom: 1px solid var(--border);
 		}
 		table.standings tr:last-child td { border-bottom: none; }
-		/* Scoring tab, matchup view: the closing row of every matchup but the
-		   last gets a heavier rule so a group of two (or a lone bye) reads as
-		   one game rather than blurring into the next team's row. */
-		tr.scoring-matchup-gap td { border-bottom: 2px solid var(--border); }
-		/* ...and every other matchup gets a light purple wash — --chip-bg,
-		   the same "this band is one group" tint the Depth Charts position
-		   header already uses, rather than --accent itself (which means
-		   "notable" elsewhere on this page, not "grouped"). Banding by
-		   matchup rather than by row lets the eye tell where one game ends
-		   and the next begins without reading every score. */
-		tr.scoring-matchup-shaded td { background: var(--chip-bg); }
+		/* Scoring tab, matchup view: a purple box drawn around each two-team
+		   (or lone bye) matchup, rather than a background wash — a wash
+		   fought with me-row's own gold background on any row that was both
+		   "mine" and in a shaded group, muddying the one highlight that
+		   actually matters. A border can't collide with it the same way.
+		   Every row gets the left/right edges; only a group's first row gets
+		   the top edge, so the next group's top edge doubles as this one's
+		   bottom (border-collapse merges them into a single dividing line);
+		   the very last row needs its own bottom edge since table.standings
+		   above just zeroed it out. */
+		table.standings.matchup-scoring td:first-child { border-left: 2px solid var(--accent); }
+		table.standings.matchup-scoring td:last-child { border-right: 2px solid var(--accent); }
+		table.standings.matchup-scoring tr.scoring-matchup-top td { border-top: 2px solid var(--accent); }
+		table.standings.matchup-scoring tr.scoring-matchup-bottom td { border-bottom: 2px solid var(--accent); }
 		table.standings th:not(:first-child),
 		table.standings td:not(:first-child) {
 			text-align: right;
@@ -4909,8 +4912,8 @@
 				card.appendChild(el('div', { class: 'team', text: `Week ${league.scoring.week}` }));
 			}
 
-			const table = el('table', { class: 'standings' });
 			const matchups = league.scoring?.matchups;
+			const table = el('table', { class: matchups && matchups.length ? 'standings matchup-scoring' : 'standings' });
 
 			// Head-to-head pairing when the provider exposes it (ESPN, Sleeper) —
 			// groups teams by who's actually playing whom, which is what a manager
@@ -4930,11 +4933,11 @@
 						.filter(Boolean)
 						.sort((a, b) => Number(b.score) - Number(a.score));
 					group.forEach((t, ti) => {
-						const isGroupEnd = ti === group.length - 1 && gi < matchups.length - 1;
+						const isLastRow = gi === matchups.length - 1 && ti === group.length - 1;
 						const classes = [
 							t.isMe ? 'me-row' : '',
-							isGroupEnd ? 'scoring-matchup-gap' : '',
-							gi % 2 === 0 ? 'scoring-matchup-shaded' : '',
+							ti === 0 ? 'scoring-matchup-top' : '',
+							isLastRow ? 'scoring-matchup-bottom' : '',
 						].filter(Boolean).join(' ');
 						const row = el('tr', { class: classes });
 						row.appendChild(el('td', { text: t.teamName }));
