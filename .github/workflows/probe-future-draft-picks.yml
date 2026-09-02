@@ -1,0 +1,28 @@
+name: Probe Future Draft Picks (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here,
+# the same rule the other manual workflows follow.
+#
+# Asks MFL what it returns about a franchise's future (unmade) draft picks,
+# ahead of building the Rosters card's new Draft Picks section. Read-only:
+# MFL's api_info docs page plus a handful of candidate TYPE= export calls.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Dump what MFL says about future draft picks
+        env:
+          MFL_USERNAME: ${{ secrets.MFL_USERNAME }}
+          MFL_PASSWORD: ${{ secrets.MFL_PASSWORD }}
+        run: node scripts/probe-future-draft-picks.mjs
