@@ -1470,17 +1470,47 @@
 			border-bottom: 1px solid var(--border);
 		}
 		table.standings tr:last-child td { border-bottom: none; }
-		/* Scoring tab, matchup view: the closing row of every matchup but the
-		   last gets a heavier rule so a group of two (or a lone bye) reads as
-		   one game rather than blurring into the next team's row. */
-		tr.scoring-matchup-gap td { border-bottom: 2px solid var(--border); }
-		/* ...and every other matchup gets a light purple wash — --chip-bg,
-		   the same "this band is one group" tint the Depth Charts position
-		   header already uses, rather than --accent itself (which means
-		   "notable" elsewhere on this page, not "grouped"). Banding by
-		   matchup rather than by row lets the eye tell where one game ends
-		   and the next begins without reading every score. */
-		tr.scoring-matchup-shaded td { background: var(--chip-bg); }
+		/* Scoring tab, matchup view: each two-team (or lone bye) matchup is its
+		   own small card — the exact border/radius/background .card already
+		   uses everywhere else, not a table row carrying a colored border or
+		   background. Two earlier attempts (a background tint that fought
+		   with me-row's own background, then a colored stroke that read as
+		   harsh against a page that never strokes anything) both tried to
+		   make the grouping cue carry a second job. The border, the divider
+		   between the two rows, and the gap to the next pill already say
+		   "these two belong together" without it; no alternating tone
+		   between pills either, on the same reasoning — a color difference
+		   that encodes nothing still invites the question of what it means. */
+		.scoring-matchup-header {
+			display: flex;
+			justify-content: space-between;
+			font-size: 0.68rem;
+			text-transform: uppercase;
+			letter-spacing: 0.04em;
+			color: var(--muted);
+			padding: 0 0.7rem 0.35rem;
+		}
+		.scoring-matchup-pills {
+			display: flex;
+			flex-direction: column;
+			gap: 0.45rem;
+		}
+		.scoring-matchup-pill {
+			background: var(--card-bg);
+			border: 1px solid var(--border);
+			border-radius: 12px;
+			overflow: hidden;
+		}
+		.scoring-matchup-row {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding: 0.4rem 0.7rem;
+			font-size: 0.9rem;
+		}
+		.scoring-matchup-row + .scoring-matchup-row {
+			border-top: 1px solid var(--border);
+		}
 		table.standings th:not(:first-child),
 		table.standings td:not(:first-child) {
 			text-align: right;
@@ -1680,7 +1710,10 @@
 			font-size: 0.85em;
 			opacity: 0.85;
 		}
-		tr.me-row td {
+		/* .scoring-matchup-row.me-row is the Scoring tab's matchup pill —
+		   a div, not a table row — getting the identical treatment below. */
+		tr.me-row td,
+		.scoring-matchup-row.me-row {
 			font-weight: 700;
 			/* Same light yellow as the Provider/Year badges (--gold-chip-*)
 			   rather than the full-strength --gold used for warning states
@@ -4909,7 +4942,6 @@
 				card.appendChild(el('div', { class: 'team', text: `Week ${league.scoring.week}` }));
 			}
 
-			const table = el('table', { class: 'standings' });
 			const matchups = league.scoring?.matchups;
 
 			// Head-to-head pairing when the provider exposes it (ESPN, Sleeper) —
@@ -4918,31 +4950,45 @@
 			// leaderboard. Falls back to the flat leaderboard when pairing isn't
 			// available (MFL — see scripts/probe-live-scoring-matchup.mjs — or an
 			// older cached sync that predates this field).
+			//
+			// Rendered as a stack of small cards, not a table: two earlier attempts
+			// (a background tint that fought with me-row's own background, then a
+			// colored stroke that read as harsh next to a page that never strokes
+			// anything) both tried to make the grouping cue carry a second job. A
+			// plain .scoring-matchup-pill — the same border/radius/background every
+			// .card on the page already uses — plus the divider between its two
+			// rows and the gap to the next pill already say "these two belong
+			// together" on their own; a color doing that job too just invites the
+			// question of whether the color means something else. That's also why
+			// there's no alternating tone between pills: it would encode nothing,
+			// same as here, but a page that alternates colors elsewhere to mean
+			// something trains people to look for a meaning that isn't there.
 			if (matchups && matchups.length) {
 				const teamById = new Map(teams.map((t) => [t.franchiseId, t]));
-				const headRow = el('tr');
-				['Team', 'Score'].forEach((h) => headRow.appendChild(el('th', { text: h })));
-				table.appendChild(headRow);
 
-				matchups.forEach((m, gi) => {
+				const header = el('div', { class: 'scoring-matchup-header' });
+				header.appendChild(el('span', { text: 'Team' }));
+				header.appendChild(el('span', { text: 'Score' }));
+				card.appendChild(header);
+
+				const pills = el('div', { class: 'scoring-matchup-pills' });
+				matchups.forEach((m) => {
 					const group = m.teamIds
 						.map((id) => teamById.get(id))
 						.filter(Boolean)
 						.sort((a, b) => Number(b.score) - Number(a.score));
-					group.forEach((t, ti) => {
-						const isGroupEnd = ti === group.length - 1 && gi < matchups.length - 1;
-						const classes = [
-							t.isMe ? 'me-row' : '',
-							isGroupEnd ? 'scoring-matchup-gap' : '',
-							gi % 2 === 0 ? 'scoring-matchup-shaded' : '',
-						].filter(Boolean).join(' ');
-						const row = el('tr', { class: classes });
-						row.appendChild(el('td', { text: t.teamName }));
-						row.appendChild(el('td', { text: t.score }));
-						table.appendChild(row);
+					const pill = el('div', { class: 'scoring-matchup-pill' });
+					group.forEach((t) => {
+						const row = el('div', { class: `scoring-matchup-row${t.isMe ? ' me-row' : ''}` });
+						row.appendChild(el('span', { text: t.teamName }));
+						row.appendChild(el('span', { text: t.score }));
+						pill.appendChild(row);
 					});
+					pills.appendChild(pill);
 				});
+				card.appendChild(pills);
 			} else {
+				const table = el('table', { class: 'standings' });
 				const headRow = el('tr');
 				['#', 'Team', 'Score'].forEach((h) => headRow.appendChild(el('th', { text: h })));
 				table.appendChild(headRow);
@@ -4954,8 +5000,8 @@
 					row.appendChild(el('td', { text: t.score }));
 					table.appendChild(row);
 				});
+				card.appendChild(table);
 			}
-			card.appendChild(table);
 			return card;
 		}
 
