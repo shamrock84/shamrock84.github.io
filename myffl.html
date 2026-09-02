@@ -1184,6 +1184,36 @@
 			color: var(--muted);
 			font-weight: normal;
 		}
+		/* Draft Picks group (buildDraftPicksTable) — its own class rather than
+		   reusing table.roster, since these rows aren't .player-row (no
+		   position/name/bye/ECR) and table.roster's borders key off that
+		   class. Plain bordered rows like table.roster's own, just simpler. */
+		table.draft-picks {
+			width: 100%;
+			border-collapse: collapse;
+			font-size: 0.9rem;
+		}
+		table.draft-picks th {
+			text-align: left;
+			font-size: 0.72rem;
+			color: var(--muted);
+			font-weight: 600;
+			padding: 0 0.2rem 0.3rem;
+		}
+		table.draft-picks td {
+			padding: 0.3rem 0.2rem;
+			border-bottom: 1px solid var(--border);
+			font-variant-numeric: tabular-nums;
+		}
+		table.draft-picks tr:last-child td {
+			border-bottom: none;
+		}
+		/* Blank for a natural pick (see buildDraftPicksTable) — muted so a
+		   traded-in pick's origin reads as metadata, not a fact as prominent
+		   as the year/round themselves. */
+		table.draft-picks .draft-pick-via {
+			color: var(--muted);
+		}
 		/* A real salary that has a known contract length (see
 		   salaryByYearBreakdown) renders as this instead of plain text — a
 		   dotted underline signals "click me" without borrowing the solid
@@ -3374,6 +3404,33 @@
 			return table;
 		}
 
+		// Draft Picks group (renderCard, after Injured Reserve). picks is
+		// league.draftPicks — already sorted by year then round and already
+		// resolved to our current ownership by the sync (see
+		// parseFutureDraftPicks in providers.mjs: a pick traded away simply
+		// isn't in the list, so there's nothing here to reconcile). No
+		// pick-number/slot column: MFL's own futureDraftPicks response doesn't
+		// carry one, because draft order isn't set this many months out — year
+		// and round are genuinely all there is. Via is blank for a natural
+		// pick and names the team it was acquired from otherwise, mirroring
+		// originalTeamName's own null-means-ours convention.
+		function buildDraftPicksTable(picks) {
+			const table = el('table', { class: 'draft-picks' });
+			const headRow = el('tr');
+			headRow.appendChild(el('th', { text: 'Year' }));
+			headRow.appendChild(el('th', { text: 'Round' }));
+			headRow.appendChild(el('th', { text: 'Via' }));
+			table.appendChild(headRow);
+			for (const pick of picks) {
+				const row = el('tr');
+				row.appendChild(el('td', { text: String(pick.year) }));
+				row.appendChild(el('td', { text: String(pick.round) }));
+				row.appendChild(el('td', { class: 'draft-pick-via', text: pick.originalTeamName || '—' }));
+				table.appendChild(row);
+			}
+			return table;
+		}
+
 		// The manager's own locally-planned salary for a still-unset roster
 		// spot, or null if there isn't one — or the viewer isn't logged in.
 		// A plan is exactly the kind of strategy that shouldn't leak to a
@@ -4571,6 +4628,32 @@
 				// iteration instead.
 				if (group.key === 'TAXI_SQUAD' && taxiSalaryTotalEl) groupContent.appendChild(taxiSalaryTotalEl);
 				if (group.key === 'TAXI_SQUAD' && taxiExpirationSummaryEl) groupContent.appendChild(taxiExpirationSummaryEl);
+			}
+
+			// Dynasty/Salary Cap only, after Injured Reserve — a draft-only or
+			// redraft league re-drafts from scratch every year, so a future pick
+			// isn't a thing to plan around there. Not part of STATUS_GROUPS/
+			// byStatus above: a draft pick isn't a player and carries none of the
+			// fields (position, bye, ECR, salary) every other group's table
+			// renders, so it gets its own table rather than being forced through
+			// buildRosterTable. league.draftPicks comes off MFL's
+			// TYPE=futureDraftPicks (see fetchLeagueRoster in providers.mjs) —
+			// null means "couldn't tell" (not fetched, or the fetch failed) and
+			// stays hidden same as an empty list, since there's nothing to show
+			// either way; only a non-empty confirmed list renders, same
+			// "omitted rather than printed empty" idiom every other group here
+			// already follows.
+			const showDraftPicks = (league.type === 'dynasty' || league.type === 'salarycap')
+				&& Array.isArray(league.draftPicks) && league.draftPicks.length > 0;
+			if (showDraftPicks) {
+				const groupWrap = el('div', { class: 'roster-group' });
+				const groupLabel = el('div', { class: 'group-label', text: `Draft Picks (${league.draftPicks.length})` });
+				const groupContent = el('div', { class: 'roster-group-content' });
+				makeGroupCollapsible(groupWrap, groupLabel, `${league.id}:DRAFT_PICKS`);
+				groupWrap.appendChild(groupLabel);
+				groupContent.appendChild(buildDraftPicksTable(league.draftPicks));
+				groupWrap.appendChild(groupContent);
+				card.appendChild(groupWrap);
 			}
 
 			if (!league.players || league.players.length === 0) {
