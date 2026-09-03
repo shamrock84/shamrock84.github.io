@@ -48,13 +48,7 @@ const MAX_BODY_BYTES = 256 * 1024;
 // (a string, same shape as every other plan kind — see setResultOverride in
 // myffl.html). Presence of an entry IS its confirmation; there is no
 // separate confirmed flag to validate here.
-//
-// watchlist is the Planning tab's per-league watch list — leagueId ->
-// playerId -> '1' (presence is the whole signal; there's no value worth
-// carrying beyond it, unlike a contract length or salary). It fits this
-// shape exactly, so it costs nothing beyond being listed here — no
-// dedicated validate/merge code of its own, unlike tasks below.
-const PLAN_KINDS = ['contractPlans', 'salaryPlans', 'cutPlans', 'resultOverrides', 'watchlist'];
+const PLAN_KINDS = ['contractPlans', 'salaryPlans', 'cutPlans', 'resultOverrides'];
 
 // The Planning tab's task list. Id-keyed rather than leagueId -> playerId ->
 // value — a task isn't scoped to a league or a player — so it doesn't fit
@@ -90,7 +84,7 @@ function resolveStore(env) {
 }
 
 function emptyDocument() {
-  return { contractPlans: {}, salaryPlans: {}, cutPlans: {}, resultOverrides: {}, watchlist: {}, tasks: {}, updatedAt: null };
+  return { contractPlans: {}, salaryPlans: {}, cutPlans: {}, resultOverrides: {}, tasks: {}, updatedAt: null };
 }
 
 // Returns an array of human-readable problems — empty means valid.

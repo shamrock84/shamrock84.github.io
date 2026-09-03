@@ -54,10 +54,6 @@ check('accepts a well-formed resultOverrides document',
   validatePlans({ resultOverrides: { 30641: { 2024: '2' } } }).length === 0);
 check('rejects a non-object resultOverrides kind', validatePlans({ resultOverrides: 'nope' }).length === 1);
 
-check('accepts a well-formed watchlist document',
-  validatePlans({ watchlist: { 30641: { 16148: '1' } } }).length === 0);
-check('rejects a non-object watchlist kind', validatePlans({ watchlist: 'nope' }).length === 1);
-
 console.log('validateTasks');
 eq('accepts a well-formed task', validateTasks({
   t1: { text: 'Set lineups', category: 'Weekly', done: false, createdAt: 1000, completedAt: null },
@@ -109,7 +105,7 @@ eq('an empty incoming document never erases a stored task',
   { t1: { text: 'a', category: '', done: false, order: 1, createdAt: 1, completedAt: null } });
 
 console.log('emptyDocument');
-eq('carries every plan kind plus tasks', emptyDocument(), { contractPlans: {}, salaryPlans: {}, cutPlans: {}, resultOverrides: {}, watchlist: {}, tasks: {}, updatedAt: null });
+eq('carries every plan kind plus tasks', emptyDocument(), { contractPlans: {}, salaryPlans: {}, cutPlans: {}, resultOverrides: {}, tasks: {}, updatedAt: null });
 
 console.log('mergePlans');
 // The case this endpoint exists for: a phone that has never synced posts an
@@ -138,12 +134,12 @@ eq('stored wins a conflict — it synced more recently than an unpushed local',
     { contractPlans: { 30641: { 1: '1' } } },
   ).contractPlans,
   { 30641: { 1: '3' } });
-eq('all five PLAN_KINDS merge independently',
+eq('all four PLAN_KINDS merge independently',
   mergePlans(
-    { contractPlans: { 30641: { 1: '1' } }, salaryPlans: { 30641: { 9: '50' } }, cutPlans: { 30641: { 2: '1' } }, resultOverrides: { 30641: { 2024: '3' } }, watchlist: { 30641: { 3: '1' } } },
+    { contractPlans: { 30641: { 1: '1' } }, salaryPlans: { 30641: { 9: '50' } }, cutPlans: { 30641: { 2: '1' } }, resultOverrides: { 30641: { 2024: '3' } } },
     { salaryPlans: { 30641: { 8: '25' } } },
   ),
-  { contractPlans: { 30641: { 1: '1' } }, salaryPlans: { 30641: { 8: '25', 9: '50' } }, cutPlans: { 30641: { 2: '1' } }, resultOverrides: { 30641: { 2024: '3' } }, watchlist: { 30641: { 3: '1' } }, tasks: {}, updatedAt: null });
+  { contractPlans: { 30641: { 1: '1' } }, salaryPlans: { 30641: { 8: '25', 9: '50' } }, cutPlans: { 30641: { 2: '1' } }, resultOverrides: { 30641: { 2024: '3' } }, tasks: {}, updatedAt: null });
 const mergedTasks = mergePlans(
   { tasks: { t1: { text: 'a', category: '', done: false, createdAt: 1, completedAt: null } } },
   { tasks: { t2: { text: 'b', category: '', done: false, createdAt: 2, completedAt: null } } },
