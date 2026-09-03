@@ -2343,21 +2343,19 @@
 		.planning-task-row.planning-task-drop-after {
 			box-shadow: inset 0 -3px 0 0 var(--accent);
 		}
-		/* Completed rows only ever render inside .planning-done-details, so
+		/* Completed rows only ever render inside .planning-task-section, so
 		   the strikethrough never has to be toggled off elsewhere. */
 		.planning-task-done .planning-task-text {
 			color: var(--muted);
 			text-decoration: line-through;
 		}
-		.planning-task-category {
-			margin: 0.7rem 0 0.2rem;
-			font-size: 0.78rem;
-			text-transform: uppercase;
-			letter-spacing: 0.04em;
-			color: var(--muted);
-		}
-		.planning-done-details { margin-top: 0.8rem; }
-		.planning-done-details summary {
+		/* One shared <details>/<summary> shape for every collapsible section
+		   in the Tasks card — each category and Completed alike. Only the
+		   default open state differs between them (see renderTasksCard):
+		   a category starts open, since it's somewhere you're expected to
+		   be working, while Completed starts closed the way it always has. */
+		.planning-task-section { margin-top: 0.7rem; }
+		.planning-task-section summary {
 			cursor: pointer;
 			color: var(--muted);
 			font-size: 0.85rem;
@@ -8748,21 +8746,23 @@
 
 			if (openEntries.length > 0) {
 				for (const key of categoryKeys) {
-					// A category label only earns its keep once there's more
-					// than one group to tell apart — a single-category list
-					// (the common case for a while) stays a plain list.
-					if (categoryKeys.length > 1) {
-						card.appendChild(el('div', { class: 'planning-task-category', text: key || 'Uncategorized' }));
-					}
 					const groupEntries = byCategory.get(key);
-					groupEntries.forEach(([id, t], index) => card.appendChild(buildTaskRow(id, t, { key, index, groupEntries })));
+					// Every category gets its own collapsible section, same
+					// shape as Completed below — open by default, unlike
+					// Completed, since a category is somewhere you're
+					// expected to be working, not somewhere things go once
+					// they're out of the way.
+					const details = el('details', { class: 'planning-task-section', open: 'true' });
+					details.appendChild(el('summary', { text: `${key || 'Uncategorized'} (${groupEntries.length})` }));
+					groupEntries.forEach(([id, t], index) => details.appendChild(buildTaskRow(id, t, { key, index, groupEntries })));
+					card.appendChild(details);
 				}
 			} else {
 				card.appendChild(el('div', { class: 'planning-empty', text: 'Nothing open — nice.' }));
 			}
 
 			if (doneEntries.length > 0) {
-				const details = el('details', { class: 'planning-done-details' });
+				const details = el('details', { class: 'planning-task-section' });
 				details.appendChild(el('summary', { text: `Completed (${doneEntries.length})` }));
 				for (const [id, t] of doneEntries) details.appendChild(buildTaskRow(id, t));
 				card.appendChild(details);
