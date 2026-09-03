@@ -33,7 +33,6 @@ const scriptSource = html.match(/<script>([\s\S]*)<\/script>/)[1];
 const CONTRACT_KEY = 'myfflContractPlans';
 const SALARY_KEY = 'myfflSalaryPlans';
 const CUT_KEY = 'myfflCutPlans';
-const WATCHLIST_KEY = 'myfflWatchlist';
 const TASKS_KEY = 'myfflTasks';
 const PENDING_KEY = 'myfflPlanPending';
 const TASKS_PENDING_KEY = 'myfflTasksPending';
@@ -103,7 +102,6 @@ function loadPage(disk, respond) {
 		contracts: () => JSON.parse(localStorage.getItem(CONTRACT_KEY) || '{}'),
 		salaries: () => JSON.parse(localStorage.getItem(SALARY_KEY) || '{}'),
 		cuts: () => JSON.parse(localStorage.getItem(CUT_KEY) || '{}'),
-		watchlist: () => JSON.parse(localStorage.getItem(WATCHLIST_KEY) || '{}'),
 		tasks: () => JSON.parse(localStorage.getItem(TASKS_KEY) || '{}'),
 		pending: () => JSON.parse(localStorage.getItem(PENDING_KEY) || 'null'),
 		pendingTasks: () => JSON.parse(localStorage.getItem(TASKS_PENDING_KEY) || 'null'),
@@ -201,35 +199,6 @@ test('a plan set on one device still arrives on the other', async () => {
 	assert.deepEqual(b.contracts(), { L1: { p1: '3' } });
 	assert.deepEqual(b.salaries(), { L1: { p1: '22' } });
 	assert.deepEqual(b.cuts(), { L1: { p2: 'CUT' } });
-});
-
-test('a watchlisted player arrives on the other device, and removing it propagates', async () => {
-	// Same deletion hazard this file exists to catch, on the newest PLAN_KINDS
-	// entry: a union can't express a removal, so this has to go through the
-	// same GET-carries-a-deletion path proven above for contractPlans.
-	const store = newStore();
-	const phone = newDisk({ [SYNCED_KEY]: '1' });
-	const ipad = newDisk({ [SYNCED_KEY]: '1' });
-
-	const a = loadPage(ipad, store.serve);
-	await a.g.syncPlans();
-	a.g.setWatchlisted('L1', 'p1', true);
-	await flush(a);
-	assert.deepEqual(store.read().watchlist, { L1: { p1: '1' } });
-
-	const b = loadPage(phone, store.serve);
-	await b.g.syncPlans();
-	await settle();
-	assert.deepEqual(b.watchlist(), { L1: { p1: '1' } }, 'the watch arrives on the other device');
-
-	a.g.setWatchlisted('L1', 'p1', false);
-	await flush(a);
-	assert.deepEqual(store.read().watchlist, {}, 'the removal reaches the store');
-
-	const reload = loadPage(phone, store.serve); // same disk, fresh page
-	await reload.g.syncPlans();
-	await settle();
-	assert.deepEqual(reload.watchlist(), {}, 'the phone drops it on its next load');
 });
 
 test('a task arrives on the other device, and deleting it propagates', async () => {
@@ -375,7 +344,7 @@ test('an edit made with the store down is pushed on the next load', async () => 
 	offline.g.setContractPlan('L1', 'p1', '');
 	await flush(offline);
 	assert.deepEqual(offline.contracts(), {}, 'the page still works offline');
-	assert.deepEqual(offline.pending(), { contractPlans: { L1: { p1: '' } }, salaryPlans: {}, cutPlans: {}, resultOverrides: {}, watchlist: {} });
+	assert.deepEqual(offline.pending(), { contractPlans: { L1: { p1: '' } }, salaryPlans: {}, cutPlans: {}, resultOverrides: {} });
 
 	const back = loadPage(disk, store.serve);
 	await back.g.syncPlans();
@@ -417,7 +386,7 @@ test('an edit made while a push is in flight stays pending', async () => {
 
 	assert.deepEqual(
 		page.pending(),
-		{ contractPlans: { L1: { p1: '2', p2: '3' } }, salaryPlans: {}, cutPlans: {}, resultOverrides: {}, watchlist: {} },
+		{ contractPlans: { L1: { p1: '2', p2: '3' } }, salaryPlans: {}, cutPlans: {}, resultOverrides: {} },
 		'the second edit is not cleared by an answer that predates it'
 	);
 });

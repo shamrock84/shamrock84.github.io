@@ -2220,9 +2220,9 @@
 			padding-bottom: 2rem;
 		}
 		footer a { color: var(--accent); }
-		/* Planning tab — Watch List and Tasks. The add/remove controls mirror
-		   the Admin tab's shape (an input row, a pill add button, a small
-		   remove icon), but get their own class prefix rather than reusing
+		/* Planning tab — Tasks. The add/remove controls mirror the Admin
+		   tab's shape (an input row, a pill add button, a small remove
+		   icon), but get their own class prefix rather than reusing
 		   .admin-* — unrelated features sharing a shape isn't a reason to
 		   couple them (see the CLAUDE.md note on .results-* vs .finances-*
 		   for the same call made elsewhere in this file). */
@@ -2244,7 +2244,6 @@
 			background: var(--card-bg);
 			color: inherit;
 		}
-		.planning-select { min-width: 0; }
 		.planning-add-btn {
 			font: inherit;
 			font-size: 0.85rem;
@@ -2272,16 +2271,6 @@
 			font-size: 0.85rem;
 			margin: 0.4rem 0;
 		}
-		.planning-watch-row {
-			display: flex;
-			align-items: center;
-			gap: 0.5rem;
-			padding: 0.35rem 0;
-			border-bottom: 1px solid var(--border);
-		}
-		.planning-watch-row:last-child { border-bottom: none; }
-		.planning-watch-name { flex: 1; }
-		.planning-watch-league { color: var(--muted); font-size: 0.8rem; }
 		.planning-task-row {
 			display: flex;
 			align-items: center;
@@ -2751,40 +2740,6 @@
 			schedulePlanPush();
 		}
 
-		// Planning tab's watch list — leagueId -> playerId -> '1'. Same shape,
-		// same independent storage, and same reasoning as the three plans
-		// above, but the value itself carries no information beyond presence
-		// (unlike a contract length or salary, there's no "how much" to a
-		// watch-list entry) — '1' rather than a timestamp, because showing
-		// "added 3 days ago" isn't worth the extra few characters of synced
-		// state. Scoped per league rather than global on purpose: watching a
-		// player as a trade target in one league says nothing about a league
-		// where you already roster him.
-		const WATCHLIST_STORAGE_KEY = 'myfflWatchlist';
-		function loadWatchlist() {
-			try {
-				return JSON.parse(localStorage.getItem(WATCHLIST_STORAGE_KEY) || '{}');
-			} catch {
-				return {};
-			}
-		}
-		function isWatchlisted(leagueId, playerId) {
-			return !!loadWatchlist()[leagueId]?.[playerId];
-		}
-		function setWatchlisted(leagueId, playerId, on) {
-			const list = loadWatchlist();
-			if (!on) {
-				delete list[leagueId]?.[playerId];
-				if (list[leagueId] && Object.keys(list[leagueId]).length === 0) delete list[leagueId];
-			} else {
-				list[leagueId] = list[leagueId] || {};
-				list[leagueId][playerId] = '1';
-			}
-			localStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify(list));
-			recordPlanEdit('watchlist', leagueId, playerId, on ? '1' : '');
-			schedulePlanPush();
-		}
-
 		// Planning tab's task list. Unlike every plan above, a task isn't
 		// scoped to a league or a player, so it doesn't fit the
 		// leagueId -> playerId -> string shape those share — it's its own
@@ -2910,7 +2865,7 @@
 		let planPushGeneration = 0;
 
 		function localPlansDocument() {
-			return { contractPlans: loadContractPlans(), salaryPlans: loadSalaryPlans(), cutPlans: loadCutPlans(), resultOverrides: loadResultOverrides(), watchlist: loadWatchlist(), tasks: loadTasks() };
+			return { contractPlans: loadContractPlans(), salaryPlans: loadSalaryPlans(), cutPlans: loadCutPlans(), resultOverrides: loadResultOverrides(), tasks: loadTasks() };
 		}
 
 		function writePlansLocal(doc) {
@@ -2918,7 +2873,6 @@
 			localStorage.setItem(SALARY_PLAN_STORAGE_KEY, JSON.stringify(doc.salaryPlans || {}));
 			localStorage.setItem(CUT_PLAN_STORAGE_KEY, JSON.stringify(doc.cutPlans || {}));
 			localStorage.setItem(RESULT_OVERRIDE_STORAGE_KEY, JSON.stringify(doc.resultOverrides || {}));
-			localStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify(doc.watchlist || {}));
 			writeTasksLocal(doc.tasks);
 		}
 
@@ -2939,14 +2893,13 @@
 		// can tell a plan another device deleted apart from one this device
 		// simply hasn't been told about yet.
 		const PLAN_PENDING_KEY = 'myfflPlanPending';
-		// watchlist joins this loop for free — see its definition above for why
-		// it fits the same leagueId -> playerId -> string shape as the other
-		// four. tasks does not (it isn't league- or player-scoped) and is
-		// handled by its own pending log, TASKS_PENDING_KEY, just below.
-		const PLAN_KINDS = ['contractPlans', 'salaryPlans', 'cutPlans', 'resultOverrides', 'watchlist'];
+		// tasks does not fit this leagueId -> playerId -> string shape (it
+		// isn't league- or player-scoped) and is handled by its own pending
+		// log, TASKS_PENDING_KEY, just below.
+		const PLAN_KINDS = ['contractPlans', 'salaryPlans', 'cutPlans', 'resultOverrides'];
 
 		function emptyPlanEdits() {
-			return { contractPlans: {}, salaryPlans: {}, cutPlans: {}, resultOverrides: {}, watchlist: {} };
+			return { contractPlans: {}, salaryPlans: {}, cutPlans: {}, resultOverrides: {} };
 		}
 
 		function loadPendingPlanEdits() {
@@ -8494,88 +8447,6 @@
 			return card;
 		}
 
-		// Planning tab — Watch List. Gated behind login the same way and for
-		// the same reason as Analytics/History (see the History tab comment):
-		// a portfolio-wide view of the manager's own strategy, not a league
-		// mate's to read. Unlike Results/Finances it never returns null —
-		// even with nothing watched yet, the add controls are worth showing
-		// so a new visitor finds the feature rather than a missing tab.
-		function renderWatchlistCard(leagues) {
-			const list = loadWatchlist();
-			const card = el('div', { class: 'card planning-card', 'data-view': 'planning' });
-			const heading = el('h2', { class: 'card-heading', text: 'Watch List' });
-			card.appendChild(heading);
-			makeCollapsible(card, heading, 'watchlist');
-			card.appendChild(el('div', { class: 'team', text: 'Players to keep an eye on, per league.' }));
-
-			const addRow = el('div', { class: 'planning-add-row' });
-			const leagueSelect = el('select', { class: 'planning-input planning-select' });
-			for (const league of leagues) {
-				leagueSelect.appendChild(el('option', { value: league.id, text: leagueDisplayName(league) }));
-			}
-			const playerSelect = el('select', { class: 'planning-input planning-select' });
-			// Rebuilt on every league change rather than pre-built per league —
-			// leagues run into the dozens of players each, and only one
-			// dropdown's worth is ever on screen at a time. Already-watched
-			// players are excluded so the list can't offer a duplicate add.
-			const fillPlayers = () => {
-				playerSelect.innerHTML = '';
-				const league = leagues.find((l) => String(l.id) === leagueSelect.value);
-				const already = new Set(Object.keys(list[leagueSelect.value] || {}));
-				const players = [...(league?.players || [])]
-					.filter((p) => !already.has(String(p.id)))
-					.sort((a, b) => a.name.localeCompare(b.name));
-				for (const p of players) {
-					playerSelect.appendChild(el('option', { value: p.id, text: `${p.name} (${p.position}${p.team ? ' ' + p.team : ''})` }));
-				}
-			};
-			leagueSelect.addEventListener('change', fillPlayers);
-			fillPlayers();
-			const addBtn = el('button', { type: 'button', class: 'planning-add-btn', text: '+ Watch' });
-			addBtn.addEventListener('click', () => {
-				if (!playerSelect.value) return;
-				setWatchlisted(leagueSelect.value, playerSelect.value, true);
-				renderGrid();
-			});
-			addRow.appendChild(leagueSelect);
-			addRow.appendChild(playerSelect);
-			addRow.appendChild(addBtn);
-			card.appendChild(addRow);
-
-			const entries = [];
-			for (const [leagueId, players] of Object.entries(list)) {
-				const league = leagues.find((l) => String(l.id) === String(leagueId));
-				if (!league) continue;
-				for (const playerId of Object.keys(players)) {
-					const p = (league.players || []).find((pl) => String(pl.id) === String(playerId));
-					entries.push({ league, playerId, player: p });
-				}
-			}
-			entries.sort((a, b) => (a.player?.name || '').localeCompare(b.player?.name || ''));
-
-			if (entries.length === 0) {
-				card.appendChild(el('div', { class: 'planning-empty', text: 'Nothing on the watch list yet.' }));
-				return card;
-			}
-			const listEl = el('div', { class: 'planning-watch-list' });
-			for (const { league, playerId, player } of entries) {
-				const row = el('div', { class: 'planning-watch-row' });
-				const nameCell = el('span', { class: 'planning-watch-name', text: player ? player.name : `Player ${playerId}` });
-				if (player) appendTeamSuffix(nameCell, player.team);
-				row.appendChild(nameCell);
-				row.appendChild(el('span', { class: 'planning-watch-league', text: leagueDisplayName(league) }));
-				const removeBtn = el('button', { type: 'button', class: 'planning-icon-btn planning-remove-btn', title: 'Remove from watch list', text: '✕' });
-				removeBtn.addEventListener('click', () => {
-					setWatchlisted(league.id, playerId, false);
-					renderGrid();
-				});
-				row.appendChild(removeBtn);
-				listEl.appendChild(row);
-			}
-			card.appendChild(listEl);
-			return card;
-		}
-
 		// Planning tab — Tasks. A checkbox, not the radio buttons the original
 		// notes for this tab sketched — radio implies a mutually-exclusive
 		// choice within a group, which isn't what completing one task among
@@ -10201,11 +10072,10 @@
 				if (financesCard) gridEl.appendChild(financesCard);
 			}
 
-			// Planning tab: the manager's own notes-adjacent tools (watch list,
-			// tasks), gated behind login for the same reason as Analytics and
-			// History above — it's strategy, not a league mate's business.
+			// Planning tab: the manager's own task list, gated behind login for
+			// the same reason as Analytics and History above — it's strategy,
+			// not a league mate's business.
 			if (isLoggedIn()) {
-				gridEl.appendChild(renderWatchlistCard(data.leagues));
 				gridEl.appendChild(renderTasksCard());
 			}
 
