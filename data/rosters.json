@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-03T12:51:29.405Z",
+  "generatedAt": "2026-09-03T12:54:17.476Z",
   "year": "2026",
   "rankingPools": {
     "DYNASTY|PPR|ALL": {
@@ -11947,7 +11947,7 @@
     }
   },
   "depthCharts": {
-    "generatedAt": "2026-09-03T12:50:55.845Z",
+    "generatedAt": "2026-09-03T12:54:02.767Z",
     "teams": {
       "ATL": {
         "name": "Atlanta Falcons",
@@ -16985,7 +16985,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-03T12:48:54.745Z",
+      "updatedAt": "2026-09-03T12:52:12.171Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -20937,7 +20937,7 @@
           "originalTeamName": "Swingline Steamrollers"
         }
       ],
-      "updatedAt": "2026-09-03T12:48:55.940Z",
+      "updatedAt": "2026-09-03T12:52:13.168Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -21059,8 +21059,19 @@
       "standingsError": null,
       "scoring": null,
       "scoringError": "No live scoring available yet",
-      "starters": null,
-      "lineupError": "MFL request failed (429): /export?TYPE=weeklyResults&L=25608&W=1&JSON=1 (year 2026)",
+      "lineupWeek": "1",
+      "starters": [
+        "14783",
+        "13130",
+        "14802",
+        "13163",
+        "16615",
+        "15282",
+        "16641",
+        "16846",
+        "0518"
+      ],
+      "lineupError": null,
       "draftInProgress": false,
       "available": [
         "Chig Okonkwo",
@@ -24711,7 +24722,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-03T12:48:58.638Z",
+      "updatedAt": "2026-09-03T12:52:14.211Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -24853,19 +24864,8 @@
       "standingsError": null,
       "scoring": null,
       "scoringError": "No live scoring available yet",
-      "lineupWeek": "1",
-      "starters": [
-        "14056",
-        "16167",
-        "13604",
-        "16809",
-        "16190",
-        "14842",
-        "15794",
-        "17222",
-        "0512"
-      ],
-      "lineupError": null,
+      "starters": null,
+      "lineupError": "MFL request failed (429): /export?TYPE=weeklyResults&L=23545&W=1&JSON=1 (year 2026)",
       "draftInProgress": false,
       "available": [
         "Chig Okonkwo",
@@ -28088,7 +28088,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-03T12:48:59.830Z",
+      "updatedAt": "2026-09-03T12:52:15.759Z",
       "error": null,
       "tags": [
         "Best Ball"
@@ -28231,7 +28231,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=league&L=35217&JSON=1 (year 2026)",
+      "scoringError": "No live scoring available yet",
       "draftInProgress": false,
       "available": [
         "Kenny Gainwell",
@@ -31318,7 +31318,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-03T12:49:01.070Z",
+      "updatedAt": "2026-09-03T12:52:16.674Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -31462,7 +31462,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=34850&JSON=1 (year 2026)",
+      "scoringError": "No live scoring available yet",
       "draftInProgress": false,
       "available": [
         "Kenny Gainwell",
@@ -33539,7 +33539,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-03T12:49:02.458Z",
+      "updatedAt": "2026-09-03T12:52:17.808Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -35454,7 +35454,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-03T12:49:03.730Z",
+      "updatedAt": "2026-09-03T12:52:19.243Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -36941,7 +36941,7 @@
           "injuryStatus": null
         }
       ],
-      "updatedAt": "2026-09-03T12:49:03.897Z",
+      "updatedAt": "2026-09-03T12:52:19.374Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -38124,7 +38124,7 @@
           "injuryStatus": null
         }
       ],
-      "updatedAt": "2026-09-03T12:49:03.984Z",
+      "updatedAt": "2026-09-03T12:52:19.441Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -39408,7 +39408,7 @@
         }
       ],
       "draftInProgress": false,
-      "updatedAt": "2026-09-03T12:49:04.246Z",
+      "updatedAt": "2026-09-03T12:52:19.732Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -39720,7 +39720,7 @@
         "Christian Kirk"
       ],
       "power": {
-        "computedAt": "2026-09-03T12:48:52.009Z",
+        "computedAt": "2026-09-03T12:52:10.412Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -40429,7 +40429,7 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-09-03T12:48:52.009Z",
+      "availableAt": "2026-09-03T12:52:10.412Z",
       "results": []
     },
     {
@@ -40770,7 +40770,7 @@
         "position": []
       },
       "draftPicks": null,
-      "updatedAt": "2026-09-03T12:49:05.186Z",
+      "updatedAt": "2026-09-03T12:52:20.661Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -42035,7 +42035,7 @@
         "position": []
       },
       "draftPicks": null,
-      "updatedAt": "2026-09-03T12:49:06.000Z",
+      "updatedAt": "2026-09-03T12:52:21.505Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -42728,7 +42728,7 @@
         "position": []
       },
       "draftPicks": null,
-      "updatedAt": "2026-09-03T12:49:06.805Z",
+      "updatedAt": "2026-09-03T12:52:22.085Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -43959,7 +43959,7 @@
         "position": []
       },
       "draftPicks": null,
-      "updatedAt": "2026-09-03T12:49:07.452Z",
+      "updatedAt": "2026-09-03T12:52:22.717Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -45334,7 +45334,7 @@
         "position": []
       },
       "draftPicks": null,
-      "updatedAt": "2026-09-03T12:49:08.176Z",
+      "updatedAt": "2026-09-03T12:52:23.422Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -46616,7 +46616,7 @@
         "position": []
       },
       "draftPicks": null,
-      "updatedAt": "2026-09-03T12:49:08.720Z",
+      "updatedAt": "2026-09-03T12:52:23.987Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -46750,7 +46750,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet",
+      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=61777&JSON=1 (year 2026)",
       "draftInProgress": false,
       "available": [
         "Stefon Diggs",
@@ -47898,7 +47898,7 @@
         "position": []
       },
       "draftPicks": null,
-      "updatedAt": "2026-09-03T12:49:09.451Z",
+      "updatedAt": "2026-09-03T12:52:24.488Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -48031,7 +48031,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=league&L=30196&JSON=1 (year 2026)",
+      "scoringError": "No live scoring available yet",
       "draftInProgress": false,
       "available": [
         "Stefon Diggs",
@@ -49194,7 +49194,7 @@
         "position": []
       },
       "draftPicks": null,
-      "updatedAt": "2026-09-03T12:49:10.567Z",
+      "updatedAt": "2026-09-03T12:52:25.143Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -49338,7 +49338,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "No live scoring available yet",
+      "scoringError": "MFL request failed (429): /export?TYPE=league&L=26222&JSON=1 (year 2026)",
       "draftInProgress": false,
       "available": [
         "Kenny Gainwell",
