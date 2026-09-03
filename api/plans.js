@@ -48,11 +48,28 @@ const MAX_BODY_BYTES = 256 * 1024;
 // (a string, same shape as every other plan kind — see setResultOverride in
 // myffl.html). Presence of an entry IS its confirmation; there is no
 // separate confirmed flag to validate here.
-const PLAN_KINDS = ['contractPlans', 'salaryPlans', 'cutPlans', 'resultOverrides'];
+//
+// watchlist is the Planning tab's per-league watch list — leagueId ->
+// playerId -> '1' (presence is the whole signal; there's no value worth
+// carrying beyond it, unlike a contract length or salary). It fits this
+// shape exactly, so it costs nothing beyond being listed here — no
+// dedicated validate/merge code of its own, unlike tasks below.
+const PLAN_KINDS = ['contractPlans', 'salaryPlans', 'cutPlans', 'resultOverrides', 'watchlist'];
+
+// The Planning tab's task list. Id-keyed rather than leagueId -> playerId ->
+// value — a task isn't scoped to a league or a player — so it doesn't fit
+// the PLAN_KINDS shape above and gets its own validate/merge pair instead of
+// joining that loop. The id is generated client-side (see makeTaskId in
+// myffl.html); a real collision between two devices is not a case worth
+// building for, so a collision resolves the same way PLAN_KINDS does —
+// stored wins.
+const MAX_TASKS = 300;
+const MAX_TASK_TEXT_LENGTH = 200;
+const MAX_TASK_CATEGORY_LENGTH = 40;
 
 // Exported for the unit test in scripts/test-plans.mjs. Vercel only ever
 // invokes the default export, so extra named exports cost nothing at runtime.
-export { validatePlans, mergePlans, emptyDocument, resolveStore };
+export { validatePlans, mergePlans, emptyDocument, resolveStore, validateTasks, mergeTasks };
 
 // The Upstash integration has injected its REST credentials under two
 // different prefixes over time, and which one a project gets depends on when
@@ -73,7 +90,7 @@ function resolveStore(env) {
 }
 
 function emptyDocument() {
-  return { contractPlans: {}, salaryPlans: {}, cutPlans: {}, resultOverrides: {}, updatedAt: null };
+  return { contractPlans: {}, salaryPlans: {}, cutPlans: {}, resultOverrides: {}, watchlist: {}, tasks: {}, updatedAt: null };
 }
 
 // Returns an array of human-readable problems — empty means valid.
@@ -121,7 +138,82 @@ function validatePlans(plans) {
       }
     }
   }
+  errors.push(...validateTasks(plans.tasks));
   return errors;
+}
+
+// Shape-only, same posture as validatePlans above: what makes a good task
+// category is the page's business, not this endpoint's. `done` and
+// `createdAt` are validated strictly (they drive sorting and the
+// open/completed split) rather than coerced, since a malformed value here
+// would silently misfile a task rather than just render oddly.
+function validateTasks(tasks) {
+  const errors = [];
+  if (tasks === undefined) return errors;
+  if (tasks === null || typeof tasks !== 'object' || Array.isArray(tasks)) {
+    return ['tasks must be an object'];
+  }
+  const ids = Object.keys(tasks);
+  if (ids.length > MAX_TASKS) return [`tasks has more than ${MAX_TASKS} entries`];
+  for (const id of ids) {
+    const task = tasks[id];
+    if (task === null || typeof task !== 'object' || Array.isArray(task)) {
+      errors.push(`tasks.${id} must be an object`);
+      continue;
+    }
+    if (typeof task.text !== 'string' || task.text.length === 0 || task.text.length > MAX_TASK_TEXT_LENGTH) {
+      errors.push(`tasks.${id}.text must be a non-empty string up to ${MAX_TASK_TEXT_LENGTH} characters`);
+    }
+    if (task.category !== undefined && (typeof task.category !== 'string' || task.category.length > MAX_TASK_CATEGORY_LENGTH)) {
+      errors.push(`tasks.${id}.category must be a string up to ${MAX_TASK_CATEGORY_LENGTH} characters`);
+    }
+    if (typeof task.done !== 'boolean') {
+      errors.push(`tasks.${id}.done must be a boolean`);
+    }
+    if (typeof task.createdAt !== 'number') {
+      errors.push(`tasks.${id}.createdAt must be a number`);
+    }
+    if (task.completedAt !== undefined && task.completedAt !== null && typeof task.completedAt !== 'number') {
+      errors.push(`tasks.${id}.completedAt must be a number or null`);
+    }
+  }
+  return errors;
+}
+
+// Union of task ids, stored winning a real collision — same rule and same
+// rationale as mergePlans below (an unsynced local copy may be arbitrarily
+// old). A task present in only one side always survives, which is what
+// makes this safe for a first-ever sync the same way mergePlans is: the
+// common case is `incoming` carrying an offline device's own new or edited
+// tasks that `stored` has never seen.
+//
+// A task missing from `incoming` (deleted, or never sent) but present in a
+// task-shaped `stored`... falls through to whichever side actually has an
+// object; the deletion itself is carried the same way a cleared plan is —
+// by the endpoint's replace mode, which merges against an empty document,
+// so a deleted task simply isn't in `incoming` at all by the time it gets
+// here. See mergePlans for the full explanation of why direction matters.
+function mergeTasks(stored, incoming) {
+  const merged = {};
+  const a = incoming || {};
+  const b = stored || {};
+  for (const id of new Set([...Object.keys(a), ...Object.keys(b)])) {
+    const task = b[id] !== undefined ? b[id] : a[id];
+    if (task && typeof task === 'object' && !Array.isArray(task)) {
+      merged[id] = {
+        text: String(task.text || ''),
+        category: typeof task.category === 'string' ? task.category : '',
+        done: !!task.done,
+        createdAt: typeof task.createdAt === 'number' ? task.createdAt : Date.now(),
+        completedAt: typeof task.completedAt === 'number' ? task.completedAt : null,
+      };
+    }
+    // A falsy/non-object value (null, the tombstone a deleted task's id
+    // would carry if it somehow reached here) is dropped rather than
+    // stored — same "absence is the deletion" convention normaliseEntries
+    // uses for the string-valued kinds.
+  }
+  return merged;
 }
 
 // Union of two plan documents, two levels deep, with `stored` winning any
@@ -152,6 +244,7 @@ function mergePlans(stored, incoming) {
     }
     out[kind] = merged;
   }
+  out.tasks = mergeTasks((stored && stored.tasks) || {}, (incoming && incoming.tasks) || {});
   return out;
 }
 

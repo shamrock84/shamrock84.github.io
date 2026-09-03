@@ -2207,6 +2207,94 @@
 			padding-bottom: 2rem;
 		}
 		footer a { color: var(--accent); }
+		/* Planning tab — Watch List and Tasks. The add/remove controls mirror
+		   the Admin tab's shape (an input row, a pill add button, a small
+		   remove icon), but get their own class prefix rather than reusing
+		   .admin-* — unrelated features sharing a shape isn't a reason to
+		   couple them (see the CLAUDE.md note on .results-* vs .finances-*
+		   for the same call made elsewhere in this file). */
+		.planning-add-row {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 0.5rem;
+			align-items: center;
+			margin: 0.6rem 0 0.8rem;
+		}
+		.planning-task-add .planning-input:first-child { flex: 2 1 12rem; }
+		.planning-task-add .planning-input:nth-child(2) { flex: 1 1 8rem; }
+		.planning-input {
+			font: inherit;
+			font-size: 0.85rem;
+			padding: 0.35rem 0.55rem;
+			border: 1px solid var(--border);
+			border-radius: 6px;
+			background: var(--card-bg);
+			color: inherit;
+		}
+		.planning-select { min-width: 0; }
+		.planning-add-btn {
+			font: inherit;
+			font-size: 0.85rem;
+			color: var(--accent);
+			background: transparent;
+			border: 1px solid var(--accent);
+			border-radius: 999px;
+			padding: 0.35rem 0.9rem;
+			cursor: pointer;
+		}
+		.planning-icon-btn {
+			font: inherit;
+			font-size: 0.8rem;
+			line-height: 1;
+			color: var(--ir-text);
+			background: var(--ir-bg);
+			border: 1px solid var(--border);
+			border-radius: 4px;
+			padding: 0.2rem 0.35rem;
+			cursor: pointer;
+			flex-shrink: 0;
+		}
+		.planning-empty {
+			color: var(--muted);
+			font-size: 0.85rem;
+			margin: 0.4rem 0;
+		}
+		.planning-watch-row {
+			display: flex;
+			align-items: center;
+			gap: 0.5rem;
+			padding: 0.35rem 0;
+			border-bottom: 1px solid var(--border);
+		}
+		.planning-watch-row:last-child { border-bottom: none; }
+		.planning-watch-name { flex: 1; }
+		.planning-watch-league { color: var(--muted); font-size: 0.8rem; }
+		.planning-task-row {
+			display: flex;
+			align-items: center;
+			gap: 0.5rem;
+			padding: 0.3rem 0;
+		}
+		.planning-task-text { flex: 1; }
+		/* Completed rows only ever render inside .planning-done-details, so
+		   the strikethrough never has to be toggled off elsewhere. */
+		.planning-task-done .planning-task-text {
+			color: var(--muted);
+			text-decoration: line-through;
+		}
+		.planning-task-category {
+			margin: 0.7rem 0 0.2rem;
+			font-size: 0.78rem;
+			text-transform: uppercase;
+			letter-spacing: 0.04em;
+			color: var(--muted);
+		}
+		.planning-done-details { margin-top: 0.8rem; }
+		.planning-done-details summary {
+			cursor: pointer;
+			color: var(--muted);
+			font-size: 0.85rem;
+		}
 	</style>
 </head>
 <body>
@@ -2281,15 +2369,16 @@
 			return node;
 		}
 
-		// 'admin' (and, the same way, 'history') is only ever in this set when
-		// logged in — renderGrid simply doesn't build the cards otherwise, and
-		// the tab list is derived from the cards that exist, so logging out
-		// removes the tab with no extra work.
+		// 'admin' (and, the same way, 'history' and 'planning') is only ever in
+		// this set when logged in — renderGrid simply doesn't build the cards
+		// otherwise, and the tab list is derived from the cards that exist, so
+		// logging out removes the tab with no extra work.
 		// depthcharts is deliberately ungated (see renderGrid) — the tab shows
-		// even logged out, unlike analytics/history/admin, which is why it's
-		// listed here with those but built outside the isLoggedIn() blocks.
-		const VIEW_LABELS = { rosters: 'Rosters', standings: 'Standings', scoring: 'Scores', depthcharts: 'Depth Charts', analytics: 'Analytics', history: 'History', admin: 'Admin' };
-		const VIEW_ORDER = ['rosters', 'scoring', 'standings', 'depthcharts', 'analytics', 'history', 'admin'];
+		// even logged out, unlike analytics/history/planning/admin, which is
+		// why it's listed here with those but built outside the isLoggedIn()
+		// blocks.
+		const VIEW_LABELS = { rosters: 'Rosters', standings: 'Standings', scoring: 'Scores', depthcharts: 'Depth Charts', analytics: 'Analytics', history: 'History', planning: 'Planning', admin: 'Admin' };
+		const VIEW_ORDER = ['rosters', 'scoring', 'standings', 'depthcharts', 'analytics', 'history', 'planning', 'admin'];
 		// Per-league type — still what individual Rosters cards badge
 		// themselves with (a Salary Cap league's card says "Salary Cap", not
 		// "Dynasty/Salary Cap"), just no longer what any sub-tab is named
@@ -2597,6 +2686,89 @@
 			schedulePlanPush();
 		}
 
+		// Planning tab's watch list — leagueId -> playerId -> '1'. Same shape,
+		// same independent storage, and same reasoning as the three plans
+		// above, but the value itself carries no information beyond presence
+		// (unlike a contract length or salary, there's no "how much" to a
+		// watch-list entry) — '1' rather than a timestamp, because showing
+		// "added 3 days ago" isn't worth the extra few characters of synced
+		// state. Scoped per league rather than global on purpose: watching a
+		// player as a trade target in one league says nothing about a league
+		// where you already roster him.
+		const WATCHLIST_STORAGE_KEY = 'myfflWatchlist';
+		function loadWatchlist() {
+			try {
+				return JSON.parse(localStorage.getItem(WATCHLIST_STORAGE_KEY) || '{}');
+			} catch {
+				return {};
+			}
+		}
+		function isWatchlisted(leagueId, playerId) {
+			return !!loadWatchlist()[leagueId]?.[playerId];
+		}
+		function setWatchlisted(leagueId, playerId, on) {
+			const list = loadWatchlist();
+			if (!on) {
+				delete list[leagueId]?.[playerId];
+				if (list[leagueId] && Object.keys(list[leagueId]).length === 0) delete list[leagueId];
+			} else {
+				list[leagueId] = list[leagueId] || {};
+				list[leagueId][playerId] = '1';
+			}
+			localStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify(list));
+			recordPlanEdit('watchlist', leagueId, playerId, on ? '1' : '');
+			schedulePlanPush();
+		}
+
+		// Planning tab's task list. Unlike every plan above, a task isn't
+		// scoped to a league or a player, so it doesn't fit the
+		// leagueId -> playerId -> string shape those share — it's its own
+		// id -> {text, category, done, createdAt, completedAt} map, with its
+		// own storage key and its own pending-edit log (below, alongside
+		// PLAN_PENDING_KEY) rather than joining PLAN_KINDS. See api/plans.js
+		// for the matching validate/merge pair and the reasoning for why a
+		// task's id-collision handling can stay this simple (client-generated
+		// ids make a real collision between two devices not worth designing
+		// for).
+		const TASKS_STORAGE_KEY = 'myfflTasks';
+		function loadTasks() {
+			try {
+				return JSON.parse(localStorage.getItem(TASKS_STORAGE_KEY) || '{}');
+			} catch {
+				return {};
+			}
+		}
+		function writeTasksLocal(tasks) {
+			localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks || {}));
+		}
+		function makeTaskId() {
+			return `t${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+		}
+		function addTask(text, category) {
+			const tasks = loadTasks();
+			const id = makeTaskId();
+			const task = { text, category: category || '', done: false, createdAt: Date.now(), completedAt: null };
+			tasks[id] = task;
+			writeTasksLocal(tasks);
+			recordTaskEdit(id, task);
+			schedulePlanPush();
+		}
+		function setTaskDone(id, done) {
+			const tasks = loadTasks();
+			if (!tasks[id]) return;
+			tasks[id] = { ...tasks[id], done, completedAt: done ? Date.now() : null };
+			writeTasksLocal(tasks);
+			recordTaskEdit(id, tasks[id]);
+			schedulePlanPush();
+		}
+		function removeTask(id) {
+			const tasks = loadTasks();
+			delete tasks[id];
+			writeTasksLocal(tasks);
+			recordTaskEdit(id, null);
+			schedulePlanPush();
+		}
+
 		// --- Plan sync -------------------------------------------------------
 		//
 		// localStorage is per browser per device, so an iPad and a phone kept
@@ -2635,7 +2807,7 @@
 		let planPushGeneration = 0;
 
 		function localPlansDocument() {
-			return { contractPlans: loadContractPlans(), salaryPlans: loadSalaryPlans(), cutPlans: loadCutPlans(), resultOverrides: loadResultOverrides() };
+			return { contractPlans: loadContractPlans(), salaryPlans: loadSalaryPlans(), cutPlans: loadCutPlans(), resultOverrides: loadResultOverrides(), watchlist: loadWatchlist(), tasks: loadTasks() };
 		}
 
 		function writePlansLocal(doc) {
@@ -2643,6 +2815,8 @@
 			localStorage.setItem(SALARY_PLAN_STORAGE_KEY, JSON.stringify(doc.salaryPlans || {}));
 			localStorage.setItem(CUT_PLAN_STORAGE_KEY, JSON.stringify(doc.cutPlans || {}));
 			localStorage.setItem(RESULT_OVERRIDE_STORAGE_KEY, JSON.stringify(doc.resultOverrides || {}));
+			localStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify(doc.watchlist || {}));
+			writeTasksLocal(doc.tasks);
 		}
 
 		// Edits this device has made but not yet confirmed in the store, in the
@@ -2662,10 +2836,14 @@
 		// can tell a plan another device deleted apart from one this device
 		// simply hasn't been told about yet.
 		const PLAN_PENDING_KEY = 'myfflPlanPending';
-		const PLAN_KINDS = ['contractPlans', 'salaryPlans', 'cutPlans', 'resultOverrides'];
+		// watchlist joins this loop for free — see its definition above for why
+		// it fits the same leagueId -> playerId -> string shape as the other
+		// four. tasks does not (it isn't league- or player-scoped) and is
+		// handled by its own pending log, TASKS_PENDING_KEY, just below.
+		const PLAN_KINDS = ['contractPlans', 'salaryPlans', 'cutPlans', 'resultOverrides', 'watchlist'];
 
 		function emptyPlanEdits() {
-			return { contractPlans: {}, salaryPlans: {}, cutPlans: {}, resultOverrides: {} };
+			return { contractPlans: {}, salaryPlans: {}, cutPlans: {}, resultOverrides: {}, watchlist: {} };
 		}
 
 		function loadPendingPlanEdits() {
@@ -2717,13 +2895,50 @@
 			return out;
 		}
 
+		// Tasks' own pending-edit log, parallel to PLAN_PENDING_KEY above but one
+		// level shallower (id -> task, not kind -> leagueId -> playerId -> value)
+		// since a task isn't league- or player-scoped. null is the tombstone
+		// here rather than '' — a task's value is an object, never a string
+		// that could double as its own empty sentinel.
+		const TASKS_PENDING_KEY = 'myfflTasksPending';
+		function loadPendingTaskEdits() {
+			try {
+				return JSON.parse(localStorage.getItem(TASKS_PENDING_KEY) || '{}');
+			} catch {
+				return {};
+			}
+		}
+		function hasPendingTaskEdits(pending) {
+			return Object.keys(pending).length > 0;
+		}
+		function clearPendingTaskEdits() {
+			localStorage.removeItem(TASKS_PENDING_KEY);
+		}
+		function recordTaskEdit(id, taskOrNull) {
+			const pending = loadPendingTaskEdits();
+			pending[id] = taskOrNull;
+			localStorage.setItem(TASKS_PENDING_KEY, JSON.stringify(pending));
+		}
+		// Same narrow lay-over as applyPendingPlanEdits, one level shallower.
+		function applyPendingTaskEdits(remoteTasks, pending) {
+			const out = { ...(remoteTasks || {}) };
+			for (const [id, task] of Object.entries(pending)) {
+				if (task) out[id] = task;
+				else delete out[id];
+			}
+			return out;
+		}
+
 		// Take what the store answered with, with this device's unpushed edits
 		// laid back over it. Returns whether the store is behind the local copy —
 		// the signal to push, in replace mode, the only mode carrying a deletion.
 		function adoptRemotePlans(remote) {
 			const pending = loadPendingPlanEdits();
-			writePlansLocal(applyPendingPlanEdits(remote, pending));
-			return hasPendingPlanEdits(pending);
+			const pendingTasks = loadPendingTaskEdits();
+			const applied = applyPendingPlanEdits(remote, pending);
+			applied.tasks = applyPendingTaskEdits(remote && remote.tasks, pendingTasks);
+			writePlansLocal(applied);
+			return hasPendingPlanEdits(pending) || hasPendingTaskEdits(pendingTasks);
 		}
 
 		// The read half. GET rather than a merge POST because a merge is a union
@@ -2770,9 +2985,11 @@
 			// them. Anything already in the store is re-applied as a no-op, so
 			// leaving an entry behind costs nothing; dropping one loses a change.
 			const pushed = localStorage.getItem(PLAN_PENDING_KEY);
+			const pushedTasks = localStorage.getItem(TASKS_PENDING_KEY);
 			postPlans(mode).then((stored) => {
 				planPushGeneration++;
 				if (localStorage.getItem(PLAN_PENDING_KEY) === pushed) clearPendingPlanEdits();
+				if (localStorage.getItem(TASKS_PENDING_KEY) === pushedTasks) clearPendingTaskEdits();
 				markPlanSyncDone();
 				// A merge answers with the union, which may hold a plan this
 				// device cleared. Adopting it re-applies the tombstone and asks
@@ -2916,6 +3133,7 @@
 			// It is what sends the next login straight to a read (which carries a
 			// deletion) instead of back to a merge (which cannot).
 			clearPendingPlanEdits();
+			clearPendingTaskEdits();
 			// Unsaved Admin edits belong to the session that made them — leaving
 			// them in memory would hand them to whoever logs in next.
 			adminDraft = null;
@@ -8173,6 +8391,196 @@
 			return card;
 		}
 
+		// Planning tab — Watch List. Gated behind login the same way and for
+		// the same reason as Analytics/History (see the History tab comment):
+		// a portfolio-wide view of the manager's own strategy, not a league
+		// mate's to read. Unlike Results/Finances it never returns null —
+		// even with nothing watched yet, the add controls are worth showing
+		// so a new visitor finds the feature rather than a missing tab.
+		function renderWatchlistCard(leagues) {
+			const list = loadWatchlist();
+			const card = el('div', { class: 'card planning-card', 'data-view': 'planning' });
+			const heading = el('h2', { class: 'card-heading', text: 'Watch List' });
+			card.appendChild(heading);
+			makeCollapsible(card, heading, 'watchlist');
+			card.appendChild(el('div', { class: 'team', text: 'Players to keep an eye on, per league.' }));
+
+			const addRow = el('div', { class: 'planning-add-row' });
+			const leagueSelect = el('select', { class: 'planning-input planning-select' });
+			for (const league of leagues) {
+				leagueSelect.appendChild(el('option', { value: league.id, text: leagueDisplayName(league) }));
+			}
+			const playerSelect = el('select', { class: 'planning-input planning-select' });
+			// Rebuilt on every league change rather than pre-built per league —
+			// leagues run into the dozens of players each, and only one
+			// dropdown's worth is ever on screen at a time. Already-watched
+			// players are excluded so the list can't offer a duplicate add.
+			const fillPlayers = () => {
+				playerSelect.innerHTML = '';
+				const league = leagues.find((l) => String(l.id) === leagueSelect.value);
+				const already = new Set(Object.keys(list[leagueSelect.value] || {}));
+				const players = [...(league?.players || [])]
+					.filter((p) => !already.has(String(p.id)))
+					.sort((a, b) => a.name.localeCompare(b.name));
+				for (const p of players) {
+					playerSelect.appendChild(el('option', { value: p.id, text: `${p.name} (${p.position}${p.team ? ' ' + p.team : ''})` }));
+				}
+			};
+			leagueSelect.addEventListener('change', fillPlayers);
+			fillPlayers();
+			const addBtn = el('button', { type: 'button', class: 'planning-add-btn', text: '+ Watch' });
+			addBtn.addEventListener('click', () => {
+				if (!playerSelect.value) return;
+				setWatchlisted(leagueSelect.value, playerSelect.value, true);
+				renderGrid();
+			});
+			addRow.appendChild(leagueSelect);
+			addRow.appendChild(playerSelect);
+			addRow.appendChild(addBtn);
+			card.appendChild(addRow);
+
+			const entries = [];
+			for (const [leagueId, players] of Object.entries(list)) {
+				const league = leagues.find((l) => String(l.id) === String(leagueId));
+				if (!league) continue;
+				for (const playerId of Object.keys(players)) {
+					const p = (league.players || []).find((pl) => String(pl.id) === String(playerId));
+					entries.push({ league, playerId, player: p });
+				}
+			}
+			entries.sort((a, b) => (a.player?.name || '').localeCompare(b.player?.name || ''));
+
+			if (entries.length === 0) {
+				card.appendChild(el('div', { class: 'planning-empty', text: 'Nothing on the watch list yet.' }));
+				return card;
+			}
+			const listEl = el('div', { class: 'planning-watch-list' });
+			for (const { league, playerId, player } of entries) {
+				const row = el('div', { class: 'planning-watch-row' });
+				const nameCell = el('span', { class: 'planning-watch-name', text: player ? player.name : `Player ${playerId}` });
+				if (player) appendTeamSuffix(nameCell, player.team);
+				row.appendChild(nameCell);
+				row.appendChild(el('span', { class: 'planning-watch-league', text: leagueDisplayName(league) }));
+				const removeBtn = el('button', { type: 'button', class: 'planning-icon-btn planning-remove-btn', title: 'Remove from watch list', text: '✕' });
+				removeBtn.addEventListener('click', () => {
+					setWatchlisted(league.id, playerId, false);
+					renderGrid();
+				});
+				row.appendChild(removeBtn);
+				listEl.appendChild(row);
+			}
+			card.appendChild(listEl);
+			return card;
+		}
+
+		// Planning tab — Tasks. A checkbox, not the radio buttons the original
+		// notes for this tab sketched — radio implies a mutually-exclusive
+		// choice within a group, which isn't what completing one task among
+		// many independent ones is. "Site enhancement" is a category value
+		// here rather than a second list, per the same notes ("could be part
+		// of task list, maybe task categories") — one list, grouped by
+		// whatever categories exist, is simpler than two lists that would
+		// otherwise need to agree on layout and completed-section behavior.
+		function renderTasksCard() {
+			const tasks = loadTasks();
+			const card = el('div', { class: 'card planning-card', 'data-view': 'planning' });
+			const heading = el('h2', { class: 'card-heading', text: 'Tasks' });
+			card.appendChild(heading);
+			makeCollapsible(card, heading, 'tasks');
+
+			const addRow = el('div', { class: 'planning-add-row planning-task-add' });
+			const textInput = el('input', { type: 'text', class: 'planning-input', placeholder: 'New task…', autocomplete: 'off' });
+			const categoryListId = 'planning-task-categories';
+			const categoryInput = el('input', { type: 'text', class: 'planning-input', placeholder: 'Category (optional)', autocomplete: 'off', list: categoryListId });
+			const dataList = el('datalist', { id: categoryListId });
+			const existingCategories = [...new Set(Object.values(tasks).map((t) => t.category).filter(Boolean))].sort();
+			for (const c of existingCategories) dataList.appendChild(el('option', { value: c }));
+			const addBtn = el('button', { type: 'button', class: 'planning-add-btn', text: '+ Add' });
+			const submitTask = () => {
+				const text = textInput.value.trim();
+				if (!text) return;
+				addTask(text, categoryInput.value.trim());
+				renderGrid();
+			};
+			addBtn.addEventListener('click', submitTask);
+			textInput.addEventListener('keydown', (e) => {
+				if (e.key === 'Enter') submitTask();
+			});
+			addRow.appendChild(textInput);
+			addRow.appendChild(categoryInput);
+			addRow.appendChild(dataList);
+			addRow.appendChild(addBtn);
+			card.appendChild(addRow);
+
+			const entries = Object.entries(tasks);
+			if (entries.length === 0) {
+				card.appendChild(el('div', { class: 'planning-empty', text: 'No tasks yet.' }));
+				return card;
+			}
+
+			const buildTaskRow = (id, t) => {
+				const row = el('div', { class: `planning-task-row${t.done ? ' planning-task-done' : ''}` });
+				const checkbox = el('input', { type: 'checkbox' });
+				checkbox.checked = t.done;
+				checkbox.addEventListener('change', () => {
+					setTaskDone(id, checkbox.checked);
+					renderGrid();
+				});
+				row.appendChild(checkbox);
+				row.appendChild(el('span', { class: 'planning-task-text', text: t.text }));
+				const removeBtn = el('button', { type: 'button', class: 'planning-icon-btn planning-remove-btn', title: 'Delete task', text: '✕' });
+				removeBtn.addEventListener('click', () => {
+					removeTask(id);
+					renderGrid();
+				});
+				row.appendChild(removeBtn);
+				return row;
+			};
+
+			const openEntries = entries.filter(([, t]) => !t.done);
+			// Most-recently-completed first — a task finished today is more
+			// useful to see at a glance than one from three months ago, and
+			// only completed tasks have a completedAt to sort by at all.
+			const doneEntries = entries.filter(([, t]) => t.done).sort((a, b) => (b[1].completedAt || 0) - (a[1].completedAt || 0));
+
+			const byCategory = new Map();
+			for (const entry of openEntries) {
+				const key = entry[1].category || '';
+				if (!byCategory.has(key)) byCategory.set(key, []);
+				byCategory.get(key).push(entry);
+			}
+			// Uncategorized last regardless of how it sorts alphabetically —
+			// it's the fallback bucket, not a category someone named.
+			const categoryKeys = [...byCategory.keys()].sort((a, b) => {
+				if (a === '') return 1;
+				if (b === '') return -1;
+				return a.localeCompare(b);
+			});
+
+			if (openEntries.length > 0) {
+				for (const key of categoryKeys) {
+					// A category label only earns its keep once there's more
+					// than one group to tell apart — a single-category list
+					// (the common case for a while) stays a plain list.
+					if (categoryKeys.length > 1) {
+						card.appendChild(el('div', { class: 'planning-task-category', text: key || 'Uncategorized' }));
+					}
+					for (const [id, t] of byCategory.get(key)) card.appendChild(buildTaskRow(id, t));
+				}
+			} else {
+				card.appendChild(el('div', { class: 'planning-empty', text: 'Nothing open — nice.' }));
+			}
+
+			if (doneEntries.length > 0) {
+				const details = el('details', { class: 'planning-done-details' });
+				details.appendChild(el('summary', { text: `Completed (${doneEntries.length})` }));
+				for (const [id, t] of doneEntries) details.appendChild(buildTaskRow(id, t));
+				card.appendChild(details);
+			}
+
+			return card;
+		}
+
 		function updateVisibility() {
 			document.getElementById('grid').dataset.view = currentView;
 			const q = getSearchQuery();
@@ -9601,6 +10009,14 @@
 				if (resultsCard) gridEl.appendChild(resultsCard);
 				const financesCard = renderFinancesCard(data.leagues);
 				if (financesCard) gridEl.appendChild(financesCard);
+			}
+
+			// Planning tab: the manager's own notes-adjacent tools (watch list,
+			// tasks), gated behind login for the same reason as Analytics and
+			// History above — it's strategy, not a league mate's business.
+			if (isLoggedIn()) {
+				gridEl.appendChild(renderWatchlistCard(data.leagues));
+				gridEl.appendChild(renderTasksCard());
 			}
 
 			// Logged-out visitors never get this card, so 'admin' never makes it

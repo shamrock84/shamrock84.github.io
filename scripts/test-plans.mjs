@@ -4,7 +4,7 @@
 //
 // Run: node scripts/test-plans.mjs
 
-import { validatePlans, mergePlans, emptyDocument, resolveStore } from '../api/plans.js';
+import { validatePlans, mergePlans, emptyDocument, resolveStore, validateTasks, mergeTasks } from '../api/plans.js';
 
 let failures = 0;
 function check(name, cond, detail) {
@@ -54,8 +54,55 @@ check('accepts a well-formed resultOverrides document',
   validatePlans({ resultOverrides: { 30641: { 2024: '2' } } }).length === 0);
 check('rejects a non-object resultOverrides kind', validatePlans({ resultOverrides: 'nope' }).length === 1);
 
+check('accepts a well-formed watchlist document',
+  validatePlans({ watchlist: { 30641: { 16148: '1' } } }).length === 0);
+check('rejects a non-object watchlist kind', validatePlans({ watchlist: 'nope' }).length === 1);
+
+console.log('validateTasks');
+eq('accepts a well-formed task', validateTasks({
+  t1: { text: 'Set lineups', category: 'Weekly', done: false, createdAt: 1000, completedAt: null },
+}), []);
+eq('accepts a task with no category or completedAt', validateTasks({
+  t1: { text: 'Set lineups', done: true, createdAt: 1000 },
+}), []);
+eq('undefined is accepted (nothing to validate)', validateTasks(undefined), []);
+check('rejects a non-object', validateTasks('nope').length === 1);
+check('rejects an array', validateTasks([]).length === 1);
+check('rejects a non-object task', validateTasks({ t1: 'nope' }).length === 1);
+check('rejects an empty text', validateTasks({ t1: { text: '', done: false, createdAt: 1 } }).length === 1);
+check('rejects an over-long text', validateTasks({ t1: { text: 'x'.repeat(201), done: false, createdAt: 1 } }).length === 1);
+check('rejects an over-long category', validateTasks({ t1: { text: 'x', category: 'x'.repeat(41), done: false, createdAt: 1 } }).length === 1);
+check('rejects a non-boolean done', validateTasks({ t1: { text: 'x', done: 'yes', createdAt: 1 } }).length === 1);
+check('rejects a non-number createdAt', validateTasks({ t1: { text: 'x', done: false, createdAt: 'now' } }).length === 1);
+check('rejects a non-number, non-null completedAt', validateTasks({ t1: { text: 'x', done: false, createdAt: 1, completedAt: 'now' } }).length === 1);
+check('rejects too many tasks', validateTasks(Object.fromEntries(
+  [...Array(301)].map((_, i) => [i, { text: 'x', done: false, createdAt: 1 }]),
+)).length === 1);
+
+console.log('mergeTasks');
+// Key order is Set-iteration order, not meaningful here (unlike
+// leagueId/playerId keys elsewhere in this file, task ids are never
+// integer-like, so JS won't auto-sort them the way the "unions across
+// leagues" case below relies on) — checked per-id rather than as one
+// whole-object eq so the assertion doesn't depend on it either.
+const unionResult = mergeTasks({ t1: { text: 'a', category: '', done: false, createdAt: 1, completedAt: null } }, { t2: { text: 'b', category: '', done: false, createdAt: 2, completedAt: null } });
+eq('unions tasks present on only one side — t1 survives', unionResult.t1, { text: 'a', category: '', done: false, createdAt: 1, completedAt: null });
+eq('unions tasks present on only one side — t2 survives', unionResult.t2, { text: 'b', category: '', done: false, createdAt: 2, completedAt: null });
+eq('stored wins a real id collision',
+  mergeTasks(
+    { t1: { text: 'stored version', category: '', done: true, createdAt: 1, completedAt: 5 } },
+    { t1: { text: 'incoming version', category: '', done: false, createdAt: 1, completedAt: null } },
+  ),
+  { t1: { text: 'stored version', category: '', done: true, createdAt: 1, completedAt: 5 } });
+eq('a deleted task (absent from incoming, merging against empty stored) stays gone',
+  mergeTasks({}, { t1: null }),
+  {});
+eq('an empty incoming document never erases a stored task',
+  mergeTasks({ t1: { text: 'a', category: '', done: false, createdAt: 1, completedAt: null } }, {}),
+  { t1: { text: 'a', category: '', done: false, createdAt: 1, completedAt: null } });
+
 console.log('emptyDocument');
-eq('carries all four plan kinds', emptyDocument(), { contractPlans: {}, salaryPlans: {}, cutPlans: {}, resultOverrides: {}, updatedAt: null });
+eq('carries every plan kind plus tasks', emptyDocument(), { contractPlans: {}, salaryPlans: {}, cutPlans: {}, resultOverrides: {}, watchlist: {}, tasks: {}, updatedAt: null });
 
 console.log('mergePlans');
 // The case this endpoint exists for: a phone that has never synced posts an
@@ -84,12 +131,18 @@ eq('stored wins a conflict — it synced more recently than an unpushed local',
     { contractPlans: { 30641: { 1: '1' } } },
   ).contractPlans,
   { 30641: { 1: '3' } });
-eq('all four kinds merge independently',
+eq('all five PLAN_KINDS merge independently',
   mergePlans(
-    { contractPlans: { 30641: { 1: '1' } }, salaryPlans: { 30641: { 9: '50' } }, cutPlans: { 30641: { 2: '1' } }, resultOverrides: { 30641: { 2024: '3' } } },
+    { contractPlans: { 30641: { 1: '1' } }, salaryPlans: { 30641: { 9: '50' } }, cutPlans: { 30641: { 2: '1' } }, resultOverrides: { 30641: { 2024: '3' } }, watchlist: { 30641: { 3: '1' } } },
     { salaryPlans: { 30641: { 8: '25' } } },
   ),
-  { contractPlans: { 30641: { 1: '1' } }, salaryPlans: { 30641: { 8: '25', 9: '50' } }, cutPlans: { 30641: { 2: '1' } }, resultOverrides: { 30641: { 2024: '3' } }, updatedAt: null });
+  { contractPlans: { 30641: { 1: '1' } }, salaryPlans: { 30641: { 8: '25', 9: '50' } }, cutPlans: { 30641: { 2: '1' } }, resultOverrides: { 30641: { 2024: '3' } }, watchlist: { 30641: { 3: '1' } }, tasks: {}, updatedAt: null });
+const mergedTasks = mergePlans(
+  { tasks: { t1: { text: 'a', category: '', done: false, createdAt: 1, completedAt: null } } },
+  { tasks: { t2: { text: 'b', category: '', done: false, createdAt: 2, completedAt: null } } },
+).tasks;
+eq('mergePlans merges tasks alongside the PLAN_KINDS loop — t1 survives', mergedTasks.t1, { text: 'a', category: '', done: false, createdAt: 1, completedAt: null });
+eq('mergePlans merges tasks alongside the PLAN_KINDS loop — t2 survives', mergedTasks.t2, { text: 'b', category: '', done: false, createdAt: 2, completedAt: null });
 eq('numbers are normalised to strings',
   mergePlans(emptyDocument(), { contractPlans: { 30641: { 1: 2 } } }).contractPlans,
   { 30641: { 1: '2' } });
