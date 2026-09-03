@@ -8518,7 +8518,13 @@
 					renderGrid();
 				});
 				row.appendChild(checkbox);
-				row.appendChild(el('span', { class: 'planning-task-text', text: t.text }));
+				// Completed tasks lose their category's section (they all land
+				// together under Completed, sorted by completedAt), so the
+				// category rides along in parens right on the row instead —
+				// open tasks skip this, since they're already sitting under
+				// their own category heading.
+				const label = t.done && t.category ? `${t.text} (${t.category})` : t.text;
+				row.appendChild(el('span', { class: 'planning-task-text', text: label }));
 				if (group) {
 					// Touch devices don't fire HTML5 drag events at all, so
 					// these aren't a redundant second way to reorder — they're
