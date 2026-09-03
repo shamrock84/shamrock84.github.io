@@ -2289,21 +2289,73 @@
 			padding: 0.3rem 0;
 		}
 		.planning-task-text { flex: 1; }
-		/* Completed rows only ever render inside .planning-done-details, so
+		/* Priority-order drag/drop — same idiom as the Admin tab's league
+		   list (.admin-grip/.admin-move/.admin-dragging/.admin-drop-*) but
+		   its own class prefix, per the CLAUDE.md note on .results-* vs
+		   .finances-*: an unrelated feature sharing a shape isn't a reason
+		   to couple to it. */
+		.planning-task-grip {
+			color: var(--muted);
+			cursor: grab;
+			line-height: 1;
+			flex-shrink: 0;
+		}
+		.planning-task-row:active .planning-task-grip {
+			cursor: grabbing;
+		}
+		/* Touch devices don't fire HTML5 drag events at all, so don't show a
+		   grip advertising a gesture that cannot work there — ↑/↓ is the way
+		   to reorder on a phone. */
+		@media (hover: none) {
+			.planning-task-grip {
+				display: none;
+			}
+		}
+		.planning-task-move {
+			display: flex;
+			gap: 0.2rem;
+			flex-shrink: 0;
+		}
+		.planning-move-btn {
+			font: inherit;
+			font-size: 0.8rem;
+			line-height: 1;
+			color: var(--accent);
+			background: var(--chip-bg);
+			border: 1px solid var(--border);
+			border-radius: 4px;
+			padding: 0.2rem 0.35rem;
+			cursor: pointer;
+			flex-shrink: 0;
+		}
+		.planning-move-btn:disabled {
+			opacity: 0.35;
+			cursor: default;
+		}
+		/* Drag feedback. Insets rather than borders so showing where a row
+		   will land doesn't nudge every row below it by a pixel. */
+		.planning-task-row.planning-task-dragging {
+			opacity: 0.4;
+		}
+		.planning-task-row.planning-task-drop-before {
+			box-shadow: inset 0 3px 0 0 var(--accent);
+		}
+		.planning-task-row.planning-task-drop-after {
+			box-shadow: inset 0 -3px 0 0 var(--accent);
+		}
+		/* Completed rows only ever render inside .planning-task-section, so
 		   the strikethrough never has to be toggled off elsewhere. */
 		.planning-task-done .planning-task-text {
 			color: var(--muted);
 			text-decoration: line-through;
 		}
-		.planning-task-category {
-			margin: 0.7rem 0 0.2rem;
-			font-size: 0.78rem;
-			text-transform: uppercase;
-			letter-spacing: 0.04em;
-			color: var(--muted);
-		}
-		.planning-done-details { margin-top: 0.8rem; }
-		.planning-done-details summary {
+		/* One shared <details>/<summary> shape for every collapsible section
+		   in the Tasks card — each category and Completed alike. Only the
+		   default open state differs between them (see renderTasksCard):
+		   a category starts open, since it's somewhere you're expected to
+		   be working, while Completed starts closed the way it always has. */
+		.planning-task-section { margin-top: 0.7rem; }
+		.planning-task-section summary {
 			cursor: pointer;
 			color: var(--muted);
 			font-size: 0.85rem;
@@ -2736,13 +2788,18 @@
 		// Planning tab's task list. Unlike every plan above, a task isn't
 		// scoped to a league or a player, so it doesn't fit the
 		// leagueId -> playerId -> string shape those share — it's its own
-		// id -> {text, category, done, createdAt, completedAt} map, with its
-		// own storage key and its own pending-edit log (below, alongside
-		// PLAN_PENDING_KEY) rather than joining PLAN_KINDS. See api/plans.js
-		// for the matching validate/merge pair and the reasoning for why a
-		// task's id-collision handling can stay this simple (client-generated
-		// ids make a real collision between two devices not worth designing
-		// for).
+		// id -> {text, category, done, order, createdAt, completedAt} map,
+		// with its own storage key and its own pending-edit log (below,
+		// alongside PLAN_PENDING_KEY) rather than joining PLAN_KINDS. See
+		// api/plans.js for the matching validate/merge pair and the
+		// reasoning for why a task's id-collision handling can stay this
+		// simple (client-generated ids make a real collision between two
+		// devices not worth designing for).
+		//
+		// `order` is scoped per category (see openTaskIdsByCategory below),
+		// not global — a task created before this field existed has none,
+		// so every read falls back to createdAt, which is what the flat
+		// list's insertion order already amounted to.
 		const TASKS_STORAGE_KEY = 'myfflTasks';
 		function loadTasks() {
 			try {
@@ -2757,10 +2814,43 @@
 		function makeTaskId() {
 			return `t${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 		}
+		function taskOrderValue(t) {
+			return typeof t.order === 'number' ? t.order : t.createdAt;
+		}
+		// Open (undone) task ids in one category, sorted into priority order.
+		// Reordering only ever happens within a category's own section on
+		// screen, so this is the array moveTaskWithinCategory splices —
+		// mirroring moveLeague/adminDraft in the Admin tab, just scoped down
+		// to one category instead of the whole list.
+		function openTaskIdsByCategory(tasks, categoryKey) {
+			return Object.entries(tasks)
+				.filter(([, t]) => !t.done && (t.category || '') === categoryKey)
+				.sort((a, b) => taskOrderValue(a[1]) - taskOrderValue(b[1]))
+				.map(([id]) => id);
+		}
+		// Stamps `order` as the new index on every task in the category, not
+		// just the one that moved — a task nobody has ever reordered has no
+		// `order` and falls back to its (much larger) createdAt, so leaving
+		// it unstamped would sort it back to the front the next time this
+		// category is touched.
+		function moveTaskWithinCategory(categoryKey, from, to) {
+			const tasks = loadTasks();
+			const ids = openTaskIdsByCategory(tasks, categoryKey);
+			if (from === to || from < 0 || from >= ids.length || to < 0 || to >= ids.length) return;
+			const [moved] = ids.splice(from, 1);
+			ids.splice(to, 0, moved);
+			ids.forEach((id, order) => {
+				tasks[id] = { ...tasks[id], order };
+				recordTaskEdit(id, tasks[id]);
+			});
+			writeTasksLocal(tasks);
+			schedulePlanPush();
+		}
 		function addTask(text, category) {
 			const tasks = loadTasks();
 			const id = makeTaskId();
-			const task = { text, category: category || '', done: false, createdAt: Date.now(), completedAt: null };
+			const now = Date.now();
+			const task = { text, category: category || '', done: false, order: now, createdAt: now, completedAt: null };
 			tasks[id] = task;
 			writeTasksLocal(tasks);
 			recordTaskEdit(id, task);
@@ -8531,8 +8621,25 @@
 				return card;
 			}
 
-			const buildTaskRow = (id, t) => {
+			// Drag source for priority reordering, same idiom as adminDragFrom
+			// in the Admin tab's league list: module-level (well, render-local
+			// here) because dragover/drop fire on the row being dragged over,
+			// which has no other way to know what started the drag. Reordering
+			// is scoped to one category's own list (see moveTaskWithinCategory),
+			// so this carries the category alongside the index.
+			let taskDragFrom = null;
+
+			// group is undefined for completed rows — drag and the up/down
+			// buttons only ever apply to the open list, where priority order
+			// means something; a completed task's position is fixed by
+			// completedAt instead.
+			const buildTaskRow = (id, t, group) => {
 				const row = el('div', { class: `planning-task-row${t.done ? ' planning-task-done' : ''}` });
+				const { key, index, groupEntries } = group || {};
+				if (group) {
+					row.appendChild(el('span', { class: 'planning-task-grip', title: 'Drag to reorder', 'aria-hidden': 'true', text: '⠿' }));
+					row.draggable = true;
+				}
 				const checkbox = el('input', { type: 'checkbox' });
 				checkbox.checked = t.done;
 				checkbox.addEventListener('change', () => {
@@ -8541,12 +8648,80 @@
 				});
 				row.appendChild(checkbox);
 				row.appendChild(el('span', { class: 'planning-task-text', text: t.text }));
+				if (group) {
+					// Touch devices don't fire HTML5 drag events at all, so
+					// these aren't a redundant second way to reorder — they're
+					// the only way on a phone, and the only way from a
+					// keyboard. Same reasoning as the Admin tab's league list.
+					const moves = el('div', { class: 'planning-task-move' });
+					const up = el('button', { type: 'button', class: 'planning-move-btn', title: 'Move up', text: '↑' });
+					const down = el('button', { type: 'button', class: 'planning-move-btn', title: 'Move down', text: '↓' });
+					up.disabled = index === 0;
+					down.disabled = index === groupEntries.length - 1;
+					up.addEventListener('click', () => {
+						moveTaskWithinCategory(key, index, index - 1);
+						renderGrid();
+					});
+					down.addEventListener('click', () => {
+						moveTaskWithinCategory(key, index, index + 1);
+						renderGrid();
+					});
+					moves.appendChild(up);
+					moves.appendChild(down);
+					row.appendChild(moves);
+				}
 				const removeBtn = el('button', { type: 'button', class: 'planning-icon-btn planning-remove-btn', title: 'Delete task', text: '✕' });
 				removeBtn.addEventListener('click', () => {
 					removeTask(id);
 					renderGrid();
 				});
 				row.appendChild(removeBtn);
+
+				if (group) {
+					// Top half of a row means drop above it, bottom half below
+					// — same rule as the Admin tab's dropsAfter.
+					const dropsAfter = (e) => {
+						const box = row.getBoundingClientRect();
+						return e.clientY > box.top + box.height / 2;
+					};
+					row.addEventListener('dragstart', (e) => {
+						taskDragFrom = { key, index };
+						e.dataTransfer.effectAllowed = 'move';
+						e.dataTransfer.setData('text/plain', String(index));
+						setTimeout(() => row.classList.add('planning-task-dragging'), 0);
+					});
+					row.addEventListener('dragend', () => {
+						taskDragFrom = null;
+						row.classList.remove('planning-task-dragging');
+						row.classList.remove('planning-task-drop-before', 'planning-task-drop-after');
+					});
+					row.addEventListener('dragover', (e) => {
+						if (!taskDragFrom || taskDragFrom.key !== key || taskDragFrom.index === index) return;
+						e.preventDefault();
+						e.dataTransfer.dropEffect = 'move';
+						row.classList.toggle('planning-task-drop-after', dropsAfter(e));
+						row.classList.toggle('planning-task-drop-before', !dropsAfter(e));
+					});
+					row.addEventListener('dragleave', () => {
+						row.classList.remove('planning-task-drop-before', 'planning-task-drop-after');
+					});
+					row.addEventListener('drop', (e) => {
+						if (!taskDragFrom || taskDragFrom.key !== key) return;
+						e.preventDefault();
+						const from = taskDragFrom.index;
+						taskDragFrom = null;
+						row.classList.remove('planning-task-drop-before', 'planning-task-drop-after');
+						// Insertion point in the pre-removal array, corrected for
+						// the hole the dragged row leaves behind when it was
+						// above the target — without that a downward drag lands
+						// one short every time.
+						let insertAt = index + (dropsAfter(e) ? 1 : 0);
+						if (from < insertAt) insertAt--;
+						moveTaskWithinCategory(key, from, insertAt);
+						renderGrid();
+					});
+				}
+
 				return row;
 			};
 
@@ -8557,10 +8732,9 @@
 			const doneEntries = entries.filter(([, t]) => t.done).sort((a, b) => (b[1].completedAt || 0) - (a[1].completedAt || 0));
 
 			const byCategory = new Map();
-			for (const entry of openEntries) {
-				const key = entry[1].category || '';
-				if (!byCategory.has(key)) byCategory.set(key, []);
-				byCategory.get(key).push(entry);
+			for (const key of new Set(openEntries.map(([, t]) => t.category || ''))) {
+				const ids = openTaskIdsByCategory(tasks, key);
+				byCategory.set(key, ids.map((id) => [id, tasks[id]]));
 			}
 			// Uncategorized last regardless of how it sorts alphabetically —
 			// it's the fallback bucket, not a category someone named.
@@ -8572,20 +8746,23 @@
 
 			if (openEntries.length > 0) {
 				for (const key of categoryKeys) {
-					// A category label only earns its keep once there's more
-					// than one group to tell apart — a single-category list
-					// (the common case for a while) stays a plain list.
-					if (categoryKeys.length > 1) {
-						card.appendChild(el('div', { class: 'planning-task-category', text: key || 'Uncategorized' }));
-					}
-					for (const [id, t] of byCategory.get(key)) card.appendChild(buildTaskRow(id, t));
+					const groupEntries = byCategory.get(key);
+					// Every category gets its own collapsible section, same
+					// shape as Completed below — open by default, unlike
+					// Completed, since a category is somewhere you're
+					// expected to be working, not somewhere things go once
+					// they're out of the way.
+					const details = el('details', { class: 'planning-task-section', open: 'true' });
+					details.appendChild(el('summary', { text: `${key || 'Uncategorized'} (${groupEntries.length})` }));
+					groupEntries.forEach(([id, t], index) => details.appendChild(buildTaskRow(id, t, { key, index, groupEntries })));
+					card.appendChild(details);
 				}
 			} else {
 				card.appendChild(el('div', { class: 'planning-empty', text: 'Nothing open — nice.' }));
 			}
 
 			if (doneEntries.length > 0) {
-				const details = el('details', { class: 'planning-done-details' });
+				const details = el('details', { class: 'planning-task-section' });
 				details.appendChild(el('summary', { text: `Completed (${doneEntries.length})` }));
 				for (const [id, t] of doneEntries) details.appendChild(buildTaskRow(id, t));
 				card.appendChild(details);

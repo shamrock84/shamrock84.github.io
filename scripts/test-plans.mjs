@@ -65,6 +65,9 @@ eq('accepts a well-formed task', validateTasks({
 eq('accepts a task with no category or completedAt', validateTasks({
   t1: { text: 'Set lineups', done: true, createdAt: 1000 },
 }), []);
+eq('accepts a task with an order', validateTasks({
+  t1: { text: 'Set lineups', done: false, createdAt: 1000, order: 0 },
+}), []);
 eq('undefined is accepted (nothing to validate)', validateTasks(undefined), []);
 check('rejects a non-object', validateTasks('nope').length === 1);
 check('rejects an array', validateTasks([]).length === 1);
@@ -75,6 +78,7 @@ check('rejects an over-long category', validateTasks({ t1: { text: 'x', category
 check('rejects a non-boolean done', validateTasks({ t1: { text: 'x', done: 'yes', createdAt: 1 } }).length === 1);
 check('rejects a non-number createdAt', validateTasks({ t1: { text: 'x', done: false, createdAt: 'now' } }).length === 1);
 check('rejects a non-number, non-null completedAt', validateTasks({ t1: { text: 'x', done: false, createdAt: 1, completedAt: 'now' } }).length === 1);
+check('rejects a non-number order', validateTasks({ t1: { text: 'x', done: false, createdAt: 1, order: 'first' } }).length === 1);
 check('rejects too many tasks', validateTasks(Object.fromEntries(
   [...Array(301)].map((_, i) => [i, { text: 'x', done: false, createdAt: 1 }]),
 )).length === 1);
@@ -86,20 +90,23 @@ console.log('mergeTasks');
 // leagues" case below relies on) — checked per-id rather than as one
 // whole-object eq so the assertion doesn't depend on it either.
 const unionResult = mergeTasks({ t1: { text: 'a', category: '', done: false, createdAt: 1, completedAt: null } }, { t2: { text: 'b', category: '', done: false, createdAt: 2, completedAt: null } });
-eq('unions tasks present on only one side — t1 survives', unionResult.t1, { text: 'a', category: '', done: false, createdAt: 1, completedAt: null });
-eq('unions tasks present on only one side — t2 survives', unionResult.t2, { text: 'b', category: '', done: false, createdAt: 2, completedAt: null });
+eq('unions tasks present on only one side — t1 survives, order backfilled from createdAt', unionResult.t1, { text: 'a', category: '', done: false, order: 1, createdAt: 1, completedAt: null });
+eq('unions tasks present on only one side — t2 survives, order backfilled from createdAt', unionResult.t2, { text: 'b', category: '', done: false, order: 2, createdAt: 2, completedAt: null });
 eq('stored wins a real id collision',
   mergeTasks(
     { t1: { text: 'stored version', category: '', done: true, createdAt: 1, completedAt: 5 } },
     { t1: { text: 'incoming version', category: '', done: false, createdAt: 1, completedAt: null } },
   ),
-  { t1: { text: 'stored version', category: '', done: true, createdAt: 1, completedAt: 5 } });
+  { t1: { text: 'stored version', category: '', done: true, order: 1, createdAt: 1, completedAt: 5 } });
+eq('a real order value is carried through rather than backfilled',
+  mergeTasks({}, { t1: { text: 'a', category: '', done: false, order: 5, createdAt: 1, completedAt: null } }),
+  { t1: { text: 'a', category: '', done: false, order: 5, createdAt: 1, completedAt: null } });
 eq('a deleted task (absent from incoming, merging against empty stored) stays gone',
   mergeTasks({}, { t1: null }),
   {});
 eq('an empty incoming document never erases a stored task',
   mergeTasks({ t1: { text: 'a', category: '', done: false, createdAt: 1, completedAt: null } }, {}),
-  { t1: { text: 'a', category: '', done: false, createdAt: 1, completedAt: null } });
+  { t1: { text: 'a', category: '', done: false, order: 1, createdAt: 1, completedAt: null } });
 
 console.log('emptyDocument');
 eq('carries every plan kind plus tasks', emptyDocument(), { contractPlans: {}, salaryPlans: {}, cutPlans: {}, resultOverrides: {}, watchlist: {}, tasks: {}, updatedAt: null });
@@ -141,8 +148,8 @@ const mergedTasks = mergePlans(
   { tasks: { t1: { text: 'a', category: '', done: false, createdAt: 1, completedAt: null } } },
   { tasks: { t2: { text: 'b', category: '', done: false, createdAt: 2, completedAt: null } } },
 ).tasks;
-eq('mergePlans merges tasks alongside the PLAN_KINDS loop — t1 survives', mergedTasks.t1, { text: 'a', category: '', done: false, createdAt: 1, completedAt: null });
-eq('mergePlans merges tasks alongside the PLAN_KINDS loop — t2 survives', mergedTasks.t2, { text: 'b', category: '', done: false, createdAt: 2, completedAt: null });
+eq('mergePlans merges tasks alongside the PLAN_KINDS loop — t1 survives', mergedTasks.t1, { text: 'a', category: '', done: false, order: 1, createdAt: 1, completedAt: null });
+eq('mergePlans merges tasks alongside the PLAN_KINDS loop — t2 survives', mergedTasks.t2, { text: 'b', category: '', done: false, order: 2, createdAt: 2, completedAt: null });
 eq('numbers are normalised to strings',
   mergePlans(emptyDocument(), { contractPlans: { 30641: { 1: 2 } } }).contractPlans,
   { 30641: { 1: '2' } });

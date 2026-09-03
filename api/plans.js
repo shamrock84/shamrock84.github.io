@@ -146,7 +146,11 @@ function validatePlans(plans) {
 // category is the page's business, not this endpoint's. `done` and
 // `createdAt` are validated strictly (they drive sorting and the
 // open/completed split) rather than coerced, since a malformed value here
-// would silently misfile a task rather than just render oddly.
+// would silently misfile a task rather than just render oddly. `order` is
+// optional — a task created before priority ordering existed has none, and
+// the page falls back to createdAt for those (see taskOrderValue in
+// myffl.html) — but a *present* value is still checked strictly for the
+// same reason as done/createdAt.
 function validateTasks(tasks) {
   const errors = [];
   if (tasks === undefined) return errors;
@@ -176,6 +180,9 @@ function validateTasks(tasks) {
     if (task.completedAt !== undefined && task.completedAt !== null && typeof task.completedAt !== 'number') {
       errors.push(`tasks.${id}.completedAt must be a number or null`);
     }
+    if (task.order !== undefined && typeof task.order !== 'number') {
+      errors.push(`tasks.${id}.order must be a number`);
+    }
   }
   return errors;
 }
@@ -200,11 +207,17 @@ function mergeTasks(stored, incoming) {
   for (const id of new Set([...Object.keys(a), ...Object.keys(b)])) {
     const task = b[id] !== undefined ? b[id] : a[id];
     if (task && typeof task === 'object' && !Array.isArray(task)) {
+      const createdAt = typeof task.createdAt === 'number' ? task.createdAt : Date.now();
       merged[id] = {
         text: String(task.text || ''),
         category: typeof task.category === 'string' ? task.category : '',
         done: !!task.done,
-        createdAt: typeof task.createdAt === 'number' ? task.createdAt : Date.now(),
+        // Backfilled to createdAt for a task written before priority
+        // ordering existed — the same fallback taskOrderValue applies
+        // client-side, kept in sync here so a round-trip through the store
+        // can't un-backfill it.
+        order: typeof task.order === 'number' ? task.order : createdAt,
+        createdAt,
         completedAt: typeof task.completedAt === 'number' ? task.completedAt : null,
       };
     }
