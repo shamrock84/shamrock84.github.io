@@ -281,6 +281,19 @@
 			border-color: var(--accent);
 			color: #fff;
 		}
+		/* Eight main tabs (seven logged out) wrap to three rows on a phone
+		   width, with "Admin" stranded alone on the last one. Trimming
+		   padding/gap and the type a notch closes that gap to two rows
+		   without the pill starting to feel cramped. */
+		@media (max-width: 480px) {
+			.tabs {
+				gap: 0.35rem;
+			}
+			.tab-btn {
+				padding: 0.4rem 0.7rem;
+				font-size: 0.8rem;
+			}
+		}
 		.subtabs-bar {
 			display: flex;
 			align-items: center;
