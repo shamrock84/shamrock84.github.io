@@ -1931,6 +1931,13 @@
 		.admin-card {
 			grid-column: 1 / -1;
 		}
+		/* Tasks — the former Plans tab's only card, now the first card in
+		   Admin. Same full-width treatment as .admin-card, kept as its own
+		   rule since the two classes must stay separate (see renderTasksCard's
+		   comment on why this card isn't also .admin-card). */
+		.planning-card {
+			grid-column: 1 / -1;
+		}
 		.admin-note {
 			font-size: 0.85rem;
 			color: var(--muted);
@@ -2423,16 +2430,15 @@
 			return node;
 		}
 
-		// 'admin' (and, the same way, 'history' and 'planning') is only ever in
-		// this set when logged in — renderGrid simply doesn't build the cards
-		// otherwise, and the tab list is derived from the cards that exist, so
-		// logging out removes the tab with no extra work.
+		// 'admin' (and, the same way, 'history') is only ever in this set when
+		// logged in — renderGrid simply doesn't build the cards otherwise, and
+		// the tab list is derived from the cards that exist, so logging out
+		// removes the tab with no extra work.
 		// depthcharts is deliberately ungated (see renderGrid) — the tab shows
-		// even logged out, unlike analytics/history/planning/admin, which is
-		// why it's listed here with those but built outside the isLoggedIn()
-		// blocks.
-		const VIEW_LABELS = { rosters: 'Rosters', standings: 'Standings', scoring: 'Scores', depthcharts: 'Depth Charts', analytics: 'Analytics', history: 'History', planning: 'Plans', admin: 'Admin' };
-		const VIEW_ORDER = ['rosters', 'scoring', 'standings', 'depthcharts', 'analytics', 'history', 'planning', 'admin'];
+		// even logged out, unlike analytics/history/admin, which is why it's
+		// listed here with those but built outside the isLoggedIn() blocks.
+		const VIEW_LABELS = { rosters: 'Rosters', standings: 'Standings', scoring: 'Scores', depthcharts: 'Depth Charts', analytics: 'Analytics', history: 'History', admin: 'Admin' };
+		const VIEW_ORDER = ['rosters', 'scoring', 'standings', 'depthcharts', 'analytics', 'history', 'admin'];
 		// Per-league type — still what individual Rosters cards badge
 		// themselves with (a Salary Cap league's card says "Salary Cap", not
 		// "Dynasty/Salary Cap"), just no longer what any sub-tab is named
@@ -8447,17 +8453,24 @@
 			return card;
 		}
 
-		// Planning tab — Tasks. A checkbox, not the radio buttons the original
-		// notes for this tab sketched — radio implies a mutually-exclusive
-		// choice within a group, which isn't what completing one task among
-		// many independent ones is. "Site enhancement" is a category value
-		// here rather than a second list, per the same notes ("could be part
-		// of task list, maybe task categories") — one list, grouped by
-		// whatever categories exist, is simpler than two lists that would
-		// otherwise need to agree on layout and completed-section behavior.
+		// The manager's own task list — originally its own Plans tab, now the
+		// first card in Admin (see appendAdminCards). A checkbox, not the
+		// radio buttons the original notes for this tab sketched — radio
+		// implies a mutually-exclusive choice within a group, which isn't
+		// what completing one task among many independent ones is. "Site
+		// enhancement" is a category value here rather than a second list,
+		// per the same notes ("could be part of task list, maybe task
+		// categories") — one list, grouped by whatever categories exist, is
+		// simpler than two lists that would otherwise need to agree on
+		// layout and completed-section behavior.
 		function renderTasksCard() {
 			const tasks = loadTasks();
-			const card = el('div', { class: 'card planning-card', 'data-view': 'planning' });
+			// Not .admin-card — that class is how refreshAdminCard and
+			// refreshQuickLinksCard find the Leagues card uniquely via
+			// document.querySelector('.admin-card'); giving it to this card
+			// too would make that lookup ambiguous. .planning-card just gets
+			// the same full-width treatment on its own (see the CSS rule).
+			const card = el('div', { class: 'card planning-card', 'data-view': 'admin', 'data-league-type': '' });
 			const heading = el('h2', { class: 'card-heading', text: 'Tasks' });
 			card.appendChild(heading);
 			makeCollapsible(card, heading, 'tasks');
@@ -9949,10 +9962,12 @@
 			return card;
 		}
 
-		// Both Admin cards are always appended together, in this order — see
-		// renderQuickLinksCard for why Quick Links doesn't render at all
-		// until leagueConfig has loaded.
+		// All three Admin cards are always appended together, in this order —
+		// Tasks first (the former Plans tab's only card), then Leagues, then
+		// Quick Links. See renderQuickLinksCard for why Quick Links doesn't
+		// render at all until leagueConfig has loaded.
 		function appendAdminCards(gridEl) {
+			gridEl.appendChild(renderTasksCard());
 			gridEl.appendChild(renderAdminCard());
 			const linksCard = renderQuickLinksCard();
 			if (linksCard) gridEl.appendChild(linksCard);
@@ -10078,15 +10093,11 @@
 				if (financesCard) gridEl.appendChild(financesCard);
 			}
 
-			// Planning tab: the manager's own task list, gated behind login for
-			// the same reason as Analytics and History above — it's strategy,
-			// not a league mate's business.
-			if (isLoggedIn()) {
-				gridEl.appendChild(renderTasksCard());
-			}
-
-			// Logged-out visitors never get this card, so 'admin' never makes it
-			// into presentViews below and the tab simply isn't offered.
+			// Logged-out visitors never get these cards, so 'admin' never makes
+			// it into presentViews below and the tab simply isn't offered. Tasks
+			// is gated for the same reason as Analytics and History above — it's
+			// strategy, not a league mate's business — and is appended here,
+			// first, by appendAdminCards rather than as a separate tab.
 			if (isLoggedIn()) appendAdminCards(gridEl);
 
 			const presentViews = new Set([...gridEl.querySelectorAll('.card')].map((c) => c.dataset.view).filter(Boolean));
