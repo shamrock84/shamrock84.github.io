@@ -2173,7 +2173,7 @@
 		.admin-add-row {
 			margin-top: 0.7rem;
 		}
-		/* Quick Links — its own card below Leagues, same full-width treatment
+		/* Quick Links — its own card above Leagues, same full-width treatment
 		   as .admin-card. Collapses through the ordinary makeCollapsible
 		   mechanism (a plain .card-heading), so it needs nothing of its own
 		   beyond that. */
@@ -9202,7 +9202,7 @@
 		// finished sync both call renderGrid) so typing isn't lost. Cleared on
 		// logout and after a successful save.
 		let adminDraft = null;
-		// Same idea, for the Quick Links section below the league list —
+		// Same idea, for the Quick Links section above the league list —
 		// config/leagues.json's top-level quickLinks array, a sibling of
 		// leagues rather than a field on one, so it gets its own draft rather
 		// than living inside adminDraft.
@@ -9297,7 +9297,7 @@
 
 		function refreshAdminCard() {
 			// .admin-card rather than the broader [data-view="admin"], which
-			// the Quick Links card below shares — see refreshQuickLinksCard.
+			// the Quick Links card above shares — see refreshQuickLinksCard.
 			const existing = document.querySelector('.admin-card');
 			if (!existing) return;
 			existing.replaceWith(renderAdminCard());
@@ -9863,7 +9863,7 @@
 				'Scoring on Automatic is read from the league\'s own settings — whatever a reception is worth there. It only picks which FantasyPros list the ECR column uses; it changes no points, standings or lineups.',
 				'Lineups puts a lineup editor on the Rosters tab — MFL submits from here, Sleeper is view-only.',
 				'Season follows each league\'s own rollover — leave it blank and the sync stays on the old season until the new one exists, which is why a league can show a season chip in the spring. Fill it in only to pin one.',
-				'Quick Links, in its own card below, adds purple entries to the header toolbar after the leagues above — both a link and a nickname are required, since there\'s no live league name to fall back to. Its Save/Discard/Reload buttons do the exact same thing as these — both cards write to the same file at once.',
+				'Quick Links, in its own card above, adds purple entries to the header toolbar after the leagues above — both a link and a nickname are required, since there\'s no live league name to fall back to. Its Save/Discard/Reload buttons do the exact same thing as these — both cards write to the same file at once.',
 				// The one setting on this screen that changes without being touched,
 				// so it says what it resolves to today as well as what it does.
 				`Rankings on Automatic tracks the NFL calendar: rest-of-season in season, dynasty or draft otherwise (right now: ${nflInSeason() ? 'rest-of-season' : 'dynasty or draft'}). Any other choice pins that league year-round.`,
@@ -9883,16 +9883,16 @@
 				existing.replaceWith(rendered);
 			} else if (existing && !rendered) {
 				// Config isn't loaded (or failed) any more — shouldn't happen in
-				// practice since the Leagues card above owns the fetch and
+				// practice since the Leagues card below owns the fetch and
 				// nothing un-loads it, but dropping the card rather than leaving
 				// a stale one is the safe response if it ever does.
 				existing.remove();
 			} else if (!existing && rendered) {
 				// First successful load: the card didn't exist yet. Slot it in
-				// right after the Leagues card so the on-screen order matches
+				// right before the Leagues card so the on-screen order matches
 				// how they're always appended together.
 				const leaguesCard = document.querySelector('.admin-card');
-				if (leaguesCard) leaguesCard.after(rendered);
+				if (leaguesCard) leaguesCard.before(rendered);
 			}
 			updateVisibility();
 		}
@@ -9963,14 +9963,19 @@
 		}
 
 		// All three Admin cards are always appended together, in this order —
-		// Tasks first (the former Plans tab's only card), then Leagues, then
-		// Quick Links. See renderQuickLinksCard for why Quick Links doesn't
-		// render at all until leagueConfig has loaded.
+		// Tasks first (the former Plans tab's only card), then Quick Links,
+		// then Leagues. renderAdminCard is still called before
+		// renderQuickLinksCard, in spite of Quick Links now rendering first on
+		// screen — renderAdminCard is what kicks off loadLeagueConfig on a
+		// cold load (see its own body), and renderQuickLinksCard only ever
+		// reads whatever leagueConfig already holds, returning null (nothing
+		// to render yet) until that fetch has landed.
 		function appendAdminCards(gridEl) {
 			gridEl.appendChild(renderTasksCard());
-			gridEl.appendChild(renderAdminCard());
+			const adminCard = renderAdminCard();
 			const linksCard = renderQuickLinksCard();
 			if (linksCard) gridEl.appendChild(linksCard);
+			gridEl.appendChild(adminCard);
 		}
 
 		// A search on the Analytics tab shows every league-type group's cards
