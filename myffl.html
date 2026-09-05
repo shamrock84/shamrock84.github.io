@@ -2183,8 +2183,16 @@
 			gap: 0.5rem;
 		}
 		.admin-link-row .admin-field {
-			flex: 1;
 			min-width: 0;
+		}
+		/* Nearly always a short label ("FP", "DLF") next to a full URL, so the
+		   split is deliberately lopsided rather than the even flex:1/flex:1
+		   this replaced. */
+		.admin-link-row .admin-field-link {
+			flex: 3;
+		}
+		.admin-link-row .admin-field-nickname {
+			flex: 0 0 6rem;
 		}
 		.admin-add-btn, .admin-revert-btn {
 			font: inherit;
@@ -10028,11 +10036,11 @@
 			const linksList = el('div', { class: 'admin-links-list' });
 			adminLinksDraft.forEach((link, i) => {
 				const row = el('div', { class: 'admin-link-row' });
-				const urlWrap = el('label', { class: 'admin-field' });
+				const urlWrap = el('label', { class: 'admin-field admin-field-link' });
 				urlWrap.appendChild(el('span', { class: 'admin-field-label', text: 'Link' }));
 				urlWrap.appendChild(adminText(link.url, 'https://…', (v) => { link.url = v; }));
 				row.appendChild(urlWrap);
-				const nickWrap = el('label', { class: 'admin-field' });
+				const nickWrap = el('label', { class: 'admin-field admin-field-nickname' });
 				nickWrap.appendChild(el('span', { class: 'admin-field-label', text: 'Nickname' }));
 				nickWrap.appendChild(adminText(link.nickname, 'e.g. Sleeper App', (v) => { link.nickname = v; }));
 				row.appendChild(nickWrap);
