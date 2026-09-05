@@ -1763,6 +1763,13 @@
 			user-select: none;
 		}
 		.finances-details[open] .finances-summary { margin-bottom: 0.5rem; }
+		/* Average net per season, floated to the far right of the summary
+		   line. Inherits .finances-summary's accent color unless a sign
+		   class overrides it, same as the headline totals do. */
+		.finances-summary-avg {
+			float: right;
+			font-variant-numeric: tabular-nums;
+		}
 		/* Won-amount button — same shape as .salary-link. The popover it opens
 		   is a makePopover instance like every other one on this page; the
 		   shared .popover rules carry its look, and .finances-popover stays as
@@ -8511,7 +8518,21 @@
 				card.appendChild(head);
 
 				const details = el('details', { class: 'finances-details' });
-				details.appendChild(el('summary', { class: 'finances-summary', text: `Yearly breakdown (${years.length})` }));
+				// Same total the headline number above already carries, just
+				// divided by season count — a quick "is this league worth it
+				// per year" read without opening the table. Floated right
+				// rather than flexed onto the <summary>, since flex would
+				// drop the disclosure triangle browsers only draw for a
+				// list-item-display summary.
+				const avgPerYear = total / years.length;
+				details.appendChild(el('summary', { class: 'finances-summary' }, [
+					el('span', { text: `Yearly breakdown (${years.length})` }),
+					el('span', {
+						class: `finances-summary-avg ${financesSignClass(avgPerYear)}`.trim(),
+						title: `Average net across ${years.length} year(s)`,
+						text: `${formatMoney(avgPerYear)}/yr`,
+					}),
+				]));
 
 				const table = el('table', { class: 'standings finances-table' });
 				const headRow = el('tr');
