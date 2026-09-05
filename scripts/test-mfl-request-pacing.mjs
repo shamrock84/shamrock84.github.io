@@ -230,6 +230,39 @@ const league = { id: '26696', name: 'MNMx Dynasty', type: 'dynasty', franchiseId
 	);
 }
 
+// --- api/live-scoring.js opts in, at its own much smaller interval -----------
+// It fans out across every league at once, so an unpaced poll leaves as one
+// burst of ~15 simultaneous MFL requests every 30s for as long as the Scoring
+// tab is open — and one landing mid-sync stacks on top of what the sync is
+// spending. Its interval is deliberately far below the sync's 300ms, because it
+// pays the wait in latency on a user-facing tab rather than in cron wall-clock.
+//
+// Dynamically imported here, after the cases above, precisely because importing
+// it is what applies the setting — a static import would hoist above them and
+// change what they measure. That the import alone arms the gate is the property
+// under test: nothing else in the request path calls setMflRequestInterval for
+// this deployment, so if that call were dropped the burst would return silently.
+{
+	setMflRequestInterval(0);
+	await import('../api/live-scoring.js');
+
+	const { starts } = stubFetch(() => okJson({ ok: 1 }));
+	await Promise.all(
+		Array.from({ length: 6 }, (_, i) => mflGet(`/export?TYPE=liveScoring&L=${i}&JSON=1`, null, 2026))
+	);
+	const sorted = [...starts].sort((a, b) => a - b);
+	assert.equal(sorted.length, 6);
+	for (const gap of gaps(sorted)) {
+		assert.ok(gap > 0, `importing live-scoring must arm the gate, saw a ${gap}ms gap`);
+	}
+	// Bounded on both sides: it has to actually pace, and it has to stay far
+	// cheaper than the sync's interval or the tab pays for it on every poll.
+	const span = sorted[sorted.length - 1] - sorted[0];
+	assert.ok(span >= 5 * 70, `six requests must span five intervals, saw ${span}ms`);
+	assert.ok(span < 5 * 300, `live-scoring must not inherit the sync's 300ms, saw ${span}ms`);
+}
+
+setMflRequestInterval(0);
 globalThis.fetch = originalFetch;
 
 console.log('test-mfl-request-pacing: all assertions passed');

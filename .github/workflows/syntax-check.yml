@@ -241,6 +241,14 @@ jobs:
       - name: Test MFL request pacing and TYPE=league dedup
         run: node scripts/test-mfl-request-pacing.mjs
 
+      # The login's transient-failure retry. A real scheduled sync died on a
+      # connect timeout here before a single league was attempted — the
+      # per-league try/catch cannot help with a failure that happens before it.
+      # The negative case is the load-bearing one: a cookieless 200 is wrong
+      # credentials and must still fail fast rather than read as a network blip.
+      - name: Test MFL login retry
+        run: node scripts/test-mfl-login-retry.mjs
+
       - name: Validate config/leagues.json
         run: |
           node --input-type=module -e '

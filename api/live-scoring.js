@@ -16,6 +16,7 @@ import {
   fetchScoring,
   fetchEspnScoring,
   fetchSleeperScoring,
+  setMflRequestInterval,
 } from '../scripts/lib/providers.mjs';
 import { applyCors } from './lib/cors.mjs';
 
@@ -35,6 +36,32 @@ const cache = {
 
 const COOKIE_TTL_MS = 20 * 60 * 1000; // 20 min
 const NAMES_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+// This path fans out across every league at once (the Promise.allSettled
+// below), so a poll leaves as one burst of ~15 simultaneous MFL requests every
+// 30 seconds for as long as the Scoring tab is open — and a poll that lands
+// mid-sync stacks straight on top of whatever the sync is spending. That is the
+// reason for a floor here at all.
+//
+// Deliberately much smaller than the sync's 300ms, and that difference is the
+// point rather than an inconsistency: pacing is opt-in per entry point
+// precisely so each can pick an interval matched to its own latency budget. The
+// sync is an unattended cron where 30s of extra wall-clock costs nothing; this
+// answers a user-facing tab and pays the interval once per league in added
+// latency. At 75ms a steady-state poll spreads ~15 requests over about a
+// second, which the 30s cadence absorbs without the tab feeling slower.
+//
+// Keep it small for a second reason: no maxDuration is configured in
+// vercel.json, so this runs under Vercel's default ceiling. A cold start pays
+// the interval twice over — once for the TYPE=league names read, once for
+// liveScoring — and the gate must stay a rounding error against that budget,
+// not a meaningful slice of it.
+//
+// Module scope, so it is set once per warm instance alongside the caches above.
+// 75ms is a starting point chosen against those two constraints, not a measured
+// limit — the same caveat that applies to the sync's number.
+const LIVE_SCORING_MFL_INTERVAL_MS = 75;
+setMflRequestInterval(LIVE_SCORING_MFL_INTERVAL_MS);
 
 async function getMflCookie(username, password) {
   const age = Date.now() - cache.mflCookieAt;
