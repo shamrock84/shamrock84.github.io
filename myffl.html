@@ -10057,6 +10057,12 @@
 
 			buildAdminSaveActions(card);
 
+			const legend = el('div', { class: 'admin-legend' });
+			const legendList = el('ul');
+			legendList.appendChild(el('li', { text: 'Extra links shown in the header toolbar after the leagues' }));
+			legend.appendChild(legendList);
+			card.appendChild(legend);
+
 			return card;
 		}
 
