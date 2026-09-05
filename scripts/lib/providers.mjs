@@ -104,9 +104,60 @@ export function leagueUrl(league) {
 
 // --- MFL ---
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Retries a request that failed in a way that says "ask again later" rather
+// than "this will never work".
+//
+// mflGet retries a 429 and nothing else, and a transport failure — fetch itself
+// rejecting, before there is any status to read — threw straight out. For a
+// per-league read that is fine: the league falls back to the previous snapshot
+// and the other seventeen carry on. For the login it is not, because the login
+// runs before any of that machinery exists. Seen in the wild on 2026-09-05: a
+// ten-second UND_ERR_CONNECT_TIMEOUT reaching myfantasyleague.com threw out of
+// main() and took the entire scheduled run with it, costing a four-hour cycle
+// over one blip.
+//
+// So: a transport failure and the two status families that mean "later" are
+// retried, and everything else is handed back for the caller to interpret. In
+// particular a 200 carrying no session cookie is deliberately NOT retried —
+// that is what wrong credentials look like, and it should fail fast and say so
+// rather than spending fourteen seconds to reach the same conclusion.
+//
+// The backoff is more generous than mflGet's on purpose. There, waiting longer
+// competes with the rest of the run for the same rate-limit window; here the
+// alternative to waiting is not a stale league, it is no sync at all.
+// One entry per retry, so the array length is the retry count. Exported with
+// the helper only so a test can substitute a fast schedule — waiting out the
+// real fourteen seconds to assert on the give-up path would be the slowest
+// thing in the suite by an order of magnitude.
+export const TRANSIENT_RETRY_DELAYS_MS = [2000, 4000, 8000];
+
+export async function fetchWithTransientRetry(url, options, label, delays = TRANSIENT_RETRY_DELAYS_MS) {
+  let lastError = null;
+  for (let attempt = 0; attempt <= delays.length; attempt++) {
+    if (attempt > 0) await sleep(delays[attempt - 1]);
+    try {
+      const res = await fetch(url, options);
+      // 429 is the rate limiter; 5xx is MFL itself being unwell. Both are worth
+      // a second ask. A 4xx is an answer, not a hiccup, so it goes back as-is.
+      if (res.status === 429 || res.status >= 500) {
+        lastError = new Error(`${label} failed (${res.status})`);
+        continue;
+      }
+      return res;
+    } catch (err) {
+      // undici puts the useful part on .cause (UND_ERR_CONNECT_TIMEOUT and
+      // friends); err.message alone is the uninformative "fetch failed".
+      lastError = new Error(`${label} failed: ${err.cause?.code || err.message}`);
+    }
+  }
+  throw lastError;
+}
+
 export async function mflLogin(username, password) {
   const url = `${BASE}/login?USERNAME=${encodeURIComponent(username)}&PASSWORD=${encodeURIComponent(password)}&XML=1`;
-  const res = await fetch(url, { redirect: 'follow' });
+  const res = await fetchWithTransientRetry(url, { redirect: 'follow' }, 'MFL login');
   const text = await res.text();
 
   let cookie = null;
@@ -162,8 +213,6 @@ async function mflLoginForImport(username, password, leagueId, season = YEAR) {
   const host = hostMatch ? hostMatch[1] : new URL(BASE).host;
   return { cookie, host };
 }
-
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // ---- MFL request pacing ----------------------------------------------------
 // The 429s are a *burst* problem, not a volume problem, and until this gate
