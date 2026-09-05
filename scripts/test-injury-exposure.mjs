@@ -1,21 +1,24 @@
-// Unit test for the Analytics tab's Injury Exposure card — specifically
-// computeInjuryExposure in myffl.html, which is where every decision that card
-// makes actually lives.
+// Unit test for the Analytics tab's Injury Exposure and Loss Exposure cards
+// — computeInjuryExposure and computeLossExposure in myffl.html, which is
+// where every decision those cards make actually lives.
 //
-// Six of those decisions are choices rather than consequences, and each one is
-// invisible on a healthy week or a single league, which is why they're pinned
-// here rather than left to be noticed on screen:
-//
-//   - the denominator is the *same* set of leagues the Player Exposure card
-//     counts, so "3/9" means the same thing on both cards;
-//   - a player flagged in one league counts in every league that rosters him,
-//     because the provider feeds disagree routinely and it's the same body;
-//   - singletons are kept, unlike the player card's count > 1 filter;
-//   - the worst designation wins when the feeds disagree;
-//   - rows are ordered by severity *before* exposure — the one place this card
-//     deliberately differs from the player card beside it;
-//   - a designation the vocabulary doesn't recognise ranks below every one it
-//     does, so it can neither mask a real IR nor lead the card.
+// The two cards are one designation vocabulary split by INJURY_SETTLED:
+// Injury Exposure keeps Probable/Questionable/Doubtful/Out and anything else
+// still developing (COVID, an unrecognised code); Loss Exposure keeps
+// Injured Reserve (plain or the short-term IR R variant), PUP, NFI, a
+// suspension, a holdout, the Commissioner Exempt list (NA), or Retired. Both
+// share one aggregation (collectInjuryDesignations) and one badness scale
+// (INJURY_SEVERITY), so most of what's pinned below — the shared
+// denominator, keeping a flagged-in-one-league player counted everywhere
+// he's rostered, keeping singletons, the worst designation winning when
+// feeds disagree, an unrecognised code ranking last rather than being
+// swallowed — applies identically to both and is exercised on whichever
+// card the status in play belongs to. What's new here is the partition
+// itself: a player's worst designation puts him on exactly one of the two
+// cards, never both, and never demoted within one — and the two cards read
+// that shared scale in opposite directions: Injury Exposure sorts worst
+// first (sortByWorstFirst), Loss Exposure sorts best-chance-of-returning
+// first (sortByBestChanceFirst).
 //
 // As in test-plan-sync.mjs there is no DOM here: the page's script block is
 // evaluated in a vm with the handful of browser globals it touches stubbed, so
@@ -62,7 +65,7 @@ const context = {
 vm.createContext(context);
 vm.runInContext(scriptSource, context);
 
-const { computeInjuryExposure, computePlayerExposure, injuryDetailLine } = context;
+const { computeInjuryExposure, computeLossExposure, computePlayerExposure, injuryDetailLine } = context;
 
 // Shorthand for a rostered player. `injury` is the NFL designation as
 // normalizeInjuryStatus leaves it; `slot` is the roster status; `detail` is
@@ -89,25 +92,28 @@ const rowFor = (rows, name) => rows.find((r) => r.name === name);
 // card's own league-name links — this test only cares which leagues.
 const names = (entries) => [...entries].map((e) => e.name);
 
-// --- The denominator matches Player Exposure ----------------------------------
+// --- The denominator matches Player Exposure, on both cards -------------------
 {
 	const leagues = [
 		league('A', 'dynasty', [player('Hurt Guy', { injury: 'O' })]),
 		league('B', 'salarycap', [player('Hurt Guy', { injury: 'O' }), player('Fine Guy')]),
 		// No roster data: counted by neither card, so it can't quietly deflate
-		// the percentage on one of them.
+		// the percentage on any of them.
 		league('C', 'dynasty', []),
 		// Different group entirely.
 		league('D', 'draftonly', [player('Hurt Guy', { injury: 'O' })]),
 	];
 
 	const injury = computeInjuryExposure(leagues, DYNASTY);
+	const loss = computeLossExposure(leagues, DYNASTY);
 	const exposure = computePlayerExposure(leagues, DYNASTY);
 	assert.equal(injury.total, 2, 'only leagues in the group with rosters count');
-	assert.equal(injury.total, exposure.total, 'both cards share a denominator');
+	assert.equal(injury.total, exposure.total, 'Injury Exposure shares a denominator with Player Exposure');
+	assert.equal(loss.total, exposure.total, 'and so does Loss Exposure, even with no settled rows here');
 	assert.equal(rowFor(injury.rows, 'Hurt Guy').count, 2);
 	assert.equal(Math.round(rowFor(injury.rows, 'Hurt Guy').exposure), 100);
 	assert.equal(rowFor(injury.rows, 'Fine Guy'), undefined, 'healthy players are left out');
+	assert.equal(loss.rows.length, 0, 'nobody here carries a settled designation');
 }
 
 // --- Flagged in one league, rostered in two ----------------------------------
@@ -125,23 +131,32 @@ const names = (entries) => [...entries].map((e) => e.name);
 	assert.equal(Math.round(rowFor(rows, 'Half Flagged').exposure), 100);
 }
 
-// --- Singletons are kept ------------------------------------------------------
+// --- Singletons are kept, on both cards ---------------------------------------
 // The player card drops count === 1 because it answers "where am I
-// concentrated". This card answers "who of mine is hurt", and dropping
+// concentrated". These cards answer "who of mine is hurt/gone", and dropping
 // singletons would hide most of the answer.
 {
 	const leagues = [
-		league('A', 'dynasty', [player('Lone Casualty', { injury: 'IR' })]),
+		league('A', 'dynasty', [player('Lone Reserve', { injury: 'IR' })]),
 		league('B', 'dynasty', [player('Somebody Else')]),
 	];
-	const { rows } = computeInjuryExposure(leagues, DYNASTY);
+	const { rows } = computeLossExposure(leagues, DYNASTY);
 	assert.equal(rows.length, 1);
 	assert.equal(rows[0].count, 1);
 	assert.equal(Math.round(rows[0].exposure), 50);
 	assert.equal(computePlayerExposure(leagues, DYNASTY).rows.length, 0, 'the player card still drops singletons');
 }
+{
+	const leagues = [
+		league('A', 'dynasty', [player('Lone Question', { injury: 'Q' })]),
+		league('B', 'dynasty', [player('Somebody Else')]),
+	];
+	const { rows } = computeInjuryExposure(leagues, DYNASTY);
+	assert.equal(rows.length, 1, 'the same reasoning holds on Injury Exposure');
+	assert.equal(rows[0].count, 1);
+}
 
-// --- The worst designation wins ----------------------------------------------
+// --- The worst designation wins, within a card --------------------------------
 {
 	const leagues = [
 		league('A', 'dynasty', [player('Worsening', { injury: 'Q' }), player('Steady', { injury: 'D' })]),
@@ -162,113 +177,178 @@ const names = (entries) => [...entries].map((e) => e.name);
 }
 {
 	// A code with no place in the severity list still shows rather than being
-	// swallowed — normalizeInjuryStatus passes short codes through unmapped.
+	// swallowed — normalizeInjuryStatus passes short codes through unmapped. It
+	// isn't in INJURY_SETTLED either, so it lands on Injury Exposure.
 	const leagues = [
 		league('A', 'dynasty', [player('Odd Code', { injury: 'ZZZ' })]),
 		league('B', 'dynasty', [player('Odd Code', { injury: 'ZZZ' })]),
 	];
 	assert.equal(computeInjuryExposure(leagues, DYNASTY).rows[0].status, 'ZZZ');
 }
+
+// --- The settled/live split is a partition between cards, not a tiebreak -----
+// A player's worst designation across leagues decides both what he's shown
+// carrying and which single card he appears on — never both, never neither.
 {
-	// ...but it must never win the reduce against a code we can read. An
-	// unrecognised string ranks -1, so a real IR still decides what shows.
+	// A real IR still beats a Questionable in the reduce — an unrecognised
+	// string ranks -1, so it must never mask a real IR. Since IR is settled,
+	// the row lives on Loss Exposure only.
 	const leagues = [
 		league('A', 'dynasty', [player('Mixed', { injury: 'ZZZ' })]),
 		league('B', 'dynasty', [player('Mixed', { injury: 'IR' })]),
 	];
-	assert.equal(computeInjuryExposure(leagues, DYNASTY).rows[0].status, 'IR');
+	assert.equal(computeLossExposure(leagues, DYNASTY).rows[0].status, 'IR');
+	assert.equal(rowFor(computeInjuryExposure(leagues, DYNASTY).rows, 'Mixed'), undefined,
+		'he does not also appear on Injury Exposure');
+}
+{
+	// A merely Questionable player in one league and IR in another is shown as
+	// IR — INJURY_SEVERITY still decides the worst designation across leagues
+	// — and IR being settled puts the whole row on Loss Exposure, not split
+	// across both cards.
+	const leagues = [
+		league('A', 'dynasty', [player('Disputed', { injury: 'Q' })]),
+		league('B', 'dynasty', [player('Disputed', { injury: 'IR' })]),
+	];
+	assert.equal(computeLossExposure(leagues, DYNASTY).rows[0].status, 'IR');
+	assert.equal(rowFor(computeInjuryExposure(leagues, DYNASTY).rows, 'Disputed'), undefined);
 }
 {
 	// HOL is a holdout, reaching the page from MFL as an unmapped passthrough
-	// and ranked by hand: above Out, below a suspension. It is the one entry in
-	// INJURY_SEVERITY that isn't an injury, so it is the one most likely to be
-	// dropped by someone tidying the list.
+	// and ranked by hand, above a suspension: a suspension has a defined end
+	// date and better odds of returning soon, a holdout is open-ended until a
+	// contract is signed. It's settled either way, so a holdout never shows on
+	// Injury Exposure regardless of what it beats.
 	const leagues = [
 		league('A', 'dynasty', [player('Holding Out', { injury: 'HOL' })]),
 		league('B', 'dynasty', [player('Holding Out', { injury: 'O' })]),
 	];
-	assert.equal(computeInjuryExposure(leagues, DYNASTY).rows[0].status, 'HOL', 'a holdout outranks Out');
+	assert.equal(computeLossExposure(leagues, DYNASTY).rows[0].status, 'HOL', 'a holdout outranks Out and settles on Loss Exposure');
+	assert.equal(rowFor(computeInjuryExposure(leagues, DYNASTY).rows, 'Holding Out'), undefined);
 
 	const vsSuspension = [
 		league('A', 'dynasty', [player('Also Banned', { injury: 'HOL' })]),
 		league('B', 'dynasty', [player('Also Banned', { injury: 'SUSP' })]),
 	];
-	assert.equal(computeInjuryExposure(vsSuspension, DYNASTY).rows[0].status, 'SUSP', 'and a suspension outranks a holdout');
+	assert.equal(computeLossExposure(vsSuspension, DYNASTY).rows[0].status, 'HOL', 'a holdout outranks a suspension — worse odds of returning soon');
 }
 
-// --- An IR slot with no designation still counts ------------------------------
+// --- Live and settled are two disjoint cards, not one demoted list -----------
+// The two cards used to be one, with settled rows demoted to the bottom
+// rather than filtered out. A player who settles no longer sinks within a
+// shared card — he simply isn't on Injury Exposure, and shows up, undemoted,
+// on Loss Exposure instead.
+{
+	const leagues = [
+		league('A', 'dynasty', [player('Parked', { injury: 'IR' })]),
+		league('B', 'dynasty', [player('Filler')]),
+	];
+	assert.equal(computeInjuryExposure(leagues, DYNASTY).rows.length, 0, 'a settled designation never appears on Injury Exposure');
+	const { rows } = computeLossExposure(leagues, DYNASTY);
+	assert.equal(rows.length, 1);
+	assert.equal(rows[0].status, 'IR');
+}
+
+// --- An IR slot with no designation still counts, on Loss Exposure -----------
 {
 	const leagues = [
 		league('A', 'dynasty', [player('Parked', { slot: 'INJURED_RESERVE' })]),
 		league('B', 'dynasty', [player('Parked', { slot: 'ROSTER' })]),
 	];
-	const { rows } = computeInjuryExposure(leagues, DYNASTY);
+	const { rows } = computeLossExposure(leagues, DYNASTY);
 	assert.equal(rows.length, 1);
 	assert.equal(rows[0].status, 'IR');
 }
 {
-	// The feed's own designation wins over the slot when both are present.
-	const leagues = [league('A', 'dynasty', [player('Parked', { slot: 'INJURED_RESERVE', injury: 'Q' })])];
-	assert.equal(computeInjuryExposure([...leagues, league('B', 'dynasty', [player('X')])], DYNASTY).rows[0].status, 'Q');
+	// The feed's own designation wins over the slot when both are present —
+	// here the feed says Q, which is live, so the row is on Injury Exposure
+	// and never reaches Loss Exposure at all.
+	const solo = [player('Parked', { slot: 'INJURED_RESERVE', injury: 'Q' })];
+	const leagues = [league('A', 'dynasty', solo), league('B', 'dynasty', [player('X')])];
+	assert.equal(computeInjuryExposure(leagues, DYNASTY).rows[0].status, 'Q');
+	assert.equal(rowFor(computeLossExposure(leagues, DYNASTY).rows, 'Parked'), undefined);
 }
 
-// --- Ordering: still developing first, settled below --------------------------
-// The card's first key is whether a designation is still a question, not how bad
-// it is. Severity alone used to lead, and it made the card go stale: an IR is
-// triage the week it lands and a standing fact every week after, but it held the
-// top row all season either way. A sort nothing can displace has stopped sorting.
+// --- IR R: MFL's own short-term/return-designated reserve code ---------------
+// Reaches the page as the literal string "IR R" — normalizeInjuryStatus
+// (providers.mjs) passes it through unmapped, the same way HOL does — and is
+// real, current data: Trevor Etienne carries it in data/rosters.json as this
+// is written. It has to land on Loss Exposure like any other settled
+// designation, not fall through to Injury Exposure as an unrecognised code.
+{
+	const leagues = [
+		league('A', 'dynasty', [player('Short Term', { injury: 'IR R' })]),
+		league('B', 'dynasty', [player('Filler')]),
+	];
+	assert.equal(rowFor(computeLossExposure(leagues, DYNASTY).rows, 'Short Term').status, 'IR R');
+	assert.equal(rowFor(computeInjuryExposure(leagues, DYNASTY).rows, 'Short Term'), undefined,
+		'IR R is settled, not an unrecognised live code');
+}
+{
+	// It carries better odds of returning this season than a plain IR
+	// placement, so it wins the "best chance first" ordering, and it beats a
+	// plain IR in arbitration too — the more specific, more hopeful read of
+	// the same underlying reserve slot.
+	const leagues = [
+		league('A', 'dynasty', [player('Better Odds', { injury: 'IR R' }), player('Worse Odds', { injury: 'IR' })]),
+		league('B', 'dynasty', [player('Filler')]),
+	];
+	const { rows } = computeLossExposure(leagues, DYNASTY);
+	assert.deepEqual([...rows].map((r) => r.name), ['Better Odds', 'Worse Odds']);
+
+	const disputed = [
+		league('A', 'dynasty', [player('Disputed', { injury: 'IR' })]),
+		league('B', 'dynasty', [player('Disputed', { injury: 'IR R' })]),
+	];
+	assert.equal(computeLossExposure(disputed, DYNASTY).rows[0].status, 'IR', 'a plain IR still beats IR R when providers disagree');
+}
+
+// --- Ordering: worst designation first, within each card ----------------------
+// Now that the settled/live split is a boundary between two cards rather than
+// a tiebreak within one, each card's own order is severity alone worst-first,
+// then exposure, then the better player.
 {
 	const leagues = [
 		league('A', 'dynasty', [
 			player('Wide Q', { injury: 'Q', ecr: 5 }),
-			player('Lone IR', { injury: 'IR', ecr: 250 }),
+			player('Solo Out', { injury: 'O', ecr: 250 }),
 		]),
 		league('B', 'dynasty', [player('Wide Q', { injury: 'Q', ecr: 5 })]),
 		league('C', 'dynasty', [player('Wide Q', { injury: 'Q', ecr: 5 })]),
 	];
 	const { rows } = computeInjuryExposure(leagues, DYNASTY);
-	assert.deepEqual([...rows].map((r) => r.name), ['Wide Q', 'Lone IR'],
-		'three leagues of Questionable is this week\'s problem; the IR is already handled');
+	assert.deepEqual([...rows].map((r) => r.name), ['Solo Out', 'Wide Q'],
+		'Out outranks Questionable regardless of how many leagues the Questionable spans');
 }
 {
-	// Settled rows are demoted, never dropped. A newly placed IR is real news,
-	// and a card that hid them would never show it.
+	// The live ladder, worst first: Out, Doubtful, Questionable, Probable,
+	// Day-to-Day. COVID ranks below all four — rare enough to be deprioritized
+	// rather than lead the card the way it once did — and ZZZ (unrecognised)
+	// ranks lower still, the true bottom of this card: it neither leads it nor
+	// gets filed as a standing loss on the strength of a string nobody has read.
+	const live = ['O', 'D', 'Q', 'P', 'DTD', 'COVID', 'ZZZ'];
 	const leagues = [
-		league('A', 'dynasty', [player('Parked', { injury: 'IR' })]),
+		league('A', 'dynasty', live.map((s, i) => player(`P${i}`, { injury: s }))),
 		league('B', 'dynasty', [player('Filler')]),
 	];
 	const { rows } = computeInjuryExposure(leagues, DYNASTY);
-	assert.equal(rows.length, 1);
-	assert.equal(rows[0].status, 'IR');
+	assert.deepEqual([...rows].map((r) => r.status), live);
 }
 {
-	// The full ladder: the live half worst-first, then the settled half
-	// worst-first. One league each, so only the sort can be ordering them.
-	//
-	// ZZZ is unrecognised — it ranks -1 and is absent from INJURY_SETTLED, which
-	// puts it at the bottom of the *live* half. It neither leads the card nor
-	// gets filed as season-ending on the strength of a string nobody has read.
-	// RET is the mirror case: settled by name, unranked by severity, so it sits
-	// at the bottom of the settled half.
-	const live = ['COVID', 'O', 'D', 'Q', 'DTD', 'P', 'ZZZ'];
-	const settled = ['IR', 'PUP', 'NFI', 'SUSP', 'HOL', 'RET'];
+	// The settled ladder, but ordered by best chance of returning first —
+	// Loss Exposure runs this card in the opposite direction from Injury
+	// Exposure. IR R (MFL's own short-term/return-designated reserve code)
+	// leads, its PUP/NFI cousins right behind it; a suspension (defined end
+	// date) beats a holdout (open-ended); the Commissioner Exempt list (NA)
+	// and a plain IR placement carry no such date; Retired trails everything,
+	// since a retired player is never coming back.
+	const settled = ['IR R', 'PUP', 'NFI', 'SUSP', 'HOL', 'NA', 'IR', 'RET'];
 	const leagues = [
-		league('A', 'dynasty', [...live, ...settled].map((s, i) => player(`P${i}`, { injury: s }))),
+		league('A', 'dynasty', settled.map((s, i) => player(`P${i}`, { injury: s }))),
 		league('B', 'dynasty', [player('Filler')]),
 	];
-	const { rows } = computeInjuryExposure(leagues, DYNASTY);
-	assert.deepEqual([...rows].map((r) => r.status), [...live, ...settled]);
-}
-{
-	// Severity still decides which designation a player is shown as carrying
-	// when two providers disagree. That is the other job INJURY_SEVERITY does,
-	// and tiering the sort must not touch it — a real IR still beats a
-	// Questionable there, even though it now sorts below one.
-	const leagues = [
-		league('A', 'dynasty', [player('Disputed', { injury: 'Q' })]),
-		league('B', 'dynasty', [player('Disputed', { injury: 'IR' })]),
-	];
-	assert.equal(computeInjuryExposure(leagues, DYNASTY).rows[0].status, 'IR');
+	const { rows } = computeLossExposure(leagues, DYNASTY);
+	assert.deepEqual([...rows].map((r) => r.status), settled);
 }
 {
 	// Within one severity tier the old ordering still applies: exposure, then
@@ -316,6 +396,14 @@ const names = (entries) => [...entries].map((e) => e.name);
 	assert.equal(rowFor(computeInjuryExposure(leagues, DYNASTY).rows, 'Shared').team, 'LVR', 'first league to carry him settles it');
 	assert.equal(rowFor(computeInjuryExposure(leagues, DYNASTY).rows, 'Solo').team, 'KCC');
 	assert.equal(rowFor(computePlayerExposure(leagues, DYNASTY).rows, 'Shared').team, 'LVR', 'and the player card agrees');
+}
+{
+	// Loss Exposure carries the team through the same way.
+	const leagues = [
+		league('A', 'dynasty', [player('Reserved', { team: 'SFO', injury: 'IR' })]),
+		league('B', 'dynasty', [player('Filler')]),
+	];
+	assert.equal(rowFor(computeLossExposure(leagues, DYNASTY).rows, 'Reserved').team, 'SFO');
 }
 
 // --- One player, two spellings, one row ---------------------------------------
@@ -380,7 +468,7 @@ const names = (entries) => [...entries].map((e) => e.name);
 	assert.equal(computeInjuryExposure(leagues, DYNASTY).rows.length, 2);
 }
 
-// --- The injury detail rides through the aggregation --------------------------
+// --- The injury detail rides through the aggregation, on both cards -----------
 // It reaches the roster two different ways — by MFL player id for MFL leagues,
 // by name for ESPN and Sleeper ones — so a player can easily carry it in one
 // league and not another. Both copies come from the same global MFL report, so
@@ -400,6 +488,14 @@ const names = (entries) => [...entries].map((e) => e.name);
 		league('B', 'dynasty', [player('Filler')]),
 	];
 	assert.equal(computeInjuryExposure(bare, DYNASTY).rows[0].detail, null);
+}
+{
+	const detail = { part: 'Personal', until: null };
+	const leagues = [
+		league('A', 'dynasty', [player('Reserved Detail', { injury: 'IR', detail })]),
+		league('B', 'dynasty', [player('Filler')]),
+	];
+	assert.deepEqual(rowFor(computeLossExposure(leagues, DYNASTY).rows, 'Reserved Detail').detail, detail);
 }
 
 // --- What actually gets printed under the name --------------------------------
