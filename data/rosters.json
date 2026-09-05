@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-05T02:20:07.789Z",
+  "generatedAt": "2026-09-05T04:26:33.737Z",
   "year": "2026",
   "rankingPools": {
     "DYNASTY|PPR|ALL": {
@@ -11244,18 +11244,18 @@
           "url": "/nfl/players/tyler-higbee.php"
         },
         {
-          "name": "Eli Raridon",
-          "position": "TE",
-          "team": "NE",
-          "rank": 47,
-          "url": "/nfl/players/eli-raridon.php"
-        },
-        {
           "name": "Max Klare",
           "position": "TE",
           "team": "LAR",
-          "rank": 48,
+          "rank": 47,
           "url": "/nfl/players/max-klare.php"
+        },
+        {
+          "name": "Eli Raridon",
+          "position": "TE",
+          "team": "NE",
+          "rank": 48,
+          "url": "/nfl/players/eli-raridon.php"
         },
         {
           "name": "Erick All Jr.",
@@ -12080,7 +12080,7 @@
     }
   },
   "depthCharts": {
-    "generatedAt": "2026-09-05T02:19:53.989Z",
+    "generatedAt": "2026-09-05T04:26:23.203Z",
     "teams": {
       "ATL": {
         "name": "Atlanta Falcons",
@@ -17055,7 +17055,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-05T02:18:26.147Z",
+      "updatedAt": "2026-09-05T04:25:04.792Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -17177,8 +17177,19 @@
       "standingsError": null,
       "scoring": null,
       "scoringError": "No live scoring available yet",
-      "starters": null,
-      "lineupError": "MFL request failed (429): /export?TYPE=weeklyResults&L=26696&W=1&JSON=1 (year 2026)",
+      "lineupWeek": "1",
+      "starters": [
+        "14783",
+        "13604",
+        "17044",
+        "14802",
+        "16627",
+        "16211",
+        "15329",
+        "16681",
+        "0518"
+      ],
+      "lineupError": null,
       "draftInProgress": false,
       "available": [
         "Chig Okonkwo",
@@ -20953,7 +20964,7 @@
           "originalTeamName": "Swingline Steamrollers"
         }
       ],
-      "updatedAt": "2026-09-05T02:18:26.988Z",
+      "updatedAt": "2026-09-05T04:25:05.800Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -24721,7 +24732,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-05T02:18:28.320Z",
+      "updatedAt": "2026-09-05T04:25:06.775Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -28074,7 +28085,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-05T02:18:30.404Z",
+      "updatedAt": "2026-09-05T04:25:07.619Z",
       "error": null,
       "tags": [
         "Best Ball"
@@ -31304,7 +31315,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-05T02:18:31.157Z",
+      "updatedAt": "2026-09-05T04:25:09.212Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -33527,7 +33538,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-05T02:18:32.639Z",
+      "updatedAt": "2026-09-05T04:25:10.731Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -35443,7 +35454,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-05T02:18:34.196Z",
+      "updatedAt": "2026-09-05T04:25:12.316Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -36934,7 +36945,7 @@
           "injuryStatus": null
         }
       ],
-      "updatedAt": "2026-09-05T02:18:34.342Z",
+      "updatedAt": "2026-09-05T04:25:12.459Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -38117,7 +38128,7 @@
           "injuryStatus": null
         }
       ],
-      "updatedAt": "2026-09-05T02:18:34.413Z",
+      "updatedAt": "2026-09-05T04:25:12.519Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -39401,7 +39412,7 @@
         }
       ],
       "draftInProgress": false,
-      "updatedAt": "2026-09-05T02:18:34.722Z",
+      "updatedAt": "2026-09-05T04:25:13.292Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -39713,7 +39724,7 @@
         "Christian Kirk"
       ],
       "power": {
-        "computedAt": "2026-09-05T02:18:24.085Z",
+        "computedAt": "2026-09-05T04:25:02.358Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -40422,7 +40433,7 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-09-05T02:18:24.085Z",
+      "availableAt": "2026-09-05T04:25:02.358Z",
       "results": []
     },
     {
@@ -40841,6 +40852,36 @@
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/sam-laporta.php"
           }
+        },
+        {
+          "id": "17107",
+          "name": "Terrance Ferguson",
+          "position": "TE",
+          "team": "LAR",
+          "bye": "11",
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null,
+          "injuryStatus": "Q",
+          "injuryDetail": {
+            "part": "General Soreness",
+            "until": "Sep 10, 2026"
+          },
+          "pts": 0,
+          "priorYearPts": 52.1,
+          "ecr": {
+            "rank": 195,
+            "posRank": "TE22",
+            "tier": 10,
+            "delta": null,
+            "url": "https://www.fantasypros.com/nfl/players/terrance-ferguson.php"
+          },
+          "sleeper": {
+            "rank": 38,
+            "posRank": "TE3",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/terrance-ferguson.php"
+          }
         }
       ],
       "salaryCap": null,
@@ -40853,7 +40894,7 @@
         "position": []
       },
       "draftPicks": null,
-      "updatedAt": "2026-09-05T02:18:35.714Z",
+      "updatedAt": "2026-09-05T04:25:15.553Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -41002,8 +41043,8 @@
         "position": "ALL",
         "lastUpdated": "9/05",
         "totalExperts": 125,
-        "matched": 17,
-        "total": 17
+        "matched": 18,
+        "total": 18
       },
       "rankingsError": null,
       "available": null,
@@ -42342,7 +42383,7 @@
         "position": []
       },
       "draftPicks": null,
-      "updatedAt": "2026-09-05T02:18:36.768Z",
+      "updatedAt": "2026-09-05T04:25:16.432Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -43661,7 +43702,7 @@
         "position": []
       },
       "draftPicks": null,
-      "updatedAt": "2026-09-05T02:18:37.746Z",
+      "updatedAt": "2026-09-05T04:25:17.034Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -44889,7 +44930,7 @@
         "position": []
       },
       "draftPicks": null,
-      "updatedAt": "2026-09-05T02:18:38.469Z",
+      "updatedAt": "2026-09-05T04:25:17.609Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -46264,7 +46305,7 @@
         "position": []
       },
       "draftPicks": null,
-      "updatedAt": "2026-09-05T02:18:39.182Z",
+      "updatedAt": "2026-09-05T04:25:18.492Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -47546,7 +47587,7 @@
         "position": []
       },
       "draftPicks": null,
-      "updatedAt": "2026-09-05T02:18:39.826Z",
+      "updatedAt": "2026-09-05T04:25:19.319Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -48831,7 +48872,7 @@
         "position": []
       },
       "draftPicks": null,
-      "updatedAt": "2026-09-05T02:18:40.423Z",
+      "updatedAt": "2026-09-05T04:25:20.179Z",
       "error": null,
       "tags": [
         "Superflex"
@@ -50127,7 +50168,7 @@
         "position": []
       },
       "draftPicks": null,
-      "updatedAt": "2026-09-05T02:18:41.095Z",
+      "updatedAt": "2026-09-05T04:25:21.160Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -50271,7 +50312,7 @@
       ],
       "standingsError": null,
       "scoring": null,
-      "scoringError": "MFL request failed (429): /export?TYPE=liveScoring&L=26222&JSON=1 (year 2026)",
+      "scoringError": "No live scoring available yet",
       "draftInProgress": false,
       "available": [
         "Kenny Gainwell",
