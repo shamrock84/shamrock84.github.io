@@ -1955,14 +1955,6 @@
 			padding-top: 0.7rem;
 			border-top: 1px solid var(--border);
 		}
-		.admin-legend h3 {
-			margin: 0 0 0.35rem;
-			font-size: 0.7rem;
-			text-transform: uppercase;
-			letter-spacing: 0.04em;
-			font-weight: 600;
-			color: var(--accent);
-		}
 		.admin-legend ul {
 			margin: 0;
 			padding-left: 1.1rem;
@@ -9963,7 +9955,6 @@
 			// that answer it. Only the non-obvious columns get a line — anything you
 			// work out by using the control once isn't worth a sentence here.
 			const legend = el('div', { class: 'admin-legend' });
-			legend.appendChild(el('h3', { text: 'Please Note' }));
 			const legendList = el('ul');
 			for (const line of [
 				'Save goes live at once. New or changed leagues appear on the other tabs after the next sync.',
