@@ -38,8 +38,8 @@
 // THIS league now" rather than waiting for its turn in iteration order.
 import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { mflLogin } from './lib/providers.mjs';
-import { backfillLeagueHistory } from './fetch-rosters.mjs';
+import { mflLogin, setMflRequestInterval } from './lib/providers.mjs';
+import { backfillLeagueHistory, MFL_REQUEST_INTERVAL_MS } from './fetch-rosters.mjs';
 
 const USERNAME = process.env.MFL_USERNAME;
 const PASSWORD = process.env.MFL_PASSWORD;
@@ -55,6 +55,11 @@ async function main() {
   if (!USERNAME || !PASSWORD) {
     throw new Error('MFL_USERNAME and MFL_PASSWORD environment variables are required.');
   }
+
+  // Same send-rate floor the sync runs under. A rate-limited year here is not
+  // just a slow year — a 429 abandons the rest of the run's MFL backfill, so
+  // pacing buys back whole leagues' worth of progress per dispatch.
+  setMflRequestInterval(MFL_REQUEST_INTERVAL_MS);
 
   const previous = JSON.parse(await readFile(OUTPUT_PATH, 'utf8'));
   const previousById = new Map(previous.leagues.map((l) => [l.id, l]));

@@ -232,6 +232,15 @@ jobs:
       - name: Test future draft picks parsing
         run: node scripts/test-future-draft-picks.mjs
 
+      # The sync's MFL send-rate floor and the one-read-per-league TYPE=league
+      # dedup. Both fail silently: pacing that stops applying just looks like
+      # MFL being moody again, and a dedup that stops deduping costs requests
+      # nobody counts. The concurrency case is the real assertion — the gate has
+      # to hold for the Promise.all fan-outs in fetchLeagueRoster and
+      # fetchStandings, not just for a serial loop.
+      - name: Test MFL request pacing and TYPE=league dedup
+        run: node scripts/test-mfl-request-pacing.mjs
+
       - name: Validate config/leagues.json
         run: |
           node --input-type=module -e '

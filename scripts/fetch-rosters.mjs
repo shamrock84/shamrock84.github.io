@@ -44,6 +44,9 @@ import {
   fetchEspnSeasonTeams,
   fetchMflSeasonMeta,
   fetchMflWeekScores,
+  fetchMflLeagueData,
+  mflFranchiseNames,
+  setMflRequestInterval,
 } from './lib/providers.mjs';
 import {
   attachRankings,
@@ -74,6 +77,26 @@ const USERNAME = process.env.MFL_USERNAME;
 const PASSWORD = process.env.MFL_PASSWORD;
 const OUTPUT_PATH = fileURLToPath(new URL('../data/rosters.json', import.meta.url));
 const CONFIG_PATH = fileURLToPath(new URL('../config/leagues.json', import.meta.url));
+
+// Minimum gap between two MFL request starts, applied across this whole run —
+// see setMflRequestInterval in providers.mjs for why the sync needs a send-rate
+// floor at all and why nothing else that imports that module gets one.
+//
+// This is a cron job with nothing waiting on it, so wall-clock is the cheapest
+// currency available here: spending ~30s spreading the run out buys back the
+// scoring and lineup fetches that were being refused at the tail of each pass.
+// The number is a starting point chosen to be comfortably slower than an
+// unpaced run rather than tuned to a measured limit — MFL publishes no rate
+// limit and its 429 carries nothing we currently capture, so tightening or
+// loosening it should follow a probe, not a guess.
+//
+// Exported because backfill-history.mjs and backfill-scoring.mjs are separate
+// entry points with their own main(), and they burst harder than this script
+// does — a season's brackets or its eighteen weekly-results reads go out
+// back-to-back for one league. They run alone with an uncontended rate-limit
+// window and still hit 429s often enough to need mflRateLimited, so they opt in
+// to the same floor rather than each picking a number.
+export const MFL_REQUEST_INTERVAL_MS = 300;
 
 // League/franchise IDs live in config/leagues.json, not here — edit that file
 // each offseason instead of this script. See its _readme field for the schema.
@@ -861,6 +884,8 @@ async function main() {
     throw new Error('MFL_USERNAME and MFL_PASSWORD environment variables are required.');
   }
 
+  setMflRequestInterval(MFL_REQUEST_INTERVAL_MS);
+
   const { leagues: LEAGUES, quickLinks: QUICK_LINKS } = await loadLeagueConfig();
   const previous = await loadPreviousOutput();
   const previousById = new Map((previous?.leagues ?? []).map((l) => [l.id, l]));
@@ -953,6 +978,28 @@ async function main() {
     }
   }
 
+  // One TYPE=league read per MFL league per run, shared by the roster,
+  // standings and scoring passes below.
+  //
+  // All three need the same franchise-id -> name map off that one response, and
+  // all three used to fetch it for themselves: three identical requests per
+  // league per sync, of which two were pure waste. Across the MFL leagues here
+  // that was ~30 requests a run — better than a fifth of the whole budget —
+  // spent re-reading a response that cannot change mid-sync, and spent right in
+  // the passes where the 429s were landing.
+  //
+  // Keyed by league id and deliberately a local rather than a field on the
+  // result object: everything on that object is serialized into
+  // data/rosters.json and fetched whole by every visitor on every page load, and
+  // this is scaffolding for the run, not data the page has any use for.
+  //
+  // A league missing from this map is the normal not-MFL case, and also the
+  // case where the roster pass failed before caching one. Both fall through to
+  // the pre-existing behaviour: fetchStandings and fetchScoring each fetch their
+  // own when handed nothing, so a league whose rosters failed can still get
+  // standings, exactly as before.
+  const mflNamesById = new Map();
+
   const leagues = [];
   for (const league of LEAGUES) {
     if (!league.franchiseId) {
@@ -987,11 +1034,20 @@ async function main() {
       continue;
     }
     try {
+      // The one TYPE=league read for this league, taken here because the roster
+      // pass is the first thing that needs it and needs the most of it (roster
+      // limits, starting-lineup slots and the salary cap all come off the same
+      // response, not just the names the other two passes want).
+      let mflLeagueData = null;
+      if (!league.provider || league.provider === 'mfl') {
+        mflLeagueData = await fetchMflLeagueData(league, cookie);
+        mflNamesById.set(league.id, mflFranchiseNames(mflLeagueData));
+      }
       const result = league.provider === 'espn'
         ? await fetchEspnLeagueRoster(league)
         : league.provider === 'sleeper'
         ? await fetchSleeperLeagueRoster(league, sleeperPlayerMap, byeWeeks)
-        : await fetchLeagueRoster(league, cookie, playerMap, byeWeeks, injuries);
+        : await fetchLeagueRoster(league, cookie, playerMap, byeWeeks, injuries, mflLeagueData);
       result.tags = league.tags || [];
       result.provider = league.provider || null;
       result.rulesUrl = league.rulesUrl || null;
@@ -1061,7 +1117,7 @@ async function main() {
         ? await fetchEspnStandings(league)
         : league.provider === 'sleeper'
         ? await fetchSleeperStandings(league)
-        : await fetchStandings(league, cookie);
+        : await fetchStandings(league, cookie, mflNamesById.get(league.id));
       target.standingsError = null;
       console.log(`Fetched standings for ${league.name}: ${target.standings.length} teams`);
     } catch (err) {
@@ -1080,7 +1136,7 @@ async function main() {
         ? await fetchEspnScoring(league)
         : league.provider === 'sleeper'
         ? await fetchSleeperScoring(league)
-        : await fetchScoring(league, cookie);
+        : await fetchScoring(league, cookie, mflNamesById.get(league.id));
       target.scoringError = null;
       console.log(`Fetched scoring for ${league.name}: ${target.scoring.teams.length} teams`);
     } catch (err) {
