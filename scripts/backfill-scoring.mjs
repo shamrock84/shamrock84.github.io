@@ -30,8 +30,8 @@
 // wait: a single season alone can approach the per-league budget).
 import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { mflLogin } from './lib/providers.mjs';
-import { backfillLeagueScoringRecords } from './fetch-rosters.mjs';
+import { mflLogin, setMflRequestInterval } from './lib/providers.mjs';
+import { backfillLeagueScoringRecords, MFL_REQUEST_INTERVAL_MS } from './fetch-rosters.mjs';
 
 const USERNAME = process.env.MFL_USERNAME;
 const PASSWORD = process.env.MFL_PASSWORD;
@@ -46,6 +46,11 @@ async function main() {
   if (!USERNAME || !PASSWORD) {
     throw new Error('MFL_USERNAME and MFL_PASSWORD environment variables are required.');
   }
+
+  // Same send-rate floor the sync runs under. This is the burstiest MFL caller
+  // in the project — one season costs roughly one request per week over a fixed
+  // weeks 1-18 window, with no bulk endpoint to fold them into.
+  setMflRequestInterval(MFL_REQUEST_INTERVAL_MS);
 
   const previous = JSON.parse(await readFile(OUTPUT_PATH, 'utf8'));
   const previousById = new Map(previous.leagues.map((l) => [l.id, l]));

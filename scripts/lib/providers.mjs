@@ -165,12 +165,63 @@ async function mflLoginForImport(username, password, leagueId, season = YEAR) {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// ---- MFL request pacing ----------------------------------------------------
+// The 429s are a *burst* problem, not a volume problem, and until this gate
+// existed nothing in a sync limited its own send rate: every request went out
+// the instant the previous response resolved. A steady-state run issues on the
+// order of a hundred MFL requests (roster, standings, scoring and lineup passes
+// across the MFL leagues, plus the global player/bye/injury lookups), and
+// across 29 committed snapshots of data/rosters.json, 24 carried at least one
+// 429 — clustered in the leagues at the tail of each pass, exactly where
+// cumulative burst exhaustion would put them.
+//
+// The retry below is the reactive half: it only helps once MFL has already
+// refused. This is the proactive half — a floor on the gap between two request
+// *starts*, which is the only knob that changes whether the refusal happens.
+//
+// Off by default, and deliberately so. api/live-scoring.js shares this module
+// and fans out across every league at once on a ~30s poll; serializing that
+// behind a gate would add seconds of latency to a user-facing tab which is not
+// what trips the limit (its franchise names are cached for an hour, so it
+// spends one request per league per poll). Pacing is opt-in, and the batch
+// entry points are the ones that opt in — see setMflRequestInterval's callers.
+let mflRequestIntervalMs = 0;
+
+// Only the request *starts* are serialized; requests already in flight still
+// overlap. A plain "has enough time passed?" check would be racy under the
+// Promise.all fan-outs in fetchLeagueRoster and fetchStandings — two concurrent
+// callers would read the same timestamp, both decide they were clear to go, and
+// send the very burst being prevented. Queuing each caller on a promise chain is
+// what makes the interval hold across concurrent callers as well as serial ones.
+let mflGate = Promise.resolve();
+let mflLastRequestAt = 0;
+
+// ms = 0 disables pacing (the default). Call once at startup.
+export function setMflRequestInterval(ms) {
+  mflRequestIntervalMs = Number(ms) || 0;
+}
+
+function paceMflRequest() {
+  if (mflRequestIntervalMs <= 0) return Promise.resolve();
+  const turn = mflGate.then(async () => {
+    const remaining = mflRequestIntervalMs - (Date.now() - mflLastRequestAt);
+    if (remaining > 0) await sleep(remaining);
+    // Stamped after the wait, not before, so the interval is measured between
+    // consecutive starts rather than drifting off one fixed origin.
+    mflLastRequestAt = Date.now();
+  });
+  mflGate = turn;
+  return turn;
+}
+
 // year defaults to the current season; pass a specific year (e.g. for
 // prior-season lookups) to hit that year's API host instead. A full sync
 // makes a lot of MFL requests back-to-back, and MFL rate-limits bursts
 // (429) — retry with a short backoff instead of failing leagues that just
-// happened to be later in the sync.
+// happened to be later in the sync. Retries recurse through here, so they are
+// paced like any other request.
 export async function mflGet(path, cookie, year = YEAR, attempt = 1) {
+  await paceMflRequest();
   const res = await fetch(`https://api.myfantasyleague.com/${year}${path}`, {
     headers: cookie ? { Cookie: cookie } : {},
     redirect: 'follow',
@@ -859,7 +910,11 @@ export function parseFutureDraftPicks(picksData, franchiseId, nameById) {
     .sort((a, b) => a.year - b.year || a.round - b.round);
 }
 
-export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, injuries) {
+// cachedLeagueData is optional — pass an already-fetched TYPE=league response
+// (from fetchMflLeagueData) to skip re-reading it. The full sync passes it, so
+// the roster, standings and scoring passes share one read per league; omit it
+// and this fetches its own exactly as it always did.
+export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, injuries, cachedLeagueData) {
   // Dynasty/Salary Cap only — a draft-only or redraft league has no future
   // picks worth showing (draft-only re-drafts from scratch every year;
   // redraft the same), so this is one extra request only for the league
@@ -877,7 +932,7 @@ export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, inj
       })
     : Promise.resolve(null);
   const [leagueData, rostersData, futureDraftPicksData] = await Promise.all([
-    mflGet(`/export?TYPE=league&L=${league.id}&JSON=1`, cookie, seasonOf(league)),
+    cachedLeagueData ?? fetchMflLeagueData(league, cookie),
     mflGet(`/export?TYPE=rosters&L=${league.id}&FRANCHISE=${league.franchiseId}&JSON=1`, cookie, seasonOf(league)),
     draftPicksPromise,
   ]);
@@ -885,11 +940,11 @@ export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, inj
   const franchises = leagueData?.league?.franchises?.franchise ?? [];
   const franchiseList = Array.isArray(franchises) ? franchises : [franchises];
   const franchiseInfo = franchiseList.find((f) => f.id === league.franchiseId);
-  // Built here rather than inline in parseFutureDraftPicks so a "via"
-  // team name resolves off the same TYPE=league response fetchStandings
-  // already builds this exact map from — no second request just to name a
-  // trade partner.
-  const nameById = new Map(franchiseList.map((f) => [f.id, f.name]));
+  // Built here rather than inline in parseFutureDraftPicks so a "via" team name
+  // resolves off the TYPE=league response already in hand — no second request
+  // just to name a trade partner. The sync hands this same map on to the
+  // standings and scoring passes rather than letting them re-read it.
+  const nameById = mflFranchiseNames(leagueData);
 
   // null means "couldn't tell" (not fetched, or the fetch failed) and is
   // left alone rather than coerced to [] — same distinction `available`
@@ -1020,15 +1075,15 @@ export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, inj
   };
 }
 
-export async function fetchStandings(league, cookie) {
-  const [leagueData, standingsData] = await Promise.all([
-    mflGet(`/export?TYPE=league&L=${league.id}&JSON=1`, cookie, seasonOf(league)),
+// cachedNameById is optional and mirrors fetchScoring's own parameter: pass a
+// franchise-name map (from mflFranchiseNames) to skip the TYPE=league read.
+// Omit it and this fetches its own, which is what keeps standings working for a
+// league whose roster pass failed and so never cached one.
+export async function fetchStandings(league, cookie, cachedNameById) {
+  const [nameById, standingsData] = await Promise.all([
+    cachedNameById ?? fetchMflFranchiseNames(league, cookie),
     mflGet(`/export?TYPE=leagueStandings&L=${league.id}&JSON=1`, cookie, seasonOf(league)),
   ]);
-
-  const franchises = leagueData?.league?.franchises?.franchise ?? [];
-  const franchiseList = Array.isArray(franchises) ? franchises : [franchises];
-  const nameById = new Map(franchiseList.map((f) => [f.id, f.name]));
 
   const rawRows = standingsData?.leagueStandings?.franchise;
   const rows = Array.isArray(rawRows) ? rawRows : rawRows ? [rawRows] : [];
@@ -1221,14 +1276,28 @@ export async function fetchMflWeekScores(yearLeagueId, cookie, year, week) {
   return parseMflWeekScores(data);
 }
 
+// The raw TYPE=league response. Exported so a single read can be shared across
+// the roster, standings and scoring passes of one sync instead of each fetching
+// it for itself — see mflNamesById in fetch-rosters.mjs for what that used to
+// cost.
+export async function fetchMflLeagueData(league, cookie) {
+  return mflGet(`/export?TYPE=league&L=${league.id}&JSON=1`, cookie, seasonOf(league));
+}
+
+// franchise id -> name, off an already-fetched TYPE=league response. Pure, and
+// the one definition of a map that three call sites used to each build for
+// themselves — identically, which is what made the extra requests pure waste.
+export function mflFranchiseNames(leagueData) {
+  const franchises = leagueData?.league?.franchises?.franchise ?? [];
+  const franchiseList = Array.isArray(franchises) ? franchises : [franchises];
+  return new Map(franchiseList.map((f) => [f.id, f.name]));
+}
+
 // Fetches just the franchise-id -> name map for an MFL league (the part of
 // TYPE=league that fetchScoring needs). Callers that already have this
 // cached (e.g. the live-scoring proxy) can skip re-fetching it every poll.
 export async function fetchMflFranchiseNames(league, cookie) {
-  const leagueData = await mflGet(`/export?TYPE=league&L=${league.id}&JSON=1`, cookie, seasonOf(league));
-  const franchises = leagueData?.league?.franchises?.franchise ?? [];
-  const franchiseList = Array.isArray(franchises) ? franchises : [franchises];
-  return new Map(franchiseList.map((f) => [f.id, f.name]));
+  return mflFranchiseNames(await fetchMflLeagueData(league, cookie));
 }
 
 // nameById is optional — pass a cached Map (from fetchMflFranchiseNames) to
