@@ -5,16 +5,20 @@
 // The two cards are one designation vocabulary split by INJURY_SETTLED:
 // Injury Exposure keeps Probable/Questionable/Doubtful/Out and anything else
 // still developing (COVID, an unrecognised code); Loss Exposure keeps
-// Injured Reserve, a suspension, a holdout, the Commissioner Exempt list
-// (NA), or Retired. Both share one aggregation (collectInjuryDesignations)
-// and one sort (sortByInjurySeverity), so most of what's pinned below —
-// the shared denominator, keeping a flagged-in-one-league player counted
-// everywhere he's rostered, keeping singletons, the worst designation
-// winning when feeds disagree, an unrecognised code ranking last rather
-// than being swallowed — applies identically to both and is exercised on
-// whichever card the status in play belongs to. What's new here is the
-// partition itself: a player's worst designation puts him on exactly one
-// of the two cards, never both, and never demoted within one.
+// Injured Reserve (plain or the short-term IR R variant), PUP, NFI, a
+// suspension, a holdout, the Commissioner Exempt list (NA), or Retired. Both
+// share one aggregation (collectInjuryDesignations) and one badness scale
+// (INJURY_SEVERITY), so most of what's pinned below — the shared
+// denominator, keeping a flagged-in-one-league player counted everywhere
+// he's rostered, keeping singletons, the worst designation winning when
+// feeds disagree, an unrecognised code ranking last rather than being
+// swallowed — applies identically to both and is exercised on whichever
+// card the status in play belongs to. What's new here is the partition
+// itself: a player's worst designation puts him on exactly one of the two
+// cards, never both, and never demoted within one — and the two cards read
+// that shared scale in opposite directions: Injury Exposure sorts worst
+// first (sortByWorstFirst), Loss Exposure sorts best-chance-of-returning
+// first (sortByBestChanceFirst).
 //
 // As in test-plan-sync.mjs there is no DOM here: the page's script block is
 // evaluated in a vm with the handful of browser globals it touches stubbed, so
@@ -211,8 +215,10 @@ const names = (entries) => [...entries].map((e) => e.name);
 }
 {
 	// HOL is a holdout, reaching the page from MFL as an unmapped passthrough
-	// and ranked by hand: above Out, below a suspension. It's settled, so a
-	// holdout never shows on Injury Exposure regardless of what it beats.
+	// and ranked by hand, above a suspension: a suspension has a defined end
+	// date and better odds of returning soon, a holdout is open-ended until a
+	// contract is signed. It's settled either way, so a holdout never shows on
+	// Injury Exposure regardless of what it beats.
 	const leagues = [
 		league('A', 'dynasty', [player('Holding Out', { injury: 'HOL' })]),
 		league('B', 'dynasty', [player('Holding Out', { injury: 'O' })]),
@@ -224,7 +230,7 @@ const names = (entries) => [...entries].map((e) => e.name);
 		league('A', 'dynasty', [player('Also Banned', { injury: 'HOL' })]),
 		league('B', 'dynasty', [player('Also Banned', { injury: 'SUSP' })]),
 	];
-	assert.equal(computeLossExposure(vsSuspension, DYNASTY).rows[0].status, 'SUSP', 'and a suspension outranks a holdout, both still on Loss Exposure');
+	assert.equal(computeLossExposure(vsSuspension, DYNASTY).rows[0].status, 'HOL', 'a holdout outranks a suspension — worse odds of returning soon');
 }
 
 // --- Live and settled are two disjoint cards, not one demoted list -----------
@@ -263,6 +269,40 @@ const names = (entries) => [...entries].map((e) => e.name);
 	assert.equal(rowFor(computeLossExposure(leagues, DYNASTY).rows, 'Parked'), undefined);
 }
 
+// --- IR R: MFL's own short-term/return-designated reserve code ---------------
+// Reaches the page as the literal string "IR R" — normalizeInjuryStatus
+// (providers.mjs) passes it through unmapped, the same way HOL does — and is
+// real, current data: Trevor Etienne carries it in data/rosters.json as this
+// is written. It has to land on Loss Exposure like any other settled
+// designation, not fall through to Injury Exposure as an unrecognised code.
+{
+	const leagues = [
+		league('A', 'dynasty', [player('Short Term', { injury: 'IR R' })]),
+		league('B', 'dynasty', [player('Filler')]),
+	];
+	assert.equal(rowFor(computeLossExposure(leagues, DYNASTY).rows, 'Short Term').status, 'IR R');
+	assert.equal(rowFor(computeInjuryExposure(leagues, DYNASTY).rows, 'Short Term'), undefined,
+		'IR R is settled, not an unrecognised live code');
+}
+{
+	// It carries better odds of returning this season than a plain IR
+	// placement, so it wins the "best chance first" ordering, and it beats a
+	// plain IR in arbitration too — the more specific, more hopeful read of
+	// the same underlying reserve slot.
+	const leagues = [
+		league('A', 'dynasty', [player('Better Odds', { injury: 'IR R' }), player('Worse Odds', { injury: 'IR' })]),
+		league('B', 'dynasty', [player('Filler')]),
+	];
+	const { rows } = computeLossExposure(leagues, DYNASTY);
+	assert.deepEqual([...rows].map((r) => r.name), ['Better Odds', 'Worse Odds']);
+
+	const disputed = [
+		league('A', 'dynasty', [player('Disputed', { injury: 'IR' })]),
+		league('B', 'dynasty', [player('Disputed', { injury: 'IR R' })]),
+	];
+	assert.equal(computeLossExposure(disputed, DYNASTY).rows[0].status, 'IR', 'a plain IR still beats IR R when providers disagree');
+}
+
 // --- Ordering: worst designation first, within each card ----------------------
 // Now that the settled/live split is a boundary between two cards rather than
 // a tiebreak within one, each card's own order is severity alone worst-first,
@@ -281,10 +321,12 @@ const names = (entries) => [...entries].map((e) => e.name);
 		'Out outranks Questionable regardless of how many leagues the Questionable spans');
 }
 {
-	// The live ladder, worst first. ZZZ is unrecognised and ranks -1, the
-	// bottom of this card — it neither leads it nor gets filed as a standing
-	// loss on the strength of a string nobody has read.
-	const live = ['COVID', 'O', 'D', 'Q', 'DTD', 'P', 'ZZZ'];
+	// The live ladder, worst first: Out, Doubtful, Questionable, Probable,
+	// Day-to-Day. COVID ranks below all four — rare enough to be deprioritized
+	// rather than lead the card the way it once did — and ZZZ (unrecognised)
+	// ranks lower still, the true bottom of this card: it neither leads it nor
+	// gets filed as a standing loss on the strength of a string nobody has read.
+	const live = ['O', 'D', 'Q', 'P', 'DTD', 'COVID', 'ZZZ'];
 	const leagues = [
 		league('A', 'dynasty', live.map((s, i) => player(`P${i}`, { injury: s }))),
 		league('B', 'dynasty', [player('Filler')]),
@@ -293,10 +335,14 @@ const names = (entries) => [...entries].map((e) => e.name);
 	assert.deepEqual([...rows].map((r) => r.status), live);
 }
 {
-	// The settled ladder, worst first. RET is settled by name but unranked by
-	// severity, so it sits at the bottom; NA (the Commissioner Exempt list)
-	// ranks beside SUSP.
-	const settled = ['IR', 'PUP', 'NFI', 'NA', 'SUSP', 'HOL', 'RET'];
+	// The settled ladder, but ordered by best chance of returning first —
+	// Loss Exposure runs this card in the opposite direction from Injury
+	// Exposure. IR R (MFL's own short-term/return-designated reserve code)
+	// leads, its PUP/NFI cousins right behind it; a suspension (defined end
+	// date) beats a holdout (open-ended); the Commissioner Exempt list (NA)
+	// and a plain IR placement carry no such date; Retired trails everything,
+	// since a retired player is never coming back.
+	const settled = ['IR R', 'PUP', 'NFI', 'SUSP', 'HOL', 'NA', 'IR', 'RET'];
 	const leagues = [
 		league('A', 'dynasty', settled.map((s, i) => player(`P${i}`, { injury: s }))),
 		league('B', 'dynasty', [player('Filler')]),

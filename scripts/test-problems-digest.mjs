@@ -16,8 +16,9 @@
 //     rendering as fresh;
 //   - Questionable starters are not flagged (the floor is Doubtful), and an
 //     unrecognised designation ranks below the floor rather than above it;
-//   - RET is flagged via INJURY_SETTLED even though it is deliberately absent
-//     from INJURY_SEVERITY;
+//   - RET is flagged via INJURY_SETTLED, and COVID via DIGEST_ALSO_FLAGGED —
+//     both sit at extreme ends of INJURY_SEVERITY (see its comment) where the
+//     plain severity-floor check alone no longer reaches them;
 //   - absence of lineup data reads as "not asked", never as an empty lineup;
 //   - a mid-draft league, a league still on last season, and a league with
 //     no rostered players at all get no lineup checks — a true answer about
@@ -150,11 +151,24 @@ const kinds = (problems) => [...problems].map((p) => p.kind);
 }
 
 {
-	// RET is deliberately absent from INJURY_SEVERITY (see its comment) and
-	// must still be flagged, via INJURY_SETTLED — a retired starter is the
-	// most settled problem a lineup can have.
+	// RET sits at the very bottom of INJURY_SEVERITY (least likely of anything
+	// to return) and is also in INJURY_SETTLED — either one would flag it here,
+	// but the settled list is what actually does the work, since Loss
+	// Exposure's own ordering never has to run for the digest to still catch
+	// a retired starter.
 	const l = league({ starters: ['1'], startingLineup: null, players: [player('1', { injury: 'RET' })] });
 	assert.deepEqual(kinds(computeLeagueProblems(l, YEAR)), ['injury'], 'RET flagged via the settled list');
+}
+
+{
+	// COVID sits at the bottom of INJURY_SEVERITY's live half now — deprioritized
+	// on Injury Exposure because it's rare, but a starter who's actually out
+	// for COVID is still exactly what this digest exists to catch. It isn't
+	// settled and its severity rank alone no longer clears the floor, so
+	// DIGEST_ALSO_FLAGGED is what catches it instead — this pins that it still
+	// does.
+	const l = league({ starters: ['1'], startingLineup: null, players: [player('1', { injury: 'COVID' })] });
+	assert.deepEqual(kinds(computeLeagueProblems(l, YEAR)), ['injury'], 'COVID flagged via DIGEST_ALSO_FLAGGED');
 }
 
 // ---- The slot beats the injury beats the bye ------------------------------

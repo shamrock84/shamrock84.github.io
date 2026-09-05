@@ -5663,37 +5663,53 @@
 			return { total, rows };
 		}
 
-		// Severity order, least to most. Two jobs, and it is worth knowing it does
-		// both, because a change here moves rows *and* changes which designation a
-		// player is shown as carrying.
+		// One badness scale, least to most, spanning every designation — live
+		// and settled alike. Three jobs read it, and it is worth knowing it does
+		// all three, because a change here moves rows on two cards at once *and*
+		// changes which designation a player is shown as carrying:
 		//
-		// First: picking one designation when a player carries different ones in
-		// different leagues. That happens legitimately rather than being a bug to
-		// fix — each provider publishes its own injury feed on its own clock, so
-		// an MFL league can already say Out while an ESPN league still says
-		// Questionable. The worse of the two is the one worth showing.
+		//   1. Arbitration — picking one designation when a player carries
+		//      different ones in different leagues. That happens legitimately
+		//      rather than being a bug to fix: each provider publishes its own
+		//      injury feed on its own clock, so an MFL league can already say
+		//      Out while an ESPN league still says Questionable. The higher
+		//      index wins.
+		//   2. Injury Exposure's own order, worst first — descending through
+		//      the live half (everything INJURY_SETTLED doesn't claim).
+		//   3. Loss Exposure's own order, best chance of returning first —
+		//      ascending through the settled half. Deliberately the opposite
+		//      direction: Injury Exposure leads with the most urgent thing to
+		//      act on, Loss Exposure leads with the most hopeful thing to know.
 		//
-		// Second: ordering the Injury Exposure card, worst first. See the sort in
-		// computeInjuryExposure for why that outranks exposure there.
+		// The live half, worst to least severe: Out, Doubtful, Questionable,
+		// Probable, Day-to-Day. COVID sits below all four — rare enough now
+		// that it no longer earns the top of the card the way it would have
+		// when this was one merged "how bad" axis, but it is still a known
+		// code and stays above anything unrecognised.
 		//
-		// HOL is a holdout — a contract dispute, not an injury. It arrives from
-		// MFL as an unmapped passthrough (normalizeInjuryStatus keeps short codes
-		// it doesn't recognise) rather than through INJURY_STATUS_MAP, so it is
-		// ranked here by hand. Above Out because a holdout is open-ended where Out
-		// is one week, below a suspension because a suspension has a known end
-		// date and a holdout ends whenever somebody signs.
+		// The settled half, best chance of returning to worst: IR R (MFL's own
+		// short-term/return-designated reserve code — Trevor Etienne carries it
+		// on The Iron Bank as this is written) and its two injury-reserve
+		// variants, PUP and NFI, are roughly the same shape, so they cluster
+		// together; then a suspension, which has a defined end date; then a
+		// holdout, open-ended until a contract is signed; then the
+		// Commissioner Exempt list (NA), open-ended and administrative; then a
+		// plain IR designation, which commits to nothing about a return; then
+		// Retired, at the very end, because "very rare" and "no chance of
+		// returning" both belong at the back of every list they're on.
 		//
-		// NA is the Commissioner Exempt list's own code — paid administrative
-		// leave with no fixed end, the same shape as a suspension, so it ranks
-		// beside SUSP rather than with the week-to-week injury codes.
+		// HOL and IR R are both unmapped passthroughs (normalizeInjuryStatus
+		// keeps short codes it doesn't recognise) rather than entries in
+		// INJURY_STATUS_MAP, so both are ranked here by hand rather than by a
+		// name the map would otherwise have translated.
 		//
-		// Anything still unrecognised ranks below everything known: indexOf gives
-		// it -1, one under 'P'. That is deliberate in both directions — a code we
-		// can't read must never mask a real IR when picking the worst, and must
-		// never lead the card when sorting. The cost is that a genuinely serious
-		// new code sits at the bottom until it is added here, which is the trade
-		// against inventing a rank for a string nobody has looked at.
-		const INJURY_SEVERITY = ['P', 'DTD', 'Q', 'D', 'O', 'COVID', 'HOL', 'SUSP', 'NA', 'NFI', 'PUP', 'IR'];
+		// Anything still unrecognised ranks below everything known: indexOf
+		// gives it -1, one under COVID. That is deliberate in both directions —
+		// a code we can't read must never mask a real IR in arbitration, and
+		// must never lead Injury Exposure. The cost is that a genuinely serious
+		// new code sits at the bottom until it is added here, which is the
+		// trade against inventing a rank for a string nobody has looked at.
+		const INJURY_SEVERITY = ['COVID', 'DTD', 'P', 'Q', 'D', 'O', 'IR R', 'PUP', 'NFI', 'SUSP', 'HOL', 'NA', 'IR', 'RET'];
 
 		const injurySeverityRank = (status) => INJURY_SEVERITY.indexOf(status);
 
@@ -5716,20 +5732,24 @@
 		// moves to the other card rather than sinking to the bottom of the one he
 		// was on — a *newly* placed IR is real news either way.
 		//
-		// Deliberately *not* a re-ranking of INJURY_SEVERITY, which still has to
-		// mean severity: it is the other half of picking which designation to show
-		// when two providers disagree, and there a real IR must still beat a
-		// Questionable. Two questions, two lists.
+		// This is a membership test, not a ranking, and it's deliberately not a
+		// re-derivation of INJURY_SEVERITY: that array still has to mean one
+		// continuous badness scale for arbitration, and there a real IR must
+		// still beat a Questionable regardless of which card either would land
+		// on. Two questions — is it still developing, and how bad is it — two
+		// lists.
 		//
-		// NA (see INJURY_SEVERITY) is the Commissioner Exempt list, added here
-		// alongside the injured-reserve variants, the suspension, and the
-		// holdout it keeps company with there.
+		// IR R (see INJURY_SEVERITY) is MFL's own short-term/return-designated
+		// reserve code, PUP and NFI its two injury-reserve variants, and NA the
+		// Commissioner Exempt list — all settled in the sense this list means
+		// even though IR R specifically carries better odds of returning this
+		// season than a plain IR placement does.
 		//
 		// An unrecognised code is deliberately absent, which lands it on the
-		// Injury Exposure side ranked -1 — the bottom of the half that is still
-		// developing. It neither leads that card nor gets quietly filed as a
-		// standing loss on the strength of a string nobody has read.
-		const INJURY_SETTLED = ['IR', 'PUP', 'NFI', 'SUSP', 'HOL', 'RET', 'NA'];
+		// Injury Exposure side ranked below COVID — the bottom of the half that
+		// is still developing. It neither leads that card nor gets quietly
+		// filed as a standing loss on the strength of a string nobody has read.
+		const INJURY_SETTLED = ['IR R', 'PUP', 'NFI', 'SUSP', 'HOL', 'NA', 'IR', 'RET'];
 
 		const injurySettledRank = (status) => (INJURY_SETTLED.includes(status) ? 1 : 0);
 
@@ -5793,15 +5813,25 @@
 		//   - Questionable starters are excluded on the same reasoning — a Q
 		//     is normal fantasy life, and seven Q rows would drown the one O.
 		//     The floor is DIGEST_INJURY_FLOOR (Doubtful), plus everything in
-		//     INJURY_SETTLED (which catches RET, absent from the severity
-		//     list on purpose — see its comment). An unrecognised designation
-		//     ranks -1 and lands under the floor, so a string nobody has read
-		//     can't put a healthy-in-truth player on the strip.
+		//     INJURY_SETTLED, plus DIGEST_ALSO_FLAGGED (COVID — see its
+		//     comment for why the severity floor alone no longer catches it).
+		//     An unrecognised designation ranks -1 and lands under the floor,
+		//     so a string nobody has read can't put a healthy-in-truth player
+		//     on the strip.
 		// The roster-level `error` *is* included: it means the league's whole
 		// card is stale fallback data, which is the one sync failure that
 		// misrenders as health — and it's also how a dead ESPN cookie, whose
 		// every read fails quietly, finally surfaces somewhere visible.
 		const DIGEST_INJURY_FLOOR = 'D';
+
+		// COVID moved to the bottom of INJURY_SEVERITY when Loss Exposure's
+		// priority order shipped — rare enough now to be deprioritized on
+		// Injury Exposure, but a starter who's actually out for COVID is
+		// exactly the kind of thing this digest exists to catch, and the
+		// severity floor above no longer reaches it on its own. Named
+		// separately rather than folded into DIGEST_INJURY_FLOOR so a future
+		// reshuffle of the exposure-card ordering can't silently drop it again.
+		const DIGEST_ALSO_FLAGGED = ['COVID'];
 
 		// Roster statuses a starter may legally carry. Anything else in the
 		// lineup — taxi squad, practice squad, a league IR slot — is flagged
@@ -5950,7 +5980,7 @@
 					continue;
 				}
 				const inj = p.injuryStatus;
-				if (inj && (INJURY_SETTLED.includes(inj) || injurySeverityRank(inj) >= injurySeverityRank(DIGEST_INJURY_FLOOR))) {
+				if (inj && (INJURY_SETTLED.includes(inj) || DIGEST_ALSO_FLAGGED.includes(inj) || injurySeverityRank(inj) >= injurySeverityRank(DIGEST_INJURY_FLOOR))) {
 					const part = p.injuryDetail && p.injuryDetail.part ? ` — ${p.injuryDetail.part}` : '';
 					problems.push({ kind: 'injury', player: p, label: `in the week ${wk} lineup but listed ${inj}${part}` });
 					continue;
@@ -6130,10 +6160,29 @@
 		// a tie between "still a question" and "already settled" within one
 		// table. `count` never sat in this chain: exposure is count/total and
 		// total is fixed for a given card, so equal exposure is equal count by
-		// construction.
-		function sortByInjurySeverity(rows) {
+		// construction. This is Injury Exposure's direction; see
+		// sortByBestChanceFirst for Loss Exposure's, which runs the same chain
+		// backwards on the first key only.
+		function sortByWorstFirst(rows) {
 			return rows.sort((a, b) =>
 				injurySeverityRank(b.status) - injurySeverityRank(a.status) ||
+				b.exposure - a.exposure ||
+				rankOrLast(a.ecr) - rankOrLast(b.ecr) ||
+				a.name.localeCompare(b.name)
+			);
+		}
+
+		// The opposite direction on the same scale: Loss Exposure leads with
+		// whichever settled designation carries the best odds of returning this
+		// season (IR R, then its PUP/NFI cousins), and ends with the ones that
+		// don't (a plain IR placement, then Retired). "Opposite" is deliberate
+		// — Injury Exposure leads with the most urgent thing to act on, this
+		// leads with the most hopeful thing to know — but the tiebreakers after
+		// severity are unchanged: more leagues exposed and the better player
+		// still come first within a tier, the same as on Injury Exposure.
+		function sortByBestChanceFirst(rows) {
+			return rows.sort((a, b) =>
+				injurySeverityRank(a.status) - injurySeverityRank(b.status) ||
 				b.exposure - a.exposure ||
 				rankOrLast(a.ecr) - rankOrLast(b.ecr) ||
 				a.name.localeCompare(b.name)
@@ -6146,16 +6195,18 @@
 		// at all — see computeLossExposure.
 		function computeInjuryExposure(leagues, types) {
 			const { total, rows } = collectInjuryDesignations(leagues, types);
-			return { total, rows: sortByInjurySeverity(rows.filter((r) => injurySettledRank(r.status) === 0)) };
+			return { total, rows: sortByWorstFirst(rows.filter((r) => injurySettledRank(r.status) === 0)) };
 		}
 
-		// The standing fact: Injured Reserve, a suspension, a holdout, or the
-		// Commissioner Exempt list — decided for months rather than this week,
-		// with nothing to do about it again until it ends (see INJURY_SETTLED).
-		// Same aggregation, same sort, the other side of the same boundary.
+		// The standing fact: Injured Reserve (plain or the short-term IR R
+		// variant), a suspension, a holdout, or the Commissioner Exempt list —
+		// decided for months rather than this week, with nothing to do about it
+		// again until it ends (see INJURY_SETTLED). Same aggregation as Injury
+		// Exposure, the other side of the same boundary, but ordered by hope
+		// rather than by threat — see sortByBestChanceFirst.
 		function computeLossExposure(leagues, types) {
 			const { total, rows } = collectInjuryDesignations(leagues, types);
-			return { total, rows: sortByInjurySeverity(rows.filter((r) => injurySettledRank(r.status) === 1)) };
+			return { total, rows: sortByBestChanceFirst(rows.filter((r) => injurySettledRank(r.status) === 1)) };
 		}
 
 		// The NFL week currently in progress — used only to highlight the Bye
