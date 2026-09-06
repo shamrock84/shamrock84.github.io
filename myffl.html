@@ -1664,7 +1664,12 @@
 			gap: 0.5rem;
 			margin: 0.75rem 0 0.35rem;
 		}
-		.results-league-head .group-label { margin: 0; }
+		/* .group-label is otherwise a section sub-header (Active Roster,
+		   Draft Picks) that's meant to shout in caps; reused here purely
+		   for its compact bold/muted sizing, it must not also force the
+		   league's own name into a case nowhere else on the page applies —
+		   every other card names a league via a plain, untransformed h2. */
+		.results-league-head .group-label { margin: 0; text-transform: none; letter-spacing: normal; }
 		.results-league-head:first-of-type { margin-top: 0; }
 		/* Name and its two-badge strip (provider, type — see
 		   historyBadgesNode) stack as a column so the badges sit directly
@@ -1735,7 +1740,9 @@
 			gap: 0.5rem;
 			margin: 0.75rem 0 0.35rem;
 		}
-		.finances-league-head .group-label { margin: 0; }
+		/* Same override as .results-league-head .group-label above, and for
+		   the same reason. */
+		.finances-league-head .group-label { margin: 0; text-transform: none; letter-spacing: normal; }
 		.finances-league-head:first-of-type { margin-top: 0; }
 		/* Same stacked name/badges shape as .results-league-name — see that
 		   comment. */
