@@ -1664,7 +1664,12 @@
 			gap: 0.5rem;
 			margin: 0.75rem 0 0.35rem;
 		}
-		.results-league-head .group-label { margin: 0; }
+		/* .group-label is otherwise a section sub-header (Active Roster,
+		   Draft Picks) that's meant to shout in caps; reused here purely
+		   for its compact bold/muted sizing, it must not also force the
+		   league's own name into a case nowhere else on the page applies —
+		   every other card names a league via a plain, untransformed h2. */
+		.results-league-head .group-label { margin: 0; text-transform: none; letter-spacing: normal; }
 		.results-league-head:first-of-type { margin-top: 0; }
 		/* Name and its two-badge strip (provider, type — see
 		   historyBadgesNode) stack as a column so the badges sit directly
@@ -1735,7 +1740,9 @@
 			gap: 0.5rem;
 			margin: 0.75rem 0 0.35rem;
 		}
-		.finances-league-head .group-label { margin: 0; }
+		/* Same override as .results-league-head .group-label above, and for
+		   the same reason. */
+		.finances-league-head .group-label { margin: 0; text-transform: none; letter-spacing: normal; }
 		.finances-league-head:first-of-type { margin-top: 0; }
 		/* Same stacked name/badges shape as .results-league-name — see that
 		   comment. */
@@ -4411,9 +4418,19 @@
 		// The type label already reads "Salary Cap" for exactly the leagues that
 		// used to get a second badge from the auction check, so no separate
 		// salary-cap badge is needed.
+		// Team count sits between type and tags — the same fact History's own
+		// badge row already carries next to provider/type (see
+		// historyBadgesNode), added here too for one consistent badge strip
+		// across every card that names a league. Standings and Scoring
+		// already make a league's size countable by row, so it's genuinely
+		// redundant there; shown anyway rather than carving out a
+		// Rosters-only exception; a matching strip everywhere is worth more
+		// than trimming one occasionally-redundant badge.
 		function formatBadgeLabels(league) {
 			const labels = [];
 			if (LEAGUE_TYPE_LABELS[league.type]) labels.push(LEAGUE_TYPE_LABELS[league.type]);
+			const count = leagueTeamCount(league);
+			if (count != null) labels.push(teamCount(count));
 			if (Array.isArray(league.tags)) labels.push(...league.tags);
 			return labels;
 		}
@@ -4423,10 +4440,10 @@
 		// legitimately be a season behind the rest — and a stale roster renders
 		// exactly like a fresh one. Stating it outright on every card is what
 		// makes the odd one out obvious without having to know to look.
-		// History tab (Results/Finances): a two-badge subset of the Rosters
-		// cards' strip — provider and type only, never season or tags. Those
-		// two are what's relevant to reading a past finish or payout (who
-		// hosted the league, what kind of league it was); season is a
+		// History tab (Results/Finances): a subset of the Rosters cards'
+		// strip — provider, type and team count, never season or tags. The
+		// first three are what's relevant to reading a past finish or payout
+		// (who hosted the league, what kind and size it was); season is a
 		// current-snapshot concept, tags are already implied by these cards'
 		// own combined-across-types layout. Placed under the league name
 		// rather than beside it the way buildCardHead does, because these
@@ -4436,7 +4453,25 @@
 			const badgesEl = el('div', { class: 'badges history-badges' });
 			badgesEl.appendChild(el('span', { class: 'badge badge-provider', text: providerBadgeLabel(league) }));
 			badgesEl.appendChild(el('span', { class: 'badge', text: LEAGUE_TYPE_LABELS[league.type] || league.type || '?' }));
+			// A third chip rather than text appended to the name itself — the
+			// name/Avg-Finish (or /Total) row has no room to spare on a phone
+			// and a bare digit there would need a word next to it for context
+			// anyway. This row already wraps per-chip instead of splitting a
+			// word mid-line, so "N Teams" costs nothing a chip doesn't already
+			// pay for provider/type.
+			const count = leagueTeamCount(league);
+			if (count != null) {
+				badgesEl.appendChild(el('span', { class: 'badge', text: teamCount(count) }));
+			}
 			return badgesEl;
+		}
+
+		// The number of teams currently in a league — read off the current
+		// season's standings, since History backfills placements per year but
+		// never a roster count for years it didn't ask about. null (never
+		// rendered) rather than 0 for a league whose standings fetch failed.
+		function leagueTeamCount(league) {
+			return Array.isArray(league.standings) && league.standings.length ? league.standings.length : null;
 		}
 
 		function seasonBadgeLabel(league) {
@@ -6880,6 +6915,13 @@
 		// drafted league all preseason while the others wait on their drafts.
 		function leagueCount(n) {
 			return `${n} league${n === 1 ? '' : 's'}`;
+		}
+
+		// Deliberately never pluralized ("10 team", not "10 teams") — a
+		// badge chip, not a sentence, and the extra letter was the whole
+		// ask that shrank it.
+		function teamCount(n) {
+			return `${n} team`;
 		}
 
 		function seasonCount(n) {
