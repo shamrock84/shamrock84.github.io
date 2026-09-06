@@ -1764,11 +1764,15 @@
 		}
 		.finances-details[open] .finances-summary { margin-bottom: 0.5rem; }
 		/* Average net per season, floated to the far right of the summary
-		   line. Inherits .finances-summary's accent color unless a sign
-		   class overrides it, same as the headline totals do. */
+		   line. Always the same accent purple as "Yearly breakdown" itself
+		   rather than the sign-colored red/green the headline totals use —
+		   an average is a different kind of number from a year's actual
+		   total, and coloring it by sign made it read like a real result
+		   plus made it hard to read against the card background. */
 		.finances-summary-avg {
 			float: right;
 			font-variant-numeric: tabular-nums;
+			color: var(--accent);
 		}
 		/* Won-amount button — same shape as .salary-link. The popover it opens
 		   is a makePopover instance like every other one on this page; the
@@ -8528,9 +8532,9 @@
 				details.appendChild(el('summary', { class: 'finances-summary' }, [
 					el('span', { text: `Yearly breakdown (${years.length})` }),
 					el('span', {
-						class: `finances-summary-avg ${financesSignClass(avgPerYear)}`.trim(),
+						class: 'finances-summary-avg',
 						title: `Average net across ${years.length} year(s)`,
-						text: `${formatMoney(avgPerYear)}/yr`,
+						text: `${formatMoney(avgPerYear)}/yr avg`,
 					}),
 				]));
 
