@@ -6917,12 +6917,11 @@
 			return `${n} league${n === 1 ? '' : 's'}`;
 		}
 
-		// "tm" rather than "team(s)" — a badge chip for a single-user site,
-		// not a label that has to be self-explanatory to a stranger, so it's
-		// optimized for width over legibility. Deliberately never
-		// pluralized either, same reasoning as the abbreviation itself.
+		// Deliberately never pluralized ("10 team", not "10 teams") — a
+		// badge chip, not a sentence, and the extra letter was the whole
+		// ask that shrank it.
 		function teamCount(n) {
-			return `${n} tm`;
+			return `${n} team`;
 		}
 
 		function seasonCount(n) {
