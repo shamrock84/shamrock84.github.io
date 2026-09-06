@@ -4418,9 +4418,19 @@
 		// The type label already reads "Salary Cap" for exactly the leagues that
 		// used to get a second badge from the auction check, so no separate
 		// salary-cap badge is needed.
+		// Team count sits between type and tags — the same fact History's own
+		// badge row already carries next to provider/type (see
+		// historyBadgesNode), added here too for one consistent badge strip
+		// across every card that names a league. Standings and Scoring
+		// already make a league's size countable by row, so it's genuinely
+		// redundant there; shown anyway rather than carving out a
+		// Rosters-only exception; a matching strip everywhere is worth more
+		// than trimming one occasionally-redundant badge.
 		function formatBadgeLabels(league) {
 			const labels = [];
 			if (LEAGUE_TYPE_LABELS[league.type]) labels.push(LEAGUE_TYPE_LABELS[league.type]);
+			const count = leagueTeamCount(league);
+			if (count != null) labels.push(teamCount(count));
 			if (Array.isArray(league.tags)) labels.push(...league.tags);
 			return labels;
 		}
@@ -4430,10 +4440,10 @@
 		// legitimately be a season behind the rest — and a stale roster renders
 		// exactly like a fresh one. Stating it outright on every card is what
 		// makes the odd one out obvious without having to know to look.
-		// History tab (Results/Finances): a two-badge subset of the Rosters
-		// cards' strip — provider and type only, never season or tags. Those
-		// two are what's relevant to reading a past finish or payout (who
-		// hosted the league, what kind of league it was); season is a
+		// History tab (Results/Finances): a subset of the Rosters cards'
+		// strip — provider, type and team count, never season or tags. The
+		// first three are what's relevant to reading a past finish or payout
+		// (who hosted the league, what kind and size it was); season is a
 		// current-snapshot concept, tags are already implied by these cards'
 		// own combined-across-types layout. Placed under the league name
 		// rather than beside it the way buildCardHead does, because these
