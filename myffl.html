@@ -4443,6 +4443,16 @@
 			const badgesEl = el('div', { class: 'badges history-badges' });
 			badgesEl.appendChild(el('span', { class: 'badge badge-provider', text: providerBadgeLabel(league) }));
 			badgesEl.appendChild(el('span', { class: 'badge', text: LEAGUE_TYPE_LABELS[league.type] || league.type || '?' }));
+			// A third chip rather than text appended to the name itself — the
+			// name/Avg-Finish (or /Total) row has no room to spare on a phone
+			// and a bare digit there would need a word next to it for context
+			// anyway. This row already wraps per-chip instead of splitting a
+			// word mid-line, so "N Teams" costs nothing a chip doesn't already
+			// pay for provider/type.
+			const count = leagueTeamCount(league);
+			if (count != null) {
+				badgesEl.appendChild(el('span', { class: 'badge', text: teamCount(count) }));
+			}
 			return badgesEl;
 		}
 
@@ -8297,10 +8307,7 @@
 				// way the Admin card's open/closed leagues do.
 				const head = el('div', { class: 'results-league-head' });
 				head.appendChild(el('div', { class: 'results-league-name' }, [
-					el('span', { class: 'group-label' }, [
-						leagueNameNode(leagueDisplayName(league), league.url),
-						...(leagueTeamCount(league) != null ? [document.createTextNode(` (${teamCount(leagueTeamCount(league))})`)] : []),
-					]),
+					el('span', { class: 'group-label' }, [leagueNameNode(leagueDisplayName(league), league.url)]),
 					historyBadgesNode(league),
 				]));
 				if (average != null) {
@@ -8533,10 +8540,7 @@
 				// <details> below it.
 				const head = el('div', { class: 'finances-league-head' });
 				head.appendChild(el('div', { class: 'finances-league-name' }, [
-					el('span', { class: 'group-label' }, [
-						leagueNameNode(leagueDisplayName(league), league.url),
-						...(leagueTeamCount(league) != null ? [document.createTextNode(` (${teamCount(leagueTeamCount(league))})`)] : []),
-					]),
+					el('span', { class: 'group-label' }, [leagueNameNode(leagueDisplayName(league), league.url)]),
 					historyBadgesNode(league),
 				]));
 				head.appendChild(el('span', {
