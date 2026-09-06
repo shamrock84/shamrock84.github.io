@@ -4439,6 +4439,14 @@
 			return badgesEl;
 		}
 
+		// The number of teams currently in a league — read off the current
+		// season's standings, since History backfills placements per year but
+		// never a roster count for years it didn't ask about. null (never
+		// rendered) rather than 0 for a league whose standings fetch failed.
+		function leagueTeamCount(league) {
+			return Array.isArray(league.standings) && league.standings.length ? league.standings.length : null;
+		}
+
 		function seasonBadgeLabel(league) {
 			const season = league.season ?? pageData?.year;
 			return season == null ? null : String(season);
@@ -6882,6 +6890,10 @@
 			return `${n} league${n === 1 ? '' : 's'}`;
 		}
 
+		function teamCount(n) {
+			return `${n} team${n === 1 ? '' : 's'}`;
+		}
+
 		function seasonCount(n) {
 			return `${n} season${n === 1 ? '' : 's'}`;
 		}
@@ -8278,7 +8290,10 @@
 				// way the Admin card's open/closed leagues do.
 				const head = el('div', { class: 'results-league-head' });
 				head.appendChild(el('div', { class: 'results-league-name' }, [
-					el('span', { class: 'group-label' }, [leagueNameNode(leagueDisplayName(league), league.url)]),
+					el('span', { class: 'group-label' }, [
+						leagueNameNode(leagueDisplayName(league), league.url),
+						...(leagueTeamCount(league) != null ? [document.createTextNode(` (${teamCount(leagueTeamCount(league))})`)] : []),
+					]),
 					historyBadgesNode(league),
 				]));
 				if (average != null) {
@@ -8511,7 +8526,10 @@
 				// <details> below it.
 				const head = el('div', { class: 'finances-league-head' });
 				head.appendChild(el('div', { class: 'finances-league-name' }, [
-					el('span', { class: 'group-label' }, [leagueNameNode(leagueDisplayName(league), league.url)]),
+					el('span', { class: 'group-label' }, [
+						leagueNameNode(leagueDisplayName(league), league.url),
+						...(leagueTeamCount(league) != null ? [document.createTextNode(` (${teamCount(leagueTeamCount(league))})`)] : []),
+					]),
 					historyBadgesNode(league),
 				]));
 				head.appendChild(el('span', {
