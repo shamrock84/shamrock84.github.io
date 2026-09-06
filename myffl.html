@@ -6917,8 +6917,11 @@
 			return `${n} league${n === 1 ? '' : 's'}`;
 		}
 
+		// Deliberately never pluralized ("10 team", not "10 teams") — a
+		// badge chip, not a sentence, and the extra letter was the whole
+		// ask that shrank it.
 		function teamCount(n) {
-			return `${n} team${n === 1 ? '' : 's'}`;
+			return `${n} team`;
 		}
 
 		function seasonCount(n) {
