@@ -1,0 +1,69 @@
+# What Vercel does NOT need.
+#
+# This repo has two deployment targets (see CLAUDE.md): GitHub Pages serves the
+# whole site at melbostads.com, and Vercel serves only `api/*.js`. Without this
+# file Vercel uploads and stores the *entire* repository on every deployment —
+# 171 MB, of which the API uses about 1.5 MB — and a free team gets 10 GB of
+# deployment storage in total. At ~171 MB a deployment and a commit every four
+# hours from the roster sync, that ceiling arrives in well under a hundred
+# deployments. It did.
+#
+# `vercel.json`'s ignoreCommand does not help here: it skips the *build*, not
+# the source upload, so a skipped deployment still costs the same storage as a
+# real one.
+#
+# Nothing here affects GitHub Pages. Pages serves from the git repository and
+# has never read this file, so every path excluded below is still live at
+# melbostads.com — which is exactly why it is safe to drop them from Vercel.
+#
+# What the functions actually need, and why this list is a denylist rather than
+# an allowlist: `api/**` (including `api/lib/`), `scripts/lib/providers.mjs`
+# (imported by live-scoring.js and submit-lineup.js — it is self-contained and
+# pulls in nothing else), `config/leagues.json` (read from disk at runtime by
+# both of those), plus package.json and vercel.json. Everything below was
+# checked against that list; nothing under `api/` references any of it.
+
+# ---- The 166 MB that is pure static art ------------------------------------
+# Banners, logos and plaques hotlinked by the MyFantasyLeague league pages, plus
+# 57 Photoshop sources that are never served to anyone. Referenced by zero HTML
+# files in this repo and by nothing under api/.
+mfl/
+images/
+nfticons/
+fflicons/
+*.gif
+*.psd
+*.pxm
+
+# ---- The synced snapshot ----------------------------------------------------
+# data/rosters.json is fetched by myffl.html with a *relative* URL, and
+# myffl.html is served by Pages — so that fetch resolves against Pages and never
+# touches Vercel. It is also the file the sync rewrites every four hours, which
+# made it the most frequently re-uploaded thing here after the art.
+data/
+
+# ---- Repo furniture, not runtime -------------------------------------------
+# Only the top-level entry points, tests and probes — none of which Vercel ever
+# runs. scripts/lib/ is deliberately NOT excluded, because providers.mjs lives
+# there and two functions import it.
+scripts/*.mjs
+.github/
+*.md
+
+# Belt and braces on the line above. Under .gitignore semantics `*` does not
+# cross a `/`, so `scripts/*.mjs` matches only the top level and providers.mjs
+# is safe — verified with `git ls-files -i -c --exclude-from=.vercelignore`.
+# Under looser globbing (where `*` does cross `/`) that same pattern would eat
+# `scripts/lib/providers.mjs` and take live-scoring and submit-lineup down with
+# it, with nothing in this repo to catch it. This negation costs one line and
+# makes the file correct under either reading. Do not remove it.
+!scripts/lib/
+
+# The HTML is deliberately kept, even though Pages is what actually serves it.
+# It is well under a megabyte against the 169 MB this file removes, and
+# excluding every static file would leave the deployment with no output
+# directory at all — a needless new failure mode for no measurable saving.
+
+# ---- Editor and OS droppings ------------------------------------------------
+.DS_Store
+*.db
