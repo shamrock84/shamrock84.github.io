@@ -9946,6 +9946,11 @@
 			if (!adminDraft) adminDraft = JSON.parse(JSON.stringify(leagueConfig.leagues || []));
 			if (!adminLinksDraft) adminLinksDraft = JSON.parse(JSON.stringify(leagueConfig.quickLinks || []));
 
+			// There's no inactive/retired flag in config/leagues.json — a league
+			// is removed outright (see the remove button below) rather than
+			// marked inactive, so every entry still in the draft counts as active.
+			heading.textContent = `Leagues (${adminDraft.length})`;
+
 			// One card per league instead of one row of a thirteen-column table.
 			// Collapsed, a card is a one-line blurb of what the league is;
 			// expanded, its fields wrap into as many columns as there is room
