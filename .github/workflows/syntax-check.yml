@@ -258,6 +258,15 @@ jobs:
       - name: Test the draft-only roster freeze
         run: node scripts/test-draftonly-freeze.mjs
 
+      # fetchScoring's own matchup parsing. TYPE=liveScoring nests franchises
+      # under liveScoring.matchup[].franchise[], never as the flat
+      # liveScoring.franchise list the code read for a long time — which made
+      # rows.length always 0 and every MFL league's Scoring tab silently
+      # report "no live scoring" regardless of the real games. Confirmed
+      # against a real in-progress week via probe-live-scoring-matchup.yml.
+      - name: Test MFL live-scoring matchup parsing
+        run: node scripts/test-live-scoring-matchup.mjs
+
       - name: Validate config/leagues.json
         run: |
           node --input-type=module -e '
