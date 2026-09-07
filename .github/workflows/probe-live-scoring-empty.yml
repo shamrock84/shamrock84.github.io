@@ -1,0 +1,46 @@
+name: Probe Live Scoring Going Empty On Repeat (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here,
+# the same rule the other manual workflows follow. Diagnoses a real production
+# symptom: api/live-scoring.js started reporting "No live scoring available
+# yet" for most MFL leagues while a single fresh probe request for the same
+# league at the same moment gets a full liveScoring.matchup[] back. See
+# scripts/probe-live-scoring-empty.mjs for the full rationale.
+#
+# Read-only: TYPE=liveScoring, repeated. Nothing is written.
+on:
+  workflow_dispatch:
+    inputs:
+      mfl_league_ids:
+        description: 'Comma-separated MFL league IDs to probe'
+        required: false
+        default: '26696'
+      repeats:
+        description: 'How many times to call TYPE=liveScoring per league'
+        required: false
+        default: '8'
+      delay_ms:
+        description: 'Delay in ms between repeated calls'
+        required: false
+        default: '2000'
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Repeat TYPE=liveScoring on one session
+        env:
+          MFL_USERNAME: ${{ secrets.MFL_USERNAME }}
+          MFL_PASSWORD: ${{ secrets.MFL_PASSWORD }}
+          PROBE_MFL_LEAGUE_IDS: ${{ inputs.mfl_league_ids }}
+          PROBE_REPEATS: ${{ inputs.repeats }}
+          PROBE_DELAY_MS: ${{ inputs.delay_ms }}
+        run: node scripts/probe-live-scoring-empty.mjs
