@@ -8854,7 +8854,8 @@
 			// too would make that lookup ambiguous. .planning-card just gets
 			// the same full-width treatment on its own (see the CSS rule).
 			const card = el('div', { class: 'card planning-card', 'data-view': 'admin', 'data-league-type': '' });
-			const heading = el('h2', { class: 'card-heading', text: 'Tasks' });
+			const openTaskCount = Object.values(tasks).filter((t) => !t.done).length;
+			const heading = el('h2', { class: 'card-heading', text: `Tasks (${openTaskCount})` });
 			card.appendChild(heading);
 			makeCollapsible(card, heading, 'tasks');
 
@@ -9904,7 +9905,11 @@
 
 		function renderAdminCard() {
 			const card = el('div', { class: 'card admin-card', 'data-view': 'admin', 'data-league-type': '' });
-			const heading = el('h2', { class: 'card-heading', text: 'Leagues' });
+			// A plain child text node here rather than heading.textContent
+			// later — makeCollapsible appends the collapse-toggle button as a
+			// child of heading right below, and textContent would wipe it out.
+			const headingLabel = document.createTextNode('Leagues');
+			const heading = el('h2', { class: 'card-heading' }, [headingLabel]);
 			card.appendChild(heading);
 			makeCollapsible(card, heading, 'admin');
 
@@ -9944,6 +9949,11 @@
 			}
 			if (!adminDraft) adminDraft = JSON.parse(JSON.stringify(leagueConfig.leagues || []));
 			if (!adminLinksDraft) adminLinksDraft = JSON.parse(JSON.stringify(leagueConfig.quickLinks || []));
+
+			// There's no inactive/retired flag in config/leagues.json — a league
+			// is removed outright (see the remove button below) rather than
+			// marked inactive, so every entry still in the draft counts as active.
+			headingLabel.textContent = `Leagues (${adminDraft.length})`;
 
 			// One card per league instead of one row of a thirteen-column table.
 			// Collapsed, a card is a one-line blurb of what the league is;
@@ -10400,7 +10410,7 @@
 			if (!adminLinksDraft) adminLinksDraft = JSON.parse(JSON.stringify(leagueConfig.quickLinks || []));
 
 			const card = el('div', { class: 'card admin-quicklinks-card', 'data-view': 'admin', 'data-league-type': '' });
-			const heading = el('h2', { class: 'card-heading', text: 'Quick Links' });
+			const heading = el('h2', { class: 'card-heading', text: `Quick Links (${adminLinksDraft.length})` });
 			card.appendChild(heading);
 			makeCollapsible(card, heading, 'admin-quicklinks');
 
