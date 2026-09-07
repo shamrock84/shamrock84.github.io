@@ -8618,8 +8618,13 @@
 			// subtitle it sits on (.team's own muted color/size) rather
 			// than the accent purple that idiom normally uses, so this
 			// row reads as one consistent line rather than a callout.
+			// card-collapse-visible pins it alongside .card-heading when
+			// the card collapses (see that rule's comment) — the same
+			// idiom Rosters' contract/cut banners use — so "how much have
+			// I made" survives a collapse the way the Total figure in the
+			// heading itself already does.
 			const overallAvgPerYear = overallTotal / totalSeasons;
-			card.appendChild(el('div', { class: 'team' }, [
+			card.appendChild(el('div', { class: 'team card-collapse-visible' }, [
 				el('span', { text: `Across ${leagueCount(summaries.length)}, ${seasonCount(totalSeasons)}` }),
 				el('span', {
 					class: 'finances-overall-avg',
