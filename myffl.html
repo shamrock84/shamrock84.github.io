@@ -8604,7 +8604,21 @@
 			card.appendChild(cardHead);
 			makeCollapsible(card, cardHead, 'finances');
 			const totalSeasons = summaries.reduce((sum, s) => sum + s.years.length, 0);
-			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(summaries.length)}, ${seasonCount(totalSeasons)}` }));
+			// Same "$X/yr avg" idiom as each league's own Yearly breakdown
+			// summary line below, just computed over every league's money
+			// and every season at once — and the same accent coloring, for
+			// the same reason: an average isn't a real year's total, so it
+			// shouldn't borrow the red/green sign coloring the headline
+			// totals use.
+			const overallAvgPerYear = overallTotal / totalSeasons;
+			card.appendChild(el('div', { class: 'team' }, [
+				el('span', { text: `Across ${leagueCount(summaries.length)}, ${seasonCount(totalSeasons)}` }),
+				el('span', {
+					class: 'finances-summary-avg',
+					title: `Average net across ${totalSeasons} season(s)`,
+					text: `${formatMoney(overallAvgPerYear)}/yr avg`,
+				}),
+			]));
 
 			for (const { league, years, total } of summaries) {
 				// Same shape as the Results card's per-league head: name left,
