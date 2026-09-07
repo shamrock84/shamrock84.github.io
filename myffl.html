@@ -497,16 +497,20 @@
 		   .card-head div for Rosters/Standings/Scoring, and the local
 		   cardHead div Results/Finances build themselves. The collapse rule
 		   further down hides every other direct child of a collapsed .card
-		   EXCEPT one also marked .card-collapse-visible (Rosters' contract/
-		   cut banners — see renderCard) — a to-do banner like "0/5 contracts
-		   set" is easy to forget entirely once the roster table collapses
-		   out from under it, so those two stay pinned above the title. Both
-		   classes, not DOM order, are what that rule keys off: the banners
-		   land BEFORE this element in the DOM, everything else lands after
-		   it. position:relative + padding-right carve out a corner for the
-		   toggle button (see makeCollapsible) without disturbing the flex
-		   layout the badges strip or an avg/total span already use inside
-		   a .card-head. */
+		   EXCEPT one also marked .card-collapse-visible — Rosters' contract/
+		   cut banners (see renderCard), and every card's own .team subtitle
+		   line ("Rick's Team", "Week 4", "Across 11 leagues, 108 seasons…")
+		   — a to-do banner like "0/5 contracts set" is easy to forget
+		   entirely once the roster table collapses out from under it, and a
+		   subtitle is exactly the context worth keeping when a card is
+		   collapsed specifically to get it out of the way, so both stay
+		   visible next to the title. Both classes, not DOM order, are what
+		   that rule keys off: the contract/cut banners land BEFORE this
+		   element in the DOM, subtitle lines land after it like everything
+		   else, and the rule doesn't care either way. position:relative +
+		   padding-right carve out a corner for the toggle button (see
+		   makeCollapsible) without disturbing the flex layout the badges
+		   strip or an avg/total span already use inside a .card-head. */
 		.card-heading {
 			position: relative;
 			padding-right: 2.3rem;
@@ -4903,7 +4907,7 @@
 			}
 
 			card.appendChild(buildCardHead(card, league, formatBadgeLabels(league)));
-			card.appendChild(el('div', { class: 'team', text: league.teamName || '' }));
+			card.appendChild(el('div', { class: 'team card-collapse-visible', text: league.teamName || '' }));
 
 			if (league.error && (!league.players || league.players.length === 0)) {
 				card.appendChild(el('div', { class: 'error-box', text: `Couldn't load this league: ${league.error}` }));
@@ -5527,7 +5531,7 @@
 			}
 
 			if (league.scoring?.week) {
-				card.appendChild(el('div', { class: 'team', text: `Week ${league.scoring.week}` }));
+				card.appendChild(el('div', { class: 'team card-collapse-visible', text: `Week ${league.scoring.week}` }));
 			}
 
 			const matchups = league.scoring?.matchups;
@@ -7011,7 +7015,7 @@
 				return card;
 			}
 
-			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(total)}` }));
+			card.appendChild(el('div', { class: 'team card-collapse-visible', text: `Across ${leagueCount(total)}` }));
 
 			if (rows.length === 0) {
 				card.appendChild(el('div', { class: 'error-box', text: 'No players owned in more than one league yet.' }));
@@ -7058,7 +7062,7 @@
 				return card;
 			}
 
-			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(total)}` }));
+			card.appendChild(el('div', { class: 'team card-collapse-visible', text: `Across ${leagueCount(total)}` }));
 
 			if (rows.length === 0) {
 				card.appendChild(el('div', { class: 'error-box', text: 'Nobody on these rosters is Probable, Questionable, Doubtful or Out right now.' }));
@@ -7097,7 +7101,7 @@
 				return card;
 			}
 
-			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(total)}` }));
+			card.appendChild(el('div', { class: 'team card-collapse-visible', text: `Across ${leagueCount(total)}` }));
 
 			if (rows.length === 0) {
 				card.appendChild(el('div', { class: 'error-box', text: 'Nobody on these rosters is on Injured Reserve, suspended, holding out, or on the Exempt list right now.' }));
@@ -7207,7 +7211,7 @@
 				return card;
 			}
 
-			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(total)}` }));
+			card.appendChild(el('div', { class: 'team card-collapse-visible', text: `Across ${leagueCount(total)}` }));
 
 			if (rows.length === 0) {
 				card.appendChild(el('div', { class: 'error-box', text: 'No bye week data available yet.' }));
@@ -7454,7 +7458,7 @@
 			card.appendChild(heading);
 			makeCollapsible(card, heading, 'power');
 			// Word for word what the other four cards say, same reasoning.
-			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(rows.length)}` }));
+			card.appendChild(el('div', { class: 'team card-collapse-visible', text: `Across ${leagueCount(rows.length)}` }));
 
 			// Conditional, and deliberately so: the five Analytics cards carry
 			// one identical subtitle and nothing else, because a standing
@@ -7671,7 +7675,7 @@
 			const heading = el('h2', { class: 'card-heading', text: 'Team Needs' });
 			card.appendChild(heading);
 			makeCollapsible(card, heading, 'needs');
-			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(rows.length)}` }));
+			card.appendChild(el('div', { class: 'team card-collapse-visible', text: `Across ${leagueCount(rows.length)}` }));
 
 			const detailLabel = detailBasis === 'projections' ? 'projections' : 'consensus rankings';
 			const table = el('table', { class: 'standings' });
@@ -7824,7 +7828,7 @@
 			// still happen; they are simply not narrated, so a group whose count
 			// looks short is explained by the comments on computeTopAvailable
 			// rather than on screen.
-			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(total)}` }));
+			card.appendChild(el('div', { class: 'team card-collapse-visible', text: `Across ${leagueCount(total)}` }));
 
 			if (total === 0) {
 				// Built from the reasons that actually apply, so a group held up by
@@ -8374,7 +8378,7 @@
 			card.appendChild(cardHead);
 			makeCollapsible(card, cardHead, 'results');
 			const totalSeasons = summaries.reduce((sum, s) => sum + s.years.length, 0);
-			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(summaries.length)}, ${seasonCount(totalSeasons)}` }));
+			card.appendChild(el('div', { class: 'team card-collapse-visible', text: `Across ${leagueCount(summaries.length)}, ${seasonCount(totalSeasons)}` }));
 
 			for (const { league, years, average, trend } of summaries) {
 				// The average used to sit as a footer row inside the yearly
@@ -8618,8 +8622,13 @@
 			// subtitle it sits on (.team's own muted color/size) rather
 			// than the accent purple that idiom normally uses, so this
 			// row reads as one consistent line rather than a callout.
+			// card-collapse-visible pins it alongside .card-heading when
+			// the card collapses (see that rule's comment) — the same
+			// idiom Rosters' contract/cut banners use — so "how much have
+			// I made" survives a collapse the way the Total figure in the
+			// heading itself already does.
 			const overallAvgPerYear = overallTotal / totalSeasons;
-			card.appendChild(el('div', { class: 'team' }, [
+			card.appendChild(el('div', { class: 'team card-collapse-visible' }, [
 				el('span', { text: `Across ${leagueCount(summaries.length)}, ${seasonCount(totalSeasons)}` }),
 				el('span', {
 					class: 'finances-overall-avg',
