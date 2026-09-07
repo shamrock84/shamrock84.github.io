@@ -1615,6 +1615,27 @@ export function espnTeamName(team) {
   return team?.name || [team?.location, team?.nickname].filter(Boolean).join(' ').trim() || String(team?.id ?? '');
 }
 
+// The real person behind a team, for the redraft leagues' Scoring card
+// ("Team Name (Owner)") — team names there are commissioner jokes, so a
+// manager scanning mid-week matchups still needs to know whose team is
+// whose. Unverified against a real ESPN response (myfantasyleague.com and
+// ESPN aren't reachable from the sandbox this repo is normally edited from,
+// and scripts/probe-espn-team-owners.mjs hasn't been run yet), so this
+// follows the widely-documented shape rather than a confirmed one: a team's
+// `owners` array holds member GUIDs, resolved against the league response's
+// own top-level `members` array. Only the first owner is used — ESPN allows
+// co-owners, but this project has nowhere to show more than one name.
+// Returns null (never a fallback string) when anything is missing or
+// unrecognized, so a wrong guess about the shape omits the parenthetical
+// instead of rendering "(undefined)" or a raw GUID.
+export function espnOwnerName(team, members) {
+  const ownerId = team?.owners?.[0];
+  if (!ownerId) return null;
+  const member = (members || []).find((m) => m.id === ownerId);
+  if (!member) return null;
+  return member.displayName || [member.firstName, member.lastName].filter(Boolean).join(' ') || null;
+}
+
 export async function espnGet(league, viewParams) {
   if (!ESPN_S2 || !ESPN_SWID) {
     throw new Error('ESPN_S2 and ESPN_SWID environment variables are required for ESPN leagues.');
@@ -1787,6 +1808,7 @@ export async function fetchEspnScoring(league, clockMap) {
     clockMap ? Promise.resolve(clockMap) : fetchNflGameClocks(),
   ]);
   const teamsById = new Map((data.teams || []).map((t) => [t.id, espnTeamName(t)]));
+  const ownerById = new Map((data.teams || []).map((t) => [t.id, espnOwnerName(t, data.members)]));
   const currentPeriod = data.status?.currentMatchupPeriod;
   const schedule = (data.schedule || []).filter((m) => m.matchupPeriodId === currentPeriod);
 
@@ -1815,6 +1837,7 @@ export async function fetchEspnScoring(league, clockMap) {
   const teams = rows.map((r) => ({
     franchiseId: String(r.teamId),
     teamName: teamsById.get(r.teamId) || String(r.teamId),
+    ownerName: ownerById.get(r.teamId) || null,
     score: r.score,
     minutesRemaining: r.minutesRemaining,
     isMe: String(r.teamId) === String(league.franchiseId),
