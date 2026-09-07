@@ -60,6 +60,14 @@ const candidatePaths = [
 
 const KEYWORDS = ['winProb', 'win_prob', 'WinProbability', 'Win Probability', 'probability', 'minutesRemaining', 'minutes remaining', 'Minutes Remaining', 'timeRemaining'];
 
+// Round 1 (26696/week1) found every guessed path either 404s or 500s except
+// /home/{id}, which loads (200) but contains none of the keywords above —
+// meaning the real "Live Scoring" page is linked from somewhere on this site
+// under a path not guessed here. Rather than keep guessing, pull every link
+// off the home page itself and follow the ones that look scoring/live-shaped
+// — that's how a human actually finds this page.
+const discoveredLinks = new Set();
+
 for (const path of candidatePaths) {
   const url = `https://${baseURL}${path}`;
   console.log(`\n--- ${url} ---`);
@@ -93,9 +101,28 @@ for (const path of candidatePaths) {
     if (uniqueAjax.length) {
       console.log(`  candidate ajax/data URLs referenced in the page:\n    ${uniqueAjax.join('\n    ')}`);
     }
+
+    // Every <a href> whose text or URL looks scoring/live-shaped — this is
+    // the actual site navigation, so it's the real way to find the page a
+    // human clicks to rather than guessing more path literals.
+    const anchorRe = /<a\s+[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+    for (const m of body.matchAll(anchorRe)) {
+      const [, href, text] = m;
+      const plainText = text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      if (/live|scor|prob/i.test(href) || /live|scor|prob/i.test(plainText)) {
+        discoveredLinks.add(`${href}  —  "${plainText}"`);
+      }
+    }
   } catch (err) {
     console.log(`  failed: ${err.message}`);
   }
+}
+
+if (discoveredLinks.size) {
+  console.log(`\n--- links discovered on the fetched pages, matching live/scor/prob ---`);
+  console.log(`  ${[...discoveredLinks].join('\n  ')}`);
+} else {
+  console.log(`\nNo live/scoring-shaped links found on any fetched page.`);
 }
 
 console.log('\n=== done ===');
