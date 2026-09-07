@@ -355,7 +355,7 @@ function fullText(node) {
 	assert.equal(nameCols.length, 2, 'one per shown league');
 	const badgeTextsOf = (nameCol) => findAll(nameCol, (c) => c.cls.split(/\s+/).includes('badge')).map(fullText);
 	assert.deepEqual(badgeTextsOf(nameCols[0]), ['ESPN', 'Dynasty'], 'League A: its own provider, then its type');
-	assert.deepEqual(badgeTextsOf(nameCols[1]), ['MFL', 'Salary Cap'], 'League B: provider defaults to MFL when unset');
+	assert.deepEqual(badgeTextsOf(nameCols[1]), ['MFL', 'Salary'], 'League B: provider defaults to MFL when unset');
 	const providerBadge = findAll(nameCols[0], (c) => c.cls.includes('badge-provider'))[0];
 	assert.ok(providerBadge, 'the provider badge carries the gold badge-provider class, same as on the Rosters cards');
 	assert.equal(fullText(providerBadge), 'ESPN');

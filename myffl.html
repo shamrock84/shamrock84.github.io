@@ -2470,16 +2470,19 @@
 		const VIEW_LABELS = { rosters: 'Rosters', standings: 'Standings', scoring: 'Scores', depthcharts: 'Depth Charts', analytics: 'Analytics', history: 'History', admin: 'Admin' };
 		const VIEW_ORDER = ['rosters', 'scoring', 'standings', 'depthcharts', 'analytics', 'history', 'admin'];
 		// Per-league type — still what individual Rosters cards badge
-		// themselves with (a Salary Cap league's card says "Salary Cap", not
+		// themselves with (a Salary Cap league's card says "Salary", not
 		// "Dynasty/Salary Cap"), just no longer what any sub-tab is named
 		// after. See SUBTAB_GROUP/SUBTAB_LABEL_OVERRIDES below for that.
+		// Shortened from "Salary Cap" to save space on the badge — the full
+		// name still appears in the Admin tab's own type dropdown (ADMIN_TYPES),
+		// which isn't space-constrained the way a card badge is.
 		// The draft-only type is named for what it is. Best Ball is a scoring
-		// system, not a league type — it's carried in `tags` (several salary-cap
-		// leagues use best-ball scoring), so using it as a type name too made
-		// the same words mean two different things. The stored value is
-		// 'draftonly'; nothing in the UI or the config says "best ball" as a
-		// type any more.
-		const LEAGUE_TYPE_LABELS = { dynasty: 'Dynasty', salarycap: 'Salary Cap', draftonly: 'Draft Only', redraft: 'Redraft' };
+		// system, not a league type — it's carried in `tags` as 'BestBall'
+		// (several salary-cap leagues use best-ball scoring), so using it as a
+		// type name too made the same words mean two different things. The
+		// stored value is 'draftonly'; nothing in the UI or the config says
+		// "best ball" as a type any more.
+		const LEAGUE_TYPE_LABELS = { dynasty: 'Dynasty', salarycap: 'Salary', draftonly: 'Draft Only', redraft: 'Redraft' };
 		// FantasyPros' ranking-type codes, spelled out for the card footnote.
 		const ECR_TYPE_LABELS = { DYNASTY: 'Dynasty', DRAFT: 'Draft', ROS: 'Rest-of-season', WEEKLY: 'Weekly', ADP: 'ADP' };
 		// Which sub-tab a league's cards render under — Dynasty and Salary Cap
@@ -4452,19 +4455,21 @@
 		// heading plus a badge strip. The provider badge (MFL/ESPN/Sleeper)
 		// always leads the strip and is styled gold instead of the usual
 		// purple, so which site actually hosts a league reads at a glance
-		// instead of blending in with Superflex/Best Ball/etc.
+		// instead of blending in with Superflex/BestBall/etc.
 		//
 		// All three card types pass the same `extraLabels`. Standings and Scoring
 		// used to get the provider badge alone, on the reasoning that format is a
-		// Rosters concern — but several tags name a scoring system outright (Best
-		// Ball) or change how points arrive (Superflex), which is exactly the
-		// context you want when reading a scoring table or a standings column.
+		// Rosters concern — but several tags name a scoring system outright
+		// (BestBall) or change how points arrive (Superflex), which is exactly
+		// the context you want when reading a scoring table or a standings column.
 		// The purple chips: what kind of league this is and how it's scored.
 		// Type is derived from data we already have; anything else (Superflex,
-		// Best Ball, ...) is the manual `tags` array in config/leagues.json, since
-		// no provider exposes it in a reliable form.
+		// BestBall, ...) is the manual `tags` array in config/leagues.json, since
+		// no provider exposes it in a reliable form. Tag text is kept short (one
+		// word, no spaces) for the same reason the type label is — badge space
+		// is tight, especially with several tags stacked on one card.
 		//
-		// The type label already reads "Salary Cap" for exactly the leagues that
+		// The type label already reads "Salary" for exactly the leagues that
 		// used to get a second badge from the auction check, so no separate
 		// salary-cap badge is needed.
 		// Team count sits between type and tags — the same fact History's own
