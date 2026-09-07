@@ -8854,7 +8854,8 @@
 			// too would make that lookup ambiguous. .planning-card just gets
 			// the same full-width treatment on its own (see the CSS rule).
 			const card = el('div', { class: 'card planning-card', 'data-view': 'admin', 'data-league-type': '' });
-			const heading = el('h2', { class: 'card-heading', text: 'Tasks' });
+			const openTaskCount = Object.values(tasks).filter((t) => !t.done).length;
+			const heading = el('h2', { class: 'card-heading', text: `Tasks (${openTaskCount})` });
 			card.appendChild(heading);
 			makeCollapsible(card, heading, 'tasks');
 
