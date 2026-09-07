@@ -2363,6 +2363,15 @@
 			gap: 0.4rem;
 			justify-content: flex-end;
 		}
+		/* Save gets the same icon-button shape as Cancel (and the row's own
+		   delete button), just recolored to accent rather than the ir-bg/
+		   ir-text red .planning-icon-btn carries by default — a checkmark
+		   next to an X reads as a matched confirm/dismiss pair the way a
+		   text "Save" button standing next to it didn't. */
+		.planning-task-save-btn {
+			color: var(--accent);
+			background: var(--chip-bg);
+		}
 		/* Priority-order drag/drop — same idiom as the Admin tab's league
 		   list (.admin-grip/.admin-move/.admin-dragging/.admin-drop-*) but
 		   its own class prefix, per the CLAUDE.md note on .results-* vs
@@ -8933,7 +8942,7 @@
 						editText.addEventListener('keydown', keydown);
 						editCategory.addEventListener('keydown', keydown);
 						const actions = el('div', { class: 'planning-task-popover-actions' });
-						const saveBtn = el('button', { type: 'button', class: 'planning-add-btn', text: 'Save' });
+						const saveBtn = el('button', { type: 'button', class: 'planning-icon-btn planning-task-save-btn', title: 'Save', text: '✓' });
 						saveBtn.addEventListener('click', save);
 						const cancelBtn = el('button', { type: 'button', class: 'planning-icon-btn', title: 'Cancel', text: '✕' });
 						cancelBtn.addEventListener('click', () => taskPopover.close());
