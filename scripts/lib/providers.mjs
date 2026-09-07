@@ -1438,6 +1438,58 @@ function attachWinProbabilities(teams, matchups) {
   }
 }
 
+// Shared by ESPN and Sleeper (below) for the same minutesRemaining MFL gets
+// for free from TYPE=liveScoring — neither provider's own fantasy API
+// exposes a live game clock anywhere (probe-espn-sleeper-live-time.yml
+// checked ESPN's mScoreboard/mRoster/mBoxscore/mLiveScoring views and
+// Sleeper's matchups/state endpoints; nothing). What both DO have is each
+// player's real NFL team, so this fetches the one thing genuinely missing —
+// real-time per-game clock/quarter — from ESPN's public, unauthenticated
+// site API (not the fantasy API: no ESPN_S2/SWID needed, and it's the same
+// underlying NFL data regardless of which fantasy platform asks), keyed by
+// team abbreviation so either provider can join its own rostered players
+// against it. One request covers every NFL game for the week — call this
+// once per poll/sync, never per league.
+//
+// secondsRemaining per team: 3600 (a full untouched game, matching the
+// convention fetchScoring's minutesRemaining already established) while the
+// game hasn't kicked off, 0 once it's over, and (quarters left) x 900 +
+// the current quarter's own clock while in progress — a coarse regulation
+// model that doesn't specially handle overtime's shorter period; an OT game
+// still resolves to a small positive number, close enough for an estimate
+// that's already a coarse stand-in (see estimateWinProbability's own
+// comment). A team with no game at all this week (a bye) is simply absent
+// from the map, which callers must treat as 0 remaining, same as "game over".
+export async function fetchNflGameClocks() {
+  const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard');
+  if (!res.ok) {
+    throw new Error(`NFL scoreboard request failed (${res.status})`);
+  }
+  const data = await res.json();
+  const clocks = new Map();
+  for (const event of data.events || []) {
+    const status = event.competitions?.[0]?.status;
+    const competitors = event.competitions?.[0]?.competitors || [];
+    const state = status?.type?.state;
+    let secondsRemaining;
+    if (state === 'post') {
+      secondsRemaining = 0;
+    } else if (state === 'in') {
+      const period = Number(status?.period ?? 0);
+      const clock = Number(status?.clock ?? 0);
+      secondsRemaining = Math.max(0, (4 - period) * 900 + clock);
+    } else {
+      // 'pre', or anything unrecognized — treat as not yet started.
+      secondsRemaining = 3600;
+    }
+    for (const c of competitors) {
+      const abbr = c.team?.abbreviation;
+      if (abbr) clocks.set(abbr, secondsRemaining);
+    }
+  }
+  return clocks;
+}
+
 export async function fetchScoring(league, cookie, nameById) {
   const [names, liveData] = await Promise.all([
     nameById ? Promise.resolve(nameById) : fetchMflFranchiseNames(league, cookie),
@@ -1705,8 +1757,35 @@ export async function fetchEspnStandings(league) {
     .sort((a, b) => b.wins - a.wins || Number(b.pointsFor) - Number(a.pointsFor));
 }
 
-export async function fetchEspnScoring(league) {
-  const data = await espnGet(league, 'view=mScoreboard&view=mTeam');
+// Sums remaining game-clock seconds across a matchup side's ACTIVE starters
+// only (bench and IR excluded, same as fetchEspnLineup's convention) — a
+// bench player's remaining game time doesn't affect this team's score, so
+// it must not affect its estimated win probability either. rosterForCurrentScoringPeriod
+// is what carries player entries here (added by the view=mRoster this
+// function's caller requests alongside mScoreboard); a proTeamId with no
+// entry in ESPN_PRO_TEAM_MAP, or a team abbreviation absent from clockMap
+// (a bye week, or the scoreboard simply not covering it), silently
+// contributes 0 rather than throwing — an estimate is never worth crashing
+// the whole card over one unresolved player.
+function espnTeamMinutesRemaining(teamSide, clockMap) {
+  const entries = teamSide?.rosterForCurrentScoringPeriod?.entries || [];
+  let seconds = 0;
+  for (const e of entries) {
+    if (e.lineupSlotId === ESPN_BENCH_SLOT_ID || e.lineupSlotId === ESPN_IR_SLOT_ID) continue;
+    const abbr = ESPN_PRO_TEAM_MAP[e.playerPoolEntry?.player?.proTeamId];
+    seconds += clockMap.get(abbr) ?? 0;
+  }
+  return Math.round(seconds / 60);
+}
+
+// clockMap is optional — pass one from fetchNflGameClocks (shared across
+// every ESPN/Sleeper league in one poll/sync, since it's the same NFL data
+// regardless of league) to skip fetching it again here.
+export async function fetchEspnScoring(league, clockMap) {
+  const [data, clocks] = await Promise.all([
+    espnGet(league, 'view=mScoreboard&view=mTeam&view=mRoster'),
+    clockMap ? Promise.resolve(clockMap) : fetchNflGameClocks(),
+  ]);
   const teamsById = new Map((data.teams || []).map((t) => [t.id, espnTeamName(t)]));
   const currentPeriod = data.status?.currentMatchupPeriod;
   const schedule = (data.schedule || []).filter((m) => m.matchupPeriodId === currentPeriod);
@@ -1719,25 +1798,35 @@ export async function fetchEspnScoring(league) {
   const matchups = [];
   for (const m of schedule) {
     const teamIds = [];
-    if (m.home) { rows.push({ teamId: m.home.teamId, score: m.home.totalPoints ?? 0 }); teamIds.push(String(m.home.teamId)); }
-    if (m.away) { rows.push({ teamId: m.away.teamId, score: m.away.totalPoints ?? 0 }); teamIds.push(String(m.away.teamId)); }
+    if (m.home) {
+      rows.push({ teamId: m.home.teamId, score: m.home.totalPoints ?? 0, minutesRemaining: espnTeamMinutesRemaining(m.home, clocks) });
+      teamIds.push(String(m.home.teamId));
+    }
+    if (m.away) {
+      rows.push({ teamId: m.away.teamId, score: m.away.totalPoints ?? 0, minutesRemaining: espnTeamMinutesRemaining(m.away, clocks) });
+      teamIds.push(String(m.away.teamId));
+    }
     if (teamIds.length) matchups.push({ teamIds });
   }
   if (rows.length === 0) {
     throw new Error('No live scoring available yet');
   }
 
-  const teams = rows
-    .map((r) => ({
-      franchiseId: String(r.teamId),
-      teamName: teamsById.get(r.teamId) || String(r.teamId),
-      score: r.score,
-      isMe: String(r.teamId) === String(league.franchiseId),
-    }))
+  const teams = rows.map((r) => ({
+    franchiseId: String(r.teamId),
+    teamName: teamsById.get(r.teamId) || String(r.teamId),
+    score: r.score,
+    minutesRemaining: r.minutesRemaining,
+    isMe: String(r.teamId) === String(league.franchiseId),
+  }));
+
+  attachWinProbabilities(teams, matchups);
+
+  const sortedTeams = teams
     .sort((a, b) => b.score - a.score)
     .map((t) => ({ ...t, score: t.score.toFixed(2) }));
 
-  return { week: currentPeriod ?? null, teams, matchups };
+  return { week: currentPeriod ?? null, teams: sortedTeams, matchups };
 }
 
 // Read-only: which of the franchise's currently-rostered players are set as
@@ -1957,10 +2046,32 @@ export async function fetchSleeperStandings(league) {
     .sort((a, b) => b.wins - a.wins || Number(b.pointsFor) - Number(a.pointsFor));
 }
 
-export async function fetchSleeperScoring(league) {
-  const [state, { names }] = await Promise.all([
+// Sums remaining game-clock seconds across a roster's own starters (Sleeper
+// lists them explicitly in `starters`, unlike ESPN which needs a slot-id
+// filter) via each player's NFL team from playerMap. A player missing from
+// playerMap, on a bye, or whose team isn't in clockMap (the scoreboard
+// simply not covering it) contributes 0 rather than throwing — same
+// silently-graceful handling as espnTeamMinutesRemaining, for the same
+// reason: this is an estimate, not worth crashing the card over one player.
+function sleeperTeamMinutesRemaining(starterIds, playerMap, clockMap) {
+  let seconds = 0;
+  for (const id of starterIds || []) {
+    const abbr = playerMap.get(String(id))?.team;
+    seconds += clockMap.get(abbr) ?? 0;
+  }
+  return Math.round(seconds / 60);
+}
+
+// clockMap and playerMap are both optional — pass a pre-fetched clockMap
+// (from fetchNflGameClocks, shared across every ESPN/Sleeper league in one
+// poll/sync) and playerMap (from loadSleeperPlayerMap, already loaded once
+// per sync wherever a Sleeper league exists) to skip re-fetching either.
+export async function fetchSleeperScoring(league, clockMap, playerMap) {
+  const [state, { names }, clocks, players] = await Promise.all([
     sleeperGet('/state/nfl'),
     sleeperTeamNames(league),
+    clockMap ? Promise.resolve(clockMap) : fetchNflGameClocks(),
+    playerMap ? Promise.resolve(playerMap) : loadSleeperPlayerMap(),
   ]);
   const week = state.week > 0 ? state.week : state.display_week;
   if (!week) {
@@ -1972,15 +2083,13 @@ export async function fetchSleeperScoring(league) {
     throw new Error('No live scoring available yet');
   }
 
-  const teams = rawMatchups
-    .map((m) => ({
-      franchiseId: String(m.roster_id),
-      teamName: names.get(String(m.roster_id)) || `Team ${m.roster_id}`,
-      score: m.points ?? 0,
-      isMe: String(m.roster_id) === String(league.franchiseId),
-    }))
-    .sort((a, b) => b.score - a.score)
-    .map((t) => ({ ...t, score: t.score.toFixed(2) }));
+  const teams = rawMatchups.map((m) => ({
+    franchiseId: String(m.roster_id),
+    teamName: names.get(String(m.roster_id)) || `Team ${m.roster_id}`,
+    score: m.points ?? 0,
+    minutesRemaining: sleeperTeamMinutesRemaining(m.starters, players, clocks),
+    isMe: String(m.roster_id) === String(league.franchiseId),
+  }));
 
   // Sleeper pairs opponents by a shared matchup_id — group by it rather than
   // assuming exactly two rosters share each id, since a missing id (a bye,
@@ -1995,7 +2104,13 @@ export async function fetchSleeperScoring(league) {
   }
   const matchups = [...groups.values()].map((teamIds) => ({ teamIds }));
 
-  return { week, teams, matchups };
+  attachWinProbabilities(teams, matchups);
+
+  const sortedTeams = teams
+    .sort((a, b) => b.score - a.score)
+    .map((t) => ({ ...t, score: t.score.toFixed(2) }));
+
+  return { week, teams: sortedTeams, matchups };
 }
 
 // Read-only: which of the franchise's players are currently set as

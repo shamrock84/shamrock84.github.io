@@ -47,6 +47,7 @@ import {
   fetchMflLeagueData,
   mflFranchiseNames,
   setMflRequestInterval,
+  fetchNflGameClocks,
 } from './lib/providers.mjs';
 import {
   attachRankings,
@@ -1202,14 +1203,30 @@ async function main() {
     }
   }
 
+  // Shared by every ESPN/Sleeper league's minutesRemaining/winProb below —
+  // one fetch of the public NFL scoreboard covers the whole week regardless
+  // of how many leagues ask, so it's pulled once here rather than once per
+  // league. Failure here must not cost any league its actual score: an
+  // empty map just means minutesRemaining/winProb come back as 0/undefined
+  // for this run, same as the "sync degrades, never fails" rule everywhere
+  // else in this file.
+  let nflClocks = new Map();
+  if (LEAGUES.some((l) => l.franchiseId && (l.provider === 'espn' || l.provider === 'sleeper'))) {
+    try {
+      nflClocks = await fetchNflGameClocks();
+    } catch (err) {
+      console.error(`Failed to fetch NFL game clocks: ${err.message}`);
+    }
+  }
+
   for (const league of LEAGUES) {
     const target = leagues.find((l) => l.id === league.id);
     if (!target || !league.franchiseId) continue;
     try {
       target.scoring = league.provider === 'espn'
-        ? await fetchEspnScoring(league)
+        ? await fetchEspnScoring(league, nflClocks)
         : league.provider === 'sleeper'
-        ? await fetchSleeperScoring(league)
+        ? await fetchSleeperScoring(league, nflClocks, sleeperPlayerMap)
         : await fetchScoring(league, cookie, mflNamesById.get(league.id));
       target.scoringError = null;
       console.log(`Fetched scoring for ${league.name}: ${target.scoring.teams.length} teams`);

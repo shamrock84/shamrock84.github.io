@@ -267,6 +267,14 @@ jobs:
       - name: Test MFL live-scoring matchup parsing
         run: node scripts/test-live-scoring-matchup.mjs
 
+      # fetchNflGameClocks and the ESPN/Sleeper join it feeds. Neither
+      # provider's own API carries a live game clock (confirmed by
+      # probe-espn-sleeper-live-time.yml), so minutesRemaining/winProb come
+      # from joining each provider's own rostered starters against the
+      # public ESPN NFL scoreboard by team abbreviation instead.
+      - name: Test ESPN/Sleeper live-time join
+        run: node scripts/test-espn-sleeper-live-time.mjs
+
       - name: Validate config/leagues.json
         run: |
           node --input-type=module -e '
