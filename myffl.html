@@ -3505,9 +3505,25 @@
 
 			// Incidental dismissal: the viewport moved under it. This is the
 			// one that has to yield while a popover is being shown, since
-			// showing it can itself provoke the scroll.
-			function closeOnViewportChange() {
+			// showing it can itself provoke the scroll. Registered on the
+			// capture phase (see below) so a scroll inside a horizontally-
+			// scrolled ancestor table still reaches it — but capture also
+			// hands it 'scroll' events that never bubble at all, and an
+			// <input>'s own text scrolling past its visible width (e.g. the
+			// cursor moving right past the edge in Edit Task's text field)
+			// is exactly that: a real, non-bubbling scroll event targeted at
+			// the input. Left unfiltered, reaching the end of the input
+			// closed the whole popover out from under whoever was typing.
+			// The popover hasn't moved in that case — only text inside an
+			// element it still contains has — so it's excluded here rather
+			// than by not-capturing (which would break the table case) or
+			// by capturing on 'scrollend' (unsupported in older browsers).
+			function closeOnViewportChange(e) {
 				if (opening) return;
+				// resize's own target is the Window, not a Node — contains()
+				// throws on anything else, so the instanceof check has to
+				// come first, not just be redundant with it.
+				if (popoverEl && e && e.target instanceof Node && popoverEl.contains(e.target)) return;
 				close();
 			}
 
