@@ -410,7 +410,7 @@ const labelsOf = (card) =>
 			{ franchiseId: '2', score: 50, depth: 5 },
 		] }, ecr: null },
 	}];
-	assert.equal(domCtx.renderTeamNeedsCard('dynasty', ['dynasty'], leagues, 2026), null);
+	assert.equal(domCtx.renderTeamNeedsCard(['dynasty'], leagues, 2026), null);
 }
 
 {
@@ -460,7 +460,7 @@ const labelsOf = (card) =>
 		{ id: 'C', name: 'Charlie', type: 'dynasty', season: '2026', franchiseId: '1', players: [] },
 	];
 
-	const card = domCtx.renderTeamNeedsCard('dynasty', ['dynasty'], leagues, 2026);
+	const card = domCtx.renderTeamNeedsCard(['dynasty'], leagues, 2026);
 	assert.notEqual(card, null);
 
 	for (const label of ['League', 'QB', 'RB', 'WR', 'TE']) {
@@ -618,7 +618,7 @@ function leagueAtRanks(id, name, size, ranks, players) {
 		{ name: 'Echo RB', position: 'RB', team: 'KC', ecr: { rank: 40 } },
 		{ name: 'Echo WR', position: 'WR', team: 'SF', ecr: { rank: 55 } },
 	]);
-	const card = domCtx.renderTeamNeedsCard('dynasty', ['dynasty'], [echo], 2026);
+	const card = domCtx.renderTeamNeedsCard(['dynasty'], [echo], 2026);
 	assert.notEqual(card, null);
 
 	const row = findAll(card, (c) => c.tag === 'tr').filter((tr) => tr.children.some((c) => c.tag === 'td'))[0];
@@ -668,7 +668,7 @@ function leagueAtRanks(id, name, size, ranks, players) {
 	const foxtrot = leagueAtRanks('F', 'Foxtrot', 10, { QB: 1, RB: 2, WR: 3, TE: 1 }, [
 		{ name: 'Foxtrot WR', position: 'WR', team: 'MIA', ecr: { rank: 20 } },
 	]);
-	const card = domCtx.renderTeamNeedsCard('dynasty', ['dynasty'], [foxtrot], 2026);
+	const card = domCtx.renderTeamNeedsCard(['dynasty'], [foxtrot], 2026);
 	assert.notEqual(card, null);
 	const row = findAll(card, (c) => c.tag === 'tr').filter((tr) => tr.children.some((c) => c.tag === 'td'))[0];
 	const [qbCell, rbCell, wrCell, teCell] = row.children.slice(1);
@@ -695,7 +695,7 @@ function leagueAtRanks(id, name, size, ranks, players) {
 		{ name: 'Golf RB', position: 'RB', team: 'DAL', ecr: { rank: 30 } },
 		{ name: 'Golf WR', position: 'WR', team: 'ATL', ecr: { rank: 45 } },
 	]);
-	const card = domCtx.renderTeamNeedsCard('dynasty', ['dynasty'], [golf], 2026);
+	const card = domCtx.renderTeamNeedsCard(['dynasty'], [golf], 2026);
 	const row = findAll(card, (c) => c.tag === 'tr').filter((tr) => tr.children.some((c) => c.tag === 'td'))[0];
 	const [qbCell, rbCell, wrCell, teCell] = row.children.slice(1);
 
@@ -725,7 +725,7 @@ function leagueAtRanks(id, name, size, ranks, players) {
 			{ franchiseId: '2', score: 5, depth: 0, byPosition: byPos(1, 1, 1, 1) },
 		] }, ecr: null },
 	};
-	const card = domCtx.renderTeamNeedsCard('dynasty', ['dynasty'], [hotel], 2026);
+	const card = domCtx.renderTeamNeedsCard(['dynasty'], [hotel], 2026);
 	const row = findAll(card, (c) => c.tag === 'tr').filter((tr) => tr.children.some((c) => c.tag === 'td'))[0];
 	const cells = row.children.slice(1);
 	assert.ok(cells.every((c) => !c.cls.includes('needs-weakest')), 'tied-everywhere: nothing is relatively worse, so nothing is flagged');
@@ -758,7 +758,7 @@ function leagueAtRanks(id, name, size, ranks, players) {
 		] }, ecr: null },
 	};
 
-	const card = domCtx.renderTeamNeedsCard('dynasty', ['dynasty'], [league], 2026);
+	const card = domCtx.renderTeamNeedsCard(['dynasty'], [league], 2026);
 	assert.notEqual(card, null);
 	const row = findAll(card, (c) => c.tag === 'tr').filter((tr) => tr.children.some((c) => c.tag === 'td'))[0];
 	const [qbCell, rbCell] = row.children.slice(1);

@@ -1138,7 +1138,7 @@ const labelsOf = (card) =>
 	assert.equal(byLabel.Charlie.avg.toFixed(2), '3.67');
 	assert.equal(byLabel.Delta.avg, null, 'the unranked league has no average');
 
-	const card = domCtx.renderPowerRankCard('dynasty', ['dynasty'], leagues, 2026);
+	const card = domCtx.renderPowerRankCard(['dynasty'], leagues, 2026);
 	assert.notEqual(card, null, 'the card renders when at least one league ranked');
 
 	const base = labelsOf(card);
@@ -1229,7 +1229,7 @@ const labelsOf = (card) =>
 			power: { projections: { source: { basis: 'projections' }, teams: teams(false) } } },
 	];
 
-	const card = domCtx.renderPowerRankCard('dynasty', ['dynasty'], leagues, 2026);
+	const card = domCtx.renderPowerRankCard(['dynasty'], leagues, 2026);
 	const rowOf = (label) => findAll(card, (c) => c.tag === 'tr')
 		.filter((tr) => tr.children.some((c) => c.tag === 'td'))
 		.find((tr) => cellLeagueName(tr.children[0]) === label);
