@@ -1,0 +1,31 @@
+name: Probe ESPN/Sleeper Live Time Remaining (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here,
+# the same rule the other manual workflows follow. Answers whether ESPN and
+# Sleeper can get the same Minutes Remaining / Win Probability treatment MFL
+# just got, before writing any parsing code. See
+# scripts/probe-espn-sleeper-live-time.mjs for the full rationale.
+#
+# Read-only: extra ESPN fantasy-API views, the public unauthenticated ESPN
+# NFL scoreboard, and Sleeper's state/matchups endpoints. Nothing is
+# written.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check ESPN/Sleeper/public-NFL sources for live game-clock data
+        env:
+          ESPN_S2: ${{ secrets.ESPN_S2 }}
+          ESPN_SWID: ${{ secrets.ESPN_SWID }}
+        run: node scripts/probe-espn-sleeper-live-time.mjs
