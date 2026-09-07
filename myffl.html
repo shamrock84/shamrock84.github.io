@@ -644,16 +644,27 @@
 			justify-content: flex-start;
 			flex-shrink: 1;
 		}
+		/* Sized down from 0.68rem/0.15rem 0.55rem/0.03em (measured in a headless
+		   browser against the worst real case — a salary-cap league carrying
+		   both Superflex and BestBall tags: MFL/season/Salary/12 team/
+		   Superflex/BestBall, 6 chips). Shrinking alone plateaus fast: at the
+		   old 6.5rem mobile cap below, even illegibly tiny text only takes
+		   that case from 5 rows to 4, because the cap is narrower than two
+		   mid-length chips side by side regardless of font size. This size
+		   paired with the widened cap below measured at 3 rows for that same
+		   case (down from 5) on the real page. 0.6rem/9.6px bold is the floor
+		   kept for legibility — smaller candidates measured fine on rows but
+		   read as illegible. */
 		.badge {
 			display: inline-block;
 			background: var(--chip-bg);
 			color: var(--accent);
 			border-radius: 999px;
-			padding: 0.15rem 0.55rem;
-			font-size: 0.68rem;
+			padding: 0.08rem 0.35rem;
+			font-size: 0.6rem;
 			font-weight: 600;
 			text-transform: uppercase;
-			letter-spacing: 0.03em;
+			letter-spacing: 0.01em;
 			white-space: nowrap;
 		}
 		/* Gold is for the two facts about a league that aren't about the league
@@ -684,16 +695,26 @@
 		   overflow-wrap:break-word above. On narrow screens a long title and
 		   its badges get tight, so wrap more aggressively there: cap the
 		   badges row tighter so it takes less width, leaving more for the
-		   title to wrap into. */
+		   title to wrap into. Widened from 6.5rem to 9.5rem alongside the
+		   .badge size cut above — 6.5rem left no room for two chips on one
+		   line at any legible font size (measured: the worst-case 6-chip
+		   card still wrapped to 4-5 rows even at illegible sizes), while
+		   9.5rem gets that same card to 3 rows at the new size (down from
+		   5). Still short of 1-2 rows; getting there needs a noticeably
+		   wider cap (~11.5rem measured), which eats further into the
+		   title's width on a narrow phone — left at 9.5rem pending a look
+		   at that trade-off against a long league name. The trade-off here
+		   is already deliberate: this does take a bit more width from the
+		   title on a narrow phone, which now wraps a little sooner. */
 		@media (max-width: 600px) {
 			.badges,
 			.badges.badges-wrap {
-				max-width: 6.5rem;
+				max-width: 9.5rem;
 			}
 			/* .history-badges is a .badges too, but it isn't competing with a
 			   title for width — it sits on its own row under the league name
 			   (see the rule above) with the full card width to itself, so
-			   the same 6.5rem cap that protects a title here just wraps
+			   the same cap that protects a title here just wraps
 			   "ESPN"/"REDRAFT" onto two lines for no reason. */
 			.history-badges {
 				max-width: none;
