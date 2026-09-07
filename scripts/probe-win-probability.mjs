@@ -51,6 +51,12 @@ if (!rawBaseURL) {
 const baseURL = rawBaseURL.replace(/^https?:\/\//, '');
 
 const candidatePaths = [
+  // Found by following the site's own "Live Scoring" nav link off /home/{id}
+  // in round 2 of this probe — the actual live-scoring page is an ajax
+  // fragment, not any of the guessed top-level paths below (all of which
+  // 404 or 500).
+  `/${year}/ajax_ls?L=${MFL_LEAGUE_ID}`,
+  `/${year}/ajax_ls?L=${MFL_LEAGUE_ID}&W=${WEEK}`,
   `/${year}/live?L=${MFL_LEAGUE_ID}`,
   `/${year}/livescoring?L=${MFL_LEAGUE_ID}`,
   `/${year}/scoring?L=${MFL_LEAGUE_ID}&W=${WEEK}`,
@@ -77,6 +83,13 @@ for (const path of candidatePaths) {
     if (!res.ok) continue;
     const body = await res.text();
     console.log(`  body length: ${body.length}`);
+
+    // ajax_ls is a small fragment meant for AJAX injection into the home
+    // page, not a full document — dump it whole rather than just grepping,
+    // since this is the actual live-scoring source the nav link pointed to.
+    if (path.includes('ajax_ls') && body.length < 30000) {
+      console.log(`  FULL BODY:\n${body}`);
+    }
 
     // Any script src referencing something scoring/live/probability-shaped.
     const scriptSrcs = [...body.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)]
