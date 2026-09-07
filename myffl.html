@@ -1781,6 +1781,14 @@
 			font-variant-numeric: tabular-nums;
 			color: var(--accent);
 		}
+		/* Same average, floated to the right of the "Across N leagues, N
+		   seasons" line instead — left in .team's own muted color/size
+		   rather than the accent purple above, so it reads as part of
+		   that subtitle rather than as its own callout. */
+		.finances-overall-avg {
+			float: right;
+			font-variant-numeric: tabular-nums;
+		}
 		/* Won-amount button — same shape as .salary-link. The popover it opens
 		   is a makePopover instance like every other one on this page; the
 		   shared .popover rules carry its look, and .finances-popover stays as
@@ -8606,15 +8614,15 @@
 			const totalSeasons = summaries.reduce((sum, s) => sum + s.years.length, 0);
 			// Same "$X/yr avg" idiom as each league's own Yearly breakdown
 			// summary line below, just computed over every league's money
-			// and every season at once — and the same accent coloring, for
-			// the same reason: an average isn't a real year's total, so it
-			// shouldn't borrow the red/green sign coloring the headline
-			// totals use.
+			// and every season at once — styled as part of the "Across…"
+			// subtitle it sits on (.team's own muted color/size) rather
+			// than the accent purple that idiom normally uses, so this
+			// row reads as one consistent line rather than a callout.
 			const overallAvgPerYear = overallTotal / totalSeasons;
 			card.appendChild(el('div', { class: 'team' }, [
 				el('span', { text: `Across ${leagueCount(summaries.length)}, ${seasonCount(totalSeasons)}` }),
 				el('span', {
-					class: 'finances-summary-avg',
+					class: 'finances-overall-avg',
 					title: `Average net across ${totalSeasons} season(s)`,
 					text: `${formatMoney(overallAvgPerYear)}/yr avg`,
 				}),
