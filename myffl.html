@@ -2335,26 +2335,33 @@
 			gap: 0.5rem;
 			padding: 0.3rem 0;
 		}
-		.planning-task-body { flex: 1; min-width: 0; }
 		.planning-task-text { flex: 1; }
 		.planning-task-text[role="button"] {
 			cursor: pointer;
 		}
-		/* Same input/button shapes as the add row and the Admin tab, just
-		   inline instead of pinned above the list. flex-wrap so a long
-		   category name doesn't force the row wider than its card on a
-		   phone — the text input just gives up width to it instead. */
-		.planning-task-edit {
-			display: flex;
-			flex-wrap: wrap;
-			gap: 0.35rem;
-			align-items: center;
+		/* Edit Task popover content — the fifth makePopover instance (see
+		   the note above renderTasksCard/taskPopover). A fixed width rather
+		   than the shrink-to-fit the other four popovers get from their
+		   rows: an input has no natural content width to shrink to, and
+		   this keeps Save/Cancel from reflowing against a wide category
+		   value. The popover's own left-edge clamp (see makePopover's
+		   position()) is what actually keeps this off-screen on a phone —
+		   nothing here needs to know the viewport width itself. */
+		.task-popover {
+			width: 14rem;
 		}
-		.planning-task-edit .planning-input:first-child { flex: 2 1 8rem; }
-		.planning-task-edit .planning-input:nth-child(2) { flex: 1 1 6rem; }
-		.planning-task-save-btn {
-			color: var(--accent);
-			background: var(--chip-bg);
+		.planning-task-popover-form {
+			display: flex;
+			flex-direction: column;
+			gap: 0.4rem;
+		}
+		.planning-task-popover-form .planning-input {
+			width: 100%;
+		}
+		.planning-task-popover-actions {
+			display: flex;
+			gap: 0.4rem;
+			justify-content: flex-end;
 		}
 		/* Priority-order drag/drop — same idiom as the Admin tab's league
 		   list (.admin-grip/.admin-move/.admin-dragging/.admin-drop-*) but
@@ -3450,15 +3457,17 @@
 		// strategy, and this page has no viewer-level access control — logged
 		// out, an unset value renders as a plain "—" instead of the dropdown.
 		//
-		// Every popover on this page is the same object: a title, then a list of
-		// two-column rows, anchored under the button that opened it. Four of
-		// them exist (Salary by Year, Starters, Team Needs, Won Breakdown) and
-		// each keeps its OWN instance and its own element — they show unrelated
-		// content pulled from unrelated tables, and nothing is gained by having
-		// one of them re-render into another's node. What they never needed was
-		// four copies of the show/hide/anchor/dismiss machinery, which is what
-		// this factory holds; the content stays at the call site, where it
-		// belongs, as the {title, rows} the caller hands to open().
+		// Every popover on this page is the same object: an optional title
+		// over content, anchored under the button that opened it. Five of
+		// them exist (Salary by Year, Starters, Team Needs, Won Breakdown,
+		// Edit Task) and each keeps its OWN instance and its own element —
+		// they show unrelated content pulled from unrelated tables, and
+		// nothing is gained by having one of them re-render into another's
+		// node. What they never needed was five copies of the show/hide/
+		// anchor/dismiss machinery, which is what this factory holds; the
+		// content stays at the call site, where it belongs, as either the
+		// {title, rows} the first four hand to open() or, for Edit Task
+		// alone, a (popoverEl) => {} builder — see open()/build() below.
 		//
 		// Each instance is appended to <body> rather than nested in its table,
 		// so its position:fixed coordinates are measured against the viewport
@@ -3505,11 +3514,17 @@
 				popoverEl.style.left = `${Math.max(8, Math.min(rect.left, maxLeft))}px`;
 			}
 
-			// rows: [{ left, right }] — both already formatted as strings by
-			// the caller, since only the caller knows whether a number is a
-			// year, a rank, or dollars.
-			function open(button, title, rows) {
-				build(button, title, rows);
+			// content is either [{ left, right }] — both already formatted as
+			// strings by the caller, since only the caller knows whether a
+			// number is a year, a rank, or dollars — or a function
+			// (popoverEl) => {} that appends whatever it needs directly. The
+			// four read-only popovers all use the row-list shape; the task
+			// editor is the one that needs a form instead of a display line,
+			// which is why this takes either rather than gaining a sibling
+			// openForm/buildForm pair that would duplicate the show/hide/
+			// anchor/dismiss machinery below for no reason.
+			function open(button, title, content) {
+				build(button, title, content);
 				show(button);
 			}
 
@@ -3540,7 +3555,7 @@
 				else setTimeout(release, 0);
 			}
 
-			function build(button, title, rows) {
+			function build(button, title, content) {
 				if (!popoverEl) {
 					popoverEl = el('div', { class: `popover ${name}-popover hidden` });
 					document.body.appendChild(popoverEl);
@@ -3560,22 +3575,26 @@
 					});
 				}
 				popoverEl.innerHTML = '';
-				popoverEl.appendChild(el('div', { class: `popover-title ${name}-popover-title`, text: title }));
-				for (const row of rows) {
-					const line = el('div', { class: `popover-row ${name}-popover-row` });
-					line.appendChild(el('span', { text: row.left }));
-					line.appendChild(el('span', { text: row.right }));
-					popoverEl.appendChild(line);
+				if (title) popoverEl.appendChild(el('div', { class: `popover-title ${name}-popover-title`, text: title }));
+				if (typeof content === 'function') {
+					content(popoverEl);
+				} else {
+					for (const row of content) {
+						const line = el('div', { class: `popover-row ${name}-popover-row` });
+						line.appendChild(el('span', { text: row.left }));
+						line.appendChild(el('span', { text: row.right }));
+						popoverEl.appendChild(line);
+					}
 				}
 				owner = button;
 			}
 
-			function toggle(button, title, rows) {
+			function toggle(button, title, content) {
 				if (owner === button && !popoverEl.classList.contains('hidden')) {
 					close();
 					return;
 				}
-				open(button, title, rows);
+				open(button, title, content);
 			}
 
 			return { open, close, toggle };
@@ -8795,6 +8814,13 @@
 		// categories") — one list, grouped by whatever categories exist, is
 		// simpler than two lists that would otherwise need to agree on
 		// layout and completed-section behavior.
+		//
+		// The fifth makePopover instance, and the odd one out: the other
+		// four show a read-only {title, rows} line; this one hosts the
+		// text+category edit form (see buildTaskRow below) so editing a
+		// task doesn't have to grow its row to fit two inputs plus the
+		// checkbox/grip/move/remove buttons already there.
+		const taskPopover = makePopover('task');
 		function renderTasksCard() {
 			const tasks = loadTasks();
 			// Not .admin-card — that class is how refreshAdminCard and
@@ -8863,74 +8889,77 @@
 					renderGrid();
 				});
 				row.appendChild(checkbox);
-				// Text and category are edited in place rather than through a
-				// popover — the existing popover (makePopover) only ever
-				// renders read-only {left,right} rows built at the call site;
-				// giving it a form would be a new variant for this one case.
-				// A click on the label swaps it for the same text+category
-				// inputs the add row uses; Save/Cancel swap it back. Wrapped
-				// in its own span (rather than replacing children of `row`
-				// directly) so the swap can't disturb the checkbox, grip, or
-				// move/remove buttons sitting alongside it.
-				const body = el('span', { class: 'planning-task-body' });
-				row.appendChild(body);
-				const showDisplay = () => {
-					body.innerHTML = '';
-					// Completed tasks lose their category's section (they all
-					// land together under Completed, sorted by completedAt),
-					// so the category rides along in parens right on the row
-					// instead — open tasks skip this, since they're already
-					// sitting under their own category heading.
-					const label = t.done && t.category ? `${t.text} (${t.category})` : t.text;
-					const textSpan = el('span', { class: 'planning-task-text', text: label, role: 'button', tabindex: '0', title: 'Click to edit' });
-					textSpan.addEventListener('click', showEditForm);
-					textSpan.addEventListener('keydown', (e) => {
-						if (e.key !== 'Enter' && e.key !== ' ') return;
-						e.preventDefault();
-						showEditForm();
+				// Completed tasks lose their category's section (they all land
+				// together under Completed, sorted by completedAt), so the
+				// category rides along in parens right on the row instead —
+				// open tasks skip this, since they're already sitting under
+				// their own category heading.
+				const label = t.done && t.category ? `${t.text} (${t.category})` : t.text;
+				const textSpan = el('span', { class: 'planning-task-text', text: label, role: 'button', tabindex: '0', title: 'Click to edit' });
+				// A click opens taskPopover on a small text+category form
+				// rather than growing the row in place — a row wide enough
+				// for a text input, a category input, AND the checkbox/grip/
+				// move/remove buttons it already carries doesn't fit a phone
+				// (see the CLAUDE.md popover note). The category input is
+				// still there since it's the only way to move a task between
+				// sections, it just no longer costs the row any width.
+				const openTaskEdit = () => {
+					taskPopover.open(textSpan, 'Edit Task', (popoverEl) => {
+						const form = el('div', { class: 'planning-task-popover-form' });
+						const editText = el('input', { type: 'text', class: 'planning-input', value: t.text });
+						const editCategory = el('input', { type: 'text', class: 'planning-input', value: t.category || '', placeholder: 'Category (optional)', list: categoryListId });
+						const save = () => {
+							const text = editText.value.trim();
+							if (!text) return;
+							const category = editCategory.value.trim();
+							const updates = { text, category };
+							// order is scoped per category (see the note above
+							// TASKS_STORAGE_KEY): a small drag-reorder index
+							// from this task's old category means nothing in
+							// the new one and could collide with indices
+							// already in use there. Moving category resets it
+							// the same way a brand new task gets one —
+							// appended at the end, exactly like addTask's
+							// `order: now`.
+							if (category !== (t.category || '')) updates.order = Date.now();
+							editTask(id, updates);
+							taskPopover.close();
+							renderGrid();
+						};
+						const keydown = (e) => {
+							if (e.key === 'Enter') save();
+							else if (e.key === 'Escape') taskPopover.close();
+						};
+						editText.addEventListener('keydown', keydown);
+						editCategory.addEventListener('keydown', keydown);
+						const actions = el('div', { class: 'planning-task-popover-actions' });
+						const saveBtn = el('button', { type: 'button', class: 'planning-add-btn', text: 'Save' });
+						saveBtn.addEventListener('click', save);
+						const cancelBtn = el('button', { type: 'button', class: 'planning-icon-btn', title: 'Cancel', text: '✕' });
+						cancelBtn.addEventListener('click', () => taskPopover.close());
+						actions.appendChild(saveBtn);
+						actions.appendChild(cancelBtn);
+						form.appendChild(editText);
+						form.appendChild(editCategory);
+						form.appendChild(actions);
+						popoverEl.appendChild(form);
+						// Deferred a tick: the popover is still `.hidden`
+						// (display: none) when this builder runs — see the
+						// two-pass positioning note above makePopover's
+						// show() — and focusing a hidden input is a no-op.
+						setTimeout(() => {
+							editText.focus();
+							editText.select();
+						}, 0);
 					});
-					body.appendChild(textSpan);
 				};
-				const showEditForm = () => {
-					body.innerHTML = '';
-					const form = el('span', { class: 'planning-task-edit' });
-					const editText = el('input', { type: 'text', class: 'planning-input', value: t.text });
-					const editCategory = el('input', { type: 'text', class: 'planning-input', value: t.category || '', placeholder: 'Category', list: categoryListId });
-					const save = () => {
-						const text = editText.value.trim();
-						if (!text) return;
-						const category = editCategory.value.trim();
-						const updates = { text, category };
-						// order is scoped per category (see the note above
-						// TASKS_STORAGE_KEY): a small drag-reorder index from
-						// this task's old category means nothing in the new
-						// one and could collide with indices already in use
-						// there. Moving category resets it the same way a
-						// brand new task gets one — appended at the end,
-						// exactly like addTask's `order: now`.
-						if (category !== (t.category || '')) updates.order = Date.now();
-						editTask(id, updates);
-						renderGrid();
-					};
-					const keydown = (e) => {
-						if (e.key === 'Enter') save();
-						else if (e.key === 'Escape') showDisplay();
-					};
-					editText.addEventListener('keydown', keydown);
-					editCategory.addEventListener('keydown', keydown);
-					const saveBtn = el('button', { type: 'button', class: 'planning-icon-btn planning-task-save-btn', title: 'Save', text: '✓' });
-					saveBtn.addEventListener('click', save);
-					const cancelBtn = el('button', { type: 'button', class: 'planning-icon-btn', title: 'Cancel', text: '✕' });
-					cancelBtn.addEventListener('click', showDisplay);
-					form.appendChild(editText);
-					form.appendChild(editCategory);
-					form.appendChild(saveBtn);
-					form.appendChild(cancelBtn);
-					body.appendChild(form);
-					editText.focus();
-					editText.select();
-				};
-				showDisplay();
+				textSpan.addEventListener('click', openTaskEdit);
+				textSpan.addEventListener('keydown', (e) => {
+					if (e.key !== 'Enter' && e.key !== ' ') return;
+					e.preventDefault();
+					openTaskEdit();
+				});
+				row.appendChild(textSpan);
 				if (group) {
 					// Touch devices don't fire HTML5 drag events at all, so
 					// these aren't a redundant second way to reorder — they're
