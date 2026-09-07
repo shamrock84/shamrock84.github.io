@@ -1,4 +1,5 @@
-// Unit test for fetchScoring in scripts/lib/providers.mjs.
+// Unit test for fetchScoring and estimateWinProbability in
+// scripts/lib/providers.mjs.
 //
 // Real bug: fetchScoring read liveScoring.franchise as a flat per-franchise
 // list. TYPE=liveScoring never actually shapes it that way — franchises sit
@@ -13,10 +14,14 @@
 //
 // This fixture is trimmed from the real captured response: five matchups,
 // one a bye-like pairing with no player data yet, mirroring what a
-// just-kicked-off week 1 actually looked like.
+// just-kicked-off week 1 actually looked like. gameSecondsRemaining is
+// added on top of the real capture's shape to exercise minutesRemaining and
+// the win-probability estimate — see probe-win-probability.mjs for why
+// MFL's own number isn't fetchable and estimateWinProbability is a
+// homegrown stand-in instead.
 
 import assert from 'node:assert/strict';
-import { fetchScoring } from './lib/providers.mjs';
+import { fetchScoring, estimateWinProbability } from './lib/providers.mjs';
 
 function stubFetch(handler) {
 	globalThis.fetch = async (url) => handler(String(url));
@@ -30,20 +35,20 @@ const liveScoringResponse = {
 		matchup: [
 			{
 				franchise: [
-					{ id: '0010', score: '0.0', isHome: '0', players: {} },
-					{ id: '0009', score: '0.0', isHome: '1', players: {} },
+					{ id: '0010', score: '0.0', isHome: '0', players: {}, gameSecondsRemaining: '0' },
+					{ id: '0009', score: '0.0', isHome: '1', players: {}, gameSecondsRemaining: '0' },
 				],
 			},
 			{
 				franchise: [
-					{ id: '0001', score: '12.4', isHome: '0', players: {} },
-					{ id: '0008', score: '9.1', isHome: '1', players: {} },
+					{ id: '0001', score: '12.4', isHome: '0', players: {}, gameSecondsRemaining: '32400' },
+					{ id: '0008', score: '9.1', isHome: '1', players: {}, gameSecondsRemaining: '28800' },
 				],
 			},
 			{
 				franchise: [
-					{ id: '0003', score: '0.0', isHome: '0', players: {} },
-					{ id: '0004', score: '0.0', isHome: '1', players: {} },
+					{ id: '0003', score: '0.0', isHome: '0', players: {}, gameSecondsRemaining: '0' },
+					{ id: '0004', score: '0.0', isHome: '1', players: {}, gameSecondsRemaining: '0' },
 				],
 			},
 		],
@@ -76,6 +81,16 @@ const liveScoringResponse = {
 	assert.equal(me.isMe, true);
 	assert.equal(me.teamName, 'My Team');
 	assert.equal(me.score, '12.40');
+	assert.equal(me.minutesRemaining, 540, '32400 seconds is 540 minutes');
+
+	const teamD = result.teams.find((t) => t.franchiseId === '0008');
+	assert.equal(teamD.minutesRemaining, 480, '28800 seconds is 480 minutes');
+	assert.equal(me.winProb + teamD.winProb, 100, 'a matchup pair\'s win probabilities always sum to 100');
+	assert.ok(me.winProb > 50, 'the team ahead on both score and remaining time is favored');
+
+	const teamA = result.teams.find((t) => t.franchiseId === '0010');
+	assert.equal(teamA.minutesRemaining, 0, 'a franchise with no remaining game time reports 0, not undefined');
+	assert.equal(teamA.winProb, 50, 'a scoreless, timeless bye-like pairing with an equally scoreless opponent is a coin flip');
 }
 
 {
@@ -88,6 +103,28 @@ const liveScoringResponse = {
 		() => fetchScoring(league, 'cookie', new Map()),
 		/No live scoring available yet/
 	);
+}
+
+// estimateWinProbability's own edge cases, isolated from the network stub.
+{
+	assert.equal(estimateWinProbability(0, 540, 0, 540), 50, 'a tied, untouched matchup is a coin flip');
+	assert.equal(estimateWinProbability(100, 0, 100, 0), 50, 'a finished, tied matchup is a coin flip, not clamped');
+	assert.equal(estimateWinProbability(101, 0, 100, 0), 100, 'a finished matchup resolves to the actual winner, unclamped');
+	assert.equal(estimateWinProbability(100, 0, 101, 0), 0, 'a finished matchup resolves to the actual loser, unclamped');
+
+	// While ANY player-minute of either side remains, the estimate never
+	// reads as a sure thing — even a blowout margin with almost no time
+	// left stays inside [1, 99], the same guard mfl_win_prob.js applies.
+	const nearCertain = estimateWinProbability(200, 1, 0, 0);
+	assert.ok(nearCertain <= 99, 'never 100 while a player-minute remains anywhere in the matchup');
+	const nearImpossible = estimateWinProbability(0, 0, 200, 1);
+	assert.ok(nearImpossible >= 1, 'never 0 while a player-minute remains anywhere in the matchup');
+
+	// A trailing team that still has (nearly) a full lineup left to play can
+	// out-project a leader who is already done — the model reads remaining
+	// playing time as upside, not just as uncertainty.
+	const aheadButDone = estimateWinProbability(90, 0, 70, 500);
+	assert.ok(aheadButDone < 50, 'a current lead from a fully-finished team loses to an opponent with a full game left');
 }
 
 console.log('test-live-scoring-matchup.mjs OK');

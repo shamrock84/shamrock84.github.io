@@ -1364,6 +1364,80 @@ export async function fetchMflFranchiseNames(league, cookie) {
 // alone), which is also the head-to-head pairing the Scoring tab wants — so
 // unlike the comment this replaces once claimed, MFL does expose it, in the
 // same place ESPN and Sleeper keep theirs.
+// Homegrown win-probability estimate. MFL's own number (the "Win Probability"
+// row on its live-scoring page) is a 400-trial client-side Monte Carlo
+// simulation — mfl_win_prob.js, pulled and read directly by
+// probe-win-probability.yml — that samples every still-playing starter's
+// remaining stat line against a proprietary live-projections feed
+// (live_proj_WW.txt) and real-time per-team NFL game state, converts each
+// trial to fantasy points via the league's scoring rules, and reports the
+// share of trials where one side's simulated total is higher. Neither input
+// is reachable through anything this project already fetches, and porting
+// the simulation itself is a much larger undertaking than this feature
+// warrants — see the probe's own header for the full shape of what MFL does.
+//
+// This is a coarser stand-in, in the same spirit as computePowerScore's
+// homegrown power rankings (see fantasypros.mjs): it never claims to match
+// MFL's own figure, only to give a reasonable one-line read using data this
+// project already has — current score plus minutesRemaining (below).
+//
+// The model: project each team's final score by adding a league-typical
+// scoring rate to its current score for every minute its roster has left to
+// play, then convert the projected margin to a probability via a normal
+// approximation whose uncertainty grows with the total remaining
+// player-minutes of BOTH teams combined. That combined-total framing (rather
+// than each team's own remaining minutes separately) is deliberate: modeled
+// as independent players, variance is additive regardless of which team
+// contributes it, so the total is what actually governs how much of the
+// outcome is still undecided — not how that total happens to be split.
+//
+// WP_POINTS_PER_MINUTE and WP_VARIANCE_PER_MINUTE are calibrated against a
+// full, untouched 9-starter/60-minute-each lineup (540 remaining
+// player-minutes, matching what fetchScoring's minutesRemaining reports
+// before kickoff): ~100 points is a mid-range weekly starting-lineup total
+// (0.185/min), and a ~28-point standard deviation is in line with typical
+// week-to-week scoring swings (var = 28^2/540 ≈ 1.45/min). Both are starting
+// points for an estimate, not a fit to this league's actual scoring rules.
+// WP_LOGISTIC_SCALE is the standard logistic-to-normal-CDF approximation
+// constant (1.702), not a tuned value.
+//
+// Clamped to [1, 99] while ANY player-minute of either team remains
+// unplayed — the same guard mfl_win_prob.js itself applies — so this never
+// reads as a sure thing while real football could still change it. Only
+// once both teams show zero minutes remaining does it resolve to the actual
+// deterministic outcome (100/0, or 50/50 on a tie).
+const WP_POINTS_PER_MINUTE = 0.185;
+const WP_VARIANCE_PER_MINUTE = 1.45;
+const WP_LOGISTIC_SCALE = 1.702;
+
+export function estimateWinProbability(scoreA, minutesA, scoreB, minutesB) {
+  const totalMinutes = minutesA + minutesB;
+  if (totalMinutes <= 0) {
+    if (scoreA === scoreB) return 50;
+    return scoreA > scoreB ? 100 : 0;
+  }
+  const projectedMargin =
+    (scoreA + WP_POINTS_PER_MINUTE * minutesA) - (scoreB + WP_POINTS_PER_MINUTE * minutesB);
+  const uncertainty = Math.sqrt(WP_VARIANCE_PER_MINUTE * totalMinutes);
+  const z = projectedMargin / uncertainty;
+  const raw = 100 / (1 + Math.exp(-WP_LOGISTIC_SCALE * z));
+  return Math.min(99, Math.max(1, Math.round(raw)));
+}
+
+// Attaches winProb to each team in a two-team matchup (a bye — one team, no
+// opponent — is left alone, since there's nothing to compare against). Reads
+// score/minutesRemaining that must already be on each team object.
+function attachWinProbabilities(teams, matchups) {
+  const byId = new Map(teams.map((t) => [t.franchiseId, t]));
+  for (const m of matchups) {
+    if (m.teamIds.length !== 2) continue;
+    const [a, b] = m.teamIds.map((id) => byId.get(id));
+    if (!a || !b) continue;
+    a.winProb = estimateWinProbability(a.score, a.minutesRemaining, b.score, b.minutesRemaining);
+    b.winProb = 100 - a.winProb;
+  }
+}
+
 export async function fetchScoring(league, cookie, nameById) {
   const [names, liveData] = await Promise.all([
     nameById ? Promise.resolve(nameById) : fetchMflFranchiseNames(league, cookie),
@@ -1390,17 +1464,26 @@ export async function fetchScoring(league, cookie, nameById) {
     throw new Error('No live scoring available yet');
   }
 
-  const teams = rows
-    .map((f) => ({
-      franchiseId: f.id,
-      teamName: names.get(f.id) || f.id,
-      score: Number(f.score ?? 0),
-      isMe: f.id === league.franchiseId,
-    }))
+  // gameSecondsRemaining is franchise-level in the raw response and already
+  // sums every one of that team's starters' own remaining game clocks (a
+  // fresh 9-starter lineup reads 32400 = 9 x 3600, confirmed against the
+  // same real capture fetchScoring's matchup fix used) — so this is exactly
+  // "how many player-minutes has this team not played yet", no extra fetch.
+  const teams = rows.map((f) => ({
+    franchiseId: f.id,
+    teamName: names.get(f.id) || f.id,
+    score: Number(f.score ?? 0),
+    minutesRemaining: Math.round(Number(f.gameSecondsRemaining ?? 0) / 60),
+    isMe: f.id === league.franchiseId,
+  }));
+
+  attachWinProbabilities(teams, matchups);
+
+  const sortedTeams = teams
     .sort((a, b) => b.score - a.score)
     .map((t) => ({ ...t, score: t.score.toFixed(2) }));
 
-  return { week: live?.week ?? null, teams, matchups };
+  return { week: live?.week ?? null, teams: sortedTeams, matchups };
 }
 
 // Which of the franchise's currently-rostered players are set as starters

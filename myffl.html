@@ -1631,6 +1631,14 @@
 		.scoring-matchup-row + .scoring-matchup-row {
 			border-top: 1px solid var(--border);
 		}
+		/* Minutes Remaining / Win Probability sub-line under a team's name —
+		   same shape as .injury-detail, muted rather than colored since this
+		   is routine scoring context, not a warning or a schedule fact. */
+		.scoring-matchup-meta {
+			color: var(--muted);
+			font-size: 0.72rem;
+			margin-top: 0.1rem;
+		}
 		table.standings th:not(:first-child),
 		table.standings td:not(:first-child) {
 			text-align: right;
@@ -5688,7 +5696,11 @@
 					const pill = el('div', { class: 'scoring-matchup-pill' });
 					group.forEach((t) => {
 						const row = el('div', { class: `scoring-matchup-row${t.isMe ? ' me-row' : ''}` });
-						row.appendChild(el('span', { text: t.teamName }));
+						const nameCol = el('div', { class: 'scoring-matchup-name' });
+						nameCol.appendChild(el('div', { text: t.teamName }));
+						const meta = scoringMetaLine(t);
+						if (meta) nameCol.appendChild(el('div', { class: 'scoring-matchup-meta', text: meta }));
+						row.appendChild(nameCol);
 						row.appendChild(el('span', { text: t.score }));
 						pill.appendChild(row);
 					});
@@ -5704,13 +5716,35 @@
 				teams.forEach((t, i) => {
 					const row = el('tr', { class: t.isMe ? 'me-row' : '' });
 					row.appendChild(el('td', { text: String(i + 1) }));
-					row.appendChild(el('td', { text: t.teamName }));
+					const nameCell = el('td');
+					nameCell.appendChild(el('div', { text: t.teamName }));
+					const meta = scoringMetaLine(t);
+					if (meta) nameCell.appendChild(el('div', { class: 'scoring-matchup-meta', text: meta }));
+					row.appendChild(nameCell);
 					row.appendChild(el('td', { text: t.score }));
 					table.appendChild(row);
 				});
 				card.appendChild(table);
 			}
 			return card;
+		}
+
+		// Minutes Remaining and Win Probability, both MFL-only (ESPN/Sleeper
+		// scoring carries neither field — see fetchScoring's own comment in
+		// providers.mjs for why: MFL's franchise-level gameSecondsRemaining
+		// already sums every starter's own remaining game clock, so
+		// minutesRemaining is free off data already fetched, while winProb is
+		// this project's own estimate rather than MFL's real number, which is
+		// a client-side Monte Carlo simulation with no fetchable equivalent.
+		// A bye (no opponent that week) carries minutesRemaining but never
+		// winProb, since there's nothing to compare against. "0 min left"
+		// still renders — a finished game is exactly as informative as one
+		// still in progress.
+		function scoringMetaLine(t) {
+			const parts = [];
+			if (t.minutesRemaining != null) parts.push(`${t.minutesRemaining} min left`);
+			if (t.winProb != null) parts.push(`Win ${t.winProb}%`);
+			return parts.join(' · ');
 		}
 
 		// Exposure: how many of your leagues (within this one group — exposure
