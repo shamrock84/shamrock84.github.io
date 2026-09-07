@@ -44,7 +44,7 @@ const SCORING_FORMATS = new Set(['PPR', 'HALF', 'STD']);
 // diff rather than a reshuffle. Anything not listed here is preserved and
 // appended after — see mergeLeague below for why that matters.
 const KEY_ORDER = [
-  'id', 'franchiseId', 'name', 'type', 'provider',
+  'id', 'franchiseId', 'name', 'displayName', 'type', 'provider',
   'tags', 'lineupPilot', 'rankingType', 'scoring', 'season', 'startYear', 'rulesUrl', 'commishContact',
   'nickname',
   'dues', 'payout1', 'payout2', 'payout3', 'payoutDivisionWinner', 'payoutWeeklyHigh', 'payoutSeasonHigh',
@@ -226,6 +226,12 @@ function validate(leagues) {
         errors.push(`${label}: rules link must start with http:// or https://.`);
       }
     }
+    // Free text shown everywhere a league is named on the page in place of
+    // the live-synced name — see leagueDisplayName in myffl.html. No format
+    // to enforce beyond "it's text", same as name/nickname.
+    if (league.displayName != null && typeof league.displayName !== 'string') {
+      errors.push(`${label}: display name must be text.`);
+    }
     // Free text shown in the header's quick-link toolbar in place of the full
     // league name — no format to enforce beyond "it's text", same as name.
     if (league.nickname != null && typeof league.nickname !== 'string') {
@@ -304,6 +310,7 @@ function mergeLeague(league) {
   put('id', String(league.id).trim());
   put('franchiseId', league.franchiseId == null ? '' : String(league.franchiseId).trim());
   put('name', league.name == null ? '' : String(league.name).trim());
+  put('displayName', league.displayName == null ? '' : String(league.displayName).trim());
   put('type', league.type);
   put('provider', league.provider);
   if (Array.isArray(league.tags) && league.tags.length) out.tags = league.tags.map((t) => t.trim());

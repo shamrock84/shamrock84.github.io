@@ -4354,17 +4354,25 @@
 			});
 		}
 
-		// The live-synced name from the last sync, falling back to config's
-		// own static `name` — which exists purely for a league the provider
-		// can't be reached for (see the schema note in config/leagues.json),
-		// and reads as a generic placeholder ("ESPN League 1") anywhere the
-		// real thing is available. Every card naming a league should call
-		// this rather than reading league.name directly: the Results and
-		// Finances cards missed it once already and showed both real ESPN
-		// leagues under their config placeholder instead of their actual
-		// names, live in production, until that got fixed.
+		// `displayName` is a manual override — the only one of the three that
+		// wins over a live sync. It exists for a league whose real name is
+		// fine on its own provider but unwieldy on every card here (long,
+		// full of punctuation, ...); unlike `nickname` (which only ever
+		// renders in the cramped header toolbar) this is what every card,
+		// popover and export uses in place of the real name, so it should
+		// stay recognizable, just shorter — not a cryptic abbreviation.
+		// Below that: the live-synced name from the last sync, falling back
+		// to config's own static `name` — which exists purely for a league
+		// the provider can't be reached for (see the schema note in
+		// config/leagues.json), and reads as a generic placeholder ("ESPN
+		// League 1") anywhere the real thing is available. Every card naming
+		// a league should call this rather than reading league.name
+		// directly: the Results and Finances cards missed it once already
+		// and showed both real ESPN leagues under their config placeholder
+		// instead of their actual names, live in production, until that got
+		// fixed.
 		function leagueDisplayName(league) {
-			return league.leagueName || league.name;
+			return league.displayName || league.leagueName || league.name;
 		}
 
 		// A league name as a link to its live site — the same idiom
@@ -9925,6 +9933,7 @@
 				bits.push(`${adminLabelFor(ADMIN_RANKINGS, league.rankingType)} rankings`);
 				if (league.lineupPilot) bits.push('Lineup editor');
 				if (league.rulesUrl) bits.push('Rules link');
+				if (league.displayName) bits.push(`Display name "${league.displayName}"`);
 				if (league.nickname) bits.push(`Toolbar label "${league.nickname}"`);
 				node.appendChild(el('div', { class: 'admin-blurb', text: bits.join(' · ') }));
 
@@ -10039,14 +10048,24 @@
 						field('Commissioner contact', adminText(league.commishContact, 'name@example.com, https://…, or slack://…', (v) => { league.commishContact = v || undefined; }), true);
 					}
 					field('Rules link', adminText(league.rulesUrl, 'https://…', (v) => { league.rulesUrl = v || undefined; }), true);
+				// Overrides the live-synced name everywhere it's shown — every
+				// card, popover, digest row and export (see leagueDisplayName)
+				// — not just the toolbar the way Toolbar Label below is. For a
+				// real name that's fine on its own site but unwieldy here
+				// (long, punctuation-heavy, ...); should still read as the
+				// league's name, just trimmed, not a cryptic abbreviation.
+				// Blank (the normal state) means use the live name as-is,
+				// which is why the placeholder here is that same name.
+				field('Display Name', adminText(league.displayName, name || 'e.g. My League Name', (v) => { league.displayName = v || undefined; }), true);
 				// The header's quick-link toolbar has room for about one line
 				// of short labels, not full league names — this is what shows
-				// there instead. Blank falls back to the live league name
-				// (leagueDisplayName), which is why the placeholder here is
-				// that same name rather than a generic example. The toolbar
-				// itself uses this array's own order with Draft Only leagues
-				// filtered out — nothing else to configure here.
-				field('Nickname', adminText(league.nickname, name || 'e.g. MNMx', (v) => { league.nickname = v || undefined; }));
+				// there instead. Blank falls back to the league's display name
+				// (leagueDisplayName — a Display Name override above wins
+				// there first), which is why the placeholder mirrors that
+				// same fallback rather than showing a generic example.
+				// The toolbar itself uses this array's own order with Draft
+				// Only leagues filtered out — nothing else to configure here.
+				field('Toolbar Label', adminText(league.nickname, league.displayName || name || 'e.g. MNMx', (v) => { league.nickname = v || undefined; }));
 					// Feeds the History tab's Finances card: Dues is the flat
 					// entry fee (assumed the same every year), and the three
 					// payouts assume every league here pays exactly the top 3 —
