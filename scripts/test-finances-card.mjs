@@ -464,7 +464,7 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	const nameColFor = (name) => findAll(headFor(name), (c) => c.cls.includes('finances-league-name'))[0];
 	const badgeTextsOf = (nameCol) => findAll(nameCol, (c) => c.cls.split(/\s+/).includes('badge')).map(fullText);
 	assert.deepEqual(badgeTextsOf(nameColFor('League A')), ['Sleeper', 'Dynasty'], 'League A: its own provider, then its type');
-	assert.deepEqual(badgeTextsOf(nameColFor('League B')), ['MFL', 'Salary Cap'], 'League B: provider defaults to MFL when unset');
+	assert.deepEqual(badgeTextsOf(nameColFor('League B')), ['MFL', 'Salary'], 'League B: provider defaults to MFL when unset');
 	const providerBadge = findAll(nameColFor('League A'), (c) => c.cls.includes('badge-provider'))[0];
 	assert.ok(providerBadge, 'the provider badge carries the gold badge-provider class, same as on the Rosters cards');
 	assert.equal(fullText(providerBadge), 'Sleeper');

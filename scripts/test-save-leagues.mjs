@@ -66,6 +66,11 @@ check('rejects a rules link with no scheme', validate(withField('rulesUrl', 'doc
 check('rejects a non-text nickname', validate(withField('nickname', { oops: 1 })).length > 0);
 check('allows a blank nickname', validate(withField('nickname', '')).length === 0);
 check('allows a short nickname', validate(withField('nickname', 'MNMx')).length === 0);
+// displayName — free text overriding the live-synced name everywhere on the
+// page (leagueDisplayName), not just the toolbar the way nickname is.
+check('rejects a non-text displayName', validate(withField('displayName', { oops: 1 })).length > 0);
+check('allows a blank displayName', validate(withField('displayName', '')).length === 0);
+check('allows a trimmed-down displayName', validate(withField('displayName', '#SFB16 - Cloud (FF 7)')).length === 0);
 // The contract-length summary is addressed with this, and a malformed one fails
 // silently: the mailto still opens, it just reaches nobody.
 check('rejects a commissioner contact with no @ and no scheme', validate(withField('commishContact', 'not-an-email')).length > 0);
@@ -188,6 +193,8 @@ check('drops a blank commissioner contact', !('commishContact' in mergeLeague({ 
 check('trims a commissioner contact', mergeLeague({ ...base(), commishContact: '  c@e.com ' }).commishContact === 'c@e.com');
 check('drops a blank nickname', !('nickname' in mergeLeague({ ...base(), nickname: '' })));
 check('trims a nickname', mergeLeague({ ...base(), nickname: '  MNMx  ' }).nickname === 'MNMx');
+check('drops a blank displayName', !('displayName' in mergeLeague({ ...base(), displayName: '' })));
+check('trims a displayName', mergeLeague({ ...base(), displayName: '  #SFB16 - Cloud (FF 7)  ' }).displayName === '#SFB16 - Cloud (FF 7)');
 check('drops a blank season', !('season' in mergeLeague({ ...base(), season: '' })));
 check('keeps a season pin as a string', mergeLeague({ ...base(), season: 2027 }).season === '2027');
 check('drops a blank startYear', !('startYear' in mergeLeague({ ...base(), startYear: '' })));

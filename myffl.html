@@ -644,16 +644,27 @@
 			justify-content: flex-start;
 			flex-shrink: 1;
 		}
+		/* Sized down from 0.68rem/0.15rem 0.55rem/0.03em (measured in a headless
+		   browser against the worst real case — a salary-cap league carrying
+		   both Superflex and BestBall tags: MFL/season/Salary/12 team/
+		   Superflex/BestBall, 6 chips). Shrinking alone plateaus fast: at the
+		   old 6.5rem mobile cap below, even illegibly tiny text only takes
+		   that case from 5 rows to 4, because the cap is narrower than two
+		   mid-length chips side by side regardless of font size. This size
+		   paired with the widened cap below measured at 3 rows for that same
+		   case (down from 5) on the real page. 0.6rem/9.6px bold is the floor
+		   kept for legibility — smaller candidates measured fine on rows but
+		   read as illegible. */
 		.badge {
 			display: inline-block;
 			background: var(--chip-bg);
 			color: var(--accent);
 			border-radius: 999px;
-			padding: 0.15rem 0.55rem;
-			font-size: 0.68rem;
+			padding: 0.08rem 0.35rem;
+			font-size: 0.6rem;
 			font-weight: 600;
 			text-transform: uppercase;
-			letter-spacing: 0.03em;
+			letter-spacing: 0.01em;
 			white-space: nowrap;
 		}
 		/* Gold is for the two facts about a league that aren't about the league
@@ -684,16 +695,26 @@
 		   overflow-wrap:break-word above. On narrow screens a long title and
 		   its badges get tight, so wrap more aggressively there: cap the
 		   badges row tighter so it takes less width, leaving more for the
-		   title to wrap into. */
+		   title to wrap into. Widened from 6.5rem to 9.5rem alongside the
+		   .badge size cut above — 6.5rem left no room for two chips on one
+		   line at any legible font size (measured: the worst-case 6-chip
+		   card still wrapped to 4-5 rows even at illegible sizes), while
+		   9.5rem gets that same card to 3 rows at the new size (down from
+		   5). Still short of 1-2 rows; getting there needs a noticeably
+		   wider cap (~11.5rem measured), which eats further into the
+		   title's width on a narrow phone — left at 9.5rem pending a look
+		   at that trade-off against a long league name. The trade-off here
+		   is already deliberate: this does take a bit more width from the
+		   title on a narrow phone, which now wraps a little sooner. */
 		@media (max-width: 600px) {
 			.badges,
 			.badges.badges-wrap {
-				max-width: 6.5rem;
+				max-width: 9.5rem;
 			}
 			/* .history-badges is a .badges too, but it isn't competing with a
 			   title for width — it sits on its own row under the league name
 			   (see the rule above) with the full card width to itself, so
-			   the same 6.5rem cap that protects a title here just wraps
+			   the same cap that protects a title here just wraps
 			   "ESPN"/"REDRAFT" onto two lines for no reason. */
 			.history-badges {
 				max-width: none;
@@ -2470,16 +2491,19 @@
 		const VIEW_LABELS = { rosters: 'Rosters', standings: 'Standings', scoring: 'Scores', depthcharts: 'Depth Charts', analytics: 'Analytics', history: 'History', admin: 'Admin' };
 		const VIEW_ORDER = ['rosters', 'scoring', 'standings', 'depthcharts', 'analytics', 'history', 'admin'];
 		// Per-league type — still what individual Rosters cards badge
-		// themselves with (a Salary Cap league's card says "Salary Cap", not
+		// themselves with (a Salary Cap league's card says "Salary", not
 		// "Dynasty/Salary Cap"), just no longer what any sub-tab is named
 		// after. See SUBTAB_GROUP/SUBTAB_LABEL_OVERRIDES below for that.
+		// Shortened from "Salary Cap" to save space on the badge — the full
+		// name still appears in the Admin tab's own type dropdown (ADMIN_TYPES),
+		// which isn't space-constrained the way a card badge is.
 		// The draft-only type is named for what it is. Best Ball is a scoring
-		// system, not a league type — it's carried in `tags` (several salary-cap
-		// leagues use best-ball scoring), so using it as a type name too made
-		// the same words mean two different things. The stored value is
-		// 'draftonly'; nothing in the UI or the config says "best ball" as a
-		// type any more.
-		const LEAGUE_TYPE_LABELS = { dynasty: 'Dynasty', salarycap: 'Salary Cap', draftonly: 'Draft Only', redraft: 'Redraft' };
+		// system, not a league type — it's carried in `tags` as 'BestBall'
+		// (several salary-cap leagues use best-ball scoring), so using it as a
+		// type name too made the same words mean two different things. The
+		// stored value is 'draftonly'; nothing in the UI or the config says
+		// "best ball" as a type any more.
+		const LEAGUE_TYPE_LABELS = { dynasty: 'Dynasty', salarycap: 'Salary', draftonly: 'Draft Only', redraft: 'Redraft' };
 		// FantasyPros' ranking-type codes, spelled out for the card footnote.
 		const ECR_TYPE_LABELS = { DYNASTY: 'Dynasty', DRAFT: 'Draft', ROS: 'Rest-of-season', WEEKLY: 'Weekly', ADP: 'ADP' };
 		// Which sub-tab a league's cards render under — Dynasty and Salary Cap
@@ -4330,17 +4354,25 @@
 			});
 		}
 
-		// The live-synced name from the last sync, falling back to config's
-		// own static `name` — which exists purely for a league the provider
-		// can't be reached for (see the schema note in config/leagues.json),
-		// and reads as a generic placeholder ("ESPN League 1") anywhere the
-		// real thing is available. Every card naming a league should call
-		// this rather than reading league.name directly: the Results and
-		// Finances cards missed it once already and showed both real ESPN
-		// leagues under their config placeholder instead of their actual
-		// names, live in production, until that got fixed.
+		// `displayName` is a manual override — the only one of the three that
+		// wins over a live sync. It exists for a league whose real name is
+		// fine on its own provider but unwieldy on every card here (long,
+		// full of punctuation, ...); unlike `nickname` (which only ever
+		// renders in the cramped header toolbar) this is what every card,
+		// popover and export uses in place of the real name, so it should
+		// stay recognizable, just shorter — not a cryptic abbreviation.
+		// Below that: the live-synced name from the last sync, falling back
+		// to config's own static `name` — which exists purely for a league
+		// the provider can't be reached for (see the schema note in
+		// config/leagues.json), and reads as a generic placeholder ("ESPN
+		// League 1") anywhere the real thing is available. Every card naming
+		// a league should call this rather than reading league.name
+		// directly: the Results and Finances cards missed it once already
+		// and showed both real ESPN leagues under their config placeholder
+		// instead of their actual names, live in production, until that got
+		// fixed.
 		function leagueDisplayName(league) {
-			return league.leagueName || league.name;
+			return league.displayName || league.leagueName || league.name;
 		}
 
 		// A league name as a link to its live site — the same idiom
@@ -4452,19 +4484,21 @@
 		// heading plus a badge strip. The provider badge (MFL/ESPN/Sleeper)
 		// always leads the strip and is styled gold instead of the usual
 		// purple, so which site actually hosts a league reads at a glance
-		// instead of blending in with Superflex/Best Ball/etc.
+		// instead of blending in with Superflex/BestBall/etc.
 		//
 		// All three card types pass the same `extraLabels`. Standings and Scoring
 		// used to get the provider badge alone, on the reasoning that format is a
-		// Rosters concern — but several tags name a scoring system outright (Best
-		// Ball) or change how points arrive (Superflex), which is exactly the
-		// context you want when reading a scoring table or a standings column.
+		// Rosters concern — but several tags name a scoring system outright
+		// (BestBall) or change how points arrive (Superflex), which is exactly
+		// the context you want when reading a scoring table or a standings column.
 		// The purple chips: what kind of league this is and how it's scored.
 		// Type is derived from data we already have; anything else (Superflex,
-		// Best Ball, ...) is the manual `tags` array in config/leagues.json, since
-		// no provider exposes it in a reliable form.
+		// BestBall, ...) is the manual `tags` array in config/leagues.json, since
+		// no provider exposes it in a reliable form. Tag text is kept short (one
+		// word, no spaces) for the same reason the type label is — badge space
+		// is tight, especially with several tags stacked on one card.
 		//
-		// The type label already reads "Salary Cap" for exactly the leagues that
+		// The type label already reads "Salary" for exactly the leagues that
 		// used to get a second badge from the auction check, so no separate
 		// salary-cap badge is needed.
 		// Team count sits between type and tags — the same fact History's own
@@ -9899,6 +9933,7 @@
 				bits.push(`${adminLabelFor(ADMIN_RANKINGS, league.rankingType)} rankings`);
 				if (league.lineupPilot) bits.push('Lineup editor');
 				if (league.rulesUrl) bits.push('Rules link');
+				if (league.displayName) bits.push(`Display name "${league.displayName}"`);
 				if (league.nickname) bits.push(`Toolbar label "${league.nickname}"`);
 				node.appendChild(el('div', { class: 'admin-blurb', text: bits.join(' · ') }));
 
@@ -10013,14 +10048,24 @@
 						field('Commissioner contact', adminText(league.commishContact, 'name@example.com, https://…, or slack://…', (v) => { league.commishContact = v || undefined; }), true);
 					}
 					field('Rules link', adminText(league.rulesUrl, 'https://…', (v) => { league.rulesUrl = v || undefined; }), true);
+				// Overrides the live-synced name everywhere it's shown — every
+				// card, popover, digest row and export (see leagueDisplayName)
+				// — not just the toolbar the way Toolbar Label below is. For a
+				// real name that's fine on its own site but unwieldy here
+				// (long, punctuation-heavy, ...); should still read as the
+				// league's name, just trimmed, not a cryptic abbreviation.
+				// Blank (the normal state) means use the live name as-is,
+				// which is why the placeholder here is that same name.
+				field('Display Name', adminText(league.displayName, name || 'e.g. My League Name', (v) => { league.displayName = v || undefined; }), true);
 				// The header's quick-link toolbar has room for about one line
 				// of short labels, not full league names — this is what shows
-				// there instead. Blank falls back to the live league name
-				// (leagueDisplayName), which is why the placeholder here is
-				// that same name rather than a generic example. The toolbar
-				// itself uses this array's own order with Draft Only leagues
-				// filtered out — nothing else to configure here.
-				field('Nickname', adminText(league.nickname, name || 'e.g. MNMx', (v) => { league.nickname = v || undefined; }));
+				// there instead. Blank falls back to the league's display name
+				// (leagueDisplayName — a Display Name override above wins
+				// there first), which is why the placeholder mirrors that
+				// same fallback rather than showing a generic example.
+				// The toolbar itself uses this array's own order with Draft
+				// Only leagues filtered out — nothing else to configure here.
+				field('Toolbar Label', adminText(league.nickname, league.displayName || name || 'e.g. MNMx', (v) => { league.nickname = v || undefined; }));
 					// Feeds the History tab's Finances card: Dues is the flat
 					// entry fee (assumed the same every year), and the three
 					// payouts assume every league here pays exactly the top 3 —
