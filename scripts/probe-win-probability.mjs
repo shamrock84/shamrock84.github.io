@@ -36,13 +36,19 @@ console.log(`\n=== MFL league ${MFL_LEAGUE_ID}, season ${year}, week ${WEEK} ===
 const cookie = await mflLogin(process.env.MFL_USERNAME, process.env.MFL_PASSWORD);
 
 const leagueData = await mflGet(`/export?TYPE=league&L=${MFL_LEAGUE_ID}&JSON=1`, cookie, year);
-const baseURL = leagueData?.league?.baseURL;
-console.log(`baseURL from TYPE=league: ${baseURL}`);
+const rawBaseURL = leagueData?.league?.baseURL;
+console.log(`baseURL from TYPE=league: ${rawBaseURL}`);
 
-if (!baseURL) {
+if (!rawBaseURL) {
   console.log('No baseURL on the league object — cannot locate the website host.');
   process.exit(0);
 }
+
+// baseURL already carries a scheme (https://www43.myfantasyleague.com) —
+// prepending https:// again produces an invalid "https://https://..." URL
+// that fails outright, which is exactly what happened the first time this
+// probe ran.
+const baseURL = rawBaseURL.replace(/^https?:\/\//, '');
 
 const candidatePaths = [
   `/${year}/live?L=${MFL_LEAGUE_ID}`,
