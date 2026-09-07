@@ -9905,7 +9905,11 @@
 
 		function renderAdminCard() {
 			const card = el('div', { class: 'card admin-card', 'data-view': 'admin', 'data-league-type': '' });
-			const heading = el('h2', { class: 'card-heading', text: 'Leagues' });
+			// A plain child text node here rather than heading.textContent
+			// later — makeCollapsible appends the collapse-toggle button as a
+			// child of heading right below, and textContent would wipe it out.
+			const headingLabel = document.createTextNode('Leagues');
+			const heading = el('h2', { class: 'card-heading' }, [headingLabel]);
 			card.appendChild(heading);
 			makeCollapsible(card, heading, 'admin');
 
@@ -9949,7 +9953,7 @@
 			// There's no inactive/retired flag in config/leagues.json — a league
 			// is removed outright (see the remove button below) rather than
 			// marked inactive, so every entry still in the draft counts as active.
-			heading.textContent = `Leagues (${adminDraft.length})`;
+			headingLabel.textContent = `Leagues (${adminDraft.length})`;
 
 			// One card per league instead of one row of a thirteen-column table.
 			// Collapsed, a card is a one-line blurb of what the league is;
