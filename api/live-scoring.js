@@ -16,6 +16,8 @@ import {
   fetchScoring,
   fetchEspnScoring,
   fetchSleeperScoring,
+  fetchNflGameClocks,
+  loadSleeperPlayerMap,
   setMflRequestInterval,
 } from '../scripts/lib/providers.mjs';
 import { applyCors } from './lib/cors.mjs';
@@ -32,10 +34,31 @@ const cache = {
   mflCookieAt: 0,
   mflNames: new Map(), // leagueId -> Map<franchiseId, name>
   mflNamesAt: new Map(), // leagueId -> timestamp
+  sleeperPlayerMap: null,
+  sleeperPlayerMapAt: 0,
 };
 
 const COOKIE_TTL_MS = 20 * 60 * 1000; // 20 min
 const NAMES_TTL_MS = 60 * 60 * 1000; // 1 hour
+// Sleeper's own player-team assignments (used for minutesRemaining) barely
+// move within a week, unlike the NFL game clocks below — same TTL reasoning
+// as the MFL franchise names above, just for a different provider's mostly-
+// static lookup. The clocks themselves are NOT cached at all: they're the
+// one thing that's genuinely different every poll while a game is live, and
+// fetching the public NFL scoreboard fresh each time is one cheap,
+// unauthenticated request shared across every ESPN/Sleeper league in that
+// poll — not one per league.
+const SLEEPER_PLAYER_MAP_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+async function getSleeperPlayerMap() {
+  const age = Date.now() - cache.sleeperPlayerMapAt;
+  if (cache.sleeperPlayerMap && age < SLEEPER_PLAYER_MAP_TTL_MS) {
+    return cache.sleeperPlayerMap;
+  }
+  cache.sleeperPlayerMap = await loadSleeperPlayerMap();
+  cache.sleeperPlayerMapAt = Date.now();
+  return cache.sleeperPlayerMap;
+}
 
 // This path fans out across every league at once (the Promise.allSettled
 // below), so a poll leaves as one burst of ~15 simultaneous MFL requests every
@@ -120,16 +143,29 @@ export default async function handler(req, res) {
     mflLoginError = err.message;
   }
 
+  // One shared fetch of the public NFL scoreboard per poll, not one per
+  // league — see fetchNflGameClocks' own comment. A failure here must not
+  // cost any ESPN/Sleeper league its actual score, so this degrades to an
+  // empty map (every minutesRemaining/winProb comes back 0/undefined for
+  // this poll) rather than rejecting.
+  let nflClocks = new Map();
+  try {
+    nflClocks = await fetchNflGameClocks();
+  } catch {
+    // degrade silently — see comment above.
+  }
+
   const results = await Promise.allSettled(
     leagues
       .filter((league) => league.franchiseId)
       .map(async (league) => {
         if (league.provider === 'espn') {
-          const scoring = await fetchEspnScoring(league);
+          const scoring = await fetchEspnScoring(league, nflClocks);
           return { id: league.id, name: league.name, scoring, scoringError: null };
         }
         if (league.provider === 'sleeper') {
-          const scoring = await fetchSleeperScoring(league);
+          const players = await getSleeperPlayerMap();
+          const scoring = await fetchSleeperScoring(league, nflClocks, players);
           return { id: league.id, name: league.name, scoring, scoringError: null };
         }
         if (mflLoginError) {

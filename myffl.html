@@ -5729,13 +5729,18 @@
 			return card;
 		}
 
-		// Minutes Remaining and Win Probability, both MFL-only (ESPN/Sleeper
-		// scoring carries neither field — see fetchScoring's own comment in
-		// providers.mjs for why: MFL's franchise-level gameSecondsRemaining
-		// already sums every starter's own remaining game clock, so
-		// minutesRemaining is free off data already fetched, while winProb is
-		// this project's own estimate rather than MFL's real number, which is
-		// a client-side Monte Carlo simulation with no fetchable equivalent.
+		// Minutes Remaining and Win Probability — all three providers carry
+		// both fields, but from different sources (see providers.mjs):
+		// MFL's franchise-level gameSecondsRemaining already sums every
+		// starter's own remaining game clock, free off data already fetched.
+		// ESPN and Sleeper have no such field in their own APIs at all
+		// (probe-espn-sleeper-live-time.yml checked), so fetchNflGameClocks
+		// joins their rostered starters against the public, unauthenticated
+		// ESPN NFL scoreboard by team abbreviation instead. winProb is this
+		// project's own estimate everywhere — MFL's real number is an
+		// unreachable client-side Monte Carlo simulation, and ESPN/Sleeper
+		// never had one to begin with — computed identically for all three
+		// by estimateWinProbability once minutesRemaining is in hand.
 		// A bye (no opponent that week) carries minutesRemaining but never
 		// winProb, since there's nothing to compare against. "0 min left"
 		// still renders — a finished game is exactly as informative as one
