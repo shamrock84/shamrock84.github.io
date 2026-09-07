@@ -52,16 +52,10 @@ const baseURL = rawBaseURL.replace(/^https?:\/\//, '');
 
 const candidatePaths = [
   // Found by following the site's own "Live Scoring" nav link off /home/{id}
-  // in round 2 of this probe — the actual live-scoring page is an ajax
-  // fragment, not any of the guessed top-level paths below (all of which
-  // 404 or 500).
+  // in round 2 of this probe — the actual live-scoring page. Round 1's other
+  // guesses (/live, /livescoring, /scoring, /options?O=14) all 404 or 500
+  // and are dropped here to keep the run/log small.
   `/${year}/ajax_ls?L=${MFL_LEAGUE_ID}`,
-  `/${year}/ajax_ls?L=${MFL_LEAGUE_ID}&W=${WEEK}`,
-  `/${year}/live?L=${MFL_LEAGUE_ID}`,
-  `/${year}/livescoring?L=${MFL_LEAGUE_ID}`,
-  `/${year}/scoring?L=${MFL_LEAGUE_ID}&W=${WEEK}`,
-  `/${year}/options?L=${MFL_LEAGUE_ID}&O=14`,
-  `/${year}/home/${MFL_LEAGUE_ID}`,
 ];
 
 const KEYWORDS = ['winProb', 'win_prob', 'WinProbability', 'Win Probability', 'probability', 'minutesRemaining', 'minutes remaining', 'Minutes Remaining', 'timeRemaining'];
@@ -87,7 +81,7 @@ for (const path of candidatePaths) {
     // ajax_ls is a small fragment meant for AJAX injection into the home
     // page, not a full document — dump it whole rather than just grepping,
     // since this is the actual live-scoring source the nav link pointed to.
-    if (path.includes('ajax_ls') && body.length < 30000) {
+    if (path.includes('ajax_ls') && body.length < 100000) {
       console.log(`  FULL BODY:\n${body}`);
     }
 
@@ -136,6 +130,28 @@ if (discoveredLinks.size) {
   console.log(`  ${[...discoveredLinks].join('\n  ')}`);
 } else {
   console.log(`\nNo live/scoring-shaped links found on any fetched page.`);
+}
+
+// Round 3 found it: ajax_ls's winprob_away/winprob_home and pmr_away/pmr_home
+// are empty <div>s at page-load — MFL computes both client-side via these two
+// script includes, not server-side. Fetching them directly (no login/cookie
+// needed for a static JS asset) is the only way to see the actual formula.
+const jsUrls = [
+  `https://${baseURL}/mfl_win_prob.js?VERSION=1.08`,
+  `https://${baseURL}/mfl_live_scoring.js?VERSION=3.54`,
+];
+for (const jsUrl of jsUrls) {
+  console.log(`\n--- ${jsUrl} ---`);
+  try {
+    const res = await fetch(jsUrl);
+    console.log(`  status: ${res.status}`);
+    if (!res.ok) continue;
+    const body = await res.text();
+    console.log(`  length: ${body.length}`);
+    console.log(`  FULL BODY:\n${body}`);
+  } catch (err) {
+    console.log(`  failed: ${err.message}`);
+  }
 }
 
 console.log('\n=== done ===');
