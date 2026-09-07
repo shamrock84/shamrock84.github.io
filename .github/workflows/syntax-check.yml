@@ -249,6 +249,15 @@ jobs:
       - name: Test MFL login retry
         run: node scripts/test-mfl-login-retry.mjs
 
+      # The finished-draft-only roster freeze. Every negative case is a way a
+      # frozen roster would be wrong, and all of them fail silently — a league
+      # stuck on last season's roster looks just like one with nothing new. The
+      # last assertion reads the source to confirm standings and scoring are
+      # still fetched every sync, since freezing those would quietly stop these
+      # leagues scoring mid-season.
+      - name: Test the draft-only roster freeze
+        run: node scripts/test-draftonly-freeze.mjs
+
       - name: Validate config/leagues.json
         run: |
           node --input-type=module -e '

@@ -224,6 +224,46 @@ export function draftIsSettled(previous, season, force = false) {
   return String(previous.season ?? '') === String(season ?? '');
 }
 
+// A `draftonly` league whose draft is over has a roster that is finished being
+// assembled, so the sync stops re-reading it and carries the last one forward.
+//
+// This is the single largest saving available in the run. The eight draft-only
+// leagues here are more than half the MFL leagues and were costing three
+// requests each every four hours — the franchise roster plus this season's and
+// last season's player scores — for a list that does not change again. Measured
+// across fourteen consecutive snapshots, every draft-only roster was byte-
+// identical for as long as its draft was finished. Standings and live scoring
+// are deliberately NOT frozen: those move every week of the season and are what
+// these leagues are actually read for. Only the roster block goes.
+//
+// The `TYPE=league` read stays too, because standings and scoring need the
+// franchise-name map off it (see mflNamesById); skipping it here would just
+// push two fetches into those passes instead.
+//
+// The one league that appeared to contradict this is worth recording, because
+// the next person to check will find it too. Worlds Collide gained three
+// players over two days (16 -> 19) and looked like a league taking free agents
+// after its draft. It wasn't: `draftInProgress` was `true` for every one of
+// those snapshots and only flipped to `false` once the roster settled at 19.
+// Those were draft picks landing in a slow draft, and this gate would not have
+// frozen the league for a moment of it. Read `draftInProgress` alongside the
+// roster before concluding a draft-only roster moves post-draft.
+//
+// Every condition below is a reason the frozen answer would be wrong:
+// a draft still running (or never confirmed finished) means the roster is still
+// filling; `draftIsSettled` keys to the season, so a rollover unfreezes the
+// league by itself; an errored previous entry is stale fallback rather than a
+// good read; and an empty roster is nothing worth keeping. REFRESH_AVAILABILITY
+// forces a real read too, which makes the workflow's existing button the manual
+// way to pull a frozen league forward.
+export function draftonlyRosterIsSettled(league, previous, force = false) {
+  if (force) return false;
+  if (league?.type !== 'draftonly') return false;
+  if (!draftIsSettled(previous, league.season, force)) return false;
+  if (previous.error) return false;
+  return Array.isArray(previous.players) && previous.players.length > 0;
+}
+
 // The manual override, wired to the workflow's refresh_availability input, for
 // when you want today's free agents now rather than at the next daily read.
 // Absent on a scheduled run, which is how the daily rule stays the default.
@@ -1000,6 +1040,8 @@ async function main() {
   // standings, exactly as before.
   const mflNamesById = new Map();
 
+  let frozenDraftonly = 0;
+
   const leagues = [];
   for (const league of LEAGUES) {
     if (!league.franchiseId) {
@@ -1043,11 +1085,35 @@ async function main() {
         mflLeagueData = await fetchMflLeagueData(league, cookie);
         mflNamesById.set(league.id, mflFranchiseNames(mflLeagueData));
       }
-      const result = league.provider === 'espn'
+      // A finished draft-only league keeps the roster it already has, at the
+      // cost of no requests at all. Built as `result` and then run through the
+      // very same config-field assignment below rather than pushed directly,
+      // so an Admin-tab edit (dues, payouts, nickname, rulesUrl) still reaches
+      // a frozen league — those come off the config, not off the provider, and
+      // silently pinning them to whatever they were when the draft ended would
+      // be a much worse bug than a stale roster.
+      const prevEntry = previousById.get(league.id);
+      const frozen = draftonlyRosterIsSettled(league, prevEntry, forceAvailability);
+      if (frozen) frozenDraftonly += 1;
+      const result = frozen
+        // updatedAt deliberately carries forward untouched: it is the age of
+        // this roster, and stamping it with now() would claim a read that
+        // didn't happen.
+        ? { ...prevEntry }
+        : league.provider === 'espn'
         ? await fetchEspnLeagueRoster(league)
         : league.provider === 'sleeper'
         ? await fetchSleeperLeagueRoster(league, sleeperPlayerMap, byeWeeks)
         : await fetchLeagueRoster(league, cookie, playerMap, byeWeeks, injuries, mflLeagueData);
+      // Identity off the config rather than off whatever the entry already
+      // carried. A no-op on the fetched path — every provider sets these three
+      // to exactly this — and load-bearing on the frozen one, where the entry
+      // came from the last snapshot and would otherwise keep a name the Admin
+      // tab has since changed. A `type` edit un-freezes the league by itself
+      // (the gate reads the config), so this can never pin a stale type.
+      result.name = league.name;
+      result.type = league.type;
+      result.url = leagueUrl(league);
       result.tags = league.tags || [];
       result.provider = league.provider || null;
       result.rulesUrl = league.rulesUrl || null;
@@ -1070,7 +1136,9 @@ async function main() {
       result.season = league.season;
       result.scoringDetected = league.detectedScoring || null;
       leagues.push(result);
-      console.log(`Fetched ${league.name}: ${result.players.length} players`);
+      console.log(frozen
+        ? `Kept ${league.name}: ${result.players.length} players (draft finished, roster frozen since ${result.updatedAt})`
+        : `Fetched ${league.name}: ${result.players.length} players`);
     } catch (err) {
       console.error(`Failed to fetch ${league.name}: ${err.message}`);
       const prev = previousById.get(league.id);
@@ -1108,6 +1176,9 @@ async function main() {
   // player map was already loaded for the roster pass.
   const detailed = attachInjuryDetail(leagues, injuries, playerMap);
   if (detailed) console.log(`Matched injury detail by name for ${detailed} non-MFL roster entries`);
+  if (frozenDraftonly) {
+    console.log(`Froze ${frozenDraftonly} finished draft-only roster(s), saving ${frozenDraftonly * 3} MFL requests`);
+  }
 
   for (const league of LEAGUES) {
     const target = leagues.find((l) => l.id === league.id);
