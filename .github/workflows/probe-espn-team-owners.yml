@@ -1,0 +1,31 @@
+name: Probe ESPN Team Owners (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here, the
+# same rule the other manual workflows follow.
+#
+# Confirms whether ESPN's fantasy-league API exposes the real person behind
+# each team (members[] + team.owners[]) so the Scoring card's matchup rows
+# could show "Team Name (Owner)" for the ESPN redraft leagues. See
+# scripts/probe-espn-team-owners.mjs.
+#
+# Read-only: one GET per ESPN league.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Probe ESPN league responses for owner/member data
+        env:
+          ESPN_S2: ${{ secrets.ESPN_S2 }}
+          ESPN_SWID: ${{ secrets.ESPN_SWID }}
+        run: node scripts/probe-espn-team-owners.mjs
