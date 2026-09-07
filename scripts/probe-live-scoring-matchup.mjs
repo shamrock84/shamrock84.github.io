@@ -1,15 +1,21 @@
-// Answers the question behind head-to-head pairing on the Scoring tab:
-// TYPE=liveScoring (what fetchScoring uses) is a flat per-franchise list —
-// no opponent field has ever been read off it. Two candidate sources for
-// pairing, checked here before writing any parsing code:
+// Answers the question behind head-to-head pairing on the Scoring tab.
+// Run against a real in-progress week (league 26696, week 1, 2026-09-07),
+// this settled it: TYPE=liveScoring is NOT the flat per-franchise list
+// fetchScoring assumed. Franchises are nested two levels down, under
+// liveScoring.matchup[].franchise[] — each matchup entry pairs exactly the
+// franchises playing each other that week (a bye stands alone). Because
+// fetchScoring read liveScoring.franchise directly, that field is always
+// absent and rows.length was always 0 — every MFL league reported "No live
+// scoring available yet" regardless of whether games were actually live.
+// Fixed in fetchScoring, which now reads the matchup-nested shape and
+// returns a `matchups` array the same shape ESPN/Sleeper already produce.
 //
-//   1. TYPE=liveScoring itself — does the whole-league response secretly
-//      carry an opponent id per franchise that nothing has ever looked for?
-//   2. TYPE=league — this is already fetched every poll for franchise names
-//      (fetchMflFranchiseNames, cached 1h in live-scoring.js), so if it also
-//      carries a static season schedule (franchise pairs per week), pairing
-//      is free: no new request, no new rate-limit cost, no change to the
-//      live-scoring proxy's request budget.
+// FRANCHISE_ID does not scope the response — passing one still returns
+// every matchup in the league, unfiltered. TYPE=league carries no
+// `schedule` key at all. TYPE=weeklyResults carries the same matchup
+// pairing (already used elsewhere via parseMflWeekScores/fetchMflLineup),
+// but franchise entries pre-kickoff have no score field at all — result/
+// spread only — so it is not a usable live-score source.
 //
 // Read-only. Run from the Actions tab (probe-live-scoring-matchup.yml).
 import { mflLogin, mflGet, seasonOf } from './lib/providers.mjs';

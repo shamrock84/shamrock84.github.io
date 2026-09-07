@@ -1352,6 +1352,18 @@ export async function fetchMflFranchiseNames(league, cookie) {
 // nameById is optional — pass a cached Map (from fetchMflFranchiseNames) to
 // skip the TYPE=league call. Omit it to fetch names fresh every time (what
 // the full sync does, since it only runs once every few hours anyway).
+//
+// TYPE=liveScoring nests franchises two levels down, under liveScoring.matchup[]
+// — never as a flat liveScoring.franchise list. This was probed wrong for a
+// while: fetchScoring originally read the flat shape, which live data never
+// populates, so rows.length was always 0 and every MFL league reported "No
+// live scoring available yet" regardless of whether games were live.
+// probe-live-scoring-matchup.yml against a real in-progress week (league
+// 26696, week 1, 2026-09-07) confirmed the real shape: each matchup entry
+// pairs exactly the franchises playing each other that week (a bye stands
+// alone), which is also the head-to-head pairing the Scoring tab wants — so
+// unlike the comment this replaces once claimed, MFL does expose it, in the
+// same place ESPN and Sleeper keep theirs.
 export async function fetchScoring(league, cookie, nameById) {
   const [names, liveData] = await Promise.all([
     nameById ? Promise.resolve(nameById) : fetchMflFranchiseNames(league, cookie),
@@ -1359,8 +1371,20 @@ export async function fetchScoring(league, cookie, nameById) {
   ]);
 
   const live = liveData?.liveScoring;
-  const rawRows = live?.franchise;
-  const rows = Array.isArray(rawRows) ? rawRows : rawRows ? [rawRows] : [];
+  const rawMatchups = live?.matchup;
+  const matchupList = Array.isArray(rawMatchups) ? rawMatchups : rawMatchups ? [rawMatchups] : [];
+
+  const rows = [];
+  const matchups = [];
+  for (const m of matchupList) {
+    const franchises = Array.isArray(m.franchise) ? m.franchise : m.franchise ? [m.franchise] : [];
+    const teamIds = [];
+    for (const f of franchises) {
+      rows.push(f);
+      teamIds.push(f.id);
+    }
+    if (teamIds.length) matchups.push({ teamIds });
+  }
 
   if (rows.length === 0) {
     throw new Error('No live scoring available yet');
@@ -1376,7 +1400,7 @@ export async function fetchScoring(league, cookie, nameById) {
     .sort((a, b) => b.score - a.score)
     .map((t) => ({ ...t, score: t.score.toFixed(2) }));
 
-  return { week: live?.week ?? null, teams };
+  return { week: live?.week ?? null, teams, matchups };
 }
 
 // Which of the franchise's currently-rostered players are set as starters

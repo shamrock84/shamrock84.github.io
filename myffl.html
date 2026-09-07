@@ -5647,12 +5647,13 @@
 
 			const matchups = league.scoring?.matchups;
 
-			// Head-to-head pairing when the provider exposes it (ESPN, Sleeper) —
-			// groups teams by who's actually playing whom, which is what a manager
-			// checking the Scoring tab mid-week wants, rather than one whole-league
-			// leaderboard. Falls back to the flat leaderboard when pairing isn't
-			// available (MFL — see scripts/probe-live-scoring-matchup.mjs — or an
-			// older cached sync that predates this field).
+			// Head-to-head pairing when the provider exposes it — groups teams by
+			// who's actually playing whom, which is what a manager checking the
+			// Scoring tab mid-week wants, rather than one whole-league leaderboard.
+			// All three providers expose it (see scripts/probe-live-scoring-matchup.mjs
+			// for how MFL's turned up, nested under liveScoring.matchup[] rather
+			// than the flat list once assumed); this still falls back to the flat
+			// leaderboard for an older cached sync that predates this field.
 			//
 			// Rendered as a stack of small cards, not a table. This has swung
 			// back and forth on user review — in order: a colored stroke around
