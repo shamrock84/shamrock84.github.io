@@ -2487,6 +2487,18 @@
 		// league count, so a portfolio that happens to hold more redraft leagues
 		// silently ranks its dynasty leagues' players on redraft logic. One
 		// grouping again.
+		//
+		// Power Rankings, Team Needs, Bye Weeks and the three exposure cards
+		// are the exception: none of the six ever compares a raw list
+		// position across leagues (see renderPowerRankCard's "per-league
+		// ordinals" comment; the exposure cards just count how many eligible
+		// leagues roster/injure/lose a player, never touching a ranking list
+		// at all), so the hazard above doesn't apply to any of them. Those
+		// six read the live sub-tab selection directly instead of looping
+		// over this grouping — see MERGED_ANALYTICS_CARDS and
+		// refreshMergedAnalyticsCards — so checking Dynasty and Redraft at
+		// once merges into one card apiece for all six, Draft Only included.
+		// Top Available is the lone holdout, still one card per group.
 		const SUBTAB_GROUP = { dynasty: 'dynasty', salarycap: 'dynasty', draftonly: 'draftonly', redraft: 'redraft' };
 		// Display order for the sub-tab strip, across every view.
 		const SUBTAB_ORDER = ['dynasty', 'redraft', 'draftonly'];
@@ -2535,6 +2547,26 @@
 		// it — they place one card at a time, by its own type.
 		function typesInSubtabGroup(groupKey) {
 			return Object.keys(SUBTAB_GROUP).filter((t) => SUBTAB_GROUP[t] === groupKey);
+		}
+
+		// Which SUBTAB_GROUP entries the Analytics view actually has leagues
+		// for — the same test renderGrid uses to decide which merged-card
+		// types are reachable and which per-group cards to build, and what
+		// renderSubTabs needs for the Analytics pill list. Analytics can't use
+		// renderSubTabs' usual trick of reading data-league-type off whatever
+		// cards already exist in the DOM, because the merged cards (see
+		// MERGED_ANALYTICS_CARDS) deliberately carry none, and Top Available
+		// skips Draft Only outright (see the "no free agency" comment on that
+		// loop) — so a Draft Only-only selection could otherwise leave zero
+		// analytics cards on screen carrying that type, and the pill for it
+		// would vanish along with them. Computed straight from league data
+		// instead, so the pill list can never depend on which cards happened
+		// to render.
+		function analyticsPresentGroups(leagues) {
+			return SUBTAB_ORDER.filter((groupKey) => {
+				const types = typesInSubtabGroup(groupKey);
+				return types.length > 0 && leagues.some((l) => types.includes(l.type));
+			});
 		}
 		// Deliberately SHORTER than POSITION_ORDER in scripts/lib/providers.mjs,
 		// which also carries the IDP positions (PN, Off, DL, DE, DT, LB, CB, S,
@@ -2608,6 +2640,11 @@
 		// register a refresher here instead, which re-filters their full row
 		// set and re-paginates from page 1. Reset on every renderGrid() rebuild
 		// since the closures it held are for cards that no longer exist.
+		// Entries carry the card they belong to, not just the bare closure,
+		// because Bye Weeks can also be torn down mid-session by
+		// refreshMergedAnalyticsCards (a sub-tab toggle) without a full
+		// renderGrid() reset — the consumer below prunes anything whose card
+		// has left the document instead of calling into a detached table.
 		let searchAwareRefreshers = [];
 		// Only re-run the refreshers when the query text itself changed —
 		// updateVisibility() runs on every tab/sub-tab click too, and doing a
@@ -6901,10 +6938,10 @@
 			// stale page 3 from before the query would otherwise render
 			// whatever the filtered set's third page happens to be, not the
 			// best matches — same rule the sort headers' onChange follows.
-			searchAwareRefreshers.push(() => {
+			searchAwareRefreshers.push({ card, fn: () => {
 				page = 0;
 				renderPage();
-			});
+			} });
 
 			renderPage();
 		}
@@ -6935,11 +6972,13 @@
 		// print under two short tables, and the numbers stand up without them. The
 		// reasoning still lives in the comments above computePlayerExposure and
 		// computeInjuryExposure, which is where anyone changing them will be.
-		function renderAnalyticsCard(groupKey, types, leagues) {
-			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
+		function renderAnalyticsCard(types, leagues) {
+			// See renderPowerRankCard's identical comment: no data-league-type
+			// on purpose, so updateVisibility never hides this merged card.
+			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': '' });
 			const heading = el('h2', { class: 'card-heading', text: 'Player Exposure' });
 			card.appendChild(heading);
-			makeCollapsible(card, heading, `exposure:${groupKey}`);
+			makeCollapsible(card, heading, 'exposure');
 
 			const { total, rows } = computePlayerExposure(leagues, types);
 
@@ -6987,13 +7026,15 @@
 		// what it's waiting for reads as a state. Same message as Player
 		// Exposure on purpose, since it's the same condition on the same
 		// leagues. Loss Exposure below repeats the same reasoning verbatim.
-		function renderInjuryExposureCard(groupKey, types, leagues) {
+		function renderInjuryExposureCard(types, leagues) {
 			const { total, rows } = computeInjuryExposure(leagues, types);
 
-			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
+			// See renderPowerRankCard's identical comment: no data-league-type
+			// on purpose, so updateVisibility never hides this merged card.
+			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': '' });
 			const heading = el('h2', { class: 'card-heading', text: 'Injury Exposure' });
 			card.appendChild(heading);
-			makeCollapsible(card, heading, `injury:${groupKey}`);
+			makeCollapsible(card, heading, 'injury');
 
 			if (total < 2) {
 				card.appendChild(el('div', {
@@ -7027,13 +7068,15 @@
 		// Structurally identical to renderInjuryExposureCard above (same
 		// no-data/no-rows branches, same table), because the two cards answer
 		// the same question of two disjoint sets of designations.
-		function renderLossExposureCard(groupKey, types, leagues) {
+		function renderLossExposureCard(types, leagues) {
 			const { total, rows } = computeLossExposure(leagues, types);
 
-			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
+			// See renderPowerRankCard's identical comment: no data-league-type
+			// on purpose, so updateVisibility never hides this merged card.
+			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': '' });
 			const heading = el('h2', { class: 'card-heading', text: 'Loss Exposure' });
 			card.appendChild(heading);
-			makeCollapsible(card, heading, `loss:${groupKey}`);
+			makeCollapsible(card, heading, 'loss');
 
 			if (total < 2) {
 				card.appendChild(el('div', {
@@ -7138,12 +7181,14 @@
 		// The current week's row additionally gets the gold highlight
 		// tr.me-row uses elsewhere for "this one is yours" — here, "this one
 		// is now" — set by currentNflWeek back in computeByeWeeks.
-		function renderByeWeeksCard(groupKey, types, leagues) {
+		function renderByeWeeksCard(types, leagues) {
 			const { total, rows, currentWeek } = computeByeWeeks(leagues, types);
-			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
+			// See renderPowerRankCard's identical comment: no data-league-type
+			// on purpose, so updateVisibility never hides this merged card.
+			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': '' });
 			const heading = el('h2', { class: 'card-heading', text: 'Bye Weeks' });
 			card.appendChild(heading);
-			makeCollapsible(card, heading, `byeweeks:${groupKey}`);
+			makeCollapsible(card, heading, 'byeweeks');
 
 			if (total === 0) {
 				card.appendChild(el('div', { class: 'error-box', text: 'No leagues here have roster data yet.' }));
@@ -7234,11 +7279,11 @@
 			// to see what matched. Clearing it goes back to initialByePage's
 			// own pick (the current week) rather than page 1, so dismissing a
 			// search doesn't strand the reader on Week 1 mid-November.
-			searchAwareRefreshers.push(() => {
+			searchAwareRefreshers.push({ card, fn: () => {
 				const q = getSearchQuery();
 				page = q ? 0 : initialByePage(rows, currentWeek, BYE_WEEKS_PAGE_SIZE);
 				renderPage();
-			});
+			} });
 
 			renderPage();
 			return card;
@@ -7256,23 +7301,29 @@
 		// says "0/7" next to names you can't do anything about isn't worth the
 		// room beside a wire you can act on. The pool it needed is still fetched
 		// — Top Available filters the same list.
-		// One row per team we hold in this group, best roster first — the
-		// portfolio question the exposure cards ask, pointed at whole teams.
-		// Power is the overall rank (starters plus bench, the full roster's
-		// projected value); Starters and Depth are the same teams ranked on
-		// each half alone, which is what tells a 3rd-overall roster whether it
-		// is a contender with no bench or a farm system with no lineup.
+		// One row per team we hold across whichever sub-tabs are checked —
+		// the portfolio question the exposure cards ask, pointed at whole
+		// teams. Power is the overall rank (starters plus bench, the full
+		// roster's projected value); Starters and Depth are the same teams
+		// ranked on each half alone, which is what tells a 3rd-overall roster
+		// whether it is a contender with no bench or a farm system with no
+		// lineup.
 		//
 		// Returns null rather than an explanation when nothing here has power
 		// data — a snapshot from before the feature, or a group entirely
 		// mid-draft — the same rule the Injury Exposure card follows: not a
 		// state the reader can act on.
 		//
-		// The ranks are per-league ordinals ("3/12"), never scores, so the
-		// dynasty and salary-cap leagues sharing this sub-tab compare fine
-		// even though their scores are computed under different slot shapes
-		// and scoring formats — the cross-list hazard that keeps Analytics on
-		// one grouping (see SUBTAB_GROUP) doesn't reach an ordinal.
+		// The ranks are per-league ordinals ("3/12"), never scores, so leagues
+		// of any type compare fine side by side even though their scores are
+		// computed under different slot shapes and scoring formats — the
+		// cross-list hazard that keeps Top Available on one sub-tab group at
+		// a time (see SUBTAB_GROUP) doesn't reach an ordinal. That's what
+		// lets this card, along with Team Needs, Bye Weeks and the three
+		// exposure cards, be a single card spanning the union of whichever
+		// sub-tabs are checked, live-rebuilt by refreshMergedAnalyticsCards
+		// on every selection change, rather than one card per group the way
+		// Top Available still is.
 		// Mirrors leagueLine on the exposure cards, flipped: there the grey
 		// line under a PLAYER's name lists the leagues; here it's under a
 		// LEAGUE's name and lists the players. Each name carries its overall
@@ -7373,7 +7424,7 @@
 			);
 		}
 
-		function renderPowerRankCard(groupKey, types, leagues, year) {
+		function renderPowerRankCard(types, leagues, year) {
 			const rows = computeMyPowerRows(leagues, types, year);
 			// A card where nothing at all could be ranked is not a card. The
 			// distinction it preserves is worth the extra condition: an absent
@@ -7384,10 +7435,16 @@
 			// render a full card of TBDs saying nothing.
 			if (!rows.some((r) => r.proj || r.ecr)) return null;
 
-			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
+			// No data-league-type: unlike the per-group cards below it, this
+			// one card already spans whichever sub-tabs are checked (see
+			// refreshMergedAnalyticsCards), so it must never be hidden by
+			// updateVisibility's own type filter — a card with no type on it
+			// is the established way to opt out of that filter (see History/
+			// Admin cards).
+			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': '' });
 			const heading = el('h2', { class: 'card-heading', text: 'Power Rankings' });
 			card.appendChild(heading);
-			makeCollapsible(card, heading, `power:${groupKey}`);
+			makeCollapsible(card, heading, 'power');
 			// Word for word what the other four cards say, same reasoning.
 			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(rows.length)}` }));
 
@@ -7589,7 +7646,7 @@
 		// between them without re-finding each row. Every column is still
 		// clickable for a reader who specifically wants "who's weakest at RB
 		// across my leagues".
-		function renderTeamNeedsCard(groupKey, types, leagues, year) {
+		function renderTeamNeedsCard(types, leagues, year) {
 			const rows = computeMyPowerRows(leagues, types, year);
 			const detailBasis = powerDetailBasis(rows);
 			const detailOf = (r) => (detailBasis === 'projections' ? r.proj : r.ecr);
@@ -7600,10 +7657,12 @@
 			// as no card at all rather than a wall of TBDs.
 			if (!rows.some((r) => detailOf(r) && detailOf(r).byPosition)) return null;
 
-			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
+			// See renderPowerRankCard's identical comment: no data-league-type
+			// on purpose, so updateVisibility never hides this merged card.
+			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': '' });
 			const heading = el('h2', { class: 'card-heading', text: 'Team Needs' });
 			card.appendChild(heading);
-			makeCollapsible(card, heading, `needs:${groupKey}`);
+			makeCollapsible(card, heading, 'needs');
 			card.appendChild(el('div', { class: 'team', text: `Across ${leagueCount(rows.length)}` }));
 
 			const detailLabel = detailBasis === 'projections' ? 'projections' : 'consensus rankings';
@@ -8841,7 +8900,12 @@
 			const q = getSearchQuery();
 			if (q !== lastSearchQuery) {
 				lastSearchQuery = q;
-				searchAwareRefreshers.forEach((fn) => fn());
+				// Prune before calling: refreshMergedAnalyticsCards can tear
+				// down and rebuild the Bye Weeks card without going through
+				// renderGrid()'s full reset, which would otherwise leave a
+				// stale entry here re-rendering into a table nobody sees.
+				searchAwareRefreshers = searchAwareRefreshers.filter((r) => document.body.contains(r.card));
+				searchAwareRefreshers.forEach((r) => r.fn());
 			}
 			// A card with no data-league-type (History, Admin — anything
 			// without a sub-tab strip) is never filtered by selection; one
@@ -9020,14 +9084,24 @@
 			const subtabsEl = document.getElementById('subtabs');
 			subtabsEl.innerHTML = '';
 
-			const typesInView = new Set(
-				[...document.querySelectorAll(`.card[data-view="${currentView}"]`)]
-					.map((c) => c.dataset.leagueType)
-					.filter(Boolean)
-			);
-			const present = SUBTAB_ORDER.filter((t) => typesInView.has(t)).concat(
-				[...typesInView].filter((t) => !SUBTAB_ORDER.includes(t))
-			);
+			// Analytics can't use the data-league-type-off-the-DOM trick every
+			// other view uses below: its merged cards (see
+			// MERGED_ANALYTICS_CARDS) carry no type at all, and Top Available
+			// skips Draft Only outright, so a Draft Only-only selection could
+			// leave zero analytics cards carrying that type — see
+			// analyticsPresentGroups' own comment.
+			const present = currentView === 'analytics'
+				? analyticsPresentGroups(pageData ? pageData.leagues : [])
+				: (() => {
+					const typesInView = new Set(
+						[...document.querySelectorAll(`.card[data-view="${currentView}"]`)]
+							.map((c) => c.dataset.leagueType)
+							.filter(Boolean)
+					);
+					return SUBTAB_ORDER.filter((t) => typesInView.has(t)).concat(
+						[...typesInView].filter((t) => !SUBTAB_ORDER.includes(t))
+					);
+				})();
 
 			if (present.length <= 1) {
 				subtabsBar.classList.add('hidden');
@@ -9059,6 +9133,10 @@
 					saveSelectedLeagueTypes();
 					btn.classList.toggle('active', selected.has(type));
 					btn.setAttribute('aria-pressed', String(selected.has(type)));
+					// Power Rankings/Team Needs/Bye Weeks are the one place a
+					// sub-tab toggle changes a card's content rather than just
+					// its visibility — see refreshMergedAnalyticsCards.
+					if (currentView === 'analytics') refreshMergedAnalyticsCards();
 					updateVisibility();
 				});
 				buttons.push(btn);
@@ -9078,6 +9156,7 @@
 					btn.classList.add('active');
 					btn.setAttribute('aria-pressed', 'true');
 				}
+				if (currentView === 'analytics') refreshMergedAnalyticsCards();
 				updateVisibility();
 			};
 			document.getElementById('subtabs-unselect-all').onclick = (e) => {
@@ -9088,6 +9167,7 @@
 					btn.classList.remove('active');
 					btn.setAttribute('aria-pressed', 'false');
 				}
+				if (currentView === 'analytics') refreshMergedAnalyticsCards();
 				updateVisibility();
 			};
 		}
@@ -10179,6 +10259,78 @@
 			heading.appendChild(el('span', { class: 'card-group-label hidden', text: ` — ${label}` }));
 		}
 
+		// The league types behind whichever sub-tabs are currently checked —
+		// what Power Rankings/Team Needs/Bye Weeks build from instead of one
+		// SUBTAB_GROUP entry at a time. See the SUBTAB_GROUP comment for why
+		// only these three can do this safely.
+		function unionTypesForGroups(groups) {
+			return [...groups].flatMap(typesInSubtabGroup);
+		}
+
+		// Every card that spans the union of whichever sub-tabs are checked,
+		// in display order. None of the six ever compares a raw list
+		// position across leagues — the three above are within-league
+		// ordinals or plain roster facts (see the SUBTAB_GROUP comment); the
+		// three exposure cards below just count how many of the eligible
+		// leagues roster/injure/lose a player, so folding Draft Only in is a
+		// bigger denominator, never a different kind of number to reconcile.
+		// Top Available is the one Analytics card that stays out of this
+		// list — see the SUBTAB_GROUP comment for the ranking-list hazard
+		// that's specific to it.
+		const MERGED_ANALYTICS_CARDS = [
+			{ id: 'merged-power-rank-card', render: (types, data) => renderPowerRankCard(types, data.leagues, data.year) },
+			{ id: 'merged-team-needs-card', render: (types, data) => renderTeamNeedsCard(types, data.leagues, data.year) },
+			{ id: 'merged-bye-weeks-card', render: (types, data) => renderByeWeeksCard(types, data.leagues) },
+			{ id: 'merged-player-exposure-card', render: (types, data) => renderAnalyticsCard(types, data.leagues) },
+			{ id: 'merged-injury-exposure-card', render: (types, data) => renderInjuryExposureCard(types, data.leagues) },
+			{ id: 'merged-loss-exposure-card', render: (types, data) => renderLossExposureCard(types, data.leagues) },
+		];
+
+		// Builds and appends every merged card right after
+		// mergedAnalyticsAnchor, in MERGED_ANALYTICS_CARDS order. Shared by
+		// the initial renderGrid build and refreshMergedAnalyticsCards, so
+		// the two can never disagree about what these cards look like for a
+		// given selection.
+		function appendMergedAnalyticsCards(gridEl, selectedGroups, data) {
+			const types = unionTypesForGroups(selectedGroups);
+			for (const { id, render } of MERGED_ANALYTICS_CARDS) {
+				const card = render(types, data);
+				if (!card) continue;
+				card.id = id;
+				gridEl.appendChild(card);
+			}
+		}
+
+		// Re-runs every merged card against the current sub-tab selection and
+		// swaps them into the grid in place — called by renderSubTabs'
+		// pill/select-all/unselect-all handlers whenever the Analytics view's
+		// own selection changes, since (unlike Top Available and every other
+		// Analytics card) their content depends on that live selection rather
+		// than on a fixed SUBTAB_GROUP entry. Removing and re-inserting after
+		// mergedAnalyticsAnchor, rather than diffing each card in place, is
+		// what keeps them in MERGED_ANALYTICS_CARDS' fixed order even when
+		// one newly appears or disappears (a group with no power data yet,
+		// say) — a plain replace-if-present wouldn't know where to put a card
+		// that didn't exist a moment ago.
+		function refreshMergedAnalyticsCards() {
+			if (!pageData) return;
+			const anchor = document.getElementById('merged-analytics-anchor');
+			if (!anchor) return;
+			for (const { id } of MERGED_ANALYTICS_CARDS) {
+				document.getElementById(id)?.remove();
+			}
+			const selectedGroups = selectedLeagueTypesByView.analytics || new Set();
+			const types = unionTypesForGroups(selectedGroups);
+			let cursor = anchor;
+			for (const { id, render } of MERGED_ANALYTICS_CARDS) {
+				const card = render(types, pageData);
+				if (!card) continue;
+				card.id = id;
+				cursor.insertAdjacentElement('afterend', card);
+				cursor = card;
+			}
+		}
+
 		// Safe to call more than once (e.g. after a manual sync completes) —
 		// clears the grid before repopulating instead of appending duplicates.
 		// Pure render from the already-loaded pageData — no network call.
@@ -10239,30 +10391,39 @@
 			// in the public data/rosters.json — which is accepted deliberately;
 			// see the History tab comment above.
 			if (isLoggedIn()) {
-				for (const groupKey of SUBTAB_ORDER) {
+				const presentGroups = analyticsPresentGroups(data.leagues);
+
+				// Power Rankings, Team Needs, Bye Weeks and the three exposure
+				// cards go first, one apiece spanning the union of whichever
+				// sub-tabs are currently checked — see MERGED_ANALYTICS_CARDS
+				// and refreshMergedAnalyticsCards. mergedAnalyticsAnchor is the
+				// fixed point refreshMergedAnalyticsCards re-inserts after on
+				// every sub-tab toggle; it carries no type of its own so
+				// updateVisibility never has anything to hide on it.
+				const mergedAnchor = el('div', { class: 'hidden', 'data-view': 'analytics', 'data-league-type': '' });
+				mergedAnchor.id = 'merged-analytics-anchor';
+				gridEl.appendChild(mergedAnchor);
+				// Seeded here rather than left to renderSubTabs (which runs
+				// later, via renderViewTabs below) so the merged cards have a
+				// selection to build from on this very first render; the two
+				// derive `present`/`presentGroups` from the same league data,
+				// so a later call is a no-op prune, never a reset of this one.
+				const selectedGroups = selectedTypesForView('analytics', presentGroups);
+				appendMergedAnalyticsCards(gridEl, selectedGroups, data);
+
+				// Top Available is the one Analytics card still built one per
+				// SUBTAB_GROUP entry, shown or hidden by the pills rather than
+				// recomputed by them — see the SUBTAB_GROUP comment for why it
+				// alone keeps the ranking-list hazard the other six sidestep.
+				// Draft Only never gets one at all: those leagues run a single
+				// draft and never open a waiver wire, so there is no "free
+				// agent" for the card to mean anything by.
+				for (const groupKey of presentGroups) {
+					if (groupKey === 'draftonly') continue;
 					const types = typesInSubtabGroup(groupKey);
-					if (!data.leagues.some((l) => types.includes(l.type))) continue;
-					const powerCard = renderPowerRankCard(groupKey, types, data.leagues, data.year);
-					if (powerCard) gridEl.appendChild(powerCard);
-					appendGroupLabel(powerCard, groupKey);
-					const needsCard = renderTeamNeedsCard(groupKey, types, data.leagues, data.year);
-					if (needsCard) gridEl.appendChild(needsCard);
-					appendGroupLabel(needsCard, groupKey);
-					const byeCard = renderByeWeeksCard(groupKey, types, data.leagues);
-					gridEl.appendChild(byeCard);
-					appendGroupLabel(byeCard, groupKey);
 					const availableCard = renderTopAvailableCard(groupKey, types, data.leagues, data.rankingPools, data.year);
 					if (availableCard) gridEl.appendChild(availableCard);
 					appendGroupLabel(availableCard, groupKey);
-					const exposureCard = renderAnalyticsCard(groupKey, types, data.leagues);
-					gridEl.appendChild(exposureCard);
-					appendGroupLabel(exposureCard, groupKey);
-					const injuryCard = renderInjuryExposureCard(groupKey, types, data.leagues);
-					gridEl.appendChild(injuryCard);
-					appendGroupLabel(injuryCard, groupKey);
-					const lossCard = renderLossExposureCard(groupKey, types, data.leagues);
-					gridEl.appendChild(lossCard);
-					appendGroupLabel(lossCard, groupKey);
 				}
 			}
 
