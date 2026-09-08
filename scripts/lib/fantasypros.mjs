@@ -722,6 +722,13 @@ export async function fetchProjections({ apiKey, season, week = 0, inSeason = fa
 // score-sorted, since that's what tells a reader which one is the flex
 // without a separate label. This is what the Power Rankings "Start" column
 // popover reads (see computeLeaguePower / renderPowerRankCard).
+//
+// `bench` is `depth`'s own identity list, the same way `starters` is
+// `score`'s: every player left over once the slots are filled, rather than
+// just their summed points. Unlike `starters` there is no seating order to
+// preserve, so it sorts by projected points descending — the same "best
+// asset first" reading `depth` itself invites, just with names attached.
+// This is what the Power Rankings "Ben" column popover reads.
 export function computePowerScore(players, slots) {
   const byPosition = new Map();
   for (const p of players || []) {
@@ -760,12 +767,24 @@ export function computePowerScore(players, slots) {
   }
   const totalPoints = (players || []).reduce((sum, p) => sum + p.points, 0);
   const byPositionOut = {};
+  const bench = [];
   for (const [pos, list] of byPosition) {
     const posTotal = list.reduce((sum, p) => sum + p.points, 0);
     const posScore = scoreByPosition.get(pos) ?? 0;
     byPositionOut[pos] = { score: posScore, depth: posTotal - posScore };
+    const at = cursor.get(pos) ?? 0;
+    for (let i = at; i < list.length; i++) bench.push(list[i]);
   }
-  return { score, depth: totalPoints - score, filled, slotCount, byPosition: byPositionOut, starters };
+  bench.sort((a, b) => b.points - a.points);
+  return {
+    score,
+    depth: totalPoints - score,
+    filled,
+    slotCount,
+    byPosition: byPositionOut,
+    starters,
+    bench: bench.map((p) => ({ name: p.name, position: p.position })),
+  };
 }
 
 // ---- The ECR fallback ---------------------------------------------------
@@ -889,11 +908,12 @@ export function computeLeaguePower({ franchises, slots, values, scoring, joinByI
       // The roster's own name, not the ranking list's — same convention as
       // every other name on the page (the team suffix, for instance, always
       // shows the provider's own spelling). Only ever read for display, in
-      // the Power Rankings "Start" popover; the join above already happened
-      // by id or normalized name, so this has no bearing on matching.
+      // the Power Rankings "Start"/"Ben" popovers; the join above already
+      // happened by id or normalized name, so this has no bearing on
+      // matching.
       players.push({ position: entry.position, points, name: p.name });
     }
-    const { score, depth, filled, slotCount, byPosition, starters } = computePowerScore(players, slots);
+    const { score, depth, filled, slotCount, byPosition, starters, bench } = computePowerScore(players, slots);
     // Normalized to every POWER_POSITIONS entry, not just the ones this
     // roster happened to fill: a team with no rostered TE is genuinely
     // weakest there, and that has to show up as a real 0/0 rather than a
@@ -914,14 +934,15 @@ export function computeLeaguePower({ franchises, slots, values, scoring, joinByI
       filled,
       slotCount,
       byPosition: byPositionOut,
-      // Every team gets its starters computed here — ranking one franchise
-      // needs the greedy fill run for all of them regardless — but
-      // fetch-rosters.mjs strips this back off every team except the one
+      // Every team gets its starters/bench computed here — ranking one
+      // franchise needs the greedy fill run for all of them regardless — but
+      // fetch-rosters.mjs strips both back off every team except the one
       // matching the league's own franchiseId before writing the sync
-      // output, since only "my" starters are ever shown on the page. Kept
-      // general here rather than taking a "which franchise is mine"
+      // output, since only "my" roster detail is ever shown on the page.
+      // Kept general here rather than taking a "which franchise is mine"
       // parameter, so this function's output doesn't depend on who's asking.
       starters,
+      bench,
     };
   });
   teams.sort((a, b) => b.score - a.score);

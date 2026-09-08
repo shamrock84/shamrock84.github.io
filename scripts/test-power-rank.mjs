@@ -203,6 +203,25 @@ function projPlayer(name, mflid, { ppr = 100, half = 90, std = 80 } = {}) {
   assert.ok(!starters.some((s) => s.name === undefined), 'a slot nobody could fill never contributes a phantom starter');
 }
 
+{
+  // The Power Rankings Ben column's popover reads this list directly. Unlike
+  // starters there's no seat to order by, so it's projected points
+  // descending across every position — best bench asset first, the same
+  // reading `depth`'s own number invites.
+  const slots = [{ positions: ['RB'], count: 1 }, { positions: ['WR'], count: 1 }];
+  const players = [
+    { name: 'Star RB', position: 'RB', points: 200 },
+    { name: 'Backup RB', position: 'RB', points: 80 },
+    { name: 'Star WR', position: 'WR', points: 180 },
+    { name: 'Deep WR', position: 'WR', points: 50 },
+  ];
+  const { bench } = computePowerScore(players, slots);
+  assert.deepEqual(bench, [
+    { name: 'Backup RB', position: 'RB' },
+    { name: 'Deep WR', position: 'WR' },
+  ], 'bench lists every unseated player, best projected points first, regardless of position');
+}
+
 // ---- MFL slot parsing ------------------------------------------------------
 
 // Shaped like TYPE=league's starters node, per formatStartingLineupRequirement
@@ -553,8 +572,8 @@ const { leaguePowerRanks, computeMyPowerRows, powerUsesPreseasonProjections, pow
 
 	const proj = leaguePowerRanks(twoBasis, 'projections');
 	assert.equal(proj.size, 3);
-	assert.deepEqual({ ...proj.byFranchise.get('0003') }, { overall: 1, starters: 3, depth: 1, byPosition: null, starterPlayers: null }, 'a farm system: best roster, worst lineup');
-	assert.deepEqual({ ...proj.byFranchise.get('0002') }, { overall: 3, starters: 1, depth: 3, byPosition: null, starterPlayers: null }, 'a contender with no bench');
+	assert.deepEqual({ ...proj.byFranchise.get('0003') }, { overall: 1, starters: 3, depth: 1, byPosition: null, starterPlayers: null, benchPlayers: null }, 'a farm system: best roster, worst lineup');
+	assert.deepEqual({ ...proj.byFranchise.get('0002') }, { overall: 3, starters: 1, depth: 3, byPosition: null, starterPlayers: null, benchPlayers: null }, 'a contender with no bench');
 	assert.equal(proj.source.basis, 'projections');
 
 	// The same franchises ranked independently on the other basis — the whole
@@ -1256,6 +1275,61 @@ const labelsOf = (card) =>
 		['Franchise QB', 'QB'],
 		['Star RB', 'RB'],
 	], 'one row per starter, name and the position that actually seated him');
+
+	alphaBtn.click();
+	assert.ok(popover.cls.includes('hidden'), 'clicking the same button again closes it (toggle)');
+}
+
+// ---- Ben column: the "who's on the bench" popover --------------------------
+//
+// Same idiom, same gate, same shared popover instance as the Start column
+// above — `benchPlayers` degrades to plain text exactly when it's missing,
+// and the two buttons must never fight over which content is showing.
+{
+	const teams = (withBench) => [
+		{ franchiseId: '1', score: 100, depth: 2, ...(withBench ? { bench: [
+			{ name: 'Backup RB', position: 'RB' },
+			{ name: 'Deep WR', position: 'WR' },
+		] } : {}) },
+		{ franchiseId: '2', score: 90, depth: 1 },
+	];
+	const leagues = [
+		{ id: 'A', name: 'Alpha', type: 'dynasty', season: '2026', franchiseId: '1',
+			power: { projections: { source: { basis: 'projections' }, teams: teams(true) } } },
+		{ id: 'B', name: 'Bravo', type: 'dynasty', season: '2026', franchiseId: '1',
+			power: { projections: { source: { basis: 'projections' }, teams: teams(false) } } },
+	];
+
+	const card = domCtx.renderPowerRankCard(['dynasty'], leagues, 2026);
+	const rowOf = (label) => findAll(card, (c) => c.tag === 'tr')
+		.filter((tr) => tr.children.some((c) => c.tag === 'td'))
+		.find((tr) => cellLeagueName(tr.children[0]) === label);
+	// Column order: League, Proj, ECR, Start, Ben, Avg — Ben is index 4.
+	const benCellOf = (label) => rowOf(label).children[4];
+
+	const alphaBtn = benCellOf('Alpha').children[0];
+	assert.ok(alphaBtn && alphaBtn.cls.includes('starters-link'), 'a franchise with bench data gets a clickable Ben number');
+	// Alpha's raw depth (2) out-ranks Bravo's (1) in both leagues (each has
+	// its own two-team competition), so the *rank* shown here is 1 — the
+	// button still shows the plain rank, not the roster or the raw value.
+	assert.equal(alphaBtn._text, '1', 'the button still shows the plain depth rank, not the roster');
+
+	const bravoCell = benCellOf('Bravo');
+	assert.ok(!bravoCell.children.some((c) => c.cls?.includes('starters-link')),
+		'no benchPlayers (old snapshot, or not this row\'s own franchise) — plain text, not a dead-looking button');
+	assert.equal(bravoCell._text, '1', 'same rank as Alpha (both leagues\' own franchise has more depth) — only the button is missing');
+
+	alphaBtn.click();
+	assert.ok(domCtx.document.body.children.some((c) => c.cls.includes('starters-popover') && !c.cls.includes('hidden')),
+		'clicking opens the same shared popover instance the Start column uses');
+	const popover = domCtx.document.body.children.find((c) => c.cls.includes('starters-popover'));
+	const title = popover.children.find((c) => c.cls.includes('starters-popover-title'));
+	assert.equal(title._text, 'Alpha — Bench', 'titled distinctly from the Start column\'s popover');
+	const rows = popover.children.filter((c) => c.cls.includes('starters-popover-row'));
+	assert.deepEqual(rows.map((r) => [r.children[0]._text, r.children[1]._text]), [
+		['Backup RB', 'RB'],
+		['Deep WR', 'WR'],
+	], 'one row per bench player, name and position');
 
 	alphaBtn.click();
 	assert.ok(popover.cls.includes('hidden'), 'clicking the same button again closes it (toggle)');
