@@ -5697,7 +5697,7 @@
 					group.forEach((t) => {
 						const row = el('div', { class: `scoring-matchup-row${t.isMe ? ' me-row' : ''}` });
 						const nameCol = el('div', { class: 'scoring-matchup-name' });
-						nameCol.appendChild(el('div', { text: t.teamName }));
+						nameCol.appendChild(el('div', { text: scoringTeamLabel(t) }));
 						const meta = scoringMetaLine(t);
 						if (meta) nameCol.appendChild(el('div', { class: 'scoring-matchup-meta', text: meta }));
 						row.appendChild(nameCol);
@@ -5717,7 +5717,7 @@
 					const row = el('tr', { class: t.isMe ? 'me-row' : '' });
 					row.appendChild(el('td', { text: String(i + 1) }));
 					const nameCell = el('td');
-					nameCell.appendChild(el('div', { text: t.teamName }));
+					nameCell.appendChild(el('div', { text: scoringTeamLabel(t) }));
 					const meta = scoringMetaLine(t);
 					if (meta) nameCell.appendChild(el('div', { class: 'scoring-matchup-meta', text: meta }));
 					row.appendChild(nameCell);
@@ -5745,6 +5745,15 @@
 		// winProb, since there's nothing to compare against. "0 min left"
 		// still renders — a finished game is exactly as informative as one
 		// still in progress.
+		// ESPN's redraft-league team names are commissioner in-jokes, so the
+		// Scoring card's matchup rows also show the real manager behind the
+		// team — "Team Name (Owner)". ownerName only ever comes from
+		// fetchEspnScoring (espnOwnerName in providers.mjs); MFL/Sleeper teams
+		// carry no such field and render unchanged.
+		function scoringTeamLabel(t) {
+			return t.ownerName ? `${t.teamName} (${t.ownerName})` : t.teamName;
+		}
+
 		function scoringMetaLine(t) {
 			const parts = [];
 			if (t.minutesRemaining != null) parts.push(`${t.minutesRemaining} min left`);
