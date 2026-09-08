@@ -1615,26 +1615,30 @@ export function espnTeamName(team) {
   return team?.name || [team?.location, team?.nickname].filter(Boolean).join(' ').trim() || String(team?.id ?? '');
 }
 
-// The real person behind a team, for the redraft leagues' Scoring card
-// ("Team Name (Owner)") — team names there are commissioner jokes, so a
-// manager scanning mid-week matchups still needs to know whose team is
-// whose. Confirmed against both real ESPN redraft leagues by
-// probe-espn-team-owners.yml: a team's `owners` array holds member GUIDs,
-// resolved against the league response's own top-level `members` array.
-// Only the first owner is used — ESPN allows co-owners, but this project has
-// nowhere to show more than one name.
+// The real person behind a team, for the redraft leagues' Standings and
+// Scoring cards ("Team Name (Owner)", teamNameWithOwner in myffl.html) —
+// team names there are commissioner jokes, so a manager scanning either
+// still needs to know whose team is whose. Confirmed against both real ESPN
+// redraft leagues by probe-espn-team-owners.yml: a team's `owners` array
+// holds member GUIDs, resolved against the league response's own top-level
+// `members` array. Only the first owner is used — ESPN allows co-owners, but
+// this project has nowhere to show more than one name. `members` was
+// confirmed present on a response carrying view=mTeam regardless of which
+// other views rode along (fetchEspnScoring's mScoreboard/mTeam/mRoster and
+// the probe's mTeam/mSettings/mRoster both returned it), which is why
+// fetchEspnStandings' existing bare view=mTeam call was trusted for this
+// too rather than adding another view.
 //
 // firstName alone, not the full "Manager" name ESPN's own site shows (that's
 // firstName + lastName, e.g. "Christopher Staloch" — confirmed against a
 // real team-and-owner pair) and not displayName, the account's login handle
 // (e.g. "cstaloch" for that same person, never shown as the manager anywhere
-// in ESPN's UI). A parenthetical on a matchup row is read at a glance
-// alongside a score, so first name is plenty to place whose team is whose
-// without the row running long; displayName is kept only as a fallback for
-// the rare account with no name fields set. Returns null (never a fallback
-// string) when anything is missing or unrecognized, so a wrong guess about
-// the shape omits the parenthetical instead of rendering "(undefined)" or a
-// raw GUID.
+// in ESPN's UI). A parenthetical read at a glance alongside a score or a
+// record is plenty served by a first name, without running the row long;
+// displayName is kept only as a fallback for the rare account with no name
+// fields set. Returns null (never a fallback string) when anything is
+// missing or unrecognized, so a wrong guess about the shape omits the
+// parenthetical instead of rendering "(undefined)" or a raw GUID.
 export function espnOwnerName(team, members) {
   const ownerId = team?.owners?.[0];
   if (!ownerId) return null;
@@ -1775,6 +1779,7 @@ export async function fetchEspnStandings(league) {
     .map((t) => ({
       franchiseId: String(t.id),
       teamName: espnTeamName(t),
+      ownerName: espnOwnerName(t, data.members),
       wins: t.record?.overall?.wins ?? 0,
       losses: t.record?.overall?.losses ?? 0,
       ties: t.record?.overall?.ties ?? 0,

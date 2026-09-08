@@ -5619,7 +5619,7 @@
 			rows.forEach((r, i) => {
 				const row = el('tr', { class: r.isMe ? 'me-row' : '' });
 				row.appendChild(el('td', { text: String(i + 1) }));
-				row.appendChild(el('td', { text: r.teamName }));
+				row.appendChild(el('td', { text: teamNameWithOwner(r) }));
 				row.appendChild(el('td', { text: `${r.wins}-${r.losses}${r.ties ? '-' + r.ties : ''}` }));
 				row.appendChild(el('td', { text: r.pointsFor }));
 				row.appendChild(el('td', { text: r.pointsAgainst }));
@@ -5697,7 +5697,7 @@
 					group.forEach((t) => {
 						const row = el('div', { class: `scoring-matchup-row${t.isMe ? ' me-row' : ''}` });
 						const nameCol = el('div', { class: 'scoring-matchup-name' });
-						nameCol.appendChild(el('div', { text: scoringTeamLabel(t) }));
+						nameCol.appendChild(el('div', { text: teamNameWithOwner(t) }));
 						const meta = scoringMetaLine(t);
 						if (meta) nameCol.appendChild(el('div', { class: 'scoring-matchup-meta', text: meta }));
 						row.appendChild(nameCol);
@@ -5717,7 +5717,7 @@
 					const row = el('tr', { class: t.isMe ? 'me-row' : '' });
 					row.appendChild(el('td', { text: String(i + 1) }));
 					const nameCell = el('td');
-					nameCell.appendChild(el('div', { text: scoringTeamLabel(t) }));
+					nameCell.appendChild(el('div', { text: teamNameWithOwner(t) }));
 					const meta = scoringMetaLine(t);
 					if (meta) nameCell.appendChild(el('div', { class: 'scoring-matchup-meta', text: meta }));
 					row.appendChild(nameCell);
@@ -5746,11 +5746,12 @@
 		// still renders — a finished game is exactly as informative as one
 		// still in progress.
 		// ESPN's redraft-league team names are commissioner in-jokes, so the
-		// Scoring card's matchup rows also show the real manager behind the
-		// team — "Team Name (Owner)". ownerName only ever comes from
+		// Standings and Scoring cards also show the real manager behind the
+		// team — "Team Name (Owner)". Shared by both since neither is
+		// scoring-specific: ownerName only ever comes from fetchEspnStandings /
 		// fetchEspnScoring (espnOwnerName in providers.mjs); MFL/Sleeper teams
 		// carry no such field and render unchanged.
-		function scoringTeamLabel(t) {
+		function teamNameWithOwner(t) {
 			return t.ownerName ? `${t.teamName} (${t.ownerName})` : t.teamName;
 		}
 
