@@ -1618,16 +1618,16 @@ export function espnTeamName(team) {
 // The real person behind a team, for the redraft leagues' Scoring card
 // ("Team Name (Owner)") — team names there are commissioner jokes, so a
 // manager scanning mid-week matchups still needs to know whose team is
-// whose. Unverified against a real ESPN response (myfantasyleague.com and
-// ESPN aren't reachable from the sandbox this repo is normally edited from,
-// and scripts/probe-espn-team-owners.mjs hasn't been run yet), so this
-// follows the widely-documented shape rather than a confirmed one: a team's
-// `owners` array holds member GUIDs, resolved against the league response's
-// own top-level `members` array. Only the first owner is used — ESPN allows
-// co-owners, but this project has nowhere to show more than one name.
-// Returns null (never a fallback string) when anything is missing or
-// unrecognized, so a wrong guess about the shape omits the parenthetical
-// instead of rendering "(undefined)" or a raw GUID.
+// whose. Confirmed against both real ESPN redraft leagues by
+// probe-espn-team-owners.yml: a team's `owners` array holds member GUIDs,
+// resolved against the league response's own top-level `members` array.
+// Only the first owner is used — ESPN allows co-owners, but this project has
+// nowhere to show more than one name. A member who never set a display name
+// resolves to ESPN's auto-generated handle (e.g. "ESPNFAN2996311429") rather
+// than a real name — confirmed live, not a hole in this function. Returns
+// null (never a fallback string) when anything is missing or unrecognized,
+// so a wrong guess about the shape omits the parenthetical instead of
+// rendering "(undefined)" or a raw GUID.
 export function espnOwnerName(team, members) {
   const ownerId = team?.owners?.[0];
   if (!ownerId) return null;

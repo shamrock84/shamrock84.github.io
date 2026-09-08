@@ -2,15 +2,20 @@
 // Confirms whether ESPN's fantasy-league API exposes the real person behind
 // each team (a "team owner" / manager name) so the Scoring card's matchup
 // rows could show "Team Name (Owner)" for the two ESPN redraft leagues.
-// providers.mjs has never read anything owner-shaped off ESPN — espnTeamName
-// only reads team.name/location/nickname — so nothing here can be assumed
-// without checking a real response first.
+// providers.mjs had never read anything owner-shaped off ESPN before this —
+// espnTeamName only reads team.name/location/nickname — so nothing here
+// could be assumed without checking a real response first.
 //
-// Community documentation for ESPN's fantasy API says a team object carries
-// an `owners` array of member GUIDs, and the top-level league response (once
-// you ask for a view that includes it — commonly mTeam, sometimes mSettings)
-// carries a `members` array with each GUID's displayName/firstName/lastName.
-// None of that has been checked against a real league here.
+// CONFIRMED (2026-09-08, probe-espn-team-owners.yml run #1, both ESPN
+// leagues): the community-documented shape holds exactly. A team object
+// carries an `owners` array of member GUIDs, and the top-level league
+// response (asked for with view=mTeam here) carries a `members` array with
+// each GUID's displayName/firstName/lastName. Every team in both leagues
+// resolved to a real member via `owners[0]`. One wrinkle worth keeping: a
+// member who never set a display name resolves to ESPN's auto-generated
+// handle (e.g. "ESPNFAN2996311429"), not a real name — espnOwnerName
+// (providers.mjs) has no way to tell that case apart from a real one, and
+// doesn't need to; it's simply what that member's account shows.
 //
 // Read-only: one GET per ESPN league already in config/leagues.json, asking
 // for every view that might carry `members` at once so a single request
