@@ -19,7 +19,10 @@
 // — the first version of espnOwnerName had this backwards. A member who
 // never set name fields falls back to ESPN's auto-generated handle (e.g.
 // "ESPNFAN2996311429"), which is simply what that member's account shows,
-// not a bug in espnOwnerName (providers.mjs).
+// not a bug in espnOwnerName (providers.mjs). espnOwnerName itself only
+// keeps firstName, a deliberate display shortening for the matchup row (see
+// its own comment) rather than a further finding about what the API or the
+// site provide — full name data is still there in `members` if ever needed.
 //
 // Read-only: one GET per ESPN league already in config/leagues.json, asking
 // for every view that might carry `members` at once so a single request
