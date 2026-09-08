@@ -1,0 +1,31 @@
+name: Probe MFL Owner Name (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here, the
+# same rule the other manual workflows follow.
+#
+# Asks whether MFL's TYPE=league export exposes anything owner/manager-name
+# shaped per franchise, the way ESPN's members[] does — see
+# scripts/probe-mfl-owner-name.mjs. Sampled across one dynasty, one
+# salary-cap, and one draft-only league in case the shape differs by type.
+#
+# Read-only: one TYPE=league GET per sampled league.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Dump MFL franchise fields for anything owner-shaped
+        env:
+          MFL_USERNAME: ${{ secrets.MFL_USERNAME }}
+          MFL_PASSWORD: ${{ secrets.MFL_PASSWORD }}
+        run: node scripts/probe-mfl-owner-name.mjs
