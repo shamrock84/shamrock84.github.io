@@ -6,15 +6,20 @@
 // Nothing in this project has ever read anything owner-shaped off MFL —
 // mflFranchiseNames only reads `f.name` — so nothing here can be assumed.
 //
-// Unlike ESPN's fantasy API, MFL franchises are commonly understood (from
-// community use, never checked against this project's own leagues before
-// now) to NOT expose the real person behind a franchise via the public
-// league-export API — a franchise's owner is a separate MFL user account
-// the export doesn't name, likely for the same privacy reason MFL requires
-// a login at all. This probe exists to check that assumption against real
-// data instead of taking it on faith, across all three league types (a
-// dynasty, a salary-cap, and a draft-only league) in case the shape differs
-// by type.
+// CONFIRMED (2026-09-08, probe-mfl-owner-name.yml run #1, one dynasty, one
+// salary-cap, and one draft-only league): MFL's public league-export API
+// does NOT expose the real person behind a franchise, in any of the three
+// league types. Every franchise object carries only cosmetic/team-level
+// fields — icon, division, name, waiverSortOrder, id, logo, sound, stadium,
+// abbrev (salarycap adds salaryCapAmount) — nothing person-shaped anywhere,
+// and no league-level key suggested one either. A franchise's owner is a
+// separate MFL user account the export simply never names, likely for the
+// same privacy reason MFL requires a login at all. Unlike espnOwnerName
+// (providers.mjs), there is no espnOwnerName-shaped function for MFL to
+// write: the data this would need does not exist in the API. A "Team Name
+// (Owner)" treatment for MFL leagues would need a different source — most
+// likely a manual per-league, per-franchise config field maintained by
+// hand — not a sync-time fetch.
 //
 // This exists because api.myfantasyleague.com is unreachable from the
 // sandbox this repo is normally edited from, so a workflow run is the only
