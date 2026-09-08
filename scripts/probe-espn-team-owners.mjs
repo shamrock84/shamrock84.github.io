@@ -11,11 +11,15 @@
 // carries an `owners` array of member GUIDs, and the top-level league
 // response (asked for with view=mTeam here) carries a `members` array with
 // each GUID's displayName/firstName/lastName. Every team in both leagues
-// resolved to a real member via `owners[0]`. One wrinkle worth keeping: a
-// member who never set a display name resolves to ESPN's auto-generated
-// handle (e.g. "ESPNFAN2996311429"), not a real name — espnOwnerName
-// (providers.mjs) has no way to tell that case apart from a real one, and
-// doesn't need to; it's simply what that member's account shows.
+// resolved to a real member via `owners[0]`.
+//
+// Also confirmed directly against ESPN's own site (not just the API shape):
+// what ESPN's UI labels "Manager" is firstName + lastName (e.g. "Christopher
+// Staloch"), not displayName (that same member's login handle, "cstaloch")
+// — the first version of espnOwnerName had this backwards. A member who
+// never set name fields falls back to ESPN's auto-generated handle (e.g.
+// "ESPNFAN2996311429"), which is simply what that member's account shows,
+// not a bug in espnOwnerName (providers.mjs).
 //
 // Read-only: one GET per ESPN league already in config/leagues.json, asking
 // for every view that might carry `members` at once so a single request
