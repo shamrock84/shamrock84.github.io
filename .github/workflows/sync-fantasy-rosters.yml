@@ -13,6 +13,10 @@ on:
         description: 'Re-read every league''s full rosters now (free agents), instead of waiting for the daily read'
         type: boolean
         default: false
+      refresh_draftonly_rosters:
+        description: 'Also re-read frozen draft-only league rosters (rarely needed — they do not change once the draft ends)'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -47,6 +51,12 @@ jobs:
           # Empty on a scheduled run, which is what leaves the free agent
           # re-read on its once-a-day rule by default.
           REFRESH_AVAILABILITY: ${{ inputs.refresh_availability }}
+          # Deliberately separate from REFRESH_AVAILABILITY above: a draft-only
+          # roster doesn't change post-draft, so forcing fresh free agents has
+          # no reason to also spend three MFL requests per draft-only league
+          # re-reading rosters that come back identical (see
+          # draftonlyRosterIsSettled in fetch-rosters.mjs).
+          REFRESH_DRAFTONLY_ROSTERS: ${{ inputs.refresh_draftonly_rosters }}
         run: node scripts/fetch-rosters.mjs
 
       - name: Commit and push if changed

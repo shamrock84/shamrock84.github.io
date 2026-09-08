@@ -254,9 +254,17 @@ export function draftIsSettled(previous, season, force = false) {
 // a draft still running (or never confirmed finished) means the roster is still
 // filling; `draftIsSettled` keys to the season, so a rollover unfreezes the
 // league by itself; an errored previous entry is stale fallback rather than a
-// good read; and an empty roster is nothing worth keeping. REFRESH_AVAILABILITY
-// forces a real read too, which makes the workflow's existing button the manual
-// way to pull a frozen league forward.
+// good read; and an empty roster is nothing worth keeping. REFRESH_DRAFTONLY_ROSTERS
+// forces a real read too, which makes the workflow's own dedicated input the
+// manual way to pull a frozen league forward — deliberately its own flag rather
+// than sharing refresh_availability's: a draft-only roster genuinely does not
+// move once the draft ends (see the module comment above), so a plain "give me
+// today's free agents" request has no reason to spend three requests per
+// draft-only league re-reading rosters that will come back byte-identical. That
+// distinction is not hypothetical — a forced availability refresh across every
+// league at once is exactly the kind of run that can push MFL into 429s, and
+// paying for a `force`d re-read here doesn't buy the freshness that
+// refresh_availability is actually for.
 export function draftonlyRosterIsSettled(league, previous, force = false) {
   if (force) return false;
   if (league?.type !== 'draftonly') return false;
@@ -269,6 +277,15 @@ export function draftonlyRosterIsSettled(league, previous, force = false) {
 // when you want today's free agents now rather than at the next daily read.
 // Absent on a scheduled run, which is how the daily rule stays the default.
 const forceAvailability = /^(true|1)$/i.test(process.env.REFRESH_AVAILABILITY || '');
+
+// A separate manual override for the draft-only roster freeze above, wired to
+// its own workflow input rather than piggybacking on forceAvailability. The
+// two used to share one flag; splitting them means "give me fresh free agents"
+// no longer implies "also spend three MFL requests per draft-only league
+// re-reading rosters that provably don't change" (see draftonlyRosterIsSettled).
+// Still available for the rare case a draft-only roster genuinely needs a
+// manual pull forward (an admin edit, a wrongly-settled freeze).
+const forceDraftonlyRefresh = /^(true|1)$/i.test(process.env.REFRESH_DRAFTONLY_ROSTERS || '');
 
 // How far back to look when a league has no known-good season to fall back on.
 // Two seasons covers a league whose new site isn't up yet, and one that missed a
@@ -1095,7 +1112,7 @@ async function main() {
       // silently pinning them to whatever they were when the draft ended would
       // be a much worse bug than a stale roster.
       const prevEntry = previousById.get(league.id);
-      const frozen = draftonlyRosterIsSettled(league, prevEntry, forceAvailability);
+      const frozen = draftonlyRosterIsSettled(league, prevEntry, forceDraftonlyRefresh);
       if (frozen) frozenDraftonly += 1;
       const result = frozen
         // updatedAt deliberately carries forward untouched: it is the age of
