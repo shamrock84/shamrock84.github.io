@@ -1622,18 +1622,23 @@ export function espnTeamName(team) {
 // probe-espn-team-owners.yml: a team's `owners` array holds member GUIDs,
 // resolved against the league response's own top-level `members` array.
 // Only the first owner is used — ESPN allows co-owners, but this project has
-// nowhere to show more than one name. A member who never set a display name
-// resolves to ESPN's auto-generated handle (e.g. "ESPNFAN2996311429") rather
-// than a real name — confirmed live, not a hole in this function. Returns
-// null (never a fallback string) when anything is missing or unrecognized,
-// so a wrong guess about the shape omits the parenthetical instead of
-// rendering "(undefined)" or a raw GUID.
+// nowhere to show more than one name.
+//
+// firstName + lastName, not displayName: ESPN's own site labels this field
+// "Manager" and shows the name, e.g. "Christopher Staloch" — confirmed
+// against a real team-and-owner pair — while displayName is the account's
+// login handle (e.g. "cstaloch" for that same person), never shown as the
+// manager anywhere in ESPN's UI. displayName is kept only as a fallback for
+// the rare account with no name fields set. Returns null (never a fallback
+// string) when anything is missing or unrecognized, so a wrong guess about
+// the shape omits the parenthetical instead of rendering "(undefined)" or a
+// raw GUID.
 export function espnOwnerName(team, members) {
   const ownerId = team?.owners?.[0];
   if (!ownerId) return null;
   const member = (members || []).find((m) => m.id === ownerId);
   if (!member) return null;
-  return member.displayName || [member.firstName, member.lastName].filter(Boolean).join(' ') || null;
+  return [member.firstName, member.lastName].filter(Boolean).join(' ') || member.displayName || null;
 }
 
 export async function espnGet(league, viewParams) {
