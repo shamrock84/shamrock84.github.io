@@ -148,9 +148,12 @@ for (const type of ['dynasty', 'salarycap', 'redraft', undefined]) {
 	);
 }
 
-// --- REFRESH_AVAILABILITY forces a real read ----------------------------------
-// Which makes the sync workflow's existing button the manual way to pull a
-// frozen league forward, with no new switch to learn.
+// --- REFRESH_DRAFTONLY_ROSTERS forces a real read ------------------------------
+// Which makes the sync workflow's dedicated input the manual way to pull a
+// frozen league forward. Deliberately its own flag rather than sharing
+// REFRESH_AVAILABILITY's (see fetch-rosters.mjs): the two used to be one, and a
+// forced availability refresh has no reason to also spend three MFL requests
+// per draft-only league re-reading rosters this same gate proves don't move.
 {
 	assert.equal(draftonlyRosterIsSettled(league(), prev(), true), false, 'force overrides the freeze');
 }
