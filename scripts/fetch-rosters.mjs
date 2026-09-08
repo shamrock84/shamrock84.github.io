@@ -1527,18 +1527,18 @@ async function main() {
         return ecrIndexByPool.get(key);
       };
 
-      // computeLeaguePower computes `starters` for every franchise in the
-      // league — ranking ours needs the same greedy fill run for everyone
-      // else regardless — but only ours is ever shown on the page (Power
-      // Rankings prints one row per league we hold a team in, never a
-      // full-league breakdown). Shipping every franchise's starter list
-      // would be N times the bytes for information nobody reads; this
-      // strips it back to just the matching franchise right before the
-      // sync writes its output.
+      // computeLeaguePower computes `starters` and `bench` for every
+      // franchise in the league — ranking ours needs the same greedy fill
+      // run for everyone else regardless — but only ours is ever shown on
+      // the page (Power Rankings prints one row per league we hold a team
+      // in, never a full-league breakdown). Shipping every franchise's
+      // roster detail would be N times the bytes for information nobody
+      // reads; this strips both back to just the matching franchise right
+      // before the sync writes its output.
       function keepMyStarters(teams, myFranchiseId) {
         return teams.map((t) => {
           if (String(t.franchiseId) !== String(myFranchiseId)) {
-            const { starters, ...rest } = t;
+            const { starters, bench, ...rest } = t;
             return rest;
           }
           return t;

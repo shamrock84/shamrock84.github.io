@@ -945,10 +945,11 @@
 		.popover-row + .popover-row {
 			border-top: 1px solid var(--border);
 		}
-		/* Power Rankings' Start column: same clickable-number idiom as
-		   .needs-link, popping up who the starting lineup actually is
-		   rather than a starters/bench split — a separate class since it's
-		   an unrelated table, but identical styling on purpose. */
+		/* Power Rankings' Start and Ben columns: same clickable-number idiom
+		   as .needs-link, popping up who the starting lineup or the bench
+		   actually is — one class for both since they're columns of the
+		   same table sharing one popover instance, not the "unrelated
+		   table" case the other per-idiom classes on this page exist for. */
 		.starters-link {
 			background: none;
 			border: none;
@@ -5261,8 +5262,9 @@
 				// Only ever present on the franchise fetch-rosters.mjs kept it
 				// for (see keepMyStarters) — every other team's is stripped
 				// before the sync ships, so this is null for them, not just
-				// unread.
+				// unread. Same for `bench`, the Ben(ch) column's counterpart.
 				starters: t.starters || null,
+				bench: t.bench || null,
 			}));
 			const hasDepth = keyed.every((t) => t.depth != null && Number.isFinite(t.depth));
 			const starters = competitionRanks(keyed.map((t) => ({ key: t.key, value: t.score })));
@@ -5307,6 +5309,9 @@
 					// means "rank" and the other means "who". What
 					// renderPowerRankCard's Start-column popover reads.
 					starterPlayers: t.starters,
+					// Same idea, one level down: the bench itself, behind the
+					// `depth` rank. What the Ben-column popover reads.
+					benchPlayers: t.bench,
 				});
 			}
 			return { size: keyed.length, byFranchise, source: block.source || null };
@@ -7580,10 +7585,12 @@
 			return line;
 		}
 
-		// "Who are the starters" for Power Rankings' Start column — its own
-		// instance, for the same reason every popover here gets one: unrelated
-		// content from an unrelated table. See makePopover for the machinery
-		// the four of them share.
+		// "Who are the starters" (and, by the same button/popover pair, "who's
+		// on the bench") for Power Rankings' Start and Ben columns — one
+		// shared instance, since unlike the popovers elsewhere on this page
+		// these two are columns of the *same* table, not unrelated content:
+		// only one can ever be open at a time anyway. See makePopover for the
+		// machinery the popovers on this page share.
 		const startersPopover = makePopover('starters');
 
 		// `players` is the same [{name, position}] list the clicked button's
@@ -7593,6 +7600,16 @@
 			startersPopover.toggle(
 				button,
 				`${label} — Starters`,
+				players.map((p) => ({ left: p.name, right: p.position }))
+			);
+		}
+
+		// Same as showStartersPopover, for the Ben column: `players` is
+		// `bench`, already ranked best-value-first by computePowerScore.
+		function showBenchPopover(button, label, players) {
+			startersPopover.toggle(
+				button,
+				`${label} — Bench`,
 				players.map((p) => ({ left: p.name, right: p.position }))
 			);
 		}
@@ -7760,11 +7777,30 @@
 					} else {
 						row.appendChild(el('td', { text: String(detail.starters) }));
 					}
-					row.appendChild(
-						detail && detail.depth != null
-							? el('td', { text: String(detail.depth) })
-							: el('td', { class: 'power-tbd', text: detail ? '—' : 'TBD' })
-					);
+					if (!detail || detail.depth == null) {
+						row.appendChild(el('td', { class: 'power-tbd', text: detail ? '—' : 'TBD' }));
+					} else if (Array.isArray(detail.benchPlayers) && detail.benchPlayers.length > 0) {
+						// Same idiom as the Start column just above: the rank stays
+						// on screen, a click reveals the roster behind it. Only
+						// present on the row's own franchise (see keepMyStarters in
+						// fetch-rosters.mjs), so an older snapshot falls back to
+						// plain text rather than a dead-looking button.
+						const btn = el('button', {
+							type: 'button',
+							class: 'starters-link',
+							title: 'Bench: click to see who',
+							text: String(detail.depth),
+						});
+						btn.addEventListener('click', (e) => {
+							e.stopPropagation();
+							showBenchPopover(btn, r.label, detail.benchPlayers);
+						});
+						const benchCell = el('td');
+						benchCell.appendChild(btn);
+						row.appendChild(benchCell);
+					} else {
+						row.appendChild(el('td', { text: String(detail.depth) }));
+					}
 					row.appendChild(
 						r.avg == null
 							? el('td', { class: 'power-tbd', text: 'TBD' })
