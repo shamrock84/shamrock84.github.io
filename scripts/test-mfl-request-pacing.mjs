@@ -230,12 +230,23 @@ const league = { id: '26696', name: 'MNMx Dynasty', type: 'dynasty', franchiseId
 	);
 }
 
-// --- api/live-scoring.js opts in, at its own much smaller interval -----------
+// --- api/live-scoring.js opts in, at its own interval -----------------------
 // It fans out across every league at once, so an unpaced poll leaves as one
 // burst of ~15 simultaneous MFL requests every 30s for as long as the Scoring
 // tab is open — and one landing mid-sync stacks on top of what the sync is
-// spending. Its interval is deliberately far below the sync's 300ms, because it
-// pays the wait in latency on a user-facing tab rather than in cron wall-clock.
+// spending.
+//
+// This interval has been raised twice now (75ms -> 150ms -> 300ms) chasing
+// real production 429s on cold-start bursts (see LIVE_SCORING_MFL_INTERVAL_MS's
+// own comment in api/live-scoring.js), and now equals the sync's own
+// MFL_REQUEST_INTERVAL_MS. That equality is coincidence, not a merged
+// constraint — this file still opts in at its own value, independently of the
+// sync's, and api/live-scoring.js now carries an explicit maxDuration rather
+// than leaning on "stay comfortably below the sync's number" as a proxy for
+// "stays inside the execution ceiling." So this no longer asserts an upper
+// bound tied to the sync's constant; it only asserts the gate is actually
+// armed with a real interval, not silently 0 (unpaced) or something wildly
+// off from what's configured.
 //
 // Dynamically imported here, after the cases above, precisely because importing
 // it is what applies the setting — a static import would hoist above them and
@@ -255,11 +266,14 @@ const league = { id: '26696', name: 'MNMx Dynasty', type: 'dynasty', franchiseId
 	for (const gap of gaps(sorted)) {
 		assert.ok(gap > 0, `importing live-scoring must arm the gate, saw a ${gap}ms gap`);
 	}
-	// Bounded on both sides: it has to actually pace, and it has to stay far
-	// cheaper than the sync's interval or the tab pays for it on every poll.
+	// Loosely bounded, not tied to any other file's constant: five gaps at
+	// api/live-scoring.js's own configured interval, plus slack for scheduler
+	// jitter. Catches the gate silently going unpaced (span near 0) or some
+	// unrelated much-larger value leaking in, without hardcoding a specific
+	// relationship to the sync's own pacing.
 	const span = sorted[sorted.length - 1] - sorted[0];
 	assert.ok(span >= 5 * 70, `six requests must span five intervals, saw ${span}ms`);
-	assert.ok(span < 5 * 300, `live-scoring must not inherit the sync's 300ms, saw ${span}ms`);
+	assert.ok(span < 5 * 1000, `six requests spanned an implausibly large ${span}ms — check the configured interval`);
 }
 
 setMflRequestInterval(0);
