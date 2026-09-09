@@ -129,32 +129,43 @@
 		#quicklinks a:last-child::after {
 			display: none;
 		}
-		/* Extra links added from the Admin tab's Quick Links section, appended
-		   after every league link (see renderQuickLinks) — purple rather than
-		   the plain muted league-link color so "not a league" reads at a
-		   glance, matching the accent-purple meaning used everywhere else on
-		   the page ("notable"). The gold-chip pill behind it is the same
-		   treatment as the Provider/Year badges (--gold-chip-*, see
-		   .badge-provider/.badge-season) so it reads as its own highlighted
-		   chip among the plain-text league links, not just bolder text. The
-		   pill itself lives on an inner span rather than the <a> — the divider
-		   above is a ::after on the <a>, so putting the pill's background
-		   there too would paint it behind the divider, making the divider read
-		   as swallowed into the pill instead of sitting between this pill and
-		   its neighbor. */
-		#quicklinks a.quicklink-extra {
-			color: var(--accent);
+		/* A toolbar entry — a league or a Quick Links extra alike, see
+		   renderQuickLinks/appendQuickLink — can be styled gold or purple
+		   instead of the plain muted league-link color, so "not a league" (or
+		   just "notable") reads at a glance instead of blending into eighteen
+		   identical plain entries. Gold reuses the Provider/Season badges'
+		   own colors (--gold-chip-*, see .badge-provider/.badge-season); purple
+		   reuses the Dynasty/Salary/Draft Only/Redraft type badge's colors
+		   (--chip-bg/--accent, see .badge) rather than a purple picked fresh
+		   for the toolbar — both are "the same chip elsewhere on the page",
+		   not a new treatment. The pill itself lives on an inner span rather
+		   than the <a> — the divider above is a ::after on the <a>, so putting
+		   the pill's background there too would paint it behind the divider,
+		   making the divider read as swallowed into the pill instead of
+		   sitting between this pill and its neighbor. */
+		#quicklinks a.quicklink-gold,
+		#quicklinks a.quicklink-purple {
 			padding: 0;
 		}
-		#quicklinks a.quicklink-extra:hover,
-		#quicklinks a.quicklink-extra:focus-visible {
-			color: var(--text);
-		}
-		#quicklinks a.quicklink-extra span {
-			display: inline-block;
+		#quicklinks a.quicklink-gold span {
 			background: var(--gold-chip-bg);
+			color: var(--gold-chip-text);
+		}
+		#quicklinks a.quicklink-purple span {
+			background: var(--chip-bg);
+			color: var(--accent);
+		}
+		#quicklinks a.quicklink-gold span,
+		#quicklinks a.quicklink-purple span {
+			display: inline-block;
 			border-radius: 999px;
 			padding: 0.15rem 0.55rem;
+		}
+		#quicklinks a.quicklink-gold:hover span,
+		#quicklinks a.quicklink-gold:focus-visible span,
+		#quicklinks a.quicklink-purple:hover span,
+		#quicklinks a.quicklink-purple:focus-visible span {
+			color: var(--text);
 		}
 		header {
 			padding: 1.5rem 1rem 1rem;
@@ -2265,6 +2276,11 @@
 		}
 		.admin-link-row .admin-field-nickname {
 			flex: 1;
+		}
+		/* A three-option dropdown never needs as much room as the free-text
+		   fields beside it. */
+		.admin-link-row .admin-field-style {
+			flex: 0 0 auto;
 		}
 		.admin-add-btn, .admin-revert-btn {
 			font: inherit;
@@ -4556,13 +4572,14 @@
 		// data.quickLinks — a top-level array, a sibling of leagues, not a
 		// per-league field — appends extra external links after every league
 		// link, in the same synced-not-live order set from the Admin tab's
-		// Quick Links section. Styled with .quicklink-extra (purple text on a
-		// gold-chip pill) so they read as "not a league" at a glance; unlike
-		// a league link, there's no live name to fall back to, so both url
-		// and nickname are required at save time (see validateQuickLinks in
-		// api/save-leagues.js). The nickname is wrapped in its own <span> so
-		// the pill's background sits behind just the text, not the divider
-		// the shared #quicklinks a::after rule appends after it.
+		// Quick Links section. Unlike a league link, there's no live name to
+		// fall back to, so both url and nickname are required at save time
+		// (see validateQuickLinks in api/save-leagues.js).
+		//
+		// Both loops render through appendQuickLink so a league's own entry
+		// and a Quick Links extra pick their look from the exact same `style`
+		// field and the exact same three options — see config/leagues.json's
+		// own _readme entry for 'style'.
 		function renderQuickLinks() {
 			const bar = document.getElementById('quicklinks');
 			if (!bar) return;
@@ -4570,16 +4587,29 @@
 			bar.innerHTML = '';
 			for (const league of leagues) {
 				const label = league.nickname || leagueDisplayName(league) || league.id;
-				const link = el('a', { href: league.url, target: '_blank', rel: 'noopener', text: label });
-				link.title = leagueDisplayName(league) || label;
-				bar.appendChild(link);
+				appendQuickLink(bar, { url: league.url, label, title: leagueDisplayName(league) || label, style: league.style });
 			}
 			for (const extra of pageData?.quickLinks || []) {
-				const link = el('a', { href: extra.url, target: '_blank', rel: 'noopener', class: 'quicklink-extra' }, [
-					el('span', { text: extra.nickname }),
-				]);
-				bar.appendChild(link);
+				appendQuickLink(bar, { url: extra.url, label: extra.nickname, style: extra.style });
 			}
+		}
+
+		// One entry in the header's quick-link toolbar. style is 'gold',
+		// 'purple', or unset/anything else for plain — plain is rendered as
+		// bare link text the way every entry looked before per-entry style
+		// existed, so it needs no pill and no extra span. Gold/purple wrap the
+		// label in its own <span> so the pill's background sits behind just
+		// the text, not the divider the shared #quicklinks a::after rule
+		// appends after it (see the .quicklink-gold/-purple CSS comment).
+		function appendQuickLink(bar, { url, label, title, style }) {
+			const cls = style === 'gold' ? 'quicklink-gold' : style === 'purple' ? 'quicklink-purple' : '';
+			const attrs = { href: url, target: '_blank', rel: 'noopener' };
+			if (cls) attrs.class = cls;
+			const link = el('a', attrs);
+			if (title) link.title = title;
+			if (cls) link.appendChild(el('span', { text: label }));
+			else link.textContent = label;
+			bar.appendChild(link);
 		}
 
 		// Every league has exactly one hosting provider — MFL is the default
@@ -9817,6 +9847,10 @@
 
 		const ADMIN_RANKINGS = [['', 'Automatic'], ['DYNASTY', 'Dynasty'], ['DRAFT', 'Draft'], ['ROS', 'Rest-of-season'], ['WEEKLY', 'Weekly'], ['ADP', 'ADP']];
 		const ADMIN_SCORING = [['', 'Automatic'], ['PPR', 'PPR'], ['HALF', 'Half PPR'], ['STD', 'Standard']];
+		// The header toolbar entry's look — shared by a league's own entry and
+		// a Quick Links extra, see appendQuickLink. Blank means plain, the
+		// look every toolbar entry had before this field existed.
+		const ADMIN_QUICKLINK_STYLES = [['', 'Plain'], ['gold', 'Gold'], ['purple', 'Purple']];
 
 		// Unsaved edits, kept across re-renders (a lineup submission or a
 		// finished sync both call renderGrid) so typing isn't lost. Cleared on
@@ -10244,6 +10278,7 @@
 				if (league.rulesUrl) bits.push('Rules link');
 				if (league.displayName) bits.push(`Display name "${league.displayName}"`);
 				if (league.nickname) bits.push(`Toolbar label "${league.nickname}"`);
+				if (league.style) bits.push(`${adminLabelFor(ADMIN_QUICKLINK_STYLES, league.style)} toolbar style`);
 				node.appendChild(el('div', { class: 'admin-blurb', text: bits.join(' · ') }));
 
 				// The two things this tab used to hide. A league whose config no longer
@@ -10375,6 +10410,14 @@
 				// The toolbar itself uses this array's own order with Draft
 				// Only leagues filtered out — nothing else to configure here.
 				field('Toolbar Label', adminText(league.nickname, league.displayName || name || 'e.g. MNMx', (v) => { league.nickname = v || undefined; }));
+				// The same plain/gold/purple choice a Quick Links extra gets
+				// below (appendQuickLink reads both off the same `style`
+				// field) — gold matches the Provider/Season badge colors,
+				// purple the Dynasty/Salary/Draft Only/Redraft type badge's.
+				// Blank (every league here, by default) is plain: the
+				// un-chipped link text the toolbar always used before this
+				// existed.
+				field('Toolbar Style', adminSelect(ADMIN_QUICKLINK_STYLES, league.style, changed((v) => { league.style = v || undefined; })));
 					// Feeds the History tab's Finances card: Dues is the flat
 					// entry fee (assumed the same every year), and the three
 					// payouts assume every league here pays exactly the top 3 —
@@ -10502,7 +10545,8 @@
 				'Scoring on Automatic is read from the league\'s own settings — whatever a reception is worth there. It only picks which FantasyPros list the ECR column uses; it changes no points, standings or lineups.',
 				'Lineups puts a lineup editor on the Rosters tab — MFL submits from here, Sleeper is view-only.',
 				'Season follows each league\'s own rollover — leave it blank and the sync stays on the old season until the new one exists, which is why a league can show a season chip in the spring. Fill it in only to pin one.',
-				'Quick Links, in its own card above, adds purple entries to the header toolbar after the leagues above — both a link and a nickname are required, since there\'s no live league name to fall back to. Its Save/Discard/Reload buttons do the exact same thing as these — both cards write to the same file at once.',
+				'Quick Links, in its own card above, adds entries to the header toolbar after the leagues above — both a link and a nickname are required, since there\'s no live league name to fall back to. Its Save/Discard/Reload buttons do the exact same thing as these — both cards write to the same file at once.',
+				'Toolbar Style (on a league) and Style (on a Quick Link) both pick from the same plain/gold/purple choice for that entry in the header toolbar — plain is the default look every entry had before this setting existed.',
 				// The one setting on this screen that changes without being touched,
 				// so it says what it resolves to today as well as what it does.
 				`Rankings on Automatic tracks the NFL calendar: rest-of-season in season, dynasty or draft otherwise (right now: ${nflInSeason() ? 'rest-of-season' : 'dynasty or draft'}). Any other choice pins that league year-round.`,
@@ -10537,10 +10581,10 @@
 		}
 
 		// Extra external links appended to the header's quick-link toolbar
-		// after every league link, styled purple there to set them apart (see
-		// renderQuickLinks and .quicklink-extra). Deliberately just two text
-		// boxes — a link and a nickname — with no fallback name to lean on
-		// the way a league's own nickname has, so both are required.
+		// after every league link (see renderQuickLinks/appendQuickLink).
+		// Link and nickname are required — there's no fallback name to lean
+		// on the way a league's own nickname has; Style is optional and
+		// defaults to plain, the same as a league's own toolbar entry.
 		//
 		// Its own card, collapsible the ordinary way (makeCollapsible), with
 		// its own Save/Discard/Reload row (buildAdminSaveActions) — genuinely
@@ -10576,6 +10620,13 @@
 				nickWrap.appendChild(el('span', { class: 'admin-field-label', text: 'Nickname' }));
 				nickWrap.appendChild(adminText(link.nickname, 'e.g. Sleeper App', (v) => { link.nickname = v; }));
 				row.appendChild(nickWrap);
+				// Same three choices as a league's own Toolbar Style field —
+				// see appendQuickLink, which reads both off the same `style`
+				// field. Blank is plain.
+				const styleWrap = el('label', { class: 'admin-field admin-field-style' });
+				styleWrap.appendChild(el('span', { class: 'admin-field-label', text: 'Style' }));
+				styleWrap.appendChild(adminSelect(ADMIN_QUICKLINK_STYLES, link.style, (v) => { link.style = v || undefined; }));
+				row.appendChild(styleWrap);
 				const removeLinkBtn = el('button', { type: 'button', class: 'admin-icon-btn admin-remove-btn', title: 'Remove this link', text: '✕' });
 				removeLinkBtn.addEventListener('click', () => {
 					adminLinksDraft.splice(i, 1);
