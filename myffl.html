@@ -167,6 +167,26 @@
 		#quicklinks a.quicklink-purple:focus-visible span {
 			color: var(--text);
 		}
+		/* Sixteen-plus toolbar entries (every league plus Quick Links) wrap to
+		   three rows at iPhone width — the same overcrowding the .tabs media
+		   query above solves for the eight main tabs. Trimming gap, type
+		   size, and pill padding a notch each closes it back to two rows
+		   without anything feeling cramped. */
+		@media (max-width: 480px) {
+			#quicklinks {
+				gap: 0.25rem;
+			}
+			#quicklinks a {
+				font-size: 0.7rem;
+			}
+			#quicklinks a::after {
+				margin-left: 0.25rem;
+			}
+			#quicklinks a.quicklink-gold span,
+			#quicklinks a.quicklink-purple span {
+				padding: 0.12rem 0.35rem;
+			}
+		}
 		header {
 			padding: 1.5rem 1rem 1rem;
 			text-align: center;
