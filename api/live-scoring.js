@@ -147,19 +147,28 @@ function makeProjectPlayer(values, provider, scoring) {
 // precisely so each can pick an interval matched to its own latency budget. The
 // sync is an unattended cron where 30s of extra wall-clock costs nothing; this
 // answers a user-facing tab and pays the interval once per league in added
-// latency. At 75ms a steady-state poll spreads ~15 requests over about a
-// second, which the 30s cadence absorbs without the tab feeling slower.
+// latency.
 //
-// Keep it small for a second reason: no maxDuration is configured in
-// vercel.json, so this runs under Vercel's default ceiling. A cold start pays
-// the interval twice over — once for the TYPE=league names read, once for
-// liveScoring — and the gate must stay a rounding error against that budget,
-// not a meaningful slice of it.
+// 75ms shipped first and turned out to be too low: real production 429s
+// landed within the first hour of this cache existing, every one of them on a
+// COLD instance (see getMflNames/getMflCookie above — cache is per warm
+// instance and does not survive a cold start). A cold poll pays the interval
+// twice over, once for the TYPE=league names read and once for liveScoring,
+// for every MFL league that isn't cached yet — roughly 2x the request count
+// of the steady-state case this constant was originally sized against, and
+// mflGet's own retry (up to 3 attempts, 1.5/3/4.5s backoff) still weren't
+// enough to outlast it. 150ms is the response: still well inside Vercel's
+// default execution ceiling even at the worst case (~30 MFL requests across
+// every league on a fully cold instance is ~4.5s of pacing floor, nowhere
+// near the ceiling that made 75ms feel urgent to begin with — that caution
+// left no actual margin against the failure that happened), and doubles the
+// gap between request starts, which is the only knob that changes whether
+// MFL refuses in the first place. Still a starting point, not a measured
+// limit — the same caveat every number in this pacing scheme carries — but
+// now anchored to an observed failure rather than a guess.
 //
 // Module scope, so it is set once per warm instance alongside the caches above.
-// 75ms is a starting point chosen against those two constraints, not a measured
-// limit — the same caveat that applies to the sync's number.
-const LIVE_SCORING_MFL_INTERVAL_MS = 75;
+const LIVE_SCORING_MFL_INTERVAL_MS = 150;
 setMflRequestInterval(LIVE_SCORING_MFL_INTERVAL_MS);
 
 async function getMflCookie(username, password) {
