@@ -267,6 +267,12 @@ jobs:
       - name: Test MFL live-scoring matchup parsing
         run: node scripts/test-live-scoring-matchup.mjs
 
+      # renderScoringCard's matchup ordering: the pill holding the logged-in
+      # manager's own team always renders first, with every other pill
+      # keeping its original relative order behind it.
+      - name: Test Scoring tab matchup ordering
+        run: node scripts/test-scoring-matchup-order.mjs
+
       # fetchNflGameClocks and the ESPN/Sleeper join it feeds. Neither
       # provider's own API carries a live game clock (confirmed by
       # probe-espn-sleeper-live-time.yml), so minutesRemaining/winProb come
