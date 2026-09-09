@@ -2102,6 +2102,22 @@
 		.admin-league.admin-open {
 			border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
 		}
+		/* A league carrying edits that haven't been saved. Deliberately a border
+		   colour plus a dot rather than a colour alone: .admin-open already
+		   spends a border colour on "this card is expanded", and the two states
+		   are independent — a card can be edited and collapsed, which is exactly
+		   the case a scan of eighteen cards needs to catch. */
+		.admin-league.admin-league-dirty {
+			border-color: var(--accent);
+		}
+		.admin-league-dirty .admin-league-name::after {
+			content: '•';
+			color: var(--accent);
+			font-size: 1.1rem;
+			line-height: 1;
+			margin-left: 0.35rem;
+			vertical-align: middle;
+		}
 		.admin-league-head {
 			display: flex;
 			align-items: center;
@@ -2212,6 +2228,23 @@
 		.admin-field-wide {
 			grid-column: 1 / -1;
 		}
+		/* Two columns for the fields that want more room than a dropdown and
+		   less than a whole row. Tags holds a couple of short words and Display
+		   Name a trimmed league name; stretched to 1 / -1 the way Rules link
+		   genuinely needs to be, each cost a full row to show ten characters and
+		   pushed the group below it onto a row it had to share.
+
+		   Behind a media query rather than a bare `span 2`, which is the trap
+		   .admin-field-wide's comment above describes: once auto-fit collapses
+		   to a single column, a 2-column span conjures an implicit second one
+		   and the sideways scroll comes back. Above 40rem the grid always has
+		   at least two real columns for the span to land in, and below it these
+		   fall back to one column like everything else. */
+		@media (min-width: 40rem) {
+			.admin-field-mid {
+				grid-column: span 2;
+			}
+		}
 		/* Section captions inside the field grid. Twenty-odd controls spanning
 		   four unrelated concerns — what the league is, how its roster reads,
 		   what it's called, what it pays — used to run together in one flat
@@ -2319,6 +2352,29 @@
 		}
 		.admin-add-row {
 			margin-top: 0.7rem;
+		}
+		/* The Leagues card's Save row, pinned to the bottom of the viewport for
+		   as long as that card is on screen. Eighteen collapsed leagues stand
+		   between a typo fixed near the top of the list and the button that
+		   commits it, and nothing about scrolling past sixteen cards you didn't
+		   touch tells you whether the one you did is saved.
+
+		   A modifier on .lineup-editor-actions rather than a change to it: that
+		   class is shared with the real lineup editor on the Rosters tab, where
+		   a pinned bar would be wrong. Only the Leagues card asks for it — the
+		   Quick Links card above is four rows tall, so its own copy of this row
+		   is already on screen next to what it saves. The opaque background is
+		   load-bearing now that the row sits over the cards it scrolls past
+		   rather than after them; it stops at the card's own padding, which
+		   holds no content to show through. */
+		.admin-sticky-actions {
+			position: sticky;
+			bottom: 0;
+			z-index: 2;
+			margin-top: 0.6rem;
+			padding: 0.6rem 0 0.5rem;
+			background: var(--card-bg);
+			border-top: 1px solid var(--border);
 		}
 		/* Quick Links — its own card above Leagues, same full-width treatment
 		   as .admin-card. Collapses through the ordinary makeCollapsible
@@ -9963,7 +10019,9 @@
 			// like Tab silently does nothing until pressed a second time.
 			const input = el('input', { type: 'text', class: 'admin-input', placeholder: placeholder || '', autocomplete: 'off' });
 			input.value = value == null ? '' : String(value);
-			input.addEventListener('input', () => onChange(input.value));
+			// Repaint the unsaved markers on every keystroke, but never re-render:
+			// see refreshAdminDirtyState for why a text input can't survive one.
+			input.addEventListener('input', () => { onChange(input.value); refreshAdminDirtyState(); });
 			return input;
 		}
 
@@ -9979,7 +10037,10 @@
 				if (val === current) opt.selected = true;
 				sel.appendChild(opt);
 			}
-			sel.addEventListener('change', () => onChange(sel.value));
+			// Most of these go through changed(), which re-renders the whole card
+			// and recomputes the markers anyway; the ones that don't (a Quick
+			// Links style) still need them repainted, and doing it twice is free.
+			sel.addEventListener('change', () => { onChange(sel.value); refreshAdminDirtyState(); });
 			return sel;
 		}
 
@@ -10038,6 +10099,93 @@
 			return Boolean(a.lineupPilot) === Boolean(b.lineupPilot);
 		}
 
+		// One league (or quick link) reduced to the values a save would actually
+		// commit, so "is this edited?" can be asked of a draft entry and a served
+		// one alike. Compared this way rather than by JSON.stringify on the raw
+		// objects, which answers wrongly twice: the Admin tab's text inputs hand
+		// back strings where the config stores real numbers (every payout, and
+		// cutdownRosterSize), and a key the draft adds lands in a different
+		// position from the same key in the served entry. Both would report an
+		// edit that saves to a byte-identical file. Blank, null and undefined all
+		// collapse to absent, matching mergeLeague's own drop-the-empties rule in
+		// api/save-leagues.js — the whole point is to agree with what that
+		// endpoint would write.
+		function adminComparable(entry) {
+			const out = [];
+			for (const [k, v] of Object.entries(entry || {})) {
+				if (v === undefined || v === null || v === '') continue;
+				out.push([k, Array.isArray(v) || (typeof v === 'object') ? JSON.stringify(v) : String(v)]);
+			}
+			out.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+			return JSON.stringify(out);
+		}
+
+		// What in the Admin draft differs from the config the site is serving.
+		// Drives three things that all answer the same question — is anything
+		// here unsaved: the dot on an edited league, the count on the Save
+		// buttons, and the leave-the-page guard. Counted as leagues rather than
+		// as fields: the number is there to say how much is outstanding, and
+		// "3 leagues" is the unit someone about to press Save is thinking in.
+		//
+		// Order is its own change, and has to be, because it's a real setting
+		// here (array order is display order on every tab) that no individual
+		// league's own values record. An added or removed league moves the id
+		// list too, so it falls out of the same comparison.
+		function adminPendingChanges() {
+			const empty = { leagues: new Set(), order: false, links: false, count: 0 };
+			if (!leagueConfig || !adminDraft) return empty;
+			const served = leagueConfig.leagues || [];
+			const servedById = new Map(served.filter((l) => l && l.id != null).map((l) => [String(l.id), l]));
+			const leagues = new Set();
+			for (const league of adminDraft) {
+				const base = league && league.id != null ? servedById.get(String(league.id)) : null;
+				// No match means a new league, or one whose ID was just edited —
+				// either way there's nothing on the site that looks like it yet.
+				if (!base || adminComparable(league) !== adminComparable(base)) leagues.add(league);
+			}
+			const ids = (list) => list.map((l) => String(l?.id ?? '')).join('\u0000');
+			const order = ids(adminDraft) !== ids(served);
+			const links = JSON.stringify((adminLinksDraft || []).map(adminComparable))
+				!== JSON.stringify((leagueConfig.quickLinks || []).map(adminComparable));
+			return { leagues, order, links, count: leagues.size + (order ? 1 : 0) + (links ? 1 : 0) };
+		}
+
+		// Repaints the unsaved markers without re-rendering anything. That's the
+		// whole reason this exists as its own pass: refreshAdminCard() rebuilds
+		// the card, which is fine for a dropdown (its value is committed the
+		// moment it fires) and destructive for a text input, where it would throw
+		// focus away mid-word. adminText/adminSelect call this on every edit
+		// instead, so a typed change lights the dot straight away.
+		//
+		// Cards are matched to draft entries by the index stamped on them at
+		// render time; anything that reorders the list re-renders it first, so
+		// the two can't drift apart.
+		function refreshAdminDirtyState() {
+			const pending = adminPendingChanges();
+			for (const node of document.querySelectorAll('.admin-league')) {
+				const league = (adminDraft || [])[Number(node.dataset.adminIndex)];
+				node.classList.toggle('admin-league-dirty', Boolean(league) && pending.leagues.has(league));
+			}
+			for (const btn of document.querySelectorAll('.admin-save-btn')) {
+				// Never disabled when the count is zero. This comparison is a
+				// convenience, not a gate — a false negative here would be a Save
+				// button that refuses to save, which is a far worse failure than
+				// an unnecessary request that writes the same bytes back.
+				btn.textContent = pending.count ? `Save changes (${pending.count})` : 'Save changes';
+			}
+		}
+
+		// Reaching the tab through a browser refresh, a closed tab, or a link is
+		// the one way an Admin edit can be lost without being told: Save commits
+		// to the repo, and everything before that lives only in adminDraft. Only
+		// armed when there's something outstanding, so the browser's own dialog
+		// never appears on a page nobody edited.
+		window.addEventListener('beforeunload', (e) => {
+			if (adminPendingChanges().count === 0) return;
+			e.preventDefault();
+			e.returnValue = '';
+		});
+
 		function refreshAdminCard() {
 			// .admin-card rather than the broader [data-view="admin"], which
 			// the Quick Links card above shares — see refreshQuickLinksCard.
@@ -10072,9 +10220,12 @@
 		// problems list), so the one you clicked is the one that updates —
 		// the other doesn't reflect a save/discard/reload until something
 		// else refreshes it.
-		function buildAdminSaveActions(card) {
-			const actions = el('div', { class: 'lineup-editor-actions' });
-			const saveBtn = el('button', { type: 'button', class: 'lineup-save-btn', text: 'Save changes' });
+		function buildAdminSaveActions(card, { sticky = false } = {}) {
+			const actions = el('div', { class: `lineup-editor-actions${sticky ? ' admin-sticky-actions' : ''}` });
+			// .admin-save-btn is the hook refreshAdminDirtyState relabels — both
+			// cards' buttons carry it, since either one saves both drafts.
+			const pendingCount = adminPendingChanges().count;
+			const saveBtn = el('button', { type: 'button', class: 'lineup-save-btn admin-save-btn', text: pendingCount ? `Save changes (${pendingCount})` : 'Save changes' });
 			const revertBtn = el('button', { type: 'button', class: 'admin-revert-btn', text: 'Discard edits' });
 			// Re-read the served config without a full page reload, so "is the page
 			// showing me stale values?" is answerable in one click.
@@ -10141,6 +10292,13 @@
 					adminDraft = null;
 					adminLinksDraft = null;
 					adminExpanded.clear();
+					// The card is deliberately left standing rather than
+					// re-rendered — the status line, the confirmation below and
+					// the Sync now button all live on it — so the unsaved markers
+					// it is still showing have to be cleared here by hand. With
+					// adminDraft gone this reads as nothing outstanding, which is
+					// exactly right.
+					refreshAdminDirtyState();
 					// Saving commits to the repository, but this page reads
 					// config/leagues.json through GitHub Pages, which keeps serving the
 					// previous copy until it redeploys. Reloading inside that window
@@ -10235,10 +10393,20 @@
 			// for, so nothing ever scrolls sideways.
 			const list = el('div', { class: 'admin-list' });
 
+			// Computed once for the whole list rather than per card: it walks the
+			// served config, and doing that eighteen times over would be the same
+			// answer eighteen times. refreshAdminDirtyState repaints from here on.
+			const pending = adminPendingChanges();
+
 			adminDraft.forEach((league, i) => {
 				const node = el('div', { class: 'admin-league' });
+				// How refreshAdminDirtyState finds the draft entry behind a card
+				// without re-rendering to ask. Safe because every operation that
+				// changes this list's order re-renders it.
+				node.dataset.adminIndex = String(i);
 				const isOpen = adminExpanded.has(league);
 				if (isOpen) node.classList.add('admin-open');
+				if (pending.leagues.has(league)) node.classList.add('admin-league-dirty');
 
 				const head = el('div', { class: 'admin-league-head' });
 				// Only the head carries draggable, never the whole card: a
@@ -10347,27 +10515,75 @@
 				head.appendChild(moves);
 				node.appendChild(head);
 
-				// Everything the collapsed card can say without being opened.
-				// Reads off the same option lists the dropdowns below use, so
-				// the two can't disagree about what a stored value is called.
+				// Everything the collapsed card can say without being opened, and
+				// only what a scan down eighteen of them can act on. The rule is
+				// that a setting earns a mention by DEVIATING from its default,
+				// not by being set: "Automatic rankings" was on all eighteen rows
+				// and told you nothing, while the settings that do differ were
+				// buried in the middle of it. Reads off the same option lists the
+				// dropdowns below use, so the two can't disagree about what a
+				// stored value is called.
+				//
+				// The season chip in the head above is the deliberate exception to
+				// that rule and stays always-on — see its own comment for why a
+				// chip that appears only when it differs is worse there.
 				const bits = [league.id ? `ID ${league.id}` : 'No league ID yet'];
 				if (league.franchiseId) bits.push(`Team ${league.franchiseId}`);
-				// Scoring reads from the league's own settings unless pinned, so the
-				// blurb shows what's actually in effect and where it came from —
-				// "Automatic" alone would say nothing about which list is in use.
+				// Kept in spite of the deviation rule, because the VALUE genuinely
+				// differs league to league (PPR and Half PPR are both well
+				// represented here) and it decides which FantasyPros list the ECR
+				// column reads. Only the annotation follows the rule: a detected
+				// format prints bare, a pinned one says so, since pinning is the
+				// part that's unusual.
 				if (league.scoring) {
-					bits.push(adminLabelFor(ADMIN_SCORING, league.scoring));
+					bits.push(`${adminLabelFor(ADMIN_SCORING, league.scoring)} (pinned)`);
 				} else if (live?.scoringDetected) {
-					bits.push(`${adminLabelFor(ADMIN_SCORING, live.scoringDetected)} (auto)`);
+					bits.push(adminLabelFor(ADMIN_SCORING, live.scoringDetected));
 				} else {
-					bits.push('Scoring: automatic');
+					bits.push('Scoring not detected yet');
 				}
-				bits.push(`${adminLabelFor(ADMIN_RANKINGS, league.rankingType)} rankings`);
+				// Unset is the normal state and follows the NFL calendar by
+				// itself, so only a pin is worth a mention here.
+				if (league.rankingType) bits.push(`${adminLabelFor(ADMIN_RANKINGS, league.rankingType)} rankings (pinned)`);
+				if (league.season) bits.push(`Season pinned to ${league.season}`);
+				if (league.startYear) bits.push(`History from ${league.startYear}`);
 				if (league.lineupPilot) bits.push('Lineup editor');
-				if (league.rulesUrl) bits.push('Rules link');
-				if (league.displayName) bits.push(`Display name "${league.displayName}"`);
-				if (league.nickname) bits.push(`Toolbar label "${league.nickname}"`);
+				if (league.cutdownRosterSize) bits.push(`Cut to ${league.cutdownRosterSize}`);
+				// No 'Rules link' entry: the 📝 icon beside the league name in the
+				// head says the same thing, in the same card, and is a link.
+				//
+				// The head shows the live synced name; displayName is what every
+				// other tab shows instead. Equal to the live name it overrides
+				// nothing visible, so it only earns a line when the two differ —
+				// which is also the only case where the head and the rest of the
+				// page disagree about what this league is called.
+				if (league.displayName && league.displayName !== name) bits.push(`Shown as "${league.displayName}"`);
+				// Same test one level down: a Toolbar Label equal to the display
+				// name it falls back to when blank is doing nothing.
+				if (league.nickname && league.nickname !== (league.displayName || name)) bits.push(`Toolbar "${league.nickname}"`);
 				if (league.style) bits.push(`${adminLabelFor(ADMIN_QUICKLINK_STYLES, league.style)} toolbar style`);
+				// Always last and always present, so a scan down the list reads
+				// these in one column. The money was the one group of fields the
+				// collapsed row said nothing about at all, which made "which
+				// leagues haven't had their payouts entered yet" a question you
+				// could only answer by opening all eighteen. An em-dash marks a
+				// missing place in an otherwise-entered table — unset reads as $0
+				// on the Finances card (see leagueFinancesSummary), so a blank is
+				// a real number there and worth being able to spot here.
+				const amount = (v) => (v == null || v === '' ? null : String(v));
+				const money = [];
+				const dues = amount(league.dues);
+				const places = [amount(league.payout1), amount(league.payout2), amount(league.payout3)];
+				if (dues != null) money.push(`$${dues} in`);
+				if (places.some((v) => v != null)) money.push(`pays ${places.map((v) => (v == null ? '—' : v)).join('/')}`);
+				for (const [value, what] of [
+					[amount(league.payoutDivisionWinner), 'div'],
+					[amount(league.payoutWeeklyHigh), 'wk'],
+					[amount(league.payoutSeasonHigh), 'season'],
+				]) {
+					if (value != null) money.push(`+${value} ${what}`);
+				}
+				bits.push(money.length ? money.join(' · ') : 'No dues or payouts set');
 				node.appendChild(el('div', { class: 'admin-blurb', text: bits.join(' · ') }));
 
 				// The two things this tab used to hide. A league whose config no longer
@@ -10415,8 +10631,13 @@
 					// swallowed rather than reloading the page.
 					const fields = el('form', { class: 'admin-fields' });
 					fields.addEventListener('submit', (e) => e.preventDefault());
-					const field = (labelText, control, wide = false) => {
-						const wrap = el('label', { class: `admin-field${wide ? ' admin-field-wide' : ''}` });
+					// `size` is 'wide' (a whole row — a URL, which has no useful
+					// shorter form) or 'mid' (two columns — a few words, wasted
+					// on a whole row); omitted is one column. A string rather
+					// than the boolean this used to take, so the two widths read
+					// as the same kind of choice at the call site.
+					const field = (labelText, control, size) => {
+						const wrap = el('label', { class: `admin-field${size ? ` admin-field-${size}` : ''}` });
 						wrap.appendChild(el('span', { class: 'admin-field-label', text: labelText }));
 						wrap.appendChild(control);
 						fields.appendChild(wrap);
@@ -10487,8 +10708,8 @@
 					field('Tags', adminText((league.tags || []).join(', '), 'comma, separated', (v) => {
 						const tags = v.split(',').map((t) => t.trim()).filter(Boolean);
 						league.tags = tags.length ? tags : undefined;
-					}), true);
-					field('Rules link', adminText(league.rulesUrl, 'https://…', (v) => { league.rulesUrl = v || undefined; }), true);
+					}), 'mid');
+					field('Rules link', adminText(league.rulesUrl, 'https://…', (v) => { league.rulesUrl = v || undefined; }), 'wide');
 					// Salary Cap only: this is who/where the contract-length summary
 					// goes, and no other league type produces one. Changing Type
 					// re-renders the card, so it appears and disappears as you switch.
@@ -10497,7 +10718,7 @@
 					// rather be reached some other way, e.g. a Discord invite or a
 					// slack://channel?team=…&id=… deep link straight to their DM.
 					if (league.type === 'salarycap') {
-						field('Commissioner contact', adminText(league.commishContact, 'name@example.com, https://…, or slack://…', (v) => { league.commishContact = v || undefined; }), true);
+						field('Commissioner contact', adminText(league.commishContact, 'name@example.com, https://…, or slack://…', (v) => { league.commishContact = v || undefined; }), 'wide');
 					}
 
 					// What this league is called, and nothing else.
@@ -10510,7 +10731,7 @@
 					// league's name, just trimmed, not a cryptic abbreviation.
 					// Blank (the normal state) means use the live name as-is,
 					// which is why the placeholder here is that same name.
-					field('Display Name', adminText(league.displayName, name || 'e.g. My League Name', (v) => { league.displayName = v || undefined; }), true);
+					field('Display Name', adminText(league.displayName, name || 'e.g. My League Name', (v) => { league.displayName = v || undefined; }), 'mid');
 					// The header's quick-link toolbar has room for about one line
 					// of short labels, not full league names — this is what shows
 					// there instead. Blank falls back to the league's display name
@@ -10669,7 +10890,7 @@
 			});
 			card.appendChild(el('div', { class: 'admin-add-row' }, [addBtn]));
 
-			buildAdminSaveActions(card);
+			buildAdminSaveActions(card, { sticky: true });
 
 			// Last thing in the card, after the Save row and the validation errors
 			// that answer it. Only the non-obvious columns get a line — anything you

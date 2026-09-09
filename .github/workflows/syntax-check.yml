@@ -70,6 +70,14 @@ jobs:
       - name: Test the Admin tab's save validation
         run: node scripts/test-save-leagues.mjs
 
+      # The Admin tab's unsaved-changes detection, which decides the dot on an
+      # edited league, the count on both Save buttons, and whether closing the
+      # tab warns you. It fails silently in both directions: a false positive
+      # marks all eighteen leagues dirty on a card that was only opened, and a
+      # false negative leaves the beforeunload guard disarmed over a real edit.
+      - name: Test the Admin tab's unsaved-changes detection
+        run: node scripts/test-admin-dirty.mjs
+
       # Also pure functions with no network: the NFL-calendar rules that flip
       # the automatic ranking set to rest-of-season at kickoff and back after
       # the Super Bowl. Nobody is watching on the day either boundary fires.
