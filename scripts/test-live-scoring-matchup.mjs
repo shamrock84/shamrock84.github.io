@@ -41,7 +41,16 @@ const liveScoringResponse = {
 			},
 			{
 				franchise: [
-					{ id: '0001', score: '12.4', isHome: '0', players: {}, gameSecondsRemaining: '32400' },
+					{
+						id: '0001', score: '12.4', isHome: '0', gameSecondsRemaining: '32400',
+						players: {
+							player: [
+								{ id: '9001', score: '6.2', status: 'starter', gameSecondsRemaining: '1800', updatedStats: '' },
+								{ id: '9002', score: '0.0', status: 'starter', gameSecondsRemaining: '3600', updatedStats: '' },
+								{ id: '9003', score: '4.0', status: 'nonstarter', gameSecondsRemaining: '0', updatedStats: '' },
+							],
+						},
+					},
 					{ id: '0008', score: '9.1', isHome: '1', players: {}, gameSecondsRemaining: '28800' },
 				],
 			},
@@ -82,9 +91,18 @@ const liveScoringResponse = {
 	assert.equal(me.teamName, 'My Team');
 	assert.equal(me.score, '12.40');
 	assert.equal(me.minutesRemaining, 540, '32400 seconds is 540 minutes');
+	assert.deepEqual(
+		me.players,
+		[
+			{ id: '9001', secondsRemaining: 1800 },
+			{ id: '9002', secondsRemaining: 3600 },
+		],
+		'the nonstarter is excluded — only starters feed the remaining-points model'
+	);
 
 	const teamD = result.teams.find((t) => t.franchiseId === '0008');
 	assert.equal(teamD.minutesRemaining, 480, '28800 seconds is 480 minutes');
+	assert.deepEqual(teamD.players, [], 'an empty players node ({}) reads as no starters, not a crash');
 	assert.equal(me.winProb + teamD.winProb, 100, 'a matchup pair\'s win probabilities always sum to 100');
 	assert.ok(me.winProb > 50, 'the team ahead on both score and remaining time is favored');
 

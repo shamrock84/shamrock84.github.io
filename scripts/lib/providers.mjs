@@ -1490,6 +1490,23 @@ export async function fetchNflGameClocks() {
   return clocks;
 }
 
+// Every currently-set starter on one franchise's liveScoring entry, for the
+// remaining-points win-probability model (estimateWinProbability's caller)
+// to value against FantasyPros projections instead of a flat per-minute
+// rate. `players.player` carries the WHOLE roster here, not just starters —
+// `status` is 'starter' or 'nonstarter' — so this filters to starters only:
+// a bench player's remaining game clock has nothing to do with this
+// matchup's outcome. Object-or-array-or-absent, the same shape every other
+// MFL list export uses (see mflRosterPlayers). `id` is the same MFL
+// player-id space fetchProjections' `byMflId` already joins against.
+function mflLiveStarters(f) {
+  const raw = f.players?.player;
+  const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
+  return list
+    .filter((p) => String(p.status).toLowerCase() === 'starter')
+    .map((p) => ({ id: String(p.id), secondsRemaining: Number(p.gameSecondsRemaining ?? 0) }));
+}
+
 export async function fetchScoring(league, cookie, nameById) {
   const [names, liveData] = await Promise.all([
     nameById ? Promise.resolve(nameById) : fetchMflFranchiseNames(league, cookie),
@@ -1527,6 +1544,7 @@ export async function fetchScoring(league, cookie, nameById) {
     score: Number(f.score ?? 0),
     minutesRemaining: Math.round(Number(f.gameSecondsRemaining ?? 0) / 60),
     isMe: f.id === league.franchiseId,
+    players: mflLiveStarters(f),
   }));
 
   attachWinProbabilities(teams, matchups);
@@ -1800,15 +1818,26 @@ export async function fetchEspnStandings(league) {
 // (a bye week, or the scoreboard simply not covering it), silently
 // contributes 0 rather than throwing — an estimate is never worth crashing
 // the whole card over one unresolved player.
-function espnTeamMinutesRemaining(teamSide, clockMap) {
+//
+// Also returns each counted starter's own name and remaining seconds — the
+// remaining-points win-probability model (estimateWinProbability's caller)
+// values them individually against FantasyPros projections instead of a
+// flat per-minute rate. ESPN has no id space FantasyPros' projections join
+// against (see fetchProjections' byMflId/byName split), so name is what
+// travels here, same as fetchEspnLeagueRoster's own player list.
+function espnTeamLiveStarters(teamSide, clockMap) {
   const entries = teamSide?.rosterForCurrentScoringPeriod?.entries || [];
   let seconds = 0;
+  const players = [];
   for (const e of entries) {
     if (e.lineupSlotId === ESPN_BENCH_SLOT_ID || e.lineupSlotId === ESPN_IR_SLOT_ID) continue;
-    const abbr = ESPN_PRO_TEAM_MAP[e.playerPoolEntry?.player?.proTeamId];
-    seconds += clockMap.get(abbr) ?? 0;
+    const p = e.playerPoolEntry?.player;
+    const abbr = ESPN_PRO_TEAM_MAP[p?.proTeamId];
+    const secondsRemaining = clockMap.get(abbr) ?? 0;
+    seconds += secondsRemaining;
+    players.push({ name: p?.fullName || '', secondsRemaining });
   }
-  return Math.round(seconds / 60);
+  return { minutesRemaining: Math.round(seconds / 60), players };
 }
 
 // clockMap is optional — pass one from fetchNflGameClocks (shared across
@@ -1833,11 +1862,13 @@ export async function fetchEspnScoring(league, clockMap) {
   for (const m of schedule) {
     const teamIds = [];
     if (m.home) {
-      rows.push({ teamId: m.home.teamId, score: m.home.totalPoints ?? 0, minutesRemaining: espnTeamMinutesRemaining(m.home, clocks) });
+      const { minutesRemaining, players } = espnTeamLiveStarters(m.home, clocks);
+      rows.push({ teamId: m.home.teamId, score: m.home.totalPoints ?? 0, minutesRemaining, players });
       teamIds.push(String(m.home.teamId));
     }
     if (m.away) {
-      rows.push({ teamId: m.away.teamId, score: m.away.totalPoints ?? 0, minutesRemaining: espnTeamMinutesRemaining(m.away, clocks) });
+      const { minutesRemaining, players } = espnTeamLiveStarters(m.away, clocks);
+      rows.push({ teamId: m.away.teamId, score: m.away.totalPoints ?? 0, minutesRemaining, players });
       teamIds.push(String(m.away.teamId));
     }
     if (teamIds.length) matchups.push({ teamIds });
@@ -1853,6 +1884,7 @@ export async function fetchEspnScoring(league, clockMap) {
     score: r.score,
     minutesRemaining: r.minutesRemaining,
     isMe: String(r.teamId) === String(league.franchiseId),
+    players: r.players,
   }));
 
   attachWinProbabilities(teams, matchups);
@@ -2086,15 +2118,22 @@ export async function fetchSleeperStandings(league) {
 // filter) via each player's NFL team from playerMap. A player missing from
 // playerMap, on a bye, or whose team isn't in clockMap (the scoreboard
 // simply not covering it) contributes 0 rather than throwing — same
-// silently-graceful handling as espnTeamMinutesRemaining, for the same
+// silently-graceful handling as espnTeamLiveStarters, for the same
 // reason: this is an estimate, not worth crashing the card over one player.
-function sleeperTeamMinutesRemaining(starterIds, playerMap, clockMap) {
+//
+// Also returns each starter's own name and remaining seconds — see
+// espnTeamLiveStarters' comment for why name, not id, is what the
+// remaining-points win-probability model joins Sleeper players against.
+function sleeperTeamLiveStarters(starterIds, playerMap, clockMap) {
   let seconds = 0;
+  const players = [];
   for (const id of starterIds || []) {
-    const abbr = playerMap.get(String(id))?.team;
-    seconds += clockMap.get(abbr) ?? 0;
+    const info = playerMap.get(String(id));
+    const secondsRemaining = clockMap.get(info?.team) ?? 0;
+    seconds += secondsRemaining;
+    players.push({ name: info?.name || '', secondsRemaining });
   }
-  return Math.round(seconds / 60);
+  return { minutesRemaining: Math.round(seconds / 60), players };
 }
 
 // clockMap and playerMap are both optional — pass a pre-fetched clockMap
@@ -2118,13 +2157,17 @@ export async function fetchSleeperScoring(league, clockMap, playerMap) {
     throw new Error('No live scoring available yet');
   }
 
-  const teams = rawMatchups.map((m) => ({
-    franchiseId: String(m.roster_id),
-    teamName: names.get(String(m.roster_id)) || `Team ${m.roster_id}`,
-    score: m.points ?? 0,
-    minutesRemaining: sleeperTeamMinutesRemaining(m.starters, players, clocks),
-    isMe: String(m.roster_id) === String(league.franchiseId),
-  }));
+  const teams = rawMatchups.map((m) => {
+    const live = sleeperTeamLiveStarters(m.starters, players, clocks);
+    return {
+      franchiseId: String(m.roster_id),
+      teamName: names.get(String(m.roster_id)) || `Team ${m.roster_id}`,
+      score: m.points ?? 0,
+      minutesRemaining: live.minutesRemaining,
+      isMe: String(m.roster_id) === String(league.franchiseId),
+      players: live.players,
+    };
+  });
 
   // Sleeper pairs opponents by a shared matchup_id — group by it rather than
   // assuming exactly two rosters share each id, since a missing id (a bye,
