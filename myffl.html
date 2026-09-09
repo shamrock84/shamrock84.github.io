@@ -745,6 +745,18 @@
 			padding: 0.6rem 0.75rem;
 			font-size: 0.85rem;
 		}
+		/* Same box shape as .error-box (so a Scoring card doesn't resize when it
+		   settles into its real state a moment later) but muted rather than IR
+		   red — this is "haven't heard back yet", not "something's wrong", and
+		   shouldn't borrow the color this page reserves for the latter. See
+		   renderScoringCard's own comment on liveScoringAttempted. */
+		.loading-box {
+			background: var(--chip-bg);
+			color: var(--muted);
+			border-radius: 8px;
+			padding: 0.6rem 0.75rem;
+			font-size: 0.85rem;
+		}
 		/* Cross-league problems digest — the strip above the grid collecting
 		   everything that needs attention, so eighteen leagues don't have to
 		   be walked one by one to find the card that's on fire. Absent
@@ -3281,6 +3293,19 @@
 		}
 		let pageData = null;
 		let liveScoringTimer = null;
+		// False until the first /api/live-scoring poll has completed, success or
+		// failure. renderScoringCard reads this to decide whether an empty/error
+		// scoring state is trustworthy: before the first poll lands, `scoring`/
+		// `scoringError` on a league are whatever the last sync (up to 4 hours
+		// stale) captured — often "No live scoring available yet" outside game
+		// windows — and painting that as fact on every page load, only to
+		// silently replace it a second later once the live poll actually
+		// answers, read as a flicker/bug rather than a loading state. See
+		// refreshLiveScoring, which flips this on the first completed attempt
+		// regardless of outcome — a failed first poll still has to release the
+		// "loading" cards back to showing the sync's own (real, just not live)
+		// data rather than leaving them stuck.
+		let liveScoringAttempted = false;
 		let syncPollTimer = null;
 
 		// Live-scoring proxy (Vercel), separate from the 4-hour GitHub Actions
@@ -5639,6 +5664,18 @@
 			card.appendChild(buildCardHead(card, league, formatBadgeLabels(league)));
 
 			const teams = league.scoring?.teams || [];
+
+			// Before the first live poll has answered, an empty/error scoring
+			// state is only the last sync's (up to 4 hours stale) snapshot —
+			// often a real "No live scoring available yet" from outside game
+			// windows, not a current answer. Painting that as fact on every
+			// page load, then silently swapping it for real data a second
+			// later, reads as a flicker, not a loading state. See
+			// liveScoringAttempted's own comment.
+			if (teams.length === 0 && !liveScoringAttempted) {
+				card.appendChild(el('div', { class: 'loading-box', text: 'Loading live scores…' }));
+				return card;
+			}
 
 			if (league.scoringError && teams.length === 0) {
 				card.appendChild(el('div', { class: 'error-box', text: `No live scoring yet: ${league.scoringError}` }));
@@ -9522,8 +9559,28 @@
 			el.classList.toggle('live-error', !!isError);
 		}
 
+		// Shared by both refreshLiveScoring outcomes below — a tear-down/rebuild
+		// of just the Scoring cards, same as every other poll already did.
+		function rerenderScoringCards() {
+			const gridEl = document.getElementById('grid');
+			gridEl.querySelectorAll('.card[data-view="scoring"]').forEach((c) => c.remove());
+			for (const league of pageData.leagues) {
+				if (league.scoring !== undefined || league.scoringError) {
+					gridEl.appendChild(renderScoringCard(league));
+				}
+			}
+			updateVisibility();
+		}
+
 		async function refreshLiveScoring() {
 			if (!LIVE_SCORING_URL || !pageData) return;
+			// Captured before this attempt touches the flag — only the FIRST
+			// completed attempt (success or failure) needs to force a re-render:
+			// that's the one that can be releasing "Loading live scores…"
+			// placeholders (see liveScoringAttempted). Every later poll already
+			// re-renders on success regardless, and a later failure correctly
+			// leaves the last known-good cards alone rather than blanking them.
+			const wasFirstAttempt = !liveScoringAttempted;
 			try {
 				const res = await fetch(`${LIVE_SCORING_URL}?t=${Date.now()}`, { cache: 'no-store' });
 				if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -9537,17 +9594,16 @@
 					league.scoringError = update.scoringError;
 				}
 
-				const gridEl = document.getElementById('grid');
-				gridEl.querySelectorAll('.card[data-view="scoring"]').forEach((c) => c.remove());
-				for (const league of pageData.leagues) {
-					if (league.scoring !== undefined || league.scoringError) {
-						gridEl.appendChild(renderScoringCard(league));
-					}
-				}
-				updateVisibility();
+				liveScoringAttempted = true;
+				rerenderScoringCards();
 				setLiveStatus(`Live updates on — last refreshed ${timeAgo(live.generatedAt)}`, false);
 			} catch (err) {
 				console.warn(`Live scoring refresh failed: ${err.message}`);
+				liveScoringAttempted = true;
+				// Release any "Loading live scores…" placeholders back to the
+				// sync's own data rather than leaving them stuck forever — a
+				// later failure, by contrast, leaves already-real cards alone.
+				if (wasFirstAttempt) rerenderScoringCards();
 				setLiveStatus(`Live update failed: ${err.message}`, true);
 			}
 		}
