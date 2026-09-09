@@ -5800,11 +5800,22 @@
 				card.appendChild(header);
 
 				const pills = el('div', { class: 'scoring-matchup-pills' });
-				matchups.forEach((m) => {
-					const group = m.teamIds
+				// My own matchup leads the stack — everything else keeps the
+				// provider's original order behind it. Array#sort is stable
+				// (spec-guaranteed since ES2019), so a single isMe/not-isMe
+				// key reorders only the one group that needs to move.
+				const matchupGroups = matchups.map((m) => ({
+					group: m.teamIds
 						.map((id) => teamById.get(id))
 						.filter(Boolean)
-						.sort((a, b) => Number(b.score) - Number(a.score));
+						.sort((a, b) => Number(b.score) - Number(a.score)),
+				}));
+				matchupGroups.sort((a, b) => {
+					const aMe = a.group.some((t) => t.isMe) ? 0 : 1;
+					const bMe = b.group.some((t) => t.isMe) ? 0 : 1;
+					return aMe - bMe;
+				});
+				matchupGroups.forEach(({ group }) => {
 					const pill = el('div', { class: 'scoring-matchup-pill' });
 					group.forEach((t) => {
 						const row = el('div', { class: `scoring-matchup-row${t.isMe ? ' me-row' : ''}` });
