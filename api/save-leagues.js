@@ -51,6 +51,7 @@ const SCORING_FORMATS = new Set(['PPR', 'HALF', 'STD']);
 const KEY_ORDER = [
   'id', 'franchiseId', 'name', 'displayName', 'type', 'provider',
   'tags', 'lineupPilot', 'rankingType', 'scoring', 'season', 'startYear', 'rulesUrl', 'commishContact',
+  'cutdownRosterSize',
   'nickname', 'style',
   'dues', 'payout1', 'payout2', 'payout3', 'payoutDivisionWinner', 'payoutWeeklyHigh', 'payoutSeasonHigh',
 ];
@@ -231,6 +232,21 @@ function validate(leagues) {
         errors.push(`${label}: rules link must start with http:// or https://.`);
       }
     }
+    // Dynasty leagues only (cut planning is gated to that type — see
+    // cutsNeededFor in myffl.html), but checked on shape rather than on type
+    // for the same reason commishContact above is: a league that changes type
+    // shouldn't have a hand-set number silently discarded, and the Admin tab
+    // already hides the field where it can't apply. A roster size, not a
+    // dollar amount, so isValidMoneyField isn't the right check — this has to
+    // be a whole number of players. The upper bound is loose on purpose: it's
+    // there to catch a year typed into the wrong box (2023), not to have an
+    // opinion about how deep a dynasty roster may be.
+    if (league.cutdownRosterSize != null && league.cutdownRosterSize !== '') {
+      const size = Number(league.cutdownRosterSize);
+      if (!Number.isInteger(size) || size < 1 || size > 100) {
+        errors.push(`${label}: cutdown roster size must be a whole number of players, or left blank.`);
+      }
+    }
     // Free text shown everywhere a league is named on the page in place of
     // the live-synced name — see leagueDisplayName in myffl.html. No format
     // to enforce beyond "it's text", same as name/nickname.
@@ -321,6 +337,14 @@ function mergeLeague(league) {
     const n = Number(v);
     if (Number.isFinite(n)) out[k] = n;
   };
+  // Same "store it unquoted" treatment for a count rather than an amount —
+  // validate() has already rejected anything that isn't a whole number, so
+  // this only has to drop the blank case.
+  const putNumber = (k, v) => {
+    if (v == null || v === '') return;
+    const n = Number(v);
+    if (Number.isInteger(n)) out[k] = n;
+  };
 
   put('id', String(league.id).trim());
   put('franchiseId', league.franchiseId == null ? '' : String(league.franchiseId).trim());
@@ -336,6 +360,13 @@ function mergeLeague(league) {
   put('startYear', league.startYear == null ? '' : String(league.startYear).trim());
   put('rulesUrl', league.rulesUrl);
   put('commishContact', league.commishContact == null ? '' : String(league.commishContact).trim());
+  // A real JSON number like the payouts below, not a quoted string like
+  // season: it's arithmetic (rosterCount - cutdownRosterSize in cutsNeededFor),
+  // and it is already stored unquoted in the three leagues that carried it
+  // before this tab knew the field existed — reaching it through mergeLeague's
+  // unknown-key passthrough would have turned those into strings the first
+  // time anyone pressed Save.
+  putNumber('cutdownRosterSize', league.cutdownRosterSize);
   put('nickname', league.nickname == null ? '' : String(league.nickname).trim());
   put('style', league.style);
   putMoney('dues', league.dues);
