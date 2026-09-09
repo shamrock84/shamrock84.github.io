@@ -94,6 +94,28 @@ check('rejects a commissioner contact link with no scheme', validate(withField('
 check('allows a slack commissioner contact link', validate(withField('commishContact', 'slack://channel?team=T12345678&id=U12345678')).length === 0,
   JSON.stringify(validate(withField('commishContact', 'slack://channel?team=T12345678&id=U12345678'))));
 check('allows a blank commissioner contact', validate(withField('commishContact', '')).length === 0);
+
+// Dynasty-only in the Admin tab (cut planning is gated to that type), but
+// validated on shape rather than on type — the same convention commishContact
+// above follows, so a league that changes type doesn't have a hand-set number
+// silently discarded. A whole number of players, never a dollar amount and
+// never a year: 2023 in this box is the mistake the upper bound exists to
+// catch, since the field sits two rows from Start Year on the same form.
+check('rejects a non-numeric cutdown roster size', validate(withField('cutdownRosterSize', 'twenty three')).length > 0);
+check('rejects a fractional cutdown roster size', validate(withField('cutdownRosterSize', '22.5')).length > 0);
+check('rejects a zero cutdown roster size', validate(withField('cutdownRosterSize', 0)).length > 0);
+check('rejects a negative cutdown roster size', validate(withField('cutdownRosterSize', -5)).length > 0);
+check('rejects a year typed into the cutdown roster size', validate(withField('cutdownRosterSize', '2023')).length > 0);
+check('allows a normal cutdown roster size', validate(withField('cutdownRosterSize', 23)).length === 0,
+  JSON.stringify(validate(withField('cutdownRosterSize', 23))));
+check('allows a cutdown roster size typed as text by the Admin tab',
+  validate(withField('cutdownRosterSize', '23')).length === 0,
+  JSON.stringify(validate(withField('cutdownRosterSize', '23'))));
+check('allows a blank cutdown roster size', validate(withField('cutdownRosterSize', '')).length === 0);
+// Not a type error, matching commishContact's own case just below: the tab
+// hides the field off-type, it doesn't reject the value.
+check('allows a cutdown roster size on a non-dynasty league',
+  validate([{ ...base(), type: 'redraft', cutdownRosterSize: 23 }]).length === 0);
 // Deliberately not tied to type: switching a league away from Salary Cap and
 // back must not silently discard the contact.
 check('allows a commissioner contact on a non-salarycap league',
@@ -206,6 +228,12 @@ check('drops empty tags', !('tags' in merged));
 check('drops lineupPilot when off', !('lineupPilot' in merged));
 check('drops a blank rules link', !('rulesUrl' in merged));
 check('drops a blank commissioner contact', !('commishContact' in mergeLeague({ ...base(), commishContact: '' })));
+// Stored unquoted, like the payouts and unlike season/startYear — cutsNeededFor
+// subtracts it from a roster count. The Admin tab's text input hands it over as
+// a string, so this is the conversion that keeps the three leagues that already
+// carried it as JSON numbers from being rewritten as strings on the first save.
+check('stores a cutdown roster size as a number', mergeLeague({ ...base(), cutdownRosterSize: '23' }).cutdownRosterSize === 23);
+check('drops a blank cutdown roster size', !('cutdownRosterSize' in mergeLeague({ ...base(), cutdownRosterSize: '' })));
 check('trims a commissioner contact', mergeLeague({ ...base(), commishContact: '  c@e.com ' }).commishContact === 'c@e.com');
 check('drops a blank nickname', !('nickname' in mergeLeague({ ...base(), nickname: '' })));
 check('trims a nickname', mergeLeague({ ...base(), nickname: '  MNMx  ' }).nickname === 'MNMx');

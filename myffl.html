@@ -2212,6 +2212,38 @@
 		.admin-field-wide {
 			grid-column: 1 / -1;
 		}
+		/* Section captions inside the field grid. Twenty-odd controls spanning
+		   four unrelated concerns — what the league is, how its roster reads,
+		   what it's called, what it pays — used to run together in one flat
+		   grid, so at desktop width a toolbar style sat in the same visual row
+		   as an entry fee with nothing to say they were different kinds of
+		   thing. The grouping is by what each setting affects rather than by
+		   what shape it is, which is why Start Year sits with the payouts (both
+		   only ever change the History tab) rather than beside Season, the
+		   other four-digit year on the form and the one it was most often
+		   confused with.
+
+		   Full-width by the same 1 / -1 rule as .admin-field-wide above, and
+		   for the same reason — a `span N` caption would conjure implicit
+		   columns at phone widths. */
+		.admin-section {
+			grid-column: 1 / -1;
+			font-size: 0.68rem;
+			text-transform: uppercase;
+			letter-spacing: 0.06em;
+			font-weight: 700;
+			color: var(--accent);
+			margin-top: 0.45rem;
+			padding-top: 0.5rem;
+			border-top: 1px solid var(--border);
+		}
+		/* The first caption sits immediately under .admin-fields' own top rule,
+		   where a second line reads as a doubled border rather than a divider. */
+		.admin-section:first-child {
+			margin-top: 0;
+			padding-top: 0;
+			border-top: 0;
+		}
 		.admin-field-check {
 			flex-direction: row;
 			align-items: center;
@@ -9984,6 +10016,12 @@
 			if (norm(cfg.provider) !== norm(live.provider)) out.push('Site');
 			if (JSON.stringify(cfg.tags || []) !== JSON.stringify(live.tags || [])) out.push('Tags');
 			if (norm(cfg.rulesUrl) !== norm(live.rulesUrl)) out.push('Rules link');
+			// Echoed back by the sync (see result.cutdownRosterSize in
+			// fetch-rosters.mjs), so it belongs here for the same reason the
+			// rest do: cut planning reads the synced copy, which means an edit
+			// made on this tab changes nothing on the Rosters card until the
+			// next sync has run — exactly what this notice exists to say.
+			if (norm(cfg.cutdownRosterSize) !== norm(live.cutdownRosterSize)) out.push('Cutdown roster size');
 			if (cfg.season && norm(cfg.season) !== norm(live.season)) out.push('Season');
 			return out;
 		}
@@ -10390,30 +10428,49 @@
 					// mid-word.
 					const changed = (apply) => (v) => { apply(v); refreshAdminCard(); };
 
+					// Section captions, in the order the four groups render.
+					// Grouped by what a setting actually changes rather than by
+					// what shape it is: everything under "League" feeds the sync
+					// and therefore every tab, "Rosters & lineups" changes what a
+					// Rosters card shows, "Naming" only ever changes what this
+					// league is called on screen, and "History & payouts" is read
+					// by nothing but the History tab's Results and Finances cards.
+					const section = (labelText) => {
+						fields.appendChild(el('div', { class: 'admin-section', text: labelText }));
+					};
+
+					// What league this is and where it's read from. These are the
+					// fields a league is created with and then rarely touched again.
+					section('League');
 					field('League ID', adminText(league.id, 'e.g. 26696', (v) => { league.id = v; }));
 					field('My team ID', adminText(league.franchiseId, 'e.g. 0001', (v) => { league.franchiseId = v; }));
 					field('Site', adminSelect(ADMIN_PROVIDERS, league.provider, changed((v) => { league.provider = v || undefined; })));
 					field('Type', adminSelect(ADMIN_TYPES, league.type, changed((v) => { league.type = v; })));
-					field('Rankings', adminSelect(ADMIN_RANKINGS, league.rankingType, changed((v) => { league.rankingType = v || undefined; })));
-					// No normalisation: blank means "read it from the league", which
-					// is not the same as pinning PPR. They used to be the same
-					// value and folding them together would now hide the setting.
-					field('Scoring', adminSelect(ADMIN_SCORING, league.scoring, changed((v) => { league.scoring = v || undefined; })));
 					// Free text rather than a dropdown: the useful values are
 					// "whatever this league has rolled over to" and, rarely, one
 					// specific year — not a list anyone can enumerate ahead of
 					// time. Blank is the normal state and means "follow it".
 					field('Season', adminText(league.season, 'auto', (v) => { league.season = v || undefined; }));
-					// A league's own history usually predates this manager joining
-					// it — the franchise id results[] is keyed to belonged to
-					// someone else before then, so its pre-join placements aren't
-					// this manager's to see. Blank (the normal state) means no
-					// floor; see isBeforeStartYear in the Results/Finances cards
-					// for how it's applied, and yearsNeedingHistoryBackfill in
-					// fetch-rosters.mjs for how it also keeps the backfill from
-					// spending MFL/ESPN requests on years nobody can see anyway.
-					field('Start Year', adminText(league.startYear, 'e.g. 2023', (v) => { league.startYear = v || undefined; }));
 
+					// Everything that changes what a Rosters card shows.
+					section('Rosters & lineups');
+					// No normalisation: blank means "read it from the league", which
+					// is not the same as pinning PPR. They used to be the same
+					// value and folding them together would now hide the setting.
+					field('Scoring', adminSelect(ADMIN_SCORING, league.scoring, changed((v) => { league.scoring = v || undefined; })));
+					field('Rankings', adminSelect(ADMIN_RANKINGS, league.rankingType, changed((v) => { league.rankingType = v || undefined; })));
+					// Dynasty only: cut planning is gated to that type (see
+					// duringWeeks1Through17 and cutsNeededFor), so on any other
+					// league this number has nothing to count against. Deliberately
+					// not MFL's own rosterLimits.size, which describes what MFL will
+					// currently tolerate rather than what the league's rules require
+					// — commissioners routinely raise it for the offseason. Hidden
+					// rather than cleared when the type changes, the same way
+					// Commissioner contact below is: a value typed under one type
+					// shouldn't vanish because you looked at the Type dropdown.
+					if (league.type === 'dynasty') {
+						field('Cutdown roster size', adminText(league.cutdownRosterSize, 'e.g. 23', (v) => { league.cutdownRosterSize = v || undefined; }));
+					}
 					const lineupWrap = el('label', { class: 'admin-field admin-field-check' });
 					const lineupBox = el('input', { type: 'checkbox' });
 					lineupBox.checked = league.lineupPilot === true;
@@ -10424,7 +10481,6 @@
 					lineupWrap.appendChild(lineupBox);
 					lineupWrap.appendChild(el('span', { class: 'admin-field-label', text: 'Lineup editor' }));
 					fields.appendChild(lineupWrap);
-
 					// Generic placeholder rather than a realistic example: greyed-out
 					// sample tags in the many untagged leagues read as real values at
 					// a glance, which is exactly the wrong impression on an edit form.
@@ -10432,6 +10488,7 @@
 						const tags = v.split(',').map((t) => t.trim()).filter(Boolean);
 						league.tags = tags.length ? tags : undefined;
 					}), true);
+					field('Rules link', adminText(league.rulesUrl, 'https://…', (v) => { league.rulesUrl = v || undefined; }), true);
 					// Salary Cap only: this is who/where the contract-length summary
 					// goes, and no other league type produces one. Changing Type
 					// re-renders the card, so it appears and disappears as you switch.
@@ -10442,33 +10499,52 @@
 					if (league.type === 'salarycap') {
 						field('Commissioner contact', adminText(league.commishContact, 'name@example.com, https://…, or slack://…', (v) => { league.commishContact = v || undefined; }), true);
 					}
-					field('Rules link', adminText(league.rulesUrl, 'https://…', (v) => { league.rulesUrl = v || undefined; }), true);
-				// Overrides the live-synced name everywhere it's shown — every
-				// card, popover, digest row and export (see leagueDisplayName)
-				// — not just the toolbar the way Toolbar Label below is. For a
-				// real name that's fine on its own site but unwieldy here
-				// (long, punctuation-heavy, ...); should still read as the
-				// league's name, just trimmed, not a cryptic abbreviation.
-				// Blank (the normal state) means use the live name as-is,
-				// which is why the placeholder here is that same name.
-				field('Display Name', adminText(league.displayName, name || 'e.g. My League Name', (v) => { league.displayName = v || undefined; }), true);
-				// The header's quick-link toolbar has room for about one line
-				// of short labels, not full league names — this is what shows
-				// there instead. Blank falls back to the league's display name
-				// (leagueDisplayName — a Display Name override above wins
-				// there first), which is why the placeholder mirrors that
-				// same fallback rather than showing a generic example.
-				// The toolbar itself uses this array's own order with Draft
-				// Only leagues filtered out — nothing else to configure here.
-				field('Toolbar Label', adminText(league.nickname, league.displayName || name || 'e.g. MNMx', (v) => { league.nickname = v || undefined; }));
-				// The same plain/gold/purple choice a Quick Links extra gets
-				// below (appendQuickLink reads both off the same `style`
-				// field) — gold matches the Provider/Season badge colors,
-				// purple the Dynasty/Salary/Draft Only/Redraft type badge's.
-				// Blank (every league here, by default) is plain: the
-				// un-chipped link text the toolbar always used before this
-				// existed.
-				field('Toolbar Style', adminSelect(ADMIN_QUICKLINK_STYLES, league.style, changed((v) => { league.style = v || undefined; })));
+
+					// What this league is called, and nothing else.
+					section('Naming');
+					// Overrides the live-synced name everywhere it's shown — every
+					// card, popover, digest row and export (see leagueDisplayName)
+					// — not just the toolbar the way Toolbar Label below is. For a
+					// real name that's fine on its own site but unwieldy here
+					// (long, punctuation-heavy, ...); should still read as the
+					// league's name, just trimmed, not a cryptic abbreviation.
+					// Blank (the normal state) means use the live name as-is,
+					// which is why the placeholder here is that same name.
+					field('Display Name', adminText(league.displayName, name || 'e.g. My League Name', (v) => { league.displayName = v || undefined; }), true);
+					// The header's quick-link toolbar has room for about one line
+					// of short labels, not full league names — this is what shows
+					// there instead. Blank falls back to the league's display name
+					// (leagueDisplayName — a Display Name override above wins
+					// there first), which is why the placeholder mirrors that
+					// same fallback rather than showing a generic example.
+					// The toolbar itself uses this array's own order with Draft
+					// Only leagues filtered out — nothing else to configure here.
+					field('Toolbar Label', adminText(league.nickname, league.displayName || name || 'e.g. MNMx', (v) => { league.nickname = v || undefined; }));
+					// The same plain/gold/purple choice a Quick Links extra gets
+					// below (appendQuickLink reads both off the same `style`
+					// field) — gold matches the Provider/Season badge colors,
+					// purple the Dynasty/Salary/Draft Only/Redraft type badge's.
+					// Blank (every league here, by default) is plain: the
+					// un-chipped link text the toolbar always used before this
+					// existed.
+					field('Toolbar Style', adminSelect(ADMIN_QUICKLINK_STYLES, league.style, changed((v) => { league.style = v || undefined; })));
+
+					// Read by nothing outside the History tab. Start Year leads the
+					// group because it's the switch that decides which years the
+					// two cards below it show at all — it was previously sat next
+					// to Season, the only other four-digit year on the form and the
+					// one it reads nothing like: Season picks which season syncs,
+					// this one picks how far back the history is this manager's.
+					section('History & payouts');
+					// A league's own history usually predates this manager joining
+					// it — the franchise id results[] is keyed to belonged to
+					// someone else before then, so its pre-join placements aren't
+					// this manager's to see. Blank (the normal state) means no
+					// floor; see isBeforeStartYear in the Results/Finances cards
+					// for how it's applied, and yearsNeedingHistoryBackfill in
+					// fetch-rosters.mjs for how it also keeps the backfill from
+					// spending MFL/ESPN requests on years nobody can see anyway.
+					field('Start Year', adminText(league.startYear, 'e.g. 2023', (v) => { league.startYear = v || undefined; }));
 					// Feeds the History tab's Finances card: Dues is the flat
 					// entry fee (assumed the same every year), and the three
 					// payouts assume every league here pays exactly the top 3 —
@@ -10487,7 +10563,17 @@
 					// backfill that fills Finish, once it's run for a given
 					// year (see config/leagues.json's _readme); blank pays
 					// nothing, same as an unentered placement payout.
-					field('Division winner ($)', adminText(league.payoutDivisionWinner, 'e.g. 50', (v) => { league.payoutDivisionWinner = v || undefined; }));
+					//
+					// Hidden for Draft Only, where it can never pay: those leagues
+					// rank by total points and never fetch head-to-head standings,
+					// so the backfill leaves divisionWinnerFranchiseId unset for
+					// them by construction (see the draftonly branch in
+					// fetch-rosters.mjs) and the Finances card has nothing to match
+					// a franchise against. Eight of the eighteen leagues here were
+					// offering a payout field that could never pay out.
+					if (league.type !== 'draftonly') {
+						field('Division winner ($)', adminText(league.payoutDivisionWinner, 'e.g. 50', (v) => { league.payoutDivisionWinner = v || undefined; }));
+					}
 					// Independent of placement — a last-place team can still have had
 					// the league's best week. Populated on the Finances card only once
 					// the separate weekly-high-score backfill has run for a given year
