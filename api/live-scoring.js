@@ -31,6 +31,15 @@ import { fetchProjections, fantasyProsApiKey, normalizePlayerName, nflSeasonPhas
 
 const CONFIG_PATH = fileURLToPath(new URL('../config/leagues.json', import.meta.url));
 
+// Explicit rather than relying on Vercel's default execution ceiling — see
+// LIVE_SCORING_MFL_INTERVAL_MS's own comment below. A fully-cold poll's
+// worst case (~30 MFL requests across every league, paced 300ms apart, plus
+// a possible 429 retry chain on top) can approach 10+ seconds; 30s leaves
+// real margin instead of hoping the platform default happened to cover it,
+// which is the assumption that ran out of room the last two times this
+// pacing interval needed raising.
+export const config = { maxDuration: 30 };
+
 // Module-level cache — persists across warm invocations of this function
 // instance (not guaranteed across cold starts, which is fine: worst case we
 // just re-login / re-fetch names once). Keeps steady-state polling down to
@@ -157,18 +166,26 @@ function makeProjectPlayer(values, provider, scoring) {
 // for every MFL league that isn't cached yet — roughly 2x the request count
 // of the steady-state case this constant was originally sized against, and
 // mflGet's own retry (up to 3 attempts, 1.5/3/4.5s backoff) still weren't
-// enough to outlast it. 150ms is the response: still well inside Vercel's
-// default execution ceiling even at the worst case (~30 MFL requests across
-// every league on a fully cold instance is ~4.5s of pacing floor, nowhere
-// near the ceiling that made 75ms feel urgent to begin with — that caution
-// left no actual margin against the failure that happened), and doubles the
-// gap between request starts, which is the only knob that changes whether
-// MFL refuses in the first place. Still a starting point, not a measured
-// limit — the same caveat every number in this pacing scheme carries — but
-// now anchored to an observed failure rather than a guess.
+// enough to outlast it. 150ms doubled that gap, but a cold instance still
+// visibly struggled in practice (every MFL league showing "Loading live
+// scores…" on a manual refresh, well past what a healthy poll should take) —
+// so this doubles again to 300ms, matching the sync's own MFL_REQUEST_INTERVAL_MS.
+//
+// That match is deliberate this time, not the inconsistency the earlier
+// comment here warned against: this file's actual constraint was never "must
+// be smaller than the sync's number" on principle, it was "must leave a cold
+// burst inside this function's execution ceiling" — and 300ms's worst case
+// (~30 MFL requests across every league on a fully cold instance ≈ 9s of
+// pacing floor alone, before request latency or a 429 retry chain) no longer
+// clears that bar on faith. `maxDuration` below is what actually buys the
+// margin now, rather than staying small and hoping the platform default was
+// generous enough — which is exactly the gamble that left no room the last
+// two times this number needed raising. Still a starting point, not a
+// measured limit — the same caveat every number in this pacing scheme
+// carries — but now anchored to two rounds of observed failure, not a guess.
 //
 // Module scope, so it is set once per warm instance alongside the caches above.
-const LIVE_SCORING_MFL_INTERVAL_MS = 150;
+const LIVE_SCORING_MFL_INTERVAL_MS = 300;
 setMflRequestInterval(LIVE_SCORING_MFL_INTERVAL_MS);
 
 async function getMflCookie(username, password) {
