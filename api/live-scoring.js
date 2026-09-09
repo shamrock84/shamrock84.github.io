@@ -215,6 +215,21 @@ async function loadLeagueConfig() {
   return JSON.parse(raw).leagues || [];
 }
 
+// draftonly leagues run a single draft and never produce a real head-to-head
+// matchup — MFL's TYPE=liveScoring genuinely has nothing for them, confirmed
+// against production: every draftonly MFL league returned "No live scoring
+// available yet" on every poll, never real data, while burning a names +
+// liveScoring request pair each in the same cold-start burst that trips
+// MFL's rate limit for every OTHER league too (see
+// LIVE_SCORING_MFL_INTERVAL_MS's own comment). Excluding them here is both
+// "this was never going to work" and "this was actively costing the leagues
+// that do." The Scoring tab's own Draft Only sub-tab pill disappears on its
+// own once no Scoring card carries that data-league-type — same mechanism
+// Top Available already uses to skip Draft Only, nothing extra needed there.
+function hasLiveScoring(league) {
+  return !!league.franchiseId && league.type !== 'draftonly';
+}
+
 export default async function handler(req, res) {
   if (applyCors(req, res, { methods: 'GET, OPTIONS' })) return;
   if (req.method !== 'GET') {
@@ -277,7 +292,7 @@ export default async function handler(req, res) {
 
   const results = await Promise.allSettled(
     leagues
-      .filter((league) => league.franchiseId)
+      .filter(hasLiveScoring)
       .map(async (league) => {
         if (league.provider === 'espn') {
           const projectPlayer = makeProjectPlayer(projections, 'espn', league.scoring);
@@ -301,7 +316,7 @@ export default async function handler(req, res) {
   );
 
   const leaguesOut = leagues
-    .filter((league) => league.franchiseId)
+    .filter(hasLiveScoring)
     .map((league, i) => {
       const r = results[i];
       if (r.status === 'fulfilled') return r.value;
