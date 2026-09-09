@@ -19,9 +19,11 @@
 # What the functions actually need, and why this list is a denylist rather than
 # an allowlist: `api/**` (including `api/lib/`), `scripts/lib/providers.mjs`
 # (imported by live-scoring.js and submit-lineup.js — it is self-contained and
-# pulls in nothing else), `config/leagues.json` (read from disk at runtime by
-# both of those), plus package.json and vercel.json. Everything below was
-# checked against that list; nothing under `api/` references any of it.
+# pulls in nothing else), `scripts/lib/fantasypros.mjs` (imported by
+# live-scoring.js for the projection-based win-probability estimate; also
+# self-contained), `config/leagues.json` (read from disk at runtime by all of
+# the above), plus package.json and vercel.json. Everything below was checked
+# against that list; nothing under `api/` references any of it.
 
 # ---- The 166 MB that is pure static art ------------------------------------
 # Banners, logos and plaques hotlinked by the MyFantasyLeague league pages, plus

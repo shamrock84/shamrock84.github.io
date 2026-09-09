@@ -72,9 +72,9 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
 {
   const clockMap = new Map([['SEA', 1800], ['NE', 0], ['KC', 3600]]);
 
-  const rosterEntry = (proTeamId, lineupSlotId) => ({
+  const rosterEntry = (proTeamId, lineupSlotId, fullName) => ({
     lineupSlotId,
-    playerPoolEntry: { player: { proTeamId } },
+    playerPoolEntry: { player: { proTeamId, fullName } },
   });
 
   const espnData = {
@@ -87,9 +87,9 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
         totalPoints: 20,
         rosterForCurrentScoringPeriod: {
           entries: [
-            rosterEntry(26, 3), // SEA starter (proTeamId 26 = SEA)
-            rosterEntry(17, 3), // NE starter, but NE's game is over (0 left)
-            rosterEntry(12, 20), // KC on the BENCH — must not count
+            rosterEntry(26, 3, 'Seattle Starter'), // SEA starter (proTeamId 26 = SEA)
+            rosterEntry(17, 3, 'Patriot Starter'), // NE starter, but NE's game is over (0 left)
+            rosterEntry(12, 20, 'Bench Guy'), // KC on the BENCH — must not count
           ],
         },
       },
@@ -98,7 +98,7 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
         totalPoints: 15,
         rosterForCurrentScoringPeriod: {
           entries: [
-            rosterEntry(12, 3), // KC starter, full game left
+            rosterEntry(12, 3, 'Chief Starter'), // KC starter, full game left
           ],
         },
       },
@@ -119,15 +119,21 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
   assert.equal(away.minutesRemaining, 60, 'KC alone, full 3600s = 60 minutes');
   assert.equal(home.winProb + away.winProb, 100);
   assert.equal(result.matchups.length, 1);
+  assert.deepEqual(
+    home.players,
+    [{ name: 'Seattle Starter', secondsRemaining: 1800 }, { name: 'Patriot Starter', secondsRemaining: 0 }],
+    'the benched entry is excluded from the per-player breakdown too, by name since ESPN has no id FantasyPros joins against'
+  );
+  assert.deepEqual(away.players, [{ name: 'Chief Starter', secondsRemaining: 3600 }]);
 }
 
 // --- fetchSleeperScoring: join against clockMap via playerMap, starters only ---
 {
   const clockMap = new Map([['DAL', 900], ['PHI', 3600]]);
   const playerMap = new Map([
-    ['100', { team: 'DAL' }],
-    ['101', { team: 'PHI' }],
-    ['102', { team: 'DAL' }], // rostered but not a starter
+    ['100', { team: 'DAL', name: 'Cowboy Starter' }],
+    ['101', { team: 'PHI', name: 'Eagle Starter' }],
+    ['102', { team: 'DAL', name: 'Cowboy Bench' }], // rostered but not a starter
   ]);
 
   stubFetch((url) => {
@@ -152,6 +158,12 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
   assert.equal(home.minutesRemaining, 15, 'DAL starter only (900s = 15 min); the non-started DAL player is excluded');
   assert.equal(away.minutesRemaining, 60, 'PHI starter, full 3600s = 60 minutes');
   assert.equal(home.winProb + away.winProb, 100);
+  assert.deepEqual(
+    home.players,
+    [{ name: 'Cowboy Starter', secondsRemaining: 900 }],
+    'only the roster\'s own `starters` list feeds the per-player breakdown, same as minutesRemaining'
+  );
+  assert.deepEqual(away.players, [{ name: 'Eagle Starter', secondsRemaining: 3600 }]);
 }
 
 console.log('test-espn-sleeper-live-time.mjs OK');
