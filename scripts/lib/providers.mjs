@@ -1381,15 +1381,27 @@ export async function fetchMflFranchiseNames(league, cookie) {
 // MFL's own figure, only to give a reasonable one-line read using data this
 // project already has — current score plus minutesRemaining (below).
 //
-// The model: project each team's final score by adding a league-typical
-// scoring rate to its current score for every minute its roster has left to
-// play, then convert the projected margin to a probability via a normal
-// approximation whose uncertainty grows with the total remaining
-// player-minutes of BOTH teams combined. That combined-total framing (rather
-// than each team's own remaining minutes separately) is deliberate: modeled
-// as independent players, variance is additive regardless of which team
-// contributes it, so the total is what actually governs how much of the
-// outcome is still undecided — not how that total happens to be split.
+// The model: project each team's final score by adding its projected
+// remaining points to its current score, then convert the projected margin
+// to a probability via a normal approximation whose uncertainty grows with
+// the total remaining player-minutes of BOTH teams combined. That
+// combined-total framing (rather than each team's own remaining minutes
+// separately) is deliberate: modeled as independent players, variance is
+// additive regardless of which team contributes it, so the total is what
+// actually governs how much of the outcome is still undecided — not how
+// that total happens to be split.
+//
+// "Projected remaining points" is deliberately not computed in here.
+// estimateRemainingPoints (below) prefers each still-playing starter's own
+// FantasyPros weekly projection, prorated by how much of their game is left
+// — a specific player's own projection beats a league-wide flat rate,
+// which used to be applied identically regardless of whose players were
+// actually still on the field. WP_POINTS_PER_MINUTE is what it falls back
+// to per player when no projection is reachable (missing API key, a
+// name-join miss, the endpoint down for this poll) — never an all-or-
+// nothing switch for the whole estimate, since one unmatched bench call-up
+// on an otherwise-projected lineup shouldn't blank out everyone else's
+// numbers.
 //
 // WP_POINTS_PER_MINUTE and WP_VARIANCE_PER_MINUTE are calibrated against a
 // full, untouched 9-starter/60-minute-each lineup (540 remaining
@@ -1410,30 +1422,74 @@ const WP_POINTS_PER_MINUTE = 0.185;
 const WP_VARIANCE_PER_MINUTE = 1.45;
 const WP_LOGISTIC_SCALE = 1.702;
 
-export function estimateWinProbability(scoreA, minutesA, scoreB, minutesB) {
+// remainingA/remainingB are each team's own projected additional points
+// over its own remaining playing time — from estimateRemainingPoints when a
+// projection index reached the caller, or omitted entirely (falling back to
+// the flat WP_POINTS_PER_MINUTE * minutes this whole function used
+// unconditionally before projections existed) when it didn't. Either way
+// the uncertainty term still keys off raw minutes, not remaining points —
+// projections narrow the *margin* estimate, they say nothing about how much
+// of the outcome is still undecided.
+export function estimateWinProbability(scoreA, minutesA, scoreB, minutesB, remainingA, remainingB) {
   const totalMinutes = minutesA + minutesB;
   if (totalMinutes <= 0) {
     if (scoreA === scoreB) return 50;
     return scoreA > scoreB ? 100 : 0;
   }
-  const projectedMargin =
-    (scoreA + WP_POINTS_PER_MINUTE * minutesA) - (scoreB + WP_POINTS_PER_MINUTE * minutesB);
+  const projectedA = scoreA + (remainingA ?? WP_POINTS_PER_MINUTE * minutesA);
+  const projectedB = scoreB + (remainingB ?? WP_POINTS_PER_MINUTE * minutesB);
+  const projectedMargin = projectedA - projectedB;
   const uncertainty = Math.sqrt(WP_VARIANCE_PER_MINUTE * totalMinutes);
   const z = projectedMargin / uncertainty;
   const raw = 100 / (1 + Math.exp(-WP_LOGISTIC_SCALE * z));
   return Math.min(99, Math.max(1, Math.round(raw)));
 }
 
+// Sums one team's still-playing starters' own projected remaining points —
+// projectPlayer(player) => this week's full projected points for them, or
+// null/undefined when no projection reached the caller (no API key this
+// poll, a name-join miss, the projections endpoint down) — prorated by how
+// much of their own game is left (secondsRemaining/3600, the same full-game
+// convention gameSecondsRemaining uses everywhere else). A player with no
+// projection falls back individually to WP_POINTS_PER_MINUTE, never taking
+// the rest of the team down with him. `players` is the per-team starter
+// list fetchScoring/fetchEspnScoring/fetchSleeperScoring now attach (id for
+// MFL, name for ESPN/Sleeper — projectPlayer is the caller's problem to
+// resolve either against a projection index, same split fetchProjections'
+// byMflId/byName already draws). Omitting projectPlayer entirely (rather
+// than passing one that always returns null) is how a caller with no
+// projection index at all opts out of this function altogether, back to
+// estimateWinProbability's own unconditional flat rate — see
+// attachWinProbabilities.
+export function estimateRemainingPoints(players, projectPlayer) {
+  let total = 0;
+  for (const p of players || []) {
+    if (!(p.secondsRemaining > 0)) continue;
+    const fraction = p.secondsRemaining / 3600;
+    const projected = projectPlayer ? projectPlayer(p) : null;
+    total += (projected != null ? projected : WP_POINTS_PER_MINUTE * 60) * fraction;
+  }
+  return total;
+}
+
 // Attaches winProb to each team in a two-team matchup (a bye — one team, no
 // opponent — is left alone, since there's nothing to compare against). Reads
 // score/minutesRemaining that must already be on each team object.
-function attachWinProbabilities(teams, matchups) {
+//
+// projectPlayer is optional and, when passed, is handed to
+// estimateRemainingPoints for both sides of the matchup — omit it
+// altogether (rather than passing one that always returns null) to fall
+// straight back to estimateWinProbability's flat per-minute rate for every
+// player, the same behavior this had before projections existed.
+function attachWinProbabilities(teams, matchups, projectPlayer) {
   const byId = new Map(teams.map((t) => [t.franchiseId, t]));
   for (const m of matchups) {
     if (m.teamIds.length !== 2) continue;
     const [a, b] = m.teamIds.map((id) => byId.get(id));
     if (!a || !b) continue;
-    a.winProb = estimateWinProbability(a.score, a.minutesRemaining, b.score, b.minutesRemaining);
+    const remainingA = projectPlayer ? estimateRemainingPoints(a.players, projectPlayer) : undefined;
+    const remainingB = projectPlayer ? estimateRemainingPoints(b.players, projectPlayer) : undefined;
+    a.winProb = estimateWinProbability(a.score, a.minutesRemaining, b.score, b.minutesRemaining, remainingA, remainingB);
     b.winProb = 100 - a.winProb;
   }
 }
@@ -1507,7 +1563,11 @@ function mflLiveStarters(f) {
     .map((p) => ({ id: String(p.id), secondsRemaining: Number(p.gameSecondsRemaining ?? 0) }));
 }
 
-export async function fetchScoring(league, cookie, nameById) {
+// projectPlayer is optional — see attachWinProbabilities' own comment for
+// what passing (or omitting) one does to the win-probability estimate.
+// MFL's starters carry `id`, the same MFL player-id space fetchProjections'
+// byMflId already joins against.
+export async function fetchScoring(league, cookie, nameById, projectPlayer) {
   const [names, liveData] = await Promise.all([
     nameById ? Promise.resolve(nameById) : fetchMflFranchiseNames(league, cookie),
     mflGet(`/export?TYPE=liveScoring&L=${league.id}&JSON=1`, cookie, seasonOf(league)),
@@ -1547,7 +1607,7 @@ export async function fetchScoring(league, cookie, nameById) {
     players: mflLiveStarters(f),
   }));
 
-  attachWinProbabilities(teams, matchups);
+  attachWinProbabilities(teams, matchups, projectPlayer);
 
   const sortedTeams = teams
     .sort((a, b) => b.score - a.score)
@@ -1842,8 +1902,10 @@ function espnTeamLiveStarters(teamSide, clockMap) {
 
 // clockMap is optional — pass one from fetchNflGameClocks (shared across
 // every ESPN/Sleeper league in one poll/sync, since it's the same NFL data
-// regardless of league) to skip fetching it again here.
-export async function fetchEspnScoring(league, clockMap) {
+// regardless of league) to skip fetching it again here. projectPlayer is
+// also optional — see attachWinProbabilities' own comment. ESPN's starters
+// carry `name`, not an id — see espnTeamLiveStarters' comment for why.
+export async function fetchEspnScoring(league, clockMap, projectPlayer) {
   const [data, clocks] = await Promise.all([
     espnGet(league, 'view=mScoreboard&view=mTeam&view=mRoster'),
     clockMap ? Promise.resolve(clockMap) : fetchNflGameClocks(),
@@ -1887,7 +1949,7 @@ export async function fetchEspnScoring(league, clockMap) {
     players: r.players,
   }));
 
-  attachWinProbabilities(teams, matchups);
+  attachWinProbabilities(teams, matchups, projectPlayer);
 
   const sortedTeams = teams
     .sort((a, b) => b.score - a.score)
@@ -1940,6 +2002,28 @@ async function sleeperGet(path) {
     throw new Error(`Sleeper request failed (${res.status}): ${path}`);
   }
   return res.json();
+}
+
+// state.week reads 0 until the season actually starts; display_week covers
+// preseason. Factored out of fetchSleeperScoring so currentNflWeek (below)
+// can share the exact same resolution rather than drifting from it —
+// fetchSleeperLineup's own week fallback is deliberately one step further
+// (falls all the way to week 1 rather than staying unresolved), so it keeps
+// its own inline copy instead of sharing this one.
+function resolveNflWeek(state) {
+  return state.week > 0 ? state.week : state.display_week;
+}
+
+// The current NFL week, independent of any one league or provider — for a
+// caller (the live-scoring win-probability model) that needs a week number
+// to ask FantasyPros' per-week projections for, but may have no Sleeper
+// league in play at all to read one off of. Sleeper's own /state/nfl is
+// public and unauthenticated (no league or account scoping), so this is a
+// safe global read rather than reaching for an unconfirmed field shape on
+// some other provider's response — see resolveNflWeek's own fallback.
+export async function currentNflWeek() {
+  const state = await sleeperGet('/state/nfl');
+  return resolveNflWeek(state);
 }
 
 // Sleeper's full player database (~12k players) — fetch once and share
@@ -2140,14 +2224,17 @@ function sleeperTeamLiveStarters(starterIds, playerMap, clockMap) {
 // (from fetchNflGameClocks, shared across every ESPN/Sleeper league in one
 // poll/sync) and playerMap (from loadSleeperPlayerMap, already loaded once
 // per sync wherever a Sleeper league exists) to skip re-fetching either.
-export async function fetchSleeperScoring(league, clockMap, playerMap) {
+// projectPlayer is also optional — see attachWinProbabilities' own comment.
+// Sleeper's starters carry `name`, not an id — see espnTeamLiveStarters'
+// comment for why.
+export async function fetchSleeperScoring(league, clockMap, playerMap, projectPlayer) {
   const [state, { names }, clocks, players] = await Promise.all([
     sleeperGet('/state/nfl'),
     sleeperTeamNames(league),
     clockMap ? Promise.resolve(clockMap) : fetchNflGameClocks(),
     playerMap ? Promise.resolve(playerMap) : loadSleeperPlayerMap(),
   ]);
-  const week = state.week > 0 ? state.week : state.display_week;
+  const week = resolveNflWeek(state);
   if (!week) {
     throw new Error('No live scoring available yet');
   }
@@ -2182,7 +2269,7 @@ export async function fetchSleeperScoring(league, clockMap, playerMap) {
   }
   const matchups = [...groups.values()].map((teamIds) => ({ teamIds }));
 
-  attachWinProbabilities(teams, matchups);
+  attachWinProbabilities(teams, matchups, projectPlayer);
 
   const sortedTeams = teams
     .sort((a, b) => b.score - a.score)

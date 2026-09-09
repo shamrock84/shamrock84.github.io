@@ -21,7 +21,7 @@
 // homegrown stand-in instead.
 
 import assert from 'node:assert/strict';
-import { fetchScoring, estimateWinProbability } from './lib/providers.mjs';
+import { fetchScoring, estimateWinProbability, estimateRemainingPoints } from './lib/providers.mjs';
 
 function stubFetch(handler) {
 	globalThis.fetch = async (url) => handler(String(url));
@@ -109,6 +109,66 @@ const liveScoringResponse = {
 	const teamA = result.teams.find((t) => t.franchiseId === '0010');
 	assert.equal(teamA.minutesRemaining, 0, 'a franchise with no remaining game time reports 0, not undefined');
 	assert.equal(teamA.winProb, 50, 'a scoreless, timeless bye-like pairing with an equally scoreless opponent is a coin flip');
+}
+
+// projectPlayer, threaded through to attachWinProbabilities/
+// estimateRemainingPoints: a team whose still-playing starters are
+// individually projected high should out-favor the flat per-minute rate
+// would have given it, even though nothing about score/minutesRemaining
+// changed.
+{
+	stubFetch(() => okJson(liveScoringResponse));
+	const league = { id: '26696', franchiseId: '0001' };
+	const names = new Map([['0001', 'My Team'], ['0008', 'Team D']]);
+
+	// 9001 projects far above the flat rate (0.185/min -> ~5.6pts for 1800s);
+	// 9002 has no entry at all, so it must fall back to the flat rate
+	// individually rather than dragging 9001's real projection down with it.
+	const projectPlayer = (p) => (p.id === '9001' ? 40 : null);
+
+	const withoutProjections = await fetchScoring(league, 'cookie', names);
+	const withProjections = await fetchScoring(league, 'cookie', names, projectPlayer);
+
+	const meBare = withoutProjections.teams.find((t) => t.franchiseId === '0001');
+	const meProjected = withProjections.teams.find((t) => t.franchiseId === '0001');
+	assert.ok(
+		meProjected.winProb > meBare.winProb,
+		'a starter projected well above the flat rate raises this team\'s win probability over the flat-rate baseline'
+	);
+}
+
+// estimateRemainingPoints in isolation.
+{
+	const players = [
+		{ id: 'a', secondsRemaining: 3600 }, // full game left, has a projection
+		{ id: 'b', secondsRemaining: 1800 }, // half a game left, no projection -> flat-rate fallback
+		{ id: 'c', secondsRemaining: 0 }, // done playing -> contributes nothing regardless
+	];
+	const projectPlayer = (p) => (p.id === 'a' ? 20 : null);
+
+	const total = estimateRemainingPoints(players, projectPlayer);
+	// a: 20 * (3600/3600) = 20; b: WP_POINTS_PER_MINUTE(0.185) * 30min = 5.55; c: 0.
+	assert.ok(Math.abs(total - 25.55) < 0.001, `expected ~25.55, got ${total}`);
+
+	assert.equal(
+		estimateRemainingPoints(players, undefined),
+		estimateRemainingPoints(players, () => null),
+		'omitting projectPlayer entirely behaves the same as one that always misses'
+	);
+
+	assert.equal(estimateRemainingPoints([], projectPlayer), 0, 'no players left to play is zero remaining, not NaN');
+}
+
+// estimateWinProbability's remainingA/remainingB override.
+{
+	// Same score/minutes on both sides (a coin flip under the flat rate), but
+	// B's own remaining points are projected far higher than A's — B should
+	// be favored despite an identical minutesRemaining split.
+	const flat = estimateWinProbability(50, 200, 50, 200);
+	assert.equal(flat, 50, 'identical score and minutes with no override is still a coin flip');
+
+	const overridden = estimateWinProbability(50, 200, 50, 200, 5, 60);
+	assert.ok(overridden < 50, 'B\'s own higher projected remaining points favors B despite equal minutesRemaining');
 }
 
 {
