@@ -9561,11 +9561,20 @@
 
 		// Shared by both refreshLiveScoring outcomes below — a tear-down/rebuild
 		// of just the Scoring cards, same as every other poll already did.
+		//
+		// draftonly excluded here the same way it is in the initial renderGrid
+		// loop below and in api/live-scoring.js's own hasLiveScoring: those
+		// leagues run a single draft and never produce a real head-to-head
+		// matchup, confirmed against production (every draftonly MFL league
+		// returned "No live scoring available yet" on every poll, never real
+		// data). The Draft Only sub-tab pill on this view disappears on its own
+		// once no Scoring card carries that data-league-type — same mechanism
+		// Top Available already uses.
 		function rerenderScoringCards() {
 			const gridEl = document.getElementById('grid');
 			gridEl.querySelectorAll('.card[data-view="scoring"]').forEach((c) => c.remove());
 			for (const league of pageData.leagues) {
-				if (league.scoring !== undefined || league.scoringError) {
+				if (league.type !== 'draftonly' && (league.scoring !== undefined || league.scoringError)) {
 					gridEl.appendChild(renderScoringCard(league));
 				}
 			}
@@ -10747,7 +10756,8 @@
 				if (league.standings !== undefined || league.standingsError) {
 					gridEl.appendChild(renderStandingsCard(league));
 				}
-				if (league.scoring !== undefined || league.scoringError) {
+				// draftonly excluded — see rerenderScoringCards' own comment.
+				if (league.type !== 'draftonly' && (league.scoring !== undefined || league.scoringError)) {
 					gridEl.appendChild(renderScoringCard(league));
 				}
 			}
