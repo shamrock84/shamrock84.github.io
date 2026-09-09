@@ -66,6 +66,11 @@ check('rejects a rules link with no scheme', validate(withField('rulesUrl', 'doc
 check('rejects a non-text nickname', validate(withField('nickname', { oops: 1 })).length > 0);
 check('allows a blank nickname', validate(withField('nickname', '')).length === 0);
 check('allows a short nickname', validate(withField('nickname', 'MNMx')).length === 0);
+// style — the toolbar entry's visual treatment, shared with quickLinks below.
+check('rejects an unknown toolbar style', validate(withField('style', 'silver')).length > 0);
+check('allows a blank toolbar style (plain)', validate(withField('style', '')).length === 0);
+check('allows a gold toolbar style', validate(withField('style', 'gold')).length === 0);
+check('allows a purple toolbar style', validate(withField('style', 'purple')).length === 0);
 // displayName — free text overriding the live-synced name everywhere on the
 // page (leagueDisplayName), not just the toolbar the way nickname is.
 check('rejects a non-text displayName', validate(withField('displayName', { oops: 1 })).length > 0);
@@ -157,12 +162,23 @@ check('rejects a quick link missing a url', validateQuickLinks([{ nickname: 'Exa
 check('rejects a quick link whose url has no scheme',
   validateQuickLinks([{ url: 'example.com', nickname: 'Example' }]).length > 0);
 check('allows an http quick link', validateQuickLinks([{ url: 'http://example.com', nickname: 'Example' }]).length === 0);
+// style — same plain/gold/purple vocabulary a league's own toolbar entry uses.
+check('rejects a quick link with an unknown style',
+  validateQuickLinks([{ url: 'https://example.com', nickname: 'Example', style: 'silver' }]).length > 0);
+check('allows a quick link with no style (plain)',
+  validateQuickLinks([{ url: 'https://example.com', nickname: 'Example' }]).length === 0);
+check('allows a gold quick link style',
+  validateQuickLinks([{ url: 'https://example.com', nickname: 'Example', style: 'gold' }]).length === 0);
+check('allows a purple quick link style',
+  validateQuickLinks([{ url: 'https://example.com', nickname: 'Example', style: 'purple' }]).length === 0);
 
 // ---- mergeLink ----
 const mergedLink = mergeLink({ url: '  https://example.com  ', nickname: '  Example  ' });
 check('trims a quick link url', mergedLink.url === 'https://example.com', JSON.stringify(mergedLink));
 check('trims a quick link nickname', mergedLink.nickname === 'Example', JSON.stringify(mergedLink));
 check('key order is stable for a quick link', Object.keys(mergedLink).join() === 'url,nickname');
+check('drops a blank quick link style', !('style' in mergedLink));
+check('keeps a quick link style', mergeLink({ url: 'https://example.com', nickname: 'Example', style: 'gold' }).style === 'gold');
 check('preserves unknown fields on a quick link',
   mergeLink({ url: 'https://example.com', nickname: 'Example', someFutureField: 1 }).someFutureField === 1);
 
@@ -193,6 +209,8 @@ check('drops a blank commissioner contact', !('commishContact' in mergeLeague({ 
 check('trims a commissioner contact', mergeLeague({ ...base(), commishContact: '  c@e.com ' }).commishContact === 'c@e.com');
 check('drops a blank nickname', !('nickname' in mergeLeague({ ...base(), nickname: '' })));
 check('trims a nickname', mergeLeague({ ...base(), nickname: '  MNMx  ' }).nickname === 'MNMx');
+check('drops a blank toolbar style', !('style' in mergeLeague({ ...base(), style: '' })));
+check('keeps a toolbar style', mergeLeague({ ...base(), style: 'purple' }).style === 'purple');
 check('drops a blank displayName', !('displayName' in mergeLeague({ ...base(), displayName: '' })));
 check('trims a displayName', mergeLeague({ ...base(), displayName: '  #SFB16 - Cloud (FF 7)  ' }).displayName === '#SFB16 - Cloud (FF 7)');
 check('drops a blank season', !('season' in mergeLeague({ ...base(), season: '' })));

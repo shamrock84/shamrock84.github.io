@@ -27,6 +27,11 @@ const BRANCH = 'main';
 
 const LEAGUE_TYPES = new Set(['dynasty', 'salarycap', 'draftonly', 'redraft']);
 const PROVIDERS = new Set(['mfl', 'espn', 'sleeper']);
+// A toolbar entry's visual treatment — shared between a league's own entry
+// and a quickLinks entry (see config/leagues.json's own _readme entry for
+// 'style'). 'plain' is not itself a valid value here: it's what an unset
+// field means, the same convention rankingType/scoring already use.
+const QUICKLINK_STYLES = new Set(['gold', 'purple']);
 
 // Retired fields. Anything listed here is stripped on save rather than being
 // carried through by mergeLeague's unknown-key passthrough, which is what keeps
@@ -46,7 +51,7 @@ const SCORING_FORMATS = new Set(['PPR', 'HALF', 'STD']);
 const KEY_ORDER = [
   'id', 'franchiseId', 'name', 'displayName', 'type', 'provider',
   'tags', 'lineupPilot', 'rankingType', 'scoring', 'season', 'startYear', 'rulesUrl', 'commishContact',
-  'nickname',
+  'nickname', 'style',
   'dues', 'payout1', 'payout2', 'payout3', 'payoutDivisionWinner', 'payoutWeeklyHigh', 'payoutSeasonHigh',
 ];
 
@@ -84,7 +89,7 @@ const SCORING_PAYOUT_FIELDS = [
 // own _readme entry for the schema and why both fields are required (unlike
 // a league's own nickname, there's no live name for a plain external link
 // to fall back to).
-const LINK_KEY_ORDER = ['url', 'nickname'];
+const LINK_KEY_ORDER = ['url', 'nickname', 'style'];
 
 function isNonEmptyString(v) {
   return typeof v === 'string' && v.trim() !== '';
@@ -237,6 +242,11 @@ function validate(leagues) {
     if (league.nickname != null && typeof league.nickname !== 'string') {
       errors.push(`${label}: nickname must be text.`);
     }
+    // The toolbar entry's visual treatment — see QUICKLINK_STYLES above.
+    // Blank/unset means plain, same convention as rankingType/scoring.
+    if (league.style != null && league.style !== '' && !QUICKLINK_STYLES.has(league.style)) {
+      errors.push(`${label}: toolbar style must be gold, purple, or left blank for plain.`);
+    }
     // Feeds the History tab's Finances card. All six are optional and
     // independent — a league can have dues entered with no payouts yet, or
     // vice versa; the card renders whatever's known and dashes the rest.
@@ -277,6 +287,11 @@ function validateQuickLinks(links) {
     if (!isNonEmptyString(link.nickname)) errors.push(`${where}: nickname is required.`);
     if (!isNonEmptyString(link.url) || !/^https?:\/\//i.test(link.url)) {
       errors.push(`${where}: link must start with http:// or https://.`);
+    }
+    // Same style vocabulary as a league's own toolbar entry — see
+    // QUICKLINK_STYLES above. Blank/unset means plain.
+    if (link.style != null && link.style !== '' && !QUICKLINK_STYLES.has(link.style)) {
+      errors.push(`${where}: style must be gold, purple, or left blank for plain.`);
     }
   });
 
@@ -322,6 +337,7 @@ function mergeLeague(league) {
   put('rulesUrl', league.rulesUrl);
   put('commishContact', league.commishContact == null ? '' : String(league.commishContact).trim());
   put('nickname', league.nickname == null ? '' : String(league.nickname).trim());
+  put('style', league.style);
   putMoney('dues', league.dues);
   putMoney('payout1', league.payout1);
   putMoney('payout2', league.payout2);
@@ -346,6 +362,7 @@ function mergeLink(link) {
   const out = Object.create(null);
   out.url = String(link.url).trim();
   out.nickname = String(link.nickname).trim();
+  if (link.style != null && link.style !== '') out.style = link.style;
   for (const [k, v] of Object.entries(link)) {
     if (!LINK_KEY_ORDER.includes(k) && v !== undefined) out[k] = v;
   }
