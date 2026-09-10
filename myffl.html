@@ -2881,23 +2881,31 @@
 		const LEAGUE_TYPE_LABELS = { dynasty: 'Dynasty', salarycap: 'Salary', draftonly: 'Draft Only', redraft: 'Redraft' };
 		// FantasyPros' ranking-type codes, spelled out for the card footnote.
 		const ECR_TYPE_LABELS = { DYNASTY: 'Dynasty', DRAFT: 'Draft', ROS: 'Rest-of-season', WEEKLY: 'Weekly', ADP: 'ADP' };
-		// Which sub-tab a league's cards render under — Dynasty and Salary Cap
-		// share one, since a salary-cap roster is still a dynasty-style keeper
-		// roster; the other two are one-to-one with their league type.
+		// Which sub-tab a league's cards render under — one-to-one with league
+		// type. Dynasty and Salary Cap used to share one on the grounds that a
+		// salary-cap roster is still a dynasty-style keeper roster; that's true
+		// of the *rankings* question (see TOP_AVAILABLE_GROUP below, which
+		// keeps exactly that merge for Top Available) but a salary-cap
+		// manager still wants to see Salary Cap's own Rosters/Standings/
+		// Scoring/History cards and sub-tab apart from plain Dynasty's, which
+		// is what a shared pill here was hiding.
 		//
-		// Analytics used to group differently, folding dynasty, salary-cap and
-		// redraft into a single "Active" sub-tab on the grounds that exposure is
-		// a portfolio question and a redraft roster is as much a share of the
-		// portfolio as a dynasty one. That reasoning still holds for the two
-		// exposure cards. It stopped holding when Top Players and Top Available
-		// arrived, because those are ordered by consensus rank, and a group
-		// spanning both kinds of league is also spanning two FantasyPros lists
-		// that disagree hard about the same player — a dynasty list is a bet on
-		// the next five years, a redraft list on the next five months, and the
-		// median across them describes neither. Worse, the median weights by
-		// league count, so a portfolio that happens to hold more redraft leagues
+		// Analytics used to group differently still, folding dynasty,
+		// salary-cap and redraft into a single "Active" sub-tab on the
+		// grounds that exposure is a portfolio question and a redraft roster
+		// is as much a share of the portfolio as a dynasty one. That
+		// reasoning still holds for the two exposure cards. It stopped
+		// holding when Top Players and Top Available arrived, because those
+		// are ordered by consensus rank, and a group spanning both kinds of
+		// league is also spanning two FantasyPros lists that disagree hard
+		// about the same player — a dynasty list is a bet on the next five
+		// years, a redraft list on the next five months, and the median
+		// across them describes neither. Worse, the median weights by league
+		// count, so a portfolio that happens to hold more redraft leagues
 		// silently ranks its dynasty leagues' players on redraft logic. One
-		// grouping again.
+		// grouping again. Dynasty and Salary Cap don't have this problem
+		// between them — both read the same DYNASTY/ROS list — which is why
+		// only Redraft-vs-everything-else needs to stay a hard boundary.
 		//
 		// Power Rankings, Team Needs, Bye Weeks and the three exposure cards
 		// are the exception: none of the six ever compares a raw list
@@ -2909,16 +2917,53 @@
 		// over this grouping — see MERGED_ANALYTICS_CARDS and
 		// refreshMergedAnalyticsCards — so checking Dynasty and Redraft at
 		// once merges into one card apiece for all six, Draft Only included.
-		// Top Available is the lone holdout, still one card per group.
-		const SUBTAB_GROUP = { dynasty: 'dynasty', salarycap: 'dynasty', draftonly: 'draftonly', redraft: 'redraft' };
+		const SUBTAB_GROUP = { dynasty: 'dynasty', salarycap: 'salarycap', draftonly: 'draftonly', redraft: 'redraft' };
 		// Display order for the sub-tab strip, across every view.
-		const SUBTAB_ORDER = ['dynasty', 'redraft', 'draftonly'];
+		const SUBTAB_ORDER = ['dynasty', 'salarycap', 'redraft', 'draftonly'];
 		// Only where a sub-tab's name needs to differ from LEAGUE_TYPE_LABELS —
 		// everything else falls through to that shared wording, so "Redraft"
-		// isn't repeated here. bestball used to be overridden to "Draft Only"
-		// for the sub-tab only; that wording is now the type label itself, so
-		// the override would be a no-op and is gone.
-		const SUBTAB_LABEL_OVERRIDES = { dynasty: 'Dynasty/Salary Cap' };
+		// isn't repeated here. Dynasty and Salary Cap used to share a
+		// "Dynasty/Salary Cap" pill and needed an override for it; now that
+		// they're separate pills each just takes its own LEAGUE_TYPE_LABELS
+		// entry, so this is empty (kept, rather than removed, as the documented
+		// extension point for the next sub-tab whose name needs to differ).
+		const SUBTAB_LABEL_OVERRIDES = {};
+		// Every key in a group map, filtered down to the ones mapping to
+		// groupKey. Shared by SUBTAB_GROUP and TOP_AVAILABLE_GROUP below,
+		// which are the same shape (league type -> pill/ranking group) but
+		// deliberately different mappings — see TOP_AVAILABLE_GROUP's own
+		// comment for why one feature still needs the merge the other four
+		// don't.
+		function typesInGroupMap(map, groupKey) {
+			return Object.keys(map).filter((t) => map[t] === groupKey);
+		}
+		// Which entries of a group map actually have a league behind them,
+		// in the map's own display order. Shared by analyticsPresentGroups
+		// (SUBTAB_GROUP) and Top Available's own present-groups check
+		// (TOP_AVAILABLE_GROUP) for the same reason typesInGroupMap is.
+		function presentGroupsFor(map, order, leagues) {
+			return order.filter((groupKey) => {
+				const types = typesInGroupMap(map, groupKey);
+				return types.length > 0 && leagues.some((l) => types.includes(l.type));
+			});
+		}
+		// Top Available is the one card that still merges Dynasty and Salary
+		// Cap after the sub-tab split above — the ranking-list hazard the
+		// SUBTAB_GROUP comment describes is about Redraft vs. everything
+		// else, not Dynasty vs. Salary Cap: both read the same FantasyPros
+		// list, so splitting their wire into two cards would just be the
+		// same free agents ranked twice under two headings. Kept as the
+		// pre-split SUBTAB_GROUP mapping so the merged card's collapse state
+		// (makeCollapsible's `available:${groupKey}` key) and its label
+		// (TOP_AVAILABLE_LABEL_OVERRIDES below) don't reset for anyone who
+		// already had it collapsed.
+		const TOP_AVAILABLE_GROUP = { dynasty: 'dynasty', salarycap: 'dynasty', draftonly: 'draftonly', redraft: 'redraft' };
+		const TOP_AVAILABLE_ORDER = ['dynasty', 'redraft', 'draftonly'];
+		// The merged group's card still needs to say "Dynasty/Salary Cap" —
+		// the wording SUBTAB_LABEL_OVERRIDES used to carry — since the pills
+		// that used to say that for it now say "Dynasty" and "Salary"
+		// separately.
+		const TOP_AVAILABLE_LABEL_OVERRIDES = { dynasty: 'Dynasty/Salary Cap' };
 
 		// The Depth Charts view's sub-tab strip reuses this exact same
 		// mechanism, repurposed for NFL divisions instead of league types —
@@ -2957,7 +3002,7 @@
 		// analytics card knows what to combine. The per-league views don't need
 		// it — they place one card at a time, by its own type.
 		function typesInSubtabGroup(groupKey) {
-			return Object.keys(SUBTAB_GROUP).filter((t) => SUBTAB_GROUP[t] === groupKey);
+			return typesInGroupMap(SUBTAB_GROUP, groupKey);
 		}
 
 		// Which SUBTAB_GROUP entries the Analytics view actually has leagues
@@ -2974,10 +3019,7 @@
 		// instead, so the pill list can never depend on which cards happened
 		// to render.
 		function analyticsPresentGroups(leagues) {
-			return SUBTAB_ORDER.filter((groupKey) => {
-				const types = typesInSubtabGroup(groupKey);
-				return types.length > 0 && leagues.some((l) => types.includes(l.type));
-			});
+			return presentGroupsFor(SUBTAB_GROUP, SUBTAB_ORDER, leagues);
 		}
 		// Deliberately SHORTER than POSITION_ORDER in scripts/lib/providers.mjs,
 		// which also carries the IDP positions (PN, Off, DL, DE, DT, LB, CB, S,
@@ -8766,7 +8808,14 @@
 			// data" when the truth is "ask again once they've drafted".
 			if (total === 0 && drafting === 0 && awaiting === 0) return null;
 
-			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': groupKey });
+			// groupKey is a TOP_AVAILABLE_GROUP key, which can merge more than
+			// one sub-tab pill (Dynasty and Salary Cap — see that constant's
+			// own comment). data-league-type has to name every pill this card
+			// should stay visible under, comma-joined — updateVisibility
+			// matches on any one of them — since the pills themselves are
+			// split via SUBTAB_GROUP and no longer share this card's grouping.
+			const pillGroups = [...new Set(types.map((t) => SUBTAB_GROUP[t] || t))];
+			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': pillGroups.join(',') });
 			const heading = el('h2', { class: 'card-heading', text: 'Top Available' });
 			card.appendChild(heading);
 			makeCollapsible(card, heading, `available:${groupKey}`);
@@ -10035,7 +10084,14 @@
 			document.querySelectorAll('.card').forEach((card) => {
 				const viewMatch = card.dataset.view === currentView;
 				const cardType = card.dataset.leagueType;
-				const typeMatch = !cardType || (selectedTypes ? selectedTypes.has(cardType) : true);
+				// Almost always one value; the merged Top Available card is the
+				// one card on the page that answers to two pills at once (see
+				// TOP_AVAILABLE_GROUP), so it carries both comma-separated and
+				// is shown if either is checked. split(',') on a plain single
+				// value is a one-element array, so this changes nothing for
+				// every other card.
+				const cardTypes = cardType ? cardType.split(',') : [];
+				const typeMatch = cardTypes.length === 0 || (selectedTypes ? cardTypes.some((t) => selectedTypes.has(t)) : true);
 				const groupLabel = card.querySelector('.card-group-label');
 				if (groupLabel) groupLabel.classList.toggle('hidden', !showAnalyticsGroupLabel);
 				let searchMatch = true;
@@ -11649,11 +11705,11 @@
 		// spanning groups, since on an ordinary visit the sub-tab strip
 		// already says which one group is on screen and the label would
 		// just be noise.
-		function appendGroupLabel(card, groupKey) {
+		function appendGroupLabel(card, groupKey, overrides = SUBTAB_LABEL_OVERRIDES) {
 			if (!card) return;
 			const heading = card.querySelector('.card-heading');
 			if (!heading) return;
-			const label = SUBTAB_LABEL_OVERRIDES[groupKey] || LEAGUE_TYPE_LABELS[groupKey] || groupKey;
+			const label = overrides[groupKey] || LEAGUE_TYPE_LABELS[groupKey] || groupKey;
 			heading.appendChild(el('span', { class: 'card-group-label hidden', text: ` — ${label}` }));
 		}
 
@@ -11811,18 +11867,24 @@
 				appendMergedAnalyticsCards(gridEl, selectedGroups, data);
 
 				// Top Available is the one Analytics card still built one per
-				// SUBTAB_GROUP entry, shown or hidden by the pills rather than
-				// recomputed by them — see the SUBTAB_GROUP comment for why it
-				// alone keeps the ranking-list hazard the other six sidestep.
-				// Draft Only never gets one at all: those leagues run a single
-				// draft and never open a waiver wire, so there is no "free
-				// agent" for the card to mean anything by.
-				for (const groupKey of presentGroups) {
+				// group rather than spanning the live sub-tab selection — see
+				// TOP_AVAILABLE_GROUP for why it alone keeps a ranking-list
+				// merge the sub-tab split above doesn't apply to, and the
+				// SUBTAB_GROUP comment for the hazard that still rules out
+				// merging Redraft in too. Shown or hidden by the pills rather
+				// than recomputed by them, same as before the split — see
+				// renderTopAvailableCard's own comment on how one card now
+				// answers to two pills at once. Draft Only never gets one at
+				// all: those leagues run a single draft and never open a
+				// waiver wire, so there is no "free agent" for the card to
+				// mean anything by.
+				const topAvailableGroups = presentGroupsFor(TOP_AVAILABLE_GROUP, TOP_AVAILABLE_ORDER, data.leagues);
+				for (const groupKey of topAvailableGroups) {
 					if (groupKey === 'draftonly') continue;
-					const types = typesInSubtabGroup(groupKey);
+					const types = typesInGroupMap(TOP_AVAILABLE_GROUP, groupKey);
 					const availableCard = renderTopAvailableCard(groupKey, types, data.leagues, data.rankingPools, data.year);
 					if (availableCard) gridEl.appendChild(availableCard);
-					appendGroupLabel(availableCard, groupKey);
+					appendGroupLabel(availableCard, groupKey, TOP_AVAILABLE_LABEL_OVERRIDES);
 				}
 			}
 
