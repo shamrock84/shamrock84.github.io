@@ -209,6 +209,13 @@ localStorage.setItem('mflAuthToken', 'anything');
 
 Everything renders and behaves normally; only the calls that actually reach Vercel will fail. This is the practical way to drive the Admin tab in a headless browser. Chromium is available for that; install Playwright with `--no-save` and remove `node_modules` afterwards, since the repo is dependency-free by design and `node_modules` is not gitignored.
 
+## Working through the Tasks card
+
+The manager tracks bugs and site-enhancement ideas for Claude to act on in the Tasks card (`renderTasksCard` in `myffl.html`) rather than describing them fresh in every conversation. Two rules when asked to work through it:
+
+- **Pull the task list with `scripts/fetch-tasks.mjs` instead of asking the user to retype or paste it.** It reads the same shared store the page does (`api/plans.js`) and needs `SITE_PASSWORD` in the environment — see the script's own header for why it never filters by category itself.
+- **Only act on tasks categorized `Bugs` or `Site Enhancement`.** The card is the manager's general-purpose task list, not a Claude inbox — other categories are there for reasons that have nothing to do with this codebase, and picking one up unasked would mean acting on an instruction the user never gave this session.
+
 ## Front-end conventions
 
 `myffl.html` is a single ~8,000-line file: vanilla JS, no framework, no bundler, styles and markup and logic all inline. Match the existing idiom rather than introducing a framework or a build step — the no-toolchain property is what lets GitHub Pages serve this directly.
