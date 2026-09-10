@@ -1,0 +1,34 @@
+name: Fetch Tasks Card (manual)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here.
+# Runs scripts/fetch-tasks.mjs against the deployed API so the Tasks card's
+# data can be read from a sandbox where shamrock84-github-io.vercel.app is
+# not on the network egress allowlist. GitHub Actions runners have real
+# internet access. Requires a SITE_PASSWORD repo secret (same value as the
+# Vercel SITE_PASSWORD env var api/login.js checks) — add it under
+# Settings > Secrets and variables > Actions if this run fails with
+# "SITE_PASSWORD is not set".
+on:
+  workflow_dispatch:
+    inputs:
+      category:
+        description: 'Optional category to filter to (e.g. Bugs)'
+        required: false
+        default: ''
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch tasks
+        env:
+          SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
+        run: node scripts/fetch-tasks.mjs "${{ github.event.inputs.category }}"
