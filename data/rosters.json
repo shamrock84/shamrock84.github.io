@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-10T12:55:29.849Z",
+  "generatedAt": "2026-09-10T19:08:26.509Z",
   "year": "2026",
   "rankingPools": {
     "ROS|PPR|ALL": {
@@ -4739,7 +4739,7 @@
         {
           "name": "Jarquez Hunter",
           "position": "RB",
-          "team": "FA",
+          "team": "MIA",
           "rank": 92,
           "url": "/nfl/players/jarquez-hunter.php"
         },
@@ -6478,7 +6478,7 @@
     }
   },
   "depthCharts": {
-    "generatedAt": "2026-09-10T12:55:18.906Z",
+    "generatedAt": "2026-09-10T19:07:55.117Z",
     "teams": {
       "ARI": {
         "name": "Arizona Cardinals",
@@ -6639,7 +6639,7 @@
             "name": "Tua Tagovailoa",
             "rank": 1,
             "role": null,
-            "injuryStatus": null
+            "injuryStatus": "Q"
           },
           {
             "id": "4360423",
@@ -9488,15 +9488,15 @@
             "injuryStatus": null
           },
           {
-            "id": "4879276",
-            "name": "Bryce Lance",
+            "id": "4698597",
+            "name": "Barion Brown",
             "rank": 3,
             "role": "S",
             "injuryStatus": null
           },
           {
-            "id": "4698597",
-            "name": "Barion Brown",
+            "id": "4879276",
+            "name": "Bryce Lance",
             "rank": 4,
             "role": "X",
             "injuryStatus": null
@@ -10226,7 +10226,7 @@
             "name": "Sam Darnold",
             "rank": 1,
             "role": null,
-            "injuryStatus": "Q"
+            "injuryStatus": "D"
           },
           {
             "id": "3924327",
@@ -11521,7 +11521,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-10T12:54:35.626Z",
+      "updatedAt": "2026-09-10T19:07:09.293Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -11775,33 +11775,6 @@
       ],
       "lineupError": null,
       "draftInProgress": false,
-      "available": [
-        "Chig Okonkwo",
-        "Kenny Gainwell",
-        "Jerry Jeudy",
-        "Adonai Mitchell",
-        "Gunnar Helm",
-        "Nicholas Singleton",
-        "Mason Taylor",
-        "Elic Ayomanor",
-        "Dontayvion Wicks",
-        "Calvin Ridley",
-        "Cade Otton",
-        "Darnell Mooney",
-        "Kimani Vidal",
-        "Rashod Bateman",
-        "Keon Coleman",
-        "Ollie Gordon II",
-        "Greg Dulcich",
-        "Cole Kmet",
-        "Bryce Lance",
-        "Deshaun Watson",
-        "Seth McGowan",
-        "Christian Kirk",
-        "Michael Mayer",
-        "Kirk Cousins"
-      ],
-      "availableAt": "2026-09-09T19:16:17.143Z",
       "rankings": {
         "type": "ROS",
         "scoring": "PPR",
@@ -11812,15 +11785,54 @@
         "total": 30
       },
       "rankingsError": null,
+      "available": [
+        "Kenny Gainwell",
+        "Greg Dulcich",
+        "Kayshon Boutte",
+        "Chig Okonkwo",
+        "Adonai Mitchell",
+        "Dontayvion Wicks",
+        "Charlie Kolar",
+        "Gunnar Helm",
+        "Jerry Jeudy",
+        "Cade Otton",
+        "Calvin Ridley",
+        "Bryce Lance",
+        "Darren Waller",
+        "Germie Bernard",
+        "Rashod Bateman",
+        "Kimani Vidal",
+        "Darnell Mooney",
+        "Mason Taylor",
+        "Colby Parkinson",
+        "Jacoby Brissett",
+        "Najee Harris",
+        "Kevin Coleman Jr.",
+        "Tyquan Thornton",
+        "Jake Tonges",
+        "Michael Mayer",
+        "Seth McGowan",
+        "Nicholas Singleton",
+        "Erick All Jr.",
+        "Malik Davis",
+        "Darius Slayton",
+        "James Conner",
+        "Elic Ayomanor",
+        "Darnell Washington",
+        "Skyler Bell",
+        "Kirk Cousins",
+        "Jahan Dotson",
+        "George Holani"
+      ],
       "power": {
-        "computedAt": "2026-09-09T19:16:17.143Z",
+        "computedAt": "2026-09-10T19:07:06.432Z",
         "scoring": "PPR",
         "projections": {
           "source": {
             "basis": "projections",
             "season": "2026",
             "week": "0",
-            "inSeason": false
+            "inSeason": true
           },
           "teams": [
             {
@@ -11901,7 +11913,7 @@
             {
               "franchiseId": "0001",
               "score": 1906.8,
-              "depth": 3284,
+              "depth": 3147.6,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
@@ -11915,7 +11927,7 @@
                 },
                 "WR": {
                   "score": 560.9,
-                  "depth": 1762.2
+                  "depth": 1625.7
                 },
                 "TE": {
                   "score": 192.2,
@@ -12014,10 +12026,6 @@
                   "position": "RB"
                 },
                 {
-                  "name": "Kayshon Boutte",
-                  "position": "WR"
-                },
-                {
                   "name": "Chris Bell",
                   "position": "WR"
                 },
@@ -12088,13 +12096,13 @@
             {
               "franchiseId": "0004",
               "score": 1630.8,
-              "depth": 2528.6,
+              "depth": 2169.6,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
                 "QB": {
                   "score": 312.6,
-                  "depth": 757.8
+                  "depth": 518.9
                 },
                 "RB": {
                   "score": 670.3,
@@ -12102,7 +12110,7 @@
                 },
                 "WR": {
                   "score": 518,
-                  "depth": 1110.3
+                  "depth": 990.1
                 },
                 "TE": {
                   "score": 129.9,
@@ -12191,83 +12199,108 @@
           "source": {
             "basis": "ecr",
             "season": "2026",
-            "rankingType": "DYNASTY",
+            "rankingType": "ROS",
             "scoring": "PPR",
-            "inSeason": false
+            "inSeason": true
           },
           "teams": [
             {
               "franchiseId": "0008",
-              "score": 20.4,
-              "depth": 13.2,
+              "score": 20.5,
+              "depth": 13.8,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
                 "QB": {
-                  "score": 1.8,
-                  "depth": 2.4
+                  "score": 1.7,
+                  "depth": 2.2
                 },
                 "RB": {
-                  "score": 9.9,
-                  "depth": 1.5
+                  "score": 8,
+                  "depth": 4.4
                 },
                 "WR": {
-                  "score": 8.1,
-                  "depth": 8.6
+                  "score": 9.8,
+                  "depth": 6.4
                 },
                 "TE": {
-                  "score": 0.5,
+                  "score": 0.9,
                   "depth": 0.8
+                }
+              }
+            },
+            {
+              "franchiseId": "0010",
+              "score": 20.2,
+              "depth": 8.2,
+              "filled": 7,
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1,
+                  "depth": 1.5
+                },
+                "RB": {
+                  "score": 9.2,
+                  "depth": 2
+                },
+                "WR": {
+                  "score": 7.4,
+                  "depth": 2.2
+                },
+                "TE": {
+                  "score": 2.5,
+                  "depth": 2.5
                 }
               }
             },
             {
               "franchiseId": "0002",
-              "score": 18.8,
-              "depth": 8.8,
+              "score": 19.3,
+              "depth": 10.7,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
                 "QB": {
                   "score": 2.5,
-                  "depth": 1.5
+                  "depth": 1.3
                 },
                 "RB": {
-                  "score": 3.5,
-                  "depth": 2.6
+                  "score": 5,
+                  "depth": 4
                 },
                 "WR": {
-                  "score": 10.5,
-                  "depth": 3.9
+                  "score": 9.7,
+                  "depth": 4.4
                 },
                 "TE": {
-                  "score": 2.3,
-                  "depth": 0.8
+                  "score": 2,
+                  "depth": 1
                 }
               }
             },
             {
               "franchiseId": "0001",
-              "score": 17.3,
-              "depth": 15.1,
+              "score": 18.1,
+              "depth": 16.4,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
                 "QB": {
-                  "score": 1.5,
-                  "depth": 1.9
+                  "score": 1.8,
+                  "depth": 1.8
                 },
                 "RB": {
-                  "score": 5.5,
-                  "depth": 3.6
+                  "score": 8.9,
+                  "depth": 1.4
                 },
                 "WR": {
-                  "score": 8.9,
-                  "depth": 7.8
+                  "score": 6.3,
+                  "depth": 11.4
                 },
                 "TE": {
-                  "score": 1.4,
-                  "depth": 1.8
+                  "score": 1.1,
+                  "depth": 1.7
                 }
               },
               "starters": [
@@ -12276,11 +12309,11 @@
                   "position": "QB"
                 },
                 {
-                  "name": "Omarion Hampton",
+                  "name": "Jonathan Taylor",
                   "position": "RB"
                 },
                 {
-                  "name": "Jonathan Taylor",
+                  "name": "Saquon Barkley",
                   "position": "RB"
                 },
                 {
@@ -12296,21 +12329,13 @@
                   "position": "TE"
                 },
                 {
-                  "name": "Luther Burden",
-                  "position": "WR"
+                  "name": "Omarion Hampton",
+                  "position": "RB"
                 }
               ],
               "bench": [
                 {
-                  "name": "Saquon Barkley",
-                  "position": "RB"
-                },
-                {
-                  "name": "Marvin Harrison Jr.",
-                  "position": "WR"
-                },
-                {
-                  "name": "Josh Downs",
+                  "name": "Luther Burden",
                   "position": "WR"
                 },
                 {
@@ -12318,28 +12343,20 @@
                   "position": "WR"
                 },
                 {
-                  "name": "George Kittle",
-                  "position": "TE"
+                  "name": "Chris Godwin",
+                  "position": "WR"
+                },
+                {
+                  "name": "Marvin Harrison Jr.",
+                  "position": "WR"
                 },
                 {
                   "name": "Courtland Sutton",
                   "position": "WR"
                 },
                 {
-                  "name": "Brenton Strange",
-                  "position": "TE"
-                },
-                {
-                  "name": "Chris Godwin",
+                  "name": "Josh Downs",
                   "position": "WR"
-                },
-                {
-                  "name": "Kyle Monangai",
-                  "position": "RB"
-                },
-                {
-                  "name": "Fernando Mendoza",
-                  "position": "QB"
                 },
                 {
                   "name": "De'Zhaun Stribling",
@@ -12350,6 +12367,18 @@
                   "position": "QB"
                 },
                 {
+                  "name": "George Kittle",
+                  "position": "TE"
+                },
+                {
+                  "name": "Rashid Shaheed",
+                  "position": "WR"
+                },
+                {
+                  "name": "Brenton Strange",
+                  "position": "TE"
+                },
+                {
                   "name": "Sam Darnold",
                   "position": "QB"
                 },
@@ -12358,8 +12387,8 @@
                   "position": "RB"
                 },
                 {
-                  "name": "Rashid Shaheed",
-                  "position": "WR"
+                  "name": "Kyle Monangai",
+                  "position": "RB"
                 },
                 {
                   "name": "Chris Bell",
@@ -12370,12 +12399,12 @@
                   "position": "WR"
                 },
                 {
-                  "name": "Tyrone Tracy",
-                  "position": "RB"
+                  "name": "Fernando Mendoza",
+                  "position": "QB"
                 },
                 {
-                  "name": "Kayshon Boutte",
-                  "position": "WR"
+                  "name": "Tyrone Tracy",
+                  "position": "RB"
                 },
                 {
                   "name": "Isiah Pacheco",
@@ -12384,177 +12413,152 @@
               ]
             },
             {
-              "franchiseId": "0010",
-              "score": 17.1,
-              "depth": 8.8,
-              "filled": 7,
-              "slotCount": 7,
-              "byPosition": {
-                "QB": {
-                  "score": 1.2,
-                  "depth": 1.3
-                },
-                "RB": {
-                  "score": 5.9,
-                  "depth": 1.9
-                },
-                "WR": {
-                  "score": 7.3,
-                  "depth": 3.1
-                },
-                "TE": {
-                  "score": 2.6,
-                  "depth": 2.5
-                }
-              }
-            },
-            {
               "franchiseId": "0009",
-              "score": 15.3,
-              "depth": 12.7,
+              "score": 15.5,
+              "depth": 13.1,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
                 "QB": {
-                  "score": 2.3,
+                  "score": 2.4,
                   "depth": 2.7
                 },
                 "RB": {
-                  "score": 4.2,
-                  "depth": 4.3
+                  "score": 5.7,
+                  "depth": 5.4
                 },
                 "WR": {
-                  "score": 7.8,
-                  "depth": 4.1
+                  "score": 6.5,
+                  "depth": 4.2
                 },
                 "TE": {
-                  "score": 1.1,
-                  "depth": 1.6
+                  "score": 0.9,
+                  "depth": 0.8
                 }
               }
             },
             {
               "franchiseId": "0007",
-              "score": 15,
-              "depth": 7.4,
+              "score": 15.1,
+              "depth": 8.2,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
                 "QB": {
-                  "score": 1.9,
-                  "depth": 1
+                  "score": 2.1,
+                  "depth": 0.6
                 },
                 "RB": {
-                  "score": 4.9,
+                  "score": 4.8,
                   "depth": 2
                 },
                 "WR": {
-                  "score": 6.5,
-                  "depth": 3.6
+                  "score": 6.8,
+                  "depth": 4.8
                 },
                 "TE": {
-                  "score": 1.7,
-                  "depth": 0.7
-                }
-              }
-            },
-            {
-              "franchiseId": "0005",
-              "score": 13.9,
-              "depth": 7.3,
-              "filled": 7,
-              "slotCount": 7,
-              "byPosition": {
-                "QB": {
-                  "score": 1.3,
-                  "depth": 2.1
-                },
-                "RB": {
-                  "score": 3,
-                  "depth": 1.4
-                },
-                "WR": {
-                  "score": 7.8,
-                  "depth": 2.4
-                },
-                "TE": {
-                  "score": 1.8,
-                  "depth": 1.4
-                }
-              }
-            },
-            {
-              "franchiseId": "0006",
-              "score": 12.1,
-              "depth": 7.8,
-              "filled": 7,
-              "slotCount": 7,
-              "byPosition": {
-                "QB": {
-                  "score": 1.7,
-                  "depth": 1.1
-                },
-                "RB": {
-                  "score": 2.7,
-                  "depth": 3.8
-                },
-                "WR": {
-                  "score": 6.1,
-                  "depth": 1.8
-                },
-                "TE": {
-                  "score": 1.6,
-                  "depth": 1.1
+                  "score": 1.4,
+                  "depth": 0.8
                 }
               }
             },
             {
               "franchiseId": "0004",
-              "score": 11.7,
-              "depth": 9.4,
+              "score": 13.7,
+              "depth": 10.4,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
                 "QB": {
-                  "score": 2,
-                  "depth": 1.7
+                  "score": 1.5,
+                  "depth": 1.4
                 },
                 "RB": {
-                  "score": 2.7,
-                  "depth": 1.7
+                  "score": 4.2,
+                  "depth": 2.4
                 },
                 "WR": {
-                  "score": 5.9,
-                  "depth": 5.4
+                  "score": 7.4,
+                  "depth": 5.3
                 },
                 "TE": {
-                  "score": 1.1,
-                  "depth": 0.5
+                  "score": 0.6,
+                  "depth": 1.3
+                }
+              }
+            },
+            {
+              "franchiseId": "0005",
+              "score": 12.5,
+              "depth": 9.1,
+              "filled": 7,
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.2,
+                  "depth": 2.9
+                },
+                "RB": {
+                  "score": 3,
+                  "depth": 1.9
+                },
+                "WR": {
+                  "score": 6.4,
+                  "depth": 2.7
+                },
+                "TE": {
+                  "score": 2,
+                  "depth": 1.6
+                }
+              }
+            },
+            {
+              "franchiseId": "0006",
+              "score": 11.9,
+              "depth": 8.9,
+              "filled": 7,
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.5,
+                  "depth": 1.1
+                },
+                "RB": {
+                  "score": 2.9,
+                  "depth": 4.6
+                },
+                "WR": {
+                  "score": 6.3,
+                  "depth": 1.8
+                },
+                "TE": {
+                  "score": 1.2,
+                  "depth": 1.3
                 }
               }
             },
             {
               "franchiseId": "0003",
-              "score": 8.2,
-              "depth": 2.9,
+              "score": 10.1,
+              "depth": 4.9,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
                 "QB": {
-                  "score": 1.4,
-                  "depth": 0.4
+                  "score": 1,
+                  "depth": 0.5
                 },
                 "RB": {
-                  "score": 2.4,
-                  "depth": 0.3
+                  "score": 3.6,
+                  "depth": 0.1
                 },
                 "WR": {
-                  "score": 2.9,
-                  "depth": 1.5
+                  "score": 4.4,
+                  "depth": 3.4
                 },
                 "TE": {
-                  "score": 1.4,
-                  "depth": 0.6
+                  "score": 1.1,
+                  "depth": 0.9
                 }
               }
             }
@@ -12562,6 +12566,7 @@
         },
         "projectionsUnavailable": null
       },
+      "availableAt": "2026-09-10T19:07:06.432Z",
       "results": [
         {
           "year": "2006",
@@ -15700,7 +15705,7 @@
           "originalTeamName": "Swingline Steamrollers"
         }
       ],
-      "updatedAt": "2026-09-10T12:54:37.583Z",
+      "updatedAt": "2026-09-10T19:07:11.427Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -15954,42 +15959,6 @@
       ],
       "lineupError": null,
       "draftInProgress": false,
-      "available": [
-        "Chig Okonkwo",
-        "Kenny Gainwell",
-        "Bryce Young",
-        "Jauan Jennings",
-        "Troy Franklin",
-        "Michael Penix Jr.",
-        "Tua Tagovailoa",
-        "Shedeur Sanders",
-        "Cade Otton",
-        "Eli Raridon",
-        "Darnell Mooney",
-        "Alvin Kamara",
-        "Aaron Rodgers",
-        "Geno Smith",
-        "Ray Davis",
-        "Emanuel Wilson",
-        "Chimere Dike",
-        "Sean Tucker",
-        "Rashod Bateman",
-        "Kyle Williams",
-        "Devaughn Vele",
-        "Greg Dulcich",
-        "Jack Bech",
-        "Cole Kmet",
-        "Bryce Lance",
-        "Deshaun Watson",
-        "Seth McGowan",
-        "Christian Kirk",
-        "Michael Mayer",
-        "Kirk Cousins",
-        "Marvin Mims Jr.",
-        "Xavier Legette",
-        "Jordan James"
-      ],
-      "availableAt": "2026-09-09T19:16:17.143Z",
       "rankings": {
         "type": "ROS",
         "scoring": "PPR",
@@ -16000,15 +15969,55 @@
         "total": 29
       },
       "rankingsError": null,
+      "available": [
+        "Kenny Gainwell",
+        "Greg Dulcich",
+        "Chig Okonkwo",
+        "Bryce Young",
+        "Charlie Kolar",
+        "Geno Smith",
+        "Jauan Jennings",
+        "Cade Otton",
+        "Evan Engram",
+        "Bryce Lance",
+        "Cooper Kupp",
+        "Mike Gesicki",
+        "Rashod Bateman",
+        "Darnell Mooney",
+        "Aaron Rodgers",
+        "Isaac TeSlaa",
+        "Kyle Williams",
+        "Ray Davis",
+        "Devaughn Vele",
+        "Troy Franklin",
+        "Kevin Coleman Jr.",
+        "Jake Tonges",
+        "Michael Mayer",
+        "Eli Raridon",
+        "Seth McGowan",
+        "Jack Bech",
+        "Chimere Dike",
+        "Erick All Jr.",
+        "Malik Davis",
+        "Darius Slayton",
+        "Elijah Arroyo",
+        "James Conner",
+        "Jordan James",
+        "Sean Tucker",
+        "Darnell Washington",
+        "Kirk Cousins",
+        "Jahan Dotson",
+        "George Holani"
+      ],
       "power": {
-        "computedAt": "2026-09-09T19:16:17.143Z",
+        "computedAt": "2026-09-10T19:07:06.432Z",
         "scoring": "PPR",
         "projections": {
           "source": {
             "basis": "projections",
             "season": "2026",
             "week": "0",
-            "inSeason": false
+            "inSeason": true
           },
           "teams": [
             {
@@ -16289,7 +16298,7 @@
             {
               "franchiseId": "0008",
               "score": 1722,
-              "depth": 2645.4,
+              "depth": 2684.4,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
@@ -16299,11 +16308,11 @@
                 },
                 "RB": {
                   "score": 510.7,
-                  "depth": 257.6
+                  "depth": 374.8
                 },
                 "WR": {
                   "score": 652,
-                  "depth": 1453.6
+                  "depth": 1375.5
                 },
                 "TE": {
                   "score": 260.4,
@@ -16367,157 +16376,82 @@
           "source": {
             "basis": "ecr",
             "season": "2026",
-            "rankingType": "DYNASTY",
+            "rankingType": "ROS",
             "scoring": "PPR",
-            "inSeason": false
+            "inSeason": true
           },
           "teams": [
             {
-              "franchiseId": "0003",
-              "score": 18.1,
-              "depth": 12.5,
-              "filled": 7,
-              "slotCount": 7,
-              "byPosition": {
-                "QB": {
-                  "score": 2.3,
-                  "depth": 2.7
-                },
-                "RB": {
-                  "score": 3,
-                  "depth": 3.9
-                },
-                "WR": {
-                  "score": 11.3,
-                  "depth": 4.3
-                },
-                "TE": {
-                  "score": 1.5,
-                  "depth": 1.5
-                }
-              }
-            },
-            {
-              "franchiseId": "0010",
-              "score": 16.2,
-              "depth": 6,
-              "filled": 7,
-              "slotCount": 7,
-              "byPosition": {
-                "QB": {
-                  "score": 1,
-                  "depth": 1.4
-                },
-                "RB": {
-                  "score": 5.9,
-                  "depth": 1.4
-                },
-                "WR": {
-                  "score": 8,
-                  "depth": 3.2
-                },
-                "TE": {
-                  "score": 1.4,
-                  "depth": 0
-                }
-              }
-            },
-            {
-              "franchiseId": "0008",
-              "score": 15.5,
-              "depth": 15.2,
-              "filled": 7,
-              "slotCount": 7,
-              "byPosition": {
-                "QB": {
-                  "score": 1.2,
-                  "depth": 1.4
-                },
-                "RB": {
-                  "score": 5.4,
-                  "depth": 1.1
-                },
-                "WR": {
-                  "score": 6.6,
-                  "depth": 10.8
-                },
-                "TE": {
-                  "score": 2.3,
-                  "depth": 1.9
-                }
-              }
-            },
-            {
-              "franchiseId": "0004",
-              "score": 15.3,
-              "depth": 6.9,
-              "filled": 7,
-              "slotCount": 7,
-              "byPosition": {
-                "QB": {
-                  "score": 1.9,
-                  "depth": 2
-                },
-                "RB": {
-                  "score": 2.9,
-                  "depth": 1.2
-                },
-                "WR": {
-                  "score": 8.8,
-                  "depth": 3
-                },
-                "TE": {
-                  "score": 1.6,
-                  "depth": 0.7
-                }
-              }
-            },
-            {
               "franchiseId": "0005",
-              "score": 15.2,
-              "depth": 7.7,
+              "score": 18,
+              "depth": 11.4,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
                 "QB": {
-                  "score": 1.1,
-                  "depth": 1.9
+                  "score": 1.3,
+                  "depth": 2.4
                 },
                 "RB": {
-                  "score": 7,
-                  "depth": 3.4
+                  "score": 9.7,
+                  "depth": 5.3
                 },
                 "WR": {
                   "score": 6.2,
-                  "depth": 1.3
+                  "depth": 2.2
                 },
                 "TE": {
                   "score": 0.8,
+                  "depth": 1.4
+                }
+              }
+            },
+            {
+              "franchiseId": "0003",
+              "score": 17.6,
+              "depth": 13.9,
+              "filled": 7,
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 2.4,
+                  "depth": 2.7
+                },
+                "RB": {
+                  "score": 4.1,
+                  "depth": 4.2
+                },
+                "WR": {
+                  "score": 10.1,
+                  "depth": 5.8
+                },
+                "TE": {
+                  "score": 1.1,
                   "depth": 1.2
                 }
               }
             },
             {
               "franchiseId": "0001",
-              "score": 15.1,
-              "depth": 11.5,
+              "score": 17.5,
+              "depth": 11.6,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
                 "QB": {
-                  "score": 1.5,
-                  "depth": 1.9
+                  "score": 1.8,
+                  "depth": 2.2
                 },
                 "RB": {
-                  "score": 4.5,
-                  "depth": 3.4
+                  "score": 7,
+                  "depth": 3
                 },
                 "WR": {
-                  "score": 6.4,
-                  "depth": 4
+                  "score": 6.1,
+                  "depth": 4.2
                 },
                 "TE": {
-                  "score": 2.6,
+                  "score": 2.5,
                   "depth": 2.2
                 }
               },
@@ -16527,23 +16461,23 @@
                   "position": "QB"
                 },
                 {
-                  "name": "Jonathan Taylor",
-                  "position": "RB"
-                },
-                {
                   "name": "Christian McCaffrey",
                   "position": "RB"
                 },
                 {
-                  "name": "Malik Nabers",
-                  "position": "WR"
+                  "name": "Jonathan Taylor",
+                  "position": "RB"
                 },
                 {
                   "name": "DeVonta Smith",
                   "position": "WR"
                 },
                 {
-                  "name": "Jordan Addison",
+                  "name": "Malik Nabers",
+                  "position": "WR"
+                },
+                {
+                  "name": "Chris Godwin",
                   "position": "WR"
                 },
                 {
@@ -16561,32 +16495,16 @@
                   "position": "QB"
                 },
                 {
-                  "name": "Kenyon Sadiq",
-                  "position": "TE"
-                },
-                {
                   "name": "Josh Downs",
                   "position": "WR"
                 },
                 {
-                  "name": "Chris Godwin",
+                  "name": "Jordan Addison",
                   "position": "WR"
-                },
-                {
-                  "name": "Jayden Higgins",
-                  "position": "WR"
-                },
-                {
-                  "name": "Kyle Monangai",
-                  "position": "RB"
                 },
                 {
                   "name": "Malik Willis",
                   "position": "QB"
-                },
-                {
-                  "name": "AJ Barner",
-                  "position": "TE"
                 },
                 {
                   "name": "Travis Kelce",
@@ -16597,16 +16515,24 @@
                   "position": "WR"
                 },
                 {
-                  "name": "Tyler Allgeier",
-                  "position": "RB"
-                },
-                {
-                  "name": "Tyrone Tracy",
-                  "position": "RB"
-                },
-                {
                   "name": "Kayshon Boutte",
                   "position": "WR"
+                },
+                {
+                  "name": "AJ Barner",
+                  "position": "TE"
+                },
+                {
+                  "name": "Kenyon Sadiq",
+                  "position": "TE"
+                },
+                {
+                  "name": "Kyle Monangai",
+                  "position": "RB"
+                },
+                {
+                  "name": "Tyler Allgeier",
+                  "position": "RB"
                 },
                 {
                   "name": "Zachariah Branch",
@@ -16615,6 +16541,10 @@
                 {
                   "name": "Elijah Sarratt",
                   "position": "WR"
+                },
+                {
+                  "name": "Tyrone Tracy",
+                  "position": "RB"
                 },
                 {
                   "name": "Isiah Pacheco",
@@ -16627,73 +16557,148 @@
               ]
             },
             {
-              "franchiseId": "0007",
-              "score": 14,
-              "depth": 7.2,
+              "franchiseId": "0010",
+              "score": 17.3,
+              "depth": 6.6,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
                 "QB": {
                   "score": 0.9,
-                  "depth": 0.6
+                  "depth": 0.8
                 },
                 "RB": {
-                  "score": 5.9,
-                  "depth": 3.2
+                  "score": 8.1,
+                  "depth": 1.3
                 },
                 "WR": {
-                  "score": 5.5,
-                  "depth": 1.9
+                  "score": 7.2,
+                  "depth": 4.3
                 },
                 "TE": {
-                  "score": 1.7,
-                  "depth": 1.5
+                  "score": 1.1,
+                  "depth": 0.2
                 }
               }
             },
             {
-              "franchiseId": "0002",
-              "score": 13.9,
-              "depth": 11,
+              "franchiseId": "0008",
+              "score": 15.4,
+              "depth": 15.6,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
                 "QB": {
-                  "score": 1.8,
-                  "depth": 0.8
+                  "score": 1,
+                  "depth": 1.6
                 },
                 "RB": {
-                  "score": 2.8,
-                  "depth": 2.1
+                  "score": 5.8,
+                  "depth": 1.7
                 },
                 "WR": {
-                  "score": 8.5,
-                  "depth": 7.3
+                  "score": 6.5,
+                  "depth": 10.3
                 },
                 "TE": {
-                  "score": 0.7,
+                  "score": 2,
+                  "depth": 2
+                }
+              }
+            },
+            {
+              "franchiseId": "0009",
+              "score": 15,
+              "depth": 7.7,
+              "filled": 7,
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 2.5,
+                  "depth": 1.3
+                },
+                "RB": {
+                  "score": 4.5,
+                  "depth": 2.7
+                },
+                "WR": {
+                  "score": 6,
+                  "depth": 2.4
+                },
+                "TE": {
+                  "score": 2,
+                  "depth": 1.3
+                }
+              }
+            },
+            {
+              "franchiseId": "0004",
+              "score": 14.6,
+              "depth": 7.5,
+              "filled": 7,
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 2.1,
+                  "depth": 1.5
+                },
+                "RB": {
+                  "score": 2.7,
+                  "depth": 1.6
+                },
+                "WR": {
+                  "score": 8.6,
+                  "depth": 3.5
+                },
+                "TE": {
+                  "score": 1.2,
                   "depth": 0.9
                 }
               }
             },
             {
-              "franchiseId": "0006",
-              "score": 12.6,
-              "depth": 8.6,
+              "franchiseId": "0002",
+              "score": 14.3,
+              "depth": 14.2,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
                 "QB": {
-                  "score": 2,
-                  "depth": 1.6
+                  "score": 1.7,
+                  "depth": 0.9
                 },
                 "RB": {
-                  "score": 3.8,
-                  "depth": 1.6
+                  "score": 4.2,
+                  "depth": 3.2
                 },
                 "WR": {
-                  "score": 5.8,
-                  "depth": 3.8
+                  "score": 7.6,
+                  "depth": 9.4
+                },
+                "TE": {
+                  "score": 0.9,
+                  "depth": 0.7
+                }
+              }
+            },
+            {
+              "franchiseId": "0006",
+              "score": 13.3,
+              "depth": 8.7,
+              "filled": 7,
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.5,
+                  "depth": 1.2
+                },
+                "RB": {
+                  "score": 4.2,
+                  "depth": 1.5
+                },
+                "WR": {
+                  "score": 6.6,
+                  "depth": 4.4
                 },
                 "TE": {
                   "score": 1,
@@ -16702,27 +16707,27 @@
               }
             },
             {
-              "franchiseId": "0009",
+              "franchiseId": "0007",
               "score": 12.6,
-              "depth": 7.3,
+              "depth": 9.1,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
                 "QB": {
-                  "score": 2.5,
-                  "depth": 1.6
+                  "score": 1,
+                  "depth": 0.8
                 },
                 "RB": {
-                  "score": 3,
-                  "depth": 2.4
+                  "score": 4.6,
+                  "depth": 4
                 },
                 "WR": {
-                  "score": 5.3,
-                  "depth": 2.6
+                  "score": 5.6,
+                  "depth": 2.8
                 },
                 "TE": {
-                  "score": 1.8,
-                  "depth": 0.7
+                  "score": 1.4,
+                  "depth": 1.6
                 }
               }
             }
@@ -16730,6 +16735,7 @@
         },
         "projectionsUnavailable": null
       },
+      "availableAt": "2026-09-10T19:07:06.432Z",
       "results": [
         {
           "year": "2007",
@@ -19726,7 +19732,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-10T12:54:40.110Z",
+      "updatedAt": "2026-09-10T19:07:13.359Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -20022,26 +20028,6 @@
       ],
       "lineupError": null,
       "draftInProgress": false,
-      "available": [
-        "Chig Okonkwo",
-        "Kenny Gainwell",
-        "Gunnar Helm",
-        "Tua Tagovailoa",
-        "Oscar Delp",
-        "Calvin Ridley",
-        "Cade Otton",
-        "Rashod Bateman",
-        "Devaughn Vele",
-        "Greg Dulcich",
-        "J.J. McCarthy",
-        "Cole Kmet",
-        "Deshaun Watson",
-        "Christian Kirk",
-        "Michael Mayer",
-        "Marvin Mims Jr.",
-        "Xavier Legette"
-      ],
-      "availableAt": "2026-09-09T19:16:17.143Z",
       "rankings": {
         "type": "ROS",
         "scoring": "PPR",
@@ -20052,15 +20038,36 @@
         "total": 26
       },
       "rankingsError": null,
+      "available": [
+        "Kenny Gainwell",
+        "Greg Dulcich",
+        "Chig Okonkwo",
+        "Charlie Kolar",
+        "Gunnar Helm",
+        "Cade Otton",
+        "Calvin Ridley",
+        "Darren Waller",
+        "Mike Gesicki",
+        "Rashod Bateman",
+        "Devaughn Vele",
+        "Kevin Coleman Jr.",
+        "Tyquan Thornton",
+        "Jake Tonges",
+        "Michael Mayer",
+        "Erick All Jr.",
+        "Darius Slayton",
+        "Darnell Washington",
+        "Jahan Dotson"
+      ],
       "power": {
-        "computedAt": "2026-09-09T19:16:17.143Z",
+        "computedAt": "2026-09-10T19:07:06.432Z",
         "scoring": "PPR",
         "projections": {
           "source": {
             "basis": "projections",
             "season": "2026",
             "week": "0",
-            "inSeason": false
+            "inSeason": true
           },
           "teams": [
             {
@@ -20461,288 +20468,238 @@
           "source": {
             "basis": "ecr",
             "season": "2026",
-            "rankingType": "DYNASTY",
+            "rankingType": "ROS",
             "scoring": "PPR",
-            "inSeason": false
+            "inSeason": true
           },
           "teams": [
             {
-              "franchiseId": "0003",
-              "score": 16.2,
-              "depth": 5.9,
-              "filled": 7,
-              "slotCount": 7,
-              "byPosition": {
-                "QB": {
-                  "score": 1.7,
-                  "depth": 3
-                },
-                "RB": {
-                  "score": 5.9,
-                  "depth": 1.1
-                },
-                "WR": {
-                  "score": 6.9,
-                  "depth": 1.1
-                },
-                "TE": {
-                  "score": 1.8,
-                  "depth": 0.7
-                }
-              }
-            },
-            {
-              "franchiseId": "0001",
-              "score": 15.7,
-              "depth": 10,
-              "filled": 7,
-              "slotCount": 7,
-              "byPosition": {
-                "QB": {
-                  "score": 2.3,
-                  "depth": 0.8
-                },
-                "RB": {
-                  "score": 2.1,
-                  "depth": 1.3
-                },
-                "WR": {
-                  "score": 8.7,
-                  "depth": 5
-                },
-                "TE": {
-                  "score": 2.6,
-                  "depth": 2.9
-                }
-              }
-            },
-            {
               "franchiseId": "0006",
-              "score": 15.5,
-              "depth": 7.7,
+              "score": 17.5,
+              "depth": 8.6,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
                 "QB": {
-                  "score": 1.9,
-                  "depth": 1.5
-                },
-                "RB": {
-                  "score": 3.2,
-                  "depth": 3.1
-                },
-                "WR": {
-                  "score": 9.3,
-                  "depth": 2.9
-                },
-                "TE": {
-                  "score": 1,
-                  "depth": 0.1
-                }
-              }
-            },
-            {
-              "franchiseId": "0012",
-              "score": 15.1,
-              "depth": 7.5,
-              "filled": 7,
-              "slotCount": 7,
-              "byPosition": {
-                "QB": {
-                  "score": 2,
-                  "depth": 1.9
-                },
-                "RB": {
-                  "score": 5.3,
-                  "depth": 1.5
-                },
-                "WR": {
-                  "score": 6.7,
-                  "depth": 2.7
-                },
-                "TE": {
-                  "score": 1.1,
-                  "depth": 1.4
-                }
-              }
-            },
-            {
-              "franchiseId": "0005",
-              "score": 14.5,
-              "depth": 6.4,
-              "filled": 7,
-              "slotCount": 7,
-              "byPosition": {
-                "QB": {
-                  "score": 1.4,
-                  "depth": 0.9
-                },
-                "RB": {
-                  "score": 6.2,
-                  "depth": 0
-                },
-                "WR": {
-                  "score": 5.9,
-                  "depth": 4.4
-                },
-                "TE": {
-                  "score": 1,
-                  "depth": 1.1
-                }
-              }
-            },
-            {
-              "franchiseId": "0010",
-              "score": 13.4,
-              "depth": 5.6,
-              "filled": 7,
-              "slotCount": 7,
-              "byPosition": {
-                "QB": {
-                  "score": 1.8,
+                  "score": 2.1,
                   "depth": 1
                 },
                 "RB": {
-                  "score": 4,
-                  "depth": 1.6
+                  "score": 5.5,
+                  "depth": 3.2
                 },
                 "WR": {
-                  "score": 7,
-                  "depth": 2.5
+                  "score": 8.9,
+                  "depth": 3.8
                 },
                 "TE": {
-                  "score": 0.5,
+                  "score": 1,
                   "depth": 0.6
                 }
               }
             },
             {
-              "franchiseId": "0002",
-              "score": 13.3,
-              "depth": 8,
+              "franchiseId": "0005",
+              "score": 17.3,
+              "depth": 7.2,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
                 "QB": {
-                  "score": 0.7,
-                  "depth": 0.8
-                },
-                "RB": {
-                  "score": 3.4,
-                  "depth": 3.7
-                },
-                "WR": {
-                  "score": 8.5,
-                  "depth": 2.5
-                },
-                "TE": {
-                  "score": 0.7,
+                  "score": 1,
                   "depth": 1
-                }
-              }
-            },
-            {
-              "franchiseId": "0007",
-              "score": 13.2,
-              "depth": 6.3,
-              "filled": 7,
-              "slotCount": 7,
-              "byPosition": {
-                "QB": {
-                  "score": 1.3,
-                  "depth": 1.7
                 },
                 "RB": {
-                  "score": 2.4,
-                  "depth": 2.9
-                },
-                "WR": {
-                  "score": 8.1,
-                  "depth": 0.9
-                },
-                "TE": {
-                  "score": 1.4,
-                  "depth": 0.7
-                }
-              }
-            },
-            {
-              "franchiseId": "0011",
-              "score": 12.3,
-              "depth": 7.5,
-              "filled": 7,
-              "slotCount": 7,
-              "byPosition": {
-                "QB": {
-                  "score": 2.5,
-                  "depth": 1.5
-                },
-                "RB": {
-                  "score": 4.9,
-                  "depth": 1.6
-                },
-                "WR": {
-                  "score": 4.1,
-                  "depth": 4.1
-                },
-                "TE": {
-                  "score": 0.8,
+                  "score": 8.9,
                   "depth": 0.3
-                }
-              }
-            },
-            {
-              "franchiseId": "0004",
-              "score": 12,
-              "depth": 4,
-              "filled": 7,
-              "slotCount": 7,
-              "byPosition": {
-                "QB": {
-                  "score": 0.6,
-                  "depth": 0.4
-                },
-                "RB": {
-                  "score": 4,
-                  "depth": 0.8
                 },
                 "WR": {
-                  "score": 5.8,
-                  "depth": 2.3
+                  "score": 6.4,
+                  "depth": 5.1
                 },
                 "TE": {
-                  "score": 1.5,
-                  "depth": 0.5
+                  "score": 1,
+                  "depth": 0.8
                 }
               }
             },
             {
-              "franchiseId": "0008",
-              "score": 11.7,
+              "franchiseId": "0003",
+              "score": 15.4,
               "depth": 6.8,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
                 "QB": {
-                  "score": 0.8,
-                  "depth": 1.4
+                  "score": 1.5,
+                  "depth": 2.8
                 },
                 "RB": {
-                  "score": 4.7,
-                  "depth": 1.8
+                  "score": 4.6,
+                  "depth": 1.6
                 },
                 "WR": {
-                  "score": 4,
+                  "score": 7.3,
+                  "depth": 1.2
+                },
+                "TE": {
+                  "score": 2,
+                  "depth": 1.1
+                }
+              }
+            },
+            {
+              "franchiseId": "0001",
+              "score": 15.2,
+              "depth": 8.6,
+              "filled": 7,
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 2.4,
+                  "depth": 0.9
+                },
+                "RB": {
+                  "score": 2.4,
+                  "depth": 1.5
+                },
+                "WR": {
+                  "score": 7.9,
+                  "depth": 3.9
+                },
+                "TE": {
+                  "score": 2.5,
+                  "depth": 2.3
+                }
+              }
+            },
+            {
+              "franchiseId": "0011",
+              "score": 15.1,
+              "depth": 7.6,
+              "filled": 7,
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 2.5,
+                  "depth": 1.8
+                },
+                "RB": {
+                  "score": 7.2,
+                  "depth": 1.5
+                },
+                "WR": {
+                  "score": 4.6,
+                  "depth": 4
+                },
+                "TE": {
+                  "score": 0.8,
+                  "depth": 0.2
+                }
+              }
+            },
+            {
+              "franchiseId": "0012",
+              "score": 14.7,
+              "depth": 8.6,
+              "filled": 7,
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.5,
+                  "depth": 1.9
+                },
+                "RB": {
+                  "score": 6.6,
+                  "depth": 1.9
+                },
+                "WR": {
+                  "score": 5.7,
+                  "depth": 3.3
+                },
+                "TE": {
+                  "score": 0.9,
+                  "depth": 1.6
+                }
+              }
+            },
+            {
+              "franchiseId": "0002",
+              "score": 14.4,
+              "depth": 9.9,
+              "filled": 7,
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 0.7,
+                  "depth": 1.1
+                },
+                "RB": {
+                  "score": 4.5,
+                  "depth": 5.6
+                },
+                "WR": {
+                  "score": 8.5,
                   "depth": 2.6
                 },
                 "TE": {
-                  "score": 2.3,
-                  "depth": 1.1
+                  "score": 0.7,
+                  "depth": 0.6
+                }
+              }
+            },
+            {
+              "franchiseId": "0010",
+              "score": 14.3,
+              "depth": 6.6,
+              "filled": 7,
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.7,
+                  "depth": 0.8
+                },
+                "RB": {
+                  "score": 5.2,
+                  "depth": 1.8
+                },
+                "WR": {
+                  "score": 6.5,
+                  "depth": 3.2
+                },
+                "TE": {
+                  "score": 0.9,
+                  "depth": 0.9
+                }
+              }
+            },
+            {
+              "franchiseId": "0008",
+              "score": 13.9,
+              "depth": 8.3,
+              "filled": 7,
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 0.9,
+                  "depth": 1
+                },
+                "RB": {
+                  "score": 5.8,
+                  "depth": 2.2
+                },
+                "WR": {
+                  "score": 5.2,
+                  "depth": 4.1
+                },
+                "TE": {
+                  "score": 2,
+                  "depth": 0.9
                 }
               },
               "starters": [
                 {
-                  "name": "Tyler Shough",
+                  "name": "Kyler Murray",
                   "position": "QB"
                 },
                 {
@@ -20758,11 +20715,11 @@
                   "position": "WR"
                 },
                 {
-                  "name": "Michael Pittman",
+                  "name": "Stefon Diggs",
                   "position": "WR"
                 },
                 {
-                  "name": "Jalen Coker",
+                  "name": "Michael Pittman",
                   "position": "WR"
                 },
                 {
@@ -20772,27 +20729,23 @@
               ],
               "bench": [
                 {
-                  "name": "Dalton Kincaid",
-                  "position": "TE"
-                },
-                {
-                  "name": "Rico Dowdle",
-                  "position": "RB"
-                },
-                {
-                  "name": "Fernando Mendoza",
-                  "position": "QB"
-                },
-                {
-                  "name": "Kyler Murray",
-                  "position": "QB"
+                  "name": "Jalen Coker",
+                  "position": "WR"
                 },
                 {
                   "name": "De'Zhaun Stribling",
                   "position": "WR"
                 },
                 {
-                  "name": "Jonah Coleman",
+                  "name": "Dalton Kincaid",
+                  "position": "TE"
+                },
+                {
+                  "name": "Tyler Shough",
+                  "position": "QB"
+                },
+                {
+                  "name": "Rico Dowdle",
                   "position": "RB"
                 },
                 {
@@ -20800,19 +20753,15 @@
                   "position": "WR"
                 },
                 {
-                  "name": "Stefon Diggs",
-                  "position": "WR"
-                },
-                {
-                  "name": "Malik Washington",
-                  "position": "WR"
+                  "name": "Jonah Coleman",
+                  "position": "RB"
                 },
                 {
                   "name": "Keaton Mitchell",
                   "position": "RB"
                 },
                 {
-                  "name": "Elijah Sarratt",
+                  "name": "Jalen Nailor",
                   "position": "WR"
                 },
                 {
@@ -20820,7 +20769,11 @@
                   "position": "WR"
                 },
                 {
-                  "name": "Jalen Nailor",
+                  "name": "Kimani Vidal",
+                  "position": "RB"
+                },
+                {
+                  "name": "Malik Washington",
                   "position": "WR"
                 },
                 {
@@ -20828,33 +20781,87 @@
                   "position": "RB"
                 },
                 {
-                  "name": "Kimani Vidal",
-                  "position": "RB"
+                  "name": "Fernando Mendoza",
+                  "position": "QB"
+                },
+                {
+                  "name": "Elijah Sarratt",
+                  "position": "WR"
                 }
               ]
             },
             {
               "franchiseId": "0009",
-              "score": 11,
-              "depth": 5.5,
+              "score": 12.2,
+              "depth": 5.7,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
                 "QB": {
-                  "score": 1,
-                  "depth": 0.8
+                  "score": 0.9,
+                  "depth": 0.9
                 },
                 "RB": {
-                  "score": 1.8,
-                  "depth": 1.2
+                  "score": 3.1,
+                  "depth": 0.8
                 },
                 "WR": {
-                  "score": 6.6,
-                  "depth": 3.1
+                  "score": 6.9,
+                  "depth": 3.4
                 },
                 "TE": {
-                  "score": 1.7,
+                  "score": 1.4,
+                  "depth": 0.6
+                }
+              }
+            },
+            {
+              "franchiseId": "0007",
+              "score": 11.7,
+              "depth": 8.7,
+              "filled": 7,
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.3,
+                  "depth": 2.2
+                },
+                "RB": {
+                  "score": 2.3,
+                  "depth": 3.6
+                },
+                "WR": {
+                  "score": 7,
+                  "depth": 2.2
+                },
+                "TE": {
+                  "score": 1.1,
+                  "depth": 0.7
+                }
+              }
+            },
+            {
+              "franchiseId": "0004",
+              "score": 10.9,
+              "depth": 5.7,
+              "filled": 7,
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 0.7,
                   "depth": 0.4
+                },
+                "RB": {
+                  "score": 3.4,
+                  "depth": 0.6
+                },
+                "WR": {
+                  "score": 5.8,
+                  "depth": 3.5
+                },
+                "TE": {
+                  "score": 1.1,
+                  "depth": 1.1
                 }
               }
             }
@@ -20862,6 +20869,7 @@
         },
         "projectionsUnavailable": null
       },
+      "availableAt": "2026-09-10T19:07:06.432Z",
       "results": [
         {
           "year": "2010",
@@ -23345,7 +23353,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-10T12:54:43.264Z",
+      "updatedAt": "2026-09-10T19:07:15.485Z",
       "error": null,
       "tags": [
         "BestBall"
@@ -23557,14 +23565,6 @@
             "winProb": 23
           },
           {
-            "franchiseId": "0010",
-            "teamName": "Joegon",
-            "score": "0.00",
-            "minutesRemaining": 480,
-            "isMe": false,
-            "winProb": 32
-          },
-          {
             "franchiseId": "0009",
             "teamName": "Three Eyed Ravens",
             "score": "0.00",
@@ -23581,6 +23581,14 @@
             "winProb": 37
           },
           {
+            "franchiseId": "0010",
+            "teamName": "Joegon",
+            "score": "0.00",
+            "minutesRemaining": 480,
+            "isMe": false,
+            "winProb": 32
+          },
+          {
             "franchiseId": "0003",
             "teamName": "Greyjoy: The Ironborn",
             "score": "0.00",
@@ -23592,14 +23600,14 @@
         "matchups": [
           {
             "teamIds": [
-              "0004",
-              "0010"
+              "0009",
+              "0012"
             ]
           },
           {
             "teamIds": [
-              "0009",
-              "0012"
+              "0004",
+              "0010"
             ]
           },
           {
@@ -23630,30 +23638,6 @@
       },
       "scoringError": null,
       "draftInProgress": false,
-      "available": [
-        "Kenny Gainwell",
-        "Chig Okonkwo",
-        "Jalen McMillan",
-        "Geno Smith",
-        "Malik Davis",
-        "Isaac TeSlaa",
-        "Rashod Bateman",
-        "Greg Dulcich",
-        "Samaje Perine",
-        "Cyrus Allen",
-        "Ollie Gordon II",
-        "Elic Ayomanor",
-        "Isaiah Davis",
-        "LeQuint Allen Jr.",
-        "Chimere Dike",
-        "Jordan James",
-        "Tory Horton",
-        "Tua Tagovailoa",
-        "Kendre Miller",
-        "Kirk Cousins",
-        "Deshaun Watson"
-      ],
-      "availableAt": "2026-09-09T19:16:17.143Z",
       "rankings": {
         "type": "ROS",
         "scoring": "PPR",
@@ -23664,15 +23648,42 @@
         "total": 23
       },
       "rankingsError": null,
+      "available": [
+        "Kenny Gainwell",
+        "Greg Dulcich",
+        "Chig Okonkwo",
+        "Charlie Kolar",
+        "Geno Smith",
+        "Jalen McMillan",
+        "Bryce Lance",
+        "Cyrus Allen",
+        "Mike Gesicki",
+        "Rashod Bateman",
+        "Isaac TeSlaa",
+        "Kevin Coleman Jr.",
+        "Theo Johnson",
+        "Jake Tonges",
+        "Michael Mayer",
+        "Eli Raridon",
+        "Chimere Dike",
+        "Erick All Jr.",
+        "Malik Davis",
+        "Darius Slayton",
+        "Elic Ayomanor",
+        "Jordan James",
+        "Darnell Washington",
+        "Kirk Cousins",
+        "Jahan Dotson"
+      ],
       "power": {
-        "computedAt": "2026-09-09T19:16:17.143Z",
+        "computedAt": "2026-09-10T19:07:06.432Z",
         "scoring": "PPR",
         "projections": {
           "source": {
             "basis": "projections",
             "season": "2026",
             "week": "0",
-            "inSeason": false
+            "inSeason": true
           },
           "teams": [
             {
@@ -24077,57 +24088,82 @@
           "source": {
             "basis": "ecr",
             "season": "2026",
-            "rankingType": "DRAFT",
+            "rankingType": "ROS",
             "scoring": "PPR",
-            "inSeason": false
+            "inSeason": true
           },
           "teams": [
             {
               "franchiseId": "0012",
-              "score": 21.6,
+              "score": 21.3,
               "depth": 5.2,
               "filled": 8,
               "slotCount": 8,
               "byPosition": {
                 "QB": {
                   "score": 1.3,
+                  "depth": 1.2
+                },
+                "RB": {
+                  "score": 7.1,
+                  "depth": 0.7
+                },
+                "WR": {
+                  "score": 11.9,
+                  "depth": 2.5
+                },
+                "TE": {
+                  "score": 1.1,
+                  "depth": 0.8
+                }
+              }
+            },
+            {
+              "franchiseId": "0008",
+              "score": 20.4,
+              "depth": 3.9,
+              "filled": 8,
+              "slotCount": 8,
+              "byPosition": {
+                "QB": {
+                  "score": 2.5,
                   "depth": 1.1
                 },
                 "RB": {
-                  "score": 6.4,
-                  "depth": 2
+                  "score": 10,
+                  "depth": 1.3
                 },
                 "WR": {
-                  "score": 12.5,
-                  "depth": 1.9
+                  "score": 7.2,
+                  "depth": 1.1
                 },
                 "TE": {
-                  "score": 1.3,
-                  "depth": 0.2
+                  "score": 0.6,
+                  "depth": 0.5
                 }
               }
             },
             {
               "franchiseId": "0004",
-              "score": 20.2,
-              "depth": 8.7,
+              "score": 19.8,
+              "depth": 8.1,
               "filled": 8,
               "slotCount": 8,
               "byPosition": {
                 "QB": {
-                  "score": 1.6,
-                  "depth": 1.8
+                  "score": 1.5,
+                  "depth": 1.9
                 },
                 "RB": {
-                  "score": 4.4,
-                  "depth": 4.6
+                  "score": 5.5,
+                  "depth": 3.2
                 },
                 "WR": {
-                  "score": 9.5,
-                  "depth": 2.2
+                  "score": 8.8,
+                  "depth": 3
                 },
                 "TE": {
-                  "score": 4.7,
+                  "score": 4,
                   "depth": 0
                 }
               },
@@ -24167,14 +24203,6 @@
               ],
               "bench": [
                 {
-                  "name": "Rhamondre Stevenson",
-                  "position": "RB"
-                },
-                {
-                  "name": "Tony Pollard",
-                  "position": "RB"
-                },
-                {
                   "name": "Courtland Sutton",
                   "position": "WR"
                 },
@@ -24183,19 +24211,11 @@
                   "position": "QB"
                 },
                 {
-                  "name": "Tyler Allgeier",
+                  "name": "Rhamondre Stevenson",
                   "position": "RB"
                 },
                 {
-                  "name": "C.J. Stroud",
-                  "position": "QB"
-                },
-                {
-                  "name": "Keaton Mitchell",
-                  "position": "RB"
-                },
-                {
-                  "name": "Emmett Johnson",
+                  "name": "Tony Pollard",
                   "position": "RB"
                 },
                 {
@@ -24203,69 +24223,60 @@
                   "position": "WR"
                 },
                 {
+                  "name": "C.J. Stroud",
+                  "position": "QB"
+                },
+                {
+                  "name": "Tyler Allgeier",
+                  "position": "RB"
+                },
+                {
+                  "name": "Keaton Mitchell",
+                  "position": "RB"
+                },
+                {
                   "name": "Chris Bell",
                   "position": "WR"
+                },
+                {
+                  "name": "Emmett Johnson",
+                  "position": "RB"
                 },
                 {
                   "name": "Troy Franklin",
                   "position": "WR"
                 },
                 {
-                  "name": "Jack Bech",
+                  "name": "Elijah Sarratt",
                   "position": "WR"
                 },
                 {
-                  "name": "Elijah Sarratt",
+                  "name": "Jack Bech",
                   "position": "WR"
                 }
               ]
             },
             {
-              "franchiseId": "0008",
-              "score": 19.7,
-              "depth": 3.9,
-              "filled": 8,
-              "slotCount": 8,
-              "byPosition": {
-                "QB": {
-                  "score": 2.4,
-                  "depth": 1.2
-                },
-                "RB": {
-                  "score": 8.7,
-                  "depth": 1.5
-                },
-                "WR": {
-                  "score": 8.2,
-                  "depth": 1.2
-                },
-                "TE": {
-                  "score": 0.3,
-                  "depth": 0.1
-                }
-              }
-            },
-            {
               "franchiseId": "0009",
-              "score": 18.6,
-              "depth": 7.4,
+              "score": 19.3,
+              "depth": 6.9,
               "filled": 8,
               "slotCount": 8,
               "byPosition": {
                 "QB": {
-                  "score": 0.7,
+                  "score": 0.8,
                   "depth": 0.6
                 },
                 "RB": {
-                  "score": 8.6,
-                  "depth": 2.1
+                  "score": 10.2,
+                  "depth": 1.4
                 },
                 "WR": {
-                  "score": 7.9,
-                  "depth": 3
+                  "score": 7.2,
+                  "depth": 3.2
                 },
                 "TE": {
-                  "score": 1.3,
+                  "score": 1.1,
                   "depth": 1.7
                 }
               }
@@ -24273,132 +24284,57 @@
             {
               "franchiseId": "0010",
               "score": 17,
-              "depth": 6.2,
-              "filled": 8,
-              "slotCount": 8,
-              "byPosition": {
-                "QB": {
-                  "score": 2.2,
-                  "depth": 1
-                },
-                "RB": {
-                  "score": 4.8,
-                  "depth": 2.9
-                },
-                "WR": {
-                  "score": 9.2,
-                  "depth": 1.7
-                },
-                "TE": {
-                  "score": 0.7,
-                  "depth": 0.6
-                }
-              }
-            },
-            {
-              "franchiseId": "0001",
-              "score": 14.6,
-              "depth": 6.2,
+              "depth": 6.1,
               "filled": 8,
               "slotCount": 8,
               "byPosition": {
                 "QB": {
                   "score": 2.1,
-                  "depth": 2.7
+                  "depth": 0.9
                 },
                 "RB": {
-                  "score": 2.9,
-                  "depth": 1.1
+                  "score": 5.1,
+                  "depth": 2.1
                 },
                 "WR": {
-                  "score": 6.6,
-                  "depth": 2.4
+                  "score": 9.1,
+                  "depth": 2.3
                 },
                 "TE": {
-                  "score": 3,
-                  "depth": 0
+                  "score": 0.7,
+                  "depth": 0.8
                 }
               }
             },
             {
               "franchiseId": "0002",
-              "score": 14,
-              "depth": 9.5,
+              "score": 14.2,
+              "depth": 11.2,
               "filled": 8,
               "slotCount": 8,
               "byPosition": {
                 "QB": {
-                  "score": 1.1,
+                  "score": 1,
                   "depth": 1
                 },
                 "RB": {
-                  "score": 6.8,
-                  "depth": 1.8
+                  "score": 6.7,
+                  "depth": 0.9
                 },
                 "WR": {
                   "score": 5.7,
-                  "depth": 6
+                  "depth": 8
                 },
                 "TE": {
-                  "score": 0.4,
-                  "depth": 0.7
-                }
-              }
-            },
-            {
-              "franchiseId": "0005",
-              "score": 13.7,
-              "depth": 4.4,
-              "filled": 8,
-              "slotCount": 8,
-              "byPosition": {
-                "QB": {
-                  "score": 1.5,
-                  "depth": 0.9
-                },
-                "RB": {
-                  "score": 2.8,
-                  "depth": 2.7
-                },
-                "WR": {
-                  "score": 8.5,
-                  "depth": 0.3
-                },
-                "TE": {
-                  "score": 1,
-                  "depth": 0.5
-                }
-              }
-            },
-            {
-              "franchiseId": "0006",
-              "score": 13.7,
-              "depth": 6.9,
-              "filled": 8,
-              "slotCount": 8,
-              "byPosition": {
-                "QB": {
-                  "score": 1.9,
-                  "depth": 0.9
-                },
-                "RB": {
-                  "score": 4.8,
-                  "depth": 1.6
-                },
-                "WR": {
-                  "score": 4.2,
-                  "depth": 2.4
-                },
-                "TE": {
-                  "score": 2.8,
-                  "depth": 2
+                  "score": 0.7,
+                  "depth": 1.3
                 }
               }
             },
             {
               "franchiseId": "0007",
-              "score": 13.4,
-              "depth": 7.1,
+              "score": 14.2,
+              "depth": 7,
               "filled": 8,
               "slotCount": 8,
               "byPosition": {
@@ -24407,66 +24343,141 @@
                   "depth": 0.7
                 },
                 "RB": {
-                  "score": 4.3,
-                  "depth": 3
+                  "score": 4.6,
+                  "depth": 2.7
                 },
                 "WR": {
-                  "score": 8,
-                  "depth": 3.2
+                  "score": 8.3,
+                  "depth": 3.4
                 },
                 "TE": {
-                  "score": 0.1,
-                  "depth": 0.1
+                  "score": 0.4,
+                  "depth": 0.2
+                }
+              }
+            },
+            {
+              "franchiseId": "0001",
+              "score": 14,
+              "depth": 6.2,
+              "filled": 8,
+              "slotCount": 8,
+              "byPosition": {
+                "QB": {
+                  "score": 2.4,
+                  "depth": 2.6
+                },
+                "RB": {
+                  "score": 2.5,
+                  "depth": 0.5
+                },
+                "WR": {
+                  "score": 6.6,
+                  "depth": 3
+                },
+                "TE": {
+                  "score": 2.6,
+                  "depth": 0
+                }
+              }
+            },
+            {
+              "franchiseId": "0005",
+              "score": 13.3,
+              "depth": 3.8,
+              "filled": 8,
+              "slotCount": 8,
+              "byPosition": {
+                "QB": {
+                  "score": 1.3,
+                  "depth": 0.9
+                },
+                "RB": {
+                  "score": 2.7,
+                  "depth": 1.5
+                },
+                "WR": {
+                  "score": 8.3,
+                  "depth": 0.5
+                },
+                "TE": {
+                  "score": 0.9,
+                  "depth": 0.9
+                }
+              }
+            },
+            {
+              "franchiseId": "0006",
+              "score": 12.9,
+              "depth": 6.3,
+              "filled": 8,
+              "slotCount": 8,
+              "byPosition": {
+                "QB": {
+                  "score": 1.7,
+                  "depth": 0.9
+                },
+                "RB": {
+                  "score": 3.4,
+                  "depth": 2.2
+                },
+                "WR": {
+                  "score": 5.3,
+                  "depth": 1.4
+                },
+                "TE": {
+                  "score": 2.5,
+                  "depth": 1.9
                 }
               }
             },
             {
               "franchiseId": "0011",
-              "score": 11.5,
-              "depth": 7,
+              "score": 12,
+              "depth": 7.5,
               "filled": 8,
               "slotCount": 8,
               "byPosition": {
                 "QB": {
                   "score": 1,
-                  "depth": 0.8
+                  "depth": 1
                 },
                 "RB": {
-                  "score": 5,
-                  "depth": 2.4
-                },
-                "WR": {
-                  "score": 4.4,
+                  "score": 4.2,
                   "depth": 2.5
                 },
+                "WR": {
+                  "score": 5.8,
+                  "depth": 2.2
+                },
                 "TE": {
-                  "score": 1.1,
-                  "depth": 1.4
+                  "score": 0.9,
+                  "depth": 1.8
                 }
               }
             },
             {
               "franchiseId": "0003",
-              "score": 9.8,
-              "depth": 4.2,
+              "score": 10,
+              "depth": 4.4,
               "filled": 8,
               "slotCount": 8,
               "byPosition": {
                 "QB": {
-                  "score": 1.4,
-                  "depth": 1.5
+                  "score": 1.5,
+                  "depth": 1.6
                 },
                 "RB": {
-                  "score": 2.7,
-                  "depth": 0.7
+                  "score": 2.5,
+                  "depth": 0.5
                 },
                 "WR": {
-                  "score": 4,
-                  "depth": 1.4
+                  "score": 4.3,
+                  "depth": 1.6
                 },
                 "TE": {
                   "score": 1.7,
-                  "depth": 0.6
+                  "depth": 0.7
                 }
               }
             }
@@ -24474,6 +24485,7 @@
         },
         "projectionsUnavailable": null
       },
+      "availableAt": "2026-09-10T19:07:06.432Z",
       "results": [
         {
           "year": "2012",
@@ -26831,7 +26843,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-10T12:54:45.563Z",
+      "updatedAt": "2026-09-10T19:07:17.680Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -27117,6 +27129,16 @@
       },
       "scoringError": null,
       "draftInProgress": false,
+      "rankings": {
+        "type": "ROS",
+        "scoring": "HALF",
+        "position": "OP",
+        "lastUpdated": "1/01",
+        "totalExperts": 0,
+        "matched": 27,
+        "total": 28
+      },
+      "rankingsError": null,
       "available": [
         "Kenny Gainwell",
         "Chig Okonkwo",
@@ -27129,26 +27151,15 @@
         "Chimere Dike",
         "Brashard Smith"
       ],
-      "availableAt": "2026-09-09T19:16:17.143Z",
-      "rankings": {
-        "type": "ROS",
-        "scoring": "HALF",
-        "position": "OP",
-        "lastUpdated": "1/01",
-        "totalExperts": 0,
-        "matched": 27,
-        "total": 28
-      },
-      "rankingsError": null,
       "power": {
-        "computedAt": "2026-09-09T19:16:17.143Z",
+        "computedAt": "2026-09-10T19:07:06.432Z",
         "scoring": "HALF",
         "projections": {
           "source": {
             "basis": "projections",
             "season": "2026",
             "week": "0",
-            "inSeason": false
+            "inSeason": true
           },
           "teams": [
             {
@@ -27565,419 +27576,10 @@
             }
           ]
         },
-        "ecr": {
-          "source": {
-            "basis": "ecr",
-            "season": "2026",
-            "rankingType": "DRAFT",
-            "scoring": "HALF",
-            "inSeason": false
-          },
-          "teams": [
-            {
-              "franchiseId": "0002",
-              "score": 23,
-              "depth": 6,
-              "filled": 9,
-              "slotCount": 9,
-              "byPosition": {
-                "QB": {
-                  "score": 8.3,
-                  "depth": 0
-                },
-                "RB": {
-                  "score": 5.1,
-                  "depth": 2.4
-                },
-                "WR": {
-                  "score": 5.7,
-                  "depth": 2.3
-                },
-                "TE": {
-                  "score": 3.9,
-                  "depth": 1.3
-                }
-              }
-            },
-            {
-              "franchiseId": "0003",
-              "score": 20.5,
-              "depth": 5.2,
-              "filled": 9,
-              "slotCount": 9,
-              "byPosition": {
-                "QB": {
-                  "score": 9,
-                  "depth": 0
-                },
-                "RB": {
-                  "score": 4.7,
-                  "depth": 2.7
-                },
-                "WR": {
-                  "score": 5.6,
-                  "depth": 2.5
-                },
-                "TE": {
-                  "score": 1.3,
-                  "depth": 0
-                }
-              }
-            },
-            {
-              "franchiseId": "0012",
-              "score": 18.1,
-              "depth": 2.4,
-              "filled": 9,
-              "slotCount": 9,
-              "byPosition": {
-                "QB": {
-                  "score": 4.7,
-                  "depth": 0
-                },
-                "RB": {
-                  "score": 5.7,
-                  "depth": 0.7
-                },
-                "WR": {
-                  "score": 6.2,
-                  "depth": 1
-                },
-                "TE": {
-                  "score": 1.5,
-                  "depth": 0.7
-                }
-              }
-            },
-            {
-              "franchiseId": "0004",
-              "score": 18,
-              "depth": 4.7,
-              "filled": 9,
-              "slotCount": 9,
-              "byPosition": {
-                "QB": {
-                  "score": 6.3,
-                  "depth": 0.7
-                },
-                "RB": {
-                  "score": 3.5,
-                  "depth": 1.4
-                },
-                "WR": {
-                  "score": 7.8,
-                  "depth": 2
-                },
-                "TE": {
-                  "score": 0.5,
-                  "depth": 0.6
-                }
-              }
-            },
-            {
-              "franchiseId": "0007",
-              "score": 15.9,
-              "depth": 6.5,
-              "filled": 9,
-              "slotCount": 9,
-              "byPosition": {
-                "QB": {
-                  "score": 6.4,
-                  "depth": 1.1
-                },
-                "RB": {
-                  "score": 4.5,
-                  "depth": 2.2
-                },
-                "WR": {
-                  "score": 4.3,
-                  "depth": 2.3
-                },
-                "TE": {
-                  "score": 0.8,
-                  "depth": 0.9
-                }
-              }
-            },
-            {
-              "franchiseId": "0008",
-              "score": 15.7,
-              "depth": 4.3,
-              "filled": 9,
-              "slotCount": 9,
-              "byPosition": {
-                "QB": {
-                  "score": 5.1,
-                  "depth": 0
-                },
-                "RB": {
-                  "score": 2.5,
-                  "depth": 1.4
-                },
-                "WR": {
-                  "score": 7.1,
-                  "depth": 1.9
-                },
-                "TE": {
-                  "score": 1,
-                  "depth": 1
-                }
-              }
-            },
-            {
-              "franchiseId": "0010",
-              "score": 15.1,
-              "depth": 6.5,
-              "filled": 9,
-              "slotCount": 9,
-              "byPosition": {
-                "QB": {
-                  "score": 5,
-                  "depth": 0.7
-                },
-                "RB": {
-                  "score": 5,
-                  "depth": 3.1
-                },
-                "WR": {
-                  "score": 4.4,
-                  "depth": 2.1
-                },
-                "TE": {
-                  "score": 0.7,
-                  "depth": 0.7
-                }
-              },
-              "starters": [
-                {
-                  "name": "Trevor Lawrence",
-                  "position": "QB"
-                },
-                {
-                  "name": "Chase Brown",
-                  "position": "RB"
-                },
-                {
-                  "name": "Breece Hall",
-                  "position": "RB"
-                },
-                {
-                  "name": "Justin Jefferson",
-                  "position": "WR"
-                },
-                {
-                  "name": "Mike Evans",
-                  "position": "WR"
-                },
-                {
-                  "name": "Michael Pittman",
-                  "position": "WR"
-                },
-                {
-                  "name": "Isaiah Likely",
-                  "position": "TE"
-                },
-                {
-                  "name": "Patrick Mahomes",
-                  "position": "QB"
-                },
-                {
-                  "name": "Rhamondre Stevenson",
-                  "position": "RB"
-                }
-              ],
-              "bench": [
-                {
-                  "name": "Jonathon Brooks",
-                  "position": "RB"
-                },
-                {
-                  "name": "Rachaad White",
-                  "position": "RB"
-                },
-                {
-                  "name": "Matthew Golden",
-                  "position": "WR"
-                },
-                {
-                  "name": "Aaron Rodgers",
-                  "position": "QB"
-                },
-                {
-                  "name": "Mark Andrews",
-                  "position": "TE"
-                },
-                {
-                  "name": "Keaton Mitchell",
-                  "position": "RB"
-                },
-                {
-                  "name": "Denzel Boston",
-                  "position": "WR"
-                },
-                {
-                  "name": "Dylan Sampson",
-                  "position": "RB"
-                },
-                {
-                  "name": "Braelon Allen",
-                  "position": "RB"
-                },
-                {
-                  "name": "Jerry Jeudy",
-                  "position": "WR"
-                },
-                {
-                  "name": "Malik Washington",
-                  "position": "WR"
-                },
-                {
-                  "name": "Rashod Bateman",
-                  "position": "WR"
-                },
-                {
-                  "name": "David Njoku",
-                  "position": "TE"
-                },
-                {
-                  "name": "Shedeur Sanders",
-                  "position": "QB"
-                },
-                {
-                  "name": "DJ Giddens",
-                  "position": "RB"
-                }
-              ]
-            },
-            {
-              "franchiseId": "0006",
-              "score": 15,
-              "depth": 4.5,
-              "filled": 9,
-              "slotCount": 9,
-              "byPosition": {
-                "QB": {
-                  "score": 7.2,
-                  "depth": 0
-                },
-                "RB": {
-                  "score": 1.6,
-                  "depth": 2.1
-                },
-                "WR": {
-                  "score": 5.3,
-                  "depth": 2.4
-                },
-                "TE": {
-                  "score": 0.9,
-                  "depth": 0
-                }
-              }
-            },
-            {
-              "franchiseId": "0009",
-              "score": 13.7,
-              "depth": 3.3,
-              "filled": 9,
-              "slotCount": 9,
-              "byPosition": {
-                "QB": {
-                  "score": 3.1,
-                  "depth": 0.3
-                },
-                "RB": {
-                  "score": 3.6,
-                  "depth": 1.6
-                },
-                "WR": {
-                  "score": 6,
-                  "depth": 1.2
-                },
-                "TE": {
-                  "score": 1.1,
-                  "depth": 0.2
-                }
-              }
-            },
-            {
-              "franchiseId": "0001",
-              "score": 13.1,
-              "depth": 5,
-              "filled": 9,
-              "slotCount": 9,
-              "byPosition": {
-                "QB": {
-                  "score": 4.8,
-                  "depth": 0.2
-                },
-                "RB": {
-                  "score": 3.7,
-                  "depth": 3.6
-                },
-                "WR": {
-                  "score": 4,
-                  "depth": 1.1
-                },
-                "TE": {
-                  "score": 0.6,
-                  "depth": 0.2
-                }
-              }
-            },
-            {
-              "franchiseId": "0011",
-              "score": 12.4,
-              "depth": 2,
-              "filled": 9,
-              "slotCount": 9,
-              "byPosition": {
-                "QB": {
-                  "score": 4.1,
-                  "depth": 0.5
-                },
-                "RB": {
-                  "score": 3.6,
-                  "depth": 0.2
-                },
-                "WR": {
-                  "score": 3.8,
-                  "depth": 1.2
-                },
-                "TE": {
-                  "score": 0.9,
-                  "depth": 0.1
-                }
-              }
-            },
-            {
-              "franchiseId": "0005",
-              "score": 10.1,
-              "depth": 3,
-              "filled": 9,
-              "slotCount": 9,
-              "byPosition": {
-                "QB": {
-                  "score": 0.5,
-                  "depth": 0.1
-                },
-                "RB": {
-                  "score": 6,
-                  "depth": 0
-                },
-                "WR": {
-                  "score": 2.8,
-                  "depth": 1.9
-                },
-                "TE": {
-                  "score": 0.7,
-                  "depth": 1
-                }
-              }
-            }
-          ]
-        },
+        "ecr": null,
         "projectionsUnavailable": null
       },
+      "availableAt": "2026-09-09T19:16:17.143Z",
       "results": [
         {
           "year": "2019",
@@ -29315,7 +28917,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-10T12:54:47.684Z",
+      "updatedAt": "2026-09-10T19:07:19.596Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -29601,6 +29203,16 @@
       },
       "scoringError": null,
       "draftInProgress": false,
+      "rankings": {
+        "type": "ROS",
+        "scoring": "HALF",
+        "position": "OP",
+        "lastUpdated": "1/01",
+        "totalExperts": 0,
+        "matched": 24,
+        "total": 25
+      },
+      "rankingsError": null,
       "available": [
         "Kenny Gainwell",
         "Chig Okonkwo",
@@ -29631,26 +29243,15 @@
         "Chimere Dike",
         "Brashard Smith"
       ],
-      "availableAt": "2026-09-09T19:16:17.143Z",
-      "rankings": {
-        "type": "ROS",
-        "scoring": "HALF",
-        "position": "OP",
-        "lastUpdated": "1/01",
-        "totalExperts": 0,
-        "matched": 24,
-        "total": 25
-      },
-      "rankingsError": null,
       "power": {
-        "computedAt": "2026-09-09T19:16:17.143Z",
+        "computedAt": "2026-09-10T19:07:06.432Z",
         "scoring": "HALF",
         "projections": {
           "source": {
             "basis": "projections",
             "season": "2026",
             "week": "0",
-            "inSeason": false
+            "inSeason": true
           },
           "teams": [
             {
@@ -30030,22 +29631,22 @@
             },
             {
               "franchiseId": "0002",
-              "score": 1392.9,
-              "depth": 1136.6,
+              "score": 1420,
+              "depth": 1306.2,
               "filled": 8,
               "slotCount": 8,
               "byPosition": {
                 "QB": {
-                  "score": 524.4,
+                  "score": 682.4,
                   "depth": 110.4
                 },
                 "RB": {
                   "score": 289.5,
-                  "depth": 240.8
+                  "depth": 279.5
                 },
                 "WR": {
-                  "score": 480.6,
-                  "depth": 500.3
+                  "score": 349.8,
+                  "depth": 631.1
                 },
                 "TE": {
                   "score": 98.4,
@@ -30055,411 +29656,10 @@
             }
           ]
         },
-        "ecr": {
-          "source": {
-            "basis": "ecr",
-            "season": "2026",
-            "rankingType": "DRAFT",
-            "scoring": "HALF",
-            "inSeason": false
-          },
-          "teams": [
-            {
-              "franchiseId": "0009",
-              "score": 23.2,
-              "depth": 4.2,
-              "filled": 8,
-              "slotCount": 8,
-              "byPosition": {
-                "QB": {
-                  "score": 10.5,
-                  "depth": 0
-                },
-                "RB": {
-                  "score": 5.8,
-                  "depth": 1.5
-                },
-                "WR": {
-                  "score": 5.3,
-                  "depth": 2.4
-                },
-                "TE": {
-                  "score": 1.5,
-                  "depth": 0.3
-                }
-              }
-            },
-            {
-              "franchiseId": "0006",
-              "score": 17.4,
-              "depth": 5.4,
-              "filled": 8,
-              "slotCount": 8,
-              "byPosition": {
-                "QB": {
-                  "score": 3.7,
-                  "depth": 0.8
-                },
-                "RB": {
-                  "score": 6.4,
-                  "depth": 1.5
-                },
-                "WR": {
-                  "score": 5.5,
-                  "depth": 1.6
-                },
-                "TE": {
-                  "score": 1.8,
-                  "depth": 1.6
-                }
-              }
-            },
-            {
-              "franchiseId": "0010",
-              "score": 17,
-              "depth": 4.6,
-              "filled": 8,
-              "slotCount": 8,
-              "byPosition": {
-                "QB": {
-                  "score": 4.4,
-                  "depth": 1.1
-                },
-                "RB": {
-                  "score": 7.2,
-                  "depth": 1
-                },
-                "WR": {
-                  "score": 4.4,
-                  "depth": 2
-                },
-                "TE": {
-                  "score": 1,
-                  "depth": 0.5
-                }
-              }
-            },
-            {
-              "franchiseId": "0001",
-              "score": 16.5,
-              "depth": 6.8,
-              "filled": 8,
-              "slotCount": 8,
-              "byPosition": {
-                "QB": {
-                  "score": 3.8,
-                  "depth": 0.9
-                },
-                "RB": {
-                  "score": 3.7,
-                  "depth": 3.5
-                },
-                "WR": {
-                  "score": 7.9,
-                  "depth": 1
-                },
-                "TE": {
-                  "score": 1.1,
-                  "depth": 1.4
-                }
-              }
-            },
-            {
-              "franchiseId": "0012",
-              "score": 15.8,
-              "depth": 6.7,
-              "filled": 8,
-              "slotCount": 8,
-              "byPosition": {
-                "QB": {
-                  "score": 6.1,
-                  "depth": 0
-                },
-                "RB": {
-                  "score": 3.8,
-                  "depth": 3.6
-                },
-                "WR": {
-                  "score": 4.9,
-                  "depth": 2.3
-                },
-                "TE": {
-                  "score": 1,
-                  "depth": 0.7
-                }
-              }
-            },
-            {
-              "franchiseId": "0007",
-              "score": 15.7,
-              "depth": 5.3,
-              "filled": 8,
-              "slotCount": 8,
-              "byPosition": {
-                "QB": {
-                  "score": 9.3,
-                  "depth": 0
-                },
-                "RB": {
-                  "score": 2.8,
-                  "depth": 1.4
-                },
-                "WR": {
-                  "score": 2.6,
-                  "depth": 3.6
-                },
-                "TE": {
-                  "score": 0.9,
-                  "depth": 0.4
-                }
-              }
-            },
-            {
-              "franchiseId": "0004",
-              "score": 15.1,
-              "depth": 4.7,
-              "filled": 8,
-              "slotCount": 8,
-              "byPosition": {
-                "QB": {
-                  "score": 4.6,
-                  "depth": 1.4
-                },
-                "RB": {
-                  "score": 4.5,
-                  "depth": 1.1
-                },
-                "WR": {
-                  "score": 5.2,
-                  "depth": 1.8
-                },
-                "TE": {
-                  "score": 0.7,
-                  "depth": 0.4
-                }
-              }
-            },
-            {
-              "franchiseId": "0003",
-              "score": 14.2,
-              "depth": 5.4,
-              "filled": 8,
-              "slotCount": 8,
-              "byPosition": {
-                "QB": {
-                  "score": 3.9,
-                  "depth": 1
-                },
-                "RB": {
-                  "score": 4,
-                  "depth": 2
-                },
-                "WR": {
-                  "score": 4.2,
-                  "depth": 1.8
-                },
-                "TE": {
-                  "score": 2.1,
-                  "depth": 0.6
-                }
-              },
-              "starters": [
-                {
-                  "name": "Jalen Hurts",
-                  "position": "QB"
-                },
-                {
-                  "name": "Kyren Williams",
-                  "position": "RB"
-                },
-                {
-                  "name": "D'Andre Swift",
-                  "position": "RB"
-                },
-                {
-                  "name": "CeeDee Lamb",
-                  "position": "WR"
-                },
-                {
-                  "name": "Michael Wilson",
-                  "position": "WR"
-                },
-                {
-                  "name": "Brock Bowers",
-                  "position": "TE"
-                },
-                {
-                  "name": "Tony Pollard",
-                  "position": "RB"
-                },
-                {
-                  "name": "Jayden Reed",
-                  "position": "WR"
-                }
-              ],
-              "bench": [
-                {
-                  "name": "Bryce Young",
-                  "position": "QB"
-                },
-                {
-                  "name": "Rachaad White",
-                  "position": "RB"
-                },
-                {
-                  "name": "Makai Lemon",
-                  "position": "WR"
-                },
-                {
-                  "name": "Aaron Jones",
-                  "position": "RB"
-                },
-                {
-                  "name": "Mark Andrews",
-                  "position": "TE"
-                },
-                {
-                  "name": "Ray Davis",
-                  "position": "RB"
-                },
-                {
-                  "name": "Jerry Jeudy",
-                  "position": "WR"
-                },
-                {
-                  "name": "Calvin Ridley",
-                  "position": "WR"
-                },
-                {
-                  "name": "Michael Penix Jr.",
-                  "position": "QB"
-                },
-                {
-                  "name": "Jaylin Noel",
-                  "position": "WR"
-                },
-                {
-                  "name": "Kaytron Allen",
-                  "position": "RB"
-                },
-                {
-                  "name": "Ted Hurst",
-                  "position": "WR"
-                },
-                {
-                  "name": "Jack Bech",
-                  "position": "WR"
-                },
-                {
-                  "name": "Xavier Legette",
-                  "position": "WR"
-                }
-              ]
-            },
-            {
-              "franchiseId": "0008",
-              "score": 13.1,
-              "depth": 6.8,
-              "filled": 8,
-              "slotCount": 8,
-              "byPosition": {
-                "QB": {
-                  "score": 4.4,
-                  "depth": 1.2
-                },
-                "RB": {
-                  "score": 3.2,
-                  "depth": 3.3
-                },
-                "WR": {
-                  "score": 5,
-                  "depth": 1.9
-                },
-                "TE": {
-                  "score": 0.6,
-                  "depth": 0.4
-                }
-              }
-            },
-            {
-              "franchiseId": "0005",
-              "score": 12.3,
-              "depth": 4.8,
-              "filled": 8,
-              "slotCount": 8,
-              "byPosition": {
-                "QB": {
-                  "score": 4.6,
-                  "depth": 0
-                },
-                "RB": {
-                  "score": 1.5,
-                  "depth": 1.3
-                },
-                "WR": {
-                  "score": 5.6,
-                  "depth": 2.7
-                },
-                "TE": {
-                  "score": 0.7,
-                  "depth": 0.8
-                }
-              }
-            },
-            {
-              "franchiseId": "0011",
-              "score": 11.4,
-              "depth": 4.7,
-              "filled": 8,
-              "slotCount": 8,
-              "byPosition": {
-                "QB": {
-                  "score": 3.5,
-                  "depth": 0.2
-                },
-                "RB": {
-                  "score": 2.6,
-                  "depth": 2.3
-                },
-                "WR": {
-                  "score": 4,
-                  "depth": 2.1
-                },
-                "TE": {
-                  "score": 1.3,
-                  "depth": 0
-                }
-              }
-            },
-            {
-              "franchiseId": "0002",
-              "score": 7.1,
-              "depth": 3.1,
-              "filled": 8,
-              "slotCount": 8,
-              "byPosition": {
-                "QB": {
-                  "score": 2.3,
-                  "depth": 0
-                },
-                "RB": {
-                  "score": 1.4,
-                  "depth": 1
-                },
-                "WR": {
-                  "score": 3.2,
-                  "depth": 1.9
-                },
-                "TE": {
-                  "score": 0.2,
-                  "depth": 0.2
-                }
-              }
-            }
-          ]
-        },
+        "ecr": null,
         "projectionsUnavailable": null
       },
+      "availableAt": "2026-09-09T19:16:17.143Z",
       "results": [
         {
           "year": "2021",
@@ -30947,8 +30147,11 @@
           "status": "ROSTER",
           "salary": "31",
           "contractYear": "1",
-          "injuryStatus": null,
-          "injuryDetail": null,
+          "injuryStatus": "Q",
+          "injuryDetail": {
+            "part": "Back",
+            "until": "Sep 13, 2026"
+          },
           "pts": 0,
           "priorYearPts": 129.32,
           "ecr": {
@@ -31482,7 +30685,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-10T12:54:49.851Z",
+      "updatedAt": "2026-09-10T19:07:21.729Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -31810,11 +31013,6 @@
       },
       "scoringError": null,
       "draftInProgress": false,
-      "available": [
-        "Kenny Gainwell",
-        "Chig Okonkwo"
-      ],
-      "availableAt": "2026-09-09T19:16:17.143Z",
       "rankings": {
         "type": "ROS",
         "scoring": "HALF",
@@ -31825,15 +31023,19 @@
         "total": 26
       },
       "rankingsError": null,
+      "available": [
+        "Kenny Gainwell",
+        "Chig Okonkwo"
+      ],
       "power": {
-        "computedAt": "2026-09-09T19:16:17.143Z",
+        "computedAt": "2026-09-10T19:07:06.432Z",
         "scoring": "HALF",
         "projections": {
           "source": {
             "basis": "projections",
             "season": "2026",
             "week": "0",
-            "inSeason": false
+            "inSeason": true
           },
           "teams": [
             {
@@ -32292,445 +31494,10 @@
             }
           ]
         },
-        "ecr": {
-          "source": {
-            "basis": "ecr",
-            "season": "2026",
-            "rankingType": "DRAFT",
-            "scoring": "HALF",
-            "inSeason": false
-          },
-          "teams": [
-            {
-              "franchiseId": "0004",
-              "score": 20.7,
-              "depth": 8,
-              "filled": 9,
-              "slotCount": 9,
-              "byPosition": {
-                "QB": {
-                  "score": 6.8,
-                  "depth": 0.7
-                },
-                "RB": {
-                  "score": 4.5,
-                  "depth": 3.5
-                },
-                "WR": {
-                  "score": 7.6,
-                  "depth": 2.6
-                },
-                "TE": {
-                  "score": 1.8,
-                  "depth": 1.2
-                }
-              }
-            },
-            {
-              "franchiseId": "0011",
-              "score": 19.2,
-              "depth": 3.9,
-              "filled": 9,
-              "slotCount": 9,
-              "byPosition": {
-                "QB": {
-                  "score": 8.6,
-                  "depth": 0
-                },
-                "RB": {
-                  "score": 1.6,
-                  "depth": 2.5
-                },
-                "WR": {
-                  "score": 8.3,
-                  "depth": 0.4
-                },
-                "TE": {
-                  "score": 0.8,
-                  "depth": 0.9
-                }
-              }
-            },
-            {
-              "franchiseId": "0007",
-              "score": 16.4,
-              "depth": 2.5,
-              "filled": 9,
-              "slotCount": 9,
-              "byPosition": {
-                "QB": {
-                  "score": 6.6,
-                  "depth": 0
-                },
-                "RB": {
-                  "score": 2.9,
-                  "depth": 1.1
-                },
-                "WR": {
-                  "score": 5.7,
-                  "depth": 0.9
-                },
-                "TE": {
-                  "score": 1.3,
-                  "depth": 0.6
-                }
-              }
-            },
-            {
-              "franchiseId": "0008",
-              "score": 15.6,
-              "depth": 0.9,
-              "filled": 9,
-              "slotCount": 9,
-              "byPosition": {
-                "QB": {
-                  "score": 1.7,
-                  "depth": 0
-                },
-                "RB": {
-                  "score": 7.5,
-                  "depth": 0.1
-                },
-                "WR": {
-                  "score": 5.7,
-                  "depth": 0.8
-                },
-                "TE": {
-                  "score": 0.6,
-                  "depth": 0
-                }
-              }
-            },
-            {
-              "franchiseId": "0006",
-              "score": 15.3,
-              "depth": 3.3,
-              "filled": 9,
-              "slotCount": 9,
-              "byPosition": {
-                "QB": {
-                  "score": 5,
-                  "depth": 0
-                },
-                "RB": {
-                  "score": 3.9,
-                  "depth": 1.2
-                },
-                "WR": {
-                  "score": 5.4,
-                  "depth": 1
-                },
-                "TE": {
-                  "score": 1.1,
-                  "depth": 1.1
-                }
-              }
-            },
-            {
-              "franchiseId": "0001",
-              "score": 14.7,
-              "depth": 1.2,
-              "filled": 9,
-              "slotCount": 9,
-              "byPosition": {
-                "QB": {
-                  "score": 3.3,
-                  "depth": 0.4
-                },
-                "RB": {
-                  "score": 4.3,
-                  "depth": 0.2
-                },
-                "WR": {
-                  "score": 4.7,
-                  "depth": 0.3
-                },
-                "TE": {
-                  "score": 2.4,
-                  "depth": 0.3
-                }
-              }
-            },
-            {
-              "franchiseId": "0010",
-              "score": 14.7,
-              "depth": 5.6,
-              "filled": 9,
-              "slotCount": 9,
-              "byPosition": {
-                "QB": {
-                  "score": 8,
-                  "depth": 0
-                },
-                "RB": {
-                  "score": 2.9,
-                  "depth": 3.2
-                },
-                "WR": {
-                  "score": 3.1,
-                  "depth": 1.7
-                },
-                "TE": {
-                  "score": 0.7,
-                  "depth": 0.6
-                }
-              }
-            },
-            {
-              "franchiseId": "0012",
-              "score": 14.4,
-              "depth": 2.6,
-              "filled": 9,
-              "slotCount": 9,
-              "byPosition": {
-                "QB": {
-                  "score": 1.9,
-                  "depth": 0
-                },
-                "RB": {
-                  "score": 5.3,
-                  "depth": 0.5
-                },
-                "WR": {
-                  "score": 6.3,
-                  "depth": 1.5
-                },
-                "TE": {
-                  "score": 0.9,
-                  "depth": 0.6
-                }
-              }
-            },
-            {
-              "franchiseId": "0013",
-              "score": 13.8,
-              "depth": 0.4,
-              "filled": 9,
-              "slotCount": 9,
-              "byPosition": {
-                "QB": {
-                  "score": 7.6,
-                  "depth": 0
-                },
-                "RB": {
-                  "score": 2.7,
-                  "depth": 0.1
-                },
-                "WR": {
-                  "score": 3.3,
-                  "depth": 0.3
-                },
-                "TE": {
-                  "score": 0.3,
-                  "depth": 0
-                }
-              }
-            },
-            {
-              "franchiseId": "0003",
-              "score": 13.6,
-              "depth": 3,
-              "filled": 9,
-              "slotCount": 9,
-              "byPosition": {
-                "QB": {
-                  "score": 4,
-                  "depth": 0
-                },
-                "RB": {
-                  "score": 3,
-                  "depth": 0.3
-                },
-                "WR": {
-                  "score": 5.8,
-                  "depth": 1.7
-                },
-                "TE": {
-                  "score": 0.7,
-                  "depth": 1
-                }
-              }
-            },
-            {
-              "franchiseId": "0002",
-              "score": 13,
-              "depth": 0.6,
-              "filled": 9,
-              "slotCount": 9,
-              "byPosition": {
-                "QB": {
-                  "score": 4.9,
-                  "depth": 0.1
-                },
-                "RB": {
-                  "score": 2.9,
-                  "depth": 0
-                },
-                "WR": {
-                  "score": 3.7,
-                  "depth": 0.5
-                },
-                "TE": {
-                  "score": 1.5,
-                  "depth": 0
-                }
-              }
-            },
-            {
-              "franchiseId": "0014",
-              "score": 11.8,
-              "depth": 2.4,
-              "filled": 9,
-              "slotCount": 9,
-              "byPosition": {
-                "QB": {
-                  "score": 3.8,
-                  "depth": 0
-                },
-                "RB": {
-                  "score": 3.8,
-                  "depth": 0.8
-                },
-                "WR": {
-                  "score": 3.2,
-                  "depth": 1.5
-                },
-                "TE": {
-                  "score": 0.9,
-                  "depth": 0.1
-                }
-              }
-            },
-            {
-              "franchiseId": "0005",
-              "score": 10.8,
-              "depth": 1.6,
-              "filled": 9,
-              "slotCount": 9,
-              "byPosition": {
-                "QB": {
-                  "score": 2,
-                  "depth": 0.2
-                },
-                "RB": {
-                  "score": 5.4,
-                  "depth": 0.6
-                },
-                "WR": {
-                  "score": 2.8,
-                  "depth": 0.7
-                },
-                "TE": {
-                  "score": 0.6,
-                  "depth": 0
-                }
-              },
-              "starters": [
-                {
-                  "name": "Tyler Shough",
-                  "position": "QB"
-                },
-                {
-                  "name": "Jonathan Taylor",
-                  "position": "RB"
-                },
-                {
-                  "name": "Saquon Barkley",
-                  "position": "RB"
-                },
-                {
-                  "name": "Davante Adams",
-                  "position": "WR"
-                },
-                {
-                  "name": "DK Metcalf",
-                  "position": "WR"
-                },
-                {
-                  "name": "Dontayvion Wicks",
-                  "position": "WR"
-                },
-                {
-                  "name": "Jake Ferguson",
-                  "position": "TE"
-                },
-                {
-                  "name": "Geno Smith",
-                  "position": "QB"
-                },
-                {
-                  "name": "Keaton Mitchell",
-                  "position": "RB"
-                }
-              ],
-              "bench": [
-                {
-                  "name": "Malik Washington",
-                  "position": "WR"
-                },
-                {
-                  "name": "Rashod Bateman",
-                  "position": "WR"
-                },
-                {
-                  "name": "Tua Tagovailoa",
-                  "position": "QB"
-                },
-                {
-                  "name": "Nicholas Singleton",
-                  "position": "RB"
-                },
-                {
-                  "name": "Kaytron Allen",
-                  "position": "RB"
-                },
-                {
-                  "name": "George Holani",
-                  "position": "RB"
-                },
-                {
-                  "name": "Troy Franklin",
-                  "position": "WR"
-                },
-                {
-                  "name": "Tyquan Thornton",
-                  "position": "WR"
-                },
-                {
-                  "name": "DJ Giddens",
-                  "position": "RB"
-                }
-              ]
-            },
-            {
-              "franchiseId": "0009",
-              "score": 8.7,
-              "depth": 6.2,
-              "filled": 9,
-              "slotCount": 9,
-              "byPosition": {
-                "QB": {
-                  "score": 1.1,
-                  "depth": 1.1
-                },
-                "RB": {
-                  "score": 4.5,
-                  "depth": 2.5
-                },
-                "WR": {
-                  "score": 2.7,
-                  "depth": 2.4
-                },
-                "TE": {
-                  "score": 0.5,
-                  "depth": 0.1
-                }
-              }
-            }
-          ]
-        },
+        "ecr": null,
         "projectionsUnavailable": null
       },
+      "availableAt": "2026-09-09T19:16:17.143Z",
       "results": [
         {
           "year": "2024",
@@ -33240,7 +32007,7 @@
           "injuryStatus": null
         }
       ],
-      "updatedAt": "2026-09-10T12:54:49.976Z",
+      "updatedAt": "2026-09-10T19:07:21.863Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -33513,49 +32280,6 @@
         "3929645"
       ],
       "lineupError": null,
-      "available": [
-        "Brock Purdy",
-        "Jared Goff",
-        "Dalton Kincaid",
-        "KC Concepcion",
-        "Jordan Love",
-        "Baker Mayfield",
-        "Romeo Doubs",
-        "Juwan Johnson",
-        "Jalen Coker",
-        "Tyler Allgeier",
-        "Tyler Shough",
-        "Malik Willis",
-        "Jonah Coleman",
-        "Rashid Shaheed",
-        "Tank Bigsby",
-        "Sam Darnold",
-        "Keaton Mitchell",
-        "C.J. Stroud",
-        "Daniel Jones",
-        "Denzel Boston",
-        "Tre Tucker",
-        "Hunter Henry",
-        "Jordyn Tyson",
-        "Chig Okonkwo",
-        "Dylan Sampson",
-        "Brenton Strange",
-        "Dalton Schultz",
-        "Cam Ward",
-        "Adonai Mitchell",
-        "Emmett Johnson",
-        "Kayshon Boutte",
-        "Dontayvion Wicks",
-        "Braelon Allen",
-        "Alvin Kamara",
-        "Jalen McMillan",
-        "Brian Robinson Jr.",
-        "Jalen Nailor",
-        "Tyrone Tracy Jr.",
-        "Terrance Ferguson",
-        "Tre' Harris"
-      ],
-      "availableAt": "2026-09-09T19:16:17.143Z",
       "rankings": {
         "type": "ROS",
         "scoring": "HALF",
@@ -33566,15 +32290,57 @@
         "total": 15
       },
       "rankingsError": null,
+      "available": [
+        "KC Concepcion",
+        "Brock Purdy",
+        "Jalen Coker",
+        "Jared Goff",
+        "Jordyn Tyson",
+        "Romeo Doubs",
+        "Denzel Boston",
+        "Malik Willis",
+        "Jordan Love",
+        "Dalton Kincaid",
+        "Rashid Shaheed",
+        "Tyler Shough",
+        "Baker Mayfield",
+        "Jacory Croskey-Merritt",
+        "Kayshon Boutte",
+        "Keenan Allen",
+        "Tre' Harris",
+        "Greg Dulcich",
+        "Daniel Jones",
+        "Adonai Mitchell",
+        "Dontayvion Wicks",
+        "Dalton Schultz",
+        "Brenton Strange",
+        "Terrance Ferguson",
+        "Jonah Coleman",
+        "Hunter Henry",
+        "Chig Okonkwo",
+        "Sam Darnold",
+        "Tank Bigsby",
+        "Cam Ward",
+        "Tyler Allgeier",
+        "AJ Barner",
+        "T.J. Hockenson",
+        "Jerry Jeudy",
+        "C.J. Stroud",
+        "Jaylin Noel",
+        "Kenyon Sadiq",
+        "Bryce Young",
+        "Omar Cooper Jr.",
+        "Gunnar Helm"
+      ],
       "power": {
-        "computedAt": "2026-09-09T19:16:17.143Z",
+        "computedAt": "2026-09-10T19:07:06.432Z",
         "scoring": "HALF",
         "projections": {
           "source": {
             "basis": "projections",
             "season": "2026",
             "week": "0",
-            "inSeason": false
+            "inSeason": true
           },
           "teams": [
             {
@@ -33655,7 +32421,7 @@
             {
               "franchiseId": "10",
               "score": 1600.1,
-              "depth": 858.9,
+              "depth": 839.8,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
@@ -33665,7 +32431,7 @@
                 },
                 "RB": {
                   "score": 522.8,
-                  "depth": 404.2
+                  "depth": 264
                 },
                 "WR": {
                   "score": 581.7,
@@ -33673,7 +32439,7 @@
                 },
                 "TE": {
                   "score": 192.4,
-                  "depth": 0
+                  "depth": 121.1
                 }
               },
               "starters": [
@@ -33720,16 +32486,16 @@
                   "position": "WR"
                 },
                 {
-                  "name": "Jacory Croskey-Merritt",
-                  "position": "RB"
-                },
-                {
                   "name": "Jonathon Brooks",
                   "position": "RB"
                 },
                 {
                   "name": "Jordan Mason",
                   "position": "RB"
+                },
+                {
+                  "name": "Juwan Johnson",
+                  "position": "TE"
                 }
               ]
             },
@@ -33889,33 +32655,58 @@
           "source": {
             "basis": "ecr",
             "season": "2026",
-            "rankingType": "DRAFT",
+            "rankingType": "ROS",
             "scoring": "HALF",
-            "inSeason": false
+            "inSeason": true
           },
           "teams": [
             {
-              "franchiseId": "10",
-              "score": 18.2,
-              "depth": 7.5,
+              "franchiseId": "7",
+              "score": 18.1,
+              "depth": 7,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
                 "QB": {
-                  "score": 1.5,
+                  "score": 0.9,
+                  "depth": 0.9
+                },
+                "RB": {
+                  "score": 11.4,
+                  "depth": 2.6
+                },
+                "WR": {
+                  "score": 4.7,
+                  "depth": 2.8
+                },
+                "TE": {
+                  "score": 1,
+                  "depth": 0.7
+                }
+              }
+            },
+            {
+              "franchiseId": "10",
+              "score": 17.2,
+              "depth": 7.7,
+              "filled": 7,
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.4,
                   "depth": 0
                 },
                 "RB": {
-                  "score": 6.8,
-                  "depth": 3.3
+                  "score": 7.2,
+                  "depth": 2.5
                 },
                 "WR": {
-                  "score": 7,
-                  "depth": 4.2
+                  "score": 6.6,
+                  "depth": 4.3
                 },
                 "TE": {
-                  "score": 2.9,
-                  "depth": 0
+                  "score": 2,
+                  "depth": 0.8
                 }
               },
               "starters": [
@@ -33954,12 +32745,12 @@
                   "position": "WR"
                 },
                 {
-                  "name": "Chris Godwin Jr.",
-                  "position": "WR"
-                },
-                {
                   "name": "Jonathon Brooks",
                   "position": "RB"
+                },
+                {
+                  "name": "Chris Godwin Jr.",
+                  "position": "WR"
                 },
                 {
                   "name": "Quentin Johnston",
@@ -33970,104 +32761,54 @@
                   "position": "RB"
                 },
                 {
-                  "name": "Jacory Croskey-Merritt",
-                  "position": "RB"
+                  "name": "Juwan Johnson",
+                  "position": "TE"
                 }
               ]
             },
             {
-              "franchiseId": "7",
-              "score": 17.2,
-              "depth": 6.9,
+              "franchiseId": "9",
+              "score": 16.7,
+              "depth": 5.1,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
                 "QB": {
-                  "score": 0.9,
-                  "depth": 0.9
+                  "score": 2.1,
+                  "depth": 1.2
                 },
                 "RB": {
-                  "score": 10,
-                  "depth": 2.7
+                  "score": 9.4,
+                  "depth": 0
                 },
                 "WR": {
-                  "score": 5.1,
-                  "depth": 2.5
+                  "score": 3.6,
+                  "depth": 3
                 },
                 "TE": {
-                  "score": 1.2,
+                  "score": 1.7,
                   "depth": 0.8
                 }
               }
             },
             {
               "franchiseId": "11",
-              "score": 16.7,
-              "depth": 6.5,
+              "score": 16.6,
+              "depth": 5.9,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
                 "QB": {
-                  "score": 2.3,
+                  "score": 2.4,
                   "depth": 0
                 },
                 "RB": {
-                  "score": 4.3,
-                  "depth": 4.6
+                  "score": 5,
+                  "depth": 3.7
                 },
                 "WR": {
-                  "score": 8.6,
-                  "depth": 1.9
-                },
-                "TE": {
-                  "score": 1.4,
-                  "depth": 0
-                }
-              }
-            },
-            {
-              "franchiseId": "9",
-              "score": 16.3,
-              "depth": 4.4,
-              "filled": 7,
-              "slotCount": 7,
-              "byPosition": {
-                "QB": {
-                  "score": 2.1,
-                  "depth": 1.1
-                },
-                "RB": {
-                  "score": 8.3,
-                  "depth": 0
-                },
-                "WR": {
-                  "score": 3.9,
-                  "depth": 2.4
-                },
-                "TE": {
-                  "score": 2,
-                  "depth": 1
-                }
-              }
-            },
-            {
-              "franchiseId": "1",
-              "score": 16.2,
-              "depth": 7,
-              "filled": 7,
-              "slotCount": 7,
-              "byPosition": {
-                "QB": {
-                  "score": 1.4,
-                  "depth": 0
-                },
-                "RB": {
-                  "score": 5.2,
-                  "depth": 3.4
-                },
-                "WR": {
-                  "score": 8.4,
-                  "depth": 3.6
+                  "score": 8,
+                  "depth": 2.2
                 },
                 "TE": {
                   "score": 1.2,
@@ -34076,59 +32817,9 @@
               }
             },
             {
-              "franchiseId": "3",
-              "score": 16,
-              "depth": 6.3,
-              "filled": 7,
-              "slotCount": 7,
-              "byPosition": {
-                "QB": {
-                  "score": 1.9,
-                  "depth": 1.4
-                },
-                "RB": {
-                  "score": 7.3,
-                  "depth": 1.9
-                },
-                "WR": {
-                  "score": 5.1,
-                  "depth": 3
-                },
-                "TE": {
-                  "score": 1.7,
-                  "depth": 0
-                }
-              }
-            },
-            {
-              "franchiseId": "8",
-              "score": 15.7,
-              "depth": 6.6,
-              "filled": 7,
-              "slotCount": 7,
-              "byPosition": {
-                "QB": {
-                  "score": 1.6,
-                  "depth": 0
-                },
-                "RB": {
-                  "score": 4.3,
-                  "depth": 1.9
-                },
-                "WR": {
-                  "score": 7.4,
-                  "depth": 4.7
-                },
-                "TE": {
-                  "score": 2.4,
-                  "depth": 0
-                }
-              }
-            },
-            {
               "franchiseId": "12",
-              "score": 15.3,
-              "depth": 6.8,
+              "score": 16.2,
+              "depth": 6.4,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
@@ -34137,23 +32828,73 @@
                   "depth": 1
                 },
                 "RB": {
-                  "score": 6.5,
-                  "depth": 3.8
+                  "score": 8.3,
+                  "depth": 3.7
                 },
                 "WR": {
-                  "score": 6.6,
-                  "depth": 1.9
+                  "score": 5.8,
+                  "depth": 1.8
                 },
                 "TE": {
-                  "score": 0.9,
+                  "score": 0.8,
+                  "depth": 0
+                }
+              }
+            },
+            {
+              "franchiseId": "1",
+              "score": 15.8,
+              "depth": 6.7,
+              "filled": 7,
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.5,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 7.3,
+                  "depth": 1.2
+                },
+                "WR": {
+                  "score": 6,
+                  "depth": 5.6
+                },
+                "TE": {
+                  "score": 1.1,
+                  "depth": 0
+                }
+              }
+            },
+            {
+              "franchiseId": "3",
+              "score": 15.6,
+              "depth": 6.5,
+              "filled": 7,
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 2.4,
+                  "depth": 1.5
+                },
+                "RB": {
+                  "score": 6.2,
+                  "depth": 3
+                },
+                "WR": {
+                  "score": 5.8,
+                  "depth": 2.1
+                },
+                "TE": {
+                  "score": 1.2,
                   "depth": 0
                 }
               }
             },
             {
               "franchiseId": "2",
-              "score": 15,
-              "depth": 6,
+              "score": 15.1,
+              "depth": 5.8,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
@@ -34162,40 +32903,65 @@
                   "depth": 1.1
                 },
                 "RB": {
-                  "score": 3.5,
-                  "depth": 0.9
+                  "score": 4,
+                  "depth": 0.7
                 },
                 "WR": {
-                  "score": 8.7,
-                  "depth": 3.2
+                  "score": 8.5,
+                  "depth": 3.3
                 },
                 "TE": {
-                  "score": 1.3,
-                  "depth": 0.8
+                  "score": 1.1,
+                  "depth": 0.7
+                }
+              }
+            },
+            {
+              "franchiseId": "8",
+              "score": 15.1,
+              "depth": 6.2,
+              "filled": 7,
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.9,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 4.8,
+                  "depth": 1.2
+                },
+                "WR": {
+                  "score": 6.6,
+                  "depth": 5.1
+                },
+                "TE": {
+                  "score": 1.8,
+                  "depth": 0
                 }
               }
             },
             {
               "franchiseId": "4",
-              "score": 14.7,
-              "depth": 5.9,
+              "score": 14.4,
+              "depth": 5.4,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
                 "QB": {
-                  "score": 1.8,
+                  "score": 1.7,
                   "depth": 0
                 },
                 "RB": {
-                  "score": 4.5,
-                  "depth": 3.2
+                  "score": 5.1,
+                  "depth": 2.3
                 },
                 "WR": {
-                  "score": 7.1,
-                  "depth": 1.8
+                  "score": 6.5,
+                  "depth": 2.3
                 },
                 "TE": {
-                  "score": 1.3,
+                  "score": 1.1,
                   "depth": 0.9
                 }
               }
@@ -34204,6 +32970,7 @@
         },
         "projectionsUnavailable": null
       },
+      "availableAt": "2026-09-10T19:07:06.432Z",
       "results": [
         {
           "year": "2020",
@@ -34509,7 +33276,7 @@
           "injuryStatus": null
         }
       ],
-      "updatedAt": "2026-09-10T12:54:50.045Z",
+      "updatedAt": "2026-09-10T19:07:21.936Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -34781,49 +33548,6 @@
         "4697745"
       ],
       "lineupError": null,
-      "available": [
-        "Jayden Reed",
-        "KC Concepcion",
-        "Dalton Kincaid",
-        "Jordan Love",
-        "De'Zhaun Stribling",
-        "Tyler Shough",
-        "Jalen Coker",
-        "Romeo Doubs",
-        "Juwan Johnson",
-        "Khalil Shakir",
-        "Malik Willis",
-        "Xavier Worthy",
-        "Woody Marks",
-        "Tyler Allgeier",
-        "Chris Rodriguez Jr.",
-        "Mark Andrews",
-        "C.J. Stroud",
-        "Jordyn Tyson",
-        "Rashid Shaheed",
-        "Jonah Coleman",
-        "Mike Washington Jr.",
-        "Keaton Mitchell",
-        "Dylan Sampson",
-        "Denzel Boston",
-        "Tre Tucker",
-        "Dalton Schultz",
-        "Cam Ward",
-        "Brenton Strange",
-        "Chig Okonkwo",
-        "Tank Bigsby",
-        "Alvin Kamara",
-        "Hunter Henry",
-        "Adonai Mitchell",
-        "Bryce Young",
-        "Kayshon Boutte",
-        "Jalen McMillan",
-        "Emmett Johnson",
-        "Jerry Jeudy",
-        "Braelon Allen",
-        "Dontayvion Wicks"
-      ],
-      "availableAt": "2026-09-09T19:16:17.143Z",
       "rankings": {
         "type": "ROS",
         "scoring": "PPR",
@@ -34834,15 +33558,57 @@
         "total": 15
       },
       "rankingsError": null,
+      "available": [
+        "KC Concepcion",
+        "Jalen Coker",
+        "De'Zhaun Stribling",
+        "Romeo Doubs",
+        "Jayden Reed",
+        "Jordyn Tyson",
+        "Denzel Boston",
+        "Khalil Shakir",
+        "Malik Willis",
+        "Dalton Kincaid",
+        "Xavier Worthy",
+        "Jordan Love",
+        "Juwan Johnson",
+        "Rashid Shaheed",
+        "Tyler Shough",
+        "Keenan Allen",
+        "Greg Dulcich",
+        "Tre' Harris",
+        "Kayshon Boutte",
+        "Dalton Schultz",
+        "Brenton Strange",
+        "Mark Andrews",
+        "Chig Okonkwo",
+        "Adonai Mitchell",
+        "Hunter Henry",
+        "Terrance Ferguson",
+        "Cam Ward",
+        "Dontayvion Wicks",
+        "T.J. Hockenson",
+        "AJ Barner",
+        "C.J. Stroud",
+        "Bryce Young",
+        "Kenyon Sadiq",
+        "Jaylin Noel",
+        "Mike Washington Jr.",
+        "Charlie Kolar",
+        "Gunnar Helm",
+        "Jerry Jeudy",
+        "Omar Cooper Jr.",
+        "Jonah Coleman"
+      ],
       "power": {
-        "computedAt": "2026-09-09T19:16:17.143Z",
+        "computedAt": "2026-09-10T19:07:06.432Z",
         "scoring": "PPR",
         "projections": {
           "source": {
             "basis": "projections",
             "season": "2026",
             "week": "0",
-            "inSeason": false
+            "inSeason": true
           },
           "teams": [
             {
@@ -35157,132 +33923,57 @@
           "source": {
             "basis": "ecr",
             "season": "2026",
-            "rankingType": "DRAFT",
+            "rankingType": "ROS",
             "scoring": "PPR",
-            "inSeason": false
+            "inSeason": true
           },
           "teams": [
             {
               "franchiseId": "3",
-              "score": 17.6,
-              "depth": 6,
+              "score": 19.1,
+              "depth": 4.9,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
                 "QB": {
-                  "score": 1.7,
-                  "depth": 1.1
-                },
-                "RB": {
-                  "score": 7.4,
-                  "depth": 3.3
-                },
-                "WR": {
-                  "score": 5.7,
-                  "depth": 0.8
-                },
-                "TE": {
-                  "score": 2.8,
-                  "depth": 0.8
-                }
-              }
-            },
-            {
-              "franchiseId": "7",
-              "score": 17.3,
-              "depth": 6.8,
-              "filled": 7,
-              "slotCount": 7,
-              "byPosition": {
-                "QB": {
-                  "score": 1.5,
-                  "depth": 2
-                },
-                "RB": {
-                  "score": 6.3,
-                  "depth": 2.2
-                },
-                "WR": {
-                  "score": 7.9,
-                  "depth": 2.6
-                },
-                "TE": {
-                  "score": 1.7,
-                  "depth": 0
-                }
-              }
-            },
-            {
-              "franchiseId": "8",
-              "score": 16.8,
-              "depth": 6.5,
-              "filled": 7,
-              "slotCount": 7,
-              "byPosition": {
-                "QB": {
-                  "score": 1.4,
-                  "depth": 0.7
-                },
-                "RB": {
-                  "score": 5.9,
-                  "depth": 3.1
-                },
-                "WR": {
-                  "score": 4.9,
-                  "depth": 2.7
-                },
-                "TE": {
-                  "score": 4.7,
-                  "depth": 0
-                }
-              }
-            },
-            {
-              "franchiseId": "10",
-              "score": 16.3,
-              "depth": 5,
-              "filled": 7,
-              "slotCount": 7,
-              "byPosition": {
-                "QB": {
-                  "score": 1.4,
+                  "score": 1.8,
                   "depth": 1
                 },
                 "RB": {
-                  "score": 4.1,
-                  "depth": 1.1
+                  "score": 8.9,
+                  "depth": 2.2
                 },
                 "WR": {
-                  "score": 9.7,
-                  "depth": 2.8
+                  "score": 5.9,
+                  "depth": 1
                 },
                 "TE": {
-                  "score": 1.1,
-                  "depth": 0
+                  "score": 2.5,
+                  "depth": 0.8
                 }
               }
             },
             {
               "franchiseId": "5",
-              "score": 16.2,
-              "depth": 8,
+              "score": 17.6,
+              "depth": 7.6,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
                 "QB": {
-                  "score": 2.1,
-                  "depth": 1.9
+                  "score": 2.4,
+                  "depth": 1.7
                 },
                 "RB": {
-                  "score": 4.9,
-                  "depth": 3.5
+                  "score": 5.9,
+                  "depth": 3.2
                 },
                 "WR": {
-                  "score": 7.9,
+                  "score": 8.1,
                   "depth": 2.6
                 },
                 "TE": {
-                  "score": 1.3,
+                  "score": 1.2,
                   "depth": 0
                 }
               },
@@ -35322,19 +34013,19 @@
                   "position": "QB"
                 },
                 {
-                  "name": "TreVeyon Henderson",
-                  "position": "RB"
-                },
-                {
                   "name": "Chris Godwin Jr.",
                   "position": "WR"
+                },
+                {
+                  "name": "Jonathon Brooks",
+                  "position": "RB"
                 },
                 {
                   "name": "Josh Downs",
                   "position": "WR"
                 },
                 {
-                  "name": "Jonathon Brooks",
+                  "name": "TreVeyon Henderson",
                   "position": "RB"
                 },
                 {
@@ -35344,23 +34035,148 @@
               ]
             },
             {
+              "franchiseId": "8",
+              "score": 16.7,
+              "depth": 5.9,
+              "filled": 7,
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.5,
+                  "depth": 0.8
+                },
+                "RB": {
+                  "score": 6.6,
+                  "depth": 2.3
+                },
+                "WR": {
+                  "score": 4.7,
+                  "depth": 2.9
+                },
+                "TE": {
+                  "score": 4,
+                  "depth": 0
+                }
+              }
+            },
+            {
+              "franchiseId": "7",
+              "score": 16.4,
+              "depth": 6.7,
+              "filled": 7,
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.3,
+                  "depth": 2.1
+                },
+                "RB": {
+                  "score": 6.3,
+                  "depth": 1.7
+                },
+                "WR": {
+                  "score": 7.3,
+                  "depth": 2.9
+                },
+                "TE": {
+                  "score": 1.4,
+                  "depth": 0
+                }
+              }
+            },
+            {
+              "franchiseId": "10",
+              "score": 16.2,
+              "depth": 4.7,
+              "filled": 7,
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.5,
+                  "depth": 1
+                },
+                "RB": {
+                  "score": 4.3,
+                  "depth": 0.8
+                },
+                "WR": {
+                  "score": 9.5,
+                  "depth": 2.9
+                },
+                "TE": {
+                  "score": 0.9,
+                  "depth": 0
+                }
+              }
+            },
+            {
+              "franchiseId": "6",
+              "score": 15.3,
+              "depth": 6.6,
+              "filled": 7,
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.3,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 7.3,
+                  "depth": 1.1
+                },
+                "WR": {
+                  "score": 5.7,
+                  "depth": 4.5
+                },
+                "TE": {
+                  "score": 1.1,
+                  "depth": 1
+                }
+              }
+            },
+            {
+              "franchiseId": "9",
+              "score": 15.3,
+              "depth": 5.8,
+              "filled": 7,
+              "slotCount": 7,
+              "byPosition": {
+                "QB": {
+                  "score": 1.5,
+                  "depth": 0
+                },
+                "RB": {
+                  "score": 6.6,
+                  "depth": 2.2
+                },
+                "WR": {
+                  "score": 6,
+                  "depth": 2.6
+                },
+                "TE": {
+                  "score": 1.1,
+                  "depth": 1
+                }
+              }
+            },
+            {
               "franchiseId": "1",
-              "score": 15.4,
-              "depth": 7.9,
+              "score": 14.6,
+              "depth": 7.8,
               "filled": 6,
               "slotCount": 7,
               "byPosition": {
                 "QB": {
-                  "score": 1.1,
-                  "depth": 1
+                  "score": 1.2,
+                  "depth": 0.9
                 },
                 "RB": {
-                  "score": 4.1,
-                  "depth": 2.9
+                  "score": 4.5,
+                  "depth": 2.4
                 },
                 "WR": {
-                  "score": 10.3,
-                  "depth": 4
+                  "score": 8.8,
+                  "depth": 4.5
                 },
                 "TE": {
                   "score": 0,
@@ -35369,97 +34185,47 @@
               }
             },
             {
-              "franchiseId": "9",
-              "score": 15.3,
+              "franchiseId": "4",
+              "score": 14.3,
               "depth": 5.4,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
                 "QB": {
-                  "score": 1.6,
-                  "depth": 0
-                },
-                "RB": {
-                  "score": 6.2,
-                  "depth": 2.2
-                },
-                "WR": {
-                  "score": 6.3,
-                  "depth": 2.1
-                },
-                "TE": {
-                  "score": 1.2,
-                  "depth": 1.1
-                }
-              }
-            },
-            {
-              "franchiseId": "6",
-              "score": 15.2,
-              "depth": 7.1,
-              "filled": 7,
-              "slotCount": 7,
-              "byPosition": {
-                "QB": {
-                  "score": 1.3,
-                  "depth": 0
-                },
-                "RB": {
-                  "score": 4.9,
-                  "depth": 3.5
-                },
-                "WR": {
-                  "score": 7.7,
-                  "depth": 2.7
-                },
-                "TE": {
-                  "score": 1.3,
-                  "depth": 0.8
-                }
-              }
-            },
-            {
-              "franchiseId": "4",
-              "score": 14.4,
-              "depth": 5.3,
-              "filled": 7,
-              "slotCount": 7,
-              "byPosition": {
-                "QB": {
-                  "score": 2.4,
+                  "score": 2.5,
                   "depth": 0.9
                 },
                 "RB": {
-                  "score": 5,
-                  "depth": 1.7
+                  "score": 5.1,
+                  "depth": 1.3
                 },
                 "WR": {
-                  "score": 5.7,
-                  "depth": 1.7
+                  "score": 5.6,
+                  "depth": 2.3
                 },
                 "TE": {
-                  "score": 1.3,
+                  "score": 1.1,
                   "depth": 0.9
                 }
               }
             },
             {
               "franchiseId": "2",
-              "score": 14,
-              "depth": 6.5,
+              "score": 13.3,
+              "depth": 6,
               "filled": 6,
               "slotCount": 7,
               "byPosition": {
                 "QB": {
-                  "score": 2.2,
+                  "score": 2.1,
                   "depth": 1.7
                 },
                 "RB": {
-                  "score": 3.9,
-                  "depth": 2.4
+                  "score": 4.3,
+                  "depth": 1.9
                 },
                 "WR": {
-                  "score": 8,
+                  "score": 6.9,
                   "depth": 2.4
                 },
                 "TE": {
@@ -35472,6 +34238,7 @@
         },
         "projectionsUnavailable": null
       },
+      "availableAt": "2026-09-10T19:07:06.432Z",
       "results": [
         {
           "year": "2025",
@@ -35877,7 +34644,7 @@
         }
       ],
       "draftInProgress": false,
-      "updatedAt": "2026-09-10T12:54:50.235Z",
+      "updatedAt": "2026-09-10T19:07:22.154Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -36213,7 +34980,7 @@
         "DJ Giddens"
       ],
       "power": {
-        "computedAt": "2026-09-10T12:54:32.452Z",
+        "computedAt": "2026-09-10T19:07:06.432Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -37257,37 +36024,41 @@
       "available": [
         "Kenny Gainwell",
         "Chig Okonkwo",
-        "Alvin Kamara",
-        "Jalen Nailor",
         "Jaylin Noel",
+        "Charlie Kolar",
         "Calvin Ridley",
-        "Sean Tucker",
         "Malachi Fields",
-        "Isiah Pacheco",
+        "Jalen Nailor",
         "Pat Freiermuth",
-        "Zachariah Branch",
-        "Darnell Mooney",
-        "Kaytron Allen",
-        "James Conner",
-        "Antonio Williams",
+        "Bryce Lance",
+        "Alvin Kamara",
         "Ted Hurst III",
-        "Jack Bech",
-        "Emanuel Wilson",
-        "Chris Brooks",
-        "Demond Claiborne",
-        "Ollie Gordon II",
-        "Elic Ayomanor",
-        "Isaiah Davis",
-        "Tyquan Thornton",
-        "LeQuint Allen Jr.",
-        "Xavier Legette",
-        "Jordan James",
-        "Tory Horton",
-        "Ty Johnson",
+        "Antonio Williams",
+        "Darren Waller",
+        "Mike Gesicki",
+        "Darnell Mooney",
+        "Kyle Williams",
         "Mason Taylor",
-        "Kendre Miller",
+        "Zachariah Branch",
         "Elijah Sarratt",
-        "Kyle Williams"
+        "Kevin Coleman Jr.",
+        "Tyquan Thornton",
+        "Theo Johnson",
+        "Michael Mayer",
+        "Eli Raridon",
+        "Jack Bech",
+        "Isiah Pacheco",
+        "Eli Stowers",
+        "Erick All Jr.",
+        "Elijah Arroyo",
+        "James Conner",
+        "Elic Ayomanor",
+        "Jordan James",
+        "Demond Claiborne",
+        "Kaytron Allen",
+        "Sean Tucker",
+        "Darnell Washington",
+        "Jahan Dotson"
       ],
       "power": {
         "computedAt": "2026-09-08T01:33:08.191Z",
@@ -38075,7 +36846,7 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-09-09T19:16:17.143Z",
+      "availableAt": "2026-09-10T19:07:06.432Z",
       "results": [
         {
           "year": "2016",
@@ -39930,46 +38701,46 @@
       },
       "rankingsError": null,
       "available": [
-        "Kenny Gainwell",
         "Denzel Boston",
-        "Chig Okonkwo",
-        "Kayshon Boutte",
-        "Brian Robinson Jr.",
-        "Tre' Harris",
-        "Jauan Jennings",
-        "Jalen Nailor",
-        "Omar Cooper Jr.",
-        "AJ Barner",
-        "Terrance Ferguson",
-        "Ja'Kobi Lane",
-        "Jaylin Noel",
-        "Calvin Ridley",
-        "Sean Tucker",
-        "Kenyon Sadiq",
-        "Chris Bell",
-        "Malachi Fields",
-        "Isiah Pacheco",
-        "Malik Davis",
-        "Nicholas Singleton",
-        "Cooper Kupp",
-        "Zachariah Branch",
-        "Justice Hill",
-        "Darnell Mooney",
-        "Kaytron Allen",
-        "Caleb Douglas",
+        "Kenny Gainwell",
         "Greg Dulcich",
-        "George Holani",
-        "Germie Bernard",
-        "James Conner",
-        "Jaylen Wright",
-        "Kaleb Johnson",
-        "Antonio Williams",
+        "Tre' Harris",
+        "Kayshon Boutte",
+        "Chig Okonkwo",
+        "Terrance Ferguson",
+        "AJ Barner",
+        "Kenyon Sadiq",
+        "Jaylin Noel",
+        "Charlie Kolar",
+        "Omar Cooper Jr.",
+        "Jauan Jennings",
+        "David Njoku",
+        "Ja'Kobi Lane",
+        "Calvin Ridley",
+        "Malachi Fields",
+        "Chris Bell",
+        "Jalen Nailor",
+        "Bryce Lance",
         "Ted Hurst III",
-        "Samaje Perine",
-        "Jack Bech",
-        "Emanuel Wilson",
+        "Antonio Williams",
+        "Cyrus Allen",
+        "Darren Waller",
+        "Germie Bernard",
+        "Cooper Kupp",
+        "Caleb Douglas",
+        "Mike Gesicki",
+        "Darnell Mooney",
+        "Brian Robinson Jr.",
+        "Kyle Williams",
+        "Mason Taylor",
+        "Fernando Mendoza",
+        "Zachariah Branch",
+        "Kevin Coleman Jr.",
+        "Tyquan Thornton",
         "Tank Dell",
-        "Fernando Mendoza"
+        "Theo Johnson",
+        "Michael Mayer",
+        "Seth McGowan"
       ],
       "power": {
         "computedAt": "2026-09-08T01:33:08.191Z",
@@ -40661,7 +39432,7 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-09-09T19:16:17.143Z",
+      "availableAt": "2026-09-10T19:07:06.432Z",
       "results": [
         {
           "year": "2014",
