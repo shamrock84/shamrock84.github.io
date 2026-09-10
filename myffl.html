@@ -9784,6 +9784,32 @@
 			return wrap;
 		}
 
+		// Every desktop browser moves focus to the next field on Tab from a
+		// plain text input with no help from the page. iPadOS Safari doesn't,
+		// for a hardware keyboard's Tab key specifically — Full Keyboard
+		// Access (Settings > Accessibility > Keyboards) is the only system
+		// setting that turns it on, and it's off by default, which is why
+		// "tabbing between fields" read as broken here specifically on an
+		// iPad rather than everywhere. The keydown itself still reaches the
+		// page there; Safari just doesn't act on it, so this replicates the
+		// standard behavior by hand for the one field pair a task's text and
+		// category are typed into, used from both the add row and the Edit
+		// Task popover. Harmless on a browser that already does this
+		// natively — preventDefault plus a manual focus() lands in the same
+		// place the browser's own handling would have.
+		function linkTabOrder(a, b) {
+			a.addEventListener('keydown', (e) => {
+				if (e.key !== 'Tab' || e.shiftKey) return;
+				e.preventDefault();
+				b.focus();
+			});
+			b.addEventListener('keydown', (e) => {
+				if (e.key !== 'Tab' || !e.shiftKey) return;
+				e.preventDefault();
+				a.focus();
+			});
+		}
+
 		function renderTasksCard() {
 			const tasks = loadTasks();
 			// Not .admin-card — that class is how refreshAdminCard and
@@ -9802,6 +9828,7 @@
 			const categoryInput = el('input', { type: 'text', class: 'planning-input', placeholder: 'Category (optional)', autocomplete: 'off' });
 			const existingCategories = [...new Set(Object.values(tasks).map((t) => t.category).filter(Boolean))].sort();
 			const categoryWrap = attachCategorySuggestions(categoryInput, () => existingCategories);
+			linkTabOrder(textInput, categoryInput);
 			const addBtn = el('button', { type: 'button', class: 'planning-add-btn', text: '+ Add' });
 			const submitTask = () => {
 				const text = textInput.value.trim();
@@ -9877,6 +9904,7 @@
 						const editText = el('input', { type: 'text', class: 'planning-input', value: t.text, autocomplete: 'off' });
 						const editCategory = el('input', { type: 'text', class: 'planning-input', value: t.category || '', placeholder: 'Category (optional)', autocomplete: 'off' });
 						const editCategoryWrap = attachCategorySuggestions(editCategory, () => existingCategories);
+						linkTabOrder(editText, editCategory);
 						const save = () => {
 							const text = editText.value.trim();
 							if (!text) return;
