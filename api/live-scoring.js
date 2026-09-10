@@ -17,7 +17,8 @@ import {
   loadPlayerMap,
   fetchEspnScoring,
   fetchSleeperScoring,
-  fetchNflGameClocks,
+  fetchNflGames,
+  gameClocksFromGames,
   loadSleeperPlayerMap,
   setMflRequestInterval,
   currentNflWeek,
@@ -313,11 +314,19 @@ export default async function handler(req, res) {
   // cost any ESPN/Sleeper league its actual score, so this degrades to an
   // empty map (every minutesRemaining/winProb comes back 0/undefined for
   // this poll) rather than rejecting.
+  let nflGames = new Map();
   let nflClocks = new Map();
   try {
-    nflClocks = await fetchNflGameClocks();
+    // fetchNflGames is the richer read of the same single scoreboard request
+    // fetchNflGameClocks used to make — the clocks are projected out of it
+    // (gameClocksFromGames) rather than fetched again, so the drawer's
+    // opponent/kickoff line costs nothing beyond what this poll already paid.
+    nflGames = await fetchNflGames();
+    nflClocks = gameClocksFromGames(nflGames);
   } catch {
-    // degrade silently — see comment above.
+    // degrade silently — see comment above. An empty map costs every
+    // ESPN/Sleeper league its minutesRemaining/winProb for this poll and the
+    // drawer its game line; neither is worth failing the scores over.
   }
 
   // Projections are an enrichment on top of the win-probability estimate,
@@ -373,6 +382,12 @@ export default async function handler(req, res) {
 
   res.status(200).json({
     generatedAt: new Date().toISOString(),
+    // The NFL schedule, once per response rather than stamped onto each of
+    // the ~1600 starters a poll covers. The Scoring tab's detail drawer joins
+    // it by the `team` already on every player, and the map is keyed under
+    // every provider's spelling of each team (see NFL_TEAM_ALIASES) so that
+    // join is a plain lookup with nothing to normalize. ~40 keys total.
+    games: Object.fromEntries(nflGames),
     leagues: leaguesOut,
   });
 }

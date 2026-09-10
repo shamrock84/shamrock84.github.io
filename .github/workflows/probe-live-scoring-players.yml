@@ -16,8 +16,14 @@ name: Probe Live Scoring Players (manual, read-only)
 # field reads 0 before kickoff, which cannot distinguish "the field is there
 # and the game hasn't started" from "the field does not exist".
 #
+# Also dumps the public NFL scoreboard's own schedule fields and every team
+# abbreviation it publishes — the join key behind the drawer's
+# "@PIT Sun 12:00 PM" line, and the thing NFL_TEAM_ALIASES in providers.mjs
+# has to keep covering as three providers spell teams three ways.
+#
 # Read-only: MFL TYPE=liveScoring, ESPN mScoreboard/mTeam/mRoster, Sleeper
-# league + matchups. Nothing is written anywhere.
+# league + matchups, and the public NFL scoreboard. Nothing is written
+# anywhere.
 on:
   workflow_dispatch:
     inputs:

@@ -1759,9 +1759,12 @@
 			align-items: center;
 			/* Tight on purpose: the three middle columns are fixed, so every
 			   rem spent here comes straight out of the two name columns,
-			   which are what wrap first in a ~330px card. */
-			gap: 0.3rem;
-			padding: 0.2rem 0.5rem;
+			   which are what wrap first in a ~330px card. Measured, not
+			   guessed: at these values a name column gets ~103px at phone
+			   width, against the ~97px the longest game line
+			   ("@NYG Sun 12:00 PM") needs to stay on one line. */
+			gap: 0.25rem;
+			padding: 0.2rem 0.4rem;
 			font-size: 0.78rem;
 		}
 		.scoring-detail-name {
@@ -1769,6 +1772,25 @@
 			overflow-wrap: anywhere;
 		}
 		.scoring-detail-name.right { text-align: right; }
+		/* The player's own NFL game, under their name — same muted sub-line
+		   shape as .scoring-matchup-meta above it and .injury-detail
+		   elsewhere, since this is routine scheduling context rather than
+		   anything needing attention. Mirrored to the right on that side so
+		   it stays tucked under the name it belongs to. */
+		.scoring-detail-game {
+			color: var(--muted);
+			font-size: 0.62rem;
+			margin-top: 0.05rem;
+			/* Deliberately NOT white-space: nowrap. The name cells are
+			   `1fr` tracks carrying `min-width: 0` (so a long name can't
+			   push the grid wider than the card), which means a nowrap
+			   child is free to overrun its own column — and on the
+			   right-hand side that overrun leaves the card entirely and
+			   gets clipped, so "@NYG Sun 7:20 PM" renders as
+			   "@NYG Sun 7:20 P". Wrapping at the spaces costs a second
+			   line on the narrowest cards and loses nothing. */
+		}
+		.scoring-detail-game.right { text-align: right; }
 		/* The position sits in its own centre column, styled like the
 		   .scoring-matchup-header labels above it — it is a column heading
 		   that happens to repeat per row, not data about either player. */
@@ -1777,15 +1799,17 @@
 			font-size: 0.65rem;
 			text-transform: uppercase;
 			letter-spacing: 0.03em;
-			min-width: 2.1rem;
+			min-width: 1.7rem;
 			text-align: center;
 		}
 		.scoring-detail-pts {
 			font-variant-numeric: tabular-nums;
-			/* Wide enough for a three-digit two-decimal score (a defense
-			   can clear 100 in some scoring systems) without reserving a
-			   fourth digit's worth of the name columns' room. */
-			min-width: 2.6rem;
+			/* A FLOOR, not a cap — this is an `auto` grid track, so an
+			   unusually long score (a defense clearing 100) still grows the
+			   column and takes the room from the 1fr name tracks. Sized to
+			   the ordinary two-decimal case so the common row doesn't
+			   reserve a digit's worth of width the names need more. */
+			min-width: 2rem;
 		}
 		.scoring-detail-pts.left { text-align: right; }
 		/* A null points value renders as this dash rather than 0.0 — see
@@ -6129,6 +6153,88 @@
 			setCardCollapsed(key, open, SCORING_DETAIL_NS);
 		}
 
+		// The NFL schedule for the current poll, keyed by team abbreviation —
+		// set from api/live-scoring.js's `games` (see its own comment for why
+		// it rides once per response rather than being stamped onto each of
+		// the ~1600 starters a poll covers). Empty until the first poll
+		// answers, which is exactly when the drawer has no starters to put a
+		// game line under anyway.
+		//
+		// The map arrives keyed under EVERY provider's spelling of each team
+		// (MFL's LVR alongside the scoreboard's LV), so this is a plain
+		// lookup on the `team` already sitting on the player — nothing to
+		// normalize here, and no alias table duplicated across the sync
+		// boundary to drift.
+		let liveGames = {};
+
+		// "Joe Burrow" -> "J. Burrow". The drawer puts two names on one row
+		// inside a ~330px card, and the surname is what identifies a player at
+		// a glance; the given name is what wraps the row onto a second line.
+		//
+		// Two things are deliberately left alone:
+		//   * A team defense. Providers name these completely differently —
+		//     MFL says "Baltimore Ravens", ESPN says "Eagles D/ST" — and
+		//     neither has a first name to abbreviate. "B. Ravens" and
+		//     "E. D/ST" are both nonsense, so `Def` is skipped outright.
+		//   * A given name that is ALREADY initials ("A.J. Brown"). Cutting it
+		//     to "A. Brown" would drop information rather than save space,
+		//     since it is not the part making the row long.
+		// Everything after the first token is kept whole, which is what keeps
+		// a generational suffix ("J. Cook III") and a multi-part surname
+		// ("A. St. Brown") intact.
+		function abbreviatePlayerName(name, position) {
+			if (!name) return '';
+			if (String(position || '').toLowerCase() === 'def' || /D\/ST/i.test(name)) return name;
+			const parts = String(name).trim().split(/\s+/);
+			if (parts.length < 2) return name;
+			if (parts[0].includes('.')) return name;
+			return `${parts[0][0]}. ${parts.slice(1).join(' ')}`;
+		}
+
+		// "@PIT Sun 12:00 PM" — the player's own NFL game, the way ESPN's live
+		// scoreboard shows it. `@` means away; a home game is the bare
+		// opponent code, matching ESPN's own convention.
+		//
+		// The kickoff time is formatted HERE, never on the server: the Vercel
+		// function runs in UTC, so a "Sun 12:00 PM" built there would be wrong
+		// for whoever is reading it. What crosses the wire is the scoreboard's
+		// ISO timestamp (see fetchNflGames), turned into local time by the
+		// viewer's own browser.
+		//
+		// Once a game is underway the kickoff time stops being the useful
+		// fact, so the scoreboard's own status string takes over ("Q3 5:22",
+		// "Final") — used verbatim rather than rebuilt from period and clock,
+		// which would mean reinventing how it words halftime and overtime.
+		// Returns null for a player on a bye or otherwise not in the map, and
+		// the caller omits the line entirely rather than printing an empty one.
+		function playerGameLine(team) {
+			const game = team ? liveGames[team] : null;
+			if (!game) return null;
+			const side = game.opponent ? `${game.isHome ? '' : '@'}${game.opponent}` : '';
+			let when = '';
+			if (game.state === 'pre') {
+				const at = game.kickoff ? new Date(game.kickoff) : null;
+				if (at && !Number.isNaN(at.getTime())) {
+					// Two calls rather than one toLocaleString, which puts a
+					// comma between the weekday and the time in most locales.
+					when = `${at.toLocaleDateString(undefined, { weekday: 'short' })} ${at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
+				}
+			} else {
+				when = game.detail || '';
+			}
+			// The time is made atomic with non-breaking spaces so the only
+			// place this line may break is between the opponent and the
+			// when — "@HOU Sun 12:00 PM" becomes "@HOU" over
+			// "Sun 12:00 PM" rather than stranding a lone "PM" on its own
+			// line, which is what a plain wrap does in the handful of
+			// pixels the widest combination overruns by on a desktop-width
+			// card. Locale-agnostic: a 24-hour locale simply has fewer
+			// spaces to replace, and a status string ("Q3 5:22") gets the
+			// same treatment for the same reason.
+			const line = [side, when.replace(/\s+/g, '\u00a0')].filter(Boolean).join(' ');
+			return line || null;
+		}
+
 		// Stable across the 30s re-render, distinct per matchup, and naturally
 		// different once the week's pairings change — the franchise ids are
 		// sorted so the same two teams key identically regardless of which one
@@ -6200,11 +6306,24 @@
 				// id rather than an empty cell — that happens for MFL when
 				// the global player map didn't reach the poll (see
 				// getMflPlayerMap), and an id is at least something to look up.
-				nameCell.appendChild(document.createTextNode(player.name || `#${player.id || '?'}`));
+				const label = player.name
+					? abbreviatePlayerName(player.name, player.position)
+					: `#${player.id || '?'}`;
+				const line = el('div');
+				line.appendChild(document.createTextNode(label));
 				// The NFL team as a suffix, never its own column — the same
 				// rule every other table that names a player follows, and the
 				// reason this grid fits on a phone at all.
-				if (player.team) appendTeamSuffix(nameCell, player.team);
+				if (player.team) appendTeamSuffix(line, player.team);
+				nameCell.appendChild(line);
+				// The player's own game as a sub-line under the name, the way
+				// ESPN's scoreboard shows it. Absent for anyone on a bye, or
+				// whenever the scoreboard didn't reach this poll — omitted
+				// rather than printed empty, same as scoringMetaLine.
+				const game = playerGameLine(player.team);
+				if (game) {
+					nameCell.appendChild(el('div', { class: `scoring-detail-game ${side}`, text: game }));
+				}
 				if (player.points == null) {
 					// Not yet known — the provider gave no points field for
 					// this player. Never shown as 0.0, which would claim the
@@ -10099,6 +10218,9 @@
 				const res = await fetch(`${LIVE_SCORING_URL}?t=${Date.now()}`, { cache: 'no-store' });
 				if (!res.ok) throw new Error(`HTTP ${res.status}`);
 				const live = await res.json();
+				// Set before rerenderScoringCards below, which is what reads
+				// it (through playerGameLine) while building the drawers.
+				liveGames = live.games || {};
 				const byId = new Map((live.leagues || []).map((l) => [l.id, l]));
 
 				for (const league of pageData.leagues) {

@@ -1516,16 +1516,66 @@ function attachWinProbabilities(teams, matchups, projectPlayer) {
 // that's already a coarse stand-in (see estimateWinProbability's own
 // comment). A team with no game at all this week (a bye) is simply absent
 // from the map, which callers must treat as 0 remaining, same as "game over".
-export async function fetchNflGameClocks() {
+//
+// Three providers name the same NFL team differently, and this map is what
+// lets one scoreboard answer all three. MFL pads its codes to three letters
+// (GBP/JAC/KCC/LVR/NEP/NOS/SFO/TBB) where ESPN and Sleeper use the short
+// forms the scoreboard itself does; ESPN's own scoreboard has also been seen
+// to spell Washington WSH against the WAS in ESPN_PRO_TEAM_MAP. Rather than
+// normalize the player's team (which is DISPLAYED — see appendTeamSuffix's
+// rule that LVR from MFL is meant to sit beside LV from Sleeper), the games
+// map below is keyed under EVERY spelling of each team. A consumer then does
+// a plain lookup on whatever code its provider gave it, with nothing to
+// normalize and no shared constant to drift across the sync boundary.
+//
+// Entries are alias -> canonical, and the canonical side is whatever the
+// scoreboard uses. Deliberately no 'LA': it has meant both Rams and
+// Chargers, and a wrong join here would put a player in the wrong game,
+// which reads as perfectly plausible.
+const NFL_TEAM_ALIASES = {
+  GBP: 'GB', JAC: 'JAX', KCC: 'KC', LVR: 'LV', NEP: 'NE', NOS: 'NO', SFO: 'SF', TBB: 'TB',
+  WSH: 'WAS', WAS: 'WSH', ARZ: 'ARI', ARI: 'ARZ',
+};
+
+// Every spelling a given scoreboard abbreviation should answer to, itself
+// included. Both directions are covered because which side is canonical
+// depends on the provider asking — MFL says LVR and the scoreboard says LV,
+// but for Washington it has been the scoreboard carrying the odd spelling.
+function nflTeamKeys(abbr) {
+  const keys = new Set([abbr]);
+  for (const [alias, canonical] of Object.entries(NFL_TEAM_ALIASES)) {
+    if (canonical === abbr) keys.add(alias);
+    if (alias === abbr) keys.add(canonical);
+  }
+  return [...keys];
+}
+
+// One request, two views. This is the richer one: per NFL team, who they play,
+// when, and where the game currently stands — everything the Scoring tab's
+// detail drawer needs for its "@PIT Sun 12:00 PM" line, off the same public,
+// unauthenticated scoreboard fetchNflGameClocks was already making.
+//
+// `kickoff` crosses the wire as the scoreboard's own ISO timestamp and is
+// deliberately NOT formatted here: this runs on Vercel in UTC, so any
+// "Sun 12:00 PM" built server-side would be wrong for the person reading it.
+// The page formats it in the viewer's own timezone.
+//
+// `detail` is the scoreboard's own short status string ("Q3 5:22", "Final"),
+// used verbatim rather than rebuilt from period/clock — those two are already
+// read below for secondsRemaining, but turning them back into display text
+// would mean reinventing overtime, halftime and end-of-quarter wording the
+// scoreboard already words correctly.
+export async function fetchNflGames() {
   const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard');
   if (!res.ok) {
     throw new Error(`NFL scoreboard request failed (${res.status})`);
   }
   const data = await res.json();
-  const clocks = new Map();
+  const games = new Map();
   for (const event of data.events || []) {
-    const status = event.competitions?.[0]?.status;
-    const competitors = event.competitions?.[0]?.competitors || [];
+    const competition = event.competitions?.[0];
+    const status = competition?.status;
+    const competitors = competition?.competitors || [];
     const state = status?.type?.state;
     let secondsRemaining;
     if (state === 'post') {
@@ -1538,12 +1588,42 @@ export async function fetchNflGameClocks() {
       // 'pre', or anything unrecognized — treat as not yet started.
       secondsRemaining = 3600;
     }
+    const kickoff = competition?.date || event.date || null;
+    const detail = status?.type?.shortDetail || null;
     for (const c of competitors) {
       const abbr = c.team?.abbreviation;
-      if (abbr) clocks.set(abbr, secondsRemaining);
+      if (!abbr) continue;
+      // A competitor with no identifiable opponent still gets an entry —
+      // secondsRemaining is what the win-probability model needs and does
+      // not depend on knowing who the other side is. The opponent half just
+      // comes back null and the drawer omits that part of the line.
+      const other = competitors.find((o) => o !== c)?.team?.abbreviation || null;
+      const entry = {
+        opponent: other,
+        isHome: c.homeAway === 'home',
+        kickoff,
+        state: state || 'pre',
+        detail,
+        secondsRemaining,
+      };
+      for (const key of nflTeamKeys(abbr)) games.set(key, entry);
     }
   }
+  return games;
+}
+
+// Projects the games map down to what the win-probability model consumes:
+// team abbreviation -> seconds left in that team's game. Pure, so a caller
+// that already has the games map (api/live-scoring.js does) pays one request
+// for both rather than fetching the scoreboard twice.
+export function gameClocksFromGames(games) {
+  const clocks = new Map();
+  for (const [abbr, game] of games) clocks.set(abbr, game.secondsRemaining);
   return clocks;
+}
+
+export async function fetchNflGameClocks() {
+  return gameClocksFromGames(await fetchNflGames());
 }
 
 // Every currently-set starter on one franchise's liveScoring entry, for the

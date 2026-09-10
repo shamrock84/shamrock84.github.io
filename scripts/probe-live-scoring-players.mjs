@@ -185,4 +185,64 @@ if (SLEEPER_LEAGUE_ID) {
   console.log('\n\n=== Sleeper skipped (no PROBE_SLEEPER_LEAGUE_ID) ===');
 }
 
+// --- The NFL scoreboard's own schedule fields ---
+//
+// The drawer's "@PIT Sun 12:00 PM" line joins each starter to their NFL game
+// by team abbreviation, off this same public scoreboard fetchNflGameClocks
+// already reads. Two things need confirming against it, and neither is
+// visible from a sandbox (the scoreboard host is unreachable there):
+//
+//   1. The exact abbreviation each team is published under. This is the join
+//      key, and three providers spell teams differently — MFL pads to three
+//      letters (LVR/GBP/KCC/NEP/NOS/SFO/TBB/JAC) where the scoreboard uses
+//      the short forms. NFL_TEAM_ALIASES in providers.mjs covers the ones
+//      seen in real roster data; anything printed below that is NOT in the
+//      alias table and NOT already a provider's own spelling is a team whose
+//      players would silently get no game line.
+//   2. That `competitions[0].date` and `status.type.shortDetail` are really
+//      there, since the line falls back to nothing without them.
+console.log('\n\n=== NFL scoreboard (public, unauthenticated) ===\n');
+try {
+  const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard');
+  if (!res.ok) throw new Error(`scoreboard request failed (${res.status})`);
+  const data = await res.json();
+  console.log(`events: ${(data.events || []).length}`);
+  const abbrs = [];
+  for (const event of data.events || []) {
+    const competition = event.competitions?.[0];
+    const status = competition?.status;
+    const competitors = competition?.competitors || [];
+    for (const c of competitors) if (c.team?.abbreviation) abbrs.push(c.team.abbreviation);
+    if (event === data.events[0]) {
+      console.log(`\nfirst event, the fields the game line reads:`);
+      console.log(JSON.stringify({
+        'competitions[0].date': competition?.date,
+        'event.date': event.date,
+        'status.type.state': status?.type?.state,
+        'status.type.shortDetail': status?.type?.shortDetail,
+        'status.type.detail': status?.type?.detail,
+        'status.period': status?.period,
+        'status.clock': status?.clock,
+        competitors: competitors.map((c) => ({
+          abbreviation: c.team?.abbreviation,
+          homeAway: c.homeAway,
+        })),
+      }, null, 2));
+      console.log(`\nfull status block of that event:`);
+      console.log(JSON.stringify(status, null, 2));
+    }
+  }
+  console.log(`\nEVERY abbreviation this scoreboard published, sorted — these are the join keys:`);
+  console.log([...new Set(abbrs)].sort().join(' '));
+  // The teams whose players come from MFL under a different spelling. Any of
+  // these NOT handled by NFL_TEAM_ALIASES is a silent gap.
+  console.log(`\nMFL spells these differently — confirm each is aliased:`);
+  console.log('  MFL: GBP JAC KCC LVR NEP NOS SFO TBB   scoreboard should say: GB JAX KC LV NE NO SF TB');
+  console.log(`  Washington/Arizona are the two the scoreboard itself has been inconsistent on — it published: ${
+    [...new Set(abbrs)].filter((a) => /^(WAS|WSH|ARI|ARZ)$/.test(a)).join(' ') || '(neither this week)'
+  }`);
+} catch (err) {
+  console.log(`  scoreboard probe failed: ${err.message}`);
+}
+
 console.log('\nDone.');

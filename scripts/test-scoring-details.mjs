@@ -102,6 +102,16 @@ function makeContext(seed = {}) {
 
 const LOGGED_IN = { mflAuthToken: 'test-token' };
 
+// `liveGames` is a top-level `let` in the page's script, and a `let` binding
+// in a vm script is NOT a property of the context object — so assigning
+// ctx.liveGames would quietly create a second, unrelated global that
+// playerGameLine never reads. Assigning from inside the context resolves
+// lexically to the real binding.
+function setLiveGames(ctx, games) {
+	ctx.__testGames = games;
+	vm.runInContext('liveGames = __testGames;', ctx);
+}
+
 function findAll(n, pred, out = []) {
 	if (!n || !n.children) return out;
 	for (const c of n.children) {
@@ -256,13 +266,14 @@ function leagueWithMatchup() {
 	// The left column is the pill's top row (the higher score, Team One);
 	// the right column its bottom row. A reader's eye carries straight down
 	// from a team's score into that team's column, so this must not flip.
+	// Names render abbreviated — see abbreviatePlayerName's own suite below.
 	const names = rows.map((r) => findAll(r, hasClass('scoring-detail-name')).map(fullText));
-	assert.match(names[0][0], /Joe Burrow/);
-	assert.match(names[0][1], /Trevor Lawrence/);
-	assert.match(names[1][0], /James Cook/);
-	assert.match(names[1][1], /Bijan Robinson/);
+	assert.match(names[0][0], /J\. Burrow/);
+	assert.match(names[0][1], /T\. Lawrence/);
+	assert.match(names[1][0], /J\. Cook/);
+	assert.match(names[1][1], /B\. Robinson/);
 	// The WR row: Team One started none, so its side is the blank pad.
-	assert.match(names[2][1], /Drake London/);
+	assert.match(names[2][1], /D\. London/);
 
 	// The NFL team rides along as a suffix, never its own column.
 	assert.match(names[0][0], /CIN/);
@@ -388,7 +399,137 @@ function leagueWithMatchup() {
 	const body = findAll(card, hasClass('scoring-detail-body'))[0];
 	const names = findAll(body, hasClass('scoring-detail-name')).map(fullText);
 	assert.match(names[0], /#9911/, 'the raw id stands in for an unresolved name');
-	assert.match(names[1], /Someone/);
+	assert.match(names[1], /Someone/, 'a one-word name is left whole, not cut to an initial');
+}
+
+// --- abbreviatePlayerName ---
+{
+	const ctx = makeContext();
+	const abbr = ctx.abbreviatePlayerName;
+
+	assert.equal(abbr('Joe Burrow', 'QB'), 'J. Burrow');
+	assert.equal(abbr('Trevor Lawrence', 'QB'), 'T. Lawrence');
+	// A generational suffix is part of the surname half and survives whole.
+	assert.equal(abbr('James Cook III', 'RB'), 'J. Cook III');
+	assert.equal(abbr('Chris Godwin Jr.', 'WR'), 'C. Godwin Jr.');
+	// A multi-part surname likewise — everything after the first token is kept.
+	assert.equal(abbr('Amon-Ra St. Brown', 'WR'), 'A. St. Brown');
+	assert.equal(abbr("De'Von Achane", 'RB'), 'D. Achane');
+
+	// A given name that is already initials is left alone — cutting "A.J."
+	// to "A." drops information without saving the row any width, since it
+	// was never the part making the row long.
+	assert.equal(abbr('A.J. Brown', 'WR'), 'A.J. Brown');
+	assert.equal(abbr('T.J. Hockenson', 'TE'), 'T.J. Hockenson');
+
+	// Team defenses are never abbreviated, in either provider's spelling.
+	assert.equal(abbr('Baltimore Ravens', 'Def'), 'Baltimore Ravens', "MFL's spelling");
+	assert.equal(abbr('Eagles D/ST', 'Def'), 'Eagles D/ST', "ESPN's spelling");
+	// ...and the D/ST guard holds even if the position is missing or spelled
+	// differently, since Sleeper reports DEF and ESPN's map says Def.
+	assert.equal(abbr('Eagles D/ST', null), 'Eagles D/ST');
+	assert.equal(abbr('Baltimore Ravens', 'DEF'), 'Baltimore Ravens');
+
+	// Degenerate inputs don't throw or produce a stray dot.
+	assert.equal(abbr('Ravens', 'Def'), 'Ravens');
+	assert.equal(abbr('Cher', 'WR'), 'Cher', 'a one-word name has no first name to cut');
+	assert.equal(abbr('', 'WR'), '');
+	assert.equal(abbr(null, 'WR'), '');
+}
+
+// --- playerGameLine, and the abbreviation join it depends on ---
+{
+	const ctx = makeContext();
+	// Shaped exactly as api/live-scoring.js serializes fetchNflGames' map:
+	// keyed under every provider's spelling of the same team.
+	const kickoff = '2026-09-13T17:00:00.000Z';
+	setLiveGames(ctx, {
+		CIN: { opponent: 'TB', isHome: true, kickoff, state: 'pre', detail: null, secondsRemaining: 3600 },
+		BUF: { opponent: 'HOU', isHome: false, kickoff, state: 'pre', detail: null, secondsRemaining: 3600 },
+		LV: { opponent: 'DEN', isHome: false, kickoff, state: 'in', detail: 'Q3 5:22', secondsRemaining: 1200 },
+		LVR: { opponent: 'DEN', isHome: false, kickoff, state: 'in', detail: 'Q3 5:22', secondsRemaining: 1200 },
+		SEA: { opponent: 'NE', isHome: true, kickoff, state: 'post', detail: 'Final', secondsRemaining: 0 },
+		NYG: { opponent: null, isHome: true, kickoff, state: 'pre', detail: null, secondsRemaining: 3600 },
+	});
+
+	// A home game is the bare opponent code; away carries the @. ESPN's own
+	// convention, and the screenshot this card was modelled on.
+	// The time half is joined with non-breaking spaces (see playerGameLine),
+	// so comparisons here normalize it back to plain spaces for readability.
+	const line = (team) => { const l = ctx.playerGameLine(team); return l && l.replace(/\u00a0/g, ' '); };
+	assert.match(line('CIN'), /^TB /, 'home game has no @');
+	assert.match(line('BUF'), /^@HOU /, 'away game carries the @');
+
+	// The only breakable space is the one between the opponent and the time.
+	// Without this a desktop-width card strands a lone "PM" on its own line.
+	const raw = ctx.playerGameLine('BUF');
+	assert.equal((raw.match(/ /g) || []).length, 1, 'exactly one ordinary space, after the opponent');
+	assert.ok(raw.includes('\u00a0'), 'and the time itself is non-breaking');
+
+	// Once a game is underway the kickoff time stops being the useful fact
+	// and the scoreboard's own status string takes over, verbatim.
+	assert.equal(line('LV'), '@DEN Q3 5:22');
+	assert.equal(line('SEA'), 'NE Final');
+
+	// THE join assertion: MFL pads its team codes, so the same player read
+	// from MFL (LVR) and from Sleeper (LV) must both resolve. Without the
+	// alias keys, eight teams' worth of players get no line at all and
+	// nothing on screen says why.
+	assert.equal(line('LVR'), line('LV'), "MFL's LVR resolves the same game as LV");
+
+	// A team not in the map (a bye, or the scoreboard not covering it) gets
+	// no line rather than a half-built one.
+	assert.equal(ctx.playerGameLine('MIA'), null, 'a bye team has no line');
+	assert.equal(ctx.playerGameLine(null), null);
+	assert.equal(ctx.playerGameLine(undefined), null);
+
+	// An unidentifiable opponent still yields the time half rather than
+	// dropping the line or printing a bare "@".
+	const lone = line('NYG');
+	assert.ok(lone && !lone.includes('@'), 'no opponent means no @ and no empty code');
+
+	// The kickoff is formatted from the ISO timestamp in the VIEWER's
+	// timezone — never on the server, which runs in UTC. Asserted as
+	// "whatever this runtime's locale makes of that instant" rather than a
+	// fixed string, since the point is that it is locale-driven.
+	const at = new Date(kickoff);
+	const expected = `${at.toLocaleDateString(undefined, { weekday: 'short' })} ${at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
+	assert.equal(line('CIN'), `TB ${expected}`);
+	assert.ok(/\d/.test(expected) && !expected.includes(','), 'weekday and time, no comma between them');
+
+	// A malformed kickoff degrades to the opponent alone rather than
+	// rendering "Invalid Date".
+	setLiveGames(ctx, { CIN: { opponent: 'TB', isHome: true, kickoff: 'not-a-date', state: 'pre', detail: null } });
+	assert.equal(line('CIN'), 'TB');
+}
+
+// --- both, as actually rendered into the drawer ---
+{
+	const ctx = makeContext(LOGGED_IN);
+	ctx.liveScoringAttempted = true;
+	setLiveGames(ctx, {
+		CIN: { opponent: 'TB', isHome: true, kickoff: '2026-09-13T17:00:00.000Z', state: 'pre', detail: null },
+		JAX: { opponent: 'CLE', isHome: true, kickoff: '2026-09-13T17:00:00.000Z', state: 'pre', detail: null },
+	});
+	const league = leagueWithMatchup();
+	const card = ctx.renderScoringCard(league);
+	findAll(card, hasClass('scoring-detail-toggle'))[0].listeners.click[0]();
+	const body = findAll(card, hasClass('scoring-detail-body'))[0];
+
+	const names = findAll(body, hasClass('scoring-detail-name')).map(fullText);
+	assert.match(names[0], /J\. Burrow/, 'the first name is abbreviated in the rendered row');
+	assert.ok(!names[0].includes('Joe'), 'and the full given name is gone');
+	assert.match(names[1], /T\. Lawrence/);
+
+	// The game line renders as its own sub-line under the name, not inline
+	// with it and not as a column.
+	const gameLines = findAll(body, hasClass('scoring-detail-game')).map(fullText);
+	assert.equal(gameLines.length, 2, 'only the two players whose teams are in the schedule get a line');
+	assert.ok(gameLines.some((g) => g.startsWith('TB ')), 'Burrow (CIN, home vs TB)');
+	assert.ok(gameLines.some((g) => g.startsWith('CLE ')), 'Lawrence (JAX, home vs CLE)');
+	// The players on teams absent from the schedule are still rendered — they
+	// just carry no game line.
+	assert.equal(findAll(body, hasClass('scoring-detail-row')).length, 3);
 }
 
 console.log('test-scoring-details.mjs OK');
