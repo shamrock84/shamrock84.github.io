@@ -9867,8 +9867,15 @@
 				const openTaskEdit = () => {
 					taskPopover.open(textSpan, 'Edit Task', (popoverEl) => {
 						const form = el('div', { class: 'planning-task-popover-form' });
-						const editText = el('input', { type: 'text', class: 'planning-input', value: t.text });
-						const editCategory = el('input', { type: 'text', class: 'planning-input', value: t.category || '', placeholder: 'Category (optional)' });
+						// autocomplete off on both — see adminText's identical
+						// comment: without it, a value typed here repeatedly
+						// (the same task text pattern, the same handful of
+						// categories) starts triggering the browser's own
+						// autofill dropdown, and the first Tab press in that
+						// state dismisses the dropdown instead of moving
+						// focus to the next field.
+						const editText = el('input', { type: 'text', class: 'planning-input', value: t.text, autocomplete: 'off' });
+						const editCategory = el('input', { type: 'text', class: 'planning-input', value: t.category || '', placeholder: 'Category (optional)', autocomplete: 'off' });
 						const editCategoryWrap = attachCategorySuggestions(editCategory, () => existingCategories);
 						const save = () => {
 							const text = editText.value.trim();
