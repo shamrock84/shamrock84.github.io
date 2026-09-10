@@ -9784,49 +9784,22 @@
 			return wrap;
 		}
 
-		// TEMPORARY: diagnosing an iPadOS Safari + hardware keyboard report
-		// that Tab still doesn't move focus between these two fields even
-		// with this handler attached and Full Keyboard Access on (which
-		// rules out the earlier theory that Safari simply declines to act
-		// on a keydown it does receive). This overlay answers the one
-		// question neither of us can answer from a description alone: does
-		// the keydown event reach the page's JS at all when Tab is pressed
-		// there. Remove once that's answered and the real fix (if any is
-		// possible from page JS) replaces it.
-		function tabDebugLog(label, e) {
-			let dbg = document.getElementById('tab-debug-overlay');
-			if (!dbg) {
-				dbg = el('div', { id: 'tab-debug-overlay' });
-				dbg.style.cssText = 'position:fixed;bottom:8px;left:8px;right:8px;z-index:9999;background:#000;color:#0f0;font:11px monospace;padding:6px;border-radius:6px;max-height:40vh;overflow:auto;white-space:pre-wrap;pointer-events:none;';
-				document.body.appendChild(dbg);
-			}
-			const line = `${label}: key=${e.key} code=${e.code} keyCode=${e.keyCode} shift=${e.shiftKey}`;
-			dbg.textContent = `${line}\n${dbg.textContent}`.split('\n').slice(0, 20).join('\n');
-		}
-
-		// Every desktop browser moves focus to the next field on Tab from a
-		// plain text input with no help from the page. This is meant to
-		// replicate that by hand for the one field pair a task's text and
-		// category are typed into, used from both the add row and the Edit
-		// Task popover — see the TEMPORARY block above for why it isn't
-		// confirmed to actually do that on iPadOS yet. Harmless on a
-		// browser that already moves focus on Tab natively: preventDefault
-		// plus a manual focus() lands in the same place the browser's own
-		// handling would have.
-		function linkTabOrder(a, b) {
-			a.addEventListener('keydown', (e) => {
-				tabDebugLog('text', e);
-				if (e.key !== 'Tab' || e.shiftKey) return;
-				e.preventDefault();
-				b.focus();
-			});
-			b.addEventListener('keydown', (e) => {
-				tabDebugLog('category', e);
-				if (e.key !== 'Tab' || !e.shiftKey) return;
-				e.preventDefault();
-				a.focus();
-			});
-		}
+		// Tab between the task text and category fields was investigated and
+		// found not fixable from page JS — recorded here so it isn't
+		// re-attempted blindly. A hardware-keyboard Tab press on iPadOS
+		// Safari (confirmed on a real device, Full Keyboard Access on)
+		// dispatches no keydown to the page at all: an on-screen debug
+		// overlay logging every keydown on these two fields showed nothing
+		// for a plain Tab press, so a `keydown` listener — the only hook a
+		// page has — has nothing to listen to; a `keydown`/`focus`-based
+		// `linkTabOrder(a, b)` helper was written and shipped believing the
+		// event would arrive, then removed once the overlay proved it
+		// doesn't. Cmd+Tab does fire a keydown, but only for Meta — iPadOS
+		// reserves Cmd+Tab as the App Switcher shortcut and consumes the
+		// Tab press itself before any webpage sees it, which is a second,
+		// unrelated reason that particular combination will never work
+		// here. No workaround exists on the page's side; tapping directly
+		// into the field you want is the practical alternative.
 
 		function renderTasksCard() {
 			const tasks = loadTasks();
@@ -9846,7 +9819,6 @@
 			const categoryInput = el('input', { type: 'text', class: 'planning-input', placeholder: 'Category (optional)', autocomplete: 'off' });
 			const existingCategories = [...new Set(Object.values(tasks).map((t) => t.category).filter(Boolean))].sort();
 			const categoryWrap = attachCategorySuggestions(categoryInput, () => existingCategories);
-			linkTabOrder(textInput, categoryInput);
 			const addBtn = el('button', { type: 'button', class: 'planning-add-btn', text: '+ Add' });
 			const submitTask = () => {
 				const text = textInput.value.trim();
@@ -9922,7 +9894,6 @@
 						const editText = el('input', { type: 'text', class: 'planning-input', value: t.text, autocomplete: 'off' });
 						const editCategory = el('input', { type: 'text', class: 'planning-input', value: t.category || '', placeholder: 'Category (optional)', autocomplete: 'off' });
 						const editCategoryWrap = attachCategorySuggestions(editCategory, () => existingCategories);
-						linkTabOrder(editText, editCategory);
 						const save = () => {
 							const text = editText.value.trim();
 							if (!text) return;
