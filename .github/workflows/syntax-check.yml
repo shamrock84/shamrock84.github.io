@@ -281,6 +281,17 @@ jobs:
       - name: Test Scoring tab matchup ordering
         run: node scripts/test-scoring-matchup-order.mjs
 
+      # The Scoring tab's per-matchup detail drawer: how the two lineups are
+      # paired into rows, and the login/bye gates on showing it at all. Every
+      # way this breaks is silent — a starter dropped from the grid, one
+      # side's players rendered against the wrong opponent's column, or a
+      # player whose game hasn't started shown as a confident 0.00 rather
+      # than a dash — and all of them look like a perfectly ordinary table.
+      # The localStorage round-trip is load-bearing too: it's the only reason
+      # an open drawer survives the ~30s poll rebuilding every Scoring card.
+      - name: Test the Scoring tab detail drawer
+        run: node scripts/test-scoring-details.mjs
+
       # fetchNflGameClocks and the ESPN/Sleeper join it feeds. Neither
       # provider's own API carries a live game clock (confirmed by
       # probe-espn-sleeper-live-time.yml), so minutesRemaining/winProb come

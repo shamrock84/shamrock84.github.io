@@ -79,6 +79,39 @@ const PASSWORD = process.env.MFL_PASSWORD;
 const OUTPUT_PATH = fileURLToPath(new URL('../data/rosters.json', import.meta.url));
 const CONFIG_PATH = fileURLToPath(new URL('../config/leagues.json', import.meta.url));
 
+// Drops the per-starter `players[]` array off a scoring result before it is
+// written to data/rosters.json. Everything else on the result stays.
+//
+// That array exists to feed attachWinProbabilities, which runs inside
+// fetch*Scoring and reduces it to the one scalar worth keeping — `winProb`
+// — so by the time the result gets here it is spent intermediate state.
+// It has never been read by myffl.html from the snapshot, and it cannot
+// usefully be: the Scoring tab's detail drawer renders live numbers, and
+// the first api/live-scoring.js poll replaces this whole object seconds
+// after page load. The snapshot's copy would only ever be a set of scores
+// up to four hours stale.
+//
+// This is a page-load budget call, not tidiness. data/rosters.json is
+// fetched WHOLE by every visitor on every page load (see CLAUDE.md's own
+// note that this is the budget any new field spends), and the bare
+// { id, secondsRemaining } version of this array was already 45KB of a
+// 1.6MB file across 977 starters. Adding name/position/team/points for the
+// drawer roughly triples that — ~85KB of new weight on every page load, all
+// of it discarded unread on the first poll. Stripping it instead makes the
+// drawer cost the snapshot nothing and hands back the 45KB already being
+// spent.
+//
+// A null/absent scoring result passes straight through — the callers here
+// fall back to the previous snapshot entry on failure, and that entry has
+// already been through this same strip.
+function stripScoringPlayers(scoring) {
+  if (!scoring || !Array.isArray(scoring.teams)) return scoring;
+  return {
+    ...scoring,
+    teams: scoring.teams.map(({ players, ...rest }) => rest),
+  };
+}
+
 // Minimum gap between two MFL request starts, applied across this whole run —
 // see setMflRequestInterval in providers.mjs for why the sync needs a send-rate
 // floor at all and why nothing else that imports that module gets one.
@@ -1243,11 +1276,12 @@ async function main() {
     const target = leagues.find((l) => l.id === league.id);
     if (!target || !league.franchiseId) continue;
     try {
-      target.scoring = league.provider === 'espn'
+      const scoring = league.provider === 'espn'
         ? await fetchEspnScoring(league, nflClocks)
         : league.provider === 'sleeper'
         ? await fetchSleeperScoring(league, nflClocks, sleeperPlayerMap)
         : await fetchScoring(league, cookie, mflNamesById.get(league.id));
+      target.scoring = stripScoringPlayers(scoring);
       target.scoringError = null;
       console.log(`Fetched scoring for ${league.name}: ${target.scoring.teams.length} teams`);
     } catch (err) {

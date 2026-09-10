@@ -1555,19 +1555,52 @@ export async function fetchNflGameClocks() {
 // matchup's outcome. Object-or-array-or-absent, the same shape every other
 // MFL list export uses (see mflRosterPlayers). `id` is the same MFL
 // player-id space fetchProjections' `byMflId` already joins against.
-function mflLiveStarters(f) {
+//
+// Also carries what the Scoring tab's per-matchup detail drawer renders:
+// `name`/`position`/`team` (resolved through the optional `playerMap` from
+// loadPlayerMap — MFL's liveScoring response has ids and nothing else, so
+// without a map those come back null and the drawer falls back to showing
+// the raw id) and `points`, this player's own score so far this week.
+//
+// `points` is read defensively and lands null when the field is absent —
+// probe-live-scoring-players.yml is what confirms it against a live week,
+// and the drawer renders a null as "--" (exactly what ESPN's own live
+// scoreboard shows for a player whose game hasn't started). A missing
+// points field must degrade to a dash rather than a confident 0.0, which
+// would read as "played and scored nothing".
+function mflLiveStarters(f, playerMap) {
   const raw = f.players?.player;
   const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
   return list
     .filter((p) => String(p.status).toLowerCase() === 'starter')
-    .map((p) => ({ id: String(p.id), secondsRemaining: Number(p.gameSecondsRemaining ?? 0) }));
+    .map((p) => {
+      const info = playerMap?.get(String(p.id));
+      return {
+        id: String(p.id),
+        secondsRemaining: Number(p.gameSecondsRemaining ?? 0),
+        name: info?.name ?? null,
+        position: info?.position ?? null,
+        team: info?.team ?? null,
+        points: p.score == null || p.score === '' ? null : Number(p.score),
+      };
+    });
 }
 
 // projectPlayer is optional — see attachWinProbabilities' own comment for
 // what passing (or omitting) one does to the win-probability estimate.
 // MFL's starters carry `id`, the same MFL player-id space fetchProjections'
 // byMflId already joins against.
-export async function fetchScoring(league, cookie, nameById, projectPlayer) {
+//
+// playerMap (from loadPlayerMap) is also optional, and only the Scoring
+// tab's detail drawer needs it: MFL's liveScoring response identifies
+// players by id alone, so without a map each starter's name/position/team
+// come back null. Deliberately a parameter rather than fetched here —
+// loadPlayerMap is one big GLOBAL request (every player in the league
+// universe, not league-scoped), so it must be fetched once per run and
+// shared across every league, never once per fetchScoring call. The sync
+// already loads it for the roster pass; api/live-scoring.js caches it at
+// module level for the same reason it caches franchise names.
+export async function fetchScoring(league, cookie, nameById, projectPlayer, playerMap) {
   const [names, liveData] = await Promise.all([
     nameById ? Promise.resolve(nameById) : fetchMflFranchiseNames(league, cookie),
     mflGet(`/export?TYPE=liveScoring&L=${league.id}&JSON=1`, cookie, seasonOf(league)),
@@ -1604,7 +1637,7 @@ export async function fetchScoring(league, cookie, nameById, projectPlayer) {
     score: Number(f.score ?? 0),
     minutesRemaining: Math.round(Number(f.gameSecondsRemaining ?? 0) / 60),
     isMe: f.id === league.franchiseId,
-    players: mflLiveStarters(f),
+    players: mflLiveStarters(f, playerMap),
   }));
 
   attachWinProbabilities(teams, matchups, projectPlayer);
@@ -1885,6 +1918,24 @@ export async function fetchEspnStandings(league) {
 // flat per-minute rate. ESPN has no id space FantasyPros' projections join
 // against (see fetchProjections' byMflId/byName split), so name is what
 // travels here, same as fetchEspnLeagueRoster's own player list.
+//
+// Also carries what the Scoring tab's per-matchup detail drawer renders:
+// `position`/`team` off the same player object the name comes from, and
+// `points` — this player's own score so far this week, which ESPN puts on
+// playerPoolEntry.appliedStatTotal. That field is community-documented
+// rather than probed, which is why it is read defensively and lands null
+// when absent (probe-live-scoring-players.yml is what confirms it against a
+// live week). The drawer renders a null as "--", never a confident 0.0,
+// which would claim the player played and scored nothing.
+//
+// No slot label travels here. lineupSlotId IS on every entry, but this
+// project only knows two of its values — 20 (bench) and 21 (IR), both
+// community-documented and only the ones needed to answer "is this player
+// playing this week". Mapping the rest onto FLEX/WR-TE/etc. would be
+// guesswork of exactly the kind DEFAULT_POWER_SLOTS already stands in for
+// elsewhere, so the drawer groups by real `position` instead — which every
+// provider agrees on — and lets probe-live-scoring-players.yml's slot
+// histogram be the thing that eventually answers it off real data.
 function espnTeamLiveStarters(teamSide, clockMap) {
   const entries = teamSide?.rosterForCurrentScoringPeriod?.entries || [];
   let seconds = 0;
@@ -1895,7 +1946,14 @@ function espnTeamLiveStarters(teamSide, clockMap) {
     const abbr = ESPN_PRO_TEAM_MAP[p?.proTeamId];
     const secondsRemaining = clockMap.get(abbr) ?? 0;
     seconds += secondsRemaining;
-    players.push({ name: p?.fullName || '', secondsRemaining });
+    const points = e.playerPoolEntry?.appliedStatTotal;
+    players.push({
+      name: p?.fullName || '',
+      secondsRemaining,
+      position: ESPN_POSITION_MAP[p?.defaultPositionId] ?? null,
+      team: abbr ?? null,
+      points: points == null ? null : Number(points),
+    });
   }
   return { minutesRemaining: Math.round(seconds / 60), players };
 }
@@ -2208,14 +2266,38 @@ export async function fetchSleeperStandings(league) {
 // Also returns each starter's own name and remaining seconds — see
 // espnTeamLiveStarters' comment for why name, not id, is what the
 // remaining-points win-probability model joins Sleeper players against.
-function sleeperTeamLiveStarters(starterIds, playerMap, clockMap) {
+//
+// Also carries what the Scoring tab's per-matchup detail drawer renders:
+// `position`/`team` off the same playerMap entry the name comes from, and
+// `points` — this player's own score so far this week, read from the
+// `players_points` map that rides along on the very matchup response
+// fetchSleeperScoring already fetched (hence `pointsById` here, passed in
+// rather than fetched: it costs nothing extra). Read defensively, landing
+// null when the map or the key is absent, so the drawer shows "--" rather
+// than a confident 0.0 claiming the player played and scored nothing.
+//
+// Note Sleeper's `starters` array is slot-ORDERED (it lines up with the
+// league's own roster_positions), which is the one place a real slot label
+// would be free. It is deliberately not used: ESPN cannot supply the same
+// thing without guessing at lineupSlotId values this project has never
+// probed, and a drawer that labelled slots for one provider and positions
+// for another would be two different cards wearing one name. Position is
+// what all three agree on.
+function sleeperTeamLiveStarters(starterIds, playerMap, clockMap, pointsById) {
   let seconds = 0;
   const players = [];
   for (const id of starterIds || []) {
     const info = playerMap.get(String(id));
     const secondsRemaining = clockMap.get(info?.team) ?? 0;
     seconds += secondsRemaining;
-    players.push({ name: info?.name || '', secondsRemaining });
+    const points = pointsById?.[String(id)];
+    players.push({
+      name: info?.name || '',
+      secondsRemaining,
+      position: info?.position ?? null,
+      team: info?.team ?? null,
+      points: points == null ? null : Number(points),
+    });
   }
   return { minutesRemaining: Math.round(seconds / 60), players };
 }
@@ -2245,7 +2327,7 @@ export async function fetchSleeperScoring(league, clockMap, playerMap, projectPl
   }
 
   const teams = rawMatchups.map((m) => {
-    const live = sleeperTeamLiveStarters(m.starters, players, clocks);
+    const live = sleeperTeamLiveStarters(m.starters, players, clocks, m.players_points);
     return {
       franchiseId: String(m.roster_id),
       teamName: names.get(String(m.roster_id)) || `Team ${m.roster_id}`,

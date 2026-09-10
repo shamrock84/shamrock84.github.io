@@ -72,9 +72,18 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
 {
   const clockMap = new Map([['SEA', 1800], ['NE', 0], ['KC', 3600]]);
 
-  const rosterEntry = (proTeamId, lineupSlotId, fullName) => ({
+  // appliedStatTotal and defaultPositionId feed the Scoring tab's detail
+  // drawer (see espnTeamLiveStarters). Both are community-documented rather
+  // than probed against a real league of ours — probe-live-scoring-players.yml
+  // is what confirms them — so the last entry below deliberately omits
+  // appliedStatTotal to pin the degrade path: an absent points field must
+  // land null, never 0, since the drawer renders the two differently.
+  const rosterEntry = (proTeamId, lineupSlotId, fullName, appliedStatTotal, defaultPositionId) => ({
     lineupSlotId,
-    playerPoolEntry: { player: { proTeamId, fullName } },
+    playerPoolEntry: {
+      ...(appliedStatTotal === undefined ? {} : { appliedStatTotal }),
+      player: { proTeamId, fullName, defaultPositionId },
+    },
   });
 
   const espnData = {
@@ -87,9 +96,9 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
         totalPoints: 20,
         rosterForCurrentScoringPeriod: {
           entries: [
-            rosterEntry(26, 3, 'Seattle Starter'), // SEA starter (proTeamId 26 = SEA)
-            rosterEntry(17, 3, 'Patriot Starter'), // NE starter, but NE's game is over (0 left)
-            rosterEntry(12, 20, 'Bench Guy'), // KC on the BENCH — must not count
+            rosterEntry(26, 3, 'Seattle Starter', 12.5, 3), // SEA starter (proTeamId 26 = SEA), WR
+            rosterEntry(17, 3, 'Patriot Starter', 0, 4), // NE starter, game over (0 left), TE, genuine 0
+            rosterEntry(12, 20, 'Bench Guy', 99, 3), // KC on the BENCH — must not count
           ],
         },
       },
@@ -98,7 +107,7 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
         totalPoints: 15,
         rosterForCurrentScoringPeriod: {
           entries: [
-            rosterEntry(12, 3, 'Chief Starter'), // KC starter, full game left
+            rosterEntry(12, 3, 'Chief Starter', undefined, 1), // KC starter, full game left, QB, NO points field
           ],
         },
       },
@@ -121,19 +130,28 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
   assert.equal(result.matchups.length, 1);
   assert.deepEqual(
     home.players,
-    [{ name: 'Seattle Starter', secondsRemaining: 1800 }, { name: 'Patriot Starter', secondsRemaining: 0 }],
+    [
+      { name: 'Seattle Starter', secondsRemaining: 1800, position: 'WR', team: 'SEA', points: 12.5 },
+      { name: 'Patriot Starter', secondsRemaining: 0, position: 'TE', team: 'NE', points: 0 },
+    ],
     'the benched entry is excluded from the per-player breakdown too, by name since ESPN has no id FantasyPros joins against'
   );
-  assert.deepEqual(away.players, [{ name: 'Chief Starter', secondsRemaining: 3600 }]);
+  // A genuine 0 above survives as 0; a MISSING appliedStatTotal below lands
+  // null. The drawer shows the first as "0.00" and the second as a dash —
+  // "played and scored nothing" and "we don't know yet" are different facts.
+  assert.deepEqual(
+    away.players,
+    [{ name: 'Chief Starter', secondsRemaining: 3600, position: 'QB', team: 'KC', points: null }]
+  );
 }
 
 // --- fetchSleeperScoring: join against clockMap via playerMap, starters only ---
 {
   const clockMap = new Map([['DAL', 900], ['PHI', 3600]]);
   const playerMap = new Map([
-    ['100', { team: 'DAL', name: 'Cowboy Starter' }],
-    ['101', { team: 'PHI', name: 'Eagle Starter' }],
-    ['102', { team: 'DAL', name: 'Cowboy Bench' }], // rostered but not a starter
+    ['100', { team: 'DAL', name: 'Cowboy Starter', position: 'RB' }],
+    ['101', { team: 'PHI', name: 'Eagle Starter', position: 'QB' }],
+    ['102', { team: 'DAL', name: 'Cowboy Bench', position: 'WR' }], // rostered but not a starter
   ]);
 
   stubFetch((url) => {
@@ -143,8 +161,15 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
       { roster_id: 1, owner_id: 'u1' },
       { roster_id: 2, owner_id: 'u2' },
     ]);
+    // players_points is the per-player map the detail drawer reads, riding
+    // along on the very response this call already makes. Roster 2
+    // deliberately has none, pinning the degrade path: no map means null
+    // points, never 0.
     if (url.includes('/matchups/1')) return okJson([
-      { roster_id: 1, points: 10, matchup_id: 1, starters: ['100'], players: ['100', '102'] },
+      {
+        roster_id: 1, points: 10, matchup_id: 1, starters: ['100'], players: ['100', '102'],
+        players_points: { 100: 10, 102: 4.5 },
+      },
       { roster_id: 2, points: 8, matchup_id: 1, starters: ['101'], players: ['101'] },
     ]);
     throw new Error(`unexpected Sleeper URL: ${url}`);
@@ -160,10 +185,14 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
   assert.equal(home.winProb + away.winProb, 100);
   assert.deepEqual(
     home.players,
-    [{ name: 'Cowboy Starter', secondsRemaining: 900 }],
+    [{ name: 'Cowboy Starter', secondsRemaining: 900, position: 'RB', team: 'DAL', points: 10 }],
     'only the roster\'s own `starters` list feeds the per-player breakdown, same as minutesRemaining'
   );
-  assert.deepEqual(away.players, [{ name: 'Eagle Starter', secondsRemaining: 3600 }]);
+  assert.deepEqual(
+    away.players,
+    [{ name: 'Eagle Starter', secondsRemaining: 3600, position: 'QB', team: 'PHI', points: null }],
+    'no players_points on this roster means null points, not a fabricated 0'
+  );
 }
 
 console.log('test-espn-sleeper-live-time.mjs OK');
