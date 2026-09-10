@@ -1,0 +1,69 @@
+name: Probe Live Scoring Players (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here, the
+# same rule every other manual workflow in this repo follows.
+#
+# Answers what each provider carries at the PLAYER level on the live-scoring
+# response the Scoring tab already fetches — above all, whether that entry
+# carries the player's own points so far this week. That single field is what
+# the per-matchup detail drawer is about, and the bet worth confirming before
+# trusting it is that all three providers already ship it in a response we pay
+# for anyway, making the drawer cost zero extra per-league requests. See
+# scripts/probe-live-scoring-players.mjs for the full rationale, including the
+# lineupSlotId question ESPN has never been probed on.
+#
+# Run this against a week whose games have actually started — every points
+# field reads 0 before kickoff, which cannot distinguish "the field is there
+# and the game hasn't started" from "the field does not exist".
+#
+# Also dumps the public NFL scoreboard's own schedule fields and every team
+# abbreviation it publishes — the join key behind the drawer's
+# "@PIT Sun 12:00 PM" line, and the thing NFL_TEAM_ALIASES in providers.mjs
+# has to keep covering as three providers spell teams three ways.
+#
+# Read-only: MFL TYPE=liveScoring, ESPN mScoreboard/mTeam/mRoster, Sleeper
+# league + matchups, and the public NFL scoreboard. Nothing is written
+# anywhere.
+on:
+  workflow_dispatch:
+    inputs:
+      mfl_league_id:
+        description: 'MFL league ID to probe (blank to skip MFL)'
+        required: false
+        default: '26696'
+      espn_league_id:
+        description: 'ESPN league ID to probe (blank to skip ESPN)'
+        required: false
+        default: '421871710'
+      sleeper_league_id:
+        description: 'Sleeper league ID to probe (blank to skip Sleeper)'
+        required: false
+        default: '1367867592919760896'
+      week:
+        description: 'Week to probe — use one whose games have started'
+        required: false
+        default: '1'
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Dump per-player live-scoring shapes for all three providers
+        env:
+          MFL_USERNAME: ${{ secrets.MFL_USERNAME }}
+          MFL_PASSWORD: ${{ secrets.MFL_PASSWORD }}
+          ESPN_S2: ${{ secrets.ESPN_S2 }}
+          ESPN_SWID: ${{ secrets.ESPN_SWID }}
+          PROBE_MFL_LEAGUE_ID: ${{ inputs.mfl_league_id }}
+          PROBE_ESPN_LEAGUE_ID: ${{ inputs.espn_league_id }}
+          PROBE_SLEEPER_LEAGUE_ID: ${{ inputs.sleeper_league_id }}
+          PROBE_WEEK: ${{ inputs.week }}
+        run: node scripts/probe-live-scoring-players.mjs

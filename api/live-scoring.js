@@ -14,9 +14,11 @@ import {
   mflLogin,
   fetchMflFranchiseNames,
   fetchScoring,
+  loadPlayerMap,
   fetchEspnScoring,
   fetchSleeperScoring,
-  fetchNflGameClocks,
+  fetchNflGames,
+  gameClocksFromGames,
   loadSleeperPlayerMap,
   setMflRequestInterval,
   currentNflWeek,
@@ -52,6 +54,8 @@ const cache = {
   mflNamesAt: new Map(), // leagueId -> timestamp
   sleeperPlayerMap: null,
   sleeperPlayerMapAt: 0,
+  mflPlayerMap: null, // loadPlayerMap's id -> { name, position, team }
+  mflPlayerMapAt: 0,
   nflWeek: null,
   nflWeekAt: 0,
   projections: null, // fetchProjections' index: { byMflId, byName, meta }
@@ -70,6 +74,20 @@ const NAMES_TTL_MS = 60 * 60 * 1000; // 1 hour
 // unauthenticated request shared across every ESPN/Sleeper league in that
 // poll — not one per league.
 const SLEEPER_PLAYER_MAP_TTL_MS = 60 * 60 * 1000; // 1 hour
+// MFL's own global player list, for the Scoring tab's detail drawer — it
+// needs a name/position beside each starter, and MFL's liveScoring response
+// identifies players by id alone.
+//
+// Same TTL and same reasoning as the Sleeper map above: names, positions and
+// NFL teams barely move within a week, so this is cached hard. What makes it
+// worth caching harder than anything else in this file is its shape — it is
+// ONE GLOBAL request (TYPE=players, every player in the league universe, a
+// multi-megabyte response), not one per league, so a warm instance pays it
+// once and every MFL league in every later poll reads it for free. It is
+// also the only MFL request in this file that is NOT league-scoped, which is
+// why it sits outside the Promise.allSettled fan-out below rather than
+// inside it.
+const MFL_PLAYER_MAP_TTL_MS = 60 * 60 * 1000; // 1 hour
 // The current NFL week changes at most once a week — 30 minutes is
 // generous rather than measured, same caveat as every other interval in
 // this file. currentNflWeek() itself is a public, unauthenticated Sleeper
@@ -92,6 +110,26 @@ async function getSleeperPlayerMap() {
   cache.sleeperPlayerMap = await loadSleeperPlayerMap();
   cache.sleeperPlayerMapAt = Date.now();
   return cache.sleeperPlayerMap;
+}
+
+// Returns null (never throws) on failure — a missing player map costs the
+// drawer its names and positions (it falls back to showing the raw MFL id),
+// but must never cost the whole poll its actual scores. Same degrade-not-fail
+// posture as getProjections below.
+async function getMflPlayerMap(cookie) {
+  const age = Date.now() - cache.mflPlayerMapAt;
+  if (cache.mflPlayerMap && age < MFL_PLAYER_MAP_TTL_MS) {
+    return cache.mflPlayerMap;
+  }
+  try {
+    cache.mflPlayerMap = await loadPlayerMap(cookie);
+    cache.mflPlayerMapAt = Date.now();
+  } catch {
+    // Leave whatever was cached (possibly null) in place and don't stamp the
+    // timestamp, so the next poll retries rather than waiting out a full TTL
+    // on a failure.
+  }
+  return cache.mflPlayerMap;
 }
 
 async function getCurrentNflWeek() {
@@ -260,16 +298,35 @@ export default async function handler(req, res) {
     mflLoginError = err.message;
   }
 
+  // The MFL player map, once per poll and shared across every MFL league —
+  // never inside the fan-out below (it is a global, non-league-scoped
+  // request; see MFL_PLAYER_MAP_TTL_MS). Skipped entirely when the login
+  // failed or no MFL league is in play, so an all-ESPN/Sleeper config never
+  // pays for it. Null on failure — see getMflPlayerMap.
+  const anyMflLeague = leagues.some((l) => hasLiveScoring(l) && (!l.provider || l.provider === 'mfl'));
+  let mflPlayerMap = null;
+  if (mflCookie && anyMflLeague) {
+    mflPlayerMap = await getMflPlayerMap(mflCookie);
+  }
+
   // One shared fetch of the public NFL scoreboard per poll, not one per
   // league — see fetchNflGameClocks' own comment. A failure here must not
   // cost any ESPN/Sleeper league its actual score, so this degrades to an
   // empty map (every minutesRemaining/winProb comes back 0/undefined for
   // this poll) rather than rejecting.
+  let nflGames = new Map();
   let nflClocks = new Map();
   try {
-    nflClocks = await fetchNflGameClocks();
+    // fetchNflGames is the richer read of the same single scoreboard request
+    // fetchNflGameClocks used to make — the clocks are projected out of it
+    // (gameClocksFromGames) rather than fetched again, so the drawer's
+    // opponent/kickoff line costs nothing beyond what this poll already paid.
+    nflGames = await fetchNflGames();
+    nflClocks = gameClocksFromGames(nflGames);
   } catch {
-    // degrade silently — see comment above.
+    // degrade silently — see comment above. An empty map costs every
+    // ESPN/Sleeper league its minutesRemaining/winProb for this poll and the
+    // drawer its game line; neither is worth failing the scores over.
   }
 
   // Projections are an enrichment on top of the win-probability estimate,
@@ -310,7 +367,7 @@ export default async function handler(req, res) {
         }
         const names = await getMflNames(league, mflCookie);
         const projectPlayer = makeProjectPlayer(projections, 'mfl', league.scoring);
-        const scoring = await fetchScoring(league, mflCookie, names, projectPlayer);
+        const scoring = await fetchScoring(league, mflCookie, names, projectPlayer, mflPlayerMap);
         return { id: league.id, name: league.name, scoring, scoringError: null };
       })
   );
@@ -325,6 +382,12 @@ export default async function handler(req, res) {
 
   res.status(200).json({
     generatedAt: new Date().toISOString(),
+    // The NFL schedule, once per response rather than stamped onto each of
+    // the ~1600 starters a poll covers. The Scoring tab's detail drawer joins
+    // it by the `team` already on every player, and the map is keyed under
+    // every provider's spelling of each team (see NFL_TEAM_ALIASES) so that
+    // join is a plain lookup with nothing to normalize. ~40 keys total.
+    games: Object.fromEntries(nflGames),
     leagues: leaguesOut,
   });
 }

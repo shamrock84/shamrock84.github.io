@@ -1703,6 +1703,126 @@
 			font-size: 0.72rem;
 			margin-top: 0.1rem;
 		}
+		/* The per-matchup detail drawer: each pill's own starter-by-starter
+		   breakdown, opened by the toggle strip at its foot. Modelled on
+		   ESPN's live scoreboard — the two teams side by side with the
+		   position between them — minus the pictures, the logos and the
+		   repeated team totals, which the pill above already carries.
+		
+		   Inside the pill's border rather than a sibling below it: the drawer
+		   belongs to that one matchup, and a pill that grew a detached panel
+		   underneath would read as a third team in the pill. Everything here
+		   is therefore separated from the rows above by the same 1px
+		   --border the two team rows already use to divide themselves. */
+		.scoring-detail-toggle {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 0.3rem;
+			width: 100%;
+			border: none;
+			border-top: 1px solid var(--border);
+			background: none;
+			color: var(--muted);
+			font: inherit;
+			font-size: 0.7rem;
+			text-transform: uppercase;
+			letter-spacing: 0.04em;
+			padding: 0.3rem 0.7rem;
+			cursor: pointer;
+			/* The strip spans the pill's full width for the same reason
+			   makeCollapsible uses a whole heading as its target: a
+			   mis-aimed tap on a phone still opens the thing. */
+		}
+		.scoring-detail-toggle:hover { color: var(--text); }
+		.scoring-detail-chevron {
+			display: inline-block;
+			font-size: 0.85em;
+			transition: transform 0.15s ease;
+		}
+		.scoring-detail-open .scoring-detail-chevron {
+			transform: rotate(180deg);
+		}
+		.scoring-detail-body {
+			border-top: 1px solid var(--border);
+			padding: 0.35rem 0;
+		}
+		/* One grid, not two stacked lists — the whole point is that a
+		   starter sits opposite the starter they are being compared with, so
+		   the two sides must share column tracks. The 1fr side columns and
+		   auto middle keep the position label hugging the centre while both
+		   names get equal room; the points columns are min-content so a
+		   long name never pushes a score off the row. */
+		.scoring-detail-row {
+			display: grid;
+			grid-template-columns: 1fr auto auto auto 1fr;
+			align-items: center;
+			/* Tight on purpose: the three middle columns are fixed, so every
+			   rem spent here comes straight out of the two name columns,
+			   which are what wrap first in a ~330px card. Measured, not
+			   guessed: at these values a name column gets ~103px at phone
+			   width, against the ~97px the longest game line
+			   ("@NYG Sun 12:00 PM") needs to stay on one line. */
+			gap: 0.25rem;
+			padding: 0.2rem 0.4rem;
+			font-size: 0.78rem;
+		}
+		.scoring-detail-name {
+			min-width: 0;
+			overflow-wrap: anywhere;
+		}
+		.scoring-detail-name.right { text-align: right; }
+		/* The player's own NFL game, under their name — same muted sub-line
+		   shape as .scoring-matchup-meta above it and .injury-detail
+		   elsewhere, since this is routine scheduling context rather than
+		   anything needing attention. Mirrored to the right on that side so
+		   it stays tucked under the name it belongs to. */
+		.scoring-detail-game {
+			color: var(--muted);
+			font-size: 0.62rem;
+			margin-top: 0.05rem;
+			/* Deliberately NOT white-space: nowrap. The name cells are
+			   `1fr` tracks carrying `min-width: 0` (so a long name can't
+			   push the grid wider than the card), which means a nowrap
+			   child is free to overrun its own column — and on the
+			   right-hand side that overrun leaves the card entirely and
+			   gets clipped, so "@NYG Sun 7:20 PM" renders as
+			   "@NYG Sun 7:20 P". Wrapping at the spaces costs a second
+			   line on the narrowest cards and loses nothing. */
+		}
+		.scoring-detail-game.right { text-align: right; }
+		/* The position sits in its own centre column, styled like the
+		   .scoring-matchup-header labels above it — it is a column heading
+		   that happens to repeat per row, not data about either player. */
+		.scoring-detail-pos {
+			color: var(--muted);
+			font-size: 0.65rem;
+			text-transform: uppercase;
+			letter-spacing: 0.03em;
+			min-width: 1.7rem;
+			text-align: center;
+		}
+		.scoring-detail-pts {
+			font-variant-numeric: tabular-nums;
+			/* A FLOOR, not a cap — this is an `auto` grid track, so an
+			   unusually long score (a defense clearing 100) still grows the
+			   column and takes the room from the 1fr name tracks. Sized to
+			   the ordinary two-decimal case so the common row doesn't
+			   reserve a digit's worth of width the names need more. */
+			min-width: 2rem;
+		}
+		.scoring-detail-pts.left { text-align: right; }
+		/* A null points value renders as this dash rather than 0.0 — see
+		   mflLiveStarters' own comment on why a missing field must not be
+		   dressed up as a real zero. Same muted treatment as an empty side
+		   of an unpaired position row. */
+		.scoring-detail-pts.empty,
+		.scoring-detail-name.empty { color: var(--muted); }
+		.scoring-detail-empty {
+			color: var(--muted);
+			font-size: 0.75rem;
+			padding: 0.3rem 0.7rem;
+		}
 		table.standings th:not(:first-child),
 		table.standings td:not(:first-child) {
 			text-align: right;
@@ -5915,6 +6035,25 @@
 						row.appendChild(el('span', { text: t.score }));
 						pill.appendChild(row);
 					});
+					// The starter-by-starter drawer, but only for a real
+					// head-to-head pair and only when logged in.
+					//
+					// Login-gated for the same reason the ECR column and the
+					// lineup checkboxes are (see isLoggedIn's own comment and
+					// CLAUDE.md's note that a card reading roster or lineup
+					// data gets gated the same way): this is every franchise's
+					// current lineup, which is a step past the team-level
+					// scores the pill itself shows. The pill and its scores
+					// stay visible either way, so a logged-out visitor loses
+					// the detail, not the card.
+					//
+					// A lone team (a bye week, or an odd team count) gets no
+					// drawer at all — there is no opposing column to lay
+					// theirs against, and a one-sided grid would be a
+					// different card wearing this one's layout.
+					if (group.length === 2 && isLoggedIn()) {
+						appendMatchupDetail(pill, league, group);
+					}
 					pills.appendChild(pill);
 				});
 				card.appendChild(pills);
@@ -5971,6 +6110,324 @@
 			if (t.minutesRemaining != null) parts.push(`${t.minutesRemaining} min left`);
 			if (t.winProb != null) parts.push(`Win ${t.winProb}%`);
 			return parts.join(' · ');
+		}
+
+		// --- Scoring tab: the per-matchup detail drawer ---
+		//
+		// Each matchup pill can open a starter-by-starter breakdown of the two
+		// scores it shows, laid out the way ESPN's own live scoreboard does it:
+		// the two teams side by side with the position between them. No
+		// pictures, no logos, and no repeat of the team totals — the pill
+		// directly above the drawer already carries those.
+		//
+		// The data is `t.players[]` off the live-scoring response, which every
+		// provider now fills with { name, position, team, points } (see
+		// mflLiveStarters / espnTeamLiveStarters / sleeperTeamLiveStarters).
+		// That array is LIVE-ONLY: scripts/fetch-rosters.mjs strips it before
+		// writing data/rosters.json (see stripScoringPlayers there for the
+		// page-load budget reasoning), so a drawer opened before the first
+		// api/live-scoring.js poll answers has nothing to show and says so
+		// rather than rendering an empty grid.
+
+		// The drawer defaults CLOSED — the opposite polarity from every other
+		// collapse on this page, all of which default open and store "this one
+		// is collapsed". So this stores "this one is OPEN" instead, in its own
+		// namespace, and absence means closed: a drawer nobody ever opened
+		// costs nothing in storage. Thin wrappers rather than a second copy of
+		// isCardCollapsed's try/catch machinery, which already answers exactly
+		// "is '1' stored at this key" and is polarity-agnostic about what that
+		// means.
+		//
+		// Storing it AT ALL is what makes the drawer usable: refreshLiveScoring
+		// tears down and rebuilds every Scoring card on each ~30s poll (see
+		// rerenderScoringCards), so an open drawer held only in the DOM would
+		// snap shut under the reader every half minute. The key includes the
+		// matchup's own franchise ids (see matchupDetailKey), so it also
+		// invalidates by itself when next week's pairings change rather than
+		// re-opening on a matchup the reader never asked about.
+		const SCORING_DETAIL_NS = 'myfflScoringDetailOpen';
+		function isScoringDetailOpen(key) {
+			return isCardCollapsed(key, SCORING_DETAIL_NS);
+		}
+		function setScoringDetailOpen(key, open) {
+			setCardCollapsed(key, open, SCORING_DETAIL_NS);
+		}
+
+		// The NFL schedule for the current poll, keyed by team abbreviation —
+		// set from api/live-scoring.js's `games` (see its own comment for why
+		// it rides once per response rather than being stamped onto each of
+		// the ~1600 starters a poll covers). Empty until the first poll
+		// answers, which is exactly when the drawer has no starters to put a
+		// game line under anyway.
+		//
+		// The map arrives keyed under EVERY provider's spelling of each team
+		// (MFL's LVR alongside the scoreboard's LV), so this is a plain
+		// lookup on the `team` already sitting on the player — nothing to
+		// normalize here, and no alias table duplicated across the sync
+		// boundary to drift.
+		let liveGames = {};
+
+		// "Joe Burrow" -> "J. Burrow". The drawer puts two names on one row
+		// inside a ~330px card, and the surname is what identifies a player at
+		// a glance; the given name is what wraps the row onto a second line.
+		//
+		// Two things are deliberately left alone:
+		//   * A team defense. Providers name these completely differently —
+		//     MFL says "Baltimore Ravens", ESPN says "Eagles D/ST" — and
+		//     neither has a first name to abbreviate. "B. Ravens" and
+		//     "E. D/ST" are both nonsense, so `Def` is skipped outright.
+		//   * A given name that is ALREADY initials ("A.J. Brown"). Cutting it
+		//     to "A. Brown" would drop information rather than save space,
+		//     since it is not the part making the row long.
+		// Everything after the first token is kept whole, which is what keeps
+		// a generational suffix ("J. Cook III") and a multi-part surname
+		// ("A. St. Brown") intact.
+		function abbreviatePlayerName(name, position) {
+			if (!name) return '';
+			if (String(position || '').toLowerCase() === 'def' || /D\/ST/i.test(name)) return name;
+			const parts = String(name).trim().split(/\s+/);
+			if (parts.length < 2) return name;
+			if (parts[0].includes('.')) return name;
+			return `${parts[0][0]}. ${parts.slice(1).join(' ')}`;
+		}
+
+		// "@PIT Sun 12:00 PM" — the player's own NFL game, the way ESPN's live
+		// scoreboard shows it. `@` means away; a home game is the bare
+		// opponent code, matching ESPN's own convention.
+		//
+		// The kickoff time is formatted HERE, never on the server: the Vercel
+		// function runs in UTC, so a "Sun 12:00 PM" built there would be wrong
+		// for whoever is reading it. What crosses the wire is the scoreboard's
+		// ISO timestamp (see fetchNflGames), turned into local time by the
+		// viewer's own browser.
+		//
+		// Once a game is underway the kickoff time stops being the useful
+		// fact, so the scoreboard's own status string takes over — "4:35 -
+		// 1st" while in progress, "Final" once over (real shapes, confirmed
+		// by probe-live-scoring-players.yml against a live game). Used
+		// verbatim rather than rebuilt from period and clock, which would
+		// mean reinventing how it words halftime and overtime.
+		// Returns null for a player on a bye or otherwise not in the map, and
+		// the caller omits the line entirely rather than printing an empty one.
+		function playerGameLine(team) {
+			const game = team ? liveGames[team] : null;
+			if (!game) return null;
+			const side = game.opponent ? `${game.isHome ? '' : '@'}${game.opponent}` : '';
+			let when = '';
+			if (game.state === 'pre') {
+				const at = game.kickoff ? new Date(game.kickoff) : null;
+				if (at && !Number.isNaN(at.getTime())) {
+					// Two calls rather than one toLocaleString, which puts a
+					// comma between the weekday and the time in most locales.
+					when = `${at.toLocaleDateString(undefined, { weekday: 'short' })} ${at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
+				}
+			} else {
+				when = game.detail || '';
+			}
+			// The time is made atomic with non-breaking spaces so the only
+			// place this line may break is between the opponent and the
+			// when — "@HOU Sun 12:00 PM" becomes "@HOU" over
+			// "Sun 12:00 PM" rather than stranding a lone "PM" on its own
+			// line, which is what a plain wrap does in the handful of
+			// pixels the widest combination overruns by on a desktop-width
+			// card. Locale-agnostic: a 24-hour locale simply has fewer
+			// spaces to replace, and a live status string ("4:35 - 1st")
+			// gets the same treatment for the same reason.
+			const line = [side, when.replace(/\s+/g, '\u00a0')].filter(Boolean).join(' ');
+			return line || null;
+		}
+
+		// Stable across the 30s re-render, distinct per matchup, and naturally
+		// different once the week's pairings change — the franchise ids are
+		// sorted so the same two teams key identically regardless of which one
+		// the score sort put on top.
+		function matchupDetailKey(league, group) {
+			return `${league.id}:${group.map((t) => t.franchiseId).sort().join('v')}`;
+		}
+
+		// Pairs the two teams' starters into rows aligned by POSITION.
+		//
+		// ESPN aligns its own scoreboard by lineup slot, which this
+		// deliberately cannot: no provider here hands over a slot label the
+		// other two could be matched against. Sleeper's `starters` array is
+		// slot-ordered and ESPN's entries carry a lineupSlotId, but this
+		// project knows only two of ESPN's slot values (bench and IR) and MFL
+		// supplies nothing of the kind — see espnTeamLiveStarters' own comment.
+		// Position is the one axis all three agree on.
+		//
+		// Each position group gets as many rows as the DEEPER side has, with
+		// the shallower side padding out with a blank. That's what keeps a
+		// flex difference legible instead of silently shifting every row
+		// below it out of alignment: a team starting three WRs against one
+		// starting two WRs and an extra TE shows that third WR opposite a
+		// gap, which is the real difference between the two lineups.
+		//
+		// Order within a group is left exactly as the provider gave it — the
+		// manager's own lineup order where the provider has one. Re-sorting by
+		// points would pair "their best WR" against "your best WR", which
+		// reads as a matchup the lineup didn't actually set.
+		function pairStartersByPosition(left, right) {
+			const posOf = (p) => p.position || '?';
+			// Positions in POSITION_ORDER order, but only the ones actually
+			// present, and with anything unrecognised (an IDP league, or a
+			// provider position this page's shorter list doesn't carry) kept
+			// rather than dropped — positionRank sends those to one shared
+			// rank at the end, so they group together at the bottom instead of
+			// vanishing from a drawer that claims to show the whole lineup.
+			const groups = [];
+			for (const p of [...(left || []), ...(right || [])]) {
+				if (!groups.includes(posOf(p))) groups.push(posOf(p));
+			}
+			groups.sort((a, b) => positionRank(a) - positionRank(b));
+			const rows = [];
+			for (const pos of groups) {
+				const l = (left || []).filter((p) => posOf(p) === pos);
+				const r = (right || []).filter((p) => posOf(p) === pos);
+				for (let i = 0; i < Math.max(l.length, r.length); i++) {
+					rows.push({ position: pos, left: l[i] || null, right: r[i] || null });
+				}
+			}
+			return rows;
+		}
+
+		// One side of one drawer row. A null player is the padding described in
+		// pairStartersByPosition — it still occupies its grid cells so the
+		// centre position column stays centred, it just has nothing in them.
+		function appendDetailSide(row, player, side) {
+			const nameCell = el('div', { class: `scoring-detail-name ${side}` });
+			const ptsCell = el('div', { class: `scoring-detail-pts ${side}` });
+			if (!player) {
+				nameCell.classList.add('empty');
+				ptsCell.classList.add('empty');
+				// U+2014 em dash: this side of the position simply has no
+				// starter, which is a different fact from a starter whose
+				// points aren't known yet (the en dash below).
+				ptsCell.textContent = '—';
+			} else {
+				// A name the provider couldn't resolve falls back to the raw
+				// id rather than an empty cell — that happens for MFL when
+				// the global player map didn't reach the poll (see
+				// getMflPlayerMap), and an id is at least something to look up.
+				const label = player.name
+					? abbreviatePlayerName(player.name, player.position)
+					: `#${player.id || '?'}`;
+				const line = el('div');
+				line.appendChild(document.createTextNode(label));
+				// The NFL team as a suffix, never its own column — the same
+				// rule every other table that names a player follows, and the
+				// reason this grid fits on a phone at all.
+				if (player.team) appendTeamSuffix(line, player.team);
+				nameCell.appendChild(line);
+				// The player's own game as a sub-line under the name, the way
+				// ESPN's scoreboard shows it. Absent for anyone on a bye, or
+				// whenever the scoreboard didn't reach this poll — omitted
+				// rather than printed empty, same as scoringMetaLine.
+				const game = playerGameLine(player.team);
+				if (game) {
+					nameCell.appendChild(el('div', { class: `scoring-detail-game ${side}`, text: game }));
+				}
+				if (player.points == null) {
+					// Not yet known — the provider gave no points field for
+					// this player. Never shown as 0.0, which would claim the
+					// player played and scored nothing. ESPN's own scoreboard
+					// shows exactly this for a game that hasn't started.
+					ptsCell.classList.add('empty');
+					ptsCell.textContent = '–';
+				} else {
+					// Two decimals, matching the team score in the pill row
+					// directly above — at one decimal the column visibly
+					// fails to sum to the total it is breaking down, which
+					// is the first thing a manager checks a drawer like this
+					// against.
+					ptsCell.textContent = Number(player.points).toFixed(2);
+				}
+			}
+			// Left side reads name-then-points inward toward the centre
+			// column; right side mirrors it, points-then-name.
+			if (side === 'left') {
+				row.appendChild(nameCell);
+				row.appendChild(ptsCell);
+			} else {
+				row.appendChild(ptsCell);
+				row.appendChild(nameCell);
+			}
+		}
+
+		// Builds the toggle strip and the drawer body, and appends both into
+		// the pill. `group` is the same score-sorted array of teams the pill's
+		// own rows were rendered from, so left/right here match top/bottom
+		// there — the reader's eye carries straight down from a team's row
+		// into that team's column.
+		function appendMatchupDetail(pill, league, group) {
+			const key = matchupDetailKey(league, group);
+			const open = isScoringDetailOpen(key);
+
+			const body = el('div', { class: 'scoring-detail-body' });
+
+			// Filled on demand, not up front. Every Scoring card for every
+			// league is built on each ~30s poll (rerenderScoringCards, and
+			// updateVisibility only *hides* the ones the sub-tabs filter
+			// out), so eagerly rendering ~18 starter rows per matchup across
+			// every league would churn a few thousand DOM nodes every half
+			// minute to keep almost all of them hidden. `filled` guards the
+			// re-open case within a single render; the next poll's teardown
+			// resets it along with everything else.
+			let filled = false;
+			const fill = () => {
+				if (filled) return;
+				filled = true;
+				const rows = pairStartersByPosition(group[0]?.players, group[1]?.players);
+				if (rows.length === 0) {
+					// Either the live poll hasn't answered yet (the snapshot
+					// carries no players[] at all — see stripScoringPlayers)
+					// or this provider returned a matchup with no starters
+					// set. Saying so beats an empty grid, which reads as a
+					// rendering bug rather than as missing data.
+					body.appendChild(el('div', {
+						class: 'scoring-detail-empty',
+						text: 'No starter detail yet — waiting on the next live update.',
+					}));
+					return;
+				}
+				rows.forEach((r) => {
+					const row = el('div', { class: 'scoring-detail-row' });
+					appendDetailSide(row, r.left, 'left');
+					row.appendChild(el('div', { class: 'scoring-detail-pos', text: r.position }));
+					appendDetailSide(row, r.right, 'right');
+					body.appendChild(row);
+				});
+			};
+
+			const chevron = el('span', { class: 'scoring-detail-chevron', 'aria-hidden': 'true', text: '▾' });
+			const label = el('span', { text: open ? 'Hide detail' : 'Show detail' });
+			const toggle = el('button', {
+				type: 'button',
+				class: 'scoring-detail-toggle',
+				'aria-expanded': String(open),
+			});
+			toggle.appendChild(chevron);
+			toggle.appendChild(label);
+
+			// A drawer the reader left open stays open across the poll's
+			// teardown, so this render has to fill it immediately.
+			body.hidden = !open;
+			if (open) {
+				pill.classList.add('scoring-detail-open');
+				fill();
+			}
+
+			toggle.addEventListener('click', () => {
+				const next = body.hidden;
+				if (next) fill();
+				body.hidden = !next;
+				pill.classList.toggle('scoring-detail-open', next);
+				toggle.setAttribute('aria-expanded', String(next));
+				label.textContent = next ? 'Hide detail' : 'Show detail';
+				setScoringDetailOpen(key, next);
+			});
+
+			pill.appendChild(toggle);
+			pill.appendChild(body);
 		}
 
 		// Exposure: how many of your leagues (within this one group — exposure
@@ -9763,6 +10220,9 @@
 				const res = await fetch(`${LIVE_SCORING_URL}?t=${Date.now()}`, { cache: 'no-store' });
 				if (!res.ok) throw new Error(`HTTP ${res.status}`);
 				const live = await res.json();
+				// Set before rerenderScoringCards below, which is what reads
+				// it (through playerGameLine) while building the drawers.
+				liveGames = live.games || {};
 				const byId = new Map((live.leagues || []).map((l) => [l.id, l]));
 
 				for (const league of pageData.leagues) {

@@ -1516,16 +1516,68 @@ function attachWinProbabilities(teams, matchups, projectPlayer) {
 // that's already a coarse stand-in (see estimateWinProbability's own
 // comment). A team with no game at all this week (a bye) is simply absent
 // from the map, which callers must treat as 0 remaining, same as "game over".
-export async function fetchNflGameClocks() {
+//
+// Three providers name the same NFL team differently, and this map is what
+// lets one scoreboard answer all three. MFL pads its codes to three letters
+// (GBP/JAC/KCC/LVR/NEP/NOS/SFO/TBB) where ESPN and Sleeper use the short
+// forms the scoreboard itself does; ESPN's own scoreboard has also been seen
+// to spell Washington WSH against the WAS in ESPN_PRO_TEAM_MAP. Rather than
+// normalize the player's team (which is DISPLAYED — see appendTeamSuffix's
+// rule that LVR from MFL is meant to sit beside LV from Sleeper), the games
+// map below is keyed under EVERY spelling of each team. A consumer then does
+// a plain lookup on whatever code its provider gave it, with nothing to
+// normalize and no shared constant to drift across the sync boundary.
+//
+// Entries are alias -> canonical, and the canonical side is whatever the
+// scoreboard uses. Deliberately no 'LA': it has meant both Rams and
+// Chargers, and a wrong join here would put a player in the wrong game,
+// which reads as perfectly plausible.
+const NFL_TEAM_ALIASES = {
+  GBP: 'GB', JAC: 'JAX', KCC: 'KC', LVR: 'LV', NEP: 'NE', NOS: 'NO', SFO: 'SF', TBB: 'TB',
+  WSH: 'WAS', WAS: 'WSH', ARZ: 'ARI', ARI: 'ARZ',
+};
+
+// Every spelling a given scoreboard abbreviation should answer to, itself
+// included. Both directions are covered because which side is canonical
+// depends on the provider asking — MFL says LVR and the scoreboard says LV,
+// but for Washington it has been the scoreboard carrying the odd spelling.
+function nflTeamKeys(abbr) {
+  const keys = new Set([abbr]);
+  for (const [alias, canonical] of Object.entries(NFL_TEAM_ALIASES)) {
+    if (canonical === abbr) keys.add(alias);
+    if (alias === abbr) keys.add(canonical);
+  }
+  return [...keys];
+}
+
+// One request, two views. This is the richer one: per NFL team, who they play,
+// when, and where the game currently stands — everything the Scoring tab's
+// detail drawer needs for its "@PIT Sun 12:00 PM" line, off the same public,
+// unauthenticated scoreboard fetchNflGameClocks was already making.
+//
+// `kickoff` crosses the wire as the scoreboard's own ISO timestamp and is
+// deliberately NOT formatted here: this runs on Vercel in UTC, so any
+// "Sun 12:00 PM" built server-side would be wrong for the person reading it.
+// The page formats it in the viewer's own timezone.
+//
+// `detail` is the scoreboard's own short status string, used verbatim rather
+// than rebuilt from period/clock — those two are already read below for
+// secondsRemaining, but turning them back into display text would mean
+// reinventing overtime, halftime and end-of-quarter wording the scoreboard
+// already words correctly. Its real shape, confirmed by
+// probe-live-scoring-players.yml against a live game: "4:35 - 1st" while in
+// progress (NOT "Q3 5:22", an earlier guess), "Final" once over.
+export async function fetchNflGames() {
   const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard');
   if (!res.ok) {
     throw new Error(`NFL scoreboard request failed (${res.status})`);
   }
   const data = await res.json();
-  const clocks = new Map();
+  const games = new Map();
   for (const event of data.events || []) {
-    const status = event.competitions?.[0]?.status;
-    const competitors = event.competitions?.[0]?.competitors || [];
+    const competition = event.competitions?.[0];
+    const status = competition?.status;
+    const competitors = competition?.competitors || [];
     const state = status?.type?.state;
     let secondsRemaining;
     if (state === 'post') {
@@ -1538,12 +1590,42 @@ export async function fetchNflGameClocks() {
       // 'pre', or anything unrecognized — treat as not yet started.
       secondsRemaining = 3600;
     }
+    const kickoff = competition?.date || event.date || null;
+    const detail = status?.type?.shortDetail || null;
     for (const c of competitors) {
       const abbr = c.team?.abbreviation;
-      if (abbr) clocks.set(abbr, secondsRemaining);
+      if (!abbr) continue;
+      // A competitor with no identifiable opponent still gets an entry —
+      // secondsRemaining is what the win-probability model needs and does
+      // not depend on knowing who the other side is. The opponent half just
+      // comes back null and the drawer omits that part of the line.
+      const other = competitors.find((o) => o !== c)?.team?.abbreviation || null;
+      const entry = {
+        opponent: other,
+        isHome: c.homeAway === 'home',
+        kickoff,
+        state: state || 'pre',
+        detail,
+        secondsRemaining,
+      };
+      for (const key of nflTeamKeys(abbr)) games.set(key, entry);
     }
   }
+  return games;
+}
+
+// Projects the games map down to what the win-probability model consumes:
+// team abbreviation -> seconds left in that team's game. Pure, so a caller
+// that already has the games map (api/live-scoring.js does) pays one request
+// for both rather than fetching the scoreboard twice.
+export function gameClocksFromGames(games) {
+  const clocks = new Map();
+  for (const [abbr, game] of games) clocks.set(abbr, game.secondsRemaining);
   return clocks;
+}
+
+export async function fetchNflGameClocks() {
+  return gameClocksFromGames(await fetchNflGames());
 }
 
 // Every currently-set starter on one franchise's liveScoring entry, for the
@@ -1555,19 +1637,52 @@ export async function fetchNflGameClocks() {
 // matchup's outcome. Object-or-array-or-absent, the same shape every other
 // MFL list export uses (see mflRosterPlayers). `id` is the same MFL
 // player-id space fetchProjections' `byMflId` already joins against.
-function mflLiveStarters(f) {
+//
+// Also carries what the Scoring tab's per-matchup detail drawer renders:
+// `name`/`position`/`team` (resolved through the optional `playerMap` from
+// loadPlayerMap — MFL's liveScoring response has ids and nothing else, so
+// without a map those come back null and the drawer falls back to showing
+// the raw id) and `points`, this player's own score so far this week.
+//
+// `points` is read defensively and lands null when the field is absent —
+// probe-live-scoring-players.yml is what confirms it against a live week,
+// and the drawer renders a null as "--" (exactly what ESPN's own live
+// scoreboard shows for a player whose game hasn't started). A missing
+// points field must degrade to a dash rather than a confident 0.0, which
+// would read as "played and scored nothing".
+function mflLiveStarters(f, playerMap) {
   const raw = f.players?.player;
   const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
   return list
     .filter((p) => String(p.status).toLowerCase() === 'starter')
-    .map((p) => ({ id: String(p.id), secondsRemaining: Number(p.gameSecondsRemaining ?? 0) }));
+    .map((p) => {
+      const info = playerMap?.get(String(p.id));
+      return {
+        id: String(p.id),
+        secondsRemaining: Number(p.gameSecondsRemaining ?? 0),
+        name: info?.name ?? null,
+        position: info?.position ?? null,
+        team: info?.team ?? null,
+        points: p.score == null || p.score === '' ? null : Number(p.score),
+      };
+    });
 }
 
 // projectPlayer is optional — see attachWinProbabilities' own comment for
 // what passing (or omitting) one does to the win-probability estimate.
 // MFL's starters carry `id`, the same MFL player-id space fetchProjections'
 // byMflId already joins against.
-export async function fetchScoring(league, cookie, nameById, projectPlayer) {
+//
+// playerMap (from loadPlayerMap) is also optional, and only the Scoring
+// tab's detail drawer needs it: MFL's liveScoring response identifies
+// players by id alone, so without a map each starter's name/position/team
+// come back null. Deliberately a parameter rather than fetched here —
+// loadPlayerMap is one big GLOBAL request (every player in the league
+// universe, not league-scoped), so it must be fetched once per run and
+// shared across every league, never once per fetchScoring call. The sync
+// already loads it for the roster pass; api/live-scoring.js caches it at
+// module level for the same reason it caches franchise names.
+export async function fetchScoring(league, cookie, nameById, projectPlayer, playerMap) {
   const [names, liveData] = await Promise.all([
     nameById ? Promise.resolve(nameById) : fetchMflFranchiseNames(league, cookie),
     mflGet(`/export?TYPE=liveScoring&L=${league.id}&JSON=1`, cookie, seasonOf(league)),
@@ -1604,7 +1719,7 @@ export async function fetchScoring(league, cookie, nameById, projectPlayer) {
     score: Number(f.score ?? 0),
     minutesRemaining: Math.round(Number(f.gameSecondsRemaining ?? 0) / 60),
     isMe: f.id === league.franchiseId,
-    players: mflLiveStarters(f),
+    players: mflLiveStarters(f, playerMap),
   }));
 
   attachWinProbabilities(teams, matchups, projectPlayer);
@@ -1885,6 +2000,24 @@ export async function fetchEspnStandings(league) {
 // flat per-minute rate. ESPN has no id space FantasyPros' projections join
 // against (see fetchProjections' byMflId/byName split), so name is what
 // travels here, same as fetchEspnLeagueRoster's own player list.
+//
+// Also carries what the Scoring tab's per-matchup detail drawer renders:
+// `position`/`team` off the same player object the name comes from, and
+// `points` — this player's own score so far this week, which ESPN puts on
+// playerPoolEntry.appliedStatTotal. That field is community-documented
+// rather than probed, which is why it is read defensively and lands null
+// when absent (probe-live-scoring-players.yml is what confirms it against a
+// live week). The drawer renders a null as "--", never a confident 0.0,
+// which would claim the player played and scored nothing.
+//
+// No slot label travels here. lineupSlotId IS on every entry, but this
+// project only knows two of its values — 20 (bench) and 21 (IR), both
+// community-documented and only the ones needed to answer "is this player
+// playing this week". Mapping the rest onto FLEX/WR-TE/etc. would be
+// guesswork of exactly the kind DEFAULT_POWER_SLOTS already stands in for
+// elsewhere, so the drawer groups by real `position` instead — which every
+// provider agrees on — and lets probe-live-scoring-players.yml's slot
+// histogram be the thing that eventually answers it off real data.
 function espnTeamLiveStarters(teamSide, clockMap) {
   const entries = teamSide?.rosterForCurrentScoringPeriod?.entries || [];
   let seconds = 0;
@@ -1895,7 +2028,14 @@ function espnTeamLiveStarters(teamSide, clockMap) {
     const abbr = ESPN_PRO_TEAM_MAP[p?.proTeamId];
     const secondsRemaining = clockMap.get(abbr) ?? 0;
     seconds += secondsRemaining;
-    players.push({ name: p?.fullName || '', secondsRemaining });
+    const points = e.playerPoolEntry?.appliedStatTotal;
+    players.push({
+      name: p?.fullName || '',
+      secondsRemaining,
+      position: ESPN_POSITION_MAP[p?.defaultPositionId] ?? null,
+      team: abbr ?? null,
+      points: points == null ? null : Number(points),
+    });
   }
   return { minutesRemaining: Math.round(seconds / 60), players };
 }
@@ -2208,14 +2348,38 @@ export async function fetchSleeperStandings(league) {
 // Also returns each starter's own name and remaining seconds — see
 // espnTeamLiveStarters' comment for why name, not id, is what the
 // remaining-points win-probability model joins Sleeper players against.
-function sleeperTeamLiveStarters(starterIds, playerMap, clockMap) {
+//
+// Also carries what the Scoring tab's per-matchup detail drawer renders:
+// `position`/`team` off the same playerMap entry the name comes from, and
+// `points` — this player's own score so far this week, read from the
+// `players_points` map that rides along on the very matchup response
+// fetchSleeperScoring already fetched (hence `pointsById` here, passed in
+// rather than fetched: it costs nothing extra). Read defensively, landing
+// null when the map or the key is absent, so the drawer shows "--" rather
+// than a confident 0.0 claiming the player played and scored nothing.
+//
+// Note Sleeper's `starters` array is slot-ORDERED (it lines up with the
+// league's own roster_positions), which is the one place a real slot label
+// would be free. It is deliberately not used: ESPN cannot supply the same
+// thing without guessing at lineupSlotId values this project has never
+// probed, and a drawer that labelled slots for one provider and positions
+// for another would be two different cards wearing one name. Position is
+// what all three agree on.
+function sleeperTeamLiveStarters(starterIds, playerMap, clockMap, pointsById) {
   let seconds = 0;
   const players = [];
   for (const id of starterIds || []) {
     const info = playerMap.get(String(id));
     const secondsRemaining = clockMap.get(info?.team) ?? 0;
     seconds += secondsRemaining;
-    players.push({ name: info?.name || '', secondsRemaining });
+    const points = pointsById?.[String(id)];
+    players.push({
+      name: info?.name || '',
+      secondsRemaining,
+      position: info?.position ?? null,
+      team: info?.team ?? null,
+      points: points == null ? null : Number(points),
+    });
   }
   return { minutesRemaining: Math.round(seconds / 60), players };
 }
@@ -2245,7 +2409,7 @@ export async function fetchSleeperScoring(league, clockMap, playerMap, projectPl
   }
 
   const teams = rawMatchups.map((m) => {
-    const live = sleeperTeamLiveStarters(m.starters, players, clocks);
+    const live = sleeperTeamLiveStarters(m.starters, players, clocks, m.players_points);
     return {
       franchiseId: String(m.roster_id),
       teamName: names.get(String(m.roster_id)) || `Team ${m.roster_id}`,

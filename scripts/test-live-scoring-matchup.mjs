@@ -91,14 +91,42 @@ const liveScoringResponse = {
 	assert.equal(me.teamName, 'My Team');
 	assert.equal(me.score, '12.40');
 	assert.equal(me.minutesRemaining, 540, '32400 seconds is 540 minutes');
+	// The nonstarter is excluded — only starters feed the remaining-points
+	// model, and only starters are what the Scoring tab's detail drawer
+	// renders.
+	//
+	// `points` comes off each player entry's own `score`, which the real
+	// captured response this fixture is trimmed from does carry (see the
+	// header above). '0.0' must survive as a real 0, not collapse to null:
+	// a starter whose game has begun and who has scored nothing is a
+	// different fact from one whose points aren't known, and the drawer
+	// renders the two differently.
+	//
+	// name/position/team are null here because no playerMap was passed —
+	// MFL's liveScoring response identifies players by id alone. The sync
+	// deliberately never passes one (it strips players[] before writing the
+	// snapshot); api/live-scoring.js does.
 	assert.deepEqual(
 		me.players,
 		[
-			{ id: '9001', secondsRemaining: 1800 },
-			{ id: '9002', secondsRemaining: 3600 },
+			{ id: '9001', secondsRemaining: 1800, name: null, position: null, team: null, points: 6.2 },
+			{ id: '9002', secondsRemaining: 3600, name: null, position: null, team: null, points: 0 },
 		],
 		'the nonstarter is excluded — only starters feed the remaining-points model'
 	);
+
+	// With a playerMap in hand, the same starters carry what the drawer
+	// needs beside each name.
+	{
+		const playerMap = new Map([['9001', { name: 'Real Name', position: 'WR', team: 'SEA' }]]);
+		const withNames = await fetchScoring(league, 'cookie', names, undefined, playerMap);
+		const mine = withNames.teams.find((t) => t.franchiseId === '0001');
+		assert.deepEqual(
+			mine.players[0],
+			{ id: '9001', secondsRemaining: 1800, name: 'Real Name', position: 'WR', team: 'SEA', points: 6.2 }
+		);
+		assert.equal(mine.players[1].name, null, 'a player the map does not cover still renders, name unresolved');
+	}
 
 	const teamD = result.teams.find((t) => t.franchiseId === '0008');
 	assert.equal(teamD.minutesRemaining, 480, '28800 seconds is 480 minutes');
