@@ -6202,9 +6202,11 @@
 		// viewer's own browser.
 		//
 		// Once a game is underway the kickoff time stops being the useful
-		// fact, so the scoreboard's own status string takes over ("Q3 5:22",
-		// "Final") — used verbatim rather than rebuilt from period and clock,
-		// which would mean reinventing how it words halftime and overtime.
+		// fact, so the scoreboard's own status string takes over — "4:35 -
+		// 1st" while in progress, "Final" once over (real shapes, confirmed
+		// by probe-live-scoring-players.yml against a live game). Used
+		// verbatim rather than rebuilt from period and clock, which would
+		// mean reinventing how it words halftime and overtime.
 		// Returns null for a player on a bye or otherwise not in the map, and
 		// the caller omits the line entirely rather than printing an empty one.
 		function playerGameLine(team) {
@@ -6229,8 +6231,8 @@
 			// line, which is what a plain wrap does in the handful of
 			// pixels the widest combination overruns by on a desktop-width
 			// card. Locale-agnostic: a 24-hour locale simply has fewer
-			// spaces to replace, and a status string ("Q3 5:22") gets the
-			// same treatment for the same reason.
+			// spaces to replace, and a live status string ("4:35 - 1st")
+			// gets the same treatment for the same reason.
 			const line = [side, when.replace(/\s+/g, '\u00a0')].filter(Boolean).join(' ');
 			return line || null;
 		}

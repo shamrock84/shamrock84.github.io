@@ -35,6 +35,68 @@
 // than a summary: the point is to see the actual key set, including keys
 // this file did not think to ask about.
 //
+// ===================================================================
+// RUN 1 — 2026-09-10, week 1, ~00:48 UTC. The only game underway was
+// SEA-NE (Thursday night), so most points read 0 legitimately. Every
+// open question came back answered:
+//
+//   MFL (league 26696)   `score` IS on every players.player entry.
+//     Union of player-entry keys: gameSecondsRemaining, id, score,
+//     status, updatedStats. All nine starters read score "0.0" — none
+//     of them were in the SEA-NE game, so 0 here is the real answer
+//     rather than a missing field. franchise.score 0.0 equalled the
+//     sum of its starters.
+//     NOTE, and it contradicts mflLiveStarters' inherited comment:
+//     this response carried ONLY starters — nine entries, zero
+//     nonstarters, on a dynasty roster that certainly has a bench. The
+//     status filter is still correct either way (it just no longer
+//     removes anything here), but "players.player carries the WHOLE
+//     roster" should not be relied on without re-checking.
+//
+//   ESPN (league 421871710)   playerPoolEntry.appliedStatTotal IS
+//     present, and live: Jaxon Smith-Njigba (SEA, the one game in
+//     progress) read 4.1 while every player yet to kick off read 0.
+//     player.defaultPositionId is present too.
+//     REAL DISCREPANCY WORTH KNOWING: that side's own totalPoints was
+//     0 at the same moment its starters summed to 4.10. ESPN's
+//     matchup-level total lags its own per-player numbers, so the
+//     drawer's column can legitimately not add up to the team score in
+//     the pill above it for an ESPN league mid-game. Not something
+//     this project can fix — both numbers are ESPN's.
+//     lineupSlotId histogram on a real 15-entry side:
+//       0:1 (QB)  2:2 (RB)  5:2 (WR)  16:1 (D/ST)  17:1 (K)
+//       20:7 (bench)  23:1 (FLEX)
+//     That confirms 20=bench, and gives real values for the rest for
+//     the first time — but the drawer still groups by `position`, since
+//     MFL supplies no slot at all and Sleeper's slots here were all
+//     FLEX (see below), so slots could not align the two sides anyway.
+//
+//   Sleeper (league 1367867592919760896)   BOTH players_points and
+//     starters_points are present, and `starters` is ordered against
+//     roster_positions. This particular league's roster_positions are
+//     8x FLEX + 2x SUPER_FLEX, which is its own argument for grouping
+//     the drawer by position rather than by slot: every slot label here
+//     would read "FLEX".
+//
+//   NFL scoreboard   competitions[0].date and status.type.shortDetail
+//     both present. TWO CORRECTIONS TO EARLIER GUESSES:
+//     * shortDetail for a live game is "4:35 - 1st", NOT "Q3 5:22".
+//       (detail is the longer "4:35 - 1st Quarter".) It is used
+//       verbatim, so nothing broke, but any comment or fixture written
+//       against the old guess was wrong.
+//     * the date has NO SECONDS — "2026-09-10T00:20Z". new Date()
+//       parses that fine (verified), so no special handling is needed.
+//     Every abbreviation published, all 32:
+//       ARI ATL BAL BUF CAR CHI CIN CLE DAL DEN DET GB HOU IND JAX KC
+//       LAC LAR LV MIA MIN NE NO NYG NYJ PHI PIT SEA SF TB TEN WSH
+//     NFL_TEAM_ALIASES in providers.mjs is confirmed COMPLETE against
+//     the codes real MFL roster data uses: GBP JAC KCC LVR NEP NOS SFO
+//     TBB all need their short form, and MFL's WAS needs the
+//     scoreboard's WSH — which this run did publish, so that alias is
+//     load-bearing, not defensive. ARZ never appeared (the scoreboard
+//     said ARI, same as MFL); that alias is unused but harmless.
+// ===================================================================
+//
 // Read-only. Run from the Actions tab (probe-live-scoring-players.yml).
 import {
   mflLogin,

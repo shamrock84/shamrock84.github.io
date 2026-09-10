@@ -1560,11 +1560,13 @@ function nflTeamKeys(abbr) {
 // "Sun 12:00 PM" built server-side would be wrong for the person reading it.
 // The page formats it in the viewer's own timezone.
 //
-// `detail` is the scoreboard's own short status string ("Q3 5:22", "Final"),
-// used verbatim rather than rebuilt from period/clock — those two are already
-// read below for secondsRemaining, but turning them back into display text
-// would mean reinventing overtime, halftime and end-of-quarter wording the
-// scoreboard already words correctly.
+// `detail` is the scoreboard's own short status string, used verbatim rather
+// than rebuilt from period/clock — those two are already read below for
+// secondsRemaining, but turning them back into display text would mean
+// reinventing overtime, halftime and end-of-quarter wording the scoreboard
+// already words correctly. Its real shape, confirmed by
+// probe-live-scoring-players.yml against a live game: "4:35 - 1st" while in
+// progress (NOT "Q3 5:22", an earlier guess), "Final" once over.
 export async function fetchNflGames() {
   const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard');
   if (!res.ok) {

@@ -446,8 +446,11 @@ function leagueWithMatchup() {
 	setLiveGames(ctx, {
 		CIN: { opponent: 'TB', isHome: true, kickoff, state: 'pre', detail: null, secondsRemaining: 3600 },
 		BUF: { opponent: 'HOU', isHome: false, kickoff, state: 'pre', detail: null, secondsRemaining: 3600 },
-		LV: { opponent: 'DEN', isHome: false, kickoff, state: 'in', detail: 'Q3 5:22', secondsRemaining: 1200 },
-		LVR: { opponent: 'DEN', isHome: false, kickoff, state: 'in', detail: 'Q3 5:22', secondsRemaining: 1200 },
+		// "4:35 - 1st" is the real shortDetail shape the scoreboard publishes
+		// for a live game (probe-live-scoring-players.yml), not the "Q3 5:22"
+		// this was first written against.
+		LV: { opponent: 'DEN', isHome: false, kickoff, state: 'in', detail: '4:35 - 1st', secondsRemaining: 1200 },
+		LVR: { opponent: 'DEN', isHome: false, kickoff, state: 'in', detail: '4:35 - 1st', secondsRemaining: 1200 },
 		SEA: { opponent: 'NE', isHome: true, kickoff, state: 'post', detail: 'Final', secondsRemaining: 0 },
 		NYG: { opponent: null, isHome: true, kickoff, state: 'pre', detail: null, secondsRemaining: 3600 },
 	});
@@ -468,7 +471,7 @@ function leagueWithMatchup() {
 
 	// Once a game is underway the kickoff time stops being the useful fact
 	// and the scoreboard's own status string takes over, verbatim.
-	assert.equal(line('LV'), '@DEN Q3 5:22');
+	assert.equal(line('LV'), '@DEN 4:35 - 1st');
 	assert.equal(line('SEA'), 'NE Final');
 
 	// THE join assertion: MFL pads its team codes, so the same player read

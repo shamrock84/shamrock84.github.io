@@ -95,7 +95,11 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
       {
         competitions: [{
           date: '2026-09-13T20:05:00Z',
-          status: { type: { state: 'in', shortDetail: 'Q3 5:22' }, period: 3, clock: 322 },
+          // The real shape probe-live-scoring-players.yml captured off a live
+          // game — "4:35 - 1st", not the "Q3 5:22" this was first written
+          // against. Used verbatim by fetchNflGames, so the fixture matching
+          // reality is the whole point.
+          status: { type: { state: 'in', shortDetail: '4:35 - 1st' }, period: 3, clock: 322 },
           competitors: [
             { team: { abbreviation: 'LV' }, homeAway: 'away' },
             { team: { abbreviation: 'DEN' }, homeAway: 'home' },
@@ -132,7 +136,7 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
   // State and the scoreboard's own status wording, used verbatim.
   assert.equal(games.get('CIN').state, 'pre');
   assert.equal(games.get('LV').state, 'in');
-  assert.equal(games.get('LV').detail, 'Q3 5:22');
+  assert.equal(games.get('LV').detail, '4:35 - 1st');
   assert.equal(games.get('WSH').detail, 'Final');
   // Clocks still ride along on the same entries.
   assert.equal(games.get('LV').secondsRemaining, 1222, 'Q3 with 5:22 left is one full quarter plus 322s');

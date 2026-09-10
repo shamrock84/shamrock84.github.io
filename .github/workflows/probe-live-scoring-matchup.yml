@@ -32,19 +32,10 @@ jobs:
         with:
           node-version: '20'
 
-      # TEMPORARY, reverted immediately after this run. A workflow_dispatch
-      # workflow can only be dispatched if it is registered on the DEFAULT
-      # branch, and probe-live-scoring-players.yml exists only on this
-      # feature branch — so this already-registered file is standing in as
-      # the launcher for it, on this branch only. main is untouched.
-      - name: Dump per-player live-scoring shapes (temporary stand-in)
+      - name: Dump liveScoring / league / weeklyResults shapes
         env:
           MFL_USERNAME: ${{ secrets.MFL_USERNAME }}
           MFL_PASSWORD: ${{ secrets.MFL_PASSWORD }}
-          ESPN_S2: ${{ secrets.ESPN_S2 }}
-          ESPN_SWID: ${{ secrets.ESPN_SWID }}
           PROBE_MFL_LEAGUE_ID: ${{ inputs.mfl_league_id }}
-          PROBE_ESPN_LEAGUE_ID: '421871710'
-          PROBE_SLEEPER_LEAGUE_ID: '1367867592919760896'
           PROBE_WEEK: ${{ inputs.week }}
-        run: node scripts/probe-live-scoring-players.mjs
+        run: node scripts/probe-live-scoring-matchup.mjs
