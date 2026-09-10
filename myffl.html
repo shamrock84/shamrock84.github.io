@@ -9854,7 +9854,13 @@
 						// show() — and focusing a hidden input is a no-op.
 						setTimeout(() => {
 							editText.focus();
-							editText.select();
+							// Cursor at the end, not select() — a full
+							// selection meant the very next keystroke (or a
+							// tap meant only to reposition the cursor)
+							// wiped the whole task text, which is exactly
+							// what you don't want when editing an existing
+							// one rather than starting fresh.
+							editText.setSelectionRange(editText.value.length, editText.value.length);
 						}, 0);
 					});
 				};
