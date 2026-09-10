@@ -213,7 +213,7 @@ Everything renders and behaves normally; only the calls that actually reach Verc
 
 The manager tracks bugs and site-enhancement ideas for Claude to act on in the Tasks card (`renderTasksCard` in `myffl.html`) rather than describing them fresh in every conversation. Two rules when asked to work through it:
 
-- **Pull the task list with `scripts/fetch-tasks.mjs` instead of asking the user to retype or paste it.** It reads the same shared store the page does (`api/plans.js`) and needs `SITE_PASSWORD` in the environment — see the script's own header for why it never filters by category itself.
+- **Pull the task list with `scripts/fetch-tasks.mjs` instead of asking the user to retype or paste it.** It reads the same shared store the page does (`api/plans.js`) and needs `SITE_PASSWORD` in the environment — see the script's own header for why it never filters by category itself. When the sandbox's network egress doesn't allow `shamrock84-github-io.vercel.app` (the usual case — see "Verifying changes"), dispatch `fetch-tasks.yml` instead: it runs the same script on a GitHub Actions runner using a `SITE_PASSWORD` repo secret and prints the result to the job log.
 - **Only act on tasks categorized `Bugs` or `Site Enhancement`.** The card is the manager's general-purpose task list, not a Claude inbox — other categories are there for reasons that have nothing to do with this codebase, and picking one up unasked would mean acting on an instruction the user never gave this session.
 
 ## Front-end conventions
