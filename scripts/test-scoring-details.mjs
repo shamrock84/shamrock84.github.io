@@ -402,6 +402,66 @@ function leagueWithMatchup() {
 	assert.match(names[1], /Someone/, 'a one-word name is left whole, not cut to an initial');
 }
 
+// A team defense's name is cut to its mascot ("Baltimore Ravens" ->
+// "Ravens", "Eagles D/ST" -> "Eagles") and still gets the same team-code
+// suffix every other starter gets — the two no longer say the same thing,
+// so unlike a full location name, the suffix isn't spending width on a
+// repeat.
+{
+	const ctx = makeContext(LOGGED_IN);
+	ctx.liveScoringAttempted = true;
+	const league = leagueWithMatchup();
+	league.scoring.teams[0].players = [
+		{ id: '111', name: 'Joe Burrow', position: 'QB', team: 'CIN', points: 18.4 },
+		{ id: '999', name: 'Philadelphia Eagles', position: 'Def', team: 'PHI', points: 6 },
+	];
+	league.scoring.teams[1].players = [
+		{ id: '333', name: 'Trevor Lawrence', position: 'QB', team: 'JAX', points: 0 },
+		// ESPN's own spelling — lands on the same mascot-only result as
+		// MFL's "Baltimore Ravens" above. (Position casing must match the
+		// other side's 'Def' here so pairStartersByPosition puts both
+		// defenses in one row; Sleeper's uppercase DEF is pinned separately
+		// in abbreviatePlayerName's own suite below.)
+		{ id: '998', name: 'Eagles D/ST', position: 'Def', team: 'PHI', points: 4 },
+	];
+	const card = ctx.renderScoringCard(league);
+	findAll(card, hasClass('scoring-detail-toggle'))[0].listeners.click[0]();
+	const body = findAll(card, hasClass('scoring-detail-body'))[0];
+	const rows = findAll(body, hasClass('scoring-detail-row'));
+	const cells = rows.map((r) => findAll(r, hasClass('scoring-detail-name')));
+	const suffixes = (cell) => findAll(cell, hasClass('team-suffix')).map(fullText);
+
+	// The QB row is the control: unaffected by any of this.
+	assert.deepEqual(suffixes(cells[0][0]), ['CIN']);
+	assert.match(fullText(cells[0][0]), /J\. Burrow/);
+
+	// Both sides land on the identical "Eagles PHI" even though one came
+	// from MFL's "Location Mascot" shape and the other from ESPN's
+	// "Mascot D/ST" shape — proof the two spellings converge.
+	assert.deepEqual(suffixes(cells[1][0]), ['PHI']);
+	assert.deepEqual(suffixes(cells[1][1]), ['PHI']);
+	assert.equal(fullText(cells[1][0]).replace(/\s+/g, ' ').trim(), 'Eagles PHI', "MFL's spelling");
+	assert.equal(fullText(cells[1][1]).replace(/\s+/g, ' ').trim(), 'Eagles PHI', "ESPN's spelling");
+}
+
+// An unresolved starter (MFL when the global player map didn't reach the
+// poll) falls back to "#id" rather than a mascot — there's no name to cut
+// down — and still keeps its team code, which is the only thing left
+// identifying it.
+{
+	const ctx = makeContext(LOGGED_IN);
+	ctx.liveScoringAttempted = true;
+	const league = leagueWithMatchup();
+	league.scoring.teams[0].players = [{ id: '9911', name: null, position: 'Def', team: 'BAL', points: 5 }];
+	league.scoring.teams[1].players = [{ id: '9912', name: 'Someone', position: null, team: 'ATL', points: 6 }];
+	const card = ctx.renderScoringCard(league);
+	findAll(card, hasClass('scoring-detail-toggle'))[0].listeners.click[0]();
+	const body = findAll(card, hasClass('scoring-detail-body'))[0];
+	const names = findAll(body, hasClass('scoring-detail-name'));
+	assert.match(fullText(names[0]), /#9911/);
+	assert.deepEqual(findAll(names[0], hasClass('team-suffix')).map(fullText), ['BAL']);
+}
+
 // --- abbreviatePlayerName ---
 {
 	const ctx = makeContext();
@@ -422,16 +482,26 @@ function leagueWithMatchup() {
 	assert.equal(abbr('A.J. Brown', 'WR'), 'A.J. Brown');
 	assert.equal(abbr('T.J. Hockenson', 'TE'), 'T.J. Hockenson');
 
-	// Team defenses are never abbreviated, in either provider's spelling.
-	assert.equal(abbr('Baltimore Ravens', 'Def'), 'Baltimore Ravens', "MFL's spelling");
-	assert.equal(abbr('Eagles D/ST', 'Def'), 'Eagles D/ST', "ESPN's spelling");
+	// A team defense keeps only its mascot, in either provider's spelling.
+	assert.equal(abbr('Baltimore Ravens', 'Def'), 'Ravens', "MFL's spelling");
+	assert.equal(abbr('Eagles D/ST', 'Def'), 'Eagles', "ESPN's spelling — D/ST isn't the mascot");
 	// ...and the D/ST guard holds even if the position is missing or spelled
 	// differently, since Sleeper reports DEF and ESPN's map says Def.
-	assert.equal(abbr('Eagles D/ST', null), 'Eagles D/ST');
-	assert.equal(abbr('Baltimore Ravens', 'DEF'), 'Baltimore Ravens');
+	assert.equal(abbr('Eagles D/ST', null), 'Eagles');
+	assert.equal(abbr('Baltimore Ravens', 'DEF'), 'Ravens');
+
+	// THE case this exists for: a two-word city must not leave its second
+	// word stuck to the mascot. Nine of the league's 32 franchises have one
+	// (New England, Kansas City, Green Bay, Tampa Bay, Las Vegas, New
+	// Orleans, San Francisco, both New York teams) — "drop the first word"
+	// would have left "England Patriots" on the row. Keeping the LAST word
+	// instead is right regardless of how many words came before it.
+	assert.equal(abbr('New England Patriots', 'Def'), 'Patriots');
+	assert.equal(abbr('Kansas City Chiefs', 'DEF'), 'Chiefs');
+	assert.equal(abbr('San Francisco 49ers', 'Def'), '49ers', 'a numeric mascot is still just the last word');
 
 	// Degenerate inputs don't throw or produce a stray dot.
-	assert.equal(abbr('Ravens', 'Def'), 'Ravens');
+	assert.equal(abbr('Ravens', 'Def'), 'Ravens', 'already just the mascot');
 	assert.equal(abbr('Cher', 'WR'), 'Cher', 'a one-word name has no first name to cut');
 	assert.equal(abbr('', 'WR'), '');
 	assert.equal(abbr(null, 'WR'), '');

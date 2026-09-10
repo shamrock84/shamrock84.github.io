@@ -6167,24 +6167,49 @@
 		// boundary to drift.
 		let liveGames = {};
 
-		// "Joe Burrow" -> "J. Burrow". The drawer puts two names on one row
-		// inside a ~330px card, and the surname is what identifies a player at
-		// a glance; the given name is what wraps the row onto a second line.
+		// A team defense, in any provider's spelling. Both halves of the test
+		// are load-bearing: the position half catches MFL's "Baltimore
+		// Ravens", which carries nothing in the name to recognise it by, and
+		// the name half catches a provider that hands over no position at all
+		// (ESPN's map says Def where Sleeper reports DEF, so the position is
+		// compared case-insensitively).
+		function isTeamDefense(name, position) {
+			if (String(position || '').toLowerCase() === 'def') return true;
+			return /D\/ST/i.test(String(name || ''));
+		}
+
+		// "Joe Burrow" -> "J. Burrow"; "Baltimore Ravens" -> "Ravens";
+		// "Eagles D/ST" -> "Eagles". The drawer puts two names on one row
+		// inside a ~330px card, and the surname (or, for a defense, the
+		// mascot) is what identifies a team at a glance; everything ahead of
+		// it is what wraps the row onto a second line.
 		//
-		// Two things are deliberately left alone:
-		//   * A team defense. Providers name these completely differently —
-		//     MFL says "Baltimore Ravens", ESPN says "Eagles D/ST" — and
-		//     neither has a first name to abbreviate. "B. Ravens" and
-		//     "E. D/ST" are both nonsense, so `Def` is skipped outright.
-		//   * A given name that is ALREADY initials ("A.J. Brown"). Cutting it
-		//     to "A. Brown" would drop information rather than save space,
-		//     since it is not the part making the row long.
-		// Everything after the first token is kept whole, which is what keeps
-		// a generational suffix ("J. Cook III") and a multi-part surname
-		// ("A. St. Brown") intact.
+		// A defense keeps only its LAST word, never its first. Nine of the
+		// league's 32 franchises have a two-word city (New England, Kansas
+		// City, Green Bay, Tampa Bay, Las Vegas, New Orleans, San Francisco,
+		// and both New York teams), so "drop the first word" alone would
+		// leave "England Patriots" on the row for a third of the league.
+		// Every current mascot is itself one word, so the last token is
+		// always right regardless of how many words the city before it has.
+		// ESPN's own "Eagles D/ST" spelling has already dropped the city —
+		// its trailing "D/ST" is stripped first so that isn't mistaken for
+		// the mascot. The team code appendTeamSuffix prints underneath
+		// carries what the city word would have (Baltimore/BAL, Eagles/PHI),
+		// so nothing here is lost, just moved to where the rest of the
+		// starters already carry it.
+		//
+		// A given name that is ALREADY initials ("A.J. Brown") is the other
+		// thing left alone — cutting it to "A. Brown" would drop information
+		// rather than save space, since it is not the part making the row
+		// long. Everything after the first token is kept whole, which is
+		// what keeps a generational suffix ("J. Cook III") and a multi-part
+		// surname ("A. St. Brown") intact.
 		function abbreviatePlayerName(name, position) {
 			if (!name) return '';
-			if (String(position || '').toLowerCase() === 'def' || /D\/ST/i.test(name)) return name;
+			if (isTeamDefense(name, position)) {
+				const words = String(name).replace(/\s*D\/ST$/i, '').trim().split(/\s+/).filter(Boolean);
+				return words[words.length - 1] || name;
+			}
 			const parts = String(name).trim().split(/\s+/);
 			if (parts.length < 2) return name;
 			if (parts[0].includes('.')) return name;
@@ -6315,7 +6340,10 @@
 				line.appendChild(document.createTextNode(label));
 				// The NFL team as a suffix, never its own column — the same
 				// rule every other table that names a player follows, and the
-				// reason this grid fits on a phone at all.
+				// reason this grid fits on a phone at all. A defense gets one
+				// too, same as anyone else: abbreviatePlayerName has already
+				// cut it down to its mascot ("Ravens"), so the code beneath
+				// ("BAL") carries the city rather than restating it.
 				if (player.team) appendTeamSuffix(line, player.team);
 				nameCell.appendChild(line);
 				// The player's own game as a sub-line under the name, the way
