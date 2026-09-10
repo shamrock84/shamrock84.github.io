@@ -2342,6 +2342,15 @@
 			gap: 0.2rem;
 			min-width: 0;
 		}
+		/* adminText/adminSelect apply no font-size of their own, which leaves
+		   the browser's UA default for form controls — well under 16px. iOS
+		   Safari zooms the whole page in on focus of any text input under
+		   that threshold, regardless of viewport width, which is why this
+		   isn't behind a phone-width media query like the rest of this
+		   section. */
+		.admin-input {
+			font-size: 16px;
+		}
 		/* 1 / -1 rather than span 2: with auto-fit down to a single column, a
 		   2-column span would conjure an implicit second column and reintroduce
 		   the sideways scroll this whole layout exists to remove. */
@@ -2577,7 +2586,12 @@
 			margin: 0.6rem 0 0.8rem;
 		}
 		.planning-task-add .planning-input:first-child { flex: 2 1 12rem; }
-		.planning-task-add .planning-input:nth-child(2) { flex: 1 1 8rem; }
+		/* The category field's flex sizing used to key off :nth-child(2)
+		   directly on the input; it now targets the wrapper
+		   attachCategorySuggestions puts around it (see that function's own
+		   comment for why the wrapper exists at all), since the input
+		   itself is no longer addRow's direct 2nd child. */
+		.planning-task-add .category-suggest-wrap { flex: 1 1 8rem; }
 		.planning-input {
 			font: inherit;
 			font-size: 0.85rem;
@@ -2586,6 +2600,38 @@
 			border-radius: 6px;
 			background: var(--card-bg);
 			color: inherit;
+		}
+		/* attachCategorySuggestions' hand-rolled stand-in for <datalist> (see
+		   its own comment for why datalist isn't used). Positioned relative
+		   to the input it wraps rather than to the card, so it tracks the
+		   input regardless of which of the two contexts (the add row, the
+		   Edit Task popover form) it's used from. */
+		.category-suggest-wrap {
+			position: relative;
+			min-width: 0;
+		}
+		.category-suggest-wrap .planning-input { width: 100%; }
+		.category-suggest-list {
+			position: absolute;
+			top: 100%;
+			left: 0;
+			right: 0;
+			z-index: 5;
+			margin-top: 2px;
+			max-height: 9rem;
+			overflow-y: auto;
+			background: var(--card-bg);
+			border: 1px solid var(--border);
+			border-radius: 6px;
+			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+		}
+		.category-suggest-item {
+			padding: 0.3rem 0.55rem;
+			font-size: 0.85rem;
+			cursor: pointer;
+		}
+		.category-suggest-item:hover {
+			background: var(--chip-bg);
 		}
 		.planning-add-btn {
 			font: inherit;
@@ -3822,6 +3868,15 @@
 				// throws on anything else, so the instanceof check has to
 				// come first, not just be redundant with it.
 				if (popoverEl && e && e.target instanceof Node && popoverEl.contains(e.target)) return;
+				// A phone's on-screen keyboard fires exactly this kind of
+				// Window-targeted resize/scroll the instant a popover's own
+				// input is focused — tapping into Edit Task's text field
+				// closed the popover out from under the tap that opened it.
+				// That event targets the Window rather than the input, so
+				// the check above never catches it; checking focus instead
+				// is what tells "the keyboard just opened" apart from "the
+				// page was scrolled while this happened to be open".
+				if (popoverEl && document.activeElement && popoverEl.contains(document.activeElement)) return;
 				close();
 			}
 
@@ -9623,6 +9678,55 @@
 		// task doesn't have to grow its row to fit two inputs plus the
 		// checkbox/grip/move/remove buttons already there.
 		const taskPopover = makePopover('task');
+
+		// <datalist> is the obvious way to offer existing categories as you
+		// type, and it used to be the only one here — but mobile Safari
+		// never shows a datalist's suggestions at all, which is what "type
+		// ahead doesn't work on phone" actually was: not a bug in which
+		// categories were offered, but the browser silently declining to
+		// render its own dropdown. This is a small hand-rolled replacement
+		// that behaves the same on every platform, wired to a text input in
+		// place of the `list` attribute rather than alongside it — running
+		// both at once would show two dropdowns on a browser that does
+		// support datalist.
+		function attachCategorySuggestions(input, getCategories) {
+			const wrap = el('div', { class: 'category-suggest-wrap' });
+			wrap.appendChild(input);
+			const list = el('div', { class: 'category-suggest-list hidden' });
+			wrap.appendChild(list);
+
+			function render() {
+				const q = input.value.trim().toLowerCase();
+				const matches = getCategories().filter((c) => c.toLowerCase().includes(q) && c.toLowerCase() !== q);
+				list.innerHTML = '';
+				if (matches.length === 0) {
+					list.classList.add('hidden');
+					return;
+				}
+				for (const c of matches) {
+					const item = el('div', { class: 'category-suggest-item', text: c });
+					// mousedown rather than click: it fires before the input's
+					// own blur, so the value lands before blur's handler hides
+					// the list out from under a tap that hadn't landed yet —
+					// the same race the Edit Task popover's outside-click
+					// dismissal has to dodge (see closeOnViewportChange above).
+					item.addEventListener('mousedown', (e) => {
+						e.preventDefault();
+						input.value = c;
+						list.classList.add('hidden');
+						input.focus();
+					});
+					list.appendChild(item);
+				}
+				list.classList.remove('hidden');
+			}
+
+			input.addEventListener('focus', render);
+			input.addEventListener('input', render);
+			input.addEventListener('blur', () => list.classList.add('hidden'));
+			return wrap;
+		}
+
 		function renderTasksCard() {
 			const tasks = loadTasks();
 			// Not .admin-card — that class is how refreshAdminCard and
@@ -9638,11 +9742,9 @@
 
 			const addRow = el('div', { class: 'planning-add-row planning-task-add' });
 			const textInput = el('input', { type: 'text', class: 'planning-input', placeholder: 'New task…', autocomplete: 'off' });
-			const categoryListId = 'planning-task-categories';
-			const categoryInput = el('input', { type: 'text', class: 'planning-input', placeholder: 'Category (optional)', autocomplete: 'off', list: categoryListId });
-			const dataList = el('datalist', { id: categoryListId });
+			const categoryInput = el('input', { type: 'text', class: 'planning-input', placeholder: 'Category (optional)', autocomplete: 'off' });
 			const existingCategories = [...new Set(Object.values(tasks).map((t) => t.category).filter(Boolean))].sort();
-			for (const c of existingCategories) dataList.appendChild(el('option', { value: c }));
+			const categoryWrap = attachCategorySuggestions(categoryInput, () => existingCategories);
 			const addBtn = el('button', { type: 'button', class: 'planning-add-btn', text: '+ Add' });
 			const submitTask = () => {
 				const text = textInput.value.trim();
@@ -9655,8 +9757,7 @@
 				if (e.key === 'Enter') submitTask();
 			});
 			addRow.appendChild(textInput);
-			addRow.appendChild(categoryInput);
-			addRow.appendChild(dataList);
+			addRow.appendChild(categoryWrap);
 			addRow.appendChild(addBtn);
 			card.appendChild(addRow);
 
@@ -9710,7 +9811,8 @@
 					taskPopover.open(textSpan, 'Edit Task', (popoverEl) => {
 						const form = el('div', { class: 'planning-task-popover-form' });
 						const editText = el('input', { type: 'text', class: 'planning-input', value: t.text });
-						const editCategory = el('input', { type: 'text', class: 'planning-input', value: t.category || '', placeholder: 'Category (optional)', list: categoryListId });
+						const editCategory = el('input', { type: 'text', class: 'planning-input', value: t.category || '', placeholder: 'Category (optional)' });
+						const editCategoryWrap = attachCategorySuggestions(editCategory, () => existingCategories);
 						const save = () => {
 							const text = editText.value.trim();
 							if (!text) return;
@@ -9743,7 +9845,7 @@
 						actions.appendChild(saveBtn);
 						actions.appendChild(cancelBtn);
 						form.appendChild(editText);
-						form.appendChild(editCategory);
+						form.appendChild(editCategoryWrap);
 						form.appendChild(actions);
 						popoverEl.appendChild(form);
 						// Deferred a tick: the popover is still `.hidden`
