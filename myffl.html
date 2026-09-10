@@ -2594,7 +2594,15 @@
 		.planning-task-add .category-suggest-wrap { flex: 1 1 8rem; }
 		.planning-input {
 			font: inherit;
-			font-size: 0.85rem;
+			/* 16px, not the 0.85rem every other size in this card uses — a
+			   text input below 16px is exactly the cue iOS Safari zooms the
+			   page in on focus for (see the .admin-input comment for the
+			   same fix). This one is a Tasks-card sibling of that bug, not
+			   the same rule: Admin's league fields carried no font-size at
+			   all and inherited the browser's own sub-16px default, while
+			   this class set one explicitly — just still under the
+			   threshold. */
+			font-size: 16px;
 			padding: 0.35rem 0.55rem;
 			border: 1px solid var(--border);
 			border-radius: 6px;
