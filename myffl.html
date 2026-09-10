@@ -9784,26 +9784,44 @@
 			return wrap;
 		}
 
+		// TEMPORARY: diagnosing an iPadOS Safari + hardware keyboard report
+		// that Tab still doesn't move focus between these two fields even
+		// with this handler attached and Full Keyboard Access on (which
+		// rules out the earlier theory that Safari simply declines to act
+		// on a keydown it does receive). This overlay answers the one
+		// question neither of us can answer from a description alone: does
+		// the keydown event reach the page's JS at all when Tab is pressed
+		// there. Remove once that's answered and the real fix (if any is
+		// possible from page JS) replaces it.
+		function tabDebugLog(label, e) {
+			let dbg = document.getElementById('tab-debug-overlay');
+			if (!dbg) {
+				dbg = el('div', { id: 'tab-debug-overlay' });
+				dbg.style.cssText = 'position:fixed;bottom:8px;left:8px;right:8px;z-index:9999;background:#000;color:#0f0;font:11px monospace;padding:6px;border-radius:6px;max-height:40vh;overflow:auto;white-space:pre-wrap;pointer-events:none;';
+				document.body.appendChild(dbg);
+			}
+			const line = `${label}: key=${e.key} code=${e.code} keyCode=${e.keyCode} shift=${e.shiftKey}`;
+			dbg.textContent = `${line}\n${dbg.textContent}`.split('\n').slice(0, 20).join('\n');
+		}
+
 		// Every desktop browser moves focus to the next field on Tab from a
-		// plain text input with no help from the page. iPadOS Safari doesn't,
-		// for a hardware keyboard's Tab key specifically — Full Keyboard
-		// Access (Settings > Accessibility > Keyboards) is the only system
-		// setting that turns it on, and it's off by default, which is why
-		// "tabbing between fields" read as broken here specifically on an
-		// iPad rather than everywhere. The keydown itself still reaches the
-		// page there; Safari just doesn't act on it, so this replicates the
-		// standard behavior by hand for the one field pair a task's text and
+		// plain text input with no help from the page. This is meant to
+		// replicate that by hand for the one field pair a task's text and
 		// category are typed into, used from both the add row and the Edit
-		// Task popover. Harmless on a browser that already does this
-		// natively — preventDefault plus a manual focus() lands in the same
-		// place the browser's own handling would have.
+		// Task popover — see the TEMPORARY block above for why it isn't
+		// confirmed to actually do that on iPadOS yet. Harmless on a
+		// browser that already moves focus on Tab natively: preventDefault
+		// plus a manual focus() lands in the same place the browser's own
+		// handling would have.
 		function linkTabOrder(a, b) {
 			a.addEventListener('keydown', (e) => {
+				tabDebugLog('text', e);
 				if (e.key !== 'Tab' || e.shiftKey) return;
 				e.preventDefault();
 				b.focus();
 			});
 			b.addEventListener('keydown', (e) => {
+				tabDebugLog('category', e);
 				if (e.key !== 'Tab' || !e.shiftKey) return;
 				e.preventDefault();
 				a.focus();
