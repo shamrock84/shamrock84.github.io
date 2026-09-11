@@ -10,8 +10,14 @@
 	<meta name="theme-color" media="(prefers-color-scheme: light)" content="#4F2683">
 	<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#140f1e">
 	<style>
-		/* Minnesota Vikings palette: purple as the primary accent everywhere,
-		   gold reserved specifically for highlighting the user's own team. */
+		/* Minnesota Vikings palette: purple as the primary accent
+		   everywhere. Gold is "notable, not urgent" — badge metadata
+		   (Provider/Season), a taxi-squad player, the Bye Weeks
+		   current-week row, the Scoring drawer's currently-playing-player
+		   highlight. "This is my team" (.me-row) used to be gold's one
+		   reserved meaning, but moved to the same purple every badge chip
+		   uses once gold was needed for a live player on the same card —
+		   see .scoring-detail-toggle.scoring-detail-live's own comment. */
 		:root {
 			--bg: #f5f3f9;
 			--card-bg: #ffffff;
