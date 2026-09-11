@@ -1831,6 +1831,21 @@
 		.scoring-detail-name {
 			min-width: 0;
 			overflow-wrap: anywhere;
+			/* Stretched to the row's full height (overriding the row's own
+			   align-items: center) rather than sized to its own content, so
+			   a live highlight (below) fills the same height as the score
+			   column beside it regardless of which one has more lines —
+			   the name column often runs two (the player line plus the game
+			   sub-line) where the score column is always one. The inner
+			   flex + justify-content just re-centers that content within
+			   the taller box; column direction keeps the cross axis
+			   (width) at its default stretch, which is what lets
+			   text-align below keep working exactly as it did as a plain
+			   block. */
+			align-self: stretch;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
 		}
 		.scoring-detail-name.right { text-align: right; }
 		/* The player's own NFL game, under their name — same muted sub-line
@@ -1871,6 +1886,14 @@
 			   the ordinary two-decimal case so the common row doesn't
 			   reserve a digit's worth of width the names need more. */
 			min-width: 2rem;
+			/* Same stretch-and-recenter as .scoring-detail-name, and for the
+			   same reason: a one-line score must fill exactly as much
+			   height as a two-line name so their live highlights (below)
+			   read as the same size. */
+			align-self: stretch;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
 		}
 		.scoring-detail-pts.left { text-align: right; }
 		/* A null points value renders as this dash rather than 0.0 — see
@@ -1887,17 +1910,22 @@
 		   kickoff) stays highlighted, not muted. A player whose game hasn't
 		   started, or is already final, gets neither class and renders
 		   exactly as before.
-		   The padding/negative-margin pair extends the fill into the row's
-		   own gap without changing any track's width, so the name chip and
-		   the score chip on the same side read as one block instead of two
-		   separated by a visible seam. */
+		   The horizontal padding/negative-margin pair extends the fill into
+		   the row's own column gap without changing any track's width, so
+		   the name chip and the score chip on the same side read as one
+		   block instead of two separated by a visible seam. Vertical
+		   padding is deliberately NOT part of that pair — the stretch on
+		   .scoring-detail-name/.scoring-detail-pts above already sizes both
+		   to the row's full height, so adding vertical padding here would
+		   just push this fill taller than that shared height rather than
+		   making the two sides match. */
 		.scoring-detail-pts.live,
 		.scoring-detail-name.live {
 			background: var(--ir-bg);
 			color: var(--ir-text);
 			border-radius: 4px;
-			padding: 0.1rem 0.3rem;
-			margin: -0.1rem -0.3rem;
+			padding: 0 0.3rem;
+			margin: 0 -0.3rem;
 		}
 		.scoring-detail-empty {
 			color: var(--muted);
