@@ -300,6 +300,13 @@ jobs:
       - name: Test ESPN/Sleeper live-time join
         run: node scripts/test-espn-sleeper-live-time.mjs
 
+      # The quick-link toolbar's red task-count footnote: exact-category,
+      # open-tasks-only summing (quickLinkTaskCounts), and that the marker
+      # itself is only ever present at a positive count and never nested
+      # inside a gold/purple entry's own pill span (appendQuickLink).
+      - name: Test quick-link task footnotes
+        run: node scripts/test-quicklink-tasknotes.mjs
+
       - name: Validate config/leagues.json
         run: |
           node --input-type=module -e '
