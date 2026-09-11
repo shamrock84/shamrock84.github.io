@@ -33,9 +33,16 @@ const scriptSource = html.match(/<script>([\s\S]*)<\/script>/)[1];
 function node(tag = 'div') {
 	const n = {
 		tag, children: [], attrs: {}, cls: '', _text: '', dataset: {}, style: {}, listeners: {},
-		classList: { add() {}, remove() {}, toggle() {}, contains: () => false },
-		addEventListener() {}, removeEventListener() {}, setAttribute() {},
-		focus() {}, remove() {},
+		classList: {
+			add(c) { n.cls = `${n.cls} ${c}`.trim(); },
+			remove(c) { n.cls = n.cls.split(' ').filter((x) => x !== c).join(' '); },
+			toggle() {},
+			contains: (c) => n.cls.split(' ').includes(c),
+		},
+		addEventListener(type, fn) { (n.listeners[type] = n.listeners[type] || []).push(fn); },
+		removeEventListener() {},
+		setAttribute(k, v) { n.attrs[k] = v; },
+		focus() {}, remove() {}, scrollIntoView() {},
 		appendChild(c) { n.children.push(c); return c; },
 		insertBefore(c) { n.children.push(c); return c; },
 		querySelector: () => null, querySelectorAll: () => [], closest: () => null,
@@ -65,7 +72,7 @@ const context = {
 vm.createContext(context);
 vm.runInContext(scriptSource, context);
 
-const { quickLinkTaskCounts, appendQuickLink, quickLinkLabelForLeague, taskBadgeLabel, buildCardHead } = context;
+const { quickLinkTaskCounts, appendQuickLink, quickLinkLabelForLeague, taskBadgeLabel, buildCardHead, attachTaskBadgeClick, goToTasksCard } = context;
 
 function setTasks(tasks) {
 	tasksStore = JSON.stringify(tasks);
@@ -112,20 +119,20 @@ function renderedLink(opts) {
 
 {
 	const link = renderedLink({ url: 'https://example.com', label: 'MNMx', taskCount: 3 });
-	const note = link.children.find((c) => c.cls === 'quicklink-tasknote');
+	const note = link.children.find((c) => c.cls.split(' ').includes('quicklink-tasknote'));
 	assert.ok(note, 'a positive task count renders the footnote element');
 	assert.equal(note.textContent, '3', 'the footnote text is the count itself');
 }
 
 {
 	const link = renderedLink({ url: 'https://example.com', label: 'MNMx', taskCount: 0 });
-	assert.equal(link.children.find((c) => c.cls === 'quicklink-tasknote'), undefined,
+	assert.equal(link.children.find((c) => c.cls.split(' ').includes('quicklink-tasknote')), undefined,
 		'a zero count omits the footnote entirely rather than printing 0');
 }
 
 {
 	const link = renderedLink({ url: 'https://example.com', label: 'MNMx' });
-	assert.equal(link.children.find((c) => c.cls === 'quicklink-tasknote'), undefined,
+	assert.equal(link.children.find((c) => c.cls.split(' ').includes('quicklink-tasknote')), undefined,
 		'no taskCount at all (an unmatched label) omits the footnote the same way');
 }
 
@@ -134,7 +141,7 @@ function renderedLink(opts) {
 	// appendQuickLink's own comment); the footnote must sit outside that
 	// span so it never inherits the pill's background.
 	const link = renderedLink({ url: 'https://example.com', label: 'Sleeper App', style: 'gold', taskCount: 1 });
-	const note = link.children.find((c) => c.cls === 'quicklink-tasknote');
+	const note = link.children.find((c) => c.cls.split(' ').includes('quicklink-tasknote'));
 	const pill = link.children.find((c) => c.tag === 'span');
 	assert.ok(note && pill, 'both the pill span and the footnote are present');
 	assert.ok(!pill.children.includes(note), 'the footnote is a sibling of the pill span, not nested inside it');
@@ -205,6 +212,106 @@ setTasks({
 	const head = buildCardHead(card, { id: '100', nickname: 'MNMx', type: 'dynasty' });
 	const badge = badgeTexts(head).find((b) => b.cls.includes('badge-task'));
 	assert.equal(badge, undefined, 'a fully-completed category leaves no task badge behind');
+}
+
+// ---- attachTaskBadgeClick: wiring shared by all three markers --------------
+
+{
+	const badge = node('span');
+	attachTaskBadgeClick(badge);
+	assert.equal(badge.attrs.role, 'button', 'exposed as a button to assistive tech');
+	assert.equal(badge.attrs.tabindex, '0', 'keyboard-reachable');
+	assert.equal(badge.title, 'Go to Tasks', 'tells a mouse user what the click does');
+	assert.ok(badge.cls.split(' ').includes('task-badge-link'), 'carries the shared clickable-marker class');
+}
+
+{
+	// Redirect the global goToTasksCard so this only pins that a click (and
+	// Enter/Space, for keyboard parity) reaches it, and that the event's
+	// default action and propagation are both swallowed — needed so the
+	// toolbar footnote doesn't also follow its <a> out to the league site,
+	// and the card badge doesn't also toggle the card it sits inside.
+	// goToTasksCard's own behavior is pinned separately below.
+	const calls = [];
+	const realGoToTasksCard = context.goToTasksCard;
+	context.goToTasksCard = () => calls.push('go');
+
+	const badge = node('span');
+	attachTaskBadgeClick(badge);
+	let prevented = false;
+	let stopped = false;
+	badge.listeners.click[0]({ preventDefault: () => { prevented = true; }, stopPropagation: () => { stopped = true; } });
+	assert.deepEqual(calls, ['go'], 'a click activates it');
+	assert.ok(prevented, 'and swallows the click\'s default action');
+	assert.ok(stopped, 'and its propagation');
+
+	calls.length = 0;
+	const noop = { preventDefault() {}, stopPropagation() {} };
+	badge.listeners.keydown[0]({ key: 'Enter', ...noop });
+	badge.listeners.keydown[0]({ key: ' ', ...noop });
+	badge.listeners.keydown[0]({ key: 'Tab', ...noop });
+	assert.deepEqual(calls, ['go', 'go'], 'Enter and Space activate it, same as a click; other keys do not');
+
+	context.goToTasksCard = realGoToTasksCard;
+}
+
+// ---- goToTasksCard: finding, expanding and landing on the Tasks card -------
+
+const realSwitchToView = context.switchToView;
+
+{
+	// No Tasks card in the DOM at all — the improbable logged-out-with-
+	// stale-local-tasks case, or a click that outlives a logout. Must be a
+	// silent no-op, never a switch to an Admin tab with nothing on it.
+	const calls = [];
+	context.switchToView = (v) => calls.push(v);
+	context.document.querySelector = () => null;
+	goToTasksCard();
+	assert.deepEqual(calls, [], 'nothing to expand means no tab switch either');
+	context.switchToView = realSwitchToView;
+}
+
+{
+	// Collapsed: switches tabs, expands via the toggle's own click handling
+	// (not a hand-rolled class flip), and scrolls to it.
+	const calls = [];
+	context.switchToView = (v) => calls.push(v);
+	const toggle = node('button');
+	toggle.className = 'card-collapse-toggle';
+	let toggleClicked = 0;
+	toggle.click = () => { toggleClicked++; };
+	const card = node('div');
+	card.className = 'planning-card card-collapsed';
+	card.querySelector = (sel) => (sel === '.card-collapse-toggle' ? toggle : null);
+	let scrolled = 0;
+	card.scrollIntoView = () => { scrolled++; };
+	context.document.querySelector = (sel) => (sel === '.planning-card' ? card : null);
+	goToTasksCard();
+	assert.deepEqual(calls, ['admin'], 'switches to the Admin tab');
+	assert.equal(toggleClicked, 1, 'expands a collapsed card via its own toggle');
+	assert.equal(scrolled, 1, 'and scrolls it into view');
+	context.switchToView = realSwitchToView;
+}
+
+{
+	// Already expanded: same tab switch and scroll, but the toggle must be
+	// left alone — clicking it would collapse a card that wasn't collapsed.
+	const calls = [];
+	context.switchToView = (v) => calls.push(v);
+	const toggle = node('button');
+	let toggleClicked = 0;
+	toggle.click = () => { toggleClicked++; };
+	const card = node('div');
+	card.className = 'planning-card';
+	card.querySelector = () => toggle;
+	let scrolled = 0;
+	card.scrollIntoView = () => { scrolled++; };
+	context.document.querySelector = () => card;
+	goToTasksCard();
+	assert.deepEqual(calls, ['admin']);
+	assert.equal(toggleClicked, 0, 'an already-expanded card is left alone');
+	assert.equal(scrolled, 1);
+	context.switchToView = realSwitchToView;
 }
 
 console.log('All quick-link task-footnote checks passed.');
