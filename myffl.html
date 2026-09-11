@@ -11157,7 +11157,7 @@
 			// served config, and doing that eighteen times over would be the same
 			// answer eighteen times. refreshAdminDirtyState repaints from here on.
 			const pending = adminPendingChanges();
-			// Same reasoning, for the collapsed blurb's task-count mention below:
+			// Same reasoning, for the collapsed row's own task-count badge below:
 			// one read of the Tasks store rather than one per card.
 			const taskCounts = quickLinkTaskCounts();
 
@@ -11250,15 +11250,29 @@
 				// rather than only when it differs: eighteen cards reading 2027
 				// and one reading 2026 is more obvious than a chip that appears
 				// only if you knew to expect it.
+				// Reads off the draft's own nickname/displayName/name, same as
+				// every other draft-sourced chip here, so an unsaved Toolbar
+				// Label edit is reflected immediately — and the same count,
+				// key (quickLinkLabelForLeague) and wording (taskBadgeLabel) as
+				// the red badge trailing this league's Rosters/Standings/
+				// Scoring cards and the header toolbar's own footnote, so none
+				// of the three can ever disagree. Trails the strip for the same
+				// "flags an outside fact, isn't part of the league's own
+				// format" reasoning buildCardHead's identical badge uses.
+				const taskCount = taskCounts[quickLinkLabelForLeague(league)] || 0;
 				const chips = [
 					{ text: providerBadgeLabel(league), gold: true },
 					...(live?.season ? [{ text: String(live.season), season: true, stale: seasonIsBehind(live.season) }] : []),
 					{ text: LEAGUE_TYPE_LABELS[league.type] || league.type || '?' },
 					...(league.tags || []).map((text) => ({ text })),
+					...(taskCount ? [{ text: taskBadgeLabel(taskCount), task: true }] : []),
 				];
 				const badges = el('div', { class: 'admin-badges' });
 				for (const chip of chips) {
-					const cls = chip.season ? `badge badge-season${chip.stale ? ' badge-season-stale' : ''}` : chip.gold ? 'badge badge-provider' : 'badge';
+					const cls = chip.season ? `badge badge-season${chip.stale ? ' badge-season-stale' : ''}`
+						: chip.gold ? 'badge badge-provider'
+						: chip.task ? 'badge badge-task'
+						: 'badge';
 					badges.appendChild(el('span', { class: cls, text: chip.text }));
 				}
 				head.appendChild(badges);
@@ -11325,15 +11339,6 @@
 				// name it falls back to when blank is doing nothing.
 				if (league.nickname && league.nickname !== (league.displayName || name)) bits.push(`Toolbar "${league.nickname}"`);
 				if (league.style) bits.push(`${adminLabelFor(ADMIN_QUICKLINK_STYLES, league.style)} toolbar style`);
-				// Same count, same key, same wording as the red badge on this
-				// league's Rosters/Standings/Scoring cards (taskBadgeLabel) and
-				// the toolbar's own footnote (quickLinkTaskCounts) — reading off
-				// the draft's own nickname/displayName/name so an unsaved
-				// Toolbar Label edit is reflected immediately, same as the
-				// "Toolbar" mention above. Follows the deviation rule: no open
-				// tasks under this league's label, no mention.
-				const taskCount = taskCounts[quickLinkLabelForLeague(league)] || 0;
-				if (taskCount) bits.push(taskBadgeLabel(taskCount));
 				// Always last and always present, so a scan down the list reads
 				// these in one column. The money was the one group of fields the
 				// collapsed row said nothing about at all, which made "which
