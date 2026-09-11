@@ -184,6 +184,14 @@
 			margin-left: 0.1rem;
 			vertical-align: super;
 		}
+		/* Every task marker is clickable straight to the Tasks card (see
+		   attachTaskBadgeClick) — a plain underline here rather than the
+		   ring .task-badge-link uses on the padded pill badges below, since
+		   a bare superscript number has no padding for a ring to sit in. */
+		#quicklinks .quicklink-tasknote.task-badge-link:hover,
+		#quicklinks .quicklink-tasknote.task-badge-link:focus-visible {
+			text-decoration: underline;
+		}
 		/* Sixteen-plus toolbar entries (every league plus Quick Links) wrap to
 		   three rows at iPhone width — the same overcrowding the .tabs media
 		   query above solves for the eight main tabs. Trimming gap, type
@@ -765,6 +773,19 @@
 		.badge-task {
 			background: var(--ir-bg);
 			color: var(--ir-text);
+		}
+		/* Shared by every clickable task marker on the page — see
+		   attachTaskBadgeClick — so the toolbar footnote, this badge and the
+		   Admin Leagues card's identical chip can't drift on the affordance.
+		   A ring rather than a background/color shift: .badge-task's own red
+		   is already the "needs a look" signal, so hover/focus only needs to
+		   say "clickable", not restate that. */
+		.task-badge-link {
+			cursor: pointer;
+		}
+		.badge.task-badge-link:hover,
+		.badge.task-badge-link:focus-visible {
+			box-shadow: inset 0 0 0 1px var(--ir-text);
 		}
 		/* Badges always stay to the right of the title (card-head is nowrap,
 		   never drops badges to their own row) — the title just shrinks and
@@ -5012,7 +5033,10 @@
 		// appends after it (see the .quicklink-gold/-purple CSS comment).
 		// taskCount (see quickLinkTaskCounts) appends a small red footnote
 		// number after the label, outside that pill span, when there's at
-		// least one open task filed under this entry's own label.
+		// least one open task filed under this entry's own label. Clickable
+		// (attachTaskBadgeClick) straight to the Tasks card — it overrides the
+		// title and swallows the click that would otherwise follow the link's
+		// own href out to the league's site.
 		function appendQuickLink(bar, { url, label, title, style, taskCount }) {
 			const cls = style === 'gold' ? 'quicklink-gold' : style === 'purple' ? 'quicklink-purple' : '';
 			const attrs = { href: url, target: '_blank', rel: 'noopener' };
@@ -5021,7 +5045,11 @@
 			if (title) link.title = title;
 			if (cls) link.appendChild(el('span', { text: label }));
 			else link.textContent = label;
-			if (taskCount) link.appendChild(el('sup', { class: 'quicklink-tasknote', text: String(taskCount) }));
+			if (taskCount) {
+				const note = el('sup', { class: 'quicklink-tasknote', text: String(taskCount) });
+				attachTaskBadgeClick(note);
+				link.appendChild(note);
+			}
 			bar.appendChild(link);
 		}
 
@@ -5294,7 +5322,13 @@
 					: label.gold ? 'badge badge-provider'
 					: label.task ? 'badge badge-task'
 					: 'badge';
-				badgesEl.appendChild(el('span', { class: cls, text: label.text }));
+				const badge = el('span', { class: cls, text: label.text });
+				// Clickable straight to the Tasks card — cardHead itself is
+				// makeCollapsible's whole toggle target below, so this has to
+				// stop the click from also collapsing the card (see
+				// attachTaskBadgeClick).
+				if (label.task) attachTaskBadgeClick(badge);
+				badgesEl.appendChild(badge);
 			}
 			cardHead.appendChild(badgesEl);
 			// data-view is set by the caller before this runs — see each of
@@ -10562,6 +10596,25 @@
 			}
 		}
 
+		// Everything a tab switch entails beyond setting currentView — shared by
+		// the tab strip's own click handler and any same-page jump to a
+		// different view (see goToTasksCard, which lands on Admin from a task
+		// badge that can be clicked from any tab). b.dataset.view is what lets
+		// this find its own button in the strip without a closure over one.
+		function switchToView(view) {
+			currentView = view;
+			localStorage.setItem(VIEW_STORAGE_KEY, currentView);
+			document.getElementById('tabs').querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.view === view));
+			renderSubTabs();
+			updateSearchVisibility();
+			updateVisibility();
+			if (currentView === 'scoring') {
+				startLiveScoringPolling();
+			} else {
+				stopLiveScoringPolling();
+			}
+		}
+
 		function renderViewTabs(views) {
 			const tabsEl = document.getElementById('tabs');
 			tabsEl.innerHTML = '';
@@ -10580,19 +10633,8 @@
 						role: 'tab',
 						text: VIEW_LABELS[view] || view,
 					});
-					btn.addEventListener('click', () => {
-						currentView = view;
-						localStorage.setItem(VIEW_STORAGE_KEY, currentView);
-						tabsEl.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b === btn));
-						renderSubTabs();
-						updateSearchVisibility();
-						updateVisibility();
-						if (currentView === 'scoring') {
-							startLiveScoringPolling();
-						} else {
-							stopLiveScoringPolling();
-						}
-					});
+					btn.dataset.view = view;
+					btn.addEventListener('click', () => switchToView(view));
 					tabsEl.appendChild(btn);
 				}
 			} else {
@@ -10601,6 +10643,49 @@
 
 			renderSubTabs();
 			updateSearchVisibility();
+		}
+
+		// Where every red task badge on the site sends you — the toolbar
+		// footnote, the Rosters/Standings/Scoring card badge, and the Admin
+		// Leagues card chip (see attachTaskBadgeClick, which wires all three
+		// to this). The Tasks card only exists once logged in (see
+		// appendAdminCards), so its absence here — a badge clicked after a
+		// logout that happened without a re-render, or the improbable case of
+		// a logged-out visitor whose browser still carries stale task data —
+		// is a silent no-op rather than switching to an Admin tab with
+		// nothing on it.
+		function goToTasksCard() {
+			const card = document.querySelector('.planning-card');
+			if (!card) return;
+			switchToView('admin');
+			// Reuses the toggle's own click handling (class, aria-expanded,
+			// title, the collapsed-state write) rather than re-implementing
+			// it here — see makeCollapsible.
+			if (card.classList.contains('card-collapsed')) card.querySelector('.card-collapse-toggle')?.click();
+			card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		}
+
+		// Shared by every red task-count marker (the toolbar footnote's <sup>,
+		// the Rosters/Standings/Scoring card badge, and the Admin Leagues card
+		// chip) so the three can't drift on where a click lands or how it's
+		// exposed to a keyboard/screen reader. A <span> rather than a real
+		// link — there's nothing to navigate to outside the page — so it
+		// carries role="button"/tabindex itself, the same keyboard-parity
+		// idiom makeGroupCollapsible's disclosure label uses.
+		function attachTaskBadgeClick(node) {
+			node.classList.add('task-badge-link');
+			node.setAttribute('role', 'button');
+			node.setAttribute('tabindex', '0');
+			node.title = 'Go to Tasks';
+			const activate = (e) => {
+				e.preventDefault();
+				e.stopPropagation();
+				goToTasksCard();
+			};
+			node.addEventListener('click', activate);
+			node.addEventListener('keydown', (e) => {
+				if (e.key === 'Enter' || e.key === ' ') activate(e);
+			});
 		}
 
 		// ---- Admin tab ---------------------------------------------------
@@ -11157,6 +11242,9 @@
 			// served config, and doing that eighteen times over would be the same
 			// answer eighteen times. refreshAdminDirtyState repaints from here on.
 			const pending = adminPendingChanges();
+			// Same reasoning, for the collapsed row's own task-count badge below:
+			// one read of the Tasks store rather than one per card.
+			const taskCounts = quickLinkTaskCounts();
 
 			adminDraft.forEach((league, i) => {
 				const node = el('div', { class: 'admin-league' });
@@ -11247,16 +11335,35 @@
 				// rather than only when it differs: eighteen cards reading 2027
 				// and one reading 2026 is more obvious than a chip that appears
 				// only if you knew to expect it.
+				// Reads off the draft's own nickname/displayName/name, same as
+				// every other draft-sourced chip here, so an unsaved Toolbar
+				// Label edit is reflected immediately — and the same count,
+				// key (quickLinkLabelForLeague) and wording (taskBadgeLabel) as
+				// the red badge trailing this league's Rosters/Standings/
+				// Scoring cards and the header toolbar's own footnote, so none
+				// of the three can ever disagree. Trails the strip for the same
+				// "flags an outside fact, isn't part of the league's own
+				// format" reasoning buildCardHead's identical badge uses.
+				const taskCount = taskCounts[quickLinkLabelForLeague(league)] || 0;
 				const chips = [
 					{ text: providerBadgeLabel(league), gold: true },
 					...(live?.season ? [{ text: String(live.season), season: true, stale: seasonIsBehind(live.season) }] : []),
 					{ text: LEAGUE_TYPE_LABELS[league.type] || league.type || '?' },
 					...(league.tags || []).map((text) => ({ text })),
+					...(taskCount ? [{ text: taskBadgeLabel(taskCount), task: true }] : []),
 				];
 				const badges = el('div', { class: 'admin-badges' });
 				for (const chip of chips) {
-					const cls = chip.season ? `badge badge-season${chip.stale ? ' badge-season-stale' : ''}` : chip.gold ? 'badge badge-provider' : 'badge';
-					badges.appendChild(el('span', { class: cls, text: chip.text }));
+					const cls = chip.season ? `badge badge-season${chip.stale ? ' badge-season-stale' : ''}`
+						: chip.gold ? 'badge badge-provider'
+						: chip.task ? 'badge badge-task'
+						: 'badge';
+					const badge = el('span', { class: cls, text: chip.text });
+					// Clickable straight to the Tasks card, same as the
+					// identical badge on this league's own Rosters/Standings/
+					// Scoring cards (see attachTaskBadgeClick).
+					if (chip.task) attachTaskBadgeClick(badge);
+					badges.appendChild(badge);
 				}
 				head.appendChild(badges);
 
