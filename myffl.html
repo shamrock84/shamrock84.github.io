@@ -167,6 +167,23 @@
 		#quicklinks a.quicklink-purple:focus-visible span {
 			color: var(--text);
 		}
+		/* A footnote-style marker appended after a quick link's own label —
+		   see renderQuickLinks/appendQuickLink — counting open Tasks
+		   (renderTasksCard) whose category exactly matches this entry's
+		   nickname/Toolbar Label. --ir-text is the page's established "needs
+		   a look" red (see the roster IR badge and the digest dot), reused
+		   here rather than a fresh color since the meaning is the same:
+		   something on this link's league or site wants attention. Sits
+		   outside the gold/purple pill's own span so it never inherits that
+		   background. Omitted from the DOM entirely at zero, same as every
+		   other optional per-entry marker in this toolbar. */
+		#quicklinks .quicklink-tasknote {
+			color: var(--ir-text);
+			font-size: 0.7em;
+			font-weight: 700;
+			margin-left: 0.1rem;
+			vertical-align: super;
+		}
 		/* Sixteen-plus toolbar entries (every league plus Quick Links) wrap to
 		   three rows at iPhone width — the same overcrowding the .tabs media
 		   query above solves for the eight main tabs. Trimming gap, type
@@ -4933,17 +4950,34 @@
 		// and a Quick Links extra pick their look from the exact same `style`
 		// field and the exact same three options — see config/leagues.json's
 		// own _readme entry for 'style'.
+		// One footnote count per quick-link label, off the same Tasks store
+		// renderTasksCard reads (loadTasks) — open tasks only, since a done
+		// one is resolved and has nothing left for the link to flag. Keyed
+		// by exact category text: a league with no nickname is keyed under
+		// whatever leagueDisplayName fallback the toolbar is actually
+		// showing, since that's the "toolbar label" a manager would type
+		// into a task's category to point at it.
+		function quickLinkTaskCounts() {
+			const counts = {};
+			for (const t of Object.values(loadTasks())) {
+				if (t.done || !t.category) continue;
+				counts[t.category] = (counts[t.category] || 0) + 1;
+			}
+			return counts;
+		}
+
 		function renderQuickLinks() {
 			const bar = document.getElementById('quicklinks');
 			if (!bar) return;
 			const leagues = (pageData?.leagues || []).filter((league) => league.type !== 'draftonly');
 			bar.innerHTML = '';
+			const taskCounts = quickLinkTaskCounts();
 			for (const league of leagues) {
 				const label = league.nickname || leagueDisplayName(league) || league.id;
-				appendQuickLink(bar, { url: league.url, label, title: leagueDisplayName(league) || label, style: league.style });
+				appendQuickLink(bar, { url: league.url, label, title: leagueDisplayName(league) || label, style: league.style, taskCount: taskCounts[label] });
 			}
 			for (const extra of pageData?.quickLinks || []) {
-				appendQuickLink(bar, { url: extra.url, label: extra.nickname, style: extra.style });
+				appendQuickLink(bar, { url: extra.url, label: extra.nickname, style: extra.style, taskCount: taskCounts[extra.nickname] });
 			}
 		}
 
@@ -4954,7 +4988,10 @@
 		// label in its own <span> so the pill's background sits behind just
 		// the text, not the divider the shared #quicklinks a::after rule
 		// appends after it (see the .quicklink-gold/-purple CSS comment).
-		function appendQuickLink(bar, { url, label, title, style }) {
+		// taskCount (see quickLinkTaskCounts) appends a small red footnote
+		// number after the label, outside that pill span, when there's at
+		// least one open task filed under this entry's own label.
+		function appendQuickLink(bar, { url, label, title, style, taskCount }) {
 			const cls = style === 'gold' ? 'quicklink-gold' : style === 'purple' ? 'quicklink-purple' : '';
 			const attrs = { href: url, target: '_blank', rel: 'noopener' };
 			if (cls) attrs.class = cls;
@@ -4962,6 +4999,7 @@
 			if (title) link.title = title;
 			if (cls) link.appendChild(el('span', { text: label }));
 			else link.textContent = label;
+			if (taskCount) link.appendChild(el('sup', { class: 'quicklink-tasknote', text: String(taskCount) }));
 			bar.appendChild(link);
 		}
 
