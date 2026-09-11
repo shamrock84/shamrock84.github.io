@@ -1,5 +1,6 @@
-// Unit test for the quick-link toolbar's task-count footnote — see
-// quickLinkTaskCounts/appendQuickLink in myffl.html.
+// Unit test for the quick-link toolbar's task-count footnote and its
+// per-card counterpart — quickLinkTaskCounts/appendQuickLink/
+// quickLinkLabelForLeague/taskBadgeLabel/buildCardHead in myffl.html.
 //
 // The footnote's whole job is to tell a manager "there's filed work about
 // this link" without a click, so its two failure modes are both silent: a
@@ -10,8 +11,14 @@
 // only looks the same. "Sum" is exact-string, open-tasks-only by design —
 // this pins both.
 //
+// The Rosters/Standings/Scoring card badge (buildCardHead) reads the exact
+// same counts under the exact same key (quickLinkLabelForLeague) as the
+// toolbar footnote, so the two must never disagree about a given league —
+// that shared key, not two independently-written label fallbacks, is what
+// this file pins for the card side.
+//
 // The page's own script block is evaluated in a vm, so this drives the real
-// quickLinkTaskCounts/appendQuickLink rather than a copy of them.
+// implementations rather than a copy of them.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -58,7 +65,7 @@ const context = {
 vm.createContext(context);
 vm.runInContext(scriptSource, context);
 
-const { quickLinkTaskCounts, appendQuickLink } = context;
+const { quickLinkTaskCounts, appendQuickLink, quickLinkLabelForLeague, taskBadgeLabel, buildCardHead } = context;
 
 function setTasks(tasks) {
 	tasksStore = JSON.stringify(tasks);
@@ -131,6 +138,73 @@ function renderedLink(opts) {
 	const pill = link.children.find((c) => c.tag === 'span');
 	assert.ok(note && pill, 'both the pill span and the footnote are present');
 	assert.ok(!pill.children.includes(note), 'the footnote is a sibling of the pill span, not nested inside it');
+}
+
+// ---- quickLinkLabelForLeague: the shared key --------------------------------
+
+assert.equal(quickLinkLabelForLeague({ nickname: 'MNMx', displayName: 'Monday Night Madness', id: '100' }), 'MNMx',
+	'nickname (Toolbar Label) wins over everything else');
+assert.equal(quickLinkLabelForLeague({ displayName: 'Iron Bank', leagueName: 'Iron Bank League', id: '200' }), 'Iron Bank',
+	'falls back to leagueDisplayName when there is no nickname');
+assert.equal(quickLinkLabelForLeague({ id: '300' }), '300',
+	'falls back to the id as a last resort, same as the toolbar itself');
+
+// ---- taskBadgeLabel: pluralization ------------------------------------------
+
+assert.equal(taskBadgeLabel(1), '1 Task', 'singular reads naturally');
+assert.equal(taskBadgeLabel(2), '2 Tasks', 'plural gets the s');
+assert.equal(taskBadgeLabel(11), '11 Tasks', 'double digits still pluralize');
+
+// ---- buildCardHead: the card badge itself -----------------------------------
+
+function badgeTexts(cardHead) {
+	const badgesEl = cardHead.children.find((c) => c.cls.split(' ').includes('badges'));
+	return badgesEl.children.map((b) => ({ text: b.textContent, cls: b.cls }));
+}
+
+setTasks({
+	a: { text: 'Fix scoring', category: 'MNMx', done: false },
+	b: { text: 'Another one', category: 'MNMx', done: false },
+	c: { text: 'Resolved', category: 'MNMx', done: true },
+});
+
+{
+	const card = node();
+	card.dataset.view = 'rosters';
+	const head = buildCardHead(card, { id: '100', nickname: 'MNMx', type: 'dynasty' });
+	const badge = badgeTexts(head).find((b) => b.cls.includes('badge-task'));
+	assert.ok(badge, 'a league whose nickname matches an open-task category gets the task badge');
+	assert.equal(badge.text, '2 Tasks', 'and it carries the right open-task count');
+}
+
+{
+	const card = node();
+	card.dataset.view = 'rosters';
+	const head = buildCardHead(card, { id: '200', nickname: 'Unrelated', type: 'dynasty' });
+	const badge = badgeTexts(head).find((b) => b.cls.includes('badge-task'));
+	assert.equal(badge, undefined, 'a league with no matching category gets no task badge at all');
+}
+
+{
+	// A league with no nickname set still falls back to leagueDisplayName —
+	// the same key a task's category would have to be typed as to match it.
+	const card = node();
+	card.dataset.view = 'standings';
+	const head = buildCardHead(card, { id: '300', displayName: 'MNMx', type: 'dynasty' });
+	const badge = badgeTexts(head).find((b) => b.cls.includes('badge-task'));
+	assert.ok(badge, 'the fallback display name is a valid match key too, same as the toolbar');
+	assert.equal(badge.text, '2 Tasks');
+}
+
+{
+	// Every task settles (done) — the badge must disappear entirely, not
+	// freeze at its last count or show a bare "0 Tasks".
+	setTasks({ a: { text: 'Fix scoring', category: 'MNMx', done: true } });
+	const card = node();
+	card.dataset.view = 'scoring';
+	const head = buildCardHead(card, { id: '100', nickname: 'MNMx', type: 'dynasty' });
+	const badge = badgeTexts(head).find((b) => b.cls.includes('badge-task'));
+	assert.equal(badge, undefined, 'a fully-completed category leaves no task badge behind');
 }
 
 console.log('All quick-link task-footnote checks passed.');
