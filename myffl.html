@@ -2800,6 +2800,26 @@
 			font-size: 0.85rem;
 			margin: 0.4rem 0;
 		}
+		/* Only rendered visible once a task's text is within
+		   TASK_COUNTER_THRESHOLD of MAX_TASK_TEXT_LENGTH — see
+		   attachTaskCharCounter. */
+		.planning-task-counter {
+			font-size: 0.75rem;
+			color: var(--muted);
+			flex-shrink: 0;
+		}
+		.planning-task-counter-limit { color: var(--ir-text); }
+		/* See PLAN_SYNC_ERROR_KEY/updateTasksSyncStatus — same "needs a look"
+		   ir-text/ir-bg pairing as the roster IR badge and the problems
+		   digest, not a new color meaning. */
+		.planning-sync-status {
+			color: var(--ir-text);
+			background: var(--ir-bg);
+			border-radius: 6px;
+			padding: 0.4rem 0.6rem;
+			font-size: 0.85rem;
+			margin: 0.4rem 0 0;
+		}
 		.planning-task-row {
 			display: flex;
 			align-items: center;
@@ -3402,6 +3422,15 @@
 		// so every read falls back to createdAt, which is what the flat
 		// list's insertion order already amounted to.
 		const TASKS_STORAGE_KEY = 'myfflTasks';
+		// Duplicated from api/plans.js's own MAX_TASK_TEXT_LENGTH — no build
+		// step, no shared import, same reasoning as the other constants this
+		// file keeps in sync across the sync boundary (see CLAUDE.md). Enforced
+		// here too, not just server-side: the whole plans document pushes
+		// atomically, so one task over the server's limit doesn't just fail to
+		// save itself, it silently blocks every other pending edit on the
+		// device until it's fixed (see PLAN_SYNC_ERROR_KEY below for what
+		// surfaces that when it happens anyway).
+		const MAX_TASK_TEXT_LENGTH = 2000;
 		function loadTasks() {
 			try {
 				return JSON.parse(localStorage.getItem(TASKS_STORAGE_KEY) || '{}');
@@ -3678,8 +3707,41 @@
 				// way out actually complete after the page is gone.
 				keepalive: true,
 			});
-			if (!res.ok) throw new Error(`HTTP ${res.status}`);
+			if (!res.ok) {
+				// api/plans.js answers a validation failure with {error, details} —
+				// carrying that through (rather than just the status code) is what
+				// setPlanSyncError below has to show, since "HTTP 400" alone gives
+				// no clue which task or plan is malformed.
+				const body = await res.json().catch(() => ({}));
+				throw new Error(body.error || `HTTP ${res.status}`);
+			}
 			return (await res.json()).plans;
+		}
+
+		// A failed push used to be invisible end to end — the request errors,
+		// .catch swallows it, and the page looks identical to a successful
+		// sync. That's exactly how a 308-character task silently blocked every
+		// push from one device for days (see MAX_TASK_TEXT_LENGTH's comment):
+		// nothing on screen said anything was wrong. This surfaces the last
+		// push failure's message next to the Tasks card until a push succeeds.
+		// Persisted rather than kept in memory so it survives a reload — the
+		// whole point is that it stays visible until someone actually looks.
+		const PLAN_SYNC_ERROR_KEY = 'myfflPlanSyncError';
+		function setPlanSyncError(message) {
+			if (message) localStorage.setItem(PLAN_SYNC_ERROR_KEY, message);
+			else localStorage.removeItem(PLAN_SYNC_ERROR_KEY);
+			updateTasksSyncStatus();
+		}
+		// Looked up by id rather than closed over, since the Tasks card this
+		// status line lives in gets torn down and rebuilt by renderGrid() on
+		// almost every edit — including, per the debounce, well before the
+		// async push this reports on has resolved.
+		function updateTasksSyncStatus() {
+			const statusEl = document.getElementById('tasks-sync-status');
+			if (!statusEl) return;
+			const message = localStorage.getItem(PLAN_SYNC_ERROR_KEY);
+			statusEl.classList.toggle('hidden', !message);
+			if (message) statusEl.textContent = `⚠ Last sync failed: ${message}`;
 		}
 
 		// Until this device has completed one successful sync it hasn't seen the
@@ -3691,7 +3753,9 @@
 		// Fire-and-forget on purpose. The local write already happened and is
 		// what the page renders from; a failed push means this device is simply
 		// unsynced for now, which is strictly better than erroring at someone
-		// mid-edit — and the pending log means the next load retries it.
+		// mid-edit — and the pending log means the next load retries it. The
+		// error is no longer *silently* swallowed, though — see
+		// PLAN_SYNC_ERROR_KEY above.
 		function sendPlanPush() {
 			if (!isLoggedIn()) return;
 			const mode = planSyncDone ? 'replace' : 'merge';
@@ -3706,11 +3770,12 @@
 				if (localStorage.getItem(PLAN_PENDING_KEY) === pushed) clearPendingPlanEdits();
 				if (localStorage.getItem(TASKS_PENDING_KEY) === pushedTasks) clearPendingTaskEdits();
 				markPlanSyncDone();
+				setPlanSyncError(null);
 				// A merge answers with the union, which may hold a plan this
 				// device cleared. Adopting it re-applies the tombstone and asks
 				// for one more push — now in replace mode — to remove it there.
 				if (mode === 'merge' && stored && adoptRemotePlans(stored)) schedulePlanPush();
-			}).catch(() => {});
+			}).catch((err) => setPlanSyncError(err.message || 'Sync failed'));
 		}
 
 		function markPlanSyncDone() {
@@ -10018,6 +10083,24 @@
 		// here. No workaround exists on the page's side; tapping directly
 		// into the field you want is the practical alternative.
 
+		// Only shown once text is getting close to MAX_TASK_TEXT_LENGTH — most
+		// tasks are a line or two, and a counter visible from the first
+		// keystroke would be noise on every one of them. Used on both the
+		// add row and the Edit Task popover's text field.
+		const TASK_COUNTER_THRESHOLD = MAX_TASK_TEXT_LENGTH - 400;
+		function attachTaskCharCounter(input) {
+			const counter = el('span', { class: 'planning-task-counter hidden' });
+			const update = () => {
+				const len = input.value.length;
+				counter.classList.toggle('hidden', len < TASK_COUNTER_THRESHOLD);
+				counter.classList.toggle('planning-task-counter-limit', len >= MAX_TASK_TEXT_LENGTH);
+				counter.textContent = `${len}/${MAX_TASK_TEXT_LENGTH}`;
+			};
+			input.addEventListener('input', update);
+			update();
+			return counter;
+		}
+
 		function renderTasksCard() {
 			const tasks = loadTasks();
 			// Not .admin-card — that class is how refreshAdminCard and
@@ -10031,8 +10114,23 @@
 			card.appendChild(heading);
 			makeCollapsible(card, heading, 'tasks');
 
+			// Hidden unless a push has actually failed — see
+			// PLAN_SYNC_ERROR_KEY. Set inline from localStorage rather than via
+			// updateTasksSyncStatus() (which looks the element up by id): this
+			// card is still a detached DOM tree at this point, not yet inserted
+			// by the caller, so getElementById can't find it yet.
+			// updateTasksSyncStatus() is for later — the async push this
+			// reports on resolves well after the card has been attached.
+			const syncErrorMessage = localStorage.getItem(PLAN_SYNC_ERROR_KEY);
+			const syncStatus = el('div', {
+				id: 'tasks-sync-status',
+				class: `planning-sync-status${syncErrorMessage ? '' : ' hidden'}`,
+				text: syncErrorMessage ? `⚠ Last sync failed: ${syncErrorMessage}` : '',
+			});
+			card.appendChild(syncStatus);
+
 			const addRow = el('div', { class: 'planning-add-row planning-task-add' });
-			const textInput = el('input', { type: 'text', class: 'planning-input', placeholder: 'New task…', autocomplete: 'off' });
+			const textInput = el('input', { type: 'text', class: 'planning-input', placeholder: 'New task…', autocomplete: 'off', maxlength: String(MAX_TASK_TEXT_LENGTH) });
 			const categoryInput = el('input', { type: 'text', class: 'planning-input', placeholder: 'Category (optional)', autocomplete: 'off' });
 			const existingCategories = [...new Set(Object.values(tasks).map((t) => t.category).filter(Boolean))].sort();
 			const categoryWrap = attachCategorySuggestions(categoryInput, () => existingCategories);
@@ -10048,6 +10146,7 @@
 				if (e.key === 'Enter') submitTask();
 			});
 			addRow.appendChild(textInput);
+			addRow.appendChild(attachTaskCharCounter(textInput));
 			addRow.appendChild(categoryWrap);
 			addRow.appendChild(addBtn);
 			card.appendChild(addRow);
@@ -10108,7 +10207,7 @@
 						// autofill dropdown, and the first Tab press in that
 						// state dismisses the dropdown instead of moving
 						// focus to the next field.
-						const editText = el('input', { type: 'text', class: 'planning-input', value: t.text, autocomplete: 'off' });
+						const editText = el('input', { type: 'text', class: 'planning-input', value: t.text, autocomplete: 'off', maxlength: String(MAX_TASK_TEXT_LENGTH) });
 						const editCategory = el('input', { type: 'text', class: 'planning-input', value: t.category || '', placeholder: 'Category (optional)', autocomplete: 'off' });
 						const editCategoryWrap = attachCategorySuggestions(editCategory, () => existingCategories);
 						const save = () => {
@@ -10143,6 +10242,7 @@
 						actions.appendChild(saveBtn);
 						actions.appendChild(cancelBtn);
 						form.appendChild(editText);
+						form.appendChild(attachTaskCharCounter(editText));
 						form.appendChild(editCategoryWrap);
 						form.appendChild(actions);
 						popoverEl.appendChild(form);

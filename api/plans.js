@@ -58,7 +58,16 @@ const PLAN_KINDS = ['contractPlans', 'salaryPlans', 'cutPlans', 'resultOverrides
 // building for, so a collision resolves the same way PLAN_KINDS does —
 // stored wins.
 const MAX_TASKS = 300;
-const MAX_TASK_TEXT_LENGTH = 200;
+// Raised from 200: the whole plans document is validated and pushed
+// atomically (see mergePlans/handler below), so one task over this limit
+// doesn't just fail to save itself — it 400s every push of the entire
+// document, silently blocking every other plan and task on whichever
+// device holds it until it's fixed. That's exactly what happened with a
+// 308-character task, and tasks are routinely used for full feature specs
+// (see CLAUDE.md's "Working through the Tasks card"), so 200 was always
+// going to be hit. 2000 comfortably covers that use while still bounding
+// the store.
+const MAX_TASK_TEXT_LENGTH = 2000;
 const MAX_TASK_CATEGORY_LENGTH = 40;
 
 // Exported for the unit test in scripts/test-plans.mjs. Vercel only ever

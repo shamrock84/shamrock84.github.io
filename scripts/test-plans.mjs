@@ -69,7 +69,7 @@ check('rejects a non-object', validateTasks('nope').length === 1);
 check('rejects an array', validateTasks([]).length === 1);
 check('rejects a non-object task', validateTasks({ t1: 'nope' }).length === 1);
 check('rejects an empty text', validateTasks({ t1: { text: '', done: false, createdAt: 1 } }).length === 1);
-check('rejects an over-long text', validateTasks({ t1: { text: 'x'.repeat(201), done: false, createdAt: 1 } }).length === 1);
+check('rejects an over-long text', validateTasks({ t1: { text: 'x'.repeat(2001), done: false, createdAt: 1 } }).length === 1);
 check('rejects an over-long category', validateTasks({ t1: { text: 'x', category: 'x'.repeat(41), done: false, createdAt: 1 } }).length === 1);
 check('rejects a non-boolean done', validateTasks({ t1: { text: 'x', done: 'yes', createdAt: 1 } }).length === 1);
 check('rejects a non-number createdAt', validateTasks({ t1: { text: 'x', done: false, createdAt: 'now' } }).length === 1);
