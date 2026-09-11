@@ -11157,6 +11157,9 @@
 			// served config, and doing that eighteen times over would be the same
 			// answer eighteen times. refreshAdminDirtyState repaints from here on.
 			const pending = adminPendingChanges();
+			// Same reasoning, for the collapsed blurb's task-count mention below:
+			// one read of the Tasks store rather than one per card.
+			const taskCounts = quickLinkTaskCounts();
 
 			adminDraft.forEach((league, i) => {
 				const node = el('div', { class: 'admin-league' });
@@ -11322,6 +11325,15 @@
 				// name it falls back to when blank is doing nothing.
 				if (league.nickname && league.nickname !== (league.displayName || name)) bits.push(`Toolbar "${league.nickname}"`);
 				if (league.style) bits.push(`${adminLabelFor(ADMIN_QUICKLINK_STYLES, league.style)} toolbar style`);
+				// Same count, same key, same wording as the red badge on this
+				// league's Rosters/Standings/Scoring cards (taskBadgeLabel) and
+				// the toolbar's own footnote (quickLinkTaskCounts) — reading off
+				// the draft's own nickname/displayName/name so an unsaved
+				// Toolbar Label edit is reflected immediately, same as the
+				// "Toolbar" mention above. Follows the deviation rule: no open
+				// tasks under this league's label, no mention.
+				const taskCount = taskCounts[quickLinkLabelForLeague(league)] || 0;
+				if (taskCount) bits.push(taskBadgeLabel(taskCount));
 				// Always last and always present, so a scan down the list reads
 				// these in one column. The money was the one group of fields the
 				// collapsed row said nothing about at all, which made "which
