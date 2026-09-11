@@ -1782,6 +1782,15 @@
 			   mis-aimed tap on a phone still opens the thing. */
 		}
 		.scoring-detail-toggle:hover { color: var(--text); }
+		/* Red flags a matchup with a currently-playing player (see
+		   isPlayerLive — ESPN scoreboard state 'in'), on the page's
+		   established "needs a look" red (--ir-text; same token as IR/cut
+		   planning) rather than a color invented for this one case. Shown
+		   collapsed, before the drawer is even opened, so a manager knows
+		   there's a live score in here without a click; wins over the hover
+		   rule above by specificity, so it doesn't fade to --text on
+		   pointer-over. */
+		.scoring-detail-toggle.scoring-detail-live { color: var(--ir-text); }
 		.scoring-detail-chevron {
 			display: inline-block;
 			font-size: 0.85em;
@@ -1865,6 +1874,15 @@
 		   of an unpaired position row. */
 		.scoring-detail-pts.empty,
 		.scoring-detail-name.empty { color: var(--muted); }
+		/* Highlights one starter's row-half once their own game is live —
+		   same --ir-text red as the toggle strip above, and the same
+		   isPlayerLive check. Declared after .empty so it wins that tie
+		   on equal specificity: a player who's live but whose points
+		   haven't posted yet (points still null right after kickoff) stays
+		   red, not muted. A player whose game hasn't started, or is
+		   already final, gets neither class and renders exactly as before. */
+		.scoring-detail-pts.live,
+		.scoring-detail-name.live { color: var(--ir-text); }
 		.scoring-detail-empty {
 			color: var(--muted);
 			font-size: 0.75rem;
@@ -6477,6 +6495,17 @@
 			return line || null;
 		}
 
+		// Whether a player's own game is live RIGHT NOW — ESPN scoreboard
+		// state 'in', not 'pre' (hasn't kicked off) or 'post' (already
+		// final). Drives the red "something can still move" flag on both
+		// the toggle strip and, once open, the individual starter rows — a
+		// team defense qualifies the same as anyone else, since it carries a
+		// `team` field too.
+		function isPlayerLive(player) {
+			if (!player || !player.team) return false;
+			return liveGames[player.team]?.state === 'in';
+		}
+
 		// Stable across the 30s re-render, distinct per matchup, and naturally
 		// different once the week's pairings change — the franchise ids are
 		// sorted so the same two teams key identically regardless of which one
@@ -6584,6 +6613,10 @@
 					// against.
 					ptsCell.textContent = Number(player.points).toFixed(2);
 				}
+				if (isPlayerLive(player)) {
+					nameCell.classList.add('live');
+					ptsCell.classList.add('live');
+				}
 			}
 			// Left side reads name-then-points inward toward the centre
 			// column; right side mirrors it, points-then-name.
@@ -6604,6 +6637,11 @@
 		function appendMatchupDetail(pill, league, group) {
 			const key = matchupDetailKey(league, group);
 			const open = isScoringDetailOpen(key);
+
+			// Computed up front, not inside fill() — the toggle strip needs
+			// this even collapsed, so a manager knows whether to open the
+			// drawer at all before it's built.
+			const anyLive = [...(group[0]?.players || []), ...(group[1]?.players || [])].some(isPlayerLive);
 
 			const body = el('div', { class: 'scoring-detail-body' });
 
@@ -6645,7 +6683,7 @@
 			const label = el('span', { text: open ? 'Hide detail' : 'Show detail' });
 			const toggle = el('button', {
 				type: 'button',
-				class: 'scoring-detail-toggle',
+				class: `scoring-detail-toggle${anyLive ? ' scoring-detail-live' : ''}`,
 				'aria-expanded': String(open),
 			});
 			toggle.appendChild(chevron);

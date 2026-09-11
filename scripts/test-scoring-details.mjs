@@ -22,6 +22,10 @@
 //   * the open/closed state round-trips through localStorage, which is the
 //     only reason an open drawer survives refreshLiveScoring tearing down
 //     and rebuilding every Scoring card on each ~30s poll.
+//   * isPlayerLive flags the toggle and a starter's own row-half red only
+//     while their game is actually underway (state 'in') — never for a game
+//     that hasn't kicked off, is already final, or a team the scoreboard
+//     never covered, any of which would otherwise be mistaken for live.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -603,6 +607,65 @@ function leagueWithMatchup() {
 	// The players on teams absent from the schedule are still rendered — they
 	// just carry no game line.
 	assert.equal(findAll(body, hasClass('scoring-detail-row')).length, 3);
+}
+
+// --- isPlayerLive and the red "still moving" flag on the toggle + rows ---
+// A currently-playing player (scoreboard state 'in') is the one thing this
+// drawer highlights unprompted — everyone else (pre-kickoff, final, or a
+// team the scoreboard never covered) must render exactly as before.
+{
+	const ctx = makeContext(LOGGED_IN);
+	ctx.liveScoringAttempted = true;
+	setLiveGames(ctx, {
+		CIN: { opponent: 'TB', isHome: true, kickoff: null, state: 'in', detail: '4:35 - 1st' },
+		JAX: { opponent: 'CLE', isHome: true, kickoff: null, state: 'pre', detail: null },
+		ATL: { opponent: 'CAR', isHome: true, kickoff: null, state: 'post', detail: 'Final' },
+		// BUF deliberately absent — a team the scoreboard doesn't cover is not
+		// live, same as a bye.
+	});
+	const league = leagueWithMatchup();
+	const card = ctx.renderScoringCard(league);
+
+	// The toggle strip carries the flag collapsed, before the drawer is even
+	// opened — Burrow (CIN) is live, so the matchup as a whole is flagged.
+	const toggle = findAll(card, hasClass('scoring-detail-toggle'))[0];
+	assert.ok(toggle.cls.split(/\s+/).includes('scoring-detail-live'), 'a live player in the matchup flags the toggle');
+
+	toggle.listeners.click[0]();
+	const body = findAll(card, hasClass('scoring-detail-body'))[0];
+	const rows = findAll(body, hasClass('scoring-detail-row'));
+	assert.deepEqual(rows.map((r) => fullText(findAll(r, hasClass('scoring-detail-pos'))[0])), ['QB', 'RB', 'WR']);
+
+	const isLive = (cell) => cell.cls.split(/\s+/).includes('live');
+	// QB row: Burrow (CIN, 'in') is live; Lawrence (JAX, 'pre') is not.
+	const qbNames = findAll(rows[0], hasClass('scoring-detail-name'));
+	const qbPts = findAll(rows[0], hasClass('scoring-detail-pts'));
+	assert.ok(isLive(qbNames[0]) && isLive(qbPts[0]), 'the live starter’s name and score both flag red');
+	assert.ok(!isLive(qbNames[1]) && !isLive(qbPts[1]), 'a game that hasn’t kicked off gets no highlight');
+
+	// RB row: Cook (BUF, not in the schedule map) and Robinson (ATL, 'post')
+	// are both non-live — a missing team must not be mistaken for live.
+	const rbNames = findAll(rows[1], hasClass('scoring-detail-name'));
+	const rbPts = findAll(rows[1], hasClass('scoring-detail-pts'));
+	assert.ok(!isLive(rbNames[0]) && !isLive(rbPts[0]), 'a team absent from the schedule is not live');
+	assert.ok(!isLive(rbNames[1]) && !isLive(rbPts[1]), 'a finished game gets no highlight');
+
+	// WR row: London (ATL, 'post') — same, no highlight once the game is over.
+	const wrNames = findAll(rows[2], hasClass('scoring-detail-name'));
+	assert.ok(!isLive(wrNames[1]), 'a finished game’s starter is never highlighted');
+}
+
+// No live player anywhere in the matchup: the toggle stays exactly as it was
+// before this feature existed.
+{
+	const ctx = makeContext(LOGGED_IN);
+	ctx.liveScoringAttempted = true;
+	setLiveGames(ctx, {
+		CIN: { opponent: 'TB', isHome: true, kickoff: null, state: 'pre', detail: null },
+	});
+	const card = ctx.renderScoringCard(leagueWithMatchup());
+	const toggle = findAll(card, hasClass('scoring-detail-toggle'))[0];
+	assert.ok(!toggle.cls.split(/\s+/).includes('scoring-detail-live'), 'nobody live means no red flag');
 }
 
 console.log('test-scoring-details.mjs OK');
