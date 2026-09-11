@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-11T19:10:24.479Z",
+  "generatedAt": "2026-09-11T22:34:51.901Z",
   "year": "2026",
   "rankingPools": {
     "ROS|PPR|ALL": {
@@ -6478,7 +6478,7 @@
     }
   },
   "depthCharts": {
-    "generatedAt": "2026-09-11T19:10:11.063Z",
+    "generatedAt": "2026-09-11T22:34:44.015Z",
     "teams": {
       "ARI": {
         "name": "Arizona Cardinals",
@@ -7558,7 +7558,7 @@
             "name": "Malik Davis",
             "rank": 2,
             "role": null,
-            "injuryStatus": "Q"
+            "injuryStatus": "O"
           },
           {
             "id": "4362478",
@@ -7981,31 +7981,24 @@
             "injuryStatus": null
           },
           {
-            "id": "4259305",
-            "name": "Bo Melton",
+            "id": "4430191",
+            "name": "Skyy Moore",
             "rank": 4,
             "role": "X",
             "injuryStatus": null
           },
           {
-            "id": "4430191",
-            "name": "Skyy Moore",
+            "id": "4635009",
+            "name": "J. Michael Sturdivant",
             "rank": 5,
             "role": "Z",
             "injuryStatus": null
           },
           {
-            "id": "4635009",
-            "name": "J. Michael Sturdivant",
-            "rank": 6,
-            "role": "S",
-            "injuryStatus": null
-          },
-          {
             "id": "4431487",
             "name": "Savion Williams",
-            "rank": 7,
-            "role": "X",
+            "rank": 6,
+            "role": "S",
             "injuryStatus": "IR"
           }
         ],
@@ -8245,7 +8238,7 @@
             "name": "Alec Pierce",
             "rank": 1,
             "role": "X",
-            "injuryStatus": "Q"
+            "injuryStatus": null
           },
           {
             "id": "4688813",
@@ -8396,7 +8389,7 @@
             "name": "Jakobi Meyers",
             "rank": 3,
             "role": "S",
-            "injuryStatus": "Q"
+            "injuryStatus": null
           },
           {
             "id": "4685415",
@@ -8770,7 +8763,7 @@
             "name": "Keaton Mitchell",
             "rank": 2,
             "role": null,
-            "injuryStatus": "Q"
+            "injuryStatus": null
           },
           {
             "id": "4430968",
@@ -8807,7 +8800,7 @@
             "name": "Brenen Thompson",
             "rank": 4,
             "role": "X",
-            "injuryStatus": "Q"
+            "injuryStatus": null
           },
           {
             "id": "4430870",
@@ -9097,7 +9090,7 @@
             "name": "Will Kacmarek",
             "rank": 2,
             "role": null,
-            "injuryStatus": "Q"
+            "injuryStatus": null
           },
           {
             "id": "4714379",
@@ -9168,13 +9161,6 @@
             "rank": 3,
             "role": null,
             "injuryStatus": null
-          },
-          {
-            "id": "4374033",
-            "name": "Jermar Jefferson",
-            "rank": 4,
-            "role": null,
-            "injuryStatus": "IR"
           }
         ],
         "WR": [
@@ -10152,38 +10138,31 @@
             "injuryStatus": null
           },
           {
-            "id": "3047876",
-            "name": "KhaDarel Hodge",
-            "rank": 6,
-            "role": "S",
-            "injuryStatus": null
-          },
-          {
             "id": "4431466",
             "name": "Jordan Watkins",
-            "rank": 7,
-            "role": "X",
+            "rank": 6,
+            "role": "S",
             "injuryStatus": "O"
           },
           {
             "id": "3895856",
             "name": "Christian Kirk",
-            "rank": 8,
-            "role": "Z",
+            "rank": 7,
+            "role": "X",
             "injuryStatus": "IR"
           },
           {
             "id": "4360438",
             "name": "Brandon Aiyuk",
-            "rank": 9,
-            "role": "S",
+            "rank": 8,
+            "role": "Z",
             "injuryStatus": "O"
           },
           {
             "id": "4428209",
             "name": "Ricky Pearsall",
-            "rank": 10,
-            "role": "X",
+            "rank": 9,
+            "role": "S",
             "injuryStatus": "IR"
           }
         ],
@@ -10872,7 +10851,7 @@
           "position": "RB",
           "team": "WAS",
           "bye": "7",
-          "status": "INJURED_RESERVE",
+          "status": "ROSTER",
           "salary": null,
           "contractYear": null,
           "injuryStatus": null,
@@ -10969,27 +10948,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/saquon-barkley.php"
-          }
-        },
-        {
-          "id": "16747",
-          "name": "Tyrone Tracy",
-          "position": "RB",
-          "team": "NYG",
-          "bye": "8",
-          "status": "ROSTER",
-          "salary": null,
-          "contractYear": null,
-          "injuryStatus": null,
-          "injuryDetail": null,
-          "pts": 0,
-          "priorYearPts": 159.8,
-          "ecr": {
-            "rank": 250,
-            "posRank": "RB61",
-            "tier": null,
-            "delta": null,
-            "url": "https://www.fantasypros.com/nfl/players/tyrone-tracy-jr.php"
           }
         },
         {
@@ -11504,7 +11462,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-11T19:09:16.790Z",
+      "updatedAt": "2026-09-11T22:34:05.444Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -11758,16 +11716,6 @@
       ],
       "lineupError": null,
       "draftInProgress": false,
-      "rankings": {
-        "type": "ROS",
-        "scoring": "PPR",
-        "position": "ALL",
-        "lastUpdated": "9/07",
-        "totalExperts": 3,
-        "matched": 30,
-        "total": 30
-      },
-      "rankingsError": null,
       "available": [
         "Kenny Gainwell",
         "Greg Dulcich",
@@ -11807,6 +11755,17 @@
         "Jahan Dotson",
         "George Holani"
       ],
+      "availableAt": "2026-09-11T19:09:13.895Z",
+      "rankings": {
+        "type": "ROS",
+        "scoring": "PPR",
+        "position": "ALL",
+        "lastUpdated": "9/07",
+        "totalExperts": 3,
+        "matched": 29,
+        "total": 29
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-09-11T19:09:13.895Z",
         "scoring": "PPR",
@@ -12549,7 +12508,6 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-09-11T19:09:13.895Z",
       "results": [
         {
           "year": "2006",
@@ -15685,7 +15643,7 @@
           "originalTeamName": "Swingline Steamrollers"
         }
       ],
-      "updatedAt": "2026-09-11T19:09:18.588Z",
+      "updatedAt": "2026-09-11T22:34:06.923Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -15894,6 +15852,12 @@
         "matchups": [
           {
             "teamIds": [
+              "0001",
+              "0007"
+            ]
+          },
+          {
+            "teamIds": [
               "0009",
               "0010"
             ]
@@ -15908,12 +15872,6 @@
             "teamIds": [
               "0004",
               "0006"
-            ]
-          },
-          {
-            "teamIds": [
-              "0001",
-              "0007"
             ]
           },
           {
@@ -15939,16 +15897,6 @@
       ],
       "lineupError": null,
       "draftInProgress": false,
-      "rankings": {
-        "type": "ROS",
-        "scoring": "PPR",
-        "position": "ALL",
-        "lastUpdated": "9/07",
-        "totalExperts": 3,
-        "matched": 28,
-        "total": 29
-      },
-      "rankingsError": null,
       "available": [
         "Kenny Gainwell",
         "Greg Dulcich",
@@ -15989,6 +15937,17 @@
         "Jahan Dotson",
         "George Holani"
       ],
+      "availableAt": "2026-09-11T19:09:13.895Z",
+      "rankings": {
+        "type": "ROS",
+        "scoring": "PPR",
+        "position": "ALL",
+        "lastUpdated": "9/07",
+        "totalExperts": 3,
+        "matched": 28,
+        "total": 29
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-09-11T19:09:13.895Z",
         "scoring": "PPR",
@@ -16715,7 +16674,6 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-09-11T19:09:13.895Z",
       "results": [
         {
           "year": "2007",
@@ -19132,11 +19090,8 @@
           "status": "ROSTER",
           "salary": null,
           "contractYear": null,
-          "injuryStatus": "Q",
-          "injuryDetail": {
-            "part": "Hamstring",
-            "until": "Sep 13, 2026"
-          },
+          "injuryStatus": null,
+          "injuryDetail": null,
           "pts": 0,
           "priorYearPts": 55.4,
           "ecr": {
@@ -19709,7 +19664,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-11T19:09:20.538Z",
+      "updatedAt": "2026-09-11T22:34:08.449Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -20005,16 +19960,6 @@
       ],
       "lineupError": null,
       "draftInProgress": false,
-      "rankings": {
-        "type": "ROS",
-        "scoring": "PPR",
-        "position": "ALL",
-        "lastUpdated": "9/07",
-        "totalExperts": 3,
-        "matched": 25,
-        "total": 26
-      },
-      "rankingsError": null,
       "available": [
         "Kenny Gainwell",
         "Greg Dulcich",
@@ -20036,6 +19981,17 @@
         "Darnell Washington",
         "Jahan Dotson"
       ],
+      "availableAt": "2026-09-11T19:09:13.895Z",
+      "rankings": {
+        "type": "ROS",
+        "scoring": "PPR",
+        "position": "ALL",
+        "lastUpdated": "9/07",
+        "totalExperts": 3,
+        "matched": 25,
+        "total": 26
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-09-11T19:09:13.895Z",
         "scoring": "PPR",
@@ -20846,7 +20802,6 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-09-11T19:09:13.895Z",
       "results": [
         {
           "year": "2010",
@@ -22882,11 +22837,8 @@
           "status": "ROSTER",
           "salary": "3",
           "contractYear": "3",
-          "injuryStatus": "Q",
-          "injuryDetail": {
-            "part": "Hamstring",
-            "until": "Sep 13, 2026"
-          },
+          "injuryStatus": null,
+          "injuryDetail": null,
           "pts": 0,
           "priorYearPts": 55.2,
           "ecr": {
@@ -23330,7 +23282,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-11T19:09:23.246Z",
+      "updatedAt": "2026-09-11T22:34:10.141Z",
       "error": null,
       "tags": [
         "BestBall"
@@ -23577,14 +23529,14 @@
         "matchups": [
           {
             "teamIds": [
-              "0009",
-              "0012"
+              "0004",
+              "0010"
             ]
           },
           {
             "teamIds": [
-              "0004",
-              "0010"
+              "0009",
+              "0012"
             ]
           },
           {
@@ -23615,16 +23567,6 @@
       },
       "scoringError": null,
       "draftInProgress": false,
-      "rankings": {
-        "type": "ROS",
-        "scoring": "PPR",
-        "position": "ALL",
-        "lastUpdated": "9/07",
-        "totalExperts": 3,
-        "matched": 23,
-        "total": 23
-      },
-      "rankingsError": null,
       "available": [
         "Kenny Gainwell",
         "Greg Dulcich",
@@ -23652,6 +23594,17 @@
         "Kirk Cousins",
         "Jahan Dotson"
       ],
+      "availableAt": "2026-09-11T19:09:13.895Z",
+      "rankings": {
+        "type": "ROS",
+        "scoring": "PPR",
+        "position": "ALL",
+        "lastUpdated": "9/07",
+        "totalExperts": 3,
+        "matched": 23,
+        "total": 23
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-09-11T19:09:13.895Z",
         "scoring": "PPR",
@@ -24462,7 +24415,6 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-09-11T19:09:13.895Z",
       "results": [
         {
           "year": "2012",
@@ -26358,11 +26310,8 @@
           "status": "ROSTER",
           "salary": "5",
           "contractYear": "2",
-          "injuryStatus": "Q",
-          "injuryDetail": {
-            "part": "Hamstring",
-            "until": "Sep 13, 2026"
-          },
+          "injuryStatus": null,
+          "injuryDetail": null,
           "pts": 0,
           "priorYearPts": 50.7,
           "ecr": {
@@ -26814,7 +26763,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-11T19:09:25.408Z",
+      "updatedAt": "2026-09-11T22:34:11.961Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -27123,7 +27072,7 @@
         "Brashard Smith"
       ],
       "power": {
-        "computedAt": "2026-09-11T19:09:13.895Z",
+        "computedAt": "2026-09-11T22:34:03.033Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -28888,7 +28837,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-11T19:09:27.611Z",
+      "updatedAt": "2026-09-11T22:34:13.907Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -29215,7 +29164,7 @@
         "Brashard Smith"
       ],
       "power": {
-        "computedAt": "2026-09-11T19:09:13.895Z",
+        "computedAt": "2026-09-11T22:34:03.033Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -30265,11 +30214,8 @@
           "status": "ROSTER",
           "salary": "3.47",
           "contractYear": "1",
-          "injuryStatus": "Q",
-          "injuryDetail": {
-            "part": "Hamstring",
-            "until": "Sep 13, 2026"
-          },
+          "injuryStatus": null,
+          "injuryDetail": null,
           "pts": 0,
           "priorYearPts": 50.7,
           "ecr": {
@@ -30656,7 +30602,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-11T19:09:29.897Z",
+      "updatedAt": "2026-09-11T22:34:15.738Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -30999,7 +30945,7 @@
         "Chig Okonkwo"
       ],
       "power": {
-        "computedAt": "2026-09-11T19:09:13.895Z",
+        "computedAt": "2026-09-11T22:34:03.033Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -31974,7 +31920,7 @@
           "injuryStatus": null
         }
       ],
-      "updatedAt": "2026-09-11T19:09:30.029Z",
+      "updatedAt": "2026-09-11T22:34:15.901Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -32247,16 +32193,6 @@
         "3929645"
       ],
       "lineupError": null,
-      "rankings": {
-        "type": "ROS",
-        "scoring": "HALF",
-        "position": "ALL",
-        "lastUpdated": "9/07",
-        "totalExperts": 3,
-        "matched": 14,
-        "total": 15
-      },
-      "rankingsError": null,
       "available": [
         "KC Concepcion",
         "Brock Purdy",
@@ -32299,6 +32235,17 @@
         "Omar Cooper Jr.",
         "Gunnar Helm"
       ],
+      "availableAt": "2026-09-11T19:09:13.895Z",
+      "rankings": {
+        "type": "ROS",
+        "scoring": "HALF",
+        "position": "ALL",
+        "lastUpdated": "9/07",
+        "totalExperts": 3,
+        "matched": 14,
+        "total": 15
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-09-11T19:09:13.895Z",
         "scoring": "HALF",
@@ -32937,7 +32884,6 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-09-11T19:09:13.895Z",
       "results": [
         {
           "year": "2020",
@@ -33239,7 +33185,7 @@
           "injuryStatus": null
         }
       ],
-      "updatedAt": "2026-09-11T19:09:30.104Z",
+      "updatedAt": "2026-09-11T22:34:15.996Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -33511,16 +33457,6 @@
         "4697745"
       ],
       "lineupError": null,
-      "rankings": {
-        "type": "ROS",
-        "scoring": "PPR",
-        "position": "ALL",
-        "lastUpdated": "9/07",
-        "totalExperts": 3,
-        "matched": 14,
-        "total": 15
-      },
-      "rankingsError": null,
       "available": [
         "Makai Lemon",
         "KC Concepcion",
@@ -33563,6 +33499,17 @@
         "Jerry Jeudy",
         "Omar Cooper Jr."
       ],
+      "availableAt": "2026-09-11T19:09:13.895Z",
+      "rankings": {
+        "type": "ROS",
+        "scoring": "PPR",
+        "position": "ALL",
+        "lastUpdated": "9/07",
+        "totalExperts": 3,
+        "matched": 14,
+        "total": 15
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-09-11T19:09:13.895Z",
         "scoring": "PPR",
@@ -34201,7 +34148,6 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-09-11T19:09:13.895Z",
       "results": [
         {
           "year": "2025",
@@ -34607,7 +34553,7 @@
         }
       ],
       "draftInProgress": false,
-      "updatedAt": "2026-09-11T19:09:30.313Z",
+      "updatedAt": "2026-09-11T22:34:16.235Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -34943,7 +34889,7 @@
         "DJ Giddens"
       ],
       "power": {
-        "computedAt": "2026-09-11T19:09:13.895Z",
+        "computedAt": "2026-09-11T22:34:03.033Z",
         "scoring": "HALF",
         "projections": {
           "source": {
