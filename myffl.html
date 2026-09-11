@@ -10,8 +10,14 @@
 	<meta name="theme-color" media="(prefers-color-scheme: light)" content="#4F2683">
 	<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#140f1e">
 	<style>
-		/* Minnesota Vikings palette: purple as the primary accent everywhere,
-		   gold reserved specifically for highlighting the user's own team. */
+		/* Minnesota Vikings palette: purple as the primary accent
+		   everywhere. Gold is "notable, not urgent" — badge metadata
+		   (Provider/Season), a taxi-squad player, the Bye Weeks
+		   current-week row, the Scoring drawer's currently-playing-player
+		   highlight. "This is my team" (.me-row) used to be gold's one
+		   reserved meaning, but moved to the same purple every badge chip
+		   uses once gold was needed for a live player on the same card —
+		   see .scoring-detail-toggle.scoring-detail-live's own comment. */
 		:root {
 			--bg: #f5f3f9;
 			--card-bg: #ffffff;
@@ -1782,6 +1788,25 @@
 			   mis-aimed tap on a phone still opens the thing. */
 		}
 		.scoring-detail-toggle:hover { color: var(--text); }
+		/* Gold flags a matchup with a currently-playing player (see
+		   isPlayerLive — ESPN scoreboard state 'in') — the same
+		   --gold-chip-bg/--gold-chip-text pairing the Provider/Year badges
+		   use, chosen over red because a live player isn't a warning, it's
+		   "notable right now". Gold used to belong to .me-row's own "this
+		   is my team" highlight one row up in the same pill — moved to
+		   purple (below) specifically so the two don't read as the same
+		   fact; don't move this one back to gold-and-.me-row-to-something-
+		   else without re-solving that collision. Shown collapsed, before
+		   the drawer is even opened, so a manager knows there's a live
+		   score in here without a click; the explicit :hover rule keeps it
+		   filled on pointer-over rather than fading toward the plain-hover
+		   rule above (same specificity, so source order alone isn't a safe
+		   enough guarantee to skip it). */
+		.scoring-detail-toggle.scoring-detail-live,
+		.scoring-detail-toggle.scoring-detail-live:hover {
+			background: var(--gold-chip-bg);
+			color: var(--gold-chip-text);
+		}
 		.scoring-detail-chevron {
 			display: inline-block;
 			font-size: 0.85em;
@@ -1817,6 +1842,21 @@
 		.scoring-detail-name {
 			min-width: 0;
 			overflow-wrap: anywhere;
+			/* Stretched to the row's full height (overriding the row's own
+			   align-items: center) rather than sized to its own content, so
+			   a live highlight (below) fills the same height as the score
+			   column beside it regardless of which one has more lines —
+			   the name column often runs two (the player line plus the game
+			   sub-line) where the score column is always one. The inner
+			   flex + justify-content just re-centers that content within
+			   the taller box; column direction keeps the cross axis
+			   (width) at its default stretch, which is what lets
+			   text-align below keep working exactly as it did as a plain
+			   block. */
+			align-self: stretch;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
 		}
 		.scoring-detail-name.right { text-align: right; }
 		/* The player's own NFL game, under their name — same muted sub-line
@@ -1857,6 +1897,14 @@
 			   the ordinary two-decimal case so the common row doesn't
 			   reserve a digit's worth of width the names need more. */
 			min-width: 2rem;
+			/* Same stretch-and-recenter as .scoring-detail-name, and for the
+			   same reason: a one-line score must fill exactly as much
+			   height as a two-line name so their live highlights (below)
+			   read as the same size. */
+			align-self: stretch;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
 		}
 		.scoring-detail-pts.left { text-align: right; }
 		/* A null points value renders as this dash rather than 0.0 — see
@@ -1865,6 +1913,33 @@
 		   of an unpaired position row. */
 		.scoring-detail-pts.empty,
 		.scoring-detail-name.empty { color: var(--muted); }
+		/* Highlights one starter's row-half once their own game is live — a
+		   filled chip, same --gold-chip-bg/--gold-chip-text pairing as the
+		   toggle strip above (see its own comment for why gold rather than
+		   red, and why not the same gold .me-row uses), not just recolored
+		   text. Declared after .empty so
+		   it wins that tie on equal specificity: a player who's live but
+		   whose points haven't posted yet (points still null right after
+		   kickoff) stays highlighted, not muted. A player whose game hasn't
+		   started, or is already final, gets neither class and renders
+		   exactly as before.
+		   The horizontal padding/negative-margin pair extends the fill into
+		   the row's own column gap without changing any track's width, so
+		   the name chip and the score chip on the same side read as one
+		   block instead of two separated by a visible seam. Vertical
+		   padding is deliberately NOT part of that pair — the stretch on
+		   .scoring-detail-name/.scoring-detail-pts above already sizes both
+		   to the row's full height, so adding vertical padding here would
+		   just push this fill taller than that shared height rather than
+		   making the two sides match. */
+		.scoring-detail-pts.live,
+		.scoring-detail-name.live {
+			background: var(--gold-chip-bg);
+			color: var(--gold-chip-text);
+			border-radius: 4px;
+			padding: 0 0.3rem;
+			margin: 0 -0.3rem;
+		}
 		.scoring-detail-empty {
 			color: var(--muted);
 			font-size: 0.75rem;
@@ -2100,14 +2175,18 @@
 		tr.me-row td,
 		.scoring-matchup-row.me-row {
 			font-weight: 700;
-			/* Same light yellow as the Provider/Year badges (--gold-chip-*)
-			   rather than the full-strength --gold used for warning states
-			   (the contract banner, the problems digest) — a highlighted
-			   row isn't a warning, and sharing the badge tokens keeps the
-			   two "this is mine" and "this is metadata" yellows visually
-			   related instead of one reading as an alert. */
-			background: var(--gold-chip-bg);
-			color: var(--gold-chip-text);
+			/* The page's own purple badge pairing (--chip-bg/--accent — same
+			   as .badge's default) rather than gold: this used to be gold
+			   too, sharing the Provider/Year badge tokens, but the Scoring
+			   drawer's own live-player highlight (.scoring-detail-toggle.
+			   scoring-detail-live etc.) now needs that gold for "notable
+			   right now", and a team row and a starter row both gold on the
+			   same card read as the same fact when they aren't one. Purple
+			   is otherwise unclaimed by anything else on a Scores/Standings
+			   card, so "this is my team" gets its own color instead of
+			   sharing one that just became ambiguous. */
+			background: var(--chip-bg);
+			color: var(--accent);
 		}
 		.exposure-leagues {
 			color: var(--muted);
@@ -2172,12 +2251,18 @@
 			color: var(--gold-chip-text);
 			font-weight: 600;
 		}
-		/* The Bye Weeks row for the NFL week currently in progress — same gold
-		   as tr.me-row, so "this week" reads as the same colour "this is my
-		   team" already does elsewhere. The Teams/Players sub-lines underneath
-		   keep their own purple/grey rather than inheriting gold, since those
-		   colours are set explicitly on .bye-teams/.exposure-leagues and win
-		   over the one inherited from the row. */
+		/* The Bye Weeks row for the NFL week currently in progress — the
+		   same gold the Scoring drawer's live-player highlight uses for
+		   "notable right now" (see .scoring-detail-toggle.scoring-detail-
+		   live's own comment). tr.me-row used to share this exact gold too
+		   ("this week" reading as the same colour "this is my team" did),
+		   but that row moved to purple once the live highlight needed the
+		   gold for itself — this row's own gold stands on its own now,
+		   unrelated to "this is my team". The Teams/Players sub-lines
+		   underneath keep their own purple/grey rather than inheriting
+		   gold, since those colours are set explicitly on
+		   .bye-teams/.exposure-leagues and win over the one inherited from
+		   the row. */
 		tr.bye-week-current td {
 			background: var(--gold-chip-bg);
 			color: var(--gold-chip-text);
@@ -6477,6 +6562,17 @@
 			return line || null;
 		}
 
+		// Whether a player's own game is live RIGHT NOW — ESPN scoreboard
+		// state 'in', not 'pre' (hasn't kicked off) or 'post' (already
+		// final). Drives the red "something can still move" flag on both
+		// the toggle strip and, once open, the individual starter rows — a
+		// team defense qualifies the same as anyone else, since it carries a
+		// `team` field too.
+		function isPlayerLive(player) {
+			if (!player || !player.team) return false;
+			return liveGames[player.team]?.state === 'in';
+		}
+
 		// Stable across the 30s re-render, distinct per matchup, and naturally
 		// different once the week's pairings change — the franchise ids are
 		// sorted so the same two teams key identically regardless of which one
@@ -6584,6 +6680,10 @@
 					// against.
 					ptsCell.textContent = Number(player.points).toFixed(2);
 				}
+				if (isPlayerLive(player)) {
+					nameCell.classList.add('live');
+					ptsCell.classList.add('live');
+				}
 			}
 			// Left side reads name-then-points inward toward the centre
 			// column; right side mirrors it, points-then-name.
@@ -6604,6 +6704,11 @@
 		function appendMatchupDetail(pill, league, group) {
 			const key = matchupDetailKey(league, group);
 			const open = isScoringDetailOpen(key);
+
+			// Computed up front, not inside fill() — the toggle strip needs
+			// this even collapsed, so a manager knows whether to open the
+			// drawer at all before it's built.
+			const anyLive = [...(group[0]?.players || []), ...(group[1]?.players || [])].some(isPlayerLive);
 
 			const body = el('div', { class: 'scoring-detail-body' });
 
@@ -6645,7 +6750,7 @@
 			const label = el('span', { text: open ? 'Hide detail' : 'Show detail' });
 			const toggle = el('button', {
 				type: 'button',
-				class: 'scoring-detail-toggle',
+				class: `scoring-detail-toggle${anyLive ? ' scoring-detail-live' : ''}`,
 				'aria-expanded': String(open),
 			});
 			toggle.appendChild(chevron);
@@ -8262,9 +8367,11 @@
 		// week standing in for the name, Teams standing in for the injury
 		// detail line below it — but purple rather than red: nothing here is a
 		// warning, it's just the week's other line reusing that line's slot.
-		// The current week's row additionally gets the gold highlight
-		// tr.me-row uses elsewhere for "this one is yours" — here, "this one
-		// is now" — set by currentNflWeek back in computeByeWeeks.
+		// The current week's row additionally gets the same gold the
+		// Scoring drawer's live-player highlight uses for "notable right
+		// now" (see tr.bye-week-current's own CSS comment for why this is
+		// no longer tr.me-row's gold) — here, "this one is now" — set by
+		// currentNflWeek back in computeByeWeeks.
 		function renderByeWeeksCard(types, leagues) {
 			const { total, rows, currentWeek } = computeByeWeeks(leagues, types);
 			// See renderPowerRankCard's identical comment: no data-league-type
