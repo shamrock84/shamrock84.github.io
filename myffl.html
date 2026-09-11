@@ -757,6 +757,15 @@
 			color: var(--stale-chip-text);
 			box-shadow: inset 0 0 0 1px var(--stale-chip-ring);
 		}
+		/* The per-card counterpart to the toolbar's own quicklink-tasknote —
+		   see buildCardHead. Same --ir-text/--ir-bg pairing as the cut-select
+		   and IR-group treatments elsewhere: this is "needs a look", not a
+		   fact about the league's format, so it doesn't share the purple
+		   .badge default or either gold chip's color. */
+		.badge-task {
+			background: var(--ir-bg);
+			color: var(--ir-text);
+		}
 		/* Badges always stay to the right of the title (card-head is nowrap,
 		   never drops badges to their own row) — the title just shrinks and
 		   wraps onto more lines to make room, via min-width:0 +
@@ -4966,6 +4975,19 @@
 			return counts;
 		}
 
+		// The exact key a league's tasks are filed under — its nickname (the
+		// Admin tab's "Toolbar Label" field) falling back to leagueDisplayName
+		// and then its id, same chain the toolbar itself uses to pick a label.
+		// Shared by renderQuickLinks and the Rosters/Standings/Scoring card
+		// badge below (buildCardHead) so both read the same league's task
+		// count under the same key — a league whose Toolbar Label the toolbar
+		// isn't currently showing (a draftonly league is filtered from the bar
+		// entirely, see renderQuickLinks) still has one, since the field
+		// itself isn't type-gated, and its cards can still flag matching tasks.
+		function quickLinkLabelForLeague(league) {
+			return league.nickname || leagueDisplayName(league) || league.id;
+		}
+
 		function renderQuickLinks() {
 			const bar = document.getElementById('quicklinks');
 			if (!bar) return;
@@ -4973,7 +4995,7 @@
 			bar.innerHTML = '';
 			const taskCounts = quickLinkTaskCounts();
 			for (const league of leagues) {
-				const label = league.nickname || leagueDisplayName(league) || league.id;
+				const label = quickLinkLabelForLeague(league);
 				appendQuickLink(bar, { url: league.url, label, title: leagueDisplayName(league) || label, style: league.style, taskCount: taskCounts[label] });
 			}
 			for (const extra of pageData?.quickLinks || []) {
@@ -5242,20 +5264,36 @@
 			});
 		}
 
+		// "1 Task" / "2 Tasks" — the count itself comes from
+		// quickLinkTaskCounts, keyed by quickLinkLabelForLeague(league); this
+		// is just the pluralization, split out so it's testable on its own.
+		function taskBadgeLabel(count) {
+			return `${count} Task${count === 1 ? '' : 's'}`;
+		}
+
 		function buildCardHead(card, league, extraLabels = []) {
 			const cardHead = el('div', { class: 'card-head card-heading' });
 			cardHead.appendChild(buildLeagueHeading(league));
 			const season = seasonBadgeLabel(league);
+			const taskCount = quickLinkTaskCounts()[quickLinkLabelForLeague(league)] || 0;
 			// Gold leads: where it's hosted, then which season. The purple chips
-			// after them describe the league's own format.
+			// after them describe the league's own format. The red task badge,
+			// when there is one, trails everything else — same position as the
+			// toolbar's own task footnote relative to its label, and the same
+			// "flagging an outside fact, not describing the league" reasoning
+			// that keeps it out of the purple group.
 			const labels = [
 				{ text: providerBadgeLabel(league), gold: true },
 				...(season ? [{ text: season, gold: true, season: true, stale: seasonIsBehind(season) }] : []),
 				...extraLabels.map((text) => ({ text })),
+				...(taskCount ? [{ text: taskBadgeLabel(taskCount), task: true }] : []),
 			];
 			const badgesEl = el('div', { class: `badges${labels.length > 2 ? ' badges-wrap' : ''}` });
 			for (const label of labels) {
-				const cls = label.season ? `badge badge-season${label.stale ? ' badge-season-stale' : ''}` : label.gold ? 'badge badge-provider' : 'badge';
+				const cls = label.season ? `badge badge-season${label.stale ? ' badge-season-stale' : ''}`
+					: label.gold ? 'badge badge-provider'
+					: label.task ? 'badge badge-task'
+					: 'badge';
 				badgesEl.appendChild(el('span', { class: cls, text: label.text }));
 			}
 			cardHead.appendChild(badgesEl);

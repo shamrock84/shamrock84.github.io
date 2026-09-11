@@ -300,10 +300,14 @@ jobs:
       - name: Test ESPN/Sleeper live-time join
         run: node scripts/test-espn-sleeper-live-time.mjs
 
-      # The quick-link toolbar's red task-count footnote: exact-category,
-      # open-tasks-only summing (quickLinkTaskCounts), and that the marker
-      # itself is only ever present at a positive count and never nested
-      # inside a gold/purple entry's own pill span (appendQuickLink).
+      # The quick-link toolbar's red task-count footnote and its
+      # Rosters/Standings/Scoring card counterpart: exact-category,
+      # open-tasks-only summing (quickLinkTaskCounts), that the marker is
+      # only ever present at a positive count and never nested inside a
+      # gold/purple entry's own pill span (appendQuickLink), and that the
+      # card badge (buildCardHead) reads the same count under the same
+      # nickname/displayName/id key the toolbar itself uses
+      # (quickLinkLabelForLeague).
       - name: Test quick-link task footnotes
         run: node scripts/test-quicklink-tasknotes.mjs
 
