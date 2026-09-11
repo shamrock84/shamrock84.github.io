@@ -1783,14 +1783,19 @@
 		}
 		.scoring-detail-toggle:hover { color: var(--text); }
 		/* Red flags a matchup with a currently-playing player (see
-		   isPlayerLive — ESPN scoreboard state 'in'), on the page's
-		   established "needs a look" red (--ir-text; same token as IR/cut
-		   planning) rather than a color invented for this one case. Shown
-		   collapsed, before the drawer is even opened, so a manager knows
-		   there's a live score in here without a click; wins over the hover
-		   rule above by specificity, so it doesn't fade to --text on
-		   pointer-over. */
-		.scoring-detail-toggle.scoring-detail-live { color: var(--ir-text); }
+		   isPlayerLive — ESPN scoreboard state 'in'). A full fill rather than
+		   just red text — the same --ir-bg/--ir-text pairing .badge-task
+		   uses for its own "needs a look" chip, not a color invented for
+		   this one case. Shown collapsed, before the drawer is even opened,
+		   so a manager knows there's a live score in here without a click;
+		   the explicit :hover rule keeps it filled on pointer-over rather
+		   than fading toward the plain-hover rule above (same specificity,
+		   so source order alone isn't a safe enough guarantee to skip it). */
+		.scoring-detail-toggle.scoring-detail-live,
+		.scoring-detail-toggle.scoring-detail-live:hover {
+			background: var(--ir-bg);
+			color: var(--ir-text);
+		}
 		.scoring-detail-chevron {
 			display: inline-block;
 			font-size: 0.85em;
@@ -1874,15 +1879,26 @@
 		   of an unpaired position row. */
 		.scoring-detail-pts.empty,
 		.scoring-detail-name.empty { color: var(--muted); }
-		/* Highlights one starter's row-half once their own game is live —
-		   same --ir-text red as the toggle strip above, and the same
-		   isPlayerLive check. Declared after .empty so it wins that tie
-		   on equal specificity: a player who's live but whose points
-		   haven't posted yet (points still null right after kickoff) stays
-		   red, not muted. A player whose game hasn't started, or is
-		   already final, gets neither class and renders exactly as before. */
+		/* Highlights one starter's row-half once their own game is live — a
+		   filled chip, same --ir-bg/--ir-text pairing as the toggle strip
+		   and .badge-task, not just recolored text. Declared after .empty so
+		   it wins that tie on equal specificity: a player who's live but
+		   whose points haven't posted yet (points still null right after
+		   kickoff) stays highlighted, not muted. A player whose game hasn't
+		   started, or is already final, gets neither class and renders
+		   exactly as before.
+		   The padding/negative-margin pair extends the fill into the row's
+		   own gap without changing any track's width, so the name chip and
+		   the score chip on the same side read as one block instead of two
+		   separated by a visible seam. */
 		.scoring-detail-pts.live,
-		.scoring-detail-name.live { color: var(--ir-text); }
+		.scoring-detail-name.live {
+			background: var(--ir-bg);
+			color: var(--ir-text);
+			border-radius: 4px;
+			padding: 0.1rem 0.3rem;
+			margin: -0.1rem -0.3rem;
+		}
 		.scoring-detail-empty {
 			color: var(--muted);
 			font-size: 0.75rem;
