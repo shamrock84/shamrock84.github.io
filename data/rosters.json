@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-10T22:35:33.752Z",
+  "generatedAt": "2026-09-11T04:38:39.501Z",
   "year": "2026",
   "rankingPools": {
     "ROS|PPR|ALL": {
@@ -6478,7 +6478,7 @@
     }
   },
   "depthCharts": {
-    "generatedAt": "2026-09-10T22:35:25.162Z",
+    "generatedAt": "2026-09-11T04:38:29.658Z",
     "teams": {
       "ARI": {
         "name": "Arizona Cardinals",
@@ -7865,17 +7865,24 @@
             "injuryStatus": null
           },
           {
-            "id": "4245144",
-            "name": "Tay Martin",
+            "id": "3126997",
+            "name": "Tom Kennedy",
             "rank": 4,
             "role": "X",
             "injuryStatus": null
           },
           {
-            "id": "4685441",
-            "name": "Kendrick Law",
+            "id": "4245144",
+            "name": "Tay Martin",
             "rank": 5,
             "role": "Z",
+            "injuryStatus": null
+          },
+          {
+            "id": "4685441",
+            "name": "Kendrick Law",
+            "rank": 6,
+            "role": "S",
             "injuryStatus": "IR"
           }
         ],
@@ -8870,7 +8877,7 @@
             "name": "Ty Simpson",
             "rank": 3,
             "role": null,
-            "injuryStatus": null
+            "injuryStatus": "O"
           },
           {
             "id": "4877717",
@@ -8933,25 +8940,25 @@
             "injuryStatus": null
           },
           {
-            "id": "4360797",
-            "name": "Tutu Atwell",
+            "id": "4386544",
+            "name": "Xavier Smith",
             "rank": 5,
             "role": "Z",
             "injuryStatus": null
           },
           {
-            "id": "4386544",
-            "name": "Xavier Smith",
+            "id": "4360797",
+            "name": "Tutu Atwell",
             "rank": 6,
             "role": "S",
-            "injuryStatus": null
+            "injuryStatus": "O"
           },
           {
             "id": "4605951",
             "name": "CJ Daniels",
             "rank": 7,
             "role": "X",
-            "injuryStatus": null
+            "injuryStatus": "O"
           }
         ],
         "TE": [
@@ -8977,18 +8984,18 @@
             "injuryStatus": null
           },
           {
-            "id": "4833029",
-            "name": "Max Klare",
-            "rank": 4,
-            "role": null,
-            "injuryStatus": null
-          },
-          {
             "id": "4426553",
             "name": "Davis Allen",
+            "rank": 4,
+            "role": null,
+            "injuryStatus": "Q"
+          },
+          {
+            "id": "4833029",
+            "name": "Max Klare",
             "rank": 5,
             "role": null,
-            "injuryStatus": null
+            "injuryStatus": "O"
           }
         ]
       },
@@ -9300,16 +9307,9 @@
             "injuryStatus": null
           },
           {
-            "id": "4698253",
-            "name": "Lan Larison",
-            "rank": 4,
-            "role": null,
-            "injuryStatus": null
-          },
-          {
             "id": "4676889",
             "name": "Myles Montgomery",
-            "rank": 5,
+            "rank": 4,
             "role": null,
             "injuryStatus": "IR"
           }
@@ -10089,7 +10089,7 @@
             "name": "Kurtis Rourke",
             "rank": 3,
             "role": null,
-            "injuryStatus": null
+            "injuryStatus": "O"
           }
         ],
         "RB": [
@@ -10112,7 +10112,7 @@
             "name": "Jordan James",
             "rank": 3,
             "role": null,
-            "injuryStatus": null
+            "injuryStatus": "O"
           },
           {
             "id": "4372561",
@@ -10142,7 +10142,7 @@
             "name": "De'Zhaun Stribling",
             "rank": 3,
             "role": "S",
-            "injuryStatus": null
+            "injuryStatus": "Q"
           },
           {
             "id": "3043116",
@@ -10152,25 +10152,25 @@
             "injuryStatus": null
           },
           {
-            "id": "4431466",
-            "name": "Jordan Watkins",
+            "id": "4575665",
+            "name": "Jacob Cowing",
             "rank": 5,
             "role": "Z",
             "injuryStatus": null
           },
           {
-            "id": "4575665",
-            "name": "Jacob Cowing",
+            "id": "3047876",
+            "name": "KhaDarel Hodge",
             "rank": 6,
             "role": "S",
             "injuryStatus": null
           },
           {
-            "id": "3047876",
-            "name": "KhaDarel Hodge",
+            "id": "4431466",
+            "name": "Jordan Watkins",
             "rank": 7,
             "role": "X",
-            "injuryStatus": null
+            "injuryStatus": "O"
           },
           {
             "id": "3895856",
@@ -10207,7 +10207,7 @@
             "name": "Jake Tonges",
             "rank": 2,
             "role": null,
-            "injuryStatus": null
+            "injuryStatus": "Q"
           },
           {
             "id": "4040612",
@@ -10266,16 +10266,9 @@
             "injuryStatus": null
           },
           {
-            "id": "4035693",
-            "name": "Velus Jones Jr.",
-            "rank": 4,
-            "role": null,
-            "injuryStatus": null
-          },
-          {
             "id": "4426385",
             "name": "Zach Charbonnet",
-            "rank": 5,
+            "rank": 4,
             "role": null,
             "injuryStatus": "O"
           }
@@ -11089,7 +11082,7 @@
           "contractYear": null,
           "injuryStatus": null,
           "injuryDetail": null,
-          "pts": 0,
+          "pts": 5.6,
           "priorYearPts": 222.9,
           "ecr": {
             "rank": 60,
@@ -11221,7 +11214,7 @@
           "contractYear": null,
           "injuryStatus": null,
           "injuryDetail": null,
-          "pts": 0,
+          "pts": 12.4,
           "priorYearPts": 374,
           "ecr": {
             "rank": 4,
@@ -11323,7 +11316,7 @@
           "contractYear": null,
           "injuryStatus": null,
           "injuryDetail": null,
-          "pts": 0,
+          "pts": 3.2,
           "priorYearPts": 161.5,
           "ecr": {
             "rank": 109,
@@ -11521,7 +11514,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-10T22:34:40.066Z",
+      "updatedAt": "2026-09-11T04:37:45.213Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -11649,10 +11642,26 @@
           {
             "franchiseId": "0002",
             "teamName": "CC's Fall Guys",
-            "score": "26.20",
+            "score": "41.70",
+            "minutesRemaining": 420,
+            "isMe": false,
+            "winProb": 75
+          },
+          {
+            "franchiseId": "0010",
+            "teamName": "BarstoolSaints",
+            "score": "13.80",
             "minutesRemaining": 480,
             "isMe": false,
-            "winProb": 70
+            "winProb": 53
+          },
+          {
+            "franchiseId": "0001",
+            "teamName": "Rumble Fish",
+            "score": "12.40",
+            "minutesRemaining": 480,
+            "isMe": true,
+            "winProb": 69
           },
           {
             "franchiseId": "0009",
@@ -11660,7 +11669,7 @@
             "score": "10.90",
             "minutesRemaining": 480,
             "isMe": false,
-            "winProb": 50
+            "winProb": 47
           },
           {
             "franchiseId": "0006",
@@ -11668,31 +11677,15 @@
             "score": "7.80",
             "minutesRemaining": 480,
             "isMe": false,
-            "winProb": 30
+            "winProb": 25
           },
           {
             "franchiseId": "0008",
             "teamName": "Thundering Warpigs",
-            "score": "5.60",
-            "minutesRemaining": 480,
+            "score": "6.60",
+            "minutesRemaining": 420,
             "isMe": false,
-            "winProb": 44
-          },
-          {
-            "franchiseId": "0010",
-            "teamName": "BarstoolSaints",
-            "score": "0.00",
-            "minutesRemaining": 540,
-            "isMe": false,
-            "winProb": 50
-          },
-          {
-            "franchiseId": "0001",
-            "teamName": "Rumble Fish",
-            "score": "0.00",
-            "minutesRemaining": 540,
-            "isMe": true,
-            "winProb": 56
+            "winProb": 31
           },
           {
             "franchiseId": "0005",
@@ -14974,7 +14967,7 @@
           "contractYear": null,
           "injuryStatus": null,
           "injuryDetail": null,
-          "pts": 0,
+          "pts": 25.7,
           "priorYearPts": 219.1,
           "ecr": {
             "rank": 84,
@@ -15064,7 +15057,7 @@
           "contractYear": null,
           "injuryStatus": null,
           "injuryDetail": null,
-          "pts": 0,
+          "pts": 13.8,
           "priorYearPts": 416.6,
           "ecr": {
             "rank": 8,
@@ -15549,7 +15542,7 @@
           "contractYear": null,
           "injuryStatus": null,
           "injuryDetail": null,
-          "pts": 0,
+          "pts": 11,
           "priorYearPts": 126,
           "ecr": {
             "rank": 203,
@@ -15705,7 +15698,7 @@
           "originalTeamName": "Swingline Steamrollers"
         }
       ],
-      "updatedAt": "2026-09-10T22:34:41.807Z",
+      "updatedAt": "2026-09-11T04:37:46.793Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -15833,18 +15826,34 @@
           {
             "franchiseId": "0005",
             "teamName": "Straight Shooters",
-            "score": "26.20",
-            "minutesRemaining": 480,
+            "score": "44.20",
+            "minutesRemaining": 420,
             "isMe": false,
-            "winProb": 64
+            "winProb": 71
           },
           {
             "franchiseId": "0003",
             "teamName": "Swingline Steamrollers",
-            "score": "13.90",
-            "minutesRemaining": 480,
+            "score": "26.30",
+            "minutesRemaining": 420,
             "isMe": false,
-            "winProb": 36
+            "winProb": 29
+          },
+          {
+            "franchiseId": "0002",
+            "teamName": "Bill's Blitzkrieg",
+            "score": "19.50",
+            "minutesRemaining": 420,
+            "isMe": false,
+            "winProb": 47
+          },
+          {
+            "franchiseId": "0001",
+            "teamName": "PC Load Letter",
+            "score": "13.80",
+            "minutesRemaining": 480,
+            "isMe": true,
+            "winProb": 52
           },
           {
             "franchiseId": "0007",
@@ -15852,15 +15861,15 @@
             "score": "12.00",
             "minutesRemaining": 480,
             "isMe": false,
-            "winProb": 51
+            "winProb": 48
           },
           {
             "franchiseId": "0006",
             "teamName": "The PMITA Prisoners",
-            "score": "7.00",
-            "minutesRemaining": 480,
+            "score": "10.20",
+            "minutesRemaining": 420,
             "isMe": false,
-            "winProb": 45
+            "winProb": 42
           },
           {
             "franchiseId": "0010",
@@ -15879,12 +15888,12 @@
             "winProb": 50
           },
           {
-            "franchiseId": "0002",
-            "teamName": "Bill's Blitzkrieg",
-            "score": "4.00",
+            "franchiseId": "0004",
+            "teamName": "Case of the Mondays",
+            "score": "5.60",
             "minutesRemaining": 480,
             "isMe": false,
-            "winProb": 42
+            "winProb": 58
           },
           {
             "franchiseId": "0008",
@@ -15892,23 +15901,7 @@
             "score": "0.00",
             "minutesRemaining": 540,
             "isMe": false,
-            "winProb": 58
-          },
-          {
-            "franchiseId": "0004",
-            "teamName": "Case of the Mondays",
-            "score": "0.00",
-            "minutesRemaining": 540,
-            "isMe": false,
-            "winProb": 55
-          },
-          {
-            "franchiseId": "0001",
-            "teamName": "PC Load Letter",
-            "score": "0.00",
-            "minutesRemaining": 540,
-            "isMe": true,
-            "winProb": 49
+            "winProb": 53
           }
         ],
         "matchups": [
@@ -19729,7 +19722,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-10T22:34:43.364Z",
+      "updatedAt": "2026-09-11T04:37:48.809Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -19880,15 +19873,39 @@
             "score": "36.02",
             "minutesRemaining": 420,
             "isMe": false,
-            "winProb": 70
+            "winProb": 76
+          },
+          {
+            "franchiseId": "0006",
+            "teamName": "Blackjack",
+            "score": "26.20",
+            "minutesRemaining": 420,
+            "isMe": false,
+            "winProb": 55
           },
           {
             "franchiseId": "0004",
             "teamName": "Sitting in My Spy Shack",
-            "score": "19.00",
+            "score": "24.40",
+            "minutesRemaining": 360,
+            "isMe": false,
+            "winProb": 24
+          },
+          {
+            "franchiseId": "0002",
+            "teamName": "Probst Blue Ribbon",
+            "score": "21.10",
             "minutesRemaining": 420,
             "isMe": false,
-            "winProb": 30
+            "winProb": 55
+          },
+          {
+            "franchiseId": "0009",
+            "teamName": "The Tribal Council",
+            "score": "16.90",
+            "minutesRemaining": 480,
+            "isMe": false,
+            "winProb": 85
           },
           {
             "franchiseId": "0007",
@@ -19896,7 +19913,15 @@
             "score": "14.50",
             "minutesRemaining": 480,
             "isMe": false,
-            "winProb": 54
+            "winProb": 60
+          },
+          {
+            "franchiseId": "0010",
+            "teamName": "Blitzkrieg",
+            "score": "5.60",
+            "minutesRemaining": 480,
+            "isMe": false,
+            "winProb": 40
           },
           {
             "franchiseId": "0003",
@@ -19904,31 +19929,23 @@
             "score": "5.60",
             "minutesRemaining": 480,
             "isMe": false,
-            "winProb": 50
+            "winProb": 45
           },
           {
-            "franchiseId": "0002",
-            "teamName": "Probst Blue Ribbon",
-            "score": "5.60",
+            "franchiseId": "0005",
+            "teamName": "Outwit, Outplay, Out-draft",
+            "score": "3.20",
             "minutesRemaining": 480,
             "isMe": false,
-            "winProb": 50
+            "winProb": 41
           },
           {
-            "franchiseId": "0010",
-            "teamName": "Blitzkrieg",
-            "score": "0.00",
-            "minutesRemaining": 540,
+            "franchiseId": "0011",
+            "teamName": "Bald Fat Guys Dominate",
+            "score": "3.00",
+            "minutesRemaining": 360,
             "isMe": false,
-            "winProb": 46
-          },
-          {
-            "franchiseId": "0006",
-            "teamName": "Blackjack",
-            "score": "0.00",
-            "minutesRemaining": 540,
-            "isMe": false,
-            "winProb": 50
+            "winProb": 15
           },
           {
             "franchiseId": "0008",
@@ -19936,7 +19953,7 @@
             "score": "0.00",
             "minutesRemaining": 540,
             "isMe": true,
-            "winProb": 50
+            "winProb": 45
           },
           {
             "franchiseId": "0012",
@@ -19944,31 +19961,7 @@
             "score": "0.00",
             "minutesRemaining": 540,
             "isMe": false,
-            "winProb": 50
-          },
-          {
-            "franchiseId": "0005",
-            "teamName": "Outwit, Outplay, Out-draft",
-            "score": "0.00",
-            "minutesRemaining": 540,
-            "isMe": false,
-            "winProb": 50
-          },
-          {
-            "franchiseId": "0009",
-            "teamName": "The Tribal Council",
-            "score": "0.00",
-            "minutesRemaining": 540,
-            "isMe": false,
-            "winProb": 62
-          },
-          {
-            "franchiseId": "0011",
-            "teamName": "Bald Fat Guys Dominate",
-            "score": "0.00",
-            "minutesRemaining": 480,
-            "isMe": false,
-            "winProb": 38
+            "winProb": 59
           }
         ],
         "matchups": [
@@ -23350,7 +23343,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-10T22:34:45.205Z",
+      "updatedAt": "2026-09-11T04:37:50.777Z",
       "error": null,
       "tags": [
         "BestBall"
@@ -23503,31 +23496,63 @@
             "score": "48.30",
             "minutesRemaining": 300,
             "isMe": true,
-            "winProb": 68
+            "winProb": 76
           },
           {
             "franchiseId": "0011",
             "teamName": "Lord of Light",
-            "score": "14.70",
-            "minutesRemaining": 360,
+            "score": "32.70",
+            "minutesRemaining": 300,
             "isMe": false,
-            "winProb": 42
+            "winProb": 49
           },
           {
             "franchiseId": "0001",
             "teamName": "The FOOKING Hand of the King",
-            "score": "9.82",
-            "minutesRemaining": 420,
+            "score": "22.22",
+            "minutesRemaining": 360,
             "isMe": false,
-            "winProb": 58
+            "winProb": 51
+          },
+          {
+            "franchiseId": "0012",
+            "teamName": "Azor Ahai",
+            "score": "22.10",
+            "minutesRemaining": 360,
+            "isMe": false,
+            "winProb": 50
+          },
+          {
+            "franchiseId": "0007",
+            "teamName": "WunWun No WinWin",
+            "score": "20.72",
+            "minutesRemaining": 180,
+            "isMe": false,
+            "winProb": 18
+          },
+          {
+            "franchiseId": "0002",
+            "teamName": "Master of Coin",
+            "score": "17.10",
+            "minutesRemaining": 360,
+            "isMe": false,
+            "winProb": 66
           },
           {
             "franchiseId": "0006",
             "teamName": "Super Saucy McNultys",
-            "score": "7.00",
+            "score": "15.80",
+            "minutesRemaining": 300,
+            "isMe": false,
+            "winProb": 34
+          },
+          {
+            "franchiseId": "0003",
+            "teamName": "Greyjoy: The Ironborn",
+            "score": "15.50",
             "minutesRemaining": 420,
             "isMe": false,
-            "winProb": 54
+            "winProb": 62
           },
           {
             "franchiseId": "0008",
@@ -23535,15 +23560,15 @@
             "score": "5.50",
             "minutesRemaining": 420,
             "isMe": false,
-            "winProb": 43
+            "winProb": 38
           },
           {
-            "franchiseId": "0002",
-            "teamName": "Master of Coin",
-            "score": "3.30",
+            "franchiseId": "0010",
+            "teamName": "Joegon",
+            "score": "4.10",
             "minutesRemaining": 420,
             "isMe": false,
-            "winProb": 46
+            "winProb": 24
           },
           {
             "franchiseId": "0005",
@@ -23551,15 +23576,7 @@
             "score": "2.90",
             "minutesRemaining": 420,
             "isMe": false,
-            "winProb": 77
-          },
-          {
-            "franchiseId": "0007",
-            "teamName": "WunWun No WinWin",
-            "score": "2.22",
-            "minutesRemaining": 300,
-            "isMe": false,
-            "winProb": 23
+            "winProb": 82
           },
           {
             "franchiseId": "0009",
@@ -23567,31 +23584,7 @@
             "score": "0.00",
             "minutesRemaining": 480,
             "isMe": false,
-            "winProb": 63
-          },
-          {
-            "franchiseId": "0012",
-            "teamName": "Azor Ahai",
-            "score": "0.00",
-            "minutesRemaining": 420,
-            "isMe": false,
-            "winProb": 37
-          },
-          {
-            "franchiseId": "0010",
-            "teamName": "Joegon",
-            "score": "0.00",
-            "minutesRemaining": 480,
-            "isMe": false,
-            "winProb": 32
-          },
-          {
-            "franchiseId": "0003",
-            "teamName": "Greyjoy: The Ironborn",
-            "score": "0.00",
-            "minutesRemaining": 480,
-            "isMe": false,
-            "winProb": 57
+            "winProb": 50
           }
         ],
         "matchups": [
@@ -26667,7 +26660,7 @@
           "contractYear": "3",
           "injuryStatus": null,
           "injuryDetail": null,
-          "pts": 0,
+          "pts": 13.9,
           "priorYearPts": 65.4,
           "ecr": {
             "rank": 56,
@@ -26837,7 +26830,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-10T22:34:47.013Z",
+      "updatedAt": "2026-09-11T04:37:53.036Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -26986,12 +26979,52 @@
         "week": "1",
         "teams": [
           {
+            "franchiseId": "0003",
+            "teamName": "Groot's Gangbusters",
+            "score": "30.06",
+            "minutesRemaining": 420,
+            "isMe": false,
+            "winProb": 68
+          },
+          {
+            "franchiseId": "0005",
+            "teamName": "Super Saucy McNultys",
+            "score": "29.00",
+            "minutesRemaining": 420,
+            "isMe": false,
+            "winProb": 54
+          },
+          {
             "franchiseId": "0008",
             "teamName": "We’re the Vipers",
-            "score": "24.20",
-            "minutesRemaining": 480,
+            "score": "26.53",
+            "minutesRemaining": 420,
             "isMe": false,
-            "winProb": 75
+            "winProb": 67
+          },
+          {
+            "franchiseId": "0010",
+            "teamName": "Capo dei Capi",
+            "score": "25.90",
+            "minutesRemaining": 420,
+            "isMe": true,
+            "winProb": 46
+          },
+          {
+            "franchiseId": "0002",
+            "teamName": "Made Men",
+            "score": "17.69",
+            "minutesRemaining": 420,
+            "isMe": false,
+            "winProb": 66
+          },
+          {
+            "franchiseId": "0006",
+            "teamName": "Pennywise",
+            "score": "17.10",
+            "minutesRemaining": 420,
+            "isMe": false,
+            "winProb": 88
           },
           {
             "franchiseId": "0004",
@@ -26999,7 +27032,7 @@
             "score": "14.30",
             "minutesRemaining": 300,
             "isMe": false,
-            "winProb": 28
+            "winProb": 38
           },
           {
             "franchiseId": "0001",
@@ -27007,23 +27040,7 @@
             "score": "14.10",
             "minutesRemaining": 240,
             "isMe": false,
-            "winProb": 11
-          },
-          {
-            "franchiseId": "0010",
-            "teamName": "Capo dei Capi",
-            "score": "12.00",
-            "minutesRemaining": 480,
-            "isMe": true,
-            "winProb": 51
-          },
-          {
-            "franchiseId": "0002",
-            "teamName": "Made Men",
-            "score": "7.79",
-            "minutesRemaining": 480,
-            "isMe": false,
-            "winProb": 66
+            "winProb": 12
           },
           {
             "franchiseId": "0007",
@@ -27034,52 +27051,28 @@
             "winProb": 34
           },
           {
+            "franchiseId": "0011",
+            "teamName": "Teflon Trav",
+            "score": "3.20",
+            "minutesRemaining": 480,
+            "isMe": false,
+            "winProb": 32
+          },
+          {
+            "franchiseId": "0012",
+            "teamName": "Cement Shoes",
+            "score": "1.60",
+            "minutesRemaining": 420,
+            "isMe": false,
+            "winProb": 62
+          },
+          {
             "franchiseId": "0009",
             "teamName": "Pizzo",
             "score": "0.37",
             "minutesRemaining": 480,
             "isMe": false,
-            "winProb": 25
-          },
-          {
-            "franchiseId": "0005",
-            "teamName": "Super Saucy McNultys",
-            "score": "0.00",
-            "minutesRemaining": 540,
-            "isMe": false,
-            "winProb": 49
-          },
-          {
-            "franchiseId": "0003",
-            "teamName": "Groot's Gangbusters",
-            "score": "0.00",
-            "minutesRemaining": 540,
-            "isMe": false,
-            "winProb": 50
-          },
-          {
-            "franchiseId": "0011",
-            "teamName": "Teflon Trav",
-            "score": "0.00",
-            "minutesRemaining": 540,
-            "isMe": false,
-            "winProb": 50
-          },
-          {
-            "franchiseId": "0006",
-            "teamName": "Pennywise",
-            "score": "0.00",
-            "minutesRemaining": 540,
-            "isMe": false,
-            "winProb": 89
-          },
-          {
-            "franchiseId": "0012",
-            "teamName": "Cement Shoes",
-            "score": "0.00",
-            "minutesRemaining": 480,
-            "isMe": false,
-            "winProb": 72
+            "winProb": 33
           }
         ],
         "matchups": [
@@ -27146,7 +27139,7 @@
         "Brashard Smith"
       ],
       "power": {
-        "computedAt": "2026-09-10T22:34:37.299Z",
+        "computedAt": "2026-09-11T04:37:42.388Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -28447,7 +28440,7 @@
           "contractYear": "2",
           "injuryStatus": null,
           "injuryDetail": null,
-          "pts": 0,
+          "pts": 14,
           "priorYearPts": 235.7,
           "ecr": {
             "rank": 28,
@@ -28911,7 +28904,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-10T22:34:48.803Z",
+      "updatedAt": "2026-09-11T04:37:55.455Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -29060,20 +29053,60 @@
         "week": "1",
         "teams": [
           {
+            "franchiseId": "0010",
+            "teamName": "SUPERCAPtain America",
+            "score": "36.36",
+            "minutesRemaining": 120,
+            "isMe": false,
+            "winProb": 20
+          },
+          {
+            "franchiseId": "0008",
+            "teamName": "Beast Mode",
+            "score": "27.89",
+            "minutesRemaining": 300,
+            "isMe": false,
+            "winProb": 59
+          },
+          {
             "franchiseId": "0009",
             "teamName": "Professor Chaos",
             "score": "24.20",
             "minutesRemaining": 420,
             "isMe": false,
-            "winProb": 65
+            "winProb": 62
           },
           {
-            "franchiseId": "0010",
-            "teamName": "SUPERCAPtain America",
-            "score": "20.96",
+            "franchiseId": "0002",
+            "teamName": "Legion and Doom",
+            "score": "18.00",
             "minutesRemaining": 240,
             "isMe": false,
-            "winProb": 29
+            "winProb": 25
+          },
+          {
+            "franchiseId": "0004",
+            "teamName": "Groot",
+            "score": "15.00",
+            "minutesRemaining": 360,
+            "isMe": false,
+            "winProb": 75
+          },
+          {
+            "franchiseId": "0003",
+            "teamName": "THORgasm",
+            "score": "14.00",
+            "minutesRemaining": 420,
+            "isMe": true,
+            "winProb": 38
+          },
+          {
+            "franchiseId": "0005",
+            "teamName": "Wilson and the Multi-Beasts",
+            "score": "13.20",
+            "minutesRemaining": 360,
+            "isMe": false,
+            "winProb": 38
           },
           {
             "franchiseId": "0007",
@@ -29081,31 +29114,15 @@
             "score": "12.00",
             "minutesRemaining": 420,
             "isMe": false,
-            "winProb": 60
+            "winProb": 62
           },
           {
             "franchiseId": "0006",
             "teamName": "RedZone Vision",
-            "score": "7.10",
-            "minutesRemaining": 420,
+            "score": "10.30",
+            "minutesRemaining": 360,
             "isMe": false,
-            "winProb": 50
-          },
-          {
-            "franchiseId": "0008",
-            "teamName": "Beast Mode",
-            "score": "6.80",
-            "minutesRemaining": 420,
-            "isMe": false,
-            "winProb": 50
-          },
-          {
-            "franchiseId": "0002",
-            "teamName": "Legion and Doom",
-            "score": "4.10",
-            "minutesRemaining": 300,
-            "isMe": false,
-            "winProb": 28
+            "winProb": 41
           },
           {
             "franchiseId": "0001",
@@ -29113,31 +29130,7 @@
             "score": "4.10",
             "minutesRemaining": 420,
             "isMe": false,
-            "winProb": 71
-          },
-          {
-            "franchiseId": "0005",
-            "teamName": "Wilson and the Multi-Beasts",
-            "score": "3.30",
-            "minutesRemaining": 420,
-            "isMe": false,
-            "winProb": 40
-          },
-          {
-            "franchiseId": "0004",
-            "teamName": "Groot",
-            "score": "0.00",
-            "minutesRemaining": 420,
-            "isMe": false,
-            "winProb": 72
-          },
-          {
-            "franchiseId": "0003",
-            "teamName": "THORgasm",
-            "score": "0.00",
-            "minutesRemaining": 480,
-            "isMe": true,
-            "winProb": 35
+            "winProb": 80
           },
           {
             "franchiseId": "0011",
@@ -29238,7 +29231,7 @@
         "Brashard Smith"
       ],
       "power": {
-        "computedAt": "2026-09-10T22:34:37.299Z",
+        "computedAt": "2026-09-11T04:37:42.388Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -30389,7 +30382,7 @@
           "contractYear": "1",
           "injuryStatus": null,
           "injuryDetail": null,
-          "pts": 0,
+          "pts": 4.1,
           "priorYearPts": 195.9,
           "ecr": {
             "rank": 62,
@@ -30679,7 +30672,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-10T22:34:50.607Z",
+      "updatedAt": "2026-09-11T04:37:57.806Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -30853,47 +30846,87 @@
             "score": "31.99",
             "minutesRemaining": 420,
             "isMe": false,
-            "winProb": 81
-          },
-          {
-            "franchiseId": "0014",
-            "teamName": "U Madden, Bro",
-            "score": "12.00",
-            "minutesRemaining": 480,
-            "isMe": false,
-            "winProb": 58
-          },
-          {
-            "franchiseId": "0003",
-            "teamName": "Zoosdays are for Rhinos",
-            "score": "11.25",
-            "minutesRemaining": 420,
-            "isMe": false,
-            "winProb": 50
+            "winProb": 77
           },
           {
             "franchiseId": "0012",
             "teamName": "Gotta Catch'em All",
-            "score": "10.90",
+            "score": "28.23",
+            "minutesRemaining": 240,
+            "isMe": false,
+            "winProb": 49
+          },
+          {
+            "franchiseId": "0014",
+            "teamName": "U Madden, Bro",
+            "score": "26.00",
             "minutesRemaining": 420,
             "isMe": false,
-            "winProb": 50
+            "winProb": 62
+          },
+          {
+            "franchiseId": "0006",
+            "teamName": "Cardboard Crackheads",
+            "score": "21.45",
+            "minutesRemaining": 240,
+            "isMe": false,
+            "winProb": 10
+          },
+          {
+            "franchiseId": "0007",
+            "teamName": "Grand Theft Audible ",
+            "score": "18.76",
+            "minutesRemaining": 480,
+            "isMe": false,
+            "winProb": 90
+          },
+          {
+            "franchiseId": "0003",
+            "teamName": "Zoosdays are for Rhinos",
+            "score": "18.75",
+            "minutesRemaining": 360,
+            "isMe": false,
+            "winProb": 53
+          },
+          {
+            "franchiseId": "0013",
+            "teamName": "Perfect Dark",
+            "score": "18.00",
+            "minutesRemaining": 300,
+            "isMe": false,
+            "winProb": 51
+          },
+          {
+            "franchiseId": "0008",
+            "teamName": "Rock’emSock’emRug",
+            "score": "9.90",
+            "minutesRemaining": 480,
+            "isMe": false,
+            "winProb": 61
+          },
+          {
+            "franchiseId": "0005",
+            "teamName": "All Your Base Are Belong To Us",
+            "score": "7.00",
+            "minutesRemaining": 420,
+            "isMe": true,
+            "winProb": 23
           },
           {
             "franchiseId": "0011",
             "teamName": "Rummy and Cocaine",
             "score": "6.35",
-            "minutesRemaining": 480,
+            "minutesRemaining": 420,
             "isMe": false,
-            "winProb": 69
+            "winProb": 58
           },
           {
-            "franchiseId": "0006",
-            "teamName": "Cardboard Crackheads",
-            "score": "5.70",
-            "minutesRemaining": 360,
+            "franchiseId": "0002",
+            "teamName": "Super Sack Bros",
+            "score": "5.40",
+            "minutesRemaining": 420,
             "isMe": false,
-            "winProb": 21
+            "winProb": 47
           },
           {
             "franchiseId": "0001",
@@ -30901,15 +30934,7 @@
             "score": "4.50",
             "minutesRemaining": 480,
             "isMe": false,
-            "winProb": 42
-          },
-          {
-            "franchiseId": "0005",
-            "teamName": "All Your Base Are Belong To Us",
-            "score": "2.90",
-            "minutesRemaining": 420,
-            "isMe": true,
-            "winProb": 19
+            "winProb": 38
           },
           {
             "franchiseId": "0009",
@@ -30917,23 +30942,7 @@
             "score": "0.37",
             "minutesRemaining": 480,
             "isMe": false,
-            "winProb": 38
-          },
-          {
-            "franchiseId": "0007",
-            "teamName": "Grand Theft Audible ",
-            "score": "0.00",
-            "minutesRemaining": 540,
-            "isMe": false,
-            "winProb": 79
-          },
-          {
-            "franchiseId": "0008",
-            "teamName": "Rock’emSock’emRug",
-            "score": "0.00",
-            "minutesRemaining": 540,
-            "isMe": false,
-            "winProb": 62
+            "winProb": 39
           },
           {
             "franchiseId": "0010",
@@ -30941,23 +30950,7 @@
             "score": "0.00",
             "minutesRemaining": 420,
             "isMe": false,
-            "winProb": 31
-          },
-          {
-            "franchiseId": "0013",
-            "teamName": "Perfect Dark",
-            "score": "0.00",
-            "minutesRemaining": 480,
-            "isMe": false,
-            "winProb": 50
-          },
-          {
-            "franchiseId": "0002",
-            "teamName": "Super Sack Bros",
-            "score": "0.00",
-            "minutesRemaining": 480,
-            "isMe": false,
-            "winProb": 50
+            "winProb": 42
           }
         ],
         "matchups": [
@@ -31022,7 +31015,7 @@
         "Chig Okonkwo"
       ],
       "power": {
-        "computedAt": "2026-09-10T22:34:37.299Z",
+        "computedAt": "2026-09-11T04:37:42.388Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -32001,7 +31994,7 @@
           "injuryStatus": null
         }
       ],
-      "updatedAt": "2026-09-10T22:34:50.806Z",
+      "updatedAt": "2026-09-11T04:37:58.050Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -32143,25 +32136,25 @@
             "score": "0.00",
             "minutesRemaining": 540,
             "isMe": false,
-            "winProb": 62
+            "winProb": 83
           },
           {
             "franchiseId": "1",
             "teamName": "Team Nico",
             "ownerName": "Nic",
             "score": "0.00",
-            "minutesRemaining": 480,
+            "minutesRemaining": 360,
             "isMe": false,
-            "winProb": 38
+            "winProb": 17
           },
           {
             "franchiseId": "2",
             "teamName": "For Whom the SKOL Tolls",
             "ownerName": "Chris",
             "score": "0.00",
-            "minutesRemaining": 540,
+            "minutesRemaining": 480,
             "isMe": false,
-            "winProb": 50
+            "winProb": 38
           },
           {
             "franchiseId": "10",
@@ -32170,7 +32163,7 @@
             "score": "0.00",
             "minutesRemaining": 540,
             "isMe": true,
-            "winProb": 50
+            "winProb": 62
           },
           {
             "franchiseId": "9",
@@ -32197,34 +32190,34 @@
             "score": "0.00",
             "minutesRemaining": 480,
             "isMe": false,
-            "winProb": 50
+            "winProb": 75
           },
           {
             "franchiseId": "3",
             "teamName": "DeVante S#ck Your Blood",
             "ownerName": "Kevin",
             "score": "0.00",
-            "minutesRemaining": 480,
+            "minutesRemaining": 360,
             "isMe": false,
-            "winProb": 50
+            "winProb": 25
           },
           {
             "franchiseId": "11",
             "teamName": "MKE Mayer",
             "ownerName": "Chris",
             "score": "0.00",
-            "minutesRemaining": 480,
+            "minutesRemaining": 360,
             "isMe": false,
-            "winProb": 63
+            "winProb": 50
           },
           {
             "franchiseId": "7",
             "teamName": "You Like That?!!!",
             "ownerName": "Christopher",
             "score": "0.00",
-            "minutesRemaining": 420,
+            "minutesRemaining": 360,
             "isMe": false,
-            "winProb": 37
+            "winProb": 50
           }
         ],
         "matchups": [
@@ -33270,7 +33263,7 @@
           "injuryStatus": null
         }
       ],
-      "updatedAt": "2026-09-10T22:34:50.903Z",
+      "updatedAt": "2026-09-11T04:37:58.124Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -33412,34 +33405,34 @@
             "score": "0.00",
             "minutesRemaining": 420,
             "isMe": false,
-            "winProb": 50
+            "winProb": 64
           },
           {
             "franchiseId": "10",
             "teamName": "Jackin goff",
             "ownerName": "Braxton",
             "score": "0.00",
-            "minutesRemaining": 420,
+            "minutesRemaining": 360,
             "isMe": false,
-            "winProb": 50
+            "winProb": 36
           },
           {
             "franchiseId": "3",
             "teamName": "I am him",
             "ownerName": "Bob",
             "score": "0.00",
-            "minutesRemaining": 420,
+            "minutesRemaining": 300,
             "isMe": false,
-            "winProb": 37
+            "winProb": 24
           },
           {
             "franchiseId": "9",
             "teamName": "MAYBE NEXT YEAR ",
             "ownerName": "KEVIN",
             "score": "0.00",
-            "minutesRemaining": 480,
+            "minutesRemaining": 420,
             "isMe": false,
-            "winProb": 63
+            "winProb": 76
           },
           {
             "franchiseId": "8",
@@ -33448,25 +33441,25 @@
             "score": "0.00",
             "minutesRemaining": 360,
             "isMe": false,
-            "winProb": 25
+            "winProb": 36
           },
           {
             "franchiseId": "5",
             "teamName": "Ballroom Blitz",
             "ownerName": "Jeff",
             "score": "0.00",
-            "minutesRemaining": 480,
+            "minutesRemaining": 420,
             "isMe": true,
-            "winProb": 75
+            "winProb": 64
           },
           {
             "franchiseId": "7",
             "teamName": "BobNado",
             "ownerName": "Bob",
             "score": "0.00",
-            "minutesRemaining": 480,
+            "minutesRemaining": 420,
             "isMe": false,
-            "winProb": 50
+            "winProb": 37
           },
           {
             "franchiseId": "1",
@@ -33475,14 +33468,14 @@
             "score": "0.00",
             "minutesRemaining": 480,
             "isMe": false,
-            "winProb": 50
+            "winProb": 63
           },
           {
             "franchiseId": "2",
             "teamName": "Linclon's Loud Team",
             "ownerName": "Linclon",
             "score": "0.00",
-            "minutesRemaining": 480,
+            "minutesRemaining": 420,
             "isMe": false,
             "winProb": 50
           },
@@ -33491,7 +33484,7 @@
             "teamName": "Bones Killa ",
             "ownerName": "Jason",
             "score": "0.00",
-            "minutesRemaining": 480,
+            "minutesRemaining": 420,
             "isMe": false,
             "winProb": 50
           }
@@ -33537,7 +33530,7 @@
         "4361370",
         "4430737",
         "3915511",
-        "3116165",
+        "4248528",
         "-16030",
         "4697745"
       ],
@@ -34454,7 +34447,7 @@
           "position": "RB",
           "team": "LAR",
           "bye": "11",
-          "pts": 0,
+          "pts": 15.5,
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
@@ -34638,7 +34631,7 @@
         }
       ],
       "draftInProgress": false,
-      "updatedAt": "2026-09-10T22:34:51.238Z",
+      "updatedAt": "2026-09-11T04:37:58.297Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -34789,10 +34782,26 @@
           {
             "franchiseId": "6",
             "teamName": "Bam Knights of the Round",
-            "score": "67.70",
-            "minutesRemaining": 480,
+            "score": "83.80",
+            "minutesRemaining": 420,
             "isMe": false,
-            "winProb": 88
+            "winProb": 80
+          },
+          {
+            "franchiseId": "1",
+            "teamName": "UnicornBolt",
+            "score": "31.10",
+            "minutesRemaining": 540,
+            "isMe": false,
+            "winProb": 61
+          },
+          {
+            "franchiseId": "2",
+            "teamName": "XIII",
+            "score": "30.90",
+            "minutesRemaining": 540,
+            "isMe": false,
+            "winProb": 20
           },
           {
             "franchiseId": "12",
@@ -34800,7 +34809,23 @@
             "score": "20.32",
             "minutesRemaining": 540,
             "isMe": false,
-            "winProb": 60
+            "winProb": 39
+          },
+          {
+            "franchiseId": "9",
+            "teamName": "mmidlikowski",
+            "score": "16.40",
+            "minutesRemaining": 540,
+            "isMe": false,
+            "winProb": 56
+          },
+          {
+            "franchiseId": "4",
+            "teamName": "Gold Chocobo",
+            "score": "15.50",
+            "minutesRemaining": 540,
+            "isMe": true,
+            "winProb": 55
           },
           {
             "franchiseId": "8",
@@ -34808,7 +34833,15 @@
             "score": "14.60",
             "minutesRemaining": 480,
             "isMe": false,
-            "winProb": 42
+            "winProb": 40
+          },
+          {
+            "franchiseId": "10",
+            "teamName": "Camlawfff",
+            "score": "12.30",
+            "minutesRemaining": 540,
+            "isMe": false,
+            "winProb": 60
           },
           {
             "franchiseId": "3",
@@ -34816,31 +34849,15 @@
             "score": "5.10",
             "minutesRemaining": 540,
             "isMe": false,
-            "winProb": 44
+            "winProb": 51
           },
           {
-            "franchiseId": "1",
-            "teamName": "UnicornBolt",
-            "score": "0.00",
-            "minutesRemaining": 600,
+            "franchiseId": "7",
+            "teamName": "poppykimish",
+            "score": "4.60",
+            "minutesRemaining": 540,
             "isMe": false,
-            "winProb": 40
-          },
-          {
-            "franchiseId": "2",
-            "teamName": "XIII",
-            "score": "0.00",
-            "minutesRemaining": 600,
-            "isMe": false,
-            "winProb": 12
-          },
-          {
-            "franchiseId": "4",
-            "teamName": "Gold Chocobo",
-            "score": "0.00",
-            "minutesRemaining": 600,
-            "isMe": true,
-            "winProb": 50
+            "winProb": 49
           },
           {
             "franchiseId": "5",
@@ -34848,31 +34865,7 @@
             "score": "0.00",
             "minutesRemaining": 600,
             "isMe": false,
-            "winProb": 50
-          },
-          {
-            "franchiseId": "7",
-            "teamName": "poppykimish",
-            "score": "0.00",
-            "minutesRemaining": 600,
-            "isMe": false,
-            "winProb": 56
-          },
-          {
-            "franchiseId": "9",
-            "teamName": "mmidlikowski",
-            "score": "0.00",
-            "minutesRemaining": 600,
-            "isMe": false,
-            "winProb": 50
-          },
-          {
-            "franchiseId": "10",
-            "teamName": "Camlawfff",
-            "score": "0.00",
-            "minutesRemaining": 600,
-            "isMe": false,
-            "winProb": 58
+            "winProb": 45
           },
           {
             "franchiseId": "11",
@@ -34880,7 +34873,7 @@
             "score": "0.00",
             "minutesRemaining": 600,
             "isMe": false,
-            "winProb": 50
+            "winProb": 44
           }
         ],
         "matchups": [
@@ -34974,7 +34967,7 @@
         "DJ Giddens"
       ],
       "power": {
-        "computedAt": "2026-09-10T22:34:37.299Z",
+        "computedAt": "2026-09-11T04:37:42.388Z",
         "scoring": "HALF",
         "projections": {
           "source": {
