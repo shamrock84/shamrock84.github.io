@@ -573,3 +573,42 @@ try {
 } catch (err) {
   console.log(`  RUN 5 probe failed: ${err.message}`);
 }
+
+// RUN 6 — added immediately after RUN 5 confirmed the boxscore endpoint is
+// real. RUN 5 only dumped the "passing" category's key/label shape; before
+// writing any ESPN-boxscore -> MFL-event-code join, confirm the rushing/
+// receiving/interceptions category key names too (the point of this
+// project's whole verify-first convention — a guessed key name here would
+// silently mislabel a stat rather than error). Also prints a defensive
+// player's "interceptions" category to make sure it's a DIFFERENT shape
+// from passing's own "interceptions" key (INTs thrown vs INTs caught) —
+// a real collision risk once both get joined against MFL's IN vs IC event
+// codes.
+console.log('\n\n=== RUN 6: ESPN boxscore rushing/receiving/defensive category shapes ===\n');
+try {
+  const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard');
+  const data = await res.json();
+  const finished = (data.events || []).find((e) => e.competitions?.[0]?.status?.type?.state === 'post');
+  if (!finished) {
+    console.log('  no finished game to test against');
+  } else {
+    const sres = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=${finished.id}`);
+    const sdata = await sres.json();
+    const teams = sdata.boxscore?.players || [];
+    for (const team of teams) {
+      for (const catName of ['rushing', 'receiving', 'interceptions', 'defensive']) {
+        const cat = (team.statistics || []).find((s) => s.name === catName);
+        if (!cat) continue;
+        console.log(`\n--- ${team.team?.abbreviation} / ${catName} ---`);
+        console.log(`keys: ${JSON.stringify(cat.keys)}`);
+        console.log(`labels: ${JSON.stringify(cat.labels)}`);
+        const withStats = (cat.athletes || []).find((a) => (a.stats || []).some((s) => Number(s) > 0));
+        if (withStats) {
+          console.log(`sample athlete: ${withStats.athlete?.displayName} -> ${JSON.stringify(withStats.stats)}`);
+        }
+      }
+    }
+  }
+} catch (err) {
+  console.log(`  RUN 6 probe failed: ${err.message}`);
+}
