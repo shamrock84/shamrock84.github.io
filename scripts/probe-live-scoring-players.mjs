@@ -529,3 +529,47 @@ if (MFL_LEAGUE_ID) {
 } else {
   console.log('\n\n=== RUN 4 skipped (no PROBE_MFL_LEAGUE_ID) ===');
 }
+
+// RUN 5 — added to answer a follow-up idea: could ESPN's PUBLIC (non-
+// fantasy) NFL data supply the raw stats MFL's own API is contractually
+// forbidden from exposing (see mfl/README.md), so this project computes
+// its own MFL-scoring-rule breakdown independently rather than reading
+// one from MFL? That would need a per-player BOXSCORE endpoint — the
+// scoreboard fetchNflGames already reads has no per-player stats at all,
+// only game/team state. ESPN's site API commonly exposes a richer
+// `/summary?event=<id>` for each game; this checks whether that's real,
+// unauthenticated, and has individual player stat lines (not just team
+// score), against a real FINISHED game.
+console.log('\n\n=== RUN 5: does ESPN\'s public site API have a per-game player boxscore? ===\n');
+try {
+  const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard');
+  const data = await res.json();
+  const finished = (data.events || []).find((e) => e.competitions?.[0]?.status?.type?.state === 'post');
+  if (!finished) {
+    console.log('  no finished game in this week\'s scoreboard to test against');
+  } else {
+    console.log(`testing against event id ${finished.id} (${finished.shortName || finished.name})`);
+    const sres = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=${finished.id}`);
+    console.log(`GET /summary?event=${finished.id} -> ${sres.status}`);
+    if (sres.ok) {
+      const sdata = await sres.json();
+      console.log(`top-level keys: ${Object.keys(sdata).sort().join(', ')}`);
+      const boxscore = sdata.boxscore;
+      console.log(`boxscore present: ${!!boxscore}; boxscore keys: ${boxscore ? Object.keys(boxscore).join(', ') : '(none)'}`);
+      const playersBlock = boxscore?.players;
+      console.log(`boxscore.players present: ${!!playersBlock}; length: ${Array.isArray(playersBlock) ? playersBlock.length : 'n/a'}`);
+      if (Array.isArray(playersBlock) && playersBlock[0]) {
+        const team0 = playersBlock[0];
+        console.log(`\nfirst team block keys: ${Object.keys(team0).join(', ')}`);
+        console.log(`statistics categories: ${(team0.statistics || []).map((s) => s.name).join(', ')}`);
+        const firstCat = team0.statistics?.[0];
+        console.log(`\nfirst category ("${firstCat?.name}") full shape:`);
+        console.log(JSON.stringify(firstCat, null, 2).slice(0, 3000));
+      }
+    } else {
+      console.log(`  non-OK, body: ${(await sres.text()).slice(0, 300)}`);
+    }
+  }
+} catch (err) {
+  console.log(`  RUN 5 probe failed: ${err.message}`);
+}
