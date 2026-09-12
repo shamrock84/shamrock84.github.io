@@ -1124,13 +1124,15 @@ export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, inj
   };
 }
 
-// cachedNameById is optional and mirrors fetchScoring's own parameter: pass a
-// franchise-name map (from mflFranchiseNames) to skip the TYPE=league read.
+// cachedFranchiseInfo is optional and mirrors fetchScoring's own parameter:
+// pass the { nameById, ownerById } pair (from fetchMflFranchiseNames, or
+// built directly off an already-fetched TYPE=league response via
+// mflFranchiseNames/mflFranchiseOwnerNames) to skip the TYPE=league read.
 // Omit it and this fetches its own, which is what keeps standings working for a
 // league whose roster pass failed and so never cached one.
-export async function fetchStandings(league, cookie, cachedNameById) {
-  const [nameById, standingsData] = await Promise.all([
-    cachedNameById ?? fetchMflFranchiseNames(league, cookie),
+export async function fetchStandings(league, cookie, cachedFranchiseInfo) {
+  const [{ nameById, ownerById }, standingsData] = await Promise.all([
+    cachedFranchiseInfo ? Promise.resolve(cachedFranchiseInfo) : fetchMflFranchiseNames(league, cookie),
     mflGet(`/export?TYPE=leagueStandings&L=${league.id}&JSON=1`, cookie, seasonOf(league)),
   ]);
 
@@ -1145,6 +1147,9 @@ export async function fetchStandings(league, cookie, cachedNameById) {
   return rows.map((r) => ({
     franchiseId: r.id,
     teamName: nameById.get(r.id) || r.id,
+    // Almost always null — see mflOwnerName's own comment for why. Read the
+    // same way ESPN's ownerName is (teamNameWithOwner in myffl.html).
+    ownerName: ownerById.get(r.id) || null,
     wins: Number(r.h2hw ?? 0),
     losses: Number(r.h2hl ?? 0),
     ties: Number(r.h2ht ?? 0),
@@ -1327,8 +1332,8 @@ export async function fetchMflWeekScores(yearLeagueId, cookie, year, week) {
 
 // The raw TYPE=league response. Exported so a single read can be shared across
 // the roster, standings and scoring passes of one sync instead of each fetching
-// it for itself — see mflNamesById in fetch-rosters.mjs for what that used to
-// cost.
+// it for itself — see mflFranchiseInfoById in fetch-rosters.mjs for what that
+// used to cost.
 export async function fetchMflLeagueData(league, cookie) {
   return mflGet(`/export?TYPE=league&L=${league.id}&JSON=1`, cookie, seasonOf(league));
 }
@@ -1342,16 +1347,58 @@ export function mflFranchiseNames(leagueData) {
   return new Map(franchiseList.map((f) => [f.id, f.name]));
 }
 
-// Fetches just the franchise-id -> name map for an MFL league (the part of
-// TYPE=league that fetchScoring needs). Callers that already have this
-// cached (e.g. the live-scoring proxy) can skip re-fetching it every poll.
-export async function fetchMflFranchiseNames(league, cookie) {
-  return mflFranchiseNames(await fetchMflLeagueData(league, cookie));
+// The real person behind an MFL franchise, mirroring espnOwnerName's role
+// for the Standings/Scoring cards' "Team Name (Owner)" treatment
+// (teamNameWithOwner in myffl.html). Unlike ESPN, this is NOT a sync-time
+// given: probe-mfl-owner-name.mjs and MFL's own API docs (pasted by the
+// project's manager mid-session) confirmed a franchise's `owner_name`
+// (plus email) only appears in TYPE=league's response when the request's
+// session cookie belongs to a user with COMMISSIONER access to that
+// specific league — a per-league fact having nothing to do with league
+// type, and unrelated to the FRANCHISE_ID/PASSWORD request params an
+// earlier (wrong) theory, borrowed from python-mfl's docstring, chased
+// first. Running the probe against every MFL league in config/leagues.json
+// found exactly two where this project's login commissions the league;
+// every other franchise object simply never carries `owner_name` at all,
+// so this degrades to null there automatically — no per-league gating
+// needed in this project's own code, MFL's API already does it.
+//
+// First name only, matching espnOwnerName's own reasoning: a parenthetical
+// read at a glance next to a score or a record doesn't need the owner's
+// full "Lee Ryan". Some owners' `owner_name` is already just a first name
+// or a nickname ("Tyler", "Jabroni") — splitting on whitespace and taking
+// the first token is a no-op for those and trims the rest consistently.
+export function mflOwnerName(franchise) {
+  const raw = franchise?.owner_name;
+  if (!raw) return null;
+  return String(raw).trim().split(/\s+/)[0] || null;
 }
 
-// nameById is optional — pass a cached Map (from fetchMflFranchiseNames) to
-// skip the TYPE=league call. Omit it to fetch names fresh every time (what
-// the full sync does, since it only runs once every few hours anyway).
+// Sibling to mflFranchiseNames, off the exact same already-fetched
+// TYPE=league response — never a second request. Most entries resolve to
+// null (see mflOwnerName's own comment for why that's the expected common
+// case, not a failure) since this account only commissions a couple of the
+// leagues in this config.
+export function mflFranchiseOwnerNames(leagueData) {
+  const franchises = leagueData?.league?.franchises?.franchise ?? [];
+  const franchiseList = Array.isArray(franchises) ? franchises : [franchises];
+  return new Map(franchiseList.map((f) => [f.id, mflOwnerName(f)]));
+}
+
+// Fetches the franchise-id -> name AND franchise-id -> owner-name maps for
+// an MFL league (the part of TYPE=league that fetchStandings/fetchScoring
+// need) off a single request. Callers that already have this cached (e.g.
+// the live-scoring proxy, or the sync's own already-fetched TYPE=league
+// read for the roster pass) can skip re-fetching it every poll/pass.
+export async function fetchMflFranchiseNames(league, cookie) {
+  const leagueData = await fetchMflLeagueData(league, cookie);
+  return { nameById: mflFranchiseNames(leagueData), ownerById: mflFranchiseOwnerNames(leagueData) };
+}
+
+// franchiseInfo ({ nameById, ownerById }) is optional — pass a cached one
+// (from fetchMflFranchiseNames) to skip the TYPE=league call. Omit it to
+// fetch fresh every time (what the full sync does, since it only runs once
+// every few hours anyway).
 //
 // TYPE=liveScoring nests franchises two levels down, under liveScoring.matchup[]
 // — never as a flat liveScoring.franchise list. This was probed wrong for a
@@ -1682,9 +1729,9 @@ function mflLiveStarters(f, playerMap) {
 // shared across every league, never once per fetchScoring call. The sync
 // already loads it for the roster pass; api/live-scoring.js caches it at
 // module level for the same reason it caches franchise names.
-export async function fetchScoring(league, cookie, nameById, projectPlayer, playerMap) {
-  const [names, liveData] = await Promise.all([
-    nameById ? Promise.resolve(nameById) : fetchMflFranchiseNames(league, cookie),
+export async function fetchScoring(league, cookie, franchiseInfo, projectPlayer, playerMap) {
+  const [{ nameById, ownerById }, liveData] = await Promise.all([
+    franchiseInfo ? Promise.resolve(franchiseInfo) : fetchMflFranchiseNames(league, cookie),
     mflGet(`/export?TYPE=liveScoring&L=${league.id}&JSON=1`, cookie, seasonOf(league)),
   ]);
 
@@ -1715,7 +1762,10 @@ export async function fetchScoring(league, cookie, nameById, projectPlayer, play
   // "how many player-minutes has this team not played yet", no extra fetch.
   const teams = rows.map((f) => ({
     franchiseId: f.id,
-    teamName: names.get(f.id) || f.id,
+    teamName: nameById.get(f.id) || f.id,
+    // Almost always null — see mflOwnerName's own comment for why. Read the
+    // same way ESPN's ownerName is (teamNameWithOwner in myffl.html).
+    ownerName: ownerById.get(f.id) || null,
     score: Number(f.score ?? 0),
     minutesRemaining: Math.round(Number(f.gameSecondsRemaining ?? 0) / 60),
     isMe: f.id === league.franchiseId,
@@ -2185,6 +2235,16 @@ export async function loadSleeperPlayerMap() {
 // users + rosters have to be joined to get a display team name — Sleeper
 // rosters only carry an owner_id, the team name lives on the user's
 // metadata (or falls back to their display name).
+//
+// ownerById is the same join, for the Standings/Scoring cards' "Team Name
+// (Owner)" treatment (teamNameWithOwner in myffl.html, already applied to
+// ESPN via espnOwnerName). Unlike MFL, Sleeper's own user list is public —
+// no commissioner-only gate — but Sleeper users don't have separate
+// first/last name fields the way ESPN's members do, only `username` and a
+// self-chosen `display_name`. display_name is what Sleeper's own UI shows
+// as the manager's identity everywhere, so it's used as-is rather than
+// split like espnOwnerName/mflOwnerName do for a real "First Last" name.
+// Free off the same already-fetched users/rosters read, no extra request.
 async function sleeperTeamNames(league) {
   const [users, rosters] = await Promise.all([
     sleeperGet(`/league/${league.id}/users`),
@@ -2192,11 +2252,13 @@ async function sleeperTeamNames(league) {
   ]);
   const userById = new Map(users.map((u) => [u.user_id, u]));
   const names = new Map();
+  const ownerById = new Map();
   for (const r of rosters) {
     const user = userById.get(r.owner_id);
     names.set(String(r.roster_id), user?.metadata?.team_name || user?.display_name || `Team ${r.roster_id}`);
+    ownerById.set(String(r.roster_id), user?.display_name || null);
   }
-  return { names, rosters };
+  return { names, ownerById, rosters };
 }
 
 // MFL's nflByeWeeks map (shared with the MFL sync — bye weeks are a plain
@@ -2314,7 +2376,7 @@ export async function fetchSleeperLeagueRoster(league, playerMap, byeWeeks) {
 }
 
 export async function fetchSleeperStandings(league) {
-  const { names, rosters } = await sleeperTeamNames(league);
+  const { names, ownerById, rosters } = await sleeperTeamNames(league);
   if (rosters.length === 0) {
     throw new Error('No standings data returned for this league');
   }
@@ -2326,6 +2388,10 @@ export async function fetchSleeperStandings(league) {
       return {
         franchiseId: String(r.roster_id),
         teamName: names.get(String(r.roster_id)) || `Team ${r.roster_id}`,
+        // Read the same way ESPN's/MFL's ownerName is (teamNameWithOwner in
+        // myffl.html) — see sleeperTeamNames' own comment for why this is
+        // display_name rather than a split first/last name.
+        ownerName: ownerById.get(String(r.roster_id)) || null,
         wins: r.settings?.wins ?? 0,
         losses: r.settings?.losses ?? 0,
         ties: r.settings?.ties ?? 0,
@@ -2392,7 +2458,7 @@ function sleeperTeamLiveStarters(starterIds, playerMap, clockMap, pointsById) {
 // Sleeper's starters carry `name`, not an id — see espnTeamLiveStarters'
 // comment for why.
 export async function fetchSleeperScoring(league, clockMap, playerMap, projectPlayer) {
-  const [state, { names }, clocks, players] = await Promise.all([
+  const [state, { names, ownerById }, clocks, players] = await Promise.all([
     sleeperGet('/state/nfl'),
     sleeperTeamNames(league),
     clockMap ? Promise.resolve(clockMap) : fetchNflGameClocks(),
@@ -2413,6 +2479,7 @@ export async function fetchSleeperScoring(league, clockMap, playerMap, projectPl
     return {
       franchiseId: String(m.roster_id),
       teamName: names.get(String(m.roster_id)) || `Team ${m.roster_id}`,
+      ownerName: ownerById.get(String(m.roster_id)) || null,
       score: m.points ?? 0,
       minutesRemaining: live.minutesRemaining,
       isMe: String(m.roster_id) === String(league.franchiseId),

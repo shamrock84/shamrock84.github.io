@@ -46,6 +46,7 @@ import {
   fetchMflWeekScores,
   fetchMflLeagueData,
   mflFranchiseNames,
+  mflFranchiseOwnerNames,
   setMflRequestInterval,
   fetchNflGameClocks,
 } from './lib/providers.mjs';
@@ -271,8 +272,8 @@ export function draftIsSettled(previous, season, force = false) {
 // these leagues are actually read for. Only the roster block goes.
 //
 // The `TYPE=league` read stays too, because standings and scoring need the
-// franchise-name map off it (see mflNamesById); skipping it here would just
-// push two fetches into those passes instead.
+// franchise-name/owner-name maps off it (see mflFranchiseInfoById); skipping
+// it here would just push two fetches into those passes instead.
 //
 // The one league that appeared to contradict this is worth recording, because
 // the next person to check will find it too. Worlds Collide gained three
@@ -1089,7 +1090,13 @@ async function main() {
   // the pre-existing behaviour: fetchStandings and fetchScoring each fetch their
   // own when handed nothing, so a league whose rosters failed can still get
   // standings, exactly as before.
-  const mflNamesById = new Map();
+  //
+  // Carries { nameById, ownerById } per league rather than a bare name map —
+  // ownerById is almost always all-null (see mflOwnerName's own comment: MFL
+  // only fills owner_name in for a league this project's login commissions),
+  // but it rides along for free off the exact same TYPE=league response, so
+  // there's no reason to fetch it separately for the two leagues where it isn't.
+  const mflFranchiseInfoById = new Map();
 
   let frozenDraftonly = 0;
 
@@ -1136,7 +1143,10 @@ async function main() {
       let mflLeagueData = null;
       if (!league.provider || league.provider === 'mfl') {
         mflLeagueData = await fetchMflLeagueData(league, cookie);
-        mflNamesById.set(league.id, mflFranchiseNames(mflLeagueData));
+        mflFranchiseInfoById.set(league.id, {
+          nameById: mflFranchiseNames(mflLeagueData),
+          ownerById: mflFranchiseOwnerNames(mflLeagueData),
+        });
       }
       // A finished draft-only league keeps the roster it already has, at the
       // cost of no requests at all. Built as `result` and then run through the
@@ -1245,7 +1255,7 @@ async function main() {
         ? await fetchEspnStandings(league)
         : league.provider === 'sleeper'
         ? await fetchSleeperStandings(league)
-        : await fetchStandings(league, cookie, mflNamesById.get(league.id));
+        : await fetchStandings(league, cookie, mflFranchiseInfoById.get(league.id));
       target.standingsError = null;
       console.log(`Fetched standings for ${league.name}: ${target.standings.length} teams`);
     } catch (err) {
@@ -1280,7 +1290,7 @@ async function main() {
         ? await fetchEspnScoring(league, nflClocks)
         : league.provider === 'sleeper'
         ? await fetchSleeperScoring(league, nflClocks, sleeperPlayerMap)
-        : await fetchScoring(league, cookie, mflNamesById.get(league.id));
+        : await fetchScoring(league, cookie, mflFranchiseInfoById.get(league.id));
       target.scoring = stripScoringPlayers(scoring);
       target.scoringError = null;
       console.log(`Fetched scoring for ${league.name}: ${target.scoring.teams.length} teams`);

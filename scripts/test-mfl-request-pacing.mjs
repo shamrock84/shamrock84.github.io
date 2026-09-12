@@ -29,6 +29,7 @@ import {
 	fetchStandings,
 	fetchLeagueRoster,
 	mflFranchiseNames,
+	mflFranchiseOwnerNames,
 } from './lib/providers.mjs';
 
 // Records the moment each request *starts*, which is what the gate spaces out.
@@ -204,7 +205,8 @@ const league = { id: '26696', name: 'MNMx Dynasty', type: 'dynasty', franchiseId
 // same names — the saving has to be free of any change in what is rendered.
 {
 	const { paths } = stubFetch(routed);
-	const rows = await fetchStandings(league, null, mflFranchiseNames(leagueResponse));
+	const cachedFranchiseInfo = { nameById: mflFranchiseNames(leagueResponse), ownerById: mflFranchiseOwnerNames(leagueResponse) };
+	const rows = await fetchStandings(league, null, cachedFranchiseInfo);
 	assert.equal(paths.filter((p) => p.includes('TYPE=league&')).length, 0, 'a cached map must skip the read entirely');
 	assert.equal(paths.filter((p) => p.includes('TYPE=leagueStandings')).length, 1, 'the standings read still happens');
 	assert.equal(rows[0].teamName, 'Rumble Fish', 'cached names must resolve identically');

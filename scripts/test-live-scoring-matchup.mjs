@@ -68,11 +68,14 @@ const liveScoringResponse = {
 	stubFetch(() => okJson(liveScoringResponse));
 
 	const league = { id: '26696', franchiseId: '0001' };
-	const names = new Map([
-		['0010', 'Team A'], ['0009', 'Team B'],
-		['0001', 'My Team'], ['0008', 'Team D'],
-		['0003', 'Team E'], ['0004', 'Team F'],
-	]);
+	const names = {
+		nameById: new Map([
+			['0010', 'Team A'], ['0009', 'Team B'],
+			['0001', 'My Team'], ['0008', 'Team D'],
+			['0003', 'Team E'], ['0004', 'Team F'],
+		]),
+		ownerById: new Map(),
+	};
 
 	const result = await fetchScoring(league, 'cookie', names);
 
@@ -147,7 +150,7 @@ const liveScoringResponse = {
 {
 	stubFetch(() => okJson(liveScoringResponse));
 	const league = { id: '26696', franchiseId: '0001' };
-	const names = new Map([['0001', 'My Team'], ['0008', 'Team D']]);
+	const names = { nameById: new Map([['0001', 'My Team'], ['0008', 'Team D']]), ownerById: new Map() };
 
 	// 9001 projects far above the flat rate (0.185/min -> ~5.6pts for 1800s);
 	// 9002 has no entry at all, so it must fall back to the flat rate
@@ -206,7 +209,7 @@ const liveScoringResponse = {
 	stubFetch(() => okJson({ liveScoring: { week: '1' } }));
 	const league = { id: '26696', franchiseId: '0001' };
 	await assert.rejects(
-		() => fetchScoring(league, 'cookie', new Map()),
+		() => fetchScoring(league, 'cookie', { nameById: new Map(), ownerById: new Map() }),
 		/No live scoring available yet/
 	);
 }

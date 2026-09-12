@@ -6463,9 +6463,14 @@
 		// ESPN's redraft-league team names are commissioner in-jokes, so the
 		// Standings and Scoring cards also show the real manager behind the
 		// team — "Team Name (Owner)". Shared by both since neither is
-		// scoring-specific: ownerName only ever comes from fetchEspnStandings /
-		// fetchEspnScoring (espnOwnerName in providers.mjs); MFL/Sleeper teams
-		// carry no such field and render unchanged.
+		// scoring-specific. ownerName comes off fetchEspnStandings/
+		// fetchEspnScoring (espnOwnerName), fetchStandings/fetchScoring
+		// (mflOwnerName — null for every MFL league this project doesn't
+		// commission; see that function's own comment in providers.mjs for
+		// why that's the expected common case, not a failure), and
+		// fetchSleeperStandings/fetchSleeperScoring (sleeperTeamNames' own
+		// ownerById, off Sleeper's public display_name) — a team carrying
+		// none of those just renders unchanged.
 		function teamNameWithOwner(t) {
 			return t.ownerName ? `${t.teamName} (${t.ownerName})` : t.teamName;
 		}

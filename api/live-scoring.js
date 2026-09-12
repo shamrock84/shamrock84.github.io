@@ -50,7 +50,7 @@ export const config = { maxDuration: 30 };
 const cache = {
   mflCookie: null,
   mflCookieAt: 0,
-  mflNames: new Map(), // leagueId -> Map<franchiseId, name>
+  mflNames: new Map(), // leagueId -> { nameById: Map<franchiseId, name>, ownerById: Map<franchiseId, ownerName|null> }
   mflNamesAt: new Map(), // leagueId -> timestamp
   sleeperPlayerMap: null,
   sleeperPlayerMapAt: 0,
@@ -236,16 +236,20 @@ async function getMflCookie(username, password) {
   return cache.mflCookie;
 }
 
+// Returns { nameById, ownerById } — see fetchMflFranchiseNames's own comment.
+// ownerById is almost always all-null (MFL only fills owner_name in for a
+// league this project's login commissions), but it costs nothing extra to
+// cache alongside the names: same TYPE=league response, same TTL.
 async function getMflNames(league, cookie) {
   const at = cache.mflNamesAt.get(league.id) || 0;
   const cached = cache.mflNames.get(league.id);
   if (cached && Date.now() - at < NAMES_TTL_MS) {
     return cached;
   }
-  const names = await fetchMflFranchiseNames(league, cookie);
-  cache.mflNames.set(league.id, names);
+  const franchiseInfo = await fetchMflFranchiseNames(league, cookie);
+  cache.mflNames.set(league.id, franchiseInfo);
   cache.mflNamesAt.set(league.id, Date.now());
-  return names;
+  return franchiseInfo;
 }
 
 async function loadLeagueConfig() {
@@ -365,9 +369,9 @@ export default async function handler(req, res) {
         if (mflLoginError) {
           throw new Error(mflLoginError);
         }
-        const names = await getMflNames(league, mflCookie);
+        const franchiseInfo = await getMflNames(league, mflCookie);
         const projectPlayer = makeProjectPlayer(projections, 'mfl', league.scoring);
-        const scoring = await fetchScoring(league, mflCookie, names, projectPlayer, mflPlayerMap);
+        const scoring = await fetchScoring(league, mflCookie, franchiseInfo, projectPlayer, mflPlayerMap);
         return { id: league.id, name: league.name, scoring, scoringError: null };
       })
   );
