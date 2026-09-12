@@ -411,3 +411,40 @@ try {
 }
 
 console.log('\nDone.');
+
+// RUN 3 — added after RUN 2 found MFL's liveScoring updatedStats field
+// reads '' on every player regardless of score (confirmed against 8 real
+// scored players, 1.0 to 15.5 points, week 1 2026). Before concluding MFL
+// has no stat-breakdown source at all, check the one other MFL endpoint
+// this project already calls that carries player-level data for a week —
+// TYPE=weeklyResults, which fetchMflWeekScores/fetchMflLineup already read
+// for `status`/`score` only. Does its player entry carry anything else?
+if (MFL_LEAGUE_ID) {
+  console.log(`\n\n=== RUN 3: MFL TYPE=weeklyResults player-entry shape, league ${MFL_LEAGUE_ID} week ${WEEK} ===\n`);
+  try {
+    const cookie = await mflLogin(process.env.MFL_USERNAME, process.env.MFL_PASSWORD);
+    const year = seasonOf({ id: MFL_LEAGUE_ID });
+    const weeklyData = await mflGet(`/export?TYPE=weeklyResults&L=${MFL_LEAGUE_ID}&W=${WEEK}&JSON=1`, cookie, year);
+    const matchups = weeklyData?.weeklyResults?.matchup;
+    const matchupList = Array.isArray(matchups) ? matchups : matchups ? [matchups] : [];
+    const allPlayers = [];
+    for (const m of matchupList) {
+      const franchises = Array.isArray(m.franchise) ? m.franchise : m.franchise ? [m.franchise] : [];
+      for (const f of franchises) {
+        const players = Array.isArray(f.player) ? f.player : f.player ? [f.player] : [];
+        for (const p of players) allPlayers.push(p);
+      }
+    }
+    const unionKeys = new Set();
+    for (const p of allPlayers) for (const k of Object.keys(p || {})) unionKeys.add(k);
+    console.log(`union of ALL weeklyResults player-entry keys: ${[...unionKeys].sort().join(', ')}`);
+    const scored = allPlayers.filter((p) => Number(p.score) > 0);
+    console.log(`players with score > 0: ${scored.length} of ${allPlayers.length}`);
+    console.log(`first 4 scored entries verbatim:`);
+    console.log(JSON.stringify(scored.slice(0, 4), null, 2));
+  } catch (err) {
+    console.log(`  RUN 3 probe failed: ${err.message}`);
+  }
+} else {
+  console.log('\n\n=== RUN 3 skipped (no PROBE_MFL_LEAGUE_ID) ===');
+}
