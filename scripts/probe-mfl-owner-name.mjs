@@ -6,25 +6,27 @@
 // Nothing in this project has ever read anything owner-shaped off MFL —
 // mflFranchiseNames only reads `f.name` — so nothing here can be assumed.
 //
-// CONFIRMED (2026-09-08, probe-mfl-owner-name.yml run #1, one dynasty, one
-// salary-cap, and one draft-only league): MFL's public league-export API
-// does NOT expose the real person behind a franchise, in any of the three
-// league types. Every franchise object carries only cosmetic/team-level
-// fields — icon, division, name, waiverSortOrder, id, logo, sound, stadium,
-// abbrev (salarycap adds salaryCapAmount) — nothing person-shaped anywhere,
-// and no league-level key suggested one either. A franchise's owner is a
-// separate MFL user account the export simply never names, likely for the
-// same privacy reason MFL requires a login at all. Unlike espnOwnerName
-// (providers.mjs), there is no espnOwnerName-shaped function for MFL to
-// write: the data this would need does not exist in the API. A "Team Name
-// (Owner)" treatment for MFL leagues would need a different source — most
-// likely a manual per-league, per-franchise config field maintained by
-// hand — not a sync-time fetch.
+// Run #1 (2026-09-08, cookie session auth, one dynasty/one salarycap/one
+// draftonly league) found nothing owner-shaped in any franchise object.
 //
-// This exists because api.myfantasyleague.com is unreachable from the
-// sandbox this repo is normally edited from, so a workflow run is the only
-// place to ask. Read-only: one TYPE=league GET per sampled league.
-
+// Run #2 first suspected the missing ingredient was python-mfl's documented
+// PASSWORD+FRANCHISE_ID request params (github.com/mikeplis/python-mfl) and
+// tried that on the same three leagues — also nothing. But MFL's own API
+// docs (api_info page, pasted by the user mid-session) settle what actually
+// gates this field:
+//
+//   "league: ... If you pass the cookie of a user with commissioner access,
+//   it will return otherwise private owner information, like owner names,
+//   email addresses, etc. ... Personal user information, like name and
+//   email addresses only returned to league owners."
+//
+// So it's neither FRANCHISE_ID nor PASSWORD — it's whether the account
+// behind the session cookie holds COMMISSIONER access for THAT league. That
+// is a per-league fact having nothing to do with league type, which is why
+// sampling one league per type (runs #1-#2) could never answer it: it needs
+// checking against every MFL league this project's own account is in, to
+// see which (if any) it commissions. Plain cookie auth only this time —
+// mflGet's own production auth path, nothing extra to prove.
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { mflLogin, mflGet, seasonOf } from './lib/providers.mjs';
@@ -38,54 +40,50 @@ if (mflLeagues.length === 0) {
   process.exit(0);
 }
 
-// One representative per type, not every MFL league — the question is
-// "does the shape carry owner data at all, and does it differ by type,"
-// which three leagues answer as well as fifteen would.
-const sampleTypes = ['dynasty', 'salarycap', 'draftonly'];
-const samples = sampleTypes
-  .map((type) => mflLeagues.find((l) => l.type === type))
-  .filter(Boolean);
-
 const SUSPECT = /owner|manager|email|user|real.?name|first.?name|last.?name|contact/i;
 
 const cookie = await mflLogin(process.env.MFL_USERNAME, process.env.MFL_PASSWORD);
 
-for (const league of samples) {
+const commissionerLeagues = [];
+
+for (const league of mflLeagues) {
   console.log(`\n=== ${league.name} (${league.id}, type=${league.type}) ===`);
   try {
     const data = await mflGet(`/export?TYPE=league&L=${league.id}&JSON=1`, cookie, seasonOf(league));
 
-    console.log('  league-level keys:');
-    for (const k of Object.keys(data?.league || {})) {
-      const flag = SUSPECT.test(k) ? '  <-- SUSPECT' : '';
-      console.log(`    ${k}${flag}`);
-    }
+    const leagueKeys = Object.keys(data?.league || {});
+    const suspectLeagueKeys = leagueKeys.filter((k) => SUSPECT.test(k));
 
     const franchises = data?.league?.franchises?.franchise ?? [];
     const franchiseList = Array.isArray(franchises) ? franchises : [franchises];
+    const allFranchiseKeys = new Set();
+    for (const f of franchiseList) for (const k of Object.keys(f)) allFranchiseKeys.add(k);
+    const suspectFranchiseKeys = [...allFranchiseKeys].filter((k) => SUSPECT.test(k));
 
-    const allKeys = new Set();
-    for (const f of franchiseList) for (const k of Object.keys(f)) allKeys.add(k);
-    console.log(`  franchise keys (union across ${franchiseList.length} franchises):`);
-    for (const k of allKeys) {
-      const flag = SUSPECT.test(k) ? '  <-- SUSPECT' : '';
-      console.log(`    ${k}${flag}`);
+    if (suspectFranchiseKeys.length === 0 && suspectLeagueKeys.length === 0) {
+      console.log('  no owner-shaped keys — this account is not the commissioner here.');
+      continue;
     }
 
-    const mine = franchiseList.find((f) => f.id === league.franchiseId);
-    console.log(`  this league's own franchise (id=${league.franchiseId}), full object:`);
-    console.log(`    ${JSON.stringify(mine)}`);
-
-    console.log(`  a different franchise's full object, for comparison:`);
-    const other = franchiseList.find((f) => f.id !== league.franchiseId);
-    console.log(`    ${JSON.stringify(other)}`);
+    console.log('  SUSPECT league-level keys:', suspectLeagueKeys.join(', ') || '(none)');
+    console.log('  SUSPECT franchise keys:', suspectFranchiseKeys.join(', ') || '(none)');
+    console.log(`  franchise keys (union across ${franchiseList.length}):`, [...allFranchiseKeys].join(', '));
+    for (const f of franchiseList) {
+      console.log(`    ${JSON.stringify(f)}`);
+    }
+    commissionerLeagues.push(league.name);
   } catch (err) {
     console.log(`  FAILED: ${err.message}`);
   }
 }
 
 console.log('\n=== verdict ===');
-console.log('If no key above was flagged SUSPECT, and neither dumped franchise object carries anything');
-console.log('name-shaped beyond the team `name` itself, MFL\'s public league export does not expose an owner');
-console.log('identity the way ESPN\'s members[] does — "Team Name (Owner)" would need a different source (a');
-console.log('manual per-league config field, most likely) rather than a sync-time fetch.');
+if (commissionerLeagues.length === 0) {
+  console.log('No MFL league in the config returned an owner-shaped field. Per MFL\'s own API docs, that means');
+  console.log('this account does not hold commissioner access on any of them — commissioner status, not league');
+  console.log('type or request params, is what gates the field. "Team Name (Owner)" for MFL would need a');
+  console.log('different source (a manual per-league config field, most likely) rather than a sync-time fetch.');
+} else {
+  console.log(`Commissioner access confirmed on: ${commissionerLeagues.join(', ')}. Only these leagues can get`);
+  console.log('owner names from a sync-time fetch; every other MFL league still needs a different source.');
+}
