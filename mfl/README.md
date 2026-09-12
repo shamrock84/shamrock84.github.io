@@ -47,15 +47,64 @@ Request Reference. `liveScoring` (`updatedStats`), `weeklyResults`, and
 carries nothing between "the final score" and the raw stat item 7
 forbids outright.
 
-**Conclusion: MFL cannot support the Scoring tab's stat-breakdown
-popover through any documented, triable endpoint.** This isn't "not yet
-found" — it's the platform's own contractual limit, confirmed from two
-directions (their stated policy, and exhausting the endpoints that
-could plausibly have carried something short of it). An MFL starter's
-score stays plain, unclickable text in that popover, and should stay
-that way rather than prompting another round of probing against this
-same API. If MFL's terms or API surface ever change, this file is where
-to start.
+**Conclusion: MFL's own API cannot support the Scoring tab's
+stat-breakdown popover through any documented, triable endpoint.** This
+isn't "not yet found" — it's the platform's own contractual limit,
+confirmed from two directions (their stated policy, and exhausting the
+endpoints that could plausibly have carried something short of it). If
+MFL's terms or API surface ever change, this file is where to start —
+but **don't re-probe MFL for this again** on the strength of a new idea
+alone; the wall above is categorical, not a matter of trying harder.
+
+## What shipped instead: ESPN's public boxscore, not MFL's API
+
+The manager asked whether ESPN's own stats — reachable regardless of
+which platform a given league actually runs on — could stand in for the
+raw stat MFL refuses to expose. They can, and this project built it:
+`mflStatBreakdownFromBoxscore` in `providers.mjs` joins ESPN's PUBLIC
+site API (`fetchEspnBoxscore`, `GET .../summary?event=<id>` — the same
+unauthenticated host `fetchNflGames` already reads for game clocks,
+**never** their fantasy API) against this league's own MFL scoring
+rules (`fetchMflSkillPositionRates`, decoded via the `TYPE=allRules`
+labels confirmed above). This is a genuinely different data source than
+MFL's own — the ToS restriction above has nothing to say about it.
+
+Confirmed via RUN 5/6 of the same probe: `boxscore.players[]` carries a
+real per-athlete stat line (`passing`/`rushing`/`receiving`/`defensive`/
+`kicking`/... categories, each with parallel `keys` and per-athlete
+`stats` arrays) by the athlete's real name, for any NFL game. RUN 7
+confirmed the exact `allRules` wording for the codes this join uses
+(`RY`="Rushing Yards", `#R`="Number of Rushing TDs", `CY`="Receiving
+Yards", `#C`="Number of Receiving TDs", `CC`="Receptions" — `PY`/`#P`/
+`IN` were already confirmed by RUN 4).
+
+Scope and known gaps, all deliberate:
+- **Skill-position offense only** (passing/rushing/receiving yards,
+  TDs, INTs thrown) — same boundary the ESPN/Sleeper breakdowns already
+  draw, for the same reason: kicking needs FG-distance buckets this
+  project has no confident source for, and team defense is a
+  team-scoped stat that would need a different join entirely (by team,
+  not by player name).
+- **Joined by normalized player name**, since MFL and ESPN share no
+  player-id space — the same class of join `fetchProjections`' `byName`
+  already uses for ESPN/Sleeper against FantasyPros.
+- **Not reconciled against the real MFL score.** RUN 5 itself surfaced
+  a real ESPN-side discrepancy — one player's individual passing-yards
+  line (178) disagreed with his own team's total row (168) by 10 yards
+  in the same response. An independently-computed breakdown is not
+  guaranteed to sum to the score a manager sees above it even when
+  every rate is right. This project chose to ship without a
+  reconciliation check rather than hold the feature on one; revisit if
+  a visibly-wrong sum turns out to be common in practice.
+- **One new global request shape per poll**: every NFL game still `'in'`
+  progress or already `'post'` gets fetched (not per MFL league — one
+  merged index shared across all of them, since MFL rosters any NFL
+  team). `api/live-scoring.js` caches a game's boxscore permanently once
+  captured as `'post'` — it will never change again — and only refetches
+  ones still live, the same live-vs-static split `nflClocks` already
+  draws.
+
+Pinned by `test-mfl-boxscore-breakdown.mjs`.
 
 ## Other things confirmed from the Request Reference (RUN 4)
 
