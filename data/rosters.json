@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-12T18:22:35.392Z",
+  "generatedAt": "2026-09-12T22:16:42.610Z",
   "year": "2026",
   "rankingPools": {
     "ROS|PPR|ALL": {
@@ -6478,7 +6478,7 @@
     }
   },
   "depthCharts": {
-    "generatedAt": "2026-09-12T18:22:25.989Z",
+    "generatedAt": "2026-09-12T22:16:33.887Z",
     "teams": {
       "ARI": {
         "name": "Arizona Cardinals",
@@ -6653,7 +6653,7 @@
             "name": "Cooper Rush",
             "rank": 3,
             "role": null,
-            "injuryStatus": null
+            "injuryStatus": "Q"
           },
           {
             "id": "5344782",
@@ -6749,6 +6749,13 @@
             "id": "3043275",
             "name": "Austin Hooper",
             "rank": 3,
+            "role": null,
+            "injuryStatus": null
+          },
+          {
+            "id": "4249624",
+            "name": "Nick Muse",
+            "rank": 4,
             "role": null,
             "injuryStatus": null
           }
@@ -6858,6 +6865,13 @@
             "rank": 6,
             "role": "S",
             "injuryStatus": null
+          },
+          {
+            "id": "2576581",
+            "name": "Chris Moore",
+            "rank": 7,
+            "role": "X",
+            "injuryStatus": null
           }
         ],
         "TE": [
@@ -6930,6 +6944,13 @@
             "rank": 3,
             "role": null,
             "injuryStatus": "Q"
+          },
+          {
+            "id": "4429805",
+            "name": "Frank Gore Jr.",
+            "rank": 4,
+            "role": null,
+            "injuryStatus": null
           }
         ],
         "WR": [
@@ -6969,10 +6990,17 @@
             "injuryStatus": null
           },
           {
-            "id": "4241476",
-            "name": "Tyrell Shavers",
+            "id": "4037235",
+            "name": "Greg Dortch",
             "rank": 6,
             "role": "S",
+            "injuryStatus": null
+          },
+          {
+            "id": "4241476",
+            "name": "Tyrell Shavers",
+            "rank": 7,
+            "role": "X",
             "injuryStatus": "O"
           }
         ],
@@ -7172,6 +7200,13 @@
             "id": "15168",
             "name": "Case Keenum",
             "rank": 3,
+            "role": null,
+            "injuryStatus": null
+          },
+          {
+            "id": "4431580",
+            "name": "Miller Moss",
+            "rank": 4,
             "role": null,
             "injuryStatus": null
           }
@@ -7401,6 +7436,13 @@
             "rank": 4,
             "role": null,
             "injuryStatus": null
+          },
+          {
+            "id": "3050481",
+            "name": "Tanner Hudson",
+            "rank": 5,
+            "role": null,
+            "injuryStatus": null
           }
         ]
       },
@@ -7561,18 +7603,25 @@
             "injuryStatus": null
           },
           {
-            "id": "4240603",
-            "name": "Malik Davis",
-            "rank": 2,
-            "role": null,
-            "injuryStatus": "IR"
-          },
-          {
             "id": "4362478",
             "name": "Emari Demercado",
+            "rank": 2,
+            "role": null,
+            "injuryStatus": null
+          },
+          {
+            "id": "4429202",
+            "name": "Israel Abanikanda",
             "rank": 3,
             "role": null,
             "injuryStatus": null
+          },
+          {
+            "id": "4240603",
+            "name": "Malik Davis",
+            "rank": 4,
+            "role": null,
+            "injuryStatus": "IR"
           }
         ],
         "WR": [
@@ -8002,10 +8051,17 @@
             "injuryStatus": null
           },
           {
-            "id": "4431487",
-            "name": "Savion Williams",
+            "id": "4259305",
+            "name": "Bo Melton",
             "rank": 6,
             "role": "S",
+            "injuryStatus": null
+          },
+          {
+            "id": "4431487",
+            "name": "Savion Williams",
+            "rank": 7,
+            "role": "X",
             "injuryStatus": "IR"
           }
         ],
@@ -8342,6 +8398,13 @@
             "id": "4889929",
             "name": "Quinn Ewers",
             "rank": 2,
+            "role": null,
+            "injuryStatus": null
+          },
+          {
+            "id": "3059989",
+            "name": "Nick Mullens",
+            "rank": 3,
             "role": null,
             "injuryStatus": null
           }
@@ -8687,24 +8750,31 @@
             "injuryStatus": null
           },
           {
-            "id": "4432775",
-            "name": "Dont'e Thornton Jr.",
+            "id": "4241983",
+            "name": "Cody White",
             "rank": 6,
             "role": "S",
-            "injuryStatus": "IR"
+            "injuryStatus": null
           },
           {
-            "id": "4361426",
-            "name": "Justin Shorter",
+            "id": "4432775",
+            "name": "Dont'e Thornton Jr.",
             "rank": 7,
             "role": "X",
             "injuryStatus": "IR"
           },
           {
-            "id": "4433901",
-            "name": "Corey Rucker",
+            "id": "4361426",
+            "name": "Justin Shorter",
             "rank": 8,
             "role": "Z",
+            "injuryStatus": "IR"
+          },
+          {
+            "id": "4433901",
+            "name": "Corey Rucker",
+            "rank": 9,
+            "role": "S",
             "injuryStatus": "IR"
           }
         ],
@@ -8731,9 +8801,16 @@
             "injuryStatus": null
           },
           {
+            "id": "3138744",
+            "name": "Chris Myarick",
+            "rank": 4,
+            "role": null,
+            "injuryStatus": null
+          },
+          {
             "id": "5155825",
             "name": "Carter Runyon",
-            "rank": 4,
+            "rank": 5,
             "role": null,
             "injuryStatus": "IR"
           }
@@ -9168,6 +9245,13 @@
             "rank": 3,
             "role": null,
             "injuryStatus": null
+          },
+          {
+            "id": "4240631",
+            "name": "DeeJay Dallas",
+            "rank": 4,
+            "role": null,
+            "injuryStatus": null
           }
         ],
         "WR": [
@@ -9302,46 +9386,46 @@
         ],
         "WR": [
           {
-            "id": "4047646",
-            "name": "A.J. Brown",
-            "rank": 1,
-            "role": "X",
-            "injuryStatus": "IR"
-          },
-          {
             "id": "4361432",
             "name": "Romeo Doubs",
-            "rank": 2,
-            "role": "Z",
+            "rank": 1,
+            "role": "X",
             "injuryStatus": null
           },
           {
             "id": "4427095",
             "name": "DeMario Douglas",
-            "rank": 3,
-            "role": "S",
+            "rank": 2,
+            "role": "Z",
             "injuryStatus": null
           },
           {
             "id": "2991662",
             "name": "Mack Hollins",
-            "rank": 4,
-            "role": "X",
+            "rank": 3,
+            "role": "S",
             "injuryStatus": null
           },
           {
             "id": "4613202",
             "name": "Kyle Williams",
-            "rank": 5,
-            "role": "Z",
+            "rank": 4,
+            "role": "X",
             "injuryStatus": null
           },
           {
             "id": "4695193",
             "name": "Efton Chism III",
+            "rank": 5,
+            "role": "Z",
+            "injuryStatus": "O"
+          },
+          {
+            "id": "4047646",
+            "name": "A.J. Brown",
             "rank": 6,
             "role": "S",
-            "injuryStatus": "O"
+            "injuryStatus": "IR"
           },
           {
             "id": "4572655",
@@ -9437,16 +9521,23 @@
             "injuryStatus": null
           },
           {
-            "id": "4569682",
-            "name": "Audric Estime",
+            "id": "5081999",
+            "name": "CJ Donaldson",
             "rank": 4,
             "role": null,
-            "injuryStatus": "O"
+            "injuryStatus": null
+          },
+          {
+            "id": "4569682",
+            "name": "Audric Estime",
+            "rank": 5,
+            "role": null,
+            "injuryStatus": "IR"
           },
           {
             "id": "4242431",
             "name": "Ty Chandler",
-            "rank": 5,
+            "rank": 6,
             "role": null,
             "injuryStatus": "IR"
           }
@@ -9481,17 +9572,24 @@
             "injuryStatus": null
           },
           {
-            "id": "4880281",
-            "name": "Jordyn Tyson",
+            "id": "4372758",
+            "name": "Kevin Austin Jr.",
             "rank": 5,
             "role": "Z",
+            "injuryStatus": null
+          },
+          {
+            "id": "4880281",
+            "name": "Jordyn Tyson",
+            "rank": 6,
+            "role": "S",
             "injuryStatus": "IR"
           },
           {
             "id": "4573697",
             "name": "Mason Tipton",
-            "rank": 6,
-            "role": "S",
+            "rank": 7,
+            "role": "X",
             "injuryStatus": "O"
           }
         ],
@@ -9518,9 +9616,16 @@
             "injuryStatus": "O"
           },
           {
+            "id": "4430684",
+            "name": "Treyton Welch",
+            "rank": 4,
+            "role": null,
+            "injuryStatus": null
+          },
+          {
             "id": "4432731",
             "name": "Moliki Matavao",
-            "rank": 4,
+            "rank": 5,
             "role": null,
             "injuryStatus": "IR"
           }
@@ -9611,17 +9716,24 @@
             "injuryStatus": null
           },
           {
-            "id": "4243389",
-            "name": "Calvin Austin III",
+            "id": "3123075",
+            "name": "Braxton Berrios",
             "rank": 6,
             "role": "S",
+            "injuryStatus": null
+          },
+          {
+            "id": "4243389",
+            "name": "Calvin Austin III",
+            "rank": 7,
+            "role": "X",
             "injuryStatus": "IR"
           },
           {
             "id": "4424106",
             "name": "Gunner Olszewski",
-            "rank": 7,
-            "role": "X",
+            "rank": 8,
+            "role": "Z",
             "injuryStatus": "IR"
           }
         ],
@@ -9701,7 +9813,7 @@
             "name": "Kene Nwangwu",
             "rank": 4,
             "role": null,
-            "injuryStatus": "D"
+            "injuryStatus": "O"
           },
           {
             "id": "4430893",
@@ -9741,18 +9853,18 @@
             "injuryStatus": null
           },
           {
-            "id": "3134353",
-            "name": "Tim Patrick",
-            "rank": 5,
-            "role": "Z",
-            "injuryStatus": "O"
-          },
-          {
             "id": "4429105",
             "name": "Arian Smith",
+            "rank": 5,
+            "role": "Z",
+            "injuryStatus": null
+          },
+          {
+            "id": "3134353",
+            "name": "Tim Patrick",
             "rank": 6,
             "role": "S",
-            "injuryStatus": null
+            "injuryStatus": "IR"
           }
         ],
         "TE": [
@@ -9885,10 +9997,17 @@
             "injuryStatus": null
           },
           {
-            "id": "4686104",
-            "name": "Johnny Wilson",
+            "id": "3926231",
+            "name": "Britain Covey",
             "rank": 7,
             "role": "X",
+            "injuryStatus": null
+          },
+          {
+            "id": "4686104",
+            "name": "Johnny Wilson",
+            "rank": 8,
+            "role": "Z",
             "injuryStatus": "IR"
           }
         ],
@@ -9908,22 +10027,22 @@
             "injuryStatus": null
           },
           {
-            "id": "4431574",
-            "name": "Eli Stowers",
-            "rank": 3,
-            "role": null,
-            "injuryStatus": "Q"
-          },
-          {
             "id": "4248557",
             "name": "E.J. Jenkins",
-            "rank": 4,
+            "rank": 3,
             "role": null,
             "injuryStatus": null
           },
           {
             "id": "4241374",
             "name": "Grant Calcaterra",
+            "rank": 4,
+            "role": null,
+            "injuryStatus": "IR"
+          },
+          {
+            "id": "4431574",
+            "name": "Eli Stowers",
             "rank": 5,
             "role": null,
             "injuryStatus": "IR"
@@ -10380,6 +10499,13 @@
             "rank": 3,
             "role": null,
             "injuryStatus": "D"
+          },
+          {
+            "id": "4568024",
+            "name": "Josh Williams",
+            "rank": 4,
+            "role": null,
+            "injuryStatus": null
           }
         ],
         "WR": [
@@ -11476,7 +11602,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-12T18:21:47.759Z",
+      "updatedAt": "2026-09-12T22:15:49.518Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -15670,7 +15796,7 @@
           "originalTeamName": "Swingline Steamrollers"
         }
       ],
-      "updatedAt": "2026-09-12T18:21:49.541Z",
+      "updatedAt": "2026-09-12T22:15:51.015Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -19711,7 +19837,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-12T18:21:51.155Z",
+      "updatedAt": "2026-09-12T22:15:55.207Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -23353,7 +23479,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-12T18:21:53.085Z",
+      "updatedAt": "2026-09-12T22:15:56.905Z",
       "error": null,
       "tags": [
         "BestBall"
@@ -23624,14 +23750,14 @@
         "matchups": [
           {
             "teamIds": [
-              "0009",
-              "0012"
+              "0004",
+              "0010"
             ]
           },
           {
             "teamIds": [
-              "0004",
-              "0010"
+              "0009",
+              "0012"
             ]
           },
           {
@@ -26858,7 +26984,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-12T18:21:55.008Z",
+      "updatedAt": "2026-09-12T22:15:58.626Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -27191,7 +27317,7 @@
         "Brashard Smith"
       ],
       "power": {
-        "computedAt": "2026-09-12T18:21:45.078Z",
+        "computedAt": "2026-09-12T22:15:46.966Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -28956,7 +29082,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-12T18:21:56.884Z",
+      "updatedAt": "2026-09-12T22:16:00.462Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -29307,7 +29433,7 @@
         "Brashard Smith"
       ],
       "power": {
-        "computedAt": "2026-09-12T18:21:45.078Z",
+        "computedAt": "2026-09-12T22:15:46.966Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -29470,7 +29596,7 @@
             {
               "franchiseId": "0007",
               "score": 1800.6,
-              "depth": 1200.8,
+              "depth": 1249.4,
               "filled": 8,
               "slotCount": 8,
               "byPosition": {
@@ -29480,7 +29606,7 @@
                 },
                 "RB": {
                   "score": 395.6,
-                  "depth": 320.9
+                  "depth": 369.5
                 },
                 "WR": {
                   "score": 347.7,
@@ -30745,7 +30871,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-12T18:21:58.842Z",
+      "updatedAt": "2026-09-12T22:16:03.598Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -31116,7 +31242,7 @@
         "Chig Okonkwo"
       ],
       "power": {
-        "computedAt": "2026-09-12T18:21:45.078Z",
+        "computedAt": "2026-09-12T22:15:46.966Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -32091,7 +32217,7 @@
           "injuryStatus": null
         }
       ],
-      "updatedAt": "2026-09-12T18:21:58.976Z",
+      "updatedAt": "2026-09-12T22:16:03.791Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -33356,7 +33482,7 @@
           "injuryStatus": null
         }
       ],
-      "updatedAt": "2026-09-12T18:21:59.046Z",
+      "updatedAt": "2026-09-12T22:16:03.919Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -34724,7 +34850,7 @@
         }
       ],
       "draftInProgress": false,
-      "updatedAt": "2026-09-12T18:21:59.191Z",
+      "updatedAt": "2026-09-12T22:16:04.097Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -35084,7 +35210,7 @@
         "DJ Giddens"
       ],
       "power": {
-        "computedAt": "2026-09-12T18:21:45.078Z",
+        "computedAt": "2026-09-12T22:15:46.966Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -40632,7 +40758,7 @@
         {
           "franchiseId": "0001",
           "teamName": "Packers First Round Pick",
-          "ownerName": null,
+          "ownerName": "Joe",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -40643,7 +40769,7 @@
         {
           "franchiseId": "0002",
           "teamName": "I Love Loves",
-          "ownerName": null,
+          "ownerName": "Ben",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -40654,7 +40780,7 @@
         {
           "franchiseId": "0003",
           "teamName": "JLC's Backyard Datacenter",
-          "ownerName": null,
+          "ownerName": "Schmidty",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -40665,7 +40791,7 @@
         {
           "franchiseId": "0004",
           "teamName": "Drafting before rookies is stupid",
-          "ownerName": null,
+          "ownerName": "Josh",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -40676,7 +40802,7 @@
         {
           "franchiseId": "0005",
           "teamName": "UW Marching Band",
-          "ownerName": null,
+          "ownerName": "Dave",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -40687,7 +40813,7 @@
         {
           "franchiseId": "0006",
           "teamName": "Vikings First Round Pick",
-          "ownerName": null,
+          "ownerName": "Jeff",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -40698,7 +40824,7 @@
         {
           "franchiseId": "0007",
           "teamName": "Take your mom's ass",
-          "ownerName": null,
+          "ownerName": "Josh",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -40709,7 +40835,7 @@
         {
           "franchiseId": "0008",
           "teamName": "Pre-April Nuptials",
-          "ownerName": null,
+          "ownerName": "Eugene",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -40720,7 +40846,7 @@
         {
           "franchiseId": "0009",
           "teamName": "Wisconsin Sucks",
-          "ownerName": null,
+          "ownerName": "Michael",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -40731,7 +40857,7 @@
         {
           "franchiseId": "0010",
           "teamName": "Who the eff drafts in april",
-          "ownerName": null,
+          "ownerName": "Tyler",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -41944,7 +42070,7 @@
         {
           "franchiseId": "0001",
           "teamName": "Make Commissioning Great Again",
-          "ownerName": null,
+          "ownerName": "Joe",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -41955,7 +42081,7 @@
         {
           "franchiseId": "0002",
           "teamName": "The Patriot Lay™",
-          "ownerName": null,
+          "ownerName": "Alex",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -41966,7 +42092,7 @@
         {
           "franchiseId": "0003",
           "teamName": "Vrabels Pimp",
-          "ownerName": null,
+          "ownerName": "Dave",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -41977,7 +42103,7 @@
         {
           "franchiseId": "0004",
           "teamName": "PaulyDs Pimp",
-          "ownerName": null,
+          "ownerName": "Jeff",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -41988,7 +42114,7 @@
         {
           "franchiseId": "0005",
           "teamName": "JLC's AI Bot",
-          "ownerName": null,
+          "ownerName": "Josh",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -41999,7 +42125,7 @@
         {
           "franchiseId": "0006",
           "teamName": "Damn!  My Vrabels are starting to itch!",
-          "ownerName": null,
+          "ownerName": "Eugene",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -42010,7 +42136,7 @@
         {
           "franchiseId": "0007",
           "teamName": "Russini's Shnozz is bigger than Schmidtys Wang",
-          "ownerName": null,
+          "ownerName": "Mike",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -42021,7 +42147,7 @@
         {
           "franchiseId": "0008",
           "teamName": "Sideline Chick",
-          "ownerName": null,
+          "ownerName": "Ben",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -42032,7 +42158,7 @@
         {
           "franchiseId": "0009",
           "teamName": "Rook takes Bishop",
-          "ownerName": null,
+          "ownerName": "Josh",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -42043,7 +42169,7 @@
         {
           "franchiseId": "0010",
           "teamName": "Three Tits Mafia",
-          "ownerName": null,
+          "ownerName": "Tyler",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -42054,7 +42180,7 @@
         {
           "franchiseId": "0011",
           "teamName": "Tecmo Bowl 49ers",
-          "ownerName": null,
+          "ownerName": "Paul",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -42065,7 +42191,7 @@
         {
           "franchiseId": "0012",
           "teamName": "The Toughskins",
-          "ownerName": null,
+          "ownerName": "Dave",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -47408,7 +47534,7 @@
         {
           "franchiseId": "0001",
           "teamName": "DeepSeek and Destroy",
-          "ownerName": null,
+          "ownerName": "Joe",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -47419,7 +47545,7 @@
         {
           "franchiseId": "0002",
           "teamName": "Llama-inator",
-          "ownerName": null,
+          "ownerName": "Dave",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -47430,7 +47556,7 @@
         {
           "franchiseId": "0003",
           "teamName": "AIQ to the MOON",
-          "ownerName": null,
+          "ownerName": "Jeff",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -47441,7 +47567,7 @@
         {
           "franchiseId": "0004",
           "teamName": "GPT-800",
-          "ownerName": null,
+          "ownerName": "Josh",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -47452,7 +47578,7 @@
         {
           "franchiseId": "0005",
           "teamName": "Copilot Judgment Day",
-          "ownerName": null,
+          "ownerName": "Josh",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -47463,7 +47589,7 @@
         {
           "franchiseId": "0006",
           "teamName": "Your Franchise Has Been Terminated",
-          "ownerName": null,
+          "ownerName": "Eugene",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -47474,7 +47600,7 @@
         {
           "franchiseId": "0007",
           "teamName": "Gemini T-1000",
-          "ownerName": null,
+          "ownerName": "Mike",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -47485,7 +47611,7 @@
         {
           "franchiseId": "0008",
           "teamName": "Groot  ETF",
-          "ownerName": null,
+          "ownerName": "Ben",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -47496,7 +47622,7 @@
         {
           "franchiseId": "0009",
           "teamName": "Hasta La Vista, GPT",
-          "ownerName": null,
+          "ownerName": "Tyler",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -47507,7 +47633,7 @@
         {
           "franchiseId": "0010",
           "teamName": "Nvidia's Nightmare",
-          "ownerName": null,
+          "ownerName": "Paul",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -47518,7 +47644,7 @@
         {
           "franchiseId": "0011",
           "teamName": "Sam's Skynet",
-          "ownerName": null,
+          "ownerName": "Lucas",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -47529,7 +47655,7 @@
         {
           "franchiseId": "0012",
           "teamName": "Mythos & Machines",
-          "ownerName": null,
+          "ownerName": "Alex",
           "wins": 0,
           "losses": 0,
           "ties": 0,
