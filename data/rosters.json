@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-12T15:12:51.453Z",
+  "generatedAt": "2026-09-12T15:29:42.212Z",
   "year": "2026",
   "rankingPools": {
     "ROS|PPR|ALL": {
@@ -6478,7 +6478,7 @@
     }
   },
   "depthCharts": {
-    "generatedAt": "2026-09-12T15:12:43.545Z",
+    "generatedAt": "2026-09-12T15:29:32.063Z",
     "teams": {
       "ARI": {
         "name": "Arizona Cardinals",
@@ -11462,7 +11462,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-12T15:12:09.286Z",
+      "updatedAt": "2026-09-12T15:28:51.792Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -11736,16 +11736,6 @@
       ],
       "lineupError": null,
       "draftInProgress": false,
-      "rankings": {
-        "type": "ROS",
-        "scoring": "PPR",
-        "position": "ALL",
-        "lastUpdated": "9/07",
-        "totalExperts": 3,
-        "matched": 29,
-        "total": 29
-      },
-      "rankingsError": null,
       "available": [
         "Kenny Gainwell",
         "Greg Dulcich",
@@ -11786,6 +11776,17 @@
         "Jahan Dotson",
         "George Holani"
       ],
+      "availableAt": "2026-09-12T15:12:06.655Z",
+      "rankings": {
+        "type": "ROS",
+        "scoring": "PPR",
+        "position": "ALL",
+        "lastUpdated": "9/07",
+        "totalExperts": 3,
+        "matched": 29,
+        "total": 29
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-09-12T15:12:06.655Z",
         "scoring": "PPR",
@@ -12520,7 +12521,6 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-09-12T15:12:06.655Z",
       "results": [
         {
           "year": "2006",
@@ -15656,7 +15656,7 @@
           "originalTeamName": "Swingline Steamrollers"
         }
       ],
-      "updatedAt": "2026-09-12T15:12:10.846Z",
+      "updatedAt": "2026-09-12T15:28:53.244Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -15885,6 +15885,12 @@
         "matchups": [
           {
             "teamIds": [
+              "0001",
+              "0007"
+            ]
+          },
+          {
+            "teamIds": [
               "0009",
               "0010"
             ]
@@ -15899,12 +15905,6 @@
             "teamIds": [
               "0004",
               "0006"
-            ]
-          },
-          {
-            "teamIds": [
-              "0001",
-              "0007"
             ]
           },
           {
@@ -15930,16 +15930,6 @@
       ],
       "lineupError": null,
       "draftInProgress": false,
-      "rankings": {
-        "type": "ROS",
-        "scoring": "PPR",
-        "position": "ALL",
-        "lastUpdated": "9/07",
-        "totalExperts": 3,
-        "matched": 28,
-        "total": 29
-      },
-      "rankingsError": null,
       "available": [
         "Kenny Gainwell",
         "Greg Dulcich",
@@ -15980,6 +15970,17 @@
         "Jahan Dotson",
         "George Holani"
       ],
+      "availableAt": "2026-09-12T15:12:06.655Z",
+      "rankings": {
+        "type": "ROS",
+        "scoring": "PPR",
+        "position": "ALL",
+        "lastUpdated": "9/07",
+        "totalExperts": 3,
+        "matched": 28,
+        "total": 29
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-09-12T15:12:06.655Z",
         "scoring": "PPR",
@@ -16706,7 +16707,6 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-09-12T15:12:06.655Z",
       "results": [
         {
           "year": "2007",
@@ -19697,7 +19697,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-12T15:12:12.281Z",
+      "updatedAt": "2026-09-12T15:28:55.112Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -20017,16 +20017,6 @@
       ],
       "lineupError": null,
       "draftInProgress": false,
-      "rankings": {
-        "type": "ROS",
-        "scoring": "PPR",
-        "position": "ALL",
-        "lastUpdated": "9/07",
-        "totalExperts": 3,
-        "matched": 25,
-        "total": 26
-      },
-      "rankingsError": null,
       "available": [
         "Kenny Gainwell",
         "Greg Dulcich",
@@ -20048,6 +20038,17 @@
         "Darnell Washington",
         "Jahan Dotson"
       ],
+      "availableAt": "2026-09-12T15:12:06.655Z",
+      "rankings": {
+        "type": "ROS",
+        "scoring": "PPR",
+        "position": "ALL",
+        "lastUpdated": "9/07",
+        "totalExperts": 3,
+        "matched": 25,
+        "total": 26
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-09-12T15:12:06.655Z",
         "scoring": "PPR",
@@ -20858,7 +20859,6 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-09-12T15:12:06.655Z",
       "results": [
         {
           "year": "2010",
@@ -23339,7 +23339,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-12T15:12:13.966Z",
+      "updatedAt": "2026-09-12T15:28:57.274Z",
       "error": null,
       "tags": [
         "BestBall"
@@ -23364,7 +23364,7 @@
         {
           "franchiseId": "0001",
           "teamName": "The FOOKING Hand of the King",
-          "ownerName": "Lee",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23375,7 +23375,7 @@
         {
           "franchiseId": "0002",
           "teamName": "Master of Coin",
-          "ownerName": "Dave",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23397,7 +23397,7 @@
         {
           "franchiseId": "0004",
           "teamName": "HODOR",
-          "ownerName": "Jeff",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23408,7 +23408,7 @@
         {
           "franchiseId": "0005",
           "teamName": "Sir Ilyn's House of Payne",
-          "ownerName": "Tyler",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23419,7 +23419,7 @@
         {
           "franchiseId": "0006",
           "teamName": "Super Saucy McNultys",
-          "ownerName": "Jake",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23430,7 +23430,7 @@
         {
           "franchiseId": "0007",
           "teamName": "WunWun No WinWin",
-          "ownerName": "Jabroni",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23441,7 +23441,7 @@
         {
           "franchiseId": "0008",
           "teamName": "Valyrian Steelers",
-          "ownerName": "Andy",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23452,7 +23452,7 @@
         {
           "franchiseId": "0009",
           "teamName": "Three Eyed Ravens",
-          "ownerName": "Alex",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23463,7 +23463,7 @@
         {
           "franchiseId": "0010",
           "teamName": "Joegon",
-          "ownerName": "Joe",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23474,7 +23474,7 @@
         {
           "franchiseId": "0011",
           "teamName": "Lord of Light",
-          "ownerName": "Paul",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23485,7 +23485,7 @@
         {
           "franchiseId": "0012",
           "teamName": "Azor Ahai",
-          "ownerName": "Pete",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23501,7 +23501,7 @@
           {
             "franchiseId": "0004",
             "teamName": "HODOR",
-            "ownerName": "Jeff",
+            "ownerName": null,
             "score": "48.30",
             "minutesRemaining": 300,
             "isMe": true,
@@ -23510,7 +23510,7 @@
           {
             "franchiseId": "0011",
             "teamName": "Lord of Light",
-            "ownerName": "Paul",
+            "ownerName": null,
             "score": "32.70",
             "minutesRemaining": 300,
             "isMe": false,
@@ -23519,7 +23519,7 @@
           {
             "franchiseId": "0001",
             "teamName": "The FOOKING Hand of the King",
-            "ownerName": "Lee",
+            "ownerName": null,
             "score": "22.22",
             "minutesRemaining": 360,
             "isMe": false,
@@ -23528,7 +23528,7 @@
           {
             "franchiseId": "0012",
             "teamName": "Azor Ahai",
-            "ownerName": "Pete",
+            "ownerName": null,
             "score": "22.10",
             "minutesRemaining": 360,
             "isMe": false,
@@ -23537,7 +23537,7 @@
           {
             "franchiseId": "0007",
             "teamName": "WunWun No WinWin",
-            "ownerName": "Jabroni",
+            "ownerName": null,
             "score": "20.72",
             "minutesRemaining": 180,
             "isMe": false,
@@ -23546,7 +23546,7 @@
           {
             "franchiseId": "0002",
             "teamName": "Master of Coin",
-            "ownerName": "Dave",
+            "ownerName": null,
             "score": "17.10",
             "minutesRemaining": 360,
             "isMe": false,
@@ -23555,7 +23555,7 @@
           {
             "franchiseId": "0006",
             "teamName": "Super Saucy McNultys",
-            "ownerName": "Jake",
+            "ownerName": null,
             "score": "15.80",
             "minutesRemaining": 300,
             "isMe": false,
@@ -23573,7 +23573,7 @@
           {
             "franchiseId": "0008",
             "teamName": "Valyrian Steelers",
-            "ownerName": "Andy",
+            "ownerName": null,
             "score": "5.50",
             "minutesRemaining": 420,
             "isMe": false,
@@ -23582,7 +23582,7 @@
           {
             "franchiseId": "0010",
             "teamName": "Joegon",
-            "ownerName": "Joe",
+            "ownerName": null,
             "score": "4.10",
             "minutesRemaining": 420,
             "isMe": false,
@@ -23591,7 +23591,7 @@
           {
             "franchiseId": "0005",
             "teamName": "Sir Ilyn's House of Payne",
-            "ownerName": "Tyler",
+            "ownerName": null,
             "score": "2.90",
             "minutesRemaining": 420,
             "isMe": false,
@@ -23600,7 +23600,7 @@
           {
             "franchiseId": "0009",
             "teamName": "Three Eyed Ravens",
-            "ownerName": "Alex",
+            "ownerName": null,
             "score": "0.00",
             "minutesRemaining": 480,
             "isMe": false,
@@ -23648,16 +23648,6 @@
       },
       "scoringError": null,
       "draftInProgress": false,
-      "rankings": {
-        "type": "ROS",
-        "scoring": "PPR",
-        "position": "ALL",
-        "lastUpdated": "9/07",
-        "totalExperts": 3,
-        "matched": 23,
-        "total": 23
-      },
-      "rankingsError": null,
       "available": [
         "Kenny Gainwell",
         "Greg Dulcich",
@@ -23685,6 +23675,17 @@
         "Kirk Cousins",
         "Jahan Dotson"
       ],
+      "availableAt": "2026-09-12T15:12:06.655Z",
+      "rankings": {
+        "type": "ROS",
+        "scoring": "PPR",
+        "position": "ALL",
+        "lastUpdated": "9/07",
+        "totalExperts": 3,
+        "matched": 23,
+        "total": 23
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-09-12T15:12:06.655Z",
         "scoring": "PPR",
@@ -24495,7 +24496,6 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-09-12T15:12:06.655Z",
       "results": [
         {
           "year": "2012",
@@ -26844,7 +26844,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-12T15:12:15.881Z",
+      "updatedAt": "2026-09-12T15:28:59.315Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -27177,7 +27177,7 @@
         "Brashard Smith"
       ],
       "power": {
-        "computedAt": "2026-09-12T15:12:06.655Z",
+        "computedAt": "2026-09-12T15:28:48.881Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -28942,7 +28942,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-12T15:12:17.571Z",
+      "updatedAt": "2026-09-12T15:29:02.558Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -29293,7 +29293,7 @@
         "Brashard Smith"
       ],
       "power": {
-        "computedAt": "2026-09-12T15:12:06.655Z",
+        "computedAt": "2026-09-12T15:28:48.881Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -30731,7 +30731,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-12T15:12:19.552Z",
+      "updatedAt": "2026-09-12T15:29:04.643Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -31102,7 +31102,7 @@
         "Chig Okonkwo"
       ],
       "power": {
-        "computedAt": "2026-09-12T15:12:06.655Z",
+        "computedAt": "2026-09-12T15:28:48.881Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -32077,7 +32077,7 @@
           "injuryStatus": null
         }
       ],
-      "updatedAt": "2026-09-12T15:12:19.693Z",
+      "updatedAt": "2026-09-12T15:29:04.783Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -32350,16 +32350,6 @@
         "3929645"
       ],
       "lineupError": null,
-      "rankings": {
-        "type": "ROS",
-        "scoring": "HALF",
-        "position": "ALL",
-        "lastUpdated": "9/07",
-        "totalExperts": 3,
-        "matched": 14,
-        "total": 15
-      },
-      "rankingsError": null,
       "available": [
         "KC Concepcion",
         "Brock Purdy",
@@ -32402,6 +32392,17 @@
         "Omar Cooper Jr.",
         "Gunnar Helm"
       ],
+      "availableAt": "2026-09-12T15:12:06.655Z",
+      "rankings": {
+        "type": "ROS",
+        "scoring": "HALF",
+        "position": "ALL",
+        "lastUpdated": "9/07",
+        "totalExperts": 3,
+        "matched": 14,
+        "total": 15
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-09-12T15:12:06.655Z",
         "scoring": "HALF",
@@ -33040,7 +33041,6 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-09-12T15:12:06.655Z",
       "results": [
         {
           "year": "2020",
@@ -33342,7 +33342,7 @@
           "injuryStatus": null
         }
       ],
-      "updatedAt": "2026-09-12T15:12:19.805Z",
+      "updatedAt": "2026-09-12T15:29:04.854Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -33614,16 +33614,6 @@
         "4697745"
       ],
       "lineupError": null,
-      "rankings": {
-        "type": "ROS",
-        "scoring": "PPR",
-        "position": "ALL",
-        "lastUpdated": "9/07",
-        "totalExperts": 3,
-        "matched": 14,
-        "total": 15
-      },
-      "rankingsError": null,
       "available": [
         "Makai Lemon",
         "KC Concepcion",
@@ -33666,6 +33656,17 @@
         "Omar Cooper Jr.",
         "Jonah Coleman"
       ],
+      "availableAt": "2026-09-12T15:12:06.655Z",
+      "rankings": {
+        "type": "ROS",
+        "scoring": "PPR",
+        "position": "ALL",
+        "lastUpdated": "9/07",
+        "totalExperts": 3,
+        "matched": 14,
+        "total": 15
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-09-12T15:12:06.655Z",
         "scoring": "PPR",
@@ -34304,7 +34305,6 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-09-12T15:12:06.655Z",
       "results": [
         {
           "year": "2025",
@@ -34710,7 +34710,7 @@
         }
       ],
       "draftInProgress": false,
-      "updatedAt": "2026-09-12T15:12:19.875Z",
+      "updatedAt": "2026-09-12T15:29:05.008Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -35070,7 +35070,7 @@
         "DJ Giddens"
       ],
       "power": {
-        "computedAt": "2026-09-12T15:12:06.655Z",
+        "computedAt": "2026-09-12T15:28:48.881Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -46001,7 +46001,7 @@
         {
           "franchiseId": "0001",
           "teamName": "Overdue Fines",
-          "ownerName": "Joe",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46012,7 +46012,7 @@
         {
           "franchiseId": "0002",
           "teamName": "Judge a Book by Its Roster",
-          "ownerName": "Ben",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46023,7 +46023,7 @@
         {
           "franchiseId": "0003",
           "teamName": "The Plot Thickens",
-          "ownerName": "Josh",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46034,7 +46034,7 @@
         {
           "franchiseId": "0004",
           "teamName": "Audiobooks are NOT reading",
-          "ownerName": "Jeff",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46045,7 +46045,7 @@
         {
           "franchiseId": "0005",
           "teamName": "Spine Crackers",
-          "ownerName": "Josh",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46056,7 +46056,7 @@
         {
           "franchiseId": "0006",
           "teamName": "The Book Club Bench",
-          "ownerName": "Dave",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46067,7 +46067,7 @@
         {
           "franchiseId": "0007",
           "teamName": "Bookmarked for Later",
-          "ownerName": "Mike",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46078,7 +46078,7 @@
         {
           "franchiseId": "0008",
           "teamName": "Scratch-n-Sniff",
-          "ownerName": "Eugene",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46089,7 +46089,7 @@
         {
           "franchiseId": "0009",
           "teamName": "The Footnotes",
-          "ownerName": "Alex",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46100,7 +46100,7 @@
         {
           "franchiseId": "0010",
           "teamName": "Prologue Problems",
-          "ownerName": "Paul",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46111,7 +46111,7 @@
         {
           "franchiseId": "0011",
           "teamName": "Between Chapters",
-          "ownerName": "Lucas",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
