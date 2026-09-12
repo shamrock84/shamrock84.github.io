@@ -300,6 +300,15 @@ jobs:
       - name: Test ESPN/Sleeper live-time join
         run: node scripts/test-espn-sleeper-live-time.mjs
 
+      # The stat-breakdown popover behind a clicked score in the drawer:
+      # espnStatBreakdown/sleeperStatBreakdown in providers.mjs. Every
+      # failure mode here is silent — the wrong week's stat line, a
+      # projected value shown as real, or an unlabeled id rendered with a
+      # confidently wrong name — and all of them look like a perfectly
+      # ordinary breakdown.
+      - name: Test the Scoring tab stat breakdown
+        run: node scripts/test-stat-breakdown.mjs
+
       # The quick-link toolbar's red task-count footnote and its
       # Rosters/Standings/Scoring card counterpart: exact-category,
       # open-tasks-only summing (quickLinkTaskCounts), that the marker is

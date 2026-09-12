@@ -2068,7 +2068,65 @@ export async function fetchEspnStandings(league) {
 // elsewhere, so the drawer groups by real `position` instead — which every
 // provider agrees on — and lets probe-live-scoring-players.yml's slot
 // histogram be the thing that eventually answers it off real data.
-function espnTeamLiveStarters(teamSide, clockMap) {
+// Labels for the ESPN stat-category ids behind the Scoring tab's per-player
+// stat-breakdown popover ("7.4 points for 74 Receiving Yards"). 42/43/53 are
+// CONFIRMED live — probe-live-scoring-players.yml RUN 2 (week 1, 2026) read
+// Puka Nacua's actual (statSourceId 0) entry as
+// appliedStats {42: 7.4, 53: 5} against raw stats {42: 74, 53: 5}, and Jaxon
+// Smith-Njigba's as appliedStats {42: 12.2, 43: 6, 53: 8} against raw
+// {42: 122, 43: 1, 53: 8} — 1 receiving TD at a 6-point rate. The passing/
+// rushing entries below are the same numeric ids every major open-source
+// ESPN fantasy library agrees on (a stable, decade-old undocumented API),
+// but — unlike 42/43/53 — have never been individually confirmed against
+// one of this project's own leagues, since the only live data caught so far
+// was a receiving performance. An id with no label here is dropped from the
+// breakdown rather than guessed at (see espnStatBreakdown), which is why
+// kicking and team-defense categories are absent entirely: this project has
+// no confident id list for either yet. Re-run the probe once a QB/RB or
+// kicker/defense performance is live to fill in the gap.
+const ESPN_STAT_LABELS = {
+  0: 'Pass Attempts',
+  1: 'Pass Completions',
+  3: 'Passing Yards',
+  4: 'Passing Touchdowns',
+  19: 'Passing 2-Point Conversions',
+  20: 'Interceptions Thrown',
+  24: 'Rushing Attempts',
+  25: 'Rushing Yards',
+  26: 'Rushing Touchdowns',
+  27: 'Rushing 2-Point Conversions',
+  42: 'Receiving Yards', // CONFIRMED live
+  43: 'Receiving Touchdowns', // CONFIRMED live
+  44: 'Receiving 2-Point Conversions',
+  53: 'Receptions', // CONFIRMED live — same id fetchEspnReceptionPoints reads
+  72: 'Fumbles Lost',
+};
+
+// The breakdown behind a clicked score in the drawer: every category this
+// project has a label for that actually contributed points, largest
+// contribution first (the reading order a manager wants — "what mattered
+// most"). Reads the CURRENT WEEK's real (not projected) stat line —
+// statSourceId 0, scoped to this scoringPeriodId — which is a different
+// filter from fetchEspnLeagueRoster's own statSplitTypeId-0 season-to-date
+// read; RUN 2 confirmed the real weekly entry actually carries
+// statSplitTypeId 1, not 0. Returns [] (never null) so the caller can treat
+// "no breakdown" and "no stats array at all" the same way.
+function espnStatBreakdown(statsArray, scoringPeriodId) {
+  const entry = (statsArray || []).find(
+    (s) => s.statSourceId === 0 && s.scoringPeriodId === scoringPeriodId
+  );
+  if (!entry?.appliedStats) return [];
+  const rows = [];
+  for (const [id, points] of Object.entries(entry.appliedStats)) {
+    const label = ESPN_STAT_LABELS[id];
+    if (!label || !points) continue;
+    rows.push({ label, raw: entry.stats?.[id] ?? null, points: Number(points) });
+  }
+  rows.sort((a, b) => Math.abs(b.points) - Math.abs(a.points));
+  return rows;
+}
+
+function espnTeamLiveStarters(teamSide, clockMap, currentPeriod) {
   const entries = teamSide?.rosterForCurrentScoringPeriod?.entries || [];
   let seconds = 0;
   const players = [];
@@ -2085,6 +2143,7 @@ function espnTeamLiveStarters(teamSide, clockMap) {
       position: ESPN_POSITION_MAP[p?.defaultPositionId] ?? null,
       team: abbr ?? null,
       points: points == null ? null : Number(points),
+      stats: espnStatBreakdown(p?.stats, currentPeriod),
     });
   }
   return { minutesRemaining: Math.round(seconds / 60), players };
@@ -2114,12 +2173,12 @@ export async function fetchEspnScoring(league, clockMap, projectPlayer) {
   for (const m of schedule) {
     const teamIds = [];
     if (m.home) {
-      const { minutesRemaining, players } = espnTeamLiveStarters(m.home, clocks);
+      const { minutesRemaining, players } = espnTeamLiveStarters(m.home, clocks, currentPeriod);
       rows.push({ teamId: m.home.teamId, score: m.home.totalPoints ?? 0, minutesRemaining, players });
       teamIds.push(String(m.home.teamId));
     }
     if (m.away) {
-      const { minutesRemaining, players } = espnTeamLiveStarters(m.away, clocks);
+      const { minutesRemaining, players } = espnTeamLiveStarters(m.away, clocks, currentPeriod);
       rows.push({ teamId: m.away.teamId, score: m.away.totalPoints ?? 0, minutesRemaining, players });
       teamIds.push(String(m.away.teamId));
     }
@@ -2424,6 +2483,56 @@ export async function fetchSleeperStandings(league) {
 // null when the map or the key is absent, so the drawer shows "--" rather
 // than a confident 0.0 claiming the player played and scored nothing.
 //
+// Human labels for the Sleeper raw-stat keys behind the Scoring tab's
+// stat-breakdown popover, restricted to keys this project can both name AND
+// price: `fetchSleeperWeekStats` supplies the raw per-category count, and
+// the league's own `scoring_settings` (same object fetchSleeperReceptionPoints
+// already reads .rec off of) supplies the per-unit point value — a category
+// present in one map but not the other contributes nothing and is dropped
+// (see sleeperStatBreakdown). CONFIRMED via probe-live-scoring-players.yml
+// RUN 2 (week 1, 2026): Brock Purdy's real /stats/nfl/regular/<season>/
+// <week> entry carried pass_yd/pass_td/pass_int/pass_2pt/rush_yd/rush_2pt/
+// rec/rec_yd/rec_td/fum_lost verbatim under these exact key names. Kicking
+// and team-defense categories are deliberately absent — no live kicker or
+// defense performance has been caught by the probe yet, and a wrong label
+// there is worse than no popover at all.
+const SLEEPER_STAT_LABELS = {
+  pass_yd: 'Passing Yards',
+  pass_td: 'Passing Touchdowns',
+  pass_int: 'Interceptions Thrown',
+  pass_2pt: 'Passing 2-Point Conversions',
+  rush_yd: 'Rushing Yards',
+  rush_td: 'Rushing Touchdowns',
+  rush_2pt: 'Rushing 2-Point Conversions',
+  rec: 'Receptions',
+  rec_yd: 'Receiving Yards',
+  rec_td: 'Receiving Touchdowns',
+  rec_2pt: 'Receiving 2-Point Conversions',
+  bonus_rec_te: 'Tight End Reception Bonus',
+  fum_lost: 'Fumbles Lost',
+};
+
+// The breakdown behind a clicked Sleeper score: every labeled category this
+// player actually recorded (a nonzero raw value) that this league's own
+// rules actually price (a nonzero scoring_settings rate), largest point
+// contribution first — same reading order as espnStatBreakdown. Returns []
+// when either input is missing (a poll that skipped the weekly-stats fetch,
+// or a league whose scoring_settings didn't load) rather than throwing —
+// this is a display enrichment, never worth failing the score over.
+function sleeperStatBreakdown(playerId, weeklyStats, scoringSettings) {
+  const raw = weeklyStats?.[String(playerId)];
+  if (!raw || !scoringSettings) return [];
+  const rows = [];
+  for (const [key, label] of Object.entries(SLEEPER_STAT_LABELS)) {
+    const value = raw[key];
+    const rate = scoringSettings[key];
+    if (!value || !rate) continue;
+    rows.push({ label, raw: value, points: Number(rate) * Number(value) });
+  }
+  rows.sort((a, b) => Math.abs(b.points) - Math.abs(a.points));
+  return rows;
+}
+
 // Note Sleeper's `starters` array is slot-ORDERED (it lines up with the
 // league's own roster_positions), which is the one place a real slot label
 // would be free. It is deliberately not used: ESPN cannot supply the same
@@ -2431,7 +2540,7 @@ export async function fetchSleeperStandings(league) {
 // probed, and a drawer that labelled slots for one provider and positions
 // for another would be two different cards wearing one name. Position is
 // what all three agree on.
-function sleeperTeamLiveStarters(starterIds, playerMap, clockMap, pointsById) {
+function sleeperTeamLiveStarters(starterIds, playerMap, clockMap, pointsById, weeklyStats, scoringSettings) {
   let seconds = 0;
   const players = [];
   for (const id of starterIds || []) {
@@ -2445,9 +2554,21 @@ function sleeperTeamLiveStarters(starterIds, playerMap, clockMap, pointsById) {
       position: info?.position ?? null,
       team: info?.team ?? null,
       points: points == null ? null : Number(points),
+      stats: sleeperStatBreakdown(id, weeklyStats, scoringSettings),
     });
   }
   return { minutesRemaining: Math.round(seconds / 60), players };
+}
+
+// The public per-player weekly raw-stat endpoint behind the Sleeper half of
+// the stat-breakdown popover — confirmed live via probe-live-scoring-
+// players.yml RUN 2 (GET /stats/nfl/regular/<season>/<week> -> 200, keyed by
+// player id, categories named exactly as SLEEPER_STAT_LABELS expects).
+// League-independent (every Sleeper league in a poll shares one response for
+// the same week), same role as loadSleeperPlayerMap — fetch once, pass to
+// every fetchSleeperScoring call rather than refetching per league.
+export async function fetchSleeperWeekStats(season, week) {
+  return sleeperGet(`/stats/nfl/regular/${season}/${week}`);
 }
 
 // clockMap and playerMap are both optional — pass a pre-fetched clockMap
@@ -2455,14 +2576,19 @@ function sleeperTeamLiveStarters(starterIds, playerMap, clockMap, pointsById) {
 // poll/sync) and playerMap (from loadSleeperPlayerMap, already loaded once
 // per sync wherever a Sleeper league exists) to skip re-fetching either.
 // projectPlayer is also optional — see attachWinProbabilities' own comment.
+// weeklyStats is also optional (from fetchSleeperWeekStats, shared the same
+// way as clockMap/playerMap) — omitted, the stat-breakdown popover simply
+// has nothing to show for this league's players, same graceful-absence
+// posture as a missing projectPlayer.
 // Sleeper's starters carry `name`, not an id — see espnTeamLiveStarters'
 // comment for why.
-export async function fetchSleeperScoring(league, clockMap, playerMap, projectPlayer) {
-  const [state, { names, ownerById }, clocks, players] = await Promise.all([
+export async function fetchSleeperScoring(league, clockMap, playerMap, projectPlayer, weeklyStats) {
+  const [state, { names, ownerById }, clocks, players, leagueData] = await Promise.all([
     sleeperGet('/state/nfl'),
     sleeperTeamNames(league),
     clockMap ? Promise.resolve(clockMap) : fetchNflGameClocks(),
     playerMap ? Promise.resolve(playerMap) : loadSleeperPlayerMap(),
+    sleeperGet(`/league/${league.id}`),
   ]);
   const week = resolveNflWeek(state);
   if (!week) {
@@ -2474,8 +2600,9 @@ export async function fetchSleeperScoring(league, clockMap, playerMap, projectPl
     throw new Error('No live scoring available yet');
   }
 
+  const scoringSettings = leagueData?.scoring_settings || null;
   const teams = rawMatchups.map((m) => {
-    const live = sleeperTeamLiveStarters(m.starters, players, clocks, m.players_points);
+    const live = sleeperTeamLiveStarters(m.starters, players, clocks, m.players_points, weeklyStats, scoringSettings);
     return {
       franchiseId: String(m.roster_id),
       teamName: names.get(String(m.roster_id)) || `Team ${m.roster_id}`,
