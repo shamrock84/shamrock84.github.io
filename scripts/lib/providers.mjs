@@ -434,6 +434,69 @@ export async function fetchMflReceptionPoints(league, cookie) {
   return { points, values: [...byPosition.values()], detail, byPosition: Object.fromEntries(byPosition) };
 }
 
+// The general-purpose sibling fetchMflReceptionPoints never needed to be:
+// every event code addBoxscoreToStatIndex/ESPN_BOXSCORE_TO_MFL_EVENT can
+// produce, priced per POSITION (a league can and does run a TE premium on
+// CC — see fetchMflReceptionPoints' own comment — so a flat league-wide
+// rate would misprice a TE's reception same as it would there). Returns
+// Map<position, Map<eventCode, rate>>; a position/code with no matching
+// rule is simply absent, which mflStatBreakdownFromBoxscore reads the
+// same way it reads a stat the player didn't record — no row, not a
+// guessed rate. `*` on points means "per event" (fetchMflReceptionPoints'
+// own comment); a rule with no leading `*` (a flat bonus at a yardage
+// threshold, e.g. FG/MG's range-keyed rows) is out of scope here the same
+// way kicking is out of scope for the ESPN/Sleeper breakdowns — this
+// project has no confident way to reduce a threshold table to a single
+// per-unit rate, so it's skipped rather than misapplied to every yard.
+export async function fetchMflSkillPositionRates(league, cookie) {
+  const data = await mflGet(`/export?TYPE=rules&L=${league.id}&JSON=1`, cookie, seasonOf(league));
+  const byPosition = new Map();
+  for (const group of asArray(data?.rules?.positionRules)) {
+    const positions = String(mflText(group?.positions) ?? '').split('|').map((x) => x.trim());
+    for (const rule of asArray(group?.rule)) {
+      const event = mflText(rule?.event);
+      if (!event || !(event in MFL_EVENT_LABELS)) continue;
+      const rawPoints = String(mflText(rule?.points) ?? '');
+      if (!rawPoints.startsWith('*')) continue;
+      const rate = Number(rawPoints.slice(1));
+      if (!Number.isFinite(rate)) continue;
+      for (const pos of positions) {
+        if (!byPosition.has(pos)) byPosition.set(pos, new Map());
+        byPosition.get(pos).set(event, rate);
+      }
+    }
+  }
+  return byPosition;
+}
+
+// The breakdown behind a clicked MFL score, built from data MFL's own API
+// never carries (see mfl/README.md) — every category present in BOTH the
+// ESPN-boxscore-derived statIndex (this player actually recorded it) and
+// this league's own per-position rates (this league's rules actually
+// price it), same "recorded AND priced" gate espnStatBreakdown/
+// sleeperStatBreakdown apply, and the same largest-contribution-first
+// order. Deliberately NOT reconciled against the player's real MFL score
+// (no check that the two sums agree) — MFL's own boxscore-vs-team-total
+// discrepancy the probe already found for a real player's passing yards
+// (RUN 5: 178 individual vs 168 team-total) means an exact match isn't
+// guaranteed even when every rate is right, and this project has chosen
+// to ship the breakdown anyway rather than hold it on a reconciliation
+// check. Revisit if a visibly-wrong sum turns out to be common in
+// practice rather than a rare edge case.
+function mflStatBreakdownFromBoxscore(name, position, statIndex, ratesByPosition) {
+  const stats = statIndex?.get(normalizeBoxscoreName(name));
+  const rates = ratesByPosition?.get(position);
+  if (!stats || !rates) return [];
+  const rows = [];
+  for (const [event, raw] of Object.entries(stats)) {
+    const rate = rates.get(event);
+    if (rate == null) continue;
+    rows.push({ label: MFL_EVENT_LABELS[event], raw, points: rate * raw });
+  }
+  rows.sort((a, b) => Math.abs(b.points) - Math.abs(a.points));
+  return rows;
+}
+
 // statId 53 is receptions. An absent item means the league scores none.
 export async function fetchEspnReceptionPoints(league) {
   const data = await espnGet(league, 'view=mSettings');
@@ -1654,11 +1717,137 @@ export async function fetchNflGames() {
         state: state || 'pre',
         detail,
         secondsRemaining,
+        // The event id, for fetchEspnBoxscore below — added purely so
+        // api/live-scoring.js can collect the distinct game ids in play
+        // this week without a second scoreboard fetch. Every existing
+        // reader of this map (gameClocksFromGames, playerGameLine) reads
+        // only the fields above, so this is additive.
+        id: event.id,
       };
       for (const key of nflTeamKeys(abbr)) games.set(key, entry);
     }
   }
   return games;
+}
+
+// The public per-game boxscore behind the MFL half of the stat-breakdown
+// popover (see mfl/README.md): MFL's own API is contractually forbidden
+// from exposing raw NFL stats (Developers Program ToS item 7), but this —
+// the same unauthenticated ESPN SITE api fetchNflGames already reads, not
+// their fantasy API — publishes a full per-player boxscore for any NFL
+// game regardless of fantasy platform. Confirmed real via
+// probe-live-scoring-players.yml RUN 5/6: `boxscore.players[]` is one
+// entry per team, each carrying `statistics[]` categories (passing,
+// rushing, receiving, defensive, ...) with parallel `keys`/`labels` and
+// per-athlete `stats` arrays in the same order. Read defensively by the
+// caller — an ESPN outage or shape change here costs this feature alone,
+// never a score.
+export async function fetchEspnBoxscore(eventId) {
+  const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=${eventId}`);
+  if (!res.ok) {
+    throw new Error(`ESPN boxscore request failed (${res.status}) for event ${eventId}`);
+  }
+  const data = await res.json();
+  return data.boxscore || null;
+}
+
+// Same normalization FantasyPros' own join (normalizePlayerName in
+// fantasypros.mjs) uses — kept as its own copy rather than an import,
+// since this file is deliberately self-contained (two Vercel functions
+// import it directly by path; see .vercelignore's own note on why).
+// Accents/punctuation/case/suffixes all vary between ESPN's "Drake Maye"
+// and MFL's own player name, so both sides of the join run through this.
+const BOXSCORE_NAME_SUFFIX = /\s+(jr|sr|ii|iii|iv|v)$/;
+function normalizeBoxscoreName(raw) {
+  if (!raw) return '';
+  let s = String(raw)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[.'’`]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  while (BOXSCORE_NAME_SUFFIX.test(s)) s = s.replace(BOXSCORE_NAME_SUFFIX, '');
+  return s;
+}
+
+// ESPN boxscore (category, stat key) -> the MFL TYPE=rules event code it
+// answers. Confirmed against real data: probe-live-scoring-players.yml
+// RUN 5/6 for the category/key shapes, RUN 4/7 for allRules' own
+// shortDescription of each code (PY="Passing Yards", #P="Number of
+// Passing TDs", IN="Pass Interceptions Thrown", RY="Rushing Yards",
+// #R="Number of Rushing TDs", CY="Receiving Yards", #C="Number of
+// Receiving TDs", CC="Receptions"). Deliberately scoped to skill-position
+// offense only, matching this project's existing ESPN/Sleeper
+// stat-breakdown scope (see ESPN_STAT_LABELS/SLEEPER_STAT_LABELS' own
+// comments) — kicking and team defense would need a different join (by
+// team, not by player name) and no confident source exists for FG-
+// distance buckets at all, so both are left out rather than guessed at.
+// Passing's own "interceptions" key (INTs THROWN) is a DIFFERENT category
+// from the defensive "interceptions" category (INTs CAUGHT) confirmed
+// distinct by RUN 6 — scoping this map by category, not by key alone, is
+// what keeps the two from colliding.
+const ESPN_BOXSCORE_TO_MFL_EVENT = {
+  passing: { passingYards: 'PY', passingTouchdowns: '#P', interceptions: 'IN' },
+  rushing: { rushingYards: 'RY', rushingTouchdowns: '#R' },
+  receiving: { receivingYards: 'CY', receivingTouchdowns: '#C', receptions: 'CC' },
+};
+
+// Human labels for the MFL event codes above, worded to match
+// ESPN_STAT_LABELS/SLEEPER_STAT_LABELS' own phrasing for the same concept
+// so the popover reads identically regardless of which provider fed it —
+// confirmed verbatim against TYPE=allRules' shortDescription for each
+// (see the map above's own comment).
+const MFL_EVENT_LABELS = {
+  PY: 'Passing Yards',
+  '#P': 'Passing Touchdowns',
+  IN: 'Interceptions Thrown',
+  RY: 'Rushing Yards',
+  '#R': 'Rushing Touchdowns',
+  CY: 'Receiving Yards',
+  '#C': 'Receiving Touchdowns',
+  CC: 'Receptions',
+};
+
+// Folds one game's ESPN boxscore into a shared, normalized-name-keyed
+// index of { eventCode: rawValue }, ready to cross against
+// fetchMflSkillPositionRates' own per-position rates. `into` is mutated
+// and returned so a caller (api/live-scoring.js) can accumulate every
+// game in play this week into ONE map — MFL rosters players from any NFL
+// team, so there's no per-league way to know in advance which games
+// matter, and a plain name key (rather than name+team) is what
+// fetchScoring's existing win-probability join already relies on
+// elsewhere too. A name collision (two same-named players, one of them
+// not who this project means) is accepted here the same way it is for
+// the FantasyPros name join — rare enough in practice, and a wrong
+// breakdown reads as a wrong number rather than a crash either way.
+export function addBoxscoreToStatIndex(boxscore, into = new Map()) {
+  for (const team of boxscore?.players || []) {
+    for (const category of team.statistics || []) {
+      const keyMap = ESPN_BOXSCORE_TO_MFL_EVENT[category.name];
+      if (!keyMap) continue;
+      const keyIndexes = Object.entries(keyMap)
+        .map(([espnKey, mflCode]) => [category.keys.indexOf(espnKey), mflCode])
+        .filter(([i]) => i !== -1);
+      if (keyIndexes.length === 0) continue;
+      for (const athlete of category.athletes || []) {
+        const name = normalizeBoxscoreName(athlete.athlete?.displayName);
+        if (!name) continue;
+        const entry = into.get(name) || {};
+        for (const [i, mflCode] of keyIndexes) {
+          const raw = Number(athlete.stats?.[i]);
+          if (Number.isFinite(raw) && raw !== 0) entry[mflCode] = raw;
+        }
+        // Only stored if this pass actually added something — a player who
+        // recorded nothing in this category (or whose every stat here is a
+        // genuine 0) gets no entry at all, not an empty one a later lookup
+        // would still have to filter through.
+        if (Object.keys(entry).length > 0) into.set(name, entry);
+      }
+    }
+  }
+  return into;
 }
 
 // Projects the games map down to what the win-probability model consumes:
@@ -1697,7 +1886,7 @@ export async function fetchNflGameClocks() {
 // scoreboard shows for a player whose game hasn't started). A missing
 // points field must degrade to a dash rather than a confident 0.0, which
 // would read as "played and scored nothing".
-function mflLiveStarters(f, playerMap) {
+function mflLiveStarters(f, playerMap, boxscoreStatIndex, mflRatesByPosition) {
   const raw = f.players?.player;
   const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
   return list
@@ -1711,6 +1900,11 @@ function mflLiveStarters(f, playerMap) {
         position: info?.position ?? null,
         team: info?.team ?? null,
         points: p.score == null || p.score === '' ? null : Number(p.score),
+        // See mflStatBreakdownFromBoxscore's own comment — MFL's API has
+        // no source for this at all (mfl/README.md), so it's built from
+        // ESPN's public (non-fantasy) boxscore instead, joined by name.
+        // Both trailing args are optional; either missing degrades to [].
+        stats: mflStatBreakdownFromBoxscore(info?.name, info?.position, boxscoreStatIndex, mflRatesByPosition),
       };
     });
 }
@@ -1729,7 +1923,15 @@ function mflLiveStarters(f, playerMap) {
 // shared across every league, never once per fetchScoring call. The sync
 // already loads it for the roster pass; api/live-scoring.js caches it at
 // module level for the same reason it caches franchise names.
-export async function fetchScoring(league, cookie, franchiseInfo, projectPlayer, playerMap) {
+//
+// boxscoreStatIndex (from addBoxscoreToStatIndex, built across every NFL
+// game in play this week — GLOBAL, not league-scoped, same reasoning as
+// playerMap) and mflRatesByPosition (from fetchMflSkillPositionRates,
+// league-scoped and worth caching hard since a league's scoring rules
+// essentially never change in-season) are both optional too — omitted,
+// every starter's `stats` comes back [] via mflStatBreakdownFromBoxscore,
+// same as before this feature existed.
+export async function fetchScoring(league, cookie, franchiseInfo, projectPlayer, playerMap, boxscoreStatIndex, mflRatesByPosition) {
   const [{ nameById, ownerById }, liveData] = await Promise.all([
     franchiseInfo ? Promise.resolve(franchiseInfo) : fetchMflFranchiseNames(league, cookie),
     mflGet(`/export?TYPE=liveScoring&L=${league.id}&JSON=1`, cookie, seasonOf(league)),
@@ -1769,7 +1971,7 @@ export async function fetchScoring(league, cookie, franchiseInfo, projectPlayer,
     score: Number(f.score ?? 0),
     minutesRemaining: Math.round(Number(f.gameSecondsRemaining ?? 0) / 60),
     isMe: f.id === league.franchiseId,
-    players: mflLiveStarters(f, playerMap),
+    players: mflLiveStarters(f, playerMap, boxscoreStatIndex, mflRatesByPosition),
   }));
 
   attachWinProbabilities(teams, matchups, projectPlayer);

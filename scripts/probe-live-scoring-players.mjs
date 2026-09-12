@@ -448,3 +448,191 @@ if (MFL_LEAGUE_ID) {
 } else {
   console.log('\n\n=== RUN 3 skipped (no PROBE_MFL_LEAGUE_ID) ===');
 }
+
+// RUN 4 — added after the project's manager found MFL's own Developers
+// Program PDFs (General Info + Request Reference), which settle a question
+// RUN 2/3 could only leave open by absence: General Info's Terms of
+// Service, item 7, states MFL "can not and will not under any circumstance
+// make raw NFL player stats available, as that's forbidden per our stats
+// licensing agreement." That's a categorical answer for a RAW stat count
+// ("74 receiving yards") — no endpoint will ever carry that. But the
+// Request Reference lists TYPE=playerScores with a RULES=1 argument
+// ("re-calculates the fantasy score for each player according to that
+// league's rules") — a previously-untried endpoint. If it exposes a
+// PER-RULE POINT total (not the raw stat, just "12.0 points from this
+// scoring rule"), that's MFL's own derived number, not the licensed raw
+// stat, and could power a breakdown phrased as "Passing Touchdowns: 12.0
+// pts" without a raw count. This run checks that, and also pulls
+// TYPE=allRules — the authoritative event-code -> description decoder
+// (rather than the community-documented guesses fetchMflReceptionPoints'
+// own "CC" comment already flagged as unconfirmed for anything but
+// receptions).
+//
+// RESULTS — 2026-09-12, week 1, league 26696, real data:
+//   playerScores&RULES=1  Entries carry ONLY {id, isAvailable, score,
+//     week} — 45 of 62 scored, e.g. {id:"16185", score:"26.2"}. NO
+//     per-rule breakdown of any kind, just the one recalculated total —
+//     the same shape as weeklyResults' score, from a different call.
+//     This closes off the one remaining hope for an MFL-side breakdown:
+//     liveScoring (updatedStats), weeklyResults, and playerScores&RULES=1
+//     have now ALL been checked, and none carries anything between "the
+//     final score" and the raw stats item 7 forbids outright. There is
+//     no fourth call left to try in the Request Reference that plausibly
+//     carries this.
+//   allRules  Real and rich — confirmed abbreviation/shortDescription/
+//     detailedDescription triples for every rule, e.g. PY="Passing
+//     Yards", #P="Number of Passing TDs", IN="Pass Interceptions
+//     Thrown", TSK="QB Sacked". This is the authoritative decoder for
+//     TYPE=rules' event codes (upgrading fetchMflReceptionPoints' own
+//     "CC is the reception event" comment from behavior-inferred to
+//     documented) — useful for describing a league's SCORING RULES in
+//     the abstract, but it has nothing to say about what any player did
+//     in any given week, so it cannot feed a per-player breakdown either.
+// CONCLUSION: MFL cannot support the Scoring tab's stat-breakdown
+// popover through any documented, triable endpoint. See mfl/README.md
+// for the full writeup (the actual PDFs live there too).
+if (MFL_LEAGUE_ID) {
+  console.log(`\n\n=== RUN 4: MFL TYPE=playerScores&RULES=1, league ${MFL_LEAGUE_ID} week ${WEEK} ===\n`);
+  try {
+    const cookie = await mflLogin(process.env.MFL_USERNAME, process.env.MFL_PASSWORD);
+    const year = seasonOf({ id: MFL_LEAGUE_ID });
+    const data = await mflGet(
+      `/export?TYPE=playerScores&L=${MFL_LEAGUE_ID}&W=${WEEK}&RULES=1&JSON=1`,
+      cookie,
+      year
+    );
+    const raw = data?.playerScores?.playerScore;
+    const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
+    console.log(`playerScore entries: ${list.length}`);
+    const unionKeys = new Set();
+    for (const p of list) for (const k of Object.keys(p || {})) unionKeys.add(k);
+    console.log(`union of ALL playerScore keys: ${[...unionKeys].sort().join(', ')}`);
+    const scored = list.filter((p) => Number(p.score) > 0);
+    console.log(`entries with score > 0: ${scored.length} of ${list.length}`);
+    console.log(`first 5 scored entries verbatim:`);
+    console.log(JSON.stringify(scored.slice(0, 5), null, 2));
+  } catch (err) {
+    console.log(`  RUN 4 playerScores probe failed: ${err.message}`);
+  }
+
+  console.log(`\n\n=== RUN 4: MFL TYPE=allRules, league ${MFL_LEAGUE_ID} ===\n`);
+  try {
+    const cookie = await mflLogin(process.env.MFL_USERNAME, process.env.MFL_PASSWORD);
+    const year = seasonOf({ id: MFL_LEAGUE_ID });
+    const data = await mflGet(`/export?TYPE=allRules&JSON=1`, cookie, year);
+    const raw = data?.allRules?.positionRules;
+    console.log(`shape: ${JSON.stringify(Object.keys(data?.allRules || {}))}`);
+    console.log(JSON.stringify(data?.allRules, null, 2).slice(0, 6000));
+  } catch (err) {
+    console.log(`  RUN 4 allRules probe failed: ${err.message}`);
+  }
+} else {
+  console.log('\n\n=== RUN 4 skipped (no PROBE_MFL_LEAGUE_ID) ===');
+}
+
+// RUN 5 — added to answer a follow-up idea: could ESPN's PUBLIC (non-
+// fantasy) NFL data supply the raw stats MFL's own API is contractually
+// forbidden from exposing (see mfl/README.md), so this project computes
+// its own MFL-scoring-rule breakdown independently rather than reading
+// one from MFL? That would need a per-player BOXSCORE endpoint — the
+// scoreboard fetchNflGames already reads has no per-player stats at all,
+// only game/team state. ESPN's site API commonly exposes a richer
+// `/summary?event=<id>` for each game; this checks whether that's real,
+// unauthenticated, and has individual player stat lines (not just team
+// score), against a real FINISHED game.
+console.log('\n\n=== RUN 5: does ESPN\'s public site API have a per-game player boxscore? ===\n');
+try {
+  const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard');
+  const data = await res.json();
+  const finished = (data.events || []).find((e) => e.competitions?.[0]?.status?.type?.state === 'post');
+  if (!finished) {
+    console.log('  no finished game in this week\'s scoreboard to test against');
+  } else {
+    console.log(`testing against event id ${finished.id} (${finished.shortName || finished.name})`);
+    const sres = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=${finished.id}`);
+    console.log(`GET /summary?event=${finished.id} -> ${sres.status}`);
+    if (sres.ok) {
+      const sdata = await sres.json();
+      console.log(`top-level keys: ${Object.keys(sdata).sort().join(', ')}`);
+      const boxscore = sdata.boxscore;
+      console.log(`boxscore present: ${!!boxscore}; boxscore keys: ${boxscore ? Object.keys(boxscore).join(', ') : '(none)'}`);
+      const playersBlock = boxscore?.players;
+      console.log(`boxscore.players present: ${!!playersBlock}; length: ${Array.isArray(playersBlock) ? playersBlock.length : 'n/a'}`);
+      if (Array.isArray(playersBlock) && playersBlock[0]) {
+        const team0 = playersBlock[0];
+        console.log(`\nfirst team block keys: ${Object.keys(team0).join(', ')}`);
+        console.log(`statistics categories: ${(team0.statistics || []).map((s) => s.name).join(', ')}`);
+        const firstCat = team0.statistics?.[0];
+        console.log(`\nfirst category ("${firstCat?.name}") full shape:`);
+        console.log(JSON.stringify(firstCat, null, 2).slice(0, 3000));
+      }
+    } else {
+      console.log(`  non-OK, body: ${(await sres.text()).slice(0, 300)}`);
+    }
+  }
+} catch (err) {
+  console.log(`  RUN 5 probe failed: ${err.message}`);
+}
+
+// RUN 6 — added immediately after RUN 5 confirmed the boxscore endpoint is
+// real. RUN 5 only dumped the "passing" category's key/label shape; before
+// writing any ESPN-boxscore -> MFL-event-code join, confirm the rushing/
+// receiving/interceptions category key names too (the point of this
+// project's whole verify-first convention — a guessed key name here would
+// silently mislabel a stat rather than error). Also prints a defensive
+// player's "interceptions" category to make sure it's a DIFFERENT shape
+// from passing's own "interceptions" key (INTs thrown vs INTs caught) —
+// a real collision risk once both get joined against MFL's IN vs IC event
+// codes.
+console.log('\n\n=== RUN 6: ESPN boxscore rushing/receiving/defensive category shapes ===\n');
+try {
+  const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard');
+  const data = await res.json();
+  const finished = (data.events || []).find((e) => e.competitions?.[0]?.status?.type?.state === 'post');
+  if (!finished) {
+    console.log('  no finished game to test against');
+  } else {
+    const sres = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=${finished.id}`);
+    const sdata = await sres.json();
+    const teams = sdata.boxscore?.players || [];
+    for (const team of teams) {
+      for (const catName of ['rushing', 'receiving', 'interceptions', 'defensive']) {
+        const cat = (team.statistics || []).find((s) => s.name === catName);
+        if (!cat) continue;
+        console.log(`\n--- ${team.team?.abbreviation} / ${catName} ---`);
+        console.log(`keys: ${JSON.stringify(cat.keys)}`);
+        console.log(`labels: ${JSON.stringify(cat.labels)}`);
+        const withStats = (cat.athletes || []).find((a) => (a.stats || []).some((s) => Number(s) > 0));
+        if (withStats) {
+          console.log(`sample athlete: ${withStats.athlete?.displayName} -> ${JSON.stringify(withStats.stats)}`);
+        }
+      }
+    }
+  }
+} catch (err) {
+  console.log(`  RUN 6 probe failed: ${err.message}`);
+}
+
+// RUN 7 — RUN 4's allRules dump was truncated (this project's own
+// .slice(0, 6000)) before reaching the rushing/receiving codes needed to
+// label an MFL-side stat breakdown built from ESPN's public boxscore (see
+// RUN 5/6). Filters the same allRules response down to exactly the codes
+// this feature cares about, rather than guessing their wording by analogy
+// to the confirmed passing ones (#P/PY/IN).
+if (MFL_LEAGUE_ID) {
+  console.log(`\n\n=== RUN 7: allRules, filtered to RY/#R/CY/#C/CC ===\n`);
+  try {
+    const cookie = await mflLogin(process.env.MFL_USERNAME, process.env.MFL_PASSWORD);
+    const year = seasonOf({ id: MFL_LEAGUE_ID });
+    const data = await mflGet(`/export?TYPE=allRules&JSON=1`, cookie, year);
+    const rules = asArray(data?.allRules?.rule);
+    const wanted = new Set(['RY', '#R', 'CY', '#C', 'CC', 'R2', 'C2']);
+    for (const r of rules) {
+      const abbr = mflText(r.abbreviation);
+      if (!wanted.has(abbr)) continue;
+      console.log(`${abbr}: short="${mflText(r.shortDescription)}" detailed="${mflText(r.detailedDescription)}"`);
+    }
+  } catch (err) {
+    console.log(`  RUN 7 probe failed: ${err.message}`);
+  }
+}

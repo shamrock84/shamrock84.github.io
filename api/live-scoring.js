@@ -23,6 +23,9 @@ import {
   loadSleeperPlayerMap,
   setMflRequestInterval,
   currentNflWeek,
+  fetchEspnBoxscore,
+  addBoxscoreToStatIndex,
+  fetchMflSkillPositionRates,
 } from '../scripts/lib/providers.mjs';
 import { applyCors } from './lib/cors.mjs';
 // scripts/lib/fantasypros.mjs is a new import boundary for api/ — see
@@ -62,6 +65,9 @@ const cache = {
   projections: null, // fetchProjections' index: { byMflId, byName, meta }
   projectionsAt: 0,
   projectionsWeek: null, // the week the cached index above was fetched for
+  espnBoxscores: new Map(), // eventId -> { boxscore, final } — see getEspnBoxscore
+  mflRates: new Map(), // leagueId -> Map<position, Map<eventCode, rate>>
+  mflRatesAt: new Map(), // leagueId -> timestamp
 };
 
 const COOKIE_TTL_MS = 20 * 60 * 1000; // 20 min
@@ -102,6 +108,11 @@ const NFL_WEEK_TTL_MS = 30 * 60 * 1000;
 // moment the cached week no longer matches the current one, so a Tuesday
 // rollover can't serve last week's numbers for up to an hour.
 const PROJECTIONS_TTL_MS = 60 * 60 * 1000;
+// A league's own scoring rules (TYPE=rules, behind the MFL half of the
+// stat-breakdown popover — see mfl/README.md and
+// fetchMflSkillPositionRates' own comment) essentially never change
+// in-season, so this is cached at least as hard as MFL franchise names —
+// reusing NAMES_TTL_MS rather than inventing a second identical constant.
 
 async function getSleeperPlayerMap() {
   const age = Date.now() - cache.sleeperPlayerMapAt;
@@ -253,6 +264,41 @@ async function getMflNames(league, cookie) {
   return franchiseInfo;
 }
 
+// See mfl/README.md and fetchMflSkillPositionRates' own comment in
+// providers.mjs for why this exists at all: MFL's API has no source for
+// a stat breakdown, so this project builds one from ESPN's public
+// boxscore crossed against the league's own scoring rules instead.
+async function getMflRatesByPosition(league, cookie) {
+  const at = cache.mflRatesAt.get(league.id) || 0;
+  const cached = cache.mflRates.get(league.id);
+  if (cached && Date.now() - at < NAMES_TTL_MS) {
+    return cached;
+  }
+  const rates = await fetchMflSkillPositionRates(league, cookie);
+  cache.mflRates.set(league.id, rates);
+  cache.mflRatesAt.set(league.id, Date.now());
+  return rates;
+}
+
+// Once a game has gone final its boxscore never changes again, so a copy
+// captured while `final` is true is reused for the rest of this warm
+// instance's life rather than re-fetched every ~30s poll — the same
+// reasoning MFL_PLAYER_MAP_TTL_MS/NAMES_TTL_MS apply to their own mostly-
+// static data, just with no time limit at all since a final score is not
+// "mostly" static, it's permanently so. A game that's still `'in'`
+// progress (or not cached yet) is always fetched fresh: that's the one
+// thing genuinely different every poll, same as nflClocks' own comment.
+// The poll where a game FIRST reads 'post' still does one real fetch —
+// `isFinalNow` only controls whether THIS result is trusted for next
+// time, never whether this call itself is skipped.
+async function getEspnBoxscore(eventId, isFinalNow) {
+  const cached = cache.espnBoxscores.get(eventId);
+  if (cached?.final) return cached.boxscore;
+  const boxscore = await fetchEspnBoxscore(eventId);
+  cache.espnBoxscores.set(eventId, { boxscore, final: isFinalNow });
+  return boxscore;
+}
+
 async function loadLeagueConfig() {
   const raw = await readFile(CONFIG_PATH, 'utf8');
   return JSON.parse(raw).leagues || [];
@@ -334,6 +380,37 @@ export default async function handler(req, res) {
     // drawer its game line; neither is worth failing the scores over.
   }
 
+  // The MFL half of the stat-breakdown popover (see mfl/README.md): one
+  // ESPN public boxscore fetch per NFL game actually in play this week —
+  // GLOBAL, not per-league, same reasoning as nflGames above, since MFL
+  // rosters players from any team and there's no per-league way to narrow
+  // this down. `nflGames` already carries each entry's event `id`; a game
+  // still `'pre'` has no boxscore yet, so those are skipped rather than
+  // spending a request that can only ever come back empty. Failures are
+  // per-game (see getEspnBoxscore's own try/catch below) so one bad game
+  // costs only its own players' breakdowns, never the whole poll.
+  let mflBoxscoreStatIndex = null;
+  if (mflCookie && anyMflLeague) {
+    const eventIds = new Map(); // eventId -> isFinal, deduped across every team entry
+    for (const game of nflGames.values()) {
+      if (!game.id || game.state === 'pre') continue;
+      eventIds.set(game.id, game.state === 'post');
+    }
+    if (eventIds.size) {
+      mflBoxscoreStatIndex = new Map();
+      await Promise.all(
+        [...eventIds].map(async ([eventId, isFinal]) => {
+          try {
+            const boxscore = await getEspnBoxscore(eventId, isFinal);
+            addBoxscoreToStatIndex(boxscore, mflBoxscoreStatIndex);
+          } catch {
+            // degrade silently — see comment above.
+          }
+        })
+      );
+    }
+  }
+
   // Projections are an enrichment on top of the win-probability estimate,
   // never a dependency of it: no key configured, the week can't be
   // resolved, or the endpoint is down this poll all land here the same
@@ -391,7 +468,18 @@ export default async function handler(req, res) {
         }
         const franchiseInfo = await getMflNames(league, mflCookie);
         const projectPlayer = makeProjectPlayer(projections, 'mfl', league.scoring);
-        const scoring = await fetchScoring(league, mflCookie, franchiseInfo, projectPlayer, mflPlayerMap);
+        // A rates fetch failure costs this league's stat breakdown only
+        // (fetchScoring's mflRatesByPosition is optional — see its own
+        // comment), never the score itself.
+        let mflRatesByPosition;
+        try {
+          mflRatesByPosition = await getMflRatesByPosition(league, mflCookie);
+        } catch {
+          // degrade silently — see comment above.
+        }
+        const scoring = await fetchScoring(
+          league, mflCookie, franchiseInfo, projectPlayer, mflPlayerMap, mflBoxscoreStatIndex, mflRatesByPosition
+        );
         return { id: league.id, name: league.name, scoring, scoringError: null };
       })
   );

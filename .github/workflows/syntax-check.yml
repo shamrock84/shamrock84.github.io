@@ -309,6 +309,15 @@ jobs:
       - name: Test the Scoring tab stat breakdown
         run: node scripts/test-stat-breakdown.mjs
 
+      # The MFL half of the same popover: since MFL's own API has no
+      # source for this at all (see mfl/README.md), it's built from
+      # ESPN's public boxscore joined by name and priced by the league's
+      # own scoring rules instead. Every failure mode here is silent too —
+      # a name-join miss, a threshold rule misread as a per-unit rate, or
+      # a genuine zero shown as a real stat line.
+      - name: Test the MFL boxscore-derived stat breakdown
+        run: node scripts/test-mfl-boxscore-breakdown.mjs
+
       # The quick-link toolbar's red task-count footnote and its
       # Rosters/Standings/Scoring card counterpart: exact-category,
       # open-tasks-only summing (quickLinkTaskCounts), that the marker is

@@ -676,13 +676,18 @@ function leagueWithMatchup() {
 }
 
 // --- Stat breakdown popover: a starter carrying providers.mjs' `stats`
-// array (see espnStatBreakdown/sleeperStatBreakdown, test-stat-breakdown.mjs)
-// gets a clickable score that opens the Stat Breakdown popover with one row
-// per category, in the order providers.mjs already sorted them (largest
-// contribution first); every other starter in the same drawer, carrying no
-// `stats` at all, keeps a plain-text score exactly as before this feature
-// existed — MFL starters never carry `stats` (see the CLAUDE.md note on why),
-// so this is also what pins that an MFL-only matchup renders unchanged. ---
+// array (see espnStatBreakdown/sleeperStatBreakdown/
+// mflStatBreakdownFromBoxscore — test-stat-breakdown.mjs and
+// test-mfl-boxscore-breakdown.mjs pin those) gets a clickable score that
+// opens the Stat Breakdown popover with one row per category, in the order
+// providers.mjs already sorted them (largest contribution first); every
+// other starter in the same drawer, carrying no `stats` at all (an
+// unresolved name join, a missing rate, a bye — MFL players never carried
+// this before the ESPN-boxscore workaround, and can still land here empty
+// for any of those reasons even with it), keeps a plain-text score exactly
+// as before this feature existed. This front-end wiring test doesn't care
+// which provider a `stats` array came from — it only cares whether one is
+// present. ---
 {
 	const ctx = makeContext(LOGGED_IN);
 	ctx.liveScoringAttempted = true;

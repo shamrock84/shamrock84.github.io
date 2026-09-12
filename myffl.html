@@ -6799,11 +6799,13 @@
 					// against.
 					const text = Number(player.points).toFixed(2);
 					// A stat breakdown only exists when providers.mjs found
-					// one (ESPN/Sleeper — see espnStatBreakdown/
-					// sleeperStatBreakdown's own comments; MFL has no source
-					// for this at all, confirmed empty via
-					// probe-live-scoring-players.yml, so an MFL starter's
-					// score stays plain text exactly as before this feature).
+					// one — see espnStatBreakdown/sleeperStatBreakdown's own
+					// comments for ESPN/Sleeper, and mflStatBreakdownFromBoxscore's
+					// for MFL, which (since MFL's own API has no source for
+					// this at all — mfl/README.md) is built from ESPN's
+					// public boxscore instead. Any starter this didn't reach
+					// (an unresolved name join, a missing rate, a bye) keeps
+					// plain text exactly as before this feature existed.
 					if (player.stats && player.stats.length) {
 						const btn = el('button', {
 							type: 'button',
