@@ -448,3 +448,60 @@ if (MFL_LEAGUE_ID) {
 } else {
   console.log('\n\n=== RUN 3 skipped (no PROBE_MFL_LEAGUE_ID) ===');
 }
+
+// RUN 4 — added after the project's manager found MFL's own Developers
+// Program PDFs (General Info + Request Reference), which settle a question
+// RUN 2/3 could only leave open by absence: General Info's Terms of
+// Service, item 7, states MFL "can not and will not under any circumstance
+// make raw NFL player stats available, as that's forbidden per our stats
+// licensing agreement." That's a categorical answer for a RAW stat count
+// ("74 receiving yards") — no endpoint will ever carry that. But the
+// Request Reference lists TYPE=playerScores with a RULES=1 argument
+// ("re-calculates the fantasy score for each player according to that
+// league's rules") — a previously-untried endpoint. If it exposes a
+// PER-RULE POINT total (not the raw stat, just "12.0 points from this
+// scoring rule"), that's MFL's own derived number, not the licensed raw
+// stat, and could power a breakdown phrased as "Passing Touchdowns: 12.0
+// pts" without a raw count. This run checks that, and also pulls
+// TYPE=allRules — the authoritative event-code -> description decoder
+// (rather than the community-documented guesses fetchMflReceptionPoints'
+// own "CC" comment already flagged as unconfirmed for anything but
+// receptions).
+if (MFL_LEAGUE_ID) {
+  console.log(`\n\n=== RUN 4: MFL TYPE=playerScores&RULES=1, league ${MFL_LEAGUE_ID} week ${WEEK} ===\n`);
+  try {
+    const cookie = await mflLogin(process.env.MFL_USERNAME, process.env.MFL_PASSWORD);
+    const year = seasonOf({ id: MFL_LEAGUE_ID });
+    const data = await mflGet(
+      `/export?TYPE=playerScores&L=${MFL_LEAGUE_ID}&W=${WEEK}&RULES=1&JSON=1`,
+      cookie,
+      year
+    );
+    const raw = data?.playerScores?.playerScore;
+    const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
+    console.log(`playerScore entries: ${list.length}`);
+    const unionKeys = new Set();
+    for (const p of list) for (const k of Object.keys(p || {})) unionKeys.add(k);
+    console.log(`union of ALL playerScore keys: ${[...unionKeys].sort().join(', ')}`);
+    const scored = list.filter((p) => Number(p.score) > 0);
+    console.log(`entries with score > 0: ${scored.length} of ${list.length}`);
+    console.log(`first 5 scored entries verbatim:`);
+    console.log(JSON.stringify(scored.slice(0, 5), null, 2));
+  } catch (err) {
+    console.log(`  RUN 4 playerScores probe failed: ${err.message}`);
+  }
+
+  console.log(`\n\n=== RUN 4: MFL TYPE=allRules, league ${MFL_LEAGUE_ID} ===\n`);
+  try {
+    const cookie = await mflLogin(process.env.MFL_USERNAME, process.env.MFL_PASSWORD);
+    const year = seasonOf({ id: MFL_LEAGUE_ID });
+    const data = await mflGet(`/export?TYPE=allRules&JSON=1`, cookie, year);
+    const raw = data?.allRules?.positionRules;
+    console.log(`shape: ${JSON.stringify(Object.keys(data?.allRules || {}))}`);
+    console.log(JSON.stringify(data?.allRules, null, 2).slice(0, 6000));
+  } catch (err) {
+    console.log(`  RUN 4 allRules probe failed: ${err.message}`);
+  }
+} else {
+  console.log('\n\n=== RUN 4 skipped (no PROBE_MFL_LEAGUE_ID) ===');
+}
