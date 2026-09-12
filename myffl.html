@@ -1027,13 +1027,14 @@
 			cursor: pointer;
 		}
 		/* Every popover on this page (Salary by Year, Starters, Team Needs,
-		   Won Breakdown) is a makePopover instance and wears these rules: a
-		   title over a list of two-column rows, position:fixed and appended
-		   to <body> so a horizontally-scrolled table can't clip or misposition
-		   it. Each instance also carries its own .<name>-popover class — no
-		   rules hang off those here, they're the hook for styling or finding a
-		   single popover without touching the other three. These four blocks
-		   were byte-identical when they were written out per popover. */
+		   Won Breakdown, Stat Breakdown) is a makePopover instance and wears
+		   these rules: a title over a list of two-column rows, position:fixed
+		   and appended to <body> so a horizontally-scrolled table can't clip
+		   or misposition it. Each instance also carries its own
+		   .<name>-popover class — no rules hang off those here, they're the
+		   hook for styling or finding a single popover without touching the
+		   others. These four blocks were byte-identical when they were
+		   written out per popover, before makePopover existed to share them. */
 		.popover {
 			position: fixed;
 			z-index: 20;
@@ -1907,6 +1908,24 @@
 			justify-content: center;
 		}
 		.scoring-detail-pts.left { text-align: right; }
+		/* Same clickable-number idiom as .salary-link/.needs-link — a dotted
+		   underline for "opens a popover" rather than an outbound link. The
+		   column's own flex column (.scoring-detail-pts above) stretches this
+		   to the cell's full width via the default align-items:stretch, so
+		   the inherited text-align: right above still lands the number
+		   against the right edge same as the plain-text case it replaces. */
+		.scoring-detail-pts-link {
+			background: none;
+			border: none;
+			padding: 0;
+			margin: 0;
+			font: inherit;
+			font-variant-numeric: tabular-nums;
+			color: var(--accent);
+			text-decoration: underline dotted;
+			text-underline-offset: 0.15rem;
+			cursor: pointer;
+		}
 		/* A null points value renders as this dash rather than 0.0 — see
 		   mflLiveStarters' own comment on why a missing field must not be
 		   dressed up as a real zero. Same muted treatment as an empty side
@@ -2830,9 +2849,9 @@
 		.planning-task-text[role="button"] {
 			cursor: pointer;
 		}
-		/* Edit Task popover content — the fifth makePopover instance (see
+		/* Edit Task popover content — the sixth makePopover instance (see
 		   the note above renderTasksCard/taskPopover). A fixed width rather
-		   than the shrink-to-fit the other four popovers get from their
+		   than the shrink-to-fit the other five popovers get from their
 		   rows: an input has no natural content width to shrink to, and
 		   this keeps Save/Cancel from reflowing against a wide category
 		   value. The popover's own left-edge clamp (see makePopover's
@@ -4143,7 +4162,7 @@
 			// strings by the caller, since only the caller knows whether a
 			// number is a year, a rank, or dollars — or a function
 			// (popoverEl) => {} that appends whatever it needs directly. The
-			// four read-only popovers all use the row-list shape; the task
+			// five read-only popovers all use the row-list shape; the task
 			// editor is the one that needs a form instead of a display line,
 			// which is why this takes either rather than gaining a sibling
 			// openForm/buildForm pair that would duplicate the show/hide/
@@ -6706,6 +6725,26 @@
 			return rows;
 		}
 
+		// The stat breakdown behind a clicked score — one row per category
+		// providers.mjs found (espnStatBreakdown/sleeperStatBreakdown), a
+		// popover instance of its own since it pops up different content from
+		// a different table than any of the Rosters tab's popovers. See
+		// makePopover for the machinery every popover on this page shares.
+		const scoringDetailPopover = makePopover('scoringDetail');
+
+		// "74 Receiving Yards" from a stat row {label, raw, points} — the raw
+		// count folded into the label the way MFL's own live-scoring page
+		// phrases it ("7.4 points for 74 Receiving Yards"), read here as the
+		// popover's left column against the point value on the right. A
+		// missing raw value (defensive — providers.mjs always sets one
+		// alongside a label today) falls back to the label alone rather than
+		// printing "null Receiving Yards".
+		function statBreakdownLine(stat) {
+			if (stat.raw == null) return stat.label;
+			const raw = Number.isInteger(stat.raw) ? String(stat.raw) : Number(stat.raw).toFixed(1);
+			return `${raw} ${stat.label}`;
+		}
+
 		// One side of one drawer row. A null player is the padding described in
 		// pairStartersByPosition — it still occupies its grid cells so the
 		// centre position column stays centred, it just has nothing in them.
@@ -6758,7 +6797,32 @@
 					// fails to sum to the total it is breaking down, which
 					// is the first thing a manager checks a drawer like this
 					// against.
-					ptsCell.textContent = Number(player.points).toFixed(2);
+					const text = Number(player.points).toFixed(2);
+					// A stat breakdown only exists when providers.mjs found
+					// one (ESPN/Sleeper — see espnStatBreakdown/
+					// sleeperStatBreakdown's own comments; MFL has no source
+					// for this at all, confirmed empty via
+					// probe-live-scoring-players.yml, so an MFL starter's
+					// score stays plain text exactly as before this feature).
+					if (player.stats && player.stats.length) {
+						const btn = el('button', {
+							type: 'button',
+							class: 'scoring-detail-pts-link',
+							title: 'Stat breakdown',
+							text,
+						});
+						btn.addEventListener('click', (e) => {
+							e.stopPropagation();
+							scoringDetailPopover.toggle(
+								btn,
+								`${player.name || label} — Stat Breakdown`,
+								player.stats.map((s) => ({ left: statBreakdownLine(s), right: s.points.toFixed(1) }))
+							);
+						});
+						ptsCell.appendChild(btn);
+					} else {
+						ptsCell.textContent = text;
+					}
 				}
 				if (isPlayerLive(player)) {
 					nameCell.classList.add('live');
@@ -8910,7 +8974,8 @@
 		// "Starters vs Bench" for Team Needs' per-position rank buttons — its
 		// own instance rather than a shared one, since it pops up different
 		// content from a different table than the Rosters tab's salary
-		// popover. See makePopover for the machinery the four of them share.
+		// popover. See makePopover for the machinery every popover on this
+		// page shares.
 		const needsPopover = makePopover('needs');
 
 		// `entry` is the same {overall, starters, depth} object the clicked
@@ -9876,7 +9941,8 @@
 
 		// Won-breakdown for a year's Won cell — its own instance, matching this
 		// page's convention for these: unrelated content from an unrelated
-		// table. See makePopover for the machinery the four of them share.
+		// table. See makePopover for the machinery every popover on this page
+		// shares.
 		const financesPopover = makePopover('finances');
 
 		function showFinancesPopover(button, year, breakdown) {
@@ -10026,8 +10092,8 @@
 		// simpler than two lists that would otherwise need to agree on
 		// layout and completed-section behavior.
 		//
-		// The fifth makePopover instance, and the odd one out: the other
-		// four show a read-only {title, rows} line; this one hosts the
+		// The sixth makePopover instance, and the odd one out: the other
+		// five show a read-only {title, rows} line; this one hosts the
 		// text+category edit form (see buildTaskRow below) so editing a
 		// task doesn't have to grow its row to fit two inputs plus the
 		// checkbox/grip/move/remove buttons already there.

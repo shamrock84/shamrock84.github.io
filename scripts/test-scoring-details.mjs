@@ -65,6 +65,13 @@ function domNode(tag = 'div') {
 		set innerHTML(v) { if (v === '') n.children.length = 0; },
 		get textContent() { return n._text; },
 		set textContent(v) { n._text = v; },
+		// Zeroed rect/offsets — the Stat Breakdown popover's own positioning
+		// math (makePopover's position()) runs against these, but this suite
+		// checks that it opens with the right content, not where it lands on
+		// a real screen. Same stub shape as test-team-needs.mjs's domNode.
+		getBoundingClientRect: () => ({ top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0 }),
+		offsetWidth: 0,
+		offsetHeight: 0,
 	};
 	return n;
 }
@@ -95,7 +102,7 @@ function makeContext(seed = {}) {
 		},
 		// cardCollapseStorageKey buckets its key by viewport, so the drawer's
 		// own state helpers need this — desktop bucket here.
-		window: { addEventListener() {}, matchMedia: () => ({ matches: false }) },
+		window: { addEventListener() {}, matchMedia: () => ({ matches: false }), innerWidth: 1024 },
 		fetch: async () => ({ ok: false, status: 503, json: async () => ({}) }),
 	};
 	vm.createContext(ctx);
@@ -666,6 +673,43 @@ function leagueWithMatchup() {
 	const card = ctx.renderScoringCard(leagueWithMatchup());
 	const toggle = findAll(card, hasClass('scoring-detail-toggle'))[0];
 	assert.ok(!toggle.cls.split(/\s+/).includes('scoring-detail-live'), 'nobody live means no red flag');
+}
+
+// --- Stat breakdown popover: a starter carrying providers.mjs' `stats`
+// array (see espnStatBreakdown/sleeperStatBreakdown, test-stat-breakdown.mjs)
+// gets a clickable score that opens the Stat Breakdown popover with one row
+// per category, in the order providers.mjs already sorted them (largest
+// contribution first); every other starter in the same drawer, carrying no
+// `stats` at all, keeps a plain-text score exactly as before this feature
+// existed — MFL starters never carry `stats` (see the CLAUDE.md note on why),
+// so this is also what pins that an MFL-only matchup renders unchanged. ---
+{
+	const ctx = makeContext(LOGGED_IN);
+	ctx.liveScoringAttempted = true;
+	const league = leagueWithMatchup();
+	league.scoring.teams[0].players[0].stats = [
+		{ label: 'Passing Yards', raw: 300, points: 12 },
+		{ label: 'Passing Touchdowns', raw: 2, points: 12 },
+	];
+	const card = ctx.renderScoringCard(league);
+	const toggle = findAll(card, hasClass('scoring-detail-toggle'))[0];
+	toggle.listeners.click[0]();
+	const body = findAll(card, hasClass('scoring-detail-body'))[0];
+
+	const links = findAll(body, hasClass('scoring-detail-pts-link'));
+	assert.equal(links.length, 1, 'only the one starter carrying a stats array gets a clickable score');
+	assert.equal(fullText(links[0]), '18.40', 'the button still shows the same formatted score plain text would');
+
+	links[0].listeners.click[0]({ stopPropagation() {} });
+	const popover = findAll(ctx.document.body, hasClass('scoringDetail-popover'))[0];
+	assert.ok(popover, 'clicking the score opens the Stat Breakdown popover');
+	assert.match(fullText(findAll(popover, hasClass('popover-title'))[0]), /Joe Burrow — Stat Breakdown/);
+	const rows = findAll(popover, hasClass('popover-row'));
+	assert.equal(rows.length, 2);
+	assert.equal(fullText(rows[0].children[0]), '300 Passing Yards');
+	assert.equal(fullText(rows[0].children[1]), '12.0');
+	assert.equal(fullText(rows[1].children[0]), '2 Passing Touchdowns');
+	assert.equal(fullText(rows[1].children[1]), '12.0');
 }
 
 console.log('test-scoring-details.mjs OK');

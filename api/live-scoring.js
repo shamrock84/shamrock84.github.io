@@ -17,6 +17,7 @@ import {
   loadPlayerMap,
   fetchEspnScoring,
   fetchSleeperScoring,
+  fetchSleeperWeekStats,
   fetchNflGames,
   gameClocksFromGames,
   loadSleeperPlayerMap,
@@ -351,6 +352,25 @@ export default async function handler(req, res) {
     }
   }
 
+  // Sleeper's public per-player weekly stats — the raw-category source
+  // behind the drawer's stat-breakdown popover (see SLEEPER_STAT_LABELS'
+  // own comment in providers.mjs). League-independent, so fetched once per
+  // poll and shared across every Sleeper league below, same pattern as
+  // nflGames above; skipped entirely when no Sleeper league is configured.
+  // A failure here costs the popover its Sleeper rows for this poll, never
+  // the scores themselves — same degrade-not-fail posture as projections.
+  let sleeperWeeklyStats = null;
+  const anySleeperLeague = leagues.some((l) => hasLiveScoring(l) && l.provider === 'sleeper');
+  if (anySleeperLeague) {
+    try {
+      const week = await getCurrentNflWeek();
+      const { season } = nflSeasonPhase();
+      if (week) sleeperWeeklyStats = await fetchSleeperWeekStats(season, week);
+    } catch {
+      // degrade silently — see comment above.
+    }
+  }
+
   const results = await Promise.allSettled(
     leagues
       .filter(hasLiveScoring)
@@ -363,7 +383,7 @@ export default async function handler(req, res) {
         if (league.provider === 'sleeper') {
           const players = await getSleeperPlayerMap();
           const projectPlayer = makeProjectPlayer(projections, 'sleeper', league.scoring);
-          const scoring = await fetchSleeperScoring(league, nflClocks, players, projectPlayer);
+          const scoring = await fetchSleeperScoring(league, nflClocks, players, projectPlayer, sleeperWeeklyStats);
           return { id: league.id, name: league.name, scoring, scoringError: null };
         }
         if (mflLoginError) {

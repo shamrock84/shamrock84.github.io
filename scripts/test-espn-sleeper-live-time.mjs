@@ -239,17 +239,17 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
   assert.deepEqual(
     home.players,
     [
-      { name: 'Seattle Starter', secondsRemaining: 1800, position: 'WR', team: 'SEA', points: 12.5 },
-      { name: 'Patriot Starter', secondsRemaining: 0, position: 'TE', team: 'NE', points: 0 },
+      { name: 'Seattle Starter', secondsRemaining: 1800, position: 'WR', team: 'SEA', points: 12.5, stats: [] },
+      { name: 'Patriot Starter', secondsRemaining: 0, position: 'TE', team: 'NE', points: 0, stats: [] },
     ],
-    'the benched entry is excluded from the per-player breakdown too, by name since ESPN has no id FantasyPros joins against'
+    'the benched entry is excluded from the per-player breakdown too, by name since ESPN has no id FantasyPros joins against; stats is [] since these fixtures carry no player.stats array (see test-stat-breakdown.mjs for that)'
   );
   // A genuine 0 above survives as 0; a MISSING appliedStatTotal below lands
   // null. The drawer shows the first as "0.00" and the second as a dash —
   // "played and scored nothing" and "we don't know yet" are different facts.
   assert.deepEqual(
     away.players,
-    [{ name: 'Chief Starter', secondsRemaining: 3600, position: 'QB', team: 'KC', points: null }]
+    [{ name: 'Chief Starter', secondsRemaining: 3600, position: 'QB', team: 'KC', points: null, stats: [] }]
   );
 }
 
@@ -280,6 +280,12 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
       },
       { roster_id: 2, points: 8, matchup_id: 1, starters: ['101'], players: ['101'] },
     ]);
+    // The bare league object, fetched for scoring_settings (the stat-
+    // breakdown popover's per-category point rates) — no scoring_settings
+    // here at all, pinning that sleeperStatBreakdown degrades to [] rather
+    // than throwing when a league's rules didn't load. See
+    // test-stat-breakdown.mjs for the populated case.
+    if (/\/league\/[^/]+$/.test(url)) return okJson({});
     throw new Error(`unexpected Sleeper URL: ${url}`);
   });
 
@@ -293,12 +299,12 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
   assert.equal(home.winProb + away.winProb, 100);
   assert.deepEqual(
     home.players,
-    [{ name: 'Cowboy Starter', secondsRemaining: 900, position: 'RB', team: 'DAL', points: 10 }],
+    [{ name: 'Cowboy Starter', secondsRemaining: 900, position: 'RB', team: 'DAL', points: 10, stats: [] }],
     'only the roster\'s own `starters` list feeds the per-player breakdown, same as minutesRemaining'
   );
   assert.deepEqual(
     away.players,
-    [{ name: 'Eagle Starter', secondsRemaining: 3600, position: 'QB', team: 'PHI', points: null }],
+    [{ name: 'Eagle Starter', secondsRemaining: 3600, position: 'QB', team: 'PHI', points: null, stats: [] }],
     'no players_points on this roster means null points, not a fabricated 0'
   );
 }
