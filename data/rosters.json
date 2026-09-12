@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-12T15:30:56.863Z",
+  "generatedAt": "2026-09-12T18:22:35.392Z",
   "year": "2026",
   "rankingPools": {
     "ROS|PPR|ALL": {
@@ -6478,7 +6478,7 @@
     }
   },
   "depthCharts": {
-    "generatedAt": "2026-09-12T15:30:48.826Z",
+    "generatedAt": "2026-09-12T18:22:25.989Z",
     "teams": {
       "ARI": {
         "name": "Arizona Cardinals",
@@ -7241,6 +7241,13 @@
             "rank": 5,
             "role": "Z",
             "injuryStatus": null
+          },
+          {
+            "id": "5065495",
+            "name": "Kaden Davis",
+            "rank": 6,
+            "role": "S",
+            "injuryStatus": null
           }
         ],
         "TE": [
@@ -7558,7 +7565,7 @@
             "name": "Malik Davis",
             "rank": 2,
             "role": null,
-            "injuryStatus": "O"
+            "injuryStatus": "IR"
           },
           {
             "id": "4362478",
@@ -9597,17 +9604,24 @@
             "injuryStatus": null
           },
           {
-            "id": "4243389",
-            "name": "Calvin Austin III",
+            "id": "4570296",
+            "name": "Dalen Cambre",
             "rank": 5,
             "role": "Z",
+            "injuryStatus": null
+          },
+          {
+            "id": "4243389",
+            "name": "Calvin Austin III",
+            "rank": 6,
+            "role": "S",
             "injuryStatus": "IR"
           },
           {
             "id": "4424106",
             "name": "Gunner Olszewski",
-            "rank": 6,
-            "role": "S",
+            "rank": 7,
+            "role": "X",
             "injuryStatus": "IR"
           }
         ],
@@ -11462,7 +11476,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-12T15:30:15.101Z",
+      "updatedAt": "2026-09-12T18:21:47.759Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -15656,7 +15670,7 @@
           "originalTeamName": "Swingline Steamrollers"
         }
       ],
-      "updatedAt": "2026-09-12T15:30:16.678Z",
+      "updatedAt": "2026-09-12T18:21:49.541Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -15885,12 +15899,6 @@
         "matchups": [
           {
             "teamIds": [
-              "0001",
-              "0007"
-            ]
-          },
-          {
-            "teamIds": [
               "0009",
               "0010"
             ]
@@ -15905,6 +15913,12 @@
             "teamIds": [
               "0004",
               "0006"
+            ]
+          },
+          {
+            "teamIds": [
+              "0001",
+              "0007"
             ]
           },
           {
@@ -19697,7 +19711,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-12T15:30:18.315Z",
+      "updatedAt": "2026-09-12T18:21:51.155Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -23339,7 +23353,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-12T15:30:20.081Z",
+      "updatedAt": "2026-09-12T18:21:53.085Z",
       "error": null,
       "tags": [
         "BestBall"
@@ -26844,7 +26858,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-12T15:30:21.692Z",
+      "updatedAt": "2026-09-12T18:21:55.008Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -27177,7 +27191,7 @@
         "Brashard Smith"
       ],
       "power": {
-        "computedAt": "2026-09-12T15:30:12.541Z",
+        "computedAt": "2026-09-12T18:21:45.078Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -28942,7 +28956,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-12T15:30:23.597Z",
+      "updatedAt": "2026-09-12T18:21:56.884Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -29293,7 +29307,7 @@
         "Brashard Smith"
       ],
       "power": {
-        "computedAt": "2026-09-12T15:30:12.541Z",
+        "computedAt": "2026-09-12T18:21:45.078Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -30731,7 +30745,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-12T15:30:25.387Z",
+      "updatedAt": "2026-09-12T18:21:58.842Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -31102,7 +31116,7 @@
         "Chig Okonkwo"
       ],
       "power": {
-        "computedAt": "2026-09-12T15:30:12.541Z",
+        "computedAt": "2026-09-12T18:21:45.078Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -32077,7 +32091,7 @@
           "injuryStatus": null
         }
       ],
-      "updatedAt": "2026-09-12T15:30:25.545Z",
+      "updatedAt": "2026-09-12T18:21:58.976Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -33342,7 +33356,7 @@
           "injuryStatus": null
         }
       ],
-      "updatedAt": "2026-09-12T15:30:25.634Z",
+      "updatedAt": "2026-09-12T18:21:59.046Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -34710,7 +34724,7 @@
         }
       ],
       "draftInProgress": false,
-      "updatedAt": "2026-09-12T15:30:25.756Z",
+      "updatedAt": "2026-09-12T18:21:59.191Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -35070,7 +35084,7 @@
         "DJ Giddens"
       ],
       "power": {
-        "computedAt": "2026-09-12T15:30:12.541Z",
+        "computedAt": "2026-09-12T18:21:45.078Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -43326,7 +43340,7 @@
         {
           "franchiseId": "0001",
           "teamName": "Bo No Mercy",
-          "ownerName": "Joe",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -43337,7 +43351,7 @@
         {
           "franchiseId": "0002",
           "teamName": "QB Bills",
-          "ownerName": "Ben",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -43348,7 +43362,7 @@
         {
           "franchiseId": "0003",
           "teamName": "Tecmo Bo-lievers",
-          "ownerName": "Josh",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -43359,7 +43373,7 @@
         {
           "franchiseId": "0004",
           "teamName": "Marcus Allen",
-          "ownerName": "Jeff",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -43370,7 +43384,7 @@
         {
           "franchiseId": "0005",
           "teamName": "House of Bo",
-          "ownerName": "Josh",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -43381,7 +43395,7 @@
         {
           "franchiseId": "0006",
           "teamName": "Stop Bo If You Can",
-          "ownerName": "Dave",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -43392,7 +43406,7 @@
         {
           "franchiseId": "0007",
           "teamName": "Illegal Use of Bo Jackson",
-          "ownerName": "Alex",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -43403,7 +43417,7 @@
         {
           "franchiseId": "0008",
           "teamName": "My Bo(s)Jangle",
-          "ownerName": "Eugene",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -43414,7 +43428,7 @@
         {
           "franchiseId": "0009",
           "teamName": "The Bo Show",
-          "ownerName": "Paul",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -43425,7 +43439,7 @@
         {
           "franchiseId": "0010",
           "teamName": "Tim Brown was on the team too",
-          "ownerName": "Mike",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46001,7 +46015,7 @@
         {
           "franchiseId": "0001",
           "teamName": "Overdue Fines",
-          "ownerName": "Joe",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46012,7 +46026,7 @@
         {
           "franchiseId": "0002",
           "teamName": "Judge a Book by Its Roster",
-          "ownerName": "Ben",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46023,7 +46037,7 @@
         {
           "franchiseId": "0003",
           "teamName": "The Plot Thickens",
-          "ownerName": "Josh",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46034,7 +46048,7 @@
         {
           "franchiseId": "0004",
           "teamName": "Audiobooks are NOT reading",
-          "ownerName": "Jeff",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46045,7 +46059,7 @@
         {
           "franchiseId": "0005",
           "teamName": "Spine Crackers",
-          "ownerName": "Josh",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46056,7 +46070,7 @@
         {
           "franchiseId": "0006",
           "teamName": "The Book Club Bench",
-          "ownerName": "Dave",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46067,7 +46081,7 @@
         {
           "franchiseId": "0007",
           "teamName": "Bookmarked for Later",
-          "ownerName": "Mike",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46078,7 +46092,7 @@
         {
           "franchiseId": "0008",
           "teamName": "Scratch-n-Sniff",
-          "ownerName": "Eugene",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46089,7 +46103,7 @@
         {
           "franchiseId": "0009",
           "teamName": "The Footnotes",
-          "ownerName": "Alex",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46100,7 +46114,7 @@
         {
           "franchiseId": "0010",
           "teamName": "Prologue Problems",
-          "ownerName": "Paul",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46111,7 +46125,7 @@
         {
           "franchiseId": "0011",
           "teamName": "Between Chapters",
-          "ownerName": "Lucas",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
