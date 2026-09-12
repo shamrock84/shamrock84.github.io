@@ -97,6 +97,21 @@
 //     said ARI, same as MFL); that alias is unused but harmless.
 // ===================================================================
 //
+// ===================================================================
+// RUN 2 — added to answer a follow-up question: does the live-scoring
+// response carry enough to show a player's STAT breakdown ("7.4 points
+// for 74 Receiving Yards"), not just his total? MFL's per-player entry
+// carries an `updatedStats` key (see RUN 1) that read as an empty string
+// on every starter then, because no game was underway. This run targets
+// a week whose games have actually finished so at least some players
+// carry real content there, and additionally dumps TYPE=rules so any
+// event code updatedStats uses can be decoded against the league's own
+// point values — the same rules endpoint fetchMflReceptionPoints already
+// reads for the "CC" event.
+//
+// Fill in results here after running.
+// ===================================================================
+//
 // Read-only. Run from the Actions tab (probe-live-scoring-players.yml).
 import {
   mflLogin,
@@ -105,6 +120,9 @@ import {
   espnGet,
   loadSleeperPlayerMap,
 } from './lib/providers.mjs';
+
+const mflText = (v) => (v && typeof v === 'object' ? v.$t : v);
+const asArray = (v) => (Array.isArray(v) ? v : v == null ? [] : [v]);
 
 // Sleeper needs no auth at all, so this probe hits it with plain fetch the
 // same way probe-espn-sleeper-live-time.mjs does, rather than widening
@@ -160,6 +178,39 @@ if (MFL_LEAGUE_ID) {
       const sum = starters.reduce((acc, p) => acc + Number(p.score ?? 0), 0);
       console.log(`\nfranchise.score = ${f.score}; sum of starters' own .score = ${sum.toFixed(2)}`);
     }
+
+    // RUN 2: updatedStats read as '' on every starter in RUN 1 because no
+    // game had started yet. Scan EVERY franchise in EVERY matchup this time
+    // for a player who has actually scored, and print that entry's
+    // updatedStats verbatim rather than the possibly-still-empty first
+    // franchise's.
+    console.log(`\n--- RUN 2: hunting across all matchups for a scored player's updatedStats ---`);
+    const allPlayers = [];
+    for (const m of matchupList) {
+      const fs = Array.isArray(m.franchise) ? m.franchise : m.franchise ? [m.franchise] : [];
+      for (const fr of fs) {
+        const raw2 = fr.players?.player;
+        const list2 = Array.isArray(raw2) ? raw2 : raw2 ? [raw2] : [];
+        for (const p of list2) allPlayers.push({ franchiseId: fr.id, ...p });
+      }
+    }
+    const scored = allPlayers.filter((p) => Number(p.score) > 0);
+    console.log(`players with score > 0 across the whole league: ${scored.length} of ${allPlayers.length}`);
+    console.log(`first 6 scored players, full entry, so updatedStats' real shape is visible:`);
+    console.log(JSON.stringify(scored.slice(0, 6), null, 2));
+
+    // TYPE=rules — the decoder ring for whatever event codes updatedStats
+    // turns out to use, the same endpoint fetchMflReceptionPoints already
+    // reads for the "CC" (reception) event.
+    console.log(`\n--- TYPE=rules for league ${MFL_LEAGUE_ID}, season ${year} ---`);
+    const rulesData = await mflGet(`/export?TYPE=rules&L=${MFL_LEAGUE_ID}&JSON=1`, cookie, year);
+    for (const group of asArray(rulesData?.rules?.positionRules)) {
+      const positions = mflText(group?.positions);
+      console.log(`positions: ${positions}`);
+      for (const rule of asArray(group?.rule)) {
+        console.log(`  event=${mflText(rule?.event)}  points=${mflText(rule?.points)}  range=${JSON.stringify(rule?.range) || '(none)'}`);
+      }
+    }
   } catch (err) {
     console.log(`  MFL probe failed: ${err.message}`);
   }
@@ -205,6 +256,28 @@ if (ESPN_LEAGUE_ID) {
         .reduce((acc, e) => acc + Number(e.playerPoolEntry?.appliedStatTotal ?? 0), 0)
         .toFixed(2)
     }`);
+
+    // RUN 2: does this response carry a per-CATEGORY breakdown (raw stat id
+    // -> value, and points per stat id), or only the single appliedStatTotal
+    // number? Search every side's entries — not just the first — for a
+    // player who has actually scored, and dump that stat entry's full shape.
+    // fetchEspnLeagueRoster already reads player.stats[] filtered to
+    // statSourceId 0 / statSplitTypeId 0 (season-to-date) for `appliedTotal`
+    // only; this looks for whether the SAME array (or a live-scoped sibling)
+    // carries the individual `stats` (raw) and `appliedStats` (points per
+    // stat id) maps this drawer would need.
+    console.log(`\n--- RUN 2: hunting for a scored player's per-category stats ---`);
+    const allSides = (data.schedule || []).filter((m) => m.matchupPeriodId === currentPeriod)
+      .flatMap((m) => [m.home, m.away].filter(Boolean));
+    const allEntries = allSides.flatMap((s) => s?.rosterForCurrentScoringPeriod?.entries || []);
+    const scoredEntries = allEntries.filter((e) => Number(e.playerPoolEntry?.appliedStatTotal) > 0);
+    console.log(`entries with appliedStatTotal > 0: ${scoredEntries.length} of ${allEntries.length}`);
+    console.log(`first 3, with the player's FULL stats[] array (not just the season-total filter fetchEspnLeagueRoster applies):`);
+    console.log(JSON.stringify(scoredEntries.slice(0, 3).map((e) => ({
+      name: e.playerPoolEntry?.player?.fullName,
+      appliedStatTotal: e.playerPoolEntry?.appliedStatTotal,
+      statsArray: e.playerPoolEntry?.player?.stats,
+    })), null, 2));
   } catch (err) {
     console.log(`  ESPN probe failed: ${err.message}`);
   }
@@ -239,6 +312,36 @@ if (SLEEPER_LEAGUE_ID) {
       console.log(`\nm.points = ${m.points}; sum of starters' players_points = ${
         (m.starters || []).reduce((acc, id) => acc + Number(m.players_points?.[String(id)] ?? 0), 0).toFixed(2)
       }`);
+
+      // RUN 2: players_points/starters_points give only the FINAL number per
+      // player, same as MFL's franchise-level score. Sleeper separately
+      // publishes a public per-player raw-stat-category endpoint
+      // (undocumented; community-referenced as /stats/nfl/<season_type>/
+      // <season>/<week>) — this checks whether it's real, and whether it
+      // carries the receiving-yards/receptions-shaped categories the drawer
+      // would need, for the same players just listed above.
+      console.log(`\n--- RUN 2: probing Sleeper's public per-player weekly stats endpoint ---`);
+      try {
+        const statsRes = await fetch(`${SLEEPER_BASE}/stats/nfl/regular/${leagueData?.season}/${WEEK}`);
+        console.log(`GET /stats/nfl/regular/${leagueData?.season}/${WEEK} -> ${statsRes.status}`);
+        if (statsRes.ok) {
+          const statsData = await statsRes.json();
+          const starterId = (m.starters || []).find((id) => Number(m.players_points?.[String(id)]) > 0);
+          console.log(`response shape: ${Array.isArray(statsData) ? 'array' : typeof statsData}, keyed by player id: ${statsData && typeof statsData === 'object' && !Array.isArray(statsData) ? 'yes' : 'no'}`);
+          if (starterId && statsData?.[String(starterId)]) {
+            console.log(`stat categories for scored starter ${starterId}:`);
+            console.log(JSON.stringify(statsData[String(starterId)], null, 2));
+          } else {
+            console.log(`no scored starter found, or that id isn't a key in the response. Sample of 1 entry:`);
+            const sampleKey = Object.keys(statsData || {})[0];
+            console.log(sampleKey ? JSON.stringify({ [sampleKey]: statsData[sampleKey] }, null, 2) : '(empty response)');
+          }
+        } else {
+          console.log(`  non-OK status, body: ${(await statsRes.text()).slice(0, 300)}`);
+        }
+      } catch (err) {
+        console.log(`  Sleeper stats-endpoint probe failed: ${err.message}`);
+      }
     }
   } catch (err) {
     console.log(`  Sleeper probe failed: ${err.message}`);
