@@ -467,6 +467,30 @@ if (MFL_LEAGUE_ID) {
 // (rather than the community-documented guesses fetchMflReceptionPoints'
 // own "CC" comment already flagged as unconfirmed for anything but
 // receptions).
+//
+// RESULTS — 2026-09-12, week 1, league 26696, real data:
+//   playerScores&RULES=1  Entries carry ONLY {id, isAvailable, score,
+//     week} — 45 of 62 scored, e.g. {id:"16185", score:"26.2"}. NO
+//     per-rule breakdown of any kind, just the one recalculated total —
+//     the same shape as weeklyResults' score, from a different call.
+//     This closes off the one remaining hope for an MFL-side breakdown:
+//     liveScoring (updatedStats), weeklyResults, and playerScores&RULES=1
+//     have now ALL been checked, and none carries anything between "the
+//     final score" and the raw stats item 7 forbids outright. There is
+//     no fourth call left to try in the Request Reference that plausibly
+//     carries this.
+//   allRules  Real and rich — confirmed abbreviation/shortDescription/
+//     detailedDescription triples for every rule, e.g. PY="Passing
+//     Yards", #P="Number of Passing TDs", IN="Pass Interceptions
+//     Thrown", TSK="QB Sacked". This is the authoritative decoder for
+//     TYPE=rules' event codes (upgrading fetchMflReceptionPoints' own
+//     "CC is the reception event" comment from behavior-inferred to
+//     documented) — useful for describing a league's SCORING RULES in
+//     the abstract, but it has nothing to say about what any player did
+//     in any given week, so it cannot feed a per-player breakdown either.
+// CONCLUSION: MFL cannot support the Scoring tab's stat-breakdown
+// popover through any documented, triable endpoint. See mfl/README.md
+// for the full writeup (the actual PDFs live there too).
 if (MFL_LEAGUE_ID) {
   console.log(`\n\n=== RUN 4: MFL TYPE=playerScores&RULES=1, league ${MFL_LEAGUE_ID} week ${WEEK} ===\n`);
   try {
