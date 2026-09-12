@@ -612,3 +612,27 @@ try {
 } catch (err) {
   console.log(`  RUN 6 probe failed: ${err.message}`);
 }
+
+// RUN 7 — RUN 4's allRules dump was truncated (this project's own
+// .slice(0, 6000)) before reaching the rushing/receiving codes needed to
+// label an MFL-side stat breakdown built from ESPN's public boxscore (see
+// RUN 5/6). Filters the same allRules response down to exactly the codes
+// this feature cares about, rather than guessing their wording by analogy
+// to the confirmed passing ones (#P/PY/IN).
+if (MFL_LEAGUE_ID) {
+  console.log(`\n\n=== RUN 7: allRules, filtered to RY/#R/CY/#C/CC ===\n`);
+  try {
+    const cookie = await mflLogin(process.env.MFL_USERNAME, process.env.MFL_PASSWORD);
+    const year = seasonOf({ id: MFL_LEAGUE_ID });
+    const data = await mflGet(`/export?TYPE=allRules&JSON=1`, cookie, year);
+    const rules = asArray(data?.allRules?.rule);
+    const wanted = new Set(['RY', '#R', 'CY', '#C', 'CC', 'R2', 'C2']);
+    for (const r of rules) {
+      const abbr = mflText(r.abbreviation);
+      if (!wanted.has(abbr)) continue;
+      console.log(`${abbr}: short="${mflText(r.shortDescription)}" detailed="${mflText(r.detailedDescription)}"`);
+    }
+  } catch (err) {
+    console.log(`  RUN 7 probe failed: ${err.message}`);
+  }
+}
