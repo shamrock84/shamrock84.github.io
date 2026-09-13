@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-13T13:19:21.603Z",
+  "generatedAt": "2026-09-13T18:47:40.948Z",
   "year": "2026",
   "rankingPools": {
     "ROS|PPR|ALL": {
@@ -6471,7 +6471,7 @@
     }
   },
   "depthCharts": {
-    "generatedAt": "2026-09-13T13:18:59.906Z",
+    "generatedAt": "2026-09-13T18:47:30.369Z",
     "teams": {
       "ARI": {
         "name": "Arizona Cardinals",
@@ -6628,15 +6628,15 @@
         "name": "Atlanta Falcons",
         "QB": [
           {
-            "id": "4241479",
-            "name": "Tua Tagovailoa",
+            "id": "4360423",
+            "name": "Michael Penix Jr.",
             "rank": 1,
             "role": null,
             "injuryStatus": "O"
           },
           {
-            "id": "4360423",
-            "name": "Michael Penix Jr.",
+            "id": "4241479",
+            "name": "Tua Tagovailoa",
             "rank": 2,
             "role": null,
             "injuryStatus": "O"
@@ -6776,7 +6776,7 @@
             "name": "Joe Fagnano",
             "rank": 3,
             "role": null,
-            "injuryStatus": null
+            "injuryStatus": "O"
           },
           {
             "id": "4036419",
@@ -6843,25 +6843,25 @@
             "name": "Devontez Walker",
             "rank": 4,
             "role": "X",
-            "injuryStatus": "Q"
+            "injuryStatus": "O"
           },
           {
-            "id": "5088338",
-            "name": "Elijah Sarratt",
+            "id": "2576581",
+            "name": "Chris Moore",
             "rank": 5,
             "role": "Z",
             "injuryStatus": null
           },
           {
-            "id": "4690143",
-            "name": "LaJohntay Wester",
+            "id": "5088338",
+            "name": "Elijah Sarratt",
             "rank": 6,
             "role": "S",
-            "injuryStatus": null
+            "injuryStatus": "O"
           },
           {
-            "id": "2576581",
-            "name": "Chris Moore",
+            "id": "4690143",
+            "name": "LaJohntay Wester",
             "rank": 7,
             "role": "X",
             "injuryStatus": null
@@ -6936,7 +6936,7 @@
             "name": "Ty Johnson",
             "rank": 3,
             "role": null,
-            "injuryStatus": "Q"
+            "injuryStatus": "O"
           },
           {
             "id": "4429805",
@@ -6980,7 +6980,7 @@
             "name": "Skyler Bell",
             "rank": 5,
             "role": "Z",
-            "injuryStatus": null
+            "injuryStatus": "O"
           },
           {
             "id": "4037235",
@@ -7050,7 +7050,7 @@
             "name": "Haynes King",
             "rank": 3,
             "role": null,
-            "injuryStatus": null
+            "injuryStatus": "O"
           }
         ],
         "RB": [
@@ -7106,25 +7106,25 @@
             "injuryStatus": null
           },
           {
-            "id": "4567096",
-            "name": "John Metchie III",
+            "id": "4708486",
+            "name": "Jimmy Horn Jr.",
             "rank": 4,
             "role": "X",
             "injuryStatus": null
           },
           {
-            "id": "4708486",
-            "name": "Jimmy Horn Jr.",
+            "id": "4360763",
+            "name": "Brycen Tremayne",
             "rank": 5,
             "role": "Z",
             "injuryStatus": null
           },
           {
-            "id": "4360763",
-            "name": "Brycen Tremayne",
+            "id": "4567096",
+            "name": "John Metchie III",
             "rank": 6,
             "role": "S",
-            "injuryStatus": null
+            "injuryStatus": "O"
           },
           {
             "id": "5091739",
@@ -7157,18 +7157,18 @@
             "injuryStatus": null
           },
           {
-            "id": "4431588",
-            "name": "Ja'Tavion Sanders",
+            "id": "4034948",
+            "name": "Feleipe Franks",
             "rank": 4,
             "role": null,
             "injuryStatus": null
           },
           {
-            "id": "4034948",
-            "name": "Feleipe Franks",
+            "id": "4431588",
+            "name": "Ja'Tavion Sanders",
             "rank": 5,
             "role": null,
-            "injuryStatus": null
+            "injuryStatus": "O"
           }
         ]
       },
@@ -7187,7 +7187,7 @@
             "name": "Tyson Bagent",
             "rank": 2,
             "role": null,
-            "injuryStatus": "Q"
+            "injuryStatus": "O"
           },
           {
             "id": "15168",
@@ -7201,7 +7201,7 @@
             "name": "Miller Moss",
             "rank": 4,
             "role": null,
-            "injuryStatus": null
+            "injuryStatus": "O"
           }
         ],
         "RB": [
@@ -7240,7 +7240,7 @@
             "name": "Rome Odunze",
             "rank": 1,
             "role": "X",
-            "injuryStatus": "Q"
+            "injuryStatus": null
           },
           {
             "id": "4685278",
@@ -7398,7 +7398,7 @@
             "name": "Ke'Shawn Williams",
             "rank": 6,
             "role": "S",
-            "injuryStatus": null
+            "injuryStatus": "O"
           }
         ],
         "TE": [
@@ -7428,7 +7428,7 @@
             "name": "Jack Endries",
             "rank": 4,
             "role": null,
-            "injuryStatus": null
+            "injuryStatus": "O"
           },
           {
             "id": "3050481",
@@ -7461,7 +7461,7 @@
             "name": "Taylen Green",
             "rank": 3,
             "role": null,
-            "injuryStatus": null
+            "injuryStatus": "O"
           },
           {
             "id": "4427238",
@@ -7484,7 +7484,7 @@
             "name": "Dylan Sampson",
             "rank": 2,
             "role": null,
-            "injuryStatus": null
+            "injuryStatus": "O"
           },
           {
             "id": "4601080",
@@ -8236,7 +8236,7 @@
             "name": "Brevin Jordan",
             "rank": 5,
             "role": null,
-            "injuryStatus": null
+            "injuryStatus": "O"
           }
         ]
       },
@@ -8262,7 +8262,7 @@
             "name": "Riley Leonard",
             "rank": 3,
             "role": null,
-            "injuryStatus": null
+            "injuryStatus": "O"
           }
         ],
         "RB": [
@@ -8285,7 +8285,7 @@
             "name": "DJ Giddens",
             "rank": 3,
             "role": null,
-            "injuryStatus": null
+            "injuryStatus": "O"
           }
         ],
         "WR": [
@@ -8388,18 +8388,18 @@
             "injuryStatus": null
           },
           {
-            "id": "4889929",
-            "name": "Quinn Ewers",
+            "id": "3059989",
+            "name": "Nick Mullens",
             "rank": 2,
             "role": null,
             "injuryStatus": null
           },
           {
-            "id": "3059989",
-            "name": "Nick Mullens",
+            "id": "4889929",
+            "name": "Quinn Ewers",
             "rank": 3,
             "role": null,
-            "injuryStatus": null
+            "injuryStatus": "O"
           }
         ],
         "RB": [
@@ -8422,7 +8422,7 @@
             "name": "LeQuint Allen Jr.",
             "rank": 3,
             "role": null,
-            "injuryStatus": "Q"
+            "injuryStatus": null
           },
           {
             "id": "2576336",
@@ -8438,7 +8438,7 @@
             "name": "Brian Thomas Jr.",
             "rank": 1,
             "role": "X",
-            "injuryStatus": null
+            "injuryStatus": "Q"
           },
           {
             "id": "4432620",
@@ -8503,7 +8503,7 @@
             "name": "Tanner Koziol",
             "rank": 4,
             "role": null,
-            "injuryStatus": null
+            "injuryStatus": "O"
           }
         ]
       },
@@ -9488,7 +9488,7 @@
             "name": "Zach Wilson",
             "rank": 3,
             "role": null,
-            "injuryStatus": null
+            "injuryStatus": "O"
           }
         ],
         "RB": [
@@ -9504,7 +9504,7 @@
             "name": "Alvin Kamara",
             "rank": 2,
             "role": null,
-            "injuryStatus": "Q"
+            "injuryStatus": "O"
           },
           {
             "id": "4599739",
@@ -9836,7 +9836,7 @@
             "name": "Omar Cooper Jr.",
             "rank": 3,
             "role": "S",
-            "injuryStatus": null
+            "injuryStatus": "Q"
           },
           {
             "id": "4569371",
@@ -10064,14 +10064,14 @@
             "name": "Will Howard",
             "rank": 3,
             "role": null,
-            "injuryStatus": null
+            "injuryStatus": "O"
           },
           {
             "id": "4714771",
             "name": "Drew Allar",
             "rank": 4,
             "role": null,
-            "injuryStatus": null
+            "injuryStatus": "O"
           }
         ],
         "RB": [
@@ -10150,15 +10150,15 @@
         ],
         "TE": [
           {
-            "id": "4361411",
-            "name": "Pat Freiermuth",
+            "id": "4430802",
+            "name": "Darnell Washington",
             "rank": 1,
             "role": null,
             "injuryStatus": null
           },
           {
-            "id": "4430802",
-            "name": "Darnell Washington",
+            "id": "4361411",
+            "name": "Pat Freiermuth",
             "rank": 2,
             "role": null,
             "injuryStatus": null
@@ -10247,7 +10247,7 @@
             "name": "De'Zhaun Stribling",
             "rank": 3,
             "role": "S",
-            "injuryStatus": "Q"
+            "injuryStatus": "D"
           },
           {
             "id": "3043116",
@@ -10491,7 +10491,7 @@
             "name": "Sean Tucker",
             "rank": 3,
             "role": null,
-            "injuryStatus": "D"
+            "injuryStatus": "O"
           },
           {
             "id": "4568024",
@@ -10521,7 +10521,7 @@
             "name": "Jalen McMillan",
             "rank": 3,
             "role": "S",
-            "injuryStatus": "D"
+            "injuryStatus": "O"
           },
           {
             "id": "5220680",
@@ -10617,18 +10617,18 @@
             "injuryStatus": null
           },
           {
-            "id": "4685555",
-            "name": "Nicholas Singleton",
+            "id": "4367567",
+            "name": "Julius Chestnut",
             "rank": 3,
             "role": null,
             "injuryStatus": null
           },
           {
-            "id": "4367567",
-            "name": "Julius Chestnut",
+            "id": "4685555",
+            "name": "Nicholas Singleton",
             "rank": 4,
             "role": null,
-            "injuryStatus": null
+            "injuryStatus": "O"
           }
         ],
         "WR": [
@@ -10919,6 +10919,12 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/malik-willis.php"
+          },
+          "sleeper": {
+            "rank": 5,
+            "posRank": "QB3",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/malik-willis.php"
           }
         },
         {
@@ -10963,6 +10969,12 @@
             "posRank": "RB65",
             "tier": null,
             "delta": null,
+            "url": "https://www.fantasypros.com/nfl/players/isiah-pacheco.php"
+          },
+          "sleeper": {
+            "rank": 28,
+            "posRank": "RB16",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/isiah-pacheco.php"
           }
         },
@@ -11090,6 +11102,12 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/chris-bell.php"
+          },
+          "sleeper": {
+            "rank": 53,
+            "posRank": "WR14",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/chris-bell.php"
           }
         },
         {
@@ -11174,6 +11192,12 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/dezhaun-stribling.php"
+          },
+          "sleeper": {
+            "rank": 7,
+            "posRank": "WR2",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/dezhaun-stribling.php"
           }
         },
         {
@@ -11182,7 +11206,7 @@
           "position": "WR",
           "team": "IND",
           "bye": "13",
-          "status": "INJURED_RESERVE",
+          "status": "ROSTER",
           "salary": null,
           "contractYear": null,
           "injuryStatus": null,
@@ -11282,27 +11306,6 @@
           }
         },
         {
-          "id": "16080",
-          "name": "Rashid Shaheed",
-          "position": "WR",
-          "team": "SEA",
-          "bye": "11",
-          "status": "ROSTER",
-          "salary": null,
-          "contractYear": null,
-          "injuryStatus": null,
-          "injuryDetail": null,
-          "pts": 1.4,
-          "priorYearPts": 143.6,
-          "ecr": {
-            "rank": 123,
-            "posRank": "WR58",
-            "tier": null,
-            "delta": null,
-            "url": "https://www.fantasypros.com/nfl/players/rashid-shaheed.php"
-          }
-        },
-        {
           "id": "17520",
           "name": "Ted Hurst",
           "position": "WR",
@@ -11320,6 +11323,12 @@
             "posRank": "WR77",
             "tier": null,
             "delta": 15,
+            "url": "https://www.fantasypros.com/nfl/players/ted-hurst.php"
+          },
+          "sleeper": {
+            "rank": 59,
+            "posRank": "WR18",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/ted-hurst.php"
           }
         },
@@ -11341,6 +11350,12 @@
             "posRank": "TE18",
             "tier": null,
             "delta": null,
+            "url": "https://www.fantasypros.com/nfl/players/brenton-strange.php"
+          },
+          "sleeper": {
+            "rank": 48,
+            "posRank": "TE7",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/brenton-strange.php"
           }
         },
@@ -11447,6 +11462,12 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/baltimore-defense.php"
+          },
+          "sleeper": {
+            "rank": 42,
+            "posRank": "DST2",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/baltimore-defense.php"
           }
         },
         {
@@ -11547,7 +11568,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-13T13:18:09.064Z",
+      "updatedAt": "2026-09-13T18:46:42.895Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -11686,73 +11707,73 @@
             "franchiseId": "0002",
             "teamName": "CC's Fall Guys",
             "ownerName": null,
-            "score": "41.70",
-            "minutesRemaining": 420,
+            "score": "114.50",
+            "minutesRemaining": 232,
             "isMe": false,
-            "winProb": 75
-          },
-          {
-            "franchiseId": "0010",
-            "teamName": "BarstoolSaints",
-            "ownerName": null,
-            "score": "13.80",
-            "minutesRemaining": 480,
-            "isMe": false,
-            "winProb": 53
-          },
-          {
-            "franchiseId": "0001",
-            "teamName": "Rumble Fish",
-            "ownerName": null,
-            "score": "12.40",
-            "minutesRemaining": 480,
-            "isMe": true,
-            "winProb": 69
-          },
-          {
-            "franchiseId": "0009",
-            "teamName": "Scooby Snacks",
-            "ownerName": null,
-            "score": "10.90",
-            "minutesRemaining": 480,
-            "isMe": false,
-            "winProb": 47
-          },
-          {
-            "franchiseId": "0006",
-            "teamName": "Dirty Birds",
-            "ownerName": null,
-            "score": "7.80",
-            "minutesRemaining": 480,
-            "isMe": false,
-            "winProb": 25
+            "winProb": 98
           },
           {
             "franchiseId": "0008",
             "teamName": "Thundering Warpigs",
             "ownerName": null,
-            "score": "6.60",
-            "minutesRemaining": 420,
+            "score": "76.70",
+            "minutesRemaining": 296,
             "isMe": false,
-            "winProb": 31
-          },
-          {
-            "franchiseId": "0005",
-            "teamName": "Barbarians",
-            "ownerName": null,
-            "score": "0.00",
-            "minutesRemaining": 540,
-            "isMe": false,
-            "winProb": 50
+            "winProb": 80
           },
           {
             "franchiseId": "0007",
             "teamName": "Big Screamin’ Honkers",
             "ownerName": null,
-            "score": "0.00",
-            "minutesRemaining": 540,
+            "score": "73.60",
+            "minutesRemaining": 357,
             "isMe": false,
-            "winProb": 50
+            "winProb": 93
+          },
+          {
+            "franchiseId": "0010",
+            "teamName": "BarstoolSaints",
+            "ownerName": null,
+            "score": "36.00",
+            "minutesRemaining": 323,
+            "isMe": false,
+            "winProb": 57
+          },
+          {
+            "franchiseId": "0001",
+            "teamName": "Rumble Fish",
+            "ownerName": null,
+            "score": "28.10",
+            "minutesRemaining": 418,
+            "isMe": true,
+            "winProb": 20
+          },
+          {
+            "franchiseId": "0009",
+            "teamName": "Scooby Snacks",
+            "ownerName": null,
+            "score": "25.40",
+            "minutesRemaining": 353,
+            "isMe": false,
+            "winProb": 43
+          },
+          {
+            "franchiseId": "0006",
+            "teamName": "Dirty Birds",
+            "ownerName": null,
+            "score": "18.80",
+            "minutesRemaining": 386,
+            "isMe": false,
+            "winProb": 2
+          },
+          {
+            "franchiseId": "0005",
+            "teamName": "Barbarians",
+            "ownerName": null,
+            "score": "12.70",
+            "minutesRemaining": 415,
+            "isMe": false,
+            "winProb": 7
           },
           {
             "franchiseId": "0003",
@@ -11761,16 +11782,16 @@
             "score": "0.00",
             "minutesRemaining": 0,
             "isMe": false,
-            "winProb": 50
+            "winProb": 1
           },
           {
             "franchiseId": "0004",
             "teamName": "Blue Knights",
             "ownerName": null,
             "score": "0.00",
-            "minutesRemaining": 0,
+            "minutesRemaining": 420,
             "isMe": false,
-            "winProb": 50
+            "winProb": 99
           }
         ],
         "matchups": [
@@ -11821,16 +11842,6 @@
       ],
       "lineupError": null,
       "draftInProgress": false,
-      "rankings": {
-        "type": "ROS",
-        "scoring": "PPR",
-        "position": "ALL",
-        "lastUpdated": "9/07",
-        "totalExperts": 3,
-        "matched": 29,
-        "total": 29
-      },
-      "rankingsError": null,
       "available": [
         "Kenny Gainwell",
         "Greg Dulcich",
@@ -11871,6 +11882,17 @@
         "George Holani",
         "Christian Kirk"
       ],
+      "availableAt": "2026-09-13T13:18:06.056Z",
+      "rankings": {
+        "type": "ROS",
+        "scoring": "PPR",
+        "position": "ALL",
+        "lastUpdated": "9/07",
+        "totalExperts": 3,
+        "matched": 28,
+        "total": 28
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-09-13T13:18:06.056Z",
         "scoring": "PPR",
@@ -12605,7 +12627,6 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-09-13T13:18:06.056Z",
       "results": [
         {
           "year": "2006",
@@ -15063,6 +15084,12 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/malik-willis.php"
+          },
+          "sleeper": {
+            "rank": 5,
+            "posRank": "QB3",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/malik-willis.php"
           }
         },
         {
@@ -15149,6 +15176,12 @@
             "posRank": "RB65",
             "tier": null,
             "delta": null,
+            "url": "https://www.fantasypros.com/nfl/players/isiah-pacheco.php"
+          },
+          "sleeper": {
+            "rank": 28,
+            "posRank": "RB16",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/isiah-pacheco.php"
           }
         },
@@ -15258,6 +15291,27 @@
           }
         },
         {
+          "id": "14974",
+          "name": "Darnell Mooney",
+          "position": "WR",
+          "team": "NYG",
+          "bye": "8",
+          "status": "ROSTER",
+          "salary": null,
+          "contractYear": null,
+          "injuryStatus": null,
+          "injuryDetail": null,
+          "pts": 0,
+          "priorYearPts": 82.3,
+          "ecr": {
+            "rank": 224,
+            "posRank": "WR86",
+            "tier": null,
+            "delta": null,
+            "url": "https://www.fantasypros.com/nfl/players/darnell-mooney.php"
+          }
+        },
+        {
           "id": "15282",
           "name": "DeVonta Smith",
           "position": "WR",
@@ -15287,8 +15341,11 @@
           "status": "TAXI_SQUAD",
           "salary": null,
           "contractYear": null,
-          "injuryStatus": null,
-          "injuryDetail": null,
+          "injuryStatus": "O",
+          "injuryDetail": {
+            "part": "Coach's Decision",
+            "until": "Sep 20, 2026"
+          },
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
@@ -15296,6 +15353,12 @@
             "posRank": "WR93",
             "tier": null,
             "delta": null,
+            "url": "https://www.fantasypros.com/nfl/players/elijah-sarratt.php"
+          },
+          "sleeper": {
+            "rank": 81,
+            "posRank": "WR28",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/elijah-sarratt.php"
           }
         },
@@ -15359,27 +15422,6 @@
           }
         },
         {
-          "id": "16193",
-          "name": "Kayshon Boutte",
-          "position": "WR",
-          "team": "HOU",
-          "bye": "8",
-          "status": "ROSTER",
-          "salary": null,
-          "contractYear": null,
-          "injuryStatus": null,
-          "injuryDetail": null,
-          "pts": 0,
-          "priorYearPts": 124.1,
-          "ecr": {
-            "rank": 134,
-            "posRank": "WR61",
-            "tier": null,
-            "delta": null,
-            "url": "https://www.fantasypros.com/nfl/players/kayshon-boutte.php"
-          }
-        },
-        {
           "id": "16615",
           "name": "Malik Nabers",
           "position": "WR",
@@ -15422,6 +15464,12 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/rashid-shaheed.php"
+          },
+          "sleeper": {
+            "rank": 30,
+            "posRank": "WR5",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/rashid-shaheed.php"
           }
         },
         {
@@ -15443,6 +15491,12 @@
             "tier": null,
             "delta": -17,
             "url": "https://www.fantasypros.com/nfl/players/zachariah-branch.php"
+          },
+          "sleeper": {
+            "rank": 79,
+            "posRank": "WR26",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/zachariah-branch.php"
           }
         },
         {
@@ -15463,6 +15517,12 @@
             "posRank": "TE24",
             "tier": null,
             "delta": null,
+            "url": "https://www.fantasypros.com/nfl/players/aj-barner.php"
+          },
+          "sleeper": {
+            "rank": 83,
+            "posRank": "TE12",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/aj-barner.php"
           }
         },
@@ -15593,6 +15653,12 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/baltimore-defense.php"
+          },
+          "sleeper": {
+            "rank": 42,
+            "posRank": "DST2",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/baltimore-defense.php"
           }
         },
         {
@@ -15693,7 +15759,7 @@
           "originalTeamName": "Swingline Steamrollers"
         }
       ],
-      "updatedAt": "2026-09-13T13:18:10.646Z",
+      "updatedAt": "2026-09-13T18:46:44.572Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -15832,100 +15898,94 @@
             "franchiseId": "0005",
             "teamName": "Straight Shooters",
             "ownerName": null,
-            "score": "44.20",
-            "minutesRemaining": 420,
+            "score": "83.30",
+            "minutesRemaining": 324,
             "isMe": false,
-            "winProb": 71
-          },
-          {
-            "franchiseId": "0003",
-            "teamName": "Swingline Steamrollers",
-            "ownerName": null,
-            "score": "26.30",
-            "minutesRemaining": 420,
-            "isMe": false,
-            "winProb": 29
-          },
-          {
-            "franchiseId": "0002",
-            "teamName": "Bill's Blitzkrieg",
-            "ownerName": null,
-            "score": "19.50",
-            "minutesRemaining": 420,
-            "isMe": false,
-            "winProb": 47
-          },
-          {
-            "franchiseId": "0001",
-            "teamName": "PC Load Letter",
-            "ownerName": null,
-            "score": "13.80",
-            "minutesRemaining": 480,
-            "isMe": true,
-            "winProb": 52
-          },
-          {
-            "franchiseId": "0007",
-            "teamName": "Pete's Motivation",
-            "ownerName": null,
-            "score": "12.00",
-            "minutesRemaining": 480,
-            "isMe": false,
-            "winProb": 48
-          },
-          {
-            "franchiseId": "0006",
-            "teamName": "The PMITA Prisoners",
-            "ownerName": null,
-            "score": "10.20",
-            "minutesRemaining": 420,
-            "isMe": false,
-            "winProb": 42
-          },
-          {
-            "franchiseId": "0010",
-            "teamName": "Milton's Maulers",
-            "ownerName": null,
-            "score": "6.00",
-            "minutesRemaining": 480,
-            "isMe": false,
-            "winProb": 50
-          },
-          {
-            "franchiseId": "0009",
-            "teamName": "Smykowski's Wheelchairs",
-            "ownerName": null,
-            "score": "5.60",
-            "minutesRemaining": 480,
-            "isMe": false,
-            "winProb": 50
+            "winProb": 91
           },
           {
             "franchiseId": "0004",
             "teamName": "Case of the Mondays",
             "ownerName": null,
-            "score": "5.60",
-            "minutesRemaining": 480,
+            "score": "69.90",
+            "minutesRemaining": 324,
             "isMe": false,
-            "winProb": 58
+            "winProb": 91
+          },
+          {
+            "franchiseId": "0002",
+            "teamName": "Bill's Blitzkrieg",
+            "ownerName": null,
+            "score": "55.90",
+            "minutesRemaining": 262,
+            "isMe": false,
+            "winProb": 57
+          },
+          {
+            "franchiseId": "0003",
+            "teamName": "Swingline Steamrollers",
+            "ownerName": null,
+            "score": "55.40",
+            "minutesRemaining": 263,
+            "isMe": false,
+            "winProb": 9
+          },
+          {
+            "franchiseId": "0010",
+            "teamName": "Milton's Maulers",
+            "ownerName": null,
+            "score": "46.30",
+            "minutesRemaining": 322,
+            "isMe": false,
+            "winProb": 61
+          },
+          {
+            "franchiseId": "0009",
+            "teamName": "Smykowski's Wheelchairs",
+            "ownerName": null,
+            "score": "44.70",
+            "minutesRemaining": 290,
+            "isMe": false,
+            "winProb": 39
+          },
+          {
+            "franchiseId": "0007",
+            "teamName": "Pete's Motivation",
+            "ownerName": null,
+            "score": "41.30",
+            "minutesRemaining": 318,
+            "isMe": false,
+            "winProb": 37
+          },
+          {
+            "franchiseId": "0001",
+            "teamName": "PC Load Letter",
+            "ownerName": null,
+            "score": "38.70",
+            "minutesRemaining": 386,
+            "isMe": true,
+            "winProb": 63
+          },
+          {
+            "franchiseId": "0006",
+            "teamName": "The PMITA Prisoners",
+            "ownerName": null,
+            "score": "21.80",
+            "minutesRemaining": 358,
+            "isMe": false,
+            "winProb": 9
           },
           {
             "franchiseId": "0008",
             "teamName": "No-Talent @$$ Clowns",
             "ownerName": null,
-            "score": "0.00",
-            "minutesRemaining": 540,
+            "score": "21.50",
+            "minutesRemaining": 418,
             "isMe": false,
-            "winProb": 53
+            "winProb": 43
           }
         ],
         "matchups": [
-          {
-            "teamIds": [
-              "0001",
-              "0007"
-            ]
-          },
           {
             "teamIds": [
               "0009",
@@ -15942,6 +16002,12 @@
             "teamIds": [
               "0004",
               "0006"
+            ]
+          },
+          {
+            "teamIds": [
+              "0001",
+              "0007"
             ]
           },
           {
@@ -15967,16 +16033,6 @@
       ],
       "lineupError": null,
       "draftInProgress": false,
-      "rankings": {
-        "type": "ROS",
-        "scoring": "PPR",
-        "position": "ALL",
-        "lastUpdated": "9/07",
-        "totalExperts": 3,
-        "matched": 28,
-        "total": 29
-      },
-      "rankingsError": null,
       "available": [
         "Kenny Gainwell",
         "Greg Dulcich",
@@ -16017,6 +16073,17 @@
         "George Holani",
         "Christian Kirk"
       ],
+      "availableAt": "2026-09-13T13:18:06.056Z",
+      "rankings": {
+        "type": "ROS",
+        "scoring": "PPR",
+        "position": "ALL",
+        "lastUpdated": "9/07",
+        "totalExperts": 3,
+        "matched": 28,
+        "total": 29
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-09-13T13:18:06.056Z",
         "scoring": "PPR",
@@ -16743,7 +16810,6 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-09-13T13:18:06.056Z",
       "results": [
         {
           "year": "2007",
@@ -19068,6 +19134,12 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/kyler-murray.php"
+          },
+          "sleeper": {
+            "rank": 2,
+            "posRank": "QB1",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/kyler-murray.php"
           }
         },
         {
@@ -19088,6 +19160,12 @@
             "posRank": "QB21",
             "tier": null,
             "delta": null,
+            "url": "https://www.fantasypros.com/nfl/players/tyler-shough.php"
+          },
+          "sleeper": {
+            "rank": 9,
+            "posRank": "QB4",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/tyler-shough.php"
           }
         },
@@ -19131,6 +19209,12 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/jonah-coleman.php"
+          },
+          "sleeper": {
+            "rank": 4,
+            "posRank": "RB2",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/jonah-coleman.php"
           }
         },
         {
@@ -19151,6 +19235,12 @@
             "posRank": "RB47",
             "tier": null,
             "delta": null,
+            "url": "https://www.fantasypros.com/nfl/players/keaton-mitchell.php"
+          },
+          "sleeper": {
+            "rank": 13,
+            "posRank": "RB4",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/keaton-mitchell.php"
           }
         },
@@ -19173,6 +19263,12 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/kimani-vidal.php"
+          },
+          "sleeper": {
+            "rank": 38,
+            "posRank": "RB20",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/kimani-vidal.php"
           }
         },
         {
@@ -19193,6 +19289,12 @@
             "posRank": "RB58",
             "tier": null,
             "delta": null,
+            "url": "https://www.fantasypros.com/nfl/players/ray-davis.php"
+          },
+          "sleeper": {
+            "rank": 64,
+            "posRank": "RB26",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/ray-davis.php"
           }
         },
@@ -19257,6 +19359,12 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/dezhaun-stribling.php"
+          },
+          "sleeper": {
+            "rank": 7,
+            "posRank": "WR2",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/dezhaun-stribling.php"
           }
         },
         {
@@ -19268,8 +19376,11 @@
           "status": "TAXI_SQUAD",
           "salary": null,
           "contractYear": null,
-          "injuryStatus": null,
-          "injuryDetail": null,
+          "injuryStatus": "O",
+          "injuryDetail": {
+            "part": "Coach's Decision",
+            "until": "Sep 20, 2026"
+          },
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
@@ -19277,6 +19388,12 @@
             "posRank": "WR93",
             "tier": null,
             "delta": null,
+            "url": "https://www.fantasypros.com/nfl/players/elijah-sarratt.php"
+          },
+          "sleeper": {
+            "rank": 81,
+            "posRank": "WR28",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/elijah-sarratt.php"
           }
         },
@@ -19320,6 +19437,12 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/jalen-nailor.php"
+          },
+          "sleeper": {
+            "rank": 19,
+            "posRank": "WR3",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/jalen-nailor.php"
           }
         },
         {
@@ -19340,6 +19463,12 @@
             "posRank": "WR89",
             "tier": null,
             "delta": -17,
+            "url": "https://www.fantasypros.com/nfl/players/malik-washington.php"
+          },
+          "sleeper": {
+            "rank": 41,
+            "posRank": "WR10",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/malik-washington.php"
           }
         },
@@ -19383,6 +19512,12 @@
             "tier": null,
             "delta": -16,
             "url": "https://www.fantasypros.com/nfl/players/ryan-flournoy.php"
+          },
+          "sleeper": {
+            "rank": 39,
+            "posRank": "WR8",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/ryan-flournoy.php"
           }
         },
         {
@@ -19404,6 +19539,12 @@
             "tier": null,
             "delta": 6,
             "url": "https://www.fantasypros.com/nfl/players/stefon-diggs.php"
+          },
+          "sleeper": {
+            "rank": 6,
+            "posRank": "WR1",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/stefon-diggs.php"
           }
         },
         {
@@ -19424,6 +19565,12 @@
             "posRank": "WR60",
             "tier": null,
             "delta": 8,
+            "url": "https://www.fantasypros.com/nfl/players/tre-harris.php"
+          },
+          "sleeper": {
+            "rank": 75,
+            "posRank": "WR22",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/tre-harris.php"
           }
         },
@@ -19544,6 +19691,12 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/kansas-city-defense.php"
+          },
+          "sleeper": {
+            "rank": 29,
+            "posRank": "DST1",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/kansas-city-defense.php"
           }
         },
         {
@@ -19564,6 +19717,12 @@
             "posRank": "DST19",
             "tier": null,
             "delta": null,
+            "url": "https://www.fantasypros.com/nfl/players/new-orleans-defense.php"
+          },
+          "sleeper": {
+            "rank": 73,
+            "posRank": "DST6",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/new-orleans-defense.php"
           }
         }
@@ -19644,7 +19803,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-13T13:18:12.569Z",
+      "updatedAt": "2026-09-13T18:46:46.544Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -19802,112 +19961,112 @@
         "week": "1",
         "teams": [
           {
-            "franchiseId": "0001",
-            "teamName": "Fairplay's Dead Grandma",
-            "ownerName": null,
-            "score": "36.02",
-            "minutesRemaining": 420,
-            "isMe": false,
-            "winProb": 76
-          },
-          {
             "franchiseId": "0006",
             "teamName": "Blackjack",
             "ownerName": null,
-            "score": "26.20",
-            "minutesRemaining": 420,
+            "score": "90.16",
+            "minutesRemaining": 261,
             "isMe": false,
-            "winProb": 55
+            "winProb": 57
           },
           {
-            "franchiseId": "0004",
-            "teamName": "Sitting in My Spy Shack",
+            "franchiseId": "0001",
+            "teamName": "Fairplay's Dead Grandma",
             "ownerName": null,
-            "score": "24.40",
-            "minutesRemaining": 360,
+            "score": "63.82",
+            "minutesRemaining": 231,
             "isMe": false,
-            "winProb": 24
-          },
-          {
-            "franchiseId": "0002",
-            "teamName": "Probst Blue Ribbon",
-            "ownerName": null,
-            "score": "21.10",
-            "minutesRemaining": 420,
-            "isMe": false,
-            "winProb": 55
+            "winProb": 70
           },
           {
             "franchiseId": "0009",
             "teamName": "The Tribal Council",
             "ownerName": null,
-            "score": "16.90",
-            "minutesRemaining": 480,
+            "score": "62.38",
+            "minutesRemaining": 288,
             "isMe": false,
-            "winProb": 85
-          },
-          {
-            "franchiseId": "0007",
-            "teamName": "Dragon Slayer",
-            "ownerName": null,
-            "score": "14.50",
-            "minutesRemaining": 480,
-            "isMe": false,
-            "winProb": 60
-          },
-          {
-            "franchiseId": "0010",
-            "teamName": "Blitzkrieg",
-            "ownerName": null,
-            "score": "5.60",
-            "minutesRemaining": 480,
-            "isMe": false,
-            "winProb": 40
-          },
-          {
-            "franchiseId": "0003",
-            "teamName": "Bushwackers",
-            "ownerName": null,
-            "score": "5.60",
-            "minutesRemaining": 480,
-            "isMe": false,
-            "winProb": 45
-          },
-          {
-            "franchiseId": "0005",
-            "teamName": "Outwit, Outplay, Out-draft",
-            "ownerName": null,
-            "score": "3.20",
-            "minutesRemaining": 480,
-            "isMe": false,
-            "winProb": 41
-          },
-          {
-            "franchiseId": "0011",
-            "teamName": "Bald Fat Guys Dominate",
-            "ownerName": null,
-            "score": "3.00",
-            "minutesRemaining": 360,
-            "isMe": false,
-            "winProb": 15
-          },
-          {
-            "franchiseId": "0008",
-            "teamName": "The Merge",
-            "ownerName": null,
-            "score": "0.00",
-            "minutesRemaining": 540,
-            "isMe": true,
-            "winProb": 45
+            "winProb": 79
           },
           {
             "franchiseId": "0012",
             "teamName": "Boston Redemption",
             "ownerName": null,
-            "score": "0.00",
-            "minutesRemaining": 540,
+            "score": "58.80",
+            "minutesRemaining": 380,
+            "isMe": false,
+            "winProb": 75
+          },
+          {
+            "franchiseId": "0008",
+            "teamName": "The Merge",
+            "ownerName": null,
+            "score": "56.80",
+            "minutesRemaining": 414,
+            "isMe": true,
+            "winProb": 43
+          },
+          {
+            "franchiseId": "0002",
+            "teamName": "Probst Blue Ribbon",
+            "ownerName": null,
+            "score": "52.22",
+            "minutesRemaining": 292,
+            "isMe": false,
+            "winProb": 49
+          },
+          {
+            "franchiseId": "0010",
+            "teamName": "Blitzkrieg",
+            "ownerName": null,
+            "score": "47.76",
+            "minutesRemaining": 291,
             "isMe": false,
             "winProb": 59
+          },
+          {
+            "franchiseId": "0011",
+            "teamName": "Bald Fat Guys Dominate",
+            "ownerName": null,
+            "score": "45.02",
+            "minutesRemaining": 264,
+            "isMe": false,
+            "winProb": 21
+          },
+          {
+            "franchiseId": "0007",
+            "teamName": "Dragon Slayer",
+            "ownerName": null,
+            "score": "41.90",
+            "minutesRemaining": 290,
+            "isMe": false,
+            "winProb": 41
+          },
+          {
+            "franchiseId": "0003",
+            "teamName": "Bushwackers",
+            "ownerName": null,
+            "score": "41.24",
+            "minutesRemaining": 356,
+            "isMe": false,
+            "winProb": 51
+          },
+          {
+            "franchiseId": "0005",
+            "teamName": "Outwit, Outplay, Out-draft",
+            "ownerName": null,
+            "score": "36.34",
+            "minutesRemaining": 384,
+            "isMe": false,
+            "winProb": 25
+          },
+          {
+            "franchiseId": "0004",
+            "teamName": "Sitting in My Spy Shack",
+            "ownerName": null,
+            "score": "31.60",
+            "minutesRemaining": 330,
+            "isMe": false,
+            "winProb": 30
           }
         ],
         "matchups": [
@@ -19964,16 +20123,6 @@
       ],
       "lineupError": null,
       "draftInProgress": false,
-      "rankings": {
-        "type": "ROS",
-        "scoring": "PPR",
-        "position": "ALL",
-        "lastUpdated": "9/07",
-        "totalExperts": 3,
-        "matched": 25,
-        "total": 26
-      },
-      "rankingsError": null,
       "available": [
         "Kenny Gainwell",
         "Greg Dulcich",
@@ -19996,6 +20145,17 @@
         "Jahan Dotson",
         "Christian Kirk"
       ],
+      "availableAt": "2026-09-13T13:18:06.056Z",
+      "rankings": {
+        "type": "ROS",
+        "scoring": "PPR",
+        "position": "ALL",
+        "lastUpdated": "9/07",
+        "totalExperts": 3,
+        "matched": 25,
+        "total": 26
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-09-13T13:18:06.056Z",
         "scoring": "PPR",
@@ -20806,7 +20966,6 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-09-13T13:18:06.056Z",
       "results": [
         {
           "year": "2010",
@@ -22794,8 +22953,11 @@
           "status": "TAXI_SQUAD",
           "salary": "5.38",
           "contractYear": "2",
-          "injuryStatus": null,
-          "injuryDetail": null,
+          "injuryStatus": "O",
+          "injuryDetail": {
+            "part": "Coach's Decision",
+            "until": "Sep 20, 2026"
+          },
           "pts": 0,
           "priorYearPts": 6.6,
           "ecr": {
@@ -22825,6 +22987,12 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/emmett-johnson.php"
+          },
+          "sleeper": {
+            "rank": 14,
+            "posRank": "RB5",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/emmett-johnson.php"
           }
         },
         {
@@ -22845,6 +23013,12 @@
             "posRank": "RB47",
             "tier": null,
             "delta": null,
+            "url": "https://www.fantasypros.com/nfl/players/keaton-mitchell.php"
+          },
+          "sleeper": {
+            "rank": 13,
+            "posRank": "RB4",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/keaton-mitchell.php"
           }
         },
@@ -22996,6 +23170,12 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/chris-bell.php"
+          },
+          "sleeper": {
+            "rank": 53,
+            "posRank": "WR14",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/chris-bell.php"
           }
         },
         {
@@ -23028,8 +23208,11 @@
           "status": "TAXI_SQUAD",
           "salary": "5",
           "contractYear": "3",
-          "injuryStatus": null,
-          "injuryDetail": null,
+          "injuryStatus": "O",
+          "injuryDetail": {
+            "part": "Coach's Decision",
+            "until": "Sep 20, 2026"
+          },
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
@@ -23037,6 +23220,12 @@
             "posRank": "WR93",
             "tier": null,
             "delta": null,
+            "url": "https://www.fantasypros.com/nfl/players/elijah-sarratt.php"
+          },
+          "sleeper": {
+            "rank": 81,
+            "posRank": "WR28",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/elijah-sarratt.php"
           }
         },
@@ -23058,6 +23247,12 @@
             "posRank": "WR97",
             "tier": null,
             "delta": null,
+            "url": "https://www.fantasypros.com/nfl/players/jack-bech.php"
+          },
+          "sleeper": {
+            "rank": 80,
+            "posRank": "WR27",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/jack-bech.php"
           }
         },
@@ -23100,6 +23295,12 @@
             "posRank": "WR59",
             "tier": null,
             "delta": 13,
+            "url": "https://www.fantasypros.com/nfl/players/keenan-allen.php"
+          },
+          "sleeper": {
+            "rank": 58,
+            "posRank": "WR17",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/keenan-allen.php"
           }
         },
@@ -23251,7 +23452,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-13T13:18:14.769Z",
+      "updatedAt": "2026-09-13T18:46:48.540Z",
       "error": null,
       "tags": [
         "BestBall"
@@ -23276,7 +23477,7 @@
         {
           "franchiseId": "0001",
           "teamName": "The FOOKING Hand of the King",
-          "ownerName": null,
+          "ownerName": "Lee",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23287,7 +23488,7 @@
         {
           "franchiseId": "0002",
           "teamName": "Master of Coin",
-          "ownerName": null,
+          "ownerName": "Dave",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23309,7 +23510,7 @@
         {
           "franchiseId": "0004",
           "teamName": "HODOR",
-          "ownerName": null,
+          "ownerName": "Jeff",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23320,7 +23521,7 @@
         {
           "franchiseId": "0005",
           "teamName": "Sir Ilyn's House of Payne",
-          "ownerName": null,
+          "ownerName": "Tyler",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23331,7 +23532,7 @@
         {
           "franchiseId": "0006",
           "teamName": "Super Saucy McNultys",
-          "ownerName": null,
+          "ownerName": "Jake",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23342,7 +23543,7 @@
         {
           "franchiseId": "0007",
           "teamName": "WunWun No WinWin",
-          "ownerName": null,
+          "ownerName": "Jabroni",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23353,7 +23554,7 @@
         {
           "franchiseId": "0008",
           "teamName": "Valyrian Steelers",
-          "ownerName": null,
+          "ownerName": "Andy",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23364,7 +23565,7 @@
         {
           "franchiseId": "0009",
           "teamName": "Three Eyed Ravens",
-          "ownerName": null,
+          "ownerName": "Alex",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23375,7 +23576,7 @@
         {
           "franchiseId": "0010",
           "teamName": "Joegon",
-          "ownerName": null,
+          "ownerName": "Joe",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23386,7 +23587,7 @@
         {
           "franchiseId": "0011",
           "teamName": "Lord of Light",
-          "ownerName": null,
+          "ownerName": "Paul",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23397,7 +23598,7 @@
         {
           "franchiseId": "0012",
           "teamName": "Azor Ahai",
-          "ownerName": null,
+          "ownerName": "Pete",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23411,125 +23612,125 @@
         "week": "1",
         "teams": [
           {
-            "franchiseId": "0004",
-            "teamName": "HODOR",
-            "ownerName": null,
-            "score": "48.30",
-            "minutesRemaining": 300,
-            "isMe": true,
-            "winProb": 76
-          },
-          {
-            "franchiseId": "0011",
-            "teamName": "Lord of Light",
-            "ownerName": null,
-            "score": "32.70",
-            "minutesRemaining": 300,
+            "franchiseId": "0009",
+            "teamName": "Three Eyed Ravens",
+            "ownerName": "Alex",
+            "score": "101.52",
+            "minutesRemaining": 232,
             "isMe": false,
-            "winProb": 49
-          },
-          {
-            "franchiseId": "0001",
-            "teamName": "The FOOKING Hand of the King",
-            "ownerName": null,
-            "score": "22.22",
-            "minutesRemaining": 360,
-            "isMe": false,
-            "winProb": 51
-          },
-          {
-            "franchiseId": "0012",
-            "teamName": "Azor Ahai",
-            "ownerName": null,
-            "score": "22.10",
-            "minutesRemaining": 360,
-            "isMe": false,
-            "winProb": 50
-          },
-          {
-            "franchiseId": "0007",
-            "teamName": "WunWun No WinWin",
-            "ownerName": null,
-            "score": "20.72",
-            "minutesRemaining": 180,
-            "isMe": false,
-            "winProb": 18
+            "winProb": 96
           },
           {
             "franchiseId": "0002",
             "teamName": "Master of Coin",
-            "ownerName": null,
-            "score": "17.10",
-            "minutesRemaining": 360,
+            "ownerName": "Dave",
+            "score": "81.30",
+            "minutesRemaining": 200,
             "isMe": false,
-            "winProb": 66
+            "winProb": 98
           },
           {
-            "franchiseId": "0006",
-            "teamName": "Super Saucy McNultys",
-            "ownerName": null,
-            "score": "15.80",
-            "minutesRemaining": 300,
+            "franchiseId": "0005",
+            "teamName": "Sir Ilyn's House of Payne",
+            "ownerName": "Tyler",
+            "score": "80.74",
+            "minutesRemaining": 234,
             "isMe": false,
-            "winProb": 34
+            "winProb": 99
+          },
+          {
+            "franchiseId": "0011",
+            "teamName": "Lord of Light",
+            "ownerName": "Paul",
+            "score": "76.04",
+            "minutesRemaining": 176,
+            "isMe": false,
+            "winProb": 69
+          },
+          {
+            "franchiseId": "0010",
+            "teamName": "Joegon",
+            "ownerName": "Joe",
+            "score": "75.56",
+            "minutesRemaining": 223,
+            "isMe": false,
+            "winProb": 74
+          },
+          {
+            "franchiseId": "0008",
+            "teamName": "Valyrian Steelers",
+            "ownerName": "Andy",
+            "score": "73.02",
+            "minutesRemaining": 198,
+            "isMe": false,
+            "winProb": 46
+          },
+          {
+            "franchiseId": "0004",
+            "teamName": "HODOR",
+            "ownerName": "Jeff",
+            "score": "70.22",
+            "minutesRemaining": 172,
+            "isMe": true,
+            "winProb": 26
+          },
+          {
+            "franchiseId": "0001",
+            "teamName": "The FOOKING Hand of the King",
+            "ownerName": "Lee",
+            "score": "67.12",
+            "minutesRemaining": 168,
+            "isMe": false,
+            "winProb": 31
+          },
+          {
+            "franchiseId": "0012",
+            "teamName": "Azor Ahai",
+            "ownerName": "Pete",
+            "score": "59.00",
+            "minutesRemaining": 200,
+            "isMe": false,
+            "winProb": 4
           },
           {
             "franchiseId": "0003",
             "teamName": "Greyjoy: The Ironborn",
             "ownerName": null,
-            "score": "15.50",
-            "minutesRemaining": 420,
+            "score": "57.90",
+            "minutesRemaining": 294,
             "isMe": false,
-            "winProb": 62
+            "winProb": 54
           },
           {
-            "franchiseId": "0008",
-            "teamName": "Valyrian Steelers",
-            "ownerName": null,
-            "score": "5.50",
-            "minutesRemaining": 420,
+            "franchiseId": "0006",
+            "teamName": "Super Saucy McNultys",
+            "ownerName": "Jake",
+            "score": "39.26",
+            "minutesRemaining": 142,
             "isMe": false,
-            "winProb": 38
+            "winProb": 2
           },
           {
-            "franchiseId": "0010",
-            "teamName": "Joegon",
-            "ownerName": null,
-            "score": "4.10",
-            "minutesRemaining": 420,
+            "franchiseId": "0007",
+            "teamName": "WunWun No WinWin",
+            "ownerName": "Jabroni",
+            "score": "28.78",
+            "minutesRemaining": 180,
             "isMe": false,
-            "winProb": 24
-          },
-          {
-            "franchiseId": "0005",
-            "teamName": "Sir Ilyn's House of Payne",
-            "ownerName": null,
-            "score": "2.90",
-            "minutesRemaining": 420,
-            "isMe": false,
-            "winProb": 82
-          },
-          {
-            "franchiseId": "0009",
-            "teamName": "Three Eyed Ravens",
-            "ownerName": null,
-            "score": "0.00",
-            "minutesRemaining": 480,
-            "isMe": false,
-            "winProb": 50
+            "winProb": 1
           }
         ],
         "matchups": [
           {
             "teamIds": [
-              "0009",
-              "0012"
+              "0004",
+              "0010"
             ]
           },
           {
             "teamIds": [
-              "0004",
-              "0010"
+              "0009",
+              "0012"
             ]
           },
           {
@@ -23560,16 +23761,6 @@
       },
       "scoringError": null,
       "draftInProgress": false,
-      "rankings": {
-        "type": "ROS",
-        "scoring": "PPR",
-        "position": "ALL",
-        "lastUpdated": "9/07",
-        "totalExperts": 3,
-        "matched": 23,
-        "total": 23
-      },
-      "rankingsError": null,
       "available": [
         "Kenny Gainwell",
         "Greg Dulcich",
@@ -23597,6 +23788,17 @@
         "Jahan Dotson",
         "Christian Kirk"
       ],
+      "availableAt": "2026-09-13T13:18:06.056Z",
+      "rankings": {
+        "type": "ROS",
+        "scoring": "PPR",
+        "position": "ALL",
+        "lastUpdated": "9/07",
+        "totalExperts": 3,
+        "matched": 23,
+        "total": 23
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-09-13T13:18:06.056Z",
         "scoring": "PPR",
@@ -24407,7 +24609,6 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-09-13T13:18:06.056Z",
       "results": [
         {
           "year": "2012",
@@ -26175,6 +26376,12 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/braelon-allen.php"
+          },
+          "sleeper": {
+            "rank": 23,
+            "posRank": "RB12",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/braelon-allen.php"
           }
         },
         {
@@ -26228,8 +26435,11 @@
           "status": "ROSTER",
           "salary": "1.07",
           "contractYear": "2",
-          "injuryStatus": null,
-          "injuryDetail": null,
+          "injuryStatus": "O",
+          "injuryDetail": {
+            "part": "Coach's Decision",
+            "until": "Sep 20, 2026"
+          },
           "pts": 0,
           "priorYearPts": 6.6,
           "ecr": {
@@ -26258,6 +26468,12 @@
             "posRank": "RB53",
             "tier": null,
             "delta": null,
+            "url": "https://www.fantasypros.com/nfl/players/dylan-sampson.php"
+          },
+          "sleeper": {
+            "rank": 20,
+            "posRank": "RB10",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/dylan-sampson.php"
           }
         },
@@ -26300,6 +26516,12 @@
             "posRank": "RB47",
             "tier": null,
             "delta": null,
+            "url": "https://www.fantasypros.com/nfl/players/keaton-mitchell.php"
+          },
+          "sleeper": {
+            "rank": 13,
+            "posRank": "RB4",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/keaton-mitchell.php"
           }
         },
@@ -26381,7 +26603,13 @@
             "until": "Feb 15, 2027"
           },
           "pts": 0,
-          "priorYearPts": 0
+          "priorYearPts": 0,
+          "sleeper": {
+            "rank": 87,
+            "posRank": "WR32",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/chris-brazzell-ii.php"
+          }
         },
         {
           "id": "13633",
@@ -26426,6 +26654,12 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/denzel-boston.php"
+          },
+          "sleeper": {
+            "rank": 40,
+            "posRank": "WR9",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/denzel-boston.php"
           }
         },
         {
@@ -26446,6 +26680,12 @@
             "posRank": "WR64",
             "tier": null,
             "delta": null,
+            "url": "https://www.fantasypros.com/nfl/players/jerry-jeudy.php"
+          },
+          "sleeper": {
+            "rank": 84,
+            "posRank": "WR29",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/jerry-jeudy.php"
           }
         },
@@ -26488,6 +26728,12 @@
             "posRank": "WR89",
             "tier": null,
             "delta": -18,
+            "url": "https://www.fantasypros.com/nfl/players/malik-washington.php"
+          },
+          "sleeper": {
+            "rank": 41,
+            "posRank": "WR10",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/malik-washington.php"
           }
         },
@@ -26573,6 +26819,12 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/rashod-bateman.php"
+          },
+          "sleeper": {
+            "rank": 85,
+            "posRank": "WR30",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/rashod-bateman.php"
           }
         },
         {
@@ -26594,6 +26846,12 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/david-njoku.php"
+          },
+          "sleeper": {
+            "rank": 90,
+            "posRank": "TE13",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/david-njoku.php"
           }
         },
         {
@@ -26614,6 +26872,12 @@
             "posRank": "TE42",
             "tier": null,
             "delta": 9,
+            "url": "https://www.fantasypros.com/nfl/players/erick-all.php"
+          },
+          "sleeper": {
+            "rank": 92,
+            "posRank": "TE15",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/erick-all.php"
           }
         },
@@ -26696,7 +26960,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-13T13:18:16.921Z",
+      "updatedAt": "2026-09-13T18:46:50.717Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -26722,7 +26986,7 @@
         {
           "franchiseId": "0001",
           "teamName": "Naked Bootleggers",
-          "ownerName": null,
+          "ownerName": "Josh",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -26733,7 +26997,7 @@
         {
           "franchiseId": "0002",
           "teamName": "Made Men",
-          "ownerName": null,
+          "ownerName": "Alex",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -26744,7 +27008,7 @@
         {
           "franchiseId": "0003",
           "teamName": "Groot's Gangbusters",
-          "ownerName": null,
+          "ownerName": "Ben",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -26755,7 +27019,7 @@
         {
           "franchiseId": "0004",
           "teamName": "Hitmen",
-          "ownerName": null,
+          "ownerName": "Joe",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -26766,7 +27030,7 @@
         {
           "franchiseId": "0005",
           "teamName": "Super Saucy McNultys",
-          "ownerName": null,
+          "ownerName": "Jake",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -26777,7 +27041,7 @@
         {
           "franchiseId": "0006",
           "teamName": "Pennywise",
-          "ownerName": null,
+          "ownerName": "Pete",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -26788,7 +27052,7 @@
         {
           "franchiseId": "0007",
           "teamName": "Consigliere",
-          "ownerName": null,
+          "ownerName": "Alex",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -26799,7 +27063,7 @@
         {
           "franchiseId": "0008",
           "teamName": "We’re the Vipers",
-          "ownerName": null,
+          "ownerName": "Paul",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -26810,7 +27074,7 @@
         {
           "franchiseId": "0009",
           "teamName": "Pizzo",
-          "ownerName": null,
+          "ownerName": "Josh",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -26821,7 +27085,7 @@
         {
           "franchiseId": "0010",
           "teamName": "Capo dei Capi",
-          "ownerName": null,
+          "ownerName": "Jeff",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -26832,7 +27096,7 @@
         {
           "franchiseId": "0011",
           "teamName": "Teflon Trav",
-          "ownerName": null,
+          "ownerName": "Travis",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -26843,7 +27107,7 @@
         {
           "franchiseId": "0012",
           "teamName": "Cement Shoes",
-          "ownerName": null,
+          "ownerName": "Mike",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -26857,112 +27121,112 @@
         "week": "1",
         "teams": [
           {
-            "franchiseId": "0003",
-            "teamName": "Groot's Gangbusters",
-            "ownerName": null,
-            "score": "30.06",
-            "minutesRemaining": 420,
+            "franchiseId": "0004",
+            "teamName": "Hitmen",
+            "ownerName": "Joe",
+            "score": "110.17",
+            "minutesRemaining": 170,
             "isMe": false,
-            "winProb": 68
-          },
-          {
-            "franchiseId": "0005",
-            "teamName": "Super Saucy McNultys",
-            "ownerName": null,
-            "score": "29.00",
-            "minutesRemaining": 420,
-            "isMe": false,
-            "winProb": 54
-          },
-          {
-            "franchiseId": "0008",
-            "teamName": "We’re the Vipers",
-            "ownerName": null,
-            "score": "26.53",
-            "minutesRemaining": 420,
-            "isMe": false,
-            "winProb": 67
-          },
-          {
-            "franchiseId": "0010",
-            "teamName": "Capo dei Capi",
-            "ownerName": null,
-            "score": "25.90",
-            "minutesRemaining": 420,
-            "isMe": true,
-            "winProb": 46
-          },
-          {
-            "franchiseId": "0002",
-            "teamName": "Made Men",
-            "ownerName": null,
-            "score": "17.69",
-            "minutesRemaining": 420,
-            "isMe": false,
-            "winProb": 66
+            "winProb": 94
           },
           {
             "franchiseId": "0006",
             "teamName": "Pennywise",
-            "ownerName": null,
-            "score": "17.10",
-            "minutesRemaining": 420,
+            "ownerName": "Pete",
+            "score": "102.95",
+            "minutesRemaining": 229,
             "isMe": false,
-            "winProb": 88
+            "winProb": 99
           },
           {
-            "franchiseId": "0004",
-            "teamName": "Hitmen",
-            "ownerName": null,
-            "score": "14.30",
-            "minutesRemaining": 300,
-            "isMe": false,
-            "winProb": 38
+            "franchiseId": "0010",
+            "teamName": "Capo dei Capi",
+            "ownerName": "Jeff",
+            "score": "81.93",
+            "minutesRemaining": 195,
+            "isMe": true,
+            "winProb": 57
           },
           {
-            "franchiseId": "0001",
-            "teamName": "Naked Bootleggers",
-            "ownerName": null,
-            "score": "14.10",
-            "minutesRemaining": 240,
+            "franchiseId": "0005",
+            "teamName": "Super Saucy McNultys",
+            "ownerName": "Jake",
+            "score": "71.97",
+            "minutesRemaining": 228,
             "isMe": false,
-            "winProb": 12
+            "winProb": 43
+          },
+          {
+            "franchiseId": "0002",
+            "teamName": "Made Men",
+            "ownerName": "Alex",
+            "score": "66.59",
+            "minutesRemaining": 195,
+            "isMe": false,
+            "winProb": 52
+          },
+          {
+            "franchiseId": "0008",
+            "teamName": "We’re the Vipers",
+            "ownerName": "Paul",
+            "score": "65.73",
+            "minutesRemaining": 199,
+            "isMe": false,
+            "winProb": 80
           },
           {
             "franchiseId": "0007",
             "teamName": "Consigliere",
-            "ownerName": null,
-            "score": "4.50",
-            "minutesRemaining": 420,
+            "ownerName": "Alex",
+            "score": "54.29",
+            "minutesRemaining": 256,
             "isMe": false,
-            "winProb": 34
+            "winProb": 48
           },
           {
-            "franchiseId": "0011",
-            "teamName": "Teflon Trav",
-            "ownerName": null,
-            "score": "3.20",
-            "minutesRemaining": 480,
+            "franchiseId": "0003",
+            "teamName": "Groot's Gangbusters",
+            "ownerName": "Ben",
+            "score": "50.96",
+            "minutesRemaining": 264,
             "isMe": false,
-            "winProb": 32
+            "winProb": 65
           },
           {
             "franchiseId": "0012",
             "teamName": "Cement Shoes",
-            "ownerName": null,
-            "score": "1.60",
-            "minutesRemaining": 420,
+            "ownerName": "Mike",
+            "score": "45.60",
+            "minutesRemaining": 292,
             "isMe": false,
-            "winProb": 62
+            "winProb": 6
+          },
+          {
+            "franchiseId": "0001",
+            "teamName": "Naked Bootleggers",
+            "ownerName": "Josh",
+            "score": "39.57",
+            "minutesRemaining": 173,
+            "isMe": false,
+            "winProb": 1
           },
           {
             "franchiseId": "0009",
             "teamName": "Pizzo",
-            "ownerName": null,
-            "score": "0.37",
-            "minutesRemaining": 480,
+            "ownerName": "Josh",
+            "score": "28.80",
+            "minutesRemaining": 284,
             "isMe": false,
-            "winProb": 33
+            "winProb": 20
+          },
+          {
+            "franchiseId": "0011",
+            "teamName": "Teflon Trav",
+            "ownerName": "Travis",
+            "score": "17.59",
+            "minutesRemaining": 384,
+            "isMe": false,
+            "winProb": 35
           }
         ],
         "matchups": [
@@ -27029,7 +27293,7 @@
         "Brashard Smith"
       ],
       "power": {
-        "computedAt": "2026-09-13T13:18:06.056Z",
+        "computedAt": "2026-09-13T18:46:39.794Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -28311,6 +28575,12 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/kaytron-allen.php"
+          },
+          "sleeper": {
+            "rank": 21,
+            "posRank": "RB11",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/kaytron-allen.php"
           }
         },
         {
@@ -28373,6 +28643,12 @@
             "posRank": "RB59",
             "tier": null,
             "delta": null,
+            "url": "https://www.fantasypros.com/nfl/players/ray-davis.php"
+          },
+          "sleeper": {
+            "rank": 64,
+            "posRank": "RB26",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/ray-davis.php"
           }
         },
@@ -28479,6 +28755,12 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/jack-bech.php"
+          },
+          "sleeper": {
+            "rank": 80,
+            "posRank": "WR27",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/jack-bech.php"
           }
         },
         {
@@ -28538,6 +28820,12 @@
             "tier": null,
             "delta": 9,
             "url": "https://www.fantasypros.com/nfl/players/jaylin-noel.php"
+          },
+          "sleeper": {
+            "rank": 57,
+            "posRank": "WR16",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/jaylin-noel.php"
           }
         },
         {
@@ -28558,6 +28846,12 @@
             "posRank": "WR64",
             "tier": null,
             "delta": null,
+            "url": "https://www.fantasypros.com/nfl/players/jerry-jeudy.php"
+          },
+          "sleeper": {
+            "rank": 84,
+            "posRank": "WR29",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/jerry-jeudy.php"
           }
         },
@@ -28621,6 +28915,12 @@
             "posRank": "WR77",
             "tier": null,
             "delta": 13,
+            "url": "https://www.fantasypros.com/nfl/players/ted-hurst.php"
+          },
+          "sleeper": {
+            "rank": 59,
+            "posRank": "WR18",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/ted-hurst.php"
           }
         },
@@ -28758,7 +29058,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-13T13:18:19.154Z",
+      "updatedAt": "2026-09-13T18:46:52.731Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -28919,112 +29219,112 @@
         "week": "1",
         "teams": [
           {
-            "franchiseId": "0010",
-            "teamName": "SUPERCAPtain America",
-            "ownerName": null,
-            "score": "36.36",
-            "minutesRemaining": 120,
-            "isMe": false,
-            "winProb": 20
-          },
-          {
-            "franchiseId": "0008",
-            "teamName": "Beast Mode",
-            "ownerName": null,
-            "score": "27.89",
-            "minutesRemaining": 300,
-            "isMe": false,
-            "winProb": 59
-          },
-          {
             "franchiseId": "0009",
             "teamName": "Professor Chaos",
             "ownerName": null,
-            "score": "24.20",
-            "minutesRemaining": 420,
+            "score": "88.64",
+            "minutesRemaining": 264,
             "isMe": false,
-            "winProb": 62
-          },
-          {
-            "franchiseId": "0002",
-            "teamName": "Legion and Doom",
-            "ownerName": null,
-            "score": "18.00",
-            "minutesRemaining": 240,
-            "isMe": false,
-            "winProb": 25
+            "winProb": 92
           },
           {
             "franchiseId": "0004",
             "teamName": "Groot",
             "ownerName": null,
-            "score": "15.00",
-            "minutesRemaining": 360,
+            "score": "85.59",
+            "minutesRemaining": 197,
             "isMe": false,
-            "winProb": 75
+            "winProb": 98
           },
           {
-            "franchiseId": "0003",
-            "teamName": "THORgasm",
+            "franchiseId": "0008",
+            "teamName": "Beast Mode",
             "ownerName": null,
-            "score": "14.00",
-            "minutesRemaining": 420,
-            "isMe": true,
-            "winProb": 38
+            "score": "85.57",
+            "minutesRemaining": 173,
+            "isMe": false,
+            "winProb": 93
           },
           {
-            "franchiseId": "0005",
-            "teamName": "Wilson and the Multi-Beasts",
+            "franchiseId": "0010",
+            "teamName": "SUPERCAPtain America",
             "ownerName": null,
-            "score": "13.20",
-            "minutesRemaining": 360,
+            "score": "72.59",
+            "minutesRemaining": 83,
             "isMe": false,
-            "winProb": 38
+            "winProb": 77
           },
           {
             "franchiseId": "0007",
             "teamName": "The Juggernaut B",
             "ownerName": null,
-            "score": "12.00",
-            "minutesRemaining": 420,
+            "score": "63.06",
+            "minutesRemaining": 228,
             "isMe": false,
-            "winProb": 62
+            "winProb": 87
           },
           {
-            "franchiseId": "0006",
-            "teamName": "RedZone Vision",
+            "franchiseId": "0003",
+            "teamName": "THORgasm",
             "ownerName": null,
-            "score": "10.30",
-            "minutesRemaining": 360,
-            "isMe": false,
-            "winProb": 41
-          },
-          {
-            "franchiseId": "0001",
-            "teamName": "Gridiron Man",
-            "ownerName": null,
-            "score": "4.10",
-            "minutesRemaining": 420,
-            "isMe": false,
-            "winProb": 80
-          },
-          {
-            "franchiseId": "0011",
-            "teamName": "Professor FleX",
-            "ownerName": null,
-            "score": "0.00",
-            "minutesRemaining": 480,
-            "isMe": false,
-            "winProb": 50
+            "score": "56.41",
+            "minutesRemaining": 231,
+            "isMe": true,
+            "winProb": 8
           },
           {
             "franchiseId": "0012",
             "teamName": "Dreadpool",
             "ownerName": null,
-            "score": "0.00",
-            "minutesRemaining": 480,
+            "score": "54.59",
+            "minutesRemaining": 224,
             "isMe": false,
-            "winProb": 50
+            "winProb": 81
+          },
+          {
+            "franchiseId": "0006",
+            "teamName": "RedZone Vision",
+            "ownerName": null,
+            "score": "52.84",
+            "minutesRemaining": 170,
+            "isMe": false,
+            "winProb": 7
+          },
+          {
+            "franchiseId": "0002",
+            "teamName": "Legion and Doom",
+            "ownerName": null,
+            "score": "43.34",
+            "minutesRemaining": 144,
+            "isMe": false,
+            "winProb": 2
+          },
+          {
+            "franchiseId": "0005",
+            "teamName": "Wilson and the Multi-Beasts",
+            "ownerName": null,
+            "score": "40.23",
+            "minutesRemaining": 200,
+            "isMe": false,
+            "winProb": 13
+          },
+          {
+            "franchiseId": "0001",
+            "teamName": "Gridiron Man",
+            "ownerName": null,
+            "score": "36.97",
+            "minutesRemaining": 199,
+            "isMe": false,
+            "winProb": 23
+          },
+          {
+            "franchiseId": "0011",
+            "teamName": "Professor FleX",
+            "ownerName": null,
+            "score": "32.61",
+            "minutesRemaining": 224,
+            "isMe": false,
+            "winProb": 19
           }
         ],
         "matchups": [
@@ -29109,7 +29409,7 @@
         "Brashard Smith"
       ],
       "power": {
-        "computedAt": "2026-09-13T13:18:06.056Z",
+        "computedAt": "2026-09-13T18:46:39.794Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -29122,7 +29422,7 @@
             {
               "franchiseId": "0009",
               "score": 2177.3,
-              "depth": 1013.3,
+              "depth": 1186.6,
               "filled": 8,
               "slotCount": 8,
               "byPosition": {
@@ -29132,11 +29432,11 @@
                 },
                 "RB": {
                   "score": 586.9,
-                  "depth": 194.9
+                  "depth": 270
                 },
                 "WR": {
                   "score": 492.5,
-                  "depth": 576.3
+                  "depth": 674.5
                 },
                 "TE": {
                   "score": 171.1,
@@ -29971,8 +30271,11 @@
           "status": "ROSTER",
           "salary": "1",
           "contractYear": "3",
-          "injuryStatus": null,
-          "injuryDetail": null,
+          "injuryStatus": "O",
+          "injuryDetail": {
+            "part": "Coach's Decision",
+            "until": "Sep 20, 2026"
+          },
           "pts": 0,
           "priorYearPts": 0
         },
@@ -29994,6 +30297,12 @@
             "posRank": "QB27",
             "tier": null,
             "delta": null,
+            "url": "https://www.fantasypros.com/nfl/players/geno-smith.php"
+          },
+          "sleeper": {
+            "rank": 49,
+            "posRank": "QB8",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/geno-smith.php"
           }
         },
@@ -30040,6 +30349,12 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/tyler-shough.php"
+          },
+          "sleeper": {
+            "rank": 9,
+            "posRank": "QB4",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/tyler-shough.php"
           }
         },
         {
@@ -30051,8 +30366,11 @@
           "status": "ROSTER",
           "salary": "1.07",
           "contractYear": "2",
-          "injuryStatus": null,
-          "injuryDetail": null,
+          "injuryStatus": "O",
+          "injuryDetail": {
+            "part": "Coach's Decision",
+            "until": "Sep 20, 2026"
+          },
           "pts": 0,
           "priorYearPts": 6.6,
           "ecr": {
@@ -30081,6 +30399,12 @@
             "posRank": "RB74",
             "tier": null,
             "delta": null,
+            "url": "https://www.fantasypros.com/nfl/players/george-holani.php"
+          },
+          "sleeper": {
+            "rank": 31,
+            "posRank": "RB17",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/george-holani.php"
           }
         },
@@ -30124,6 +30448,12 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/kaytron-allen.php"
+          },
+          "sleeper": {
+            "rank": 21,
+            "posRank": "RB11",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/kaytron-allen.php"
           }
         },
         {
@@ -30145,6 +30475,12 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/keaton-mitchell.php"
+          },
+          "sleeper": {
+            "rank": 13,
+            "posRank": "RB4",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/keaton-mitchell.php"
           }
         },
         {
@@ -30156,8 +30492,11 @@
           "status": "ROSTER",
           "salary": "10",
           "contractYear": "3",
-          "injuryStatus": null,
-          "injuryDetail": null,
+          "injuryStatus": "O",
+          "injuryDetail": {
+            "part": "Coach's Decision",
+            "until": "Sep 20, 2026"
+          },
           "pts": 0,
           "priorYearPts": 0,
           "ecr": {
@@ -30165,6 +30504,12 @@
             "posRank": "RB63",
             "tier": null,
             "delta": null,
+            "url": "https://www.fantasypros.com/nfl/players/nick-singleton.php"
+          },
+          "sleeper": {
+            "rank": 18,
+            "posRank": "RB9",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/nick-singleton.php"
           }
         },
@@ -30271,6 +30616,12 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/dontayvion-wicks.php"
+          },
+          "sleeper": {
+            "rank": 44,
+            "posRank": "WR11",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/dontayvion-wicks.php"
           }
         },
         {
@@ -30313,6 +30664,12 @@
             "tier": null,
             "delta": -18,
             "url": "https://www.fantasypros.com/nfl/players/malik-washington.php"
+          },
+          "sleeper": {
+            "rank": 41,
+            "posRank": "WR10",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/malik-washington.php"
           }
         },
         {
@@ -30333,6 +30690,12 @@
             "posRank": "WR82",
             "tier": null,
             "delta": null,
+            "url": "https://www.fantasypros.com/nfl/players/rashod-bateman.php"
+          },
+          "sleeper": {
+            "rank": 85,
+            "posRank": "WR30",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/rashod-bateman.php"
           }
         },
@@ -30493,7 +30856,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-13T13:18:21.620Z",
+      "updatedAt": "2026-09-13T18:46:55.179Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -30679,127 +31042,127 @@
             "franchiseId": "0004",
             "teamName": "Chutes and Laterals",
             "ownerName": null,
-            "score": "31.99",
-            "minutesRemaining": 420,
+            "score": "115.79",
+            "minutesRemaining": 200,
             "isMe": false,
-            "winProb": 77
-          },
-          {
-            "franchiseId": "0012",
-            "teamName": "Gotta Catch'em All",
-            "ownerName": null,
-            "score": "28.23",
-            "minutesRemaining": 240,
-            "isMe": false,
-            "winProb": 49
-          },
-          {
-            "franchiseId": "0014",
-            "teamName": "U Madden, Bro",
-            "ownerName": null,
-            "score": "26.00",
-            "minutesRemaining": 420,
-            "isMe": false,
-            "winProb": 62
-          },
-          {
-            "franchiseId": "0006",
-            "teamName": "Cardboard Crackheads",
-            "ownerName": null,
-            "score": "21.45",
-            "minutesRemaining": 240,
-            "isMe": false,
-            "winProb": 10
-          },
-          {
-            "franchiseId": "0007",
-            "teamName": "Grand Theft Audible ",
-            "ownerName": null,
-            "score": "18.76",
-            "minutesRemaining": 480,
-            "isMe": false,
-            "winProb": 90
-          },
-          {
-            "franchiseId": "0003",
-            "teamName": "Zoosdays are for Rhinos",
-            "ownerName": null,
-            "score": "18.75",
-            "minutesRemaining": 360,
-            "isMe": false,
-            "winProb": 53
-          },
-          {
-            "franchiseId": "0013",
-            "teamName": "Perfect Dark",
-            "ownerName": null,
-            "score": "18.00",
-            "minutesRemaining": 300,
-            "isMe": false,
-            "winProb": 51
-          },
-          {
-            "franchiseId": "0008",
-            "teamName": "Rock’emSock’emRug",
-            "ownerName": null,
-            "score": "9.90",
-            "minutesRemaining": 480,
-            "isMe": false,
-            "winProb": 61
-          },
-          {
-            "franchiseId": "0005",
-            "teamName": "All Your Base Are Belong To Us",
-            "ownerName": null,
-            "score": "7.00",
-            "minutesRemaining": 420,
-            "isMe": true,
-            "winProb": 23
-          },
-          {
-            "franchiseId": "0011",
-            "teamName": "Rummy and Cocaine",
-            "ownerName": null,
-            "score": "6.35",
-            "minutesRemaining": 420,
-            "isMe": false,
-            "winProb": 58
-          },
-          {
-            "franchiseId": "0002",
-            "teamName": "Super Sack Bros",
-            "ownerName": null,
-            "score": "5.40",
-            "minutesRemaining": 420,
-            "isMe": false,
-            "winProb": 47
-          },
-          {
-            "franchiseId": "0001",
-            "teamName": "Checkmates",
-            "ownerName": null,
-            "score": "4.50",
-            "minutesRemaining": 480,
-            "isMe": false,
-            "winProb": 38
-          },
-          {
-            "franchiseId": "0009",
-            "teamName": "Concussed",
-            "ownerName": null,
-            "score": "0.37",
-            "minutesRemaining": 480,
-            "isMe": false,
-            "winProb": 39
+            "winProb": 99
           },
           {
             "franchiseId": "0010",
             "teamName": "Uno Reverse",
             "ownerName": null,
-            "score": "0.00",
-            "minutesRemaining": 420,
+            "score": "103.39",
+            "minutesRemaining": 248,
             "isMe": false,
-            "winProb": 42
+            "winProb": 98
+          },
+          {
+            "franchiseId": "0013",
+            "teamName": "Perfect Dark",
+            "ownerName": null,
+            "score": "73.64",
+            "minutesRemaining": 197,
+            "isMe": false,
+            "winProb": 96
+          },
+          {
+            "franchiseId": "0008",
+            "teamName": "Rock’emSock’emRug",
+            "ownerName": null,
+            "score": "72.93",
+            "minutesRemaining": 224,
+            "isMe": false,
+            "winProb": 70
+          },
+          {
+            "franchiseId": "0001",
+            "teamName": "Checkmates",
+            "ownerName": null,
+            "score": "66.45",
+            "minutesRemaining": 230,
+            "isMe": false,
+            "winProb": 78
+          },
+          {
+            "franchiseId": "0006",
+            "teamName": "Cardboard Crackheads",
+            "ownerName": null,
+            "score": "55.70",
+            "minutesRemaining": 170,
+            "isMe": false,
+            "winProb": 47
+          },
+          {
+            "franchiseId": "0009",
+            "teamName": "Concussed",
+            "ownerName": null,
+            "score": "53.82",
+            "minutesRemaining": 256,
+            "isMe": false,
+            "winProb": 30
+          },
+          {
+            "franchiseId": "0011",
+            "teamName": "Rummy and Cocaine",
+            "ownerName": null,
+            "score": "50.66",
+            "minutesRemaining": 226,
+            "isMe": false,
+            "winProb": 2
+          },
+          {
+            "franchiseId": "0012",
+            "teamName": "Gotta Catch'em All",
+            "ownerName": null,
+            "score": "48.68",
+            "minutesRemaining": 114,
+            "isMe": false,
+            "winProb": 4
+          },
+          {
+            "franchiseId": "0014",
+            "teamName": "U Madden, Bro",
+            "ownerName": null,
+            "score": "47.20",
+            "minutesRemaining": 230,
+            "isMe": false,
+            "winProb": 22
+          },
+          {
+            "franchiseId": "0002",
+            "teamName": "Super Sack Bros",
+            "ownerName": null,
+            "score": "44.56",
+            "minutesRemaining": 262,
+            "isMe": false,
+            "winProb": 75
+          },
+          {
+            "franchiseId": "0007",
+            "teamName": "Grand Theft Audible ",
+            "ownerName": null,
+            "score": "41.50",
+            "minutesRemaining": 257,
+            "isMe": false,
+            "winProb": 53
+          },
+          {
+            "franchiseId": "0003",
+            "teamName": "Zoosdays are for Rhinos",
+            "ownerName": null,
+            "score": "33.20",
+            "minutesRemaining": 232,
+            "isMe": false,
+            "winProb": 25
+          },
+          {
+            "franchiseId": "0005",
+            "teamName": "All Your Base Are Belong To Us",
+            "ownerName": null,
+            "score": "32.85",
+            "minutesRemaining": 262,
+            "isMe": true,
+            "winProb": 1
           }
         ],
         "matchups": [
@@ -30864,7 +31227,7 @@
         "Chig Okonkwo"
       ],
       "power": {
-        "computedAt": "2026-09-13T13:18:06.056Z",
+        "computedAt": "2026-09-13T18:46:39.794Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -31306,7 +31669,7 @@
             {
               "franchiseId": "0009",
               "score": 1658.2,
-              "depth": 1654.6,
+              "depth": 1611.1,
               "filled": 9,
               "slotCount": 9,
               "byPosition": {
@@ -31324,7 +31687,7 @@
                 },
                 "TE": {
                   "score": 110.8,
-                  "depth": 292.3
+                  "depth": 248.8
                 }
               }
             }
@@ -31803,6 +32166,12 @@
             "tier": null,
             "delta": 2,
             "url": "https://www.fantasypros.com/nfl/players/juwan-johnson.php"
+          },
+          "sleeper": {
+            "rank": 10,
+            "posRank": "TE1",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/juwan-johnson.php"
           }
         },
         {
@@ -31833,7 +32202,7 @@
           "injuryStatus": null
         }
       ],
-      "updatedAt": "2026-09-13T13:18:21.747Z",
+      "updatedAt": "2026-09-13T18:46:55.279Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -31972,91 +32341,91 @@
             "franchiseId": "11",
             "teamName": "MKE Mayer",
             "ownerName": "Chris",
-            "score": "31.90",
-            "minutesRemaining": 360,
+            "score": "92.72",
+            "minutesRemaining": 240,
             "isMe": false,
-            "winProb": 71
-          },
-          {
-            "franchiseId": "3",
-            "teamName": "DeVante S#ck Your Blood",
-            "ownerName": "Kevin",
-            "score": "29.40",
-            "minutesRemaining": 360,
-            "isMe": false,
-            "winProb": 32
-          },
-          {
-            "franchiseId": "8",
-            "teamName": "The Micah Parsons Project",
-            "ownerName": "Bryan",
-            "score": "22.20",
-            "minutesRemaining": 480,
-            "isMe": false,
-            "winProb": 68
-          },
-          {
-            "franchiseId": "1",
-            "teamName": "Team Nico",
-            "ownerName": "Nic",
-            "score": "22.00",
-            "minutesRemaining": 360,
-            "isMe": false,
-            "winProb": 37
-          },
-          {
-            "franchiseId": "7",
-            "teamName": "You Like That?!!!",
-            "ownerName": "Christopher",
-            "score": "15.20",
-            "minutesRemaining": 360,
-            "isMe": false,
-            "winProb": 29
-          },
-          {
-            "franchiseId": "2",
-            "teamName": "For Whom the SKOL Tolls",
-            "ownerName": "Chris",
-            "score": "1.00",
-            "minutesRemaining": 480,
-            "isMe": false,
-            "winProb": 39
-          },
-          {
-            "franchiseId": "4",
-            "teamName": "Turn On The Jettas",
-            "ownerName": "Kristin",
-            "score": "0.00",
-            "minutesRemaining": 540,
-            "isMe": false,
-            "winProb": 63
+            "winProb": 94
           },
           {
             "franchiseId": "10",
             "teamName": "Forever 22",
             "ownerName": "Jeff",
-            "score": "0.00",
-            "minutesRemaining": 540,
+            "score": "83.64",
+            "minutesRemaining": 327,
             "isMe": true,
-            "winProb": 61
+            "winProb": 95
+          },
+          {
+            "franchiseId": "1",
+            "teamName": "Team Nico",
+            "ownerName": "Nic",
+            "score": "83.00",
+            "minutesRemaining": 207,
+            "isMe": false,
+            "winProb": 81
           },
           {
             "franchiseId": "9",
             "teamName": "da magic SKOL bus",
             "ownerName": "Jocelyn",
-            "score": "0.00",
-            "minutesRemaining": 540,
+            "score": "79.16",
+            "minutesRemaining": 297,
             "isMe": false,
-            "winProb": 50
+            "winProb": 80
+          },
+          {
+            "franchiseId": "8",
+            "teamName": "The Micah Parsons Project",
+            "ownerName": "Bryan",
+            "score": "43.80",
+            "minutesRemaining": 355,
+            "isMe": false,
+            "winProb": 75
+          },
+          {
+            "franchiseId": "7",
+            "teamName": "You Like That?!!!",
+            "ownerName": "Christopher",
+            "score": "37.70",
+            "minutesRemaining": 299,
+            "isMe": false,
+            "winProb": 6
+          },
+          {
+            "franchiseId": "2",
+            "teamName": "For Whom the SKOL Tolls",
+            "ownerName": "Chris",
+            "score": "37.60",
+            "minutesRemaining": 296,
+            "isMe": false,
+            "winProb": 5
           },
           {
             "franchiseId": "12",
             "teamName": "Uncle Rico",
             "ownerName": "Erik",
-            "score": "0.00",
-            "minutesRemaining": 540,
+            "score": "36.50",
+            "minutesRemaining": 386,
             "isMe": false,
-            "winProb": 50
+            "winProb": 20
+          },
+          {
+            "franchiseId": "3",
+            "teamName": "DeVante S#ck Your Blood",
+            "ownerName": "Kevin",
+            "score": "33.90",
+            "minutesRemaining": 300,
+            "isMe": false,
+            "winProb": 25
+          },
+          {
+            "franchiseId": "4",
+            "teamName": "Turn On The Jettas",
+            "ownerName": "Kristin",
+            "score": "26.12",
+            "minutesRemaining": 382,
+            "isMe": false,
+            "winProb": 19
           }
         ],
         "matchups": [
@@ -32099,23 +32468,13 @@
         "4426502",
         "4241478",
         "4259545",
-        "3121422",
+        "3915416",
         "4431611",
         "-16021",
         "4686361",
         "3929645"
       ],
       "lineupError": null,
-      "rankings": {
-        "type": "ROS",
-        "scoring": "HALF",
-        "position": "ALL",
-        "lastUpdated": "9/07",
-        "totalExperts": 3,
-        "matched": 14,
-        "total": 15
-      },
-      "rankingsError": null,
       "available": [
         "KC Concepcion",
         "Brock Purdy",
@@ -32158,6 +32517,17 @@
         "Omar Cooper Jr.",
         "Gunnar Helm"
       ],
+      "availableAt": "2026-09-13T13:18:06.056Z",
+      "rankings": {
+        "type": "ROS",
+        "scoring": "HALF",
+        "position": "ALL",
+        "lastUpdated": "9/07",
+        "totalExperts": 3,
+        "matched": 14,
+        "total": 15
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-09-13T13:18:06.056Z",
         "scoring": "HALF",
@@ -32796,7 +33166,6 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-09-13T13:18:06.056Z",
       "results": [
         {
           "year": "2020",
@@ -33098,7 +33467,7 @@
           "injuryStatus": null
         }
       ],
-      "updatedAt": "2026-09-13T13:18:21.818Z",
+      "updatedAt": "2026-09-13T18:46:55.349Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -33234,94 +33603,94 @@
         "week": 1,
         "teams": [
           {
+            "franchiseId": "5",
+            "teamName": "Ballroom Blitz",
+            "ownerName": "Jeff",
+            "score": "85.02",
+            "minutesRemaining": 234,
+            "isMe": true,
+            "winProb": 61
+          },
+          {
             "franchiseId": "3",
             "teamName": "I am him",
             "ownerName": "Bob",
-            "score": "33.90",
-            "minutesRemaining": 300,
+            "score": "80.90",
+            "minutesRemaining": 210,
             "isMe": false,
-            "winProb": 51
+            "winProb": 78
           },
           {
             "franchiseId": "8",
             "teamName": "Dcker in her TD's",
             "ownerName": "RYANTINA",
-            "score": "30.00",
-            "minutesRemaining": 360,
+            "score": "77.80",
+            "minutesRemaining": 237,
             "isMe": false,
-            "winProb": 54
-          },
-          {
-            "franchiseId": "6",
-            "teamName": "Sunday Squad",
-            "ownerName": "Braden",
-            "score": "26.20",
-            "minutesRemaining": 420,
-            "isMe": false,
-            "winProb": 73
-          },
-          {
-            "franchiseId": "10",
-            "teamName": "Jackin goff",
-            "ownerName": "Braxton",
-            "score": "18.00",
-            "minutesRemaining": 360,
-            "isMe": false,
-            "winProb": 27
-          },
-          {
-            "franchiseId": "5",
-            "teamName": "Ballroom Blitz",
-            "ownerName": "Jeff",
-            "score": "15.50",
-            "minutesRemaining": 420,
-            "isMe": true,
-            "winProb": 46
-          },
-          {
-            "franchiseId": "7",
-            "teamName": "BobNado",
-            "ownerName": "Bob",
-            "score": "13.80",
-            "minutesRemaining": 420,
-            "isMe": false,
-            "winProb": 53
-          },
-          {
-            "franchiseId": "9",
-            "teamName": "MAYBE NEXT YEAR ",
-            "ownerName": "KEVIN",
-            "score": "11.00",
-            "minutesRemaining": 420,
-            "isMe": false,
-            "winProb": 49
-          },
-          {
-            "franchiseId": "2",
-            "teamName": "Linclon's Loud Team",
-            "ownerName": "Linclon",
-            "score": "6.00",
-            "minutesRemaining": 420,
-            "isMe": false,
-            "winProb": 50
+            "winProb": 39
           },
           {
             "franchiseId": "4",
             "teamName": "Bones Killa ",
             "ownerName": "Jason",
-            "score": "5.60",
-            "minutesRemaining": 420,
+            "score": "64.72",
+            "minutesRemaining": 269,
             "isMe": false,
-            "winProb": 50
+            "winProb": 72
           },
           {
             "franchiseId": "1",
             "teamName": "Mcconk blocked ",
             "ownerName": "RYANTINA",
-            "score": "0.00",
-            "minutesRemaining": 480,
+            "score": "61.50",
+            "minutesRemaining": 326,
             "isMe": false,
-            "winProb": 47
+            "winProb": 52
+          },
+          {
+            "franchiseId": "6",
+            "teamName": "Sunday Squad",
+            "ownerName": "Braden",
+            "score": "59.70",
+            "minutesRemaining": 297,
+            "isMe": false,
+            "winProb": 68
+          },
+          {
+            "franchiseId": "7",
+            "teamName": "BobNado",
+            "ownerName": "Bob",
+            "score": "59.54",
+            "minutesRemaining": 330,
+            "isMe": false,
+            "winProb": 48
+          },
+          {
+            "franchiseId": "10",
+            "teamName": "Jackin goff",
+            "ownerName": "Braxton",
+            "score": "52.20",
+            "minutesRemaining": 269,
+            "isMe": false,
+            "winProb": 32
+          },
+          {
+            "franchiseId": "9",
+            "teamName": "MAYBE NEXT YEAR ",
+            "ownerName": "KEVIN",
+            "score": "44.70",
+            "minutesRemaining": 295,
+            "isMe": false,
+            "winProb": 22
+          },
+          {
+            "franchiseId": "2",
+            "teamName": "Linclon's Loud Team",
+            "ownerName": "Linclon",
+            "score": "43.76",
+            "minutesRemaining": 296,
+            "isMe": false,
+            "winProb": 28
           }
         ],
         "matchups": [
@@ -33365,21 +33734,11 @@
         "4361370",
         "4430737",
         "3915511",
-        "4248528",
+        "3116165",
         "-16030",
         "4697745"
       ],
       "lineupError": null,
-      "rankings": {
-        "type": "ROS",
-        "scoring": "PPR",
-        "position": "ALL",
-        "lastUpdated": "9/07",
-        "totalExperts": 3,
-        "matched": 14,
-        "total": 15
-      },
-      "rankingsError": null,
       "available": [
         "Makai Lemon",
         "KC Concepcion",
@@ -33422,6 +33781,17 @@
         "Jonah Coleman",
         "Tre Tucker"
       ],
+      "availableAt": "2026-09-13T13:18:06.056Z",
+      "rankings": {
+        "type": "ROS",
+        "scoring": "PPR",
+        "position": "ALL",
+        "lastUpdated": "9/07",
+        "totalExperts": 3,
+        "matched": 14,
+        "total": 15
+      },
+      "rankingsError": null,
       "power": {
         "computedAt": "2026-09-13T13:18:06.056Z",
         "scoring": "PPR",
@@ -34060,7 +34430,6 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-09-13T13:18:06.056Z",
       "results": [
         {
           "year": "2025",
@@ -34129,6 +34498,12 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/kyler-murray.php"
+          },
+          "sleeper": {
+            "rank": 2,
+            "posRank": "QB1",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/kyler-murray.php"
           }
         },
         {
@@ -34145,6 +34520,12 @@
             "posRank": "QB16",
             "tier": null,
             "delta": null,
+            "url": "https://www.fantasypros.com/nfl/players/malik-willis.php"
+          },
+          "sleeper": {
+            "rank": 5,
+            "posRank": "QB3",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/malik-willis.php"
           }
         },
@@ -34192,7 +34573,7 @@
           "position": "RB",
           "team": "CIN",
           "bye": "6",
-          "pts": 0,
+          "pts": 11.6,
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
@@ -34234,6 +34615,12 @@
             "posRank": "RB74",
             "tier": null,
             "delta": null,
+            "url": "https://www.fantasypros.com/nfl/players/george-holani.php"
+          },
+          "sleeper": {
+            "rank": 31,
+            "posRank": "RB17",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/george-holani.php"
           }
         },
@@ -34281,7 +34668,7 @@
           "position": "RB",
           "team": "TEN",
           "bye": "9",
-          "pts": 0,
+          "pts": 1.8,
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
@@ -34315,7 +34702,7 @@
           "position": "RB",
           "team": "HOU",
           "bye": "8",
-          "pts": 0,
+          "pts": 3.3,
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
@@ -34375,6 +34762,12 @@
             "tier": null,
             "delta": 13,
             "url": "https://www.fantasypros.com/nfl/players/ted-hurst.php"
+          },
+          "sleeper": {
+            "rank": 59,
+            "posRank": "WR18",
+            "tier": null,
+            "url": "https://www.fantasypros.com/nfl/players/ted-hurst.php"
           }
         },
         {
@@ -34383,7 +34776,7 @@
           "position": "TE",
           "team": "JAX",
           "bye": "7",
-          "pts": 0,
+          "pts": 8.9,
           "status": "ROSTER",
           "injuryStatus": null,
           "ecr": {
@@ -34391,6 +34784,12 @@
             "posRank": "TE18",
             "tier": null,
             "delta": null,
+            "url": "https://www.fantasypros.com/nfl/players/brenton-strange.php"
+          },
+          "sleeper": {
+            "rank": 48,
+            "posRank": "TE7",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/brenton-strange.php"
           }
         },
@@ -34408,6 +34807,12 @@
             "posRank": "TE19",
             "tier": null,
             "delta": 6,
+            "url": "https://www.fantasypros.com/nfl/players/terrance-ferguson.php"
+          },
+          "sleeper": {
+            "rank": 36,
+            "posRank": "TE3",
+            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/terrance-ferguson.php"
           }
         },
@@ -34430,7 +34835,7 @@
         }
       ],
       "draftInProgress": false,
-      "updatedAt": "2026-09-13T13:18:21.992Z",
+      "updatedAt": "2026-09-13T18:46:55.563Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -34594,109 +34999,109 @@
             "franchiseId": "6",
             "teamName": "Bam Knights of the Round",
             "ownerName": "unnecruffness",
-            "score": "83.80",
-            "minutesRemaining": 420,
+            "score": "160.50",
+            "minutesRemaining": 360,
             "isMe": false,
-            "winProb": 80
-          },
-          {
-            "franchiseId": "1",
-            "teamName": "UnicornBolt",
-            "ownerName": "UnicornBolt",
-            "score": "31.10",
-            "minutesRemaining": 540,
-            "isMe": false,
-            "winProb": 61
-          },
-          {
-            "franchiseId": "2",
-            "teamName": "XIII",
-            "ownerName": "ekballer",
-            "score": "30.90",
-            "minutesRemaining": 540,
-            "isMe": false,
-            "winProb": 20
-          },
-          {
-            "franchiseId": "12",
-            "teamName": "ChadS-MN",
-            "ownerName": "ChadS-MN",
-            "score": "20.32",
-            "minutesRemaining": 540,
-            "isMe": false,
-            "winProb": 39
+            "winProb": 99
           },
           {
             "franchiseId": "9",
             "teamName": "mmidlikowski",
             "ownerName": "mmidlikowski",
-            "score": "16.40",
-            "minutesRemaining": 540,
+            "score": "135.58",
+            "minutesRemaining": 324,
             "isMe": false,
-            "winProb": 56
+            "winProb": 92
           },
           {
-            "franchiseId": "4",
-            "teamName": "Gold Chocobo",
-            "ownerName": "shamrock84",
-            "score": "15.50",
-            "minutesRemaining": 540,
-            "isMe": true,
-            "winProb": 55
-          },
-          {
-            "franchiseId": "8",
-            "teamName": "DFSKyle",
-            "ownerName": "DFSKyle",
-            "score": "14.60",
-            "minutesRemaining": 480,
+            "franchiseId": "1",
+            "teamName": "UnicornBolt",
+            "ownerName": "UnicornBolt",
+            "score": "120.80",
+            "minutesRemaining": 350,
             "isMe": false,
-            "winProb": 40
-          },
-          {
-            "franchiseId": "10",
-            "teamName": "Camlawfff",
-            "ownerName": "Camlawfff",
-            "score": "12.30",
-            "minutesRemaining": 540,
-            "isMe": false,
-            "winProb": 60
-          },
-          {
-            "franchiseId": "3",
-            "teamName": "JTivs9",
-            "ownerName": "JTivs9",
-            "score": "5.10",
-            "minutesRemaining": 540,
-            "isMe": false,
-            "winProb": 51
+            "winProb": 96
           },
           {
             "franchiseId": "7",
             "teamName": "poppykimish",
             "ownerName": "poppykimish",
-            "score": "4.60",
-            "minutesRemaining": 540,
+            "score": "120.34",
+            "minutesRemaining": 297,
             "isMe": false,
-            "winProb": 49
+            "winProb": 88
           },
           {
             "franchiseId": "5",
             "teamName": "CouchScoutsCoop",
             "ownerName": "CouchScoutsCoop",
-            "score": "0.00",
-            "minutesRemaining": 600,
+            "score": "86.20",
+            "minutesRemaining": 412,
             "isMe": false,
-            "winProb": 45
+            "winProb": 89
+          },
+          {
+            "franchiseId": "3",
+            "teamName": "JTivs9",
+            "ownerName": "JTivs9",
+            "score": "79.02",
+            "minutesRemaining": 329,
+            "isMe": false,
+            "winProb": 12
+          },
+          {
+            "franchiseId": "2",
+            "teamName": "XIII",
+            "ownerName": "ekballer",
+            "score": "71.22",
+            "minutesRemaining": 357,
+            "isMe": false,
+            "winProb": 1
+          },
+          {
+            "franchiseId": "8",
+            "teamName": "DFSKyle",
+            "ownerName": "DFSKyle",
+            "score": "65.40",
+            "minutesRemaining": 357,
+            "isMe": false,
+            "winProb": 61
           },
           {
             "franchiseId": "11",
             "teamName": "Orashna",
             "ownerName": "Orashna",
-            "score": "0.00",
-            "minutesRemaining": 600,
+            "score": "58.22",
+            "minutesRemaining": 476,
             "isMe": false,
-            "winProb": 44
+            "winProb": 8
+          },
+          {
+            "franchiseId": "10",
+            "teamName": "Camlawfff",
+            "ownerName": "Camlawfff",
+            "score": "56.80",
+            "minutesRemaining": 356,
+            "isMe": false,
+            "winProb": 39
+          },
+          {
+            "franchiseId": "4",
+            "teamName": "Gold Chocobo",
+            "ownerName": "shamrock84",
+            "score": "37.80",
+            "minutesRemaining": 444,
+            "isMe": true,
+            "winProb": 11
+          },
+          {
+            "franchiseId": "12",
+            "teamName": "ChadS-MN",
+            "ownerName": "ChadS-MN",
+            "score": "36.72",
+            "minutesRemaining": 450,
+            "isMe": false,
+            "winProb": 4
           }
         ],
         "matchups": [
@@ -34790,7 +35195,7 @@
         "DJ Giddens"
       ],
       "power": {
-        "computedAt": "2026-09-13T13:18:06.056Z",
+        "computedAt": "2026-09-13T18:46:39.794Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -41756,7 +42161,7 @@
         {
           "franchiseId": "0001",
           "teamName": "Make Commissioning Great Again",
-          "ownerName": null,
+          "ownerName": "Joe",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -41767,7 +42172,7 @@
         {
           "franchiseId": "0002",
           "teamName": "The Patriot Lay™",
-          "ownerName": null,
+          "ownerName": "Alex",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -41778,7 +42183,7 @@
         {
           "franchiseId": "0003",
           "teamName": "Vrabels Pimp",
-          "ownerName": null,
+          "ownerName": "Dave",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -41789,7 +42194,7 @@
         {
           "franchiseId": "0004",
           "teamName": "PaulyDs Pimp",
-          "ownerName": null,
+          "ownerName": "Jeff",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -41800,7 +42205,7 @@
         {
           "franchiseId": "0005",
           "teamName": "JLC's AI Bot",
-          "ownerName": null,
+          "ownerName": "Josh",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -41811,7 +42216,7 @@
         {
           "franchiseId": "0006",
           "teamName": "Damn!  My Vrabels are starting to itch!",
-          "ownerName": null,
+          "ownerName": "Eugene",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -41822,7 +42227,7 @@
         {
           "franchiseId": "0007",
           "teamName": "Russini's Shnozz is bigger than Schmidtys Wang",
-          "ownerName": null,
+          "ownerName": "Mike",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -41833,7 +42238,7 @@
         {
           "franchiseId": "0008",
           "teamName": "Sideline Chick",
-          "ownerName": null,
+          "ownerName": "Ben",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -41844,7 +42249,7 @@
         {
           "franchiseId": "0009",
           "teamName": "Rook takes Bishop",
-          "ownerName": null,
+          "ownerName": "Josh",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -41855,7 +42260,7 @@
         {
           "franchiseId": "0010",
           "teamName": "Three Tits Mafia",
-          "ownerName": null,
+          "ownerName": "Tyler",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -41866,7 +42271,7 @@
         {
           "franchiseId": "0011",
           "teamName": "Tecmo Bowl 49ers",
-          "ownerName": null,
+          "ownerName": "Paul",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -41877,7 +42282,7 @@
         {
           "franchiseId": "0012",
           "teamName": "The Toughskins",
-          "ownerName": null,
+          "ownerName": "Dave",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -43152,7 +43557,7 @@
         {
           "franchiseId": "0001",
           "teamName": "Bo No Mercy",
-          "ownerName": "Joe",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -43163,7 +43568,7 @@
         {
           "franchiseId": "0002",
           "teamName": "QB Bills",
-          "ownerName": "Ben",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -43174,7 +43579,7 @@
         {
           "franchiseId": "0003",
           "teamName": "Tecmo Bo-lievers",
-          "ownerName": "Josh",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -43185,7 +43590,7 @@
         {
           "franchiseId": "0004",
           "teamName": "Marcus Allen",
-          "ownerName": "Jeff",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -43196,7 +43601,7 @@
         {
           "franchiseId": "0005",
           "teamName": "House of Bo",
-          "ownerName": "Josh",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -43207,7 +43612,7 @@
         {
           "franchiseId": "0006",
           "teamName": "Stop Bo If You Can",
-          "ownerName": "Dave",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -43218,7 +43623,7 @@
         {
           "franchiseId": "0007",
           "teamName": "Illegal Use of Bo Jackson",
-          "ownerName": "Alex",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -43229,7 +43634,7 @@
         {
           "franchiseId": "0008",
           "teamName": "My Bo(s)Jangle",
-          "ownerName": "Eugene",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -43240,7 +43645,7 @@
         {
           "franchiseId": "0009",
           "teamName": "The Bo Show",
-          "ownerName": "Paul",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -43251,7 +43656,7 @@
         {
           "franchiseId": "0010",
           "teamName": "Tim Brown was on the team too",
-          "ownerName": "Mike",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -47220,7 +47625,7 @@
         {
           "franchiseId": "0001",
           "teamName": "DeepSeek and Destroy",
-          "ownerName": null,
+          "ownerName": "Joe",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -47231,7 +47636,7 @@
         {
           "franchiseId": "0002",
           "teamName": "Llama-inator",
-          "ownerName": null,
+          "ownerName": "Dave",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -47242,7 +47647,7 @@
         {
           "franchiseId": "0003",
           "teamName": "AIQ to the MOON",
-          "ownerName": null,
+          "ownerName": "Jeff",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -47253,7 +47658,7 @@
         {
           "franchiseId": "0004",
           "teamName": "GPT-800",
-          "ownerName": null,
+          "ownerName": "Josh",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -47264,7 +47669,7 @@
         {
           "franchiseId": "0005",
           "teamName": "Copilot Judgment Day",
-          "ownerName": null,
+          "ownerName": "Josh",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -47275,7 +47680,7 @@
         {
           "franchiseId": "0006",
           "teamName": "Your Franchise Has Been Terminated",
-          "ownerName": null,
+          "ownerName": "Eugene",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -47286,7 +47691,7 @@
         {
           "franchiseId": "0007",
           "teamName": "Gemini T-1000",
-          "ownerName": null,
+          "ownerName": "Mike",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -47297,7 +47702,7 @@
         {
           "franchiseId": "0008",
           "teamName": "Groot  ETF",
-          "ownerName": null,
+          "ownerName": "Ben",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -47308,7 +47713,7 @@
         {
           "franchiseId": "0009",
           "teamName": "Hasta La Vista, GPT",
-          "ownerName": null,
+          "ownerName": "Tyler",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -47319,7 +47724,7 @@
         {
           "franchiseId": "0010",
           "teamName": "Nvidia's Nightmare",
-          "ownerName": null,
+          "ownerName": "Paul",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -47330,7 +47735,7 @@
         {
           "franchiseId": "0011",
           "teamName": "Sam's Skynet",
-          "ownerName": null,
+          "ownerName": "Lucas",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -47341,7 +47746,7 @@
         {
           "franchiseId": "0012",
           "teamName": "Mythos & Machines",
-          "ownerName": null,
+          "ownerName": "Alex",
           "wins": 0,
           "losses": 0,
           "ties": 0,
