@@ -2331,6 +2331,7 @@ function espnStatBreakdown(statsArray, scoringPeriodId) {
 function espnTeamLiveStarters(teamSide, clockMap, currentPeriod) {
   const entries = teamSide?.rosterForCurrentScoringPeriod?.entries || [];
   let seconds = 0;
+  let score = 0;
   const players = [];
   for (const e of entries) {
     if (e.lineupSlotId === ESPN_BENCH_SLOT_ID || e.lineupSlotId === ESPN_IR_SLOT_ID) continue;
@@ -2339,6 +2340,7 @@ function espnTeamLiveStarters(teamSide, clockMap, currentPeriod) {
     const secondsRemaining = clockMap.get(abbr) ?? 0;
     seconds += secondsRemaining;
     const points = e.playerPoolEntry?.appliedStatTotal;
+    score += points == null ? 0 : Number(points);
     players.push({
       name: p?.fullName || '',
       secondsRemaining,
@@ -2348,7 +2350,7 @@ function espnTeamLiveStarters(teamSide, clockMap, currentPeriod) {
       stats: espnStatBreakdown(p?.stats, currentPeriod),
     });
   }
-  return { minutesRemaining: Math.round(seconds / 60), players };
+  return { minutesRemaining: Math.round(seconds / 60), score, players };
 }
 
 // clockMap is optional — pass one from fetchNflGameClocks (shared across
@@ -2356,6 +2358,20 @@ function espnTeamLiveStarters(teamSide, clockMap, currentPeriod) {
 // regardless of league) to skip fetching it again here. projectPlayer is
 // also optional — see attachWinProbabilities' own comment. ESPN's starters
 // carry `name`, not an id — see espnTeamLiveStarters' comment for why.
+//
+// The team score is the SUM of espnTeamLiveStarters' own per-player
+// appliedStatTotal, not the matchup object's own `totalPoints` field.
+// probe-live-scoring-players.yml RUN 1 caught the two disagreeing during a
+// live game (totalPoints read 0 while starters summed to 4.10), and it gets
+// worse than "lags a few minutes": on 2026-09-12, hours before that week's
+// Sunday slate had even kicked off, every ESPN league's `totalPoints` read
+// flat 0 while several starters already carried real scores from games that
+// had gone final. ESPN's own community docs describe why — the matchup
+// object's `totalPoints` is a batched/end-of-day figure, not a live one; the
+// live-updating number is `totalPointsLive` (unverified against a real
+// league here) or, equivalently, the per-player total this file already has
+// on hand. Summing here also retires the "the drawer doesn't add up to the
+// pill" caveat from that probe — they're now the same number by construction.
 export async function fetchEspnScoring(league, clockMap, projectPlayer) {
   const [data, clocks] = await Promise.all([
     espnGet(league, 'view=mScoreboard&view=mTeam&view=mRoster'),
@@ -2375,13 +2391,13 @@ export async function fetchEspnScoring(league, clockMap, projectPlayer) {
   for (const m of schedule) {
     const teamIds = [];
     if (m.home) {
-      const { minutesRemaining, players } = espnTeamLiveStarters(m.home, clocks, currentPeriod);
-      rows.push({ teamId: m.home.teamId, score: m.home.totalPoints ?? 0, minutesRemaining, players });
+      const { minutesRemaining, score, players } = espnTeamLiveStarters(m.home, clocks, currentPeriod);
+      rows.push({ teamId: m.home.teamId, score, minutesRemaining, players });
       teamIds.push(String(m.home.teamId));
     }
     if (m.away) {
-      const { minutesRemaining, players } = espnTeamLiveStarters(m.away, clocks, currentPeriod);
-      rows.push({ teamId: m.away.teamId, score: m.away.totalPoints ?? 0, minutesRemaining, players });
+      const { minutesRemaining, score, players } = espnTeamLiveStarters(m.away, clocks, currentPeriod);
+      rows.push({ teamId: m.away.teamId, score, minutesRemaining, players });
       teamIds.push(String(m.away.teamId));
     }
     if (teamIds.length) matchups.push({ teamIds });
