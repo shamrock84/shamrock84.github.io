@@ -329,6 +329,16 @@ jobs:
       - name: Test quick-link task footnotes
         run: node scripts/test-quicklink-tasknotes.mjs
 
+      # The Now Playing card's one rule: it shows a player only when he's
+      # BOTH currently live AND on one of MY OWN teams, never every live
+      # player league-wide. Every failure mode here is silent and looks
+      # perfectly plausible — an opponent's live starter renders exactly
+      # like one of mine would, and a same-named player an opponent holds
+      # in a different league would inflate the cross-league merge the
+      # same way.
+      - name: Test the Now Playing card
+        run: node scripts/test-now-playing.mjs
+
       - name: Validate config/leagues.json
         run: |
           node --input-type=module -e '
