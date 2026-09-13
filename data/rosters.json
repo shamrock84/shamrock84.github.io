@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-13T07:30:05.917Z",
+  "generatedAt": "2026-09-13T13:19:21.603Z",
   "year": "2026",
   "rankingPools": {
     "ROS|PPR|ALL": {
@@ -6471,7 +6471,7 @@
     }
   },
   "depthCharts": {
-    "generatedAt": "2026-09-13T04:45:33.445Z",
+    "generatedAt": "2026-09-13T13:18:59.906Z",
     "teams": {
       "ARI": {
         "name": "Arizona Cardinals",
@@ -6646,7 +6646,7 @@
             "name": "Cooper Rush",
             "rank": 3,
             "role": null,
-            "injuryStatus": "Q"
+            "injuryStatus": null
           },
           {
             "id": "5344782",
@@ -10919,12 +10919,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/malik-willis.php"
-          },
-          "sleeper": {
-            "rank": 5,
-            "posRank": "QB3",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/malik-willis.php"
           }
         },
         {
@@ -10969,12 +10963,6 @@
             "posRank": "RB65",
             "tier": null,
             "delta": null,
-            "url": "https://www.fantasypros.com/nfl/players/isiah-pacheco.php"
-          },
-          "sleeper": {
-            "rank": 28,
-            "posRank": "RB16",
-            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/isiah-pacheco.php"
           }
         },
@@ -11102,12 +11090,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/chris-bell.php"
-          },
-          "sleeper": {
-            "rank": 53,
-            "posRank": "WR14",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/chris-bell.php"
           }
         },
         {
@@ -11191,12 +11173,6 @@
             "posRank": "WR48",
             "tier": null,
             "delta": null,
-            "url": "https://www.fantasypros.com/nfl/players/dezhaun-stribling.php"
-          },
-          "sleeper": {
-            "rank": 7,
-            "posRank": "WR2",
-            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/dezhaun-stribling.php"
           }
         },
@@ -11324,12 +11300,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/rashid-shaheed.php"
-          },
-          "sleeper": {
-            "rank": 30,
-            "posRank": "WR5",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/rashid-shaheed.php"
           }
         },
         {
@@ -11351,12 +11321,6 @@
             "tier": null,
             "delta": 15,
             "url": "https://www.fantasypros.com/nfl/players/ted-hurst.php"
-          },
-          "sleeper": {
-            "rank": 59,
-            "posRank": "WR18",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/ted-hurst.php"
           }
         },
         {
@@ -11377,12 +11341,6 @@
             "posRank": "TE18",
             "tier": null,
             "delta": null,
-            "url": "https://www.fantasypros.com/nfl/players/brenton-strange.php"
-          },
-          "sleeper": {
-            "rank": 48,
-            "posRank": "TE7",
-            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/brenton-strange.php"
           }
         },
@@ -11489,12 +11447,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/baltimore-defense.php"
-          },
-          "sleeper": {
-            "rank": 42,
-            "posRank": "DST2",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/baltimore-defense.php"
           }
         },
         {
@@ -11595,7 +11547,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-13T04:44:47.674Z",
+      "updatedAt": "2026-09-13T13:18:09.064Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -11869,6 +11821,16 @@
       ],
       "lineupError": null,
       "draftInProgress": false,
+      "rankings": {
+        "type": "ROS",
+        "scoring": "PPR",
+        "position": "ALL",
+        "lastUpdated": "9/07",
+        "totalExperts": 3,
+        "matched": 29,
+        "total": 29
+      },
+      "rankingsError": null,
       "available": [
         "Kenny Gainwell",
         "Greg Dulcich",
@@ -11899,7 +11861,6 @@
         "Seth McGowan",
         "Nicholas Singleton",
         "Erick All Jr.",
-        "Malik Davis",
         "Darius Slayton",
         "James Conner",
         "Elic Ayomanor",
@@ -11907,21 +11868,11 @@
         "Skyler Bell",
         "Kirk Cousins",
         "Jahan Dotson",
-        "George Holani"
+        "George Holani",
+        "Christian Kirk"
       ],
-      "availableAt": "2026-09-12T15:12:06.655Z",
-      "rankings": {
-        "type": "ROS",
-        "scoring": "PPR",
-        "position": "ALL",
-        "lastUpdated": "9/07",
-        "totalExperts": 3,
-        "matched": 29,
-        "total": 29
-      },
-      "rankingsError": null,
       "power": {
-        "computedAt": "2026-09-12T15:12:06.655Z",
+        "computedAt": "2026-09-13T13:18:06.056Z",
         "scoring": "PPR",
         "projections": {
           "source": {
@@ -12503,7 +12454,7 @@
             {
               "franchiseId": "0009",
               "score": 15.5,
-              "depth": 13.1,
+              "depth": 13.2,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
@@ -12654,6 +12605,7 @@
         },
         "projectionsUnavailable": null
       },
+      "availableAt": "2026-09-13T13:18:06.056Z",
       "results": [
         {
           "year": "2006",
@@ -15111,12 +15063,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/malik-willis.php"
-          },
-          "sleeper": {
-            "rank": 5,
-            "posRank": "QB3",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/malik-willis.php"
           }
         },
         {
@@ -15203,12 +15149,6 @@
             "posRank": "RB65",
             "tier": null,
             "delta": null,
-            "url": "https://www.fantasypros.com/nfl/players/isiah-pacheco.php"
-          },
-          "sleeper": {
-            "rank": 28,
-            "posRank": "RB16",
-            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/isiah-pacheco.php"
           }
         },
@@ -15357,12 +15297,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/elijah-sarratt.php"
-          },
-          "sleeper": {
-            "rank": 81,
-            "posRank": "WR28",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/elijah-sarratt.php"
           }
         },
         {
@@ -15443,12 +15377,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/kayshon-boutte.php"
-          },
-          "sleeper": {
-            "rank": 74,
-            "posRank": "WR21",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/kayshon-boutte.php"
           }
         },
         {
@@ -15494,12 +15422,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/rashid-shaheed.php"
-          },
-          "sleeper": {
-            "rank": 30,
-            "posRank": "WR5",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/rashid-shaheed.php"
           }
         },
         {
@@ -15521,12 +15443,6 @@
             "tier": null,
             "delta": -17,
             "url": "https://www.fantasypros.com/nfl/players/zachariah-branch.php"
-          },
-          "sleeper": {
-            "rank": 79,
-            "posRank": "WR26",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/zachariah-branch.php"
           }
         },
         {
@@ -15547,12 +15463,6 @@
             "posRank": "TE24",
             "tier": null,
             "delta": null,
-            "url": "https://www.fantasypros.com/nfl/players/aj-barner.php"
-          },
-          "sleeper": {
-            "rank": 83,
-            "posRank": "TE12",
-            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/aj-barner.php"
           }
         },
@@ -15683,12 +15593,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/baltimore-defense.php"
-          },
-          "sleeper": {
-            "rank": 42,
-            "posRank": "DST2",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/baltimore-defense.php"
           }
         },
         {
@@ -15789,7 +15693,7 @@
           "originalTeamName": "Swingline Steamrollers"
         }
       ],
-      "updatedAt": "2026-09-13T04:44:49.297Z",
+      "updatedAt": "2026-09-13T13:18:10.646Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -16018,6 +15922,12 @@
         "matchups": [
           {
             "teamIds": [
+              "0001",
+              "0007"
+            ]
+          },
+          {
+            "teamIds": [
               "0009",
               "0010"
             ]
@@ -16032,12 +15942,6 @@
             "teamIds": [
               "0004",
               "0006"
-            ]
-          },
-          {
-            "teamIds": [
-              "0001",
-              "0007"
             ]
           },
           {
@@ -16063,6 +15967,16 @@
       ],
       "lineupError": null,
       "draftInProgress": false,
+      "rankings": {
+        "type": "ROS",
+        "scoring": "PPR",
+        "position": "ALL",
+        "lastUpdated": "9/07",
+        "totalExperts": 3,
+        "matched": 28,
+        "total": 29
+      },
+      "rankingsError": null,
       "available": [
         "Kenny Gainwell",
         "Greg Dulcich",
@@ -16092,7 +16006,6 @@
         "Jack Bech",
         "Chimere Dike",
         "Erick All Jr.",
-        "Malik Davis",
         "Darius Slayton",
         "Elijah Arroyo",
         "James Conner",
@@ -16101,21 +16014,11 @@
         "Darnell Washington",
         "Kirk Cousins",
         "Jahan Dotson",
-        "George Holani"
+        "George Holani",
+        "Christian Kirk"
       ],
-      "availableAt": "2026-09-12T15:12:06.655Z",
-      "rankings": {
-        "type": "ROS",
-        "scoring": "PPR",
-        "position": "ALL",
-        "lastUpdated": "9/07",
-        "totalExperts": 3,
-        "matched": 28,
-        "total": 29
-      },
-      "rankingsError": null,
       "power": {
-        "computedAt": "2026-09-12T15:12:06.655Z",
+        "computedAt": "2026-09-13T13:18:06.056Z",
         "scoring": "PPR",
         "projections": {
           "source": {
@@ -16753,7 +16656,7 @@
                 },
                 "WR": {
                   "score": 8.6,
-                  "depth": 3.5
+                  "depth": 3.6
                 },
                 "TE": {
                   "score": 1.2,
@@ -16840,6 +16743,7 @@
         },
         "projectionsUnavailable": null
       },
+      "availableAt": "2026-09-13T13:18:06.056Z",
       "results": [
         {
           "year": "2007",
@@ -19164,12 +19068,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/kyler-murray.php"
-          },
-          "sleeper": {
-            "rank": 2,
-            "posRank": "QB1",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/kyler-murray.php"
           }
         },
         {
@@ -19190,12 +19088,6 @@
             "posRank": "QB21",
             "tier": null,
             "delta": null,
-            "url": "https://www.fantasypros.com/nfl/players/tyler-shough.php"
-          },
-          "sleeper": {
-            "rank": 9,
-            "posRank": "QB4",
-            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/tyler-shough.php"
           }
         },
@@ -19239,12 +19131,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/jonah-coleman.php"
-          },
-          "sleeper": {
-            "rank": 4,
-            "posRank": "RB2",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/jonah-coleman.php"
           }
         },
         {
@@ -19265,12 +19151,6 @@
             "posRank": "RB47",
             "tier": null,
             "delta": null,
-            "url": "https://www.fantasypros.com/nfl/players/keaton-mitchell.php"
-          },
-          "sleeper": {
-            "rank": 13,
-            "posRank": "RB4",
-            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/keaton-mitchell.php"
           }
         },
@@ -19293,12 +19173,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/kimani-vidal.php"
-          },
-          "sleeper": {
-            "rank": 38,
-            "posRank": "RB20",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/kimani-vidal.php"
           }
         },
         {
@@ -19319,12 +19193,6 @@
             "posRank": "RB58",
             "tier": null,
             "delta": null,
-            "url": "https://www.fantasypros.com/nfl/players/ray-davis.php"
-          },
-          "sleeper": {
-            "rank": 64,
-            "posRank": "RB26",
-            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/ray-davis.php"
           }
         },
@@ -19389,12 +19257,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/dezhaun-stribling.php"
-          },
-          "sleeper": {
-            "rank": 7,
-            "posRank": "WR2",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/dezhaun-stribling.php"
           }
         },
         {
@@ -19415,12 +19277,6 @@
             "posRank": "WR93",
             "tier": null,
             "delta": null,
-            "url": "https://www.fantasypros.com/nfl/players/elijah-sarratt.php"
-          },
-          "sleeper": {
-            "rank": 81,
-            "posRank": "WR28",
-            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/elijah-sarratt.php"
           }
         },
@@ -19464,12 +19320,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/jalen-nailor.php"
-          },
-          "sleeper": {
-            "rank": 19,
-            "posRank": "WR3",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/jalen-nailor.php"
           }
         },
         {
@@ -19491,12 +19341,6 @@
             "tier": null,
             "delta": -17,
             "url": "https://www.fantasypros.com/nfl/players/malik-washington.php"
-          },
-          "sleeper": {
-            "rank": 41,
-            "posRank": "WR10",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/malik-washington.php"
           }
         },
         {
@@ -19516,7 +19360,7 @@
             "rank": 77,
             "posRank": "WR40",
             "tier": null,
-            "delta": -4,
+            "delta": -5,
             "url": "https://www.fantasypros.com/nfl/players/michael-pittman.php"
           }
         },
@@ -19539,12 +19383,6 @@
             "tier": null,
             "delta": -16,
             "url": "https://www.fantasypros.com/nfl/players/ryan-flournoy.php"
-          },
-          "sleeper": {
-            "rank": 39,
-            "posRank": "WR8",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/ryan-flournoy.php"
           }
         },
         {
@@ -19566,12 +19404,6 @@
             "tier": null,
             "delta": 6,
             "url": "https://www.fantasypros.com/nfl/players/stefon-diggs.php"
-          },
-          "sleeper": {
-            "rank": 6,
-            "posRank": "WR1",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/stefon-diggs.php"
           }
         },
         {
@@ -19592,12 +19424,6 @@
             "posRank": "WR60",
             "tier": null,
             "delta": 8,
-            "url": "https://www.fantasypros.com/nfl/players/tre-harris.php"
-          },
-          "sleeper": {
-            "rank": 75,
-            "posRank": "WR22",
-            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/tre-harris.php"
           }
         },
@@ -19718,12 +19544,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/kansas-city-defense.php"
-          },
-          "sleeper": {
-            "rank": 29,
-            "posRank": "DST1",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/kansas-city-defense.php"
           }
         },
         {
@@ -19744,12 +19564,6 @@
             "posRank": "DST19",
             "tier": null,
             "delta": null,
-            "url": "https://www.fantasypros.com/nfl/players/new-orleans-defense.php"
-          },
-          "sleeper": {
-            "rank": 73,
-            "posRank": "DST6",
-            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/new-orleans-defense.php"
           }
         }
@@ -19830,7 +19644,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-13T04:44:51.162Z",
+      "updatedAt": "2026-09-13T13:18:12.569Z",
       "error": null,
       "tags": [],
       "provider": null,
@@ -20150,6 +19964,16 @@
       ],
       "lineupError": null,
       "draftInProgress": false,
+      "rankings": {
+        "type": "ROS",
+        "scoring": "PPR",
+        "position": "ALL",
+        "lastUpdated": "9/07",
+        "totalExperts": 3,
+        "matched": 25,
+        "total": 26
+      },
+      "rankingsError": null,
       "available": [
         "Kenny Gainwell",
         "Greg Dulcich",
@@ -20169,21 +19993,11 @@
         "Erick All Jr.",
         "Darius Slayton",
         "Darnell Washington",
-        "Jahan Dotson"
+        "Jahan Dotson",
+        "Christian Kirk"
       ],
-      "availableAt": "2026-09-12T15:12:06.655Z",
-      "rankings": {
-        "type": "ROS",
-        "scoring": "PPR",
-        "position": "ALL",
-        "lastUpdated": "9/07",
-        "totalExperts": 3,
-        "matched": 25,
-        "total": 26
-      },
-      "rankingsError": null,
       "power": {
-        "computedAt": "2026-09-12T15:12:06.655Z",
+        "computedAt": "2026-09-13T13:18:06.056Z",
         "scoring": "PPR",
         "projections": {
           "source": {
@@ -20649,7 +20463,7 @@
             {
               "franchiseId": "0003",
               "score": 15.4,
-              "depth": 6.8,
+              "depth": 6.7,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
@@ -20724,7 +20538,7 @@
             {
               "franchiseId": "0012",
               "score": 14.7,
-              "depth": 8.6,
+              "depth": 8.7,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
@@ -20992,6 +20806,7 @@
         },
         "projectionsUnavailable": null
       },
+      "availableAt": "2026-09-13T13:18:06.056Z",
       "results": [
         {
           "year": "2010",
@@ -23010,12 +22825,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/emmett-johnson.php"
-          },
-          "sleeper": {
-            "rank": 14,
-            "posRank": "RB5",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/emmett-johnson.php"
           }
         },
         {
@@ -23037,12 +22846,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/keaton-mitchell.php"
-          },
-          "sleeper": {
-            "rank": 13,
-            "posRank": "RB4",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/keaton-mitchell.php"
           }
         },
         {
@@ -23062,7 +22865,7 @@
             "rank": 11,
             "posRank": "RB6",
             "tier": null,
-            "delta": 3,
+            "delta": 2,
             "url": "https://www.fantasypros.com/nfl/players/kenneth-walker-rb.php"
           }
         },
@@ -23193,12 +22996,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/chris-bell.php"
-          },
-          "sleeper": {
-            "rank": 53,
-            "posRank": "WR14",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/chris-bell.php"
           }
         },
         {
@@ -23241,12 +23038,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/elijah-sarratt.php"
-          },
-          "sleeper": {
-            "rank": 81,
-            "posRank": "WR28",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/elijah-sarratt.php"
           }
         },
         {
@@ -23267,12 +23058,6 @@
             "posRank": "WR97",
             "tier": null,
             "delta": null,
-            "url": "https://www.fantasypros.com/nfl/players/jack-bech.php"
-          },
-          "sleeper": {
-            "rank": 80,
-            "posRank": "WR27",
-            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/jack-bech.php"
           }
         },
@@ -23315,12 +23100,6 @@
             "posRank": "WR59",
             "tier": null,
             "delta": 13,
-            "url": "https://www.fantasypros.com/nfl/players/keenan-allen.php"
-          },
-          "sleeper": {
-            "rank": 58,
-            "posRank": "WR17",
-            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/keenan-allen.php"
           }
         },
@@ -23472,7 +23251,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-13T04:44:53.157Z",
+      "updatedAt": "2026-09-13T13:18:14.769Z",
       "error": null,
       "tags": [
         "BestBall"
@@ -23497,7 +23276,7 @@
         {
           "franchiseId": "0001",
           "teamName": "The FOOKING Hand of the King",
-          "ownerName": "Lee",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23508,7 +23287,7 @@
         {
           "franchiseId": "0002",
           "teamName": "Master of Coin",
-          "ownerName": "Dave",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23530,7 +23309,7 @@
         {
           "franchiseId": "0004",
           "teamName": "HODOR",
-          "ownerName": "Jeff",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23541,7 +23320,7 @@
         {
           "franchiseId": "0005",
           "teamName": "Sir Ilyn's House of Payne",
-          "ownerName": "Tyler",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23552,7 +23331,7 @@
         {
           "franchiseId": "0006",
           "teamName": "Super Saucy McNultys",
-          "ownerName": "Jake",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23563,7 +23342,7 @@
         {
           "franchiseId": "0007",
           "teamName": "WunWun No WinWin",
-          "ownerName": "Jabroni",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23574,7 +23353,7 @@
         {
           "franchiseId": "0008",
           "teamName": "Valyrian Steelers",
-          "ownerName": "Andy",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23585,7 +23364,7 @@
         {
           "franchiseId": "0009",
           "teamName": "Three Eyed Ravens",
-          "ownerName": "Alex",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23596,7 +23375,7 @@
         {
           "franchiseId": "0010",
           "teamName": "Joegon",
-          "ownerName": "Joe",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23607,7 +23386,7 @@
         {
           "franchiseId": "0011",
           "teamName": "Lord of Light",
-          "ownerName": "Paul",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23618,7 +23397,7 @@
         {
           "franchiseId": "0012",
           "teamName": "Azor Ahai",
-          "ownerName": "Pete",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -23634,7 +23413,7 @@
           {
             "franchiseId": "0004",
             "teamName": "HODOR",
-            "ownerName": "Jeff",
+            "ownerName": null,
             "score": "48.30",
             "minutesRemaining": 300,
             "isMe": true,
@@ -23643,7 +23422,7 @@
           {
             "franchiseId": "0011",
             "teamName": "Lord of Light",
-            "ownerName": "Paul",
+            "ownerName": null,
             "score": "32.70",
             "minutesRemaining": 300,
             "isMe": false,
@@ -23652,7 +23431,7 @@
           {
             "franchiseId": "0001",
             "teamName": "The FOOKING Hand of the King",
-            "ownerName": "Lee",
+            "ownerName": null,
             "score": "22.22",
             "minutesRemaining": 360,
             "isMe": false,
@@ -23661,7 +23440,7 @@
           {
             "franchiseId": "0012",
             "teamName": "Azor Ahai",
-            "ownerName": "Pete",
+            "ownerName": null,
             "score": "22.10",
             "minutesRemaining": 360,
             "isMe": false,
@@ -23670,7 +23449,7 @@
           {
             "franchiseId": "0007",
             "teamName": "WunWun No WinWin",
-            "ownerName": "Jabroni",
+            "ownerName": null,
             "score": "20.72",
             "minutesRemaining": 180,
             "isMe": false,
@@ -23679,7 +23458,7 @@
           {
             "franchiseId": "0002",
             "teamName": "Master of Coin",
-            "ownerName": "Dave",
+            "ownerName": null,
             "score": "17.10",
             "minutesRemaining": 360,
             "isMe": false,
@@ -23688,7 +23467,7 @@
           {
             "franchiseId": "0006",
             "teamName": "Super Saucy McNultys",
-            "ownerName": "Jake",
+            "ownerName": null,
             "score": "15.80",
             "minutesRemaining": 300,
             "isMe": false,
@@ -23706,7 +23485,7 @@
           {
             "franchiseId": "0008",
             "teamName": "Valyrian Steelers",
-            "ownerName": "Andy",
+            "ownerName": null,
             "score": "5.50",
             "minutesRemaining": 420,
             "isMe": false,
@@ -23715,7 +23494,7 @@
           {
             "franchiseId": "0010",
             "teamName": "Joegon",
-            "ownerName": "Joe",
+            "ownerName": null,
             "score": "4.10",
             "minutesRemaining": 420,
             "isMe": false,
@@ -23724,7 +23503,7 @@
           {
             "franchiseId": "0005",
             "teamName": "Sir Ilyn's House of Payne",
-            "ownerName": "Tyler",
+            "ownerName": null,
             "score": "2.90",
             "minutesRemaining": 420,
             "isMe": false,
@@ -23733,7 +23512,7 @@
           {
             "franchiseId": "0009",
             "teamName": "Three Eyed Ravens",
-            "ownerName": "Alex",
+            "ownerName": null,
             "score": "0.00",
             "minutesRemaining": 480,
             "isMe": false,
@@ -23781,6 +23560,16 @@
       },
       "scoringError": null,
       "draftInProgress": false,
+      "rankings": {
+        "type": "ROS",
+        "scoring": "PPR",
+        "position": "ALL",
+        "lastUpdated": "9/07",
+        "totalExperts": 3,
+        "matched": 23,
+        "total": 23
+      },
+      "rankingsError": null,
       "available": [
         "Kenny Gainwell",
         "Greg Dulcich",
@@ -23800,27 +23589,16 @@
         "Eli Raridon",
         "Chimere Dike",
         "Erick All Jr.",
-        "Malik Davis",
         "Darius Slayton",
         "Elic Ayomanor",
         "Jordan James",
         "Darnell Washington",
         "Kirk Cousins",
-        "Jahan Dotson"
+        "Jahan Dotson",
+        "Christian Kirk"
       ],
-      "availableAt": "2026-09-12T15:12:06.655Z",
-      "rankings": {
-        "type": "ROS",
-        "scoring": "PPR",
-        "position": "ALL",
-        "lastUpdated": "9/07",
-        "totalExperts": 3,
-        "matched": 23,
-        "total": 23
-      },
-      "rankingsError": null,
       "power": {
-        "computedAt": "2026-09-12T15:12:06.655Z",
+        "computedAt": "2026-09-13T13:18:06.056Z",
         "scoring": "PPR",
         "projections": {
           "source": {
@@ -24054,7 +23832,7 @@
             {
               "franchiseId": "0001",
               "score": 1813.3,
-              "depth": 1688.5,
+              "depth": 1719.7,
               "filled": 8,
               "slotCount": 8,
               "byPosition": {
@@ -24064,7 +23842,7 @@
                 },
                 "RB": {
                   "score": 432.7,
-                  "depth": 230.1
+                  "depth": 261.2
                 },
                 "WR": {
                   "score": 681.3,
@@ -24629,6 +24407,7 @@
         },
         "projectionsUnavailable": null
       },
+      "availableAt": "2026-09-13T13:18:06.056Z",
       "results": [
         {
           "year": "2012",
@@ -26396,12 +26175,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/braelon-allen.php"
-          },
-          "sleeper": {
-            "rank": 23,
-            "posRank": "RB12",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/braelon-allen.php"
           }
         },
         {
@@ -26486,12 +26259,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/dylan-sampson.php"
-          },
-          "sleeper": {
-            "rank": 20,
-            "posRank": "RB10",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/dylan-sampson.php"
           }
         },
         {
@@ -26533,12 +26300,6 @@
             "posRank": "RB47",
             "tier": null,
             "delta": null,
-            "url": "https://www.fantasypros.com/nfl/players/keaton-mitchell.php"
-          },
-          "sleeper": {
-            "rank": 13,
-            "posRank": "RB4",
-            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/keaton-mitchell.php"
           }
         },
@@ -26601,7 +26362,7 @@
             "rank": 201,
             "posRank": "WR76",
             "tier": null,
-            "delta": 35,
+            "delta": 33,
             "url": "https://www.fantasypros.com/nfl/players/bryce-lance.php"
           }
         },
@@ -26620,13 +26381,7 @@
             "until": "Feb 15, 2027"
           },
           "pts": 0,
-          "priorYearPts": 0,
-          "sleeper": {
-            "rank": 87,
-            "posRank": "WR32",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/chris-brazzell-ii.php"
-          }
+          "priorYearPts": 0
         },
         {
           "id": "13633",
@@ -26671,12 +26426,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/denzel-boston.php"
-          },
-          "sleeper": {
-            "rank": 40,
-            "posRank": "WR9",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/denzel-boston.php"
           }
         },
         {
@@ -26697,12 +26446,6 @@
             "posRank": "WR64",
             "tier": null,
             "delta": null,
-            "url": "https://www.fantasypros.com/nfl/players/jerry-jeudy.php"
-          },
-          "sleeper": {
-            "rank": 84,
-            "posRank": "WR29",
-            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/jerry-jeudy.php"
           }
         },
@@ -26745,12 +26488,6 @@
             "posRank": "WR89",
             "tier": null,
             "delta": -18,
-            "url": "https://www.fantasypros.com/nfl/players/malik-washington.php"
-          },
-          "sleeper": {
-            "rank": 41,
-            "posRank": "WR10",
-            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/malik-washington.php"
           }
         },
@@ -26813,7 +26550,7 @@
             "rank": 56,
             "posRank": "WR25",
             "tier": null,
-            "delta": 6,
+            "delta": 5,
             "url": "https://www.fantasypros.com/nfl/players/mike-evans.php"
           }
         },
@@ -26836,12 +26573,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/rashod-bateman.php"
-          },
-          "sleeper": {
-            "rank": 85,
-            "posRank": "WR30",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/rashod-bateman.php"
           }
         },
         {
@@ -26862,12 +26593,6 @@
             "posRank": "TE30",
             "tier": null,
             "delta": null,
-            "url": "https://www.fantasypros.com/nfl/players/david-njoku.php"
-          },
-          "sleeper": {
-            "rank": 90,
-            "posRank": "TE13",
-            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/david-njoku.php"
           }
         },
@@ -26890,12 +26615,6 @@
             "tier": null,
             "delta": 9,
             "url": "https://www.fantasypros.com/nfl/players/erick-all.php"
-          },
-          "sleeper": {
-            "rank": 92,
-            "posRank": "TE15",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/erick-all.php"
           }
         },
         {
@@ -26915,7 +26634,7 @@
             "rank": 120,
             "posRank": "TE10",
             "tier": null,
-            "delta": 2,
+            "delta": 3,
             "url": "https://www.fantasypros.com/nfl/players/isaiah-likely.php"
           }
         },
@@ -26977,7 +26696,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-13T04:44:55.048Z",
+      "updatedAt": "2026-09-13T13:18:16.921Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -27003,7 +26722,7 @@
         {
           "franchiseId": "0001",
           "teamName": "Naked Bootleggers",
-          "ownerName": "Josh",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -27014,7 +26733,7 @@
         {
           "franchiseId": "0002",
           "teamName": "Made Men",
-          "ownerName": "Alex",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -27025,7 +26744,7 @@
         {
           "franchiseId": "0003",
           "teamName": "Groot's Gangbusters",
-          "ownerName": "Ben",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -27036,7 +26755,7 @@
         {
           "franchiseId": "0004",
           "teamName": "Hitmen",
-          "ownerName": "Joe",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -27047,7 +26766,7 @@
         {
           "franchiseId": "0005",
           "teamName": "Super Saucy McNultys",
-          "ownerName": "Jake",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -27058,7 +26777,7 @@
         {
           "franchiseId": "0006",
           "teamName": "Pennywise",
-          "ownerName": "Pete",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -27069,7 +26788,7 @@
         {
           "franchiseId": "0007",
           "teamName": "Consigliere",
-          "ownerName": "Alex",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -27080,7 +26799,7 @@
         {
           "franchiseId": "0008",
           "teamName": "We’re the Vipers",
-          "ownerName": "Paul",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -27091,7 +26810,7 @@
         {
           "franchiseId": "0009",
           "teamName": "Pizzo",
-          "ownerName": "Josh",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -27102,7 +26821,7 @@
         {
           "franchiseId": "0010",
           "teamName": "Capo dei Capi",
-          "ownerName": "Jeff",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -27113,7 +26832,7 @@
         {
           "franchiseId": "0011",
           "teamName": "Teflon Trav",
-          "ownerName": "Travis",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -27124,7 +26843,7 @@
         {
           "franchiseId": "0012",
           "teamName": "Cement Shoes",
-          "ownerName": "Mike",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -27140,7 +26859,7 @@
           {
             "franchiseId": "0003",
             "teamName": "Groot's Gangbusters",
-            "ownerName": "Ben",
+            "ownerName": null,
             "score": "30.06",
             "minutesRemaining": 420,
             "isMe": false,
@@ -27149,7 +26868,7 @@
           {
             "franchiseId": "0005",
             "teamName": "Super Saucy McNultys",
-            "ownerName": "Jake",
+            "ownerName": null,
             "score": "29.00",
             "minutesRemaining": 420,
             "isMe": false,
@@ -27158,7 +26877,7 @@
           {
             "franchiseId": "0008",
             "teamName": "We’re the Vipers",
-            "ownerName": "Paul",
+            "ownerName": null,
             "score": "26.53",
             "minutesRemaining": 420,
             "isMe": false,
@@ -27167,7 +26886,7 @@
           {
             "franchiseId": "0010",
             "teamName": "Capo dei Capi",
-            "ownerName": "Jeff",
+            "ownerName": null,
             "score": "25.90",
             "minutesRemaining": 420,
             "isMe": true,
@@ -27176,7 +26895,7 @@
           {
             "franchiseId": "0002",
             "teamName": "Made Men",
-            "ownerName": "Alex",
+            "ownerName": null,
             "score": "17.69",
             "minutesRemaining": 420,
             "isMe": false,
@@ -27185,7 +26904,7 @@
           {
             "franchiseId": "0006",
             "teamName": "Pennywise",
-            "ownerName": "Pete",
+            "ownerName": null,
             "score": "17.10",
             "minutesRemaining": 420,
             "isMe": false,
@@ -27194,7 +26913,7 @@
           {
             "franchiseId": "0004",
             "teamName": "Hitmen",
-            "ownerName": "Joe",
+            "ownerName": null,
             "score": "14.30",
             "minutesRemaining": 300,
             "isMe": false,
@@ -27203,7 +26922,7 @@
           {
             "franchiseId": "0001",
             "teamName": "Naked Bootleggers",
-            "ownerName": "Josh",
+            "ownerName": null,
             "score": "14.10",
             "minutesRemaining": 240,
             "isMe": false,
@@ -27212,7 +26931,7 @@
           {
             "franchiseId": "0007",
             "teamName": "Consigliere",
-            "ownerName": "Alex",
+            "ownerName": null,
             "score": "4.50",
             "minutesRemaining": 420,
             "isMe": false,
@@ -27221,7 +26940,7 @@
           {
             "franchiseId": "0011",
             "teamName": "Teflon Trav",
-            "ownerName": "Travis",
+            "ownerName": null,
             "score": "3.20",
             "minutesRemaining": 480,
             "isMe": false,
@@ -27230,7 +26949,7 @@
           {
             "franchiseId": "0012",
             "teamName": "Cement Shoes",
-            "ownerName": "Mike",
+            "ownerName": null,
             "score": "1.60",
             "minutesRemaining": 420,
             "isMe": false,
@@ -27239,7 +26958,7 @@
           {
             "franchiseId": "0009",
             "teamName": "Pizzo",
-            "ownerName": "Josh",
+            "ownerName": null,
             "score": "0.37",
             "minutesRemaining": 480,
             "isMe": false,
@@ -27310,7 +27029,7 @@
         "Brashard Smith"
       ],
       "power": {
-        "computedAt": "2026-09-13T04:44:44.665Z",
+        "computedAt": "2026-09-13T13:18:06.056Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -28592,12 +28311,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/kaytron-allen.php"
-          },
-          "sleeper": {
-            "rank": 21,
-            "posRank": "RB11",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/kaytron-allen.php"
           }
         },
         {
@@ -28661,12 +28374,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/ray-davis.php"
-          },
-          "sleeper": {
-            "rank": 64,
-            "posRank": "RB26",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/ray-davis.php"
           }
         },
         {
@@ -28707,7 +28414,7 @@
             "rank": 201,
             "posRank": "WR76",
             "tier": null,
-            "delta": 35,
+            "delta": 33,
             "url": "https://www.fantasypros.com/nfl/players/bryce-lance.php"
           }
         },
@@ -28772,12 +28479,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/jack-bech.php"
-          },
-          "sleeper": {
-            "rank": 80,
-            "posRank": "WR27",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/jack-bech.php"
           }
         },
         {
@@ -28814,7 +28515,7 @@
             "rank": 101,
             "posRank": "WR50",
             "tier": null,
-            "delta": -7,
+            "delta": -8,
             "url": "https://www.fantasypros.com/nfl/players/jayden-reed.php"
           }
         },
@@ -28837,12 +28538,6 @@
             "tier": null,
             "delta": 9,
             "url": "https://www.fantasypros.com/nfl/players/jaylin-noel.php"
-          },
-          "sleeper": {
-            "rank": 57,
-            "posRank": "WR16",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/jaylin-noel.php"
           }
         },
         {
@@ -28863,12 +28558,6 @@
             "posRank": "WR64",
             "tier": null,
             "delta": null,
-            "url": "https://www.fantasypros.com/nfl/players/jerry-jeudy.php"
-          },
-          "sleeper": {
-            "rank": 84,
-            "posRank": "WR29",
-            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/jerry-jeudy.php"
           }
         },
@@ -28931,13 +28620,7 @@
             "rank": 204,
             "posRank": "WR77",
             "tier": null,
-            "delta": 14,
-            "url": "https://www.fantasypros.com/nfl/players/ted-hurst.php"
-          },
-          "sleeper": {
-            "rank": 59,
-            "posRank": "WR18",
-            "tier": null,
+            "delta": 13,
             "url": "https://www.fantasypros.com/nfl/players/ted-hurst.php"
           }
         },
@@ -29075,7 +28758,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-13T04:44:57.369Z",
+      "updatedAt": "2026-09-13T13:18:19.154Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -29101,7 +28784,7 @@
         {
           "franchiseId": "0001",
           "teamName": "Gridiron Man",
-          "ownerName": "Alex",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -29112,7 +28795,7 @@
         {
           "franchiseId": "0002",
           "teamName": "Legion and Doom",
-          "ownerName": "Super",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -29123,7 +28806,7 @@
         {
           "franchiseId": "0003",
           "teamName": "THORgasm",
-          "ownerName": "Jeff",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -29134,7 +28817,7 @@
         {
           "franchiseId": "0004",
           "teamName": "Groot",
-          "ownerName": "Ben",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -29145,7 +28828,7 @@
         {
           "franchiseId": "0005",
           "teamName": "Wilson and the Multi-Beasts",
-          "ownerName": "Paul",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -29156,7 +28839,7 @@
         {
           "franchiseId": "0006",
           "teamName": "RedZone Vision",
-          "ownerName": "Joe",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -29167,7 +28850,7 @@
         {
           "franchiseId": "0007",
           "teamName": "The Juggernaut B",
-          "ownerName": "Josh",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -29178,7 +28861,7 @@
         {
           "franchiseId": "0008",
           "teamName": "Beast Mode",
-          "ownerName": "Travis",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -29189,7 +28872,7 @@
         {
           "franchiseId": "0009",
           "teamName": "Professor Chaos",
-          "ownerName": "Travis",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -29200,7 +28883,7 @@
         {
           "franchiseId": "0010",
           "teamName": "SUPERCAPtain America",
-          "ownerName": "Ray",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -29211,7 +28894,7 @@
         {
           "franchiseId": "0011",
           "teamName": "Professor FleX",
-          "ownerName": "Brandon",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -29222,7 +28905,7 @@
         {
           "franchiseId": "0012",
           "teamName": "Dreadpool",
-          "ownerName": "Alex",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -29238,7 +28921,7 @@
           {
             "franchiseId": "0010",
             "teamName": "SUPERCAPtain America",
-            "ownerName": "Ray",
+            "ownerName": null,
             "score": "36.36",
             "minutesRemaining": 120,
             "isMe": false,
@@ -29247,7 +28930,7 @@
           {
             "franchiseId": "0008",
             "teamName": "Beast Mode",
-            "ownerName": "Travis",
+            "ownerName": null,
             "score": "27.89",
             "minutesRemaining": 300,
             "isMe": false,
@@ -29256,7 +28939,7 @@
           {
             "franchiseId": "0009",
             "teamName": "Professor Chaos",
-            "ownerName": "Travis",
+            "ownerName": null,
             "score": "24.20",
             "minutesRemaining": 420,
             "isMe": false,
@@ -29265,7 +28948,7 @@
           {
             "franchiseId": "0002",
             "teamName": "Legion and Doom",
-            "ownerName": "Super",
+            "ownerName": null,
             "score": "18.00",
             "minutesRemaining": 240,
             "isMe": false,
@@ -29274,7 +28957,7 @@
           {
             "franchiseId": "0004",
             "teamName": "Groot",
-            "ownerName": "Ben",
+            "ownerName": null,
             "score": "15.00",
             "minutesRemaining": 360,
             "isMe": false,
@@ -29283,7 +28966,7 @@
           {
             "franchiseId": "0003",
             "teamName": "THORgasm",
-            "ownerName": "Jeff",
+            "ownerName": null,
             "score": "14.00",
             "minutesRemaining": 420,
             "isMe": true,
@@ -29292,7 +28975,7 @@
           {
             "franchiseId": "0005",
             "teamName": "Wilson and the Multi-Beasts",
-            "ownerName": "Paul",
+            "ownerName": null,
             "score": "13.20",
             "minutesRemaining": 360,
             "isMe": false,
@@ -29301,7 +28984,7 @@
           {
             "franchiseId": "0007",
             "teamName": "The Juggernaut B",
-            "ownerName": "Josh",
+            "ownerName": null,
             "score": "12.00",
             "minutesRemaining": 420,
             "isMe": false,
@@ -29310,7 +28993,7 @@
           {
             "franchiseId": "0006",
             "teamName": "RedZone Vision",
-            "ownerName": "Joe",
+            "ownerName": null,
             "score": "10.30",
             "minutesRemaining": 360,
             "isMe": false,
@@ -29319,7 +29002,7 @@
           {
             "franchiseId": "0001",
             "teamName": "Gridiron Man",
-            "ownerName": "Alex",
+            "ownerName": null,
             "score": "4.10",
             "minutesRemaining": 420,
             "isMe": false,
@@ -29328,7 +29011,7 @@
           {
             "franchiseId": "0011",
             "teamName": "Professor FleX",
-            "ownerName": "Brandon",
+            "ownerName": null,
             "score": "0.00",
             "minutesRemaining": 480,
             "isMe": false,
@@ -29337,7 +29020,7 @@
           {
             "franchiseId": "0012",
             "teamName": "Dreadpool",
-            "ownerName": "Alex",
+            "ownerName": null,
             "score": "0.00",
             "minutesRemaining": 480,
             "isMe": false,
@@ -29426,7 +29109,7 @@
         "Brashard Smith"
       ],
       "power": {
-        "computedAt": "2026-09-13T04:44:44.665Z",
+        "computedAt": "2026-09-13T13:18:06.056Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -30312,12 +29995,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/geno-smith.php"
-          },
-          "sleeper": {
-            "rank": 49,
-            "posRank": "QB8",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/geno-smith.php"
           }
         },
         {
@@ -30363,12 +30040,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/tyler-shough.php"
-          },
-          "sleeper": {
-            "rank": 9,
-            "posRank": "QB4",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/tyler-shough.php"
           }
         },
         {
@@ -30409,13 +30080,7 @@
             "rank": 290,
             "posRank": "RB74",
             "tier": null,
-            "delta": -8,
-            "url": "https://www.fantasypros.com/nfl/players/george-holani.php"
-          },
-          "sleeper": {
-            "rank": 31,
-            "posRank": "RB17",
-            "tier": null,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/george-holani.php"
           }
         },
@@ -30459,12 +30124,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/kaytron-allen.php"
-          },
-          "sleeper": {
-            "rank": 21,
-            "posRank": "RB11",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/kaytron-allen.php"
           }
         },
         {
@@ -30486,12 +30145,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/keaton-mitchell.php"
-          },
-          "sleeper": {
-            "rank": 13,
-            "posRank": "RB4",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/keaton-mitchell.php"
           }
         },
         {
@@ -30512,12 +30165,6 @@
             "posRank": "RB63",
             "tier": null,
             "delta": null,
-            "url": "https://www.fantasypros.com/nfl/players/nick-singleton.php"
-          },
-          "sleeper": {
-            "rank": 18,
-            "posRank": "RB9",
-            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/nick-singleton.php"
           }
         },
@@ -30624,12 +30271,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/dontayvion-wicks.php"
-          },
-          "sleeper": {
-            "rank": 44,
-            "posRank": "WR11",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/dontayvion-wicks.php"
           }
         },
         {
@@ -30649,7 +30290,7 @@
             "rank": 232,
             "posRank": "WR88",
             "tier": null,
-            "delta": 14,
+            "delta": 13,
             "url": "https://www.fantasypros.com/nfl/players/kyle-williams-wr-2025.php"
           }
         },
@@ -30672,12 +30313,6 @@
             "tier": null,
             "delta": -18,
             "url": "https://www.fantasypros.com/nfl/players/malik-washington.php"
-          },
-          "sleeper": {
-            "rank": 41,
-            "posRank": "WR10",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/malik-washington.php"
           }
         },
         {
@@ -30698,12 +30333,6 @@
             "posRank": "WR82",
             "tier": null,
             "delta": null,
-            "url": "https://www.fantasypros.com/nfl/players/rashod-bateman.php"
-          },
-          "sleeper": {
-            "rank": 85,
-            "posRank": "WR30",
-            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/rashod-bateman.php"
           }
         },
@@ -30766,7 +30395,7 @@
             "rank": 288,
             "posRank": "TE44",
             "tier": null,
-            "delta": -8,
+            "delta": -7,
             "url": "https://www.fantasypros.com/nfl/players/darnell-washington.php"
           }
         },
@@ -30787,7 +30416,7 @@
             "rank": 224,
             "posRank": "TE33",
             "tier": null,
-            "delta": 5,
+            "delta": 4,
             "url": "https://www.fantasypros.com/nfl/players/darren-waller.php"
           }
         },
@@ -30864,7 +30493,7 @@
           "originalTeamName": null
         }
       ],
-      "updatedAt": "2026-09-13T04:44:59.450Z",
+      "updatedAt": "2026-09-13T13:18:21.620Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -31235,7 +30864,7 @@
         "Chig Okonkwo"
       ],
       "power": {
-        "computedAt": "2026-09-13T04:44:44.665Z",
+        "computedAt": "2026-09-13T13:18:06.056Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -31677,7 +31306,7 @@
             {
               "franchiseId": "0009",
               "score": 1658.2,
-              "depth": 1610.4,
+              "depth": 1654.6,
               "filled": 9,
               "slotCount": 9,
               "byPosition": {
@@ -31695,7 +31324,7 @@
                 },
                 "TE": {
                   "score": 110.8,
-                  "depth": 248.1
+                  "depth": 292.3
                 }
               }
             }
@@ -32174,12 +31803,6 @@
             "tier": null,
             "delta": 2,
             "url": "https://www.fantasypros.com/nfl/players/juwan-johnson.php"
-          },
-          "sleeper": {
-            "rank": 10,
-            "posRank": "TE1",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/juwan-johnson.php"
           }
         },
         {
@@ -32210,7 +31833,7 @@
           "injuryStatus": null
         }
       ],
-      "updatedAt": "2026-09-13T04:44:59.558Z",
+      "updatedAt": "2026-09-13T13:18:21.747Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -32483,6 +32106,16 @@
         "3929645"
       ],
       "lineupError": null,
+      "rankings": {
+        "type": "ROS",
+        "scoring": "HALF",
+        "position": "ALL",
+        "lastUpdated": "9/07",
+        "totalExperts": 3,
+        "matched": 14,
+        "total": 15
+      },
+      "rankingsError": null,
       "available": [
         "KC Concepcion",
         "Brock Purdy",
@@ -32525,19 +32158,8 @@
         "Omar Cooper Jr.",
         "Gunnar Helm"
       ],
-      "availableAt": "2026-09-12T15:12:06.655Z",
-      "rankings": {
-        "type": "ROS",
-        "scoring": "HALF",
-        "position": "ALL",
-        "lastUpdated": "9/07",
-        "totalExperts": 3,
-        "matched": 14,
-        "total": 15
-      },
-      "rankingsError": null,
       "power": {
-        "computedAt": "2026-09-12T15:12:06.655Z",
+        "computedAt": "2026-09-13T13:18:06.056Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -33174,6 +32796,7 @@
         },
         "projectionsUnavailable": null
       },
+      "availableAt": "2026-09-13T13:18:06.056Z",
       "results": [
         {
           "year": "2020",
@@ -33269,7 +32892,7 @@
             "rank": 122,
             "posRank": "RB31",
             "tier": null,
-            "delta": 4,
+            "delta": 5,
             "url": "https://www.fantasypros.com/nfl/players/blake-corum.php"
           }
         },
@@ -33475,7 +33098,7 @@
           "injuryStatus": null
         }
       ],
-      "updatedAt": "2026-09-13T04:44:59.630Z",
+      "updatedAt": "2026-09-13T13:18:21.818Z",
       "error": null,
       "tags": [],
       "provider": "espn",
@@ -33747,6 +33370,16 @@
         "4697745"
       ],
       "lineupError": null,
+      "rankings": {
+        "type": "ROS",
+        "scoring": "PPR",
+        "position": "ALL",
+        "lastUpdated": "9/07",
+        "totalExperts": 3,
+        "matched": 14,
+        "total": 15
+      },
+      "rankingsError": null,
       "available": [
         "Makai Lemon",
         "KC Concepcion",
@@ -33759,7 +33392,6 @@
         "Khalil Shakir",
         "Malik Willis",
         "Dalton Kincaid",
-        "Jordan Love",
         "Juwan Johnson",
         "Rashid Shaheed",
         "Tyler Shough",
@@ -33787,21 +33419,11 @@
         "Gunnar Helm",
         "Jerry Jeudy",
         "Omar Cooper Jr.",
-        "Jonah Coleman"
+        "Jonah Coleman",
+        "Tre Tucker"
       ],
-      "availableAt": "2026-09-12T15:12:06.655Z",
-      "rankings": {
-        "type": "ROS",
-        "scoring": "PPR",
-        "position": "ALL",
-        "lastUpdated": "9/07",
-        "totalExperts": 3,
-        "matched": 14,
-        "total": 15
-      },
-      "rankingsError": null,
       "power": {
-        "computedAt": "2026-09-12T15:12:06.655Z",
+        "computedAt": "2026-09-13T13:18:06.056Z",
         "scoring": "PPR",
         "projections": {
           "source": {
@@ -33889,13 +33511,13 @@
             {
               "franchiseId": "9",
               "score": 1817.2,
-              "depth": 749.7,
+              "depth": 1027.2,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
                 "QB": {
                   "score": 312.6,
-                  "depth": 0
+                  "depth": 277.5
                 },
                 "RB": {
                   "score": 741.8,
@@ -34337,13 +33959,13 @@
             {
               "franchiseId": "9",
               "score": 15.3,
-              "depth": 5.1,
+              "depth": 6,
               "filled": 7,
               "slotCount": 7,
               "byPosition": {
                 "QB": {
                   "score": 1.5,
-                  "depth": 0
+                  "depth": 0.9
                 },
                 "RB": {
                   "score": 6.6,
@@ -34438,6 +34060,7 @@
         },
         "projectionsUnavailable": null
       },
+      "availableAt": "2026-09-13T13:18:06.056Z",
       "results": [
         {
           "year": "2025",
@@ -34506,12 +34129,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/kyler-murray.php"
-          },
-          "sleeper": {
-            "rank": 2,
-            "posRank": "QB1",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/kyler-murray.php"
           }
         },
         {
@@ -34528,12 +34145,6 @@
             "posRank": "QB16",
             "tier": null,
             "delta": null,
-            "url": "https://www.fantasypros.com/nfl/players/malik-willis.php"
-          },
-          "sleeper": {
-            "rank": 5,
-            "posRank": "QB3",
-            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/malik-willis.php"
           }
         },
@@ -34622,13 +34233,7 @@
             "rank": 290,
             "posRank": "RB74",
             "tier": null,
-            "delta": -8,
-            "url": "https://www.fantasypros.com/nfl/players/george-holani.php"
-          },
-          "sleeper": {
-            "rank": 31,
-            "posRank": "RB17",
-            "tier": null,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/george-holani.php"
           }
         },
@@ -34768,13 +34373,7 @@
             "rank": 204,
             "posRank": "WR77",
             "tier": null,
-            "delta": 14,
-            "url": "https://www.fantasypros.com/nfl/players/ted-hurst.php"
-          },
-          "sleeper": {
-            "rank": 59,
-            "posRank": "WR18",
-            "tier": null,
+            "delta": 13,
             "url": "https://www.fantasypros.com/nfl/players/ted-hurst.php"
           }
         },
@@ -34793,12 +34392,6 @@
             "tier": null,
             "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/brenton-strange.php"
-          },
-          "sleeper": {
-            "rank": 48,
-            "posRank": "TE7",
-            "tier": null,
-            "url": "https://www.fantasypros.com/nfl/players/brenton-strange.php"
           }
         },
         {
@@ -34815,12 +34408,6 @@
             "posRank": "TE19",
             "tier": null,
             "delta": 6,
-            "url": "https://www.fantasypros.com/nfl/players/terrance-ferguson.php"
-          },
-          "sleeper": {
-            "rank": 36,
-            "posRank": "TE3",
-            "tier": null,
             "url": "https://www.fantasypros.com/nfl/players/terrance-ferguson.php"
           }
         },
@@ -34843,7 +34430,7 @@
         }
       ],
       "draftInProgress": false,
-      "updatedAt": "2026-09-13T04:44:59.814Z",
+      "updatedAt": "2026-09-13T13:18:21.992Z",
       "error": null,
       "tags": [
         "Superflex",
@@ -35203,7 +34790,7 @@
         "DJ Giddens"
       ],
       "power": {
-        "computedAt": "2026-09-13T04:44:44.665Z",
+        "computedAt": "2026-09-13T13:18:06.056Z",
         "scoring": "HALF",
         "projections": {
           "source": {
@@ -35525,7 +35112,7 @@
             {
               "franchiseId": "11",
               "score": 2044.1,
-              "depth": 679.6,
+              "depth": 678.8,
               "filled": 10,
               "slotCount": 10,
               "byPosition": {
@@ -35535,7 +35122,7 @@
                 },
                 "RB": {
                   "score": 489.5,
-                  "depth": 244.4
+                  "depth": 243.6
                 },
                 "WR": {
                   "score": 754.2,
@@ -36069,7 +35656,7 @@
             "rank": 143,
             "posRank": "TE22",
             "tier": null,
-            "delta": 3,
+            "delta": null,
             "url": "https://www.fantasypros.com/nfl/players/terrance-ferguson.php"
           },
           "sleeper": {
@@ -36293,7 +35880,8 @@
         "Kaytron Allen",
         "Sean Tucker",
         "Darnell Washington",
-        "Jahan Dotson"
+        "Jahan Dotson",
+        "Christian Kirk"
       ],
       "power": {
         "computedAt": "2026-09-08T01:33:08.191Z",
@@ -37081,7 +36669,7 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-09-12T15:12:06.655Z",
+      "availableAt": "2026-09-13T13:18:06.056Z",
       "results": [
         {
           "year": "2016",
@@ -38642,7 +38230,7 @@
             "rank": 71,
             "posRank": "WR36",
             "tier": null,
-            "delta": 11,
+            "delta": 12,
             "url": "https://www.fantasypros.com/nfl/players/makai-lemon.php"
           }
         },
@@ -39677,7 +39265,7 @@
         },
         "projectionsUnavailable": null
       },
-      "availableAt": "2026-09-12T15:12:06.655Z",
+      "availableAt": "2026-09-13T13:18:06.056Z",
       "results": [
         {
           "year": "2014",
@@ -40737,7 +40325,7 @@
             "rank": 56,
             "posRank": "WR25",
             "tier": null,
-            "delta": 6,
+            "delta": 5,
             "url": "https://www.fantasypros.com/nfl/players/mike-evans.php"
           }
         },
@@ -40793,7 +40381,7 @@
             "rank": 120,
             "posRank": "TE10",
             "tier": null,
-            "delta": 2,
+            "delta": 3,
             "url": "https://www.fantasypros.com/nfl/players/isaiah-likely.php"
           }
         },
@@ -40856,7 +40444,7 @@
         {
           "franchiseId": "0001",
           "teamName": "Packers First Round Pick",
-          "ownerName": "Joe",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -40867,7 +40455,7 @@
         {
           "franchiseId": "0002",
           "teamName": "I Love Loves",
-          "ownerName": "Ben",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -40878,7 +40466,7 @@
         {
           "franchiseId": "0003",
           "teamName": "JLC's Backyard Datacenter",
-          "ownerName": "Schmidty",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -40889,7 +40477,7 @@
         {
           "franchiseId": "0004",
           "teamName": "Drafting before rookies is stupid",
-          "ownerName": "Josh",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -40900,7 +40488,7 @@
         {
           "franchiseId": "0005",
           "teamName": "UW Marching Band",
-          "ownerName": "Dave",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -40911,7 +40499,7 @@
         {
           "franchiseId": "0006",
           "teamName": "Vikings First Round Pick",
-          "ownerName": "Jeff",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -40922,7 +40510,7 @@
         {
           "franchiseId": "0007",
           "teamName": "Take your mom's ass",
-          "ownerName": "Josh",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -40933,7 +40521,7 @@
         {
           "franchiseId": "0008",
           "teamName": "Pre-April Nuptials",
-          "ownerName": "Eugene",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -40944,7 +40532,7 @@
         {
           "franchiseId": "0009",
           "teamName": "Wisconsin Sucks",
-          "ownerName": "Michael",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -40955,7 +40543,7 @@
         {
           "franchiseId": "0010",
           "teamName": "Who the eff drafts in april",
-          "ownerName": "Tyler",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -42045,7 +41633,7 @@
             "rank": 29,
             "posRank": "WR12",
             "tier": null,
-            "delta": 3,
+            "delta": 2,
             "url": "https://www.fantasypros.com/nfl/players/zay-flowers.php"
           }
         },
@@ -43564,7 +43152,7 @@
         {
           "franchiseId": "0001",
           "teamName": "Bo No Mercy",
-          "ownerName": null,
+          "ownerName": "Joe",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -43575,7 +43163,7 @@
         {
           "franchiseId": "0002",
           "teamName": "QB Bills",
-          "ownerName": null,
+          "ownerName": "Ben",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -43586,7 +43174,7 @@
         {
           "franchiseId": "0003",
           "teamName": "Tecmo Bo-lievers",
-          "ownerName": null,
+          "ownerName": "Josh",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -43597,7 +43185,7 @@
         {
           "franchiseId": "0004",
           "teamName": "Marcus Allen",
-          "ownerName": null,
+          "ownerName": "Jeff",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -43608,7 +43196,7 @@
         {
           "franchiseId": "0005",
           "teamName": "House of Bo",
-          "ownerName": null,
+          "ownerName": "Josh",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -43619,7 +43207,7 @@
         {
           "franchiseId": "0006",
           "teamName": "Stop Bo If You Can",
-          "ownerName": null,
+          "ownerName": "Dave",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -43630,7 +43218,7 @@
         {
           "franchiseId": "0007",
           "teamName": "Illegal Use of Bo Jackson",
-          "ownerName": null,
+          "ownerName": "Alex",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -43641,7 +43229,7 @@
         {
           "franchiseId": "0008",
           "teamName": "My Bo(s)Jangle",
-          "ownerName": null,
+          "ownerName": "Eugene",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -43652,7 +43240,7 @@
         {
           "franchiseId": "0009",
           "teamName": "The Bo Show",
-          "ownerName": null,
+          "ownerName": "Paul",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -43663,7 +43251,7 @@
         {
           "franchiseId": "0010",
           "teamName": "Tim Brown was on the team too",
-          "ownerName": null,
+          "ownerName": "Mike",
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -44791,7 +44379,7 @@
             "rank": 120,
             "posRank": "TE10",
             "tier": null,
-            "delta": 2,
+            "delta": 3,
             "url": "https://www.fantasypros.com/nfl/players/isaiah-likely.php"
           }
         },
@@ -46110,7 +45698,7 @@
             "rank": 56,
             "posRank": "WR25",
             "tier": null,
-            "delta": 6,
+            "delta": 5,
             "url": "https://www.fantasypros.com/nfl/players/mike-evans.php"
           }
         },
@@ -46239,7 +45827,7 @@
         {
           "franchiseId": "0001",
           "teamName": "Overdue Fines",
-          "ownerName": "Joe",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46250,7 +45838,7 @@
         {
           "franchiseId": "0002",
           "teamName": "Judge a Book by Its Roster",
-          "ownerName": "Ben",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46261,7 +45849,7 @@
         {
           "franchiseId": "0003",
           "teamName": "The Plot Thickens",
-          "ownerName": "Josh",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46272,7 +45860,7 @@
         {
           "franchiseId": "0004",
           "teamName": "Audiobooks are NOT reading",
-          "ownerName": "Jeff",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46283,7 +45871,7 @@
         {
           "franchiseId": "0005",
           "teamName": "Spine Crackers",
-          "ownerName": "Josh",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46294,7 +45882,7 @@
         {
           "franchiseId": "0006",
           "teamName": "The Book Club Bench",
-          "ownerName": "Dave",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46305,7 +45893,7 @@
         {
           "franchiseId": "0007",
           "teamName": "Bookmarked for Later",
-          "ownerName": "Mike",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46316,7 +45904,7 @@
         {
           "franchiseId": "0008",
           "teamName": "Scratch-n-Sniff",
-          "ownerName": "Eugene",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46327,7 +45915,7 @@
         {
           "franchiseId": "0009",
           "teamName": "The Footnotes",
-          "ownerName": "Alex",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46338,7 +45926,7 @@
         {
           "franchiseId": "0010",
           "teamName": "Prologue Problems",
-          "ownerName": "Paul",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
@@ -46349,7 +45937,7 @@
         {
           "franchiseId": "0011",
           "teamName": "Between Chapters",
-          "ownerName": "Lucas",
+          "ownerName": null,
           "wins": 0,
           "losses": 0,
           "ties": 0,
