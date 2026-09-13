@@ -112,6 +112,23 @@
 // Fill in results here after running.
 // ===================================================================
 //
+// ===================================================================
+// RUN 3 — added after fetchEspnScoring switched from trusting
+// schedule[].home/away.totalPoints (confirmed on 2026-09-12 to sit flat at
+// 0 for hours while several starters' games had already gone final — a
+// batched figure, not a live one) to summing each starter's own
+// appliedStatTotal instead. Community docs for the ESPN API describe a
+// separate `totalPointsLive` (and `totalProjectedPointsLive`) field meant
+// to be the actual live-updating number, unconfirmed against any league
+// here. This run dumps every candidate location for it (the matchup object
+// itself and each side) plus the full key sets, so the question is answered
+// off real data rather than another guess: does the field exist at all,
+// where does it live, and does it already match (or improve on) the summed
+// total the code now computes?
+//
+// Fill in results here after running.
+// ===================================================================
+//
 // Read-only. Run from the Actions tab (probe-live-scoring-players.yml).
 import {
   mflLogin,
@@ -250,12 +267,24 @@ if (ESPN_LEAGUE_ID) {
       proTeamId: e.playerPoolEntry?.player?.proTeamId,
       injuryStatus: e.playerPoolEntry?.player?.injuryStatus,
     })), null, 2));
-    console.log(`\nside.totalPoints = ${side?.totalPoints}; sum of non-bench/IR appliedStatTotal = ${
-      entries
-        .filter((e) => e.lineupSlotId !== 20 && e.lineupSlotId !== 21)
-        .reduce((acc, e) => acc + Number(e.playerPoolEntry?.appliedStatTotal ?? 0), 0)
-        .toFixed(2)
-    }`);
+    const summedScore = entries
+      .filter((e) => e.lineupSlotId !== 20 && e.lineupSlotId !== 21)
+      .reduce((acc, e) => acc + Number(e.playerPoolEntry?.appliedStatTotal ?? 0), 0);
+    console.log(`\nside.totalPoints = ${side?.totalPoints}; sum of non-bench/IR appliedStatTotal = ${summedScore.toFixed(2)}`);
+
+    // RUN 3: does either the matchup object or the side itself carry a
+    // totalPointsLive (or totalProjectedPointsLive)? Dumped for BOTH sides,
+    // and both matchup-level and side-level keys, since community docs
+    // disagree on where a live total would live and neither has been
+    // checked against a real league here.
+    console.log(`\n--- RUN 3: hunting for totalPointsLive ---`);
+    console.log(`matchup-level keys: ${keysOf(m)}`);
+    console.log(`home-side keys: ${keysOf(m?.home)}`);
+    console.log(`away-side keys: ${keysOf(m?.away)}`);
+    console.log(`matchup.totalPointsLive = ${m?.totalPointsLive}; matchup.totalProjectedPointsLive = ${m?.totalProjectedPointsLive}`);
+    console.log(`home.totalPoints = ${m?.home?.totalPoints}; home.totalPointsLive = ${m?.home?.totalPointsLive}; home.totalProjectedPointsLive = ${m?.home?.totalProjectedPointsLive}`);
+    console.log(`away.totalPoints = ${m?.away?.totalPoints}; away.totalPointsLive = ${m?.away?.totalPointsLive}; away.totalProjectedPointsLive = ${m?.away?.totalProjectedPointsLive}`);
+    console.log(`(for comparison) summed non-bench/IR appliedStatTotal for the side dumped above = ${summedScore.toFixed(2)}`);
 
     // RUN 2: does this response carry a per-CATEGORY breakdown (raw stat id
     // -> value, and points per stat id), or only the single appliedStatTotal
