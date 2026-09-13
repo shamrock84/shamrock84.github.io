@@ -2328,9 +2328,13 @@ function espnStatBreakdown(statsArray, scoringPeriodId) {
   return rows;
 }
 
+// summedScore is a fallback only — the caller prefers the side's own
+// totalPointsLive (see fetchEspnScoring's comment) and reaches for this sum
+// solely if that field is ever absent from a response.
 function espnTeamLiveStarters(teamSide, clockMap, currentPeriod) {
   const entries = teamSide?.rosterForCurrentScoringPeriod?.entries || [];
   let seconds = 0;
+  let summedScore = 0;
   const players = [];
   for (const e of entries) {
     if (e.lineupSlotId === ESPN_BENCH_SLOT_ID || e.lineupSlotId === ESPN_IR_SLOT_ID) continue;
@@ -2339,6 +2343,7 @@ function espnTeamLiveStarters(teamSide, clockMap, currentPeriod) {
     const secondsRemaining = clockMap.get(abbr) ?? 0;
     seconds += secondsRemaining;
     const points = e.playerPoolEntry?.appliedStatTotal;
+    summedScore += points == null ? 0 : Number(points);
     players.push({
       name: p?.fullName || '',
       secondsRemaining,
@@ -2348,7 +2353,7 @@ function espnTeamLiveStarters(teamSide, clockMap, currentPeriod) {
       stats: espnStatBreakdown(p?.stats, currentPeriod),
     });
   }
-  return { minutesRemaining: Math.round(seconds / 60), players };
+  return { minutesRemaining: Math.round(seconds / 60), score: summedScore, players };
 }
 
 // clockMap is optional — pass one from fetchNflGameClocks (shared across
@@ -2356,6 +2361,21 @@ function espnTeamLiveStarters(teamSide, clockMap, currentPeriod) {
 // regardless of league) to skip fetching it again here. projectPlayer is
 // also optional — see attachWinProbabilities' own comment. ESPN's starters
 // carry `name`, not an id — see espnTeamLiveStarters' comment for why.
+//
+// The team score reads the SIDE's own `totalPointsLive`, never the matchup
+// object's `totalPoints` — that field is a batched/end-of-day figure, not a
+// live one. probe-live-scoring-players.yml RUN 1 caught the two disagreeing
+// during a live game (totalPoints read 0 while starters summed to 4.10), and
+// RUN 3 (2026-09-13, week 1, live Sunday slate) confirmed it gets worse than
+// "lags a few minutes": every ESPN league's `totalPoints` read flat 0 hours
+// into the slate, with several starters already carrying real scores from
+// finished games. RUN 3 also confirmed `totalPointsLive` lives on the SIDE
+// (home/away), not the matchup, and matched espnTeamLiveStarters' own summed
+// appliedStatTotal exactly (26.2 both ways) — so it's read here as the
+// primary source, with the sum kept only as a defensive fallback for a
+// response that somehow omits it. Preferring ESPN's own number over the sum
+// means a team-level manual scoring adjustment (not tied to any player's
+// stat line) is still counted; a pure sum would silently drop it.
 export async function fetchEspnScoring(league, clockMap, projectPlayer) {
   const [data, clocks] = await Promise.all([
     espnGet(league, 'view=mScoreboard&view=mTeam&view=mRoster'),
@@ -2375,13 +2395,13 @@ export async function fetchEspnScoring(league, clockMap, projectPlayer) {
   for (const m of schedule) {
     const teamIds = [];
     if (m.home) {
-      const { minutesRemaining, players } = espnTeamLiveStarters(m.home, clocks, currentPeriod);
-      rows.push({ teamId: m.home.teamId, score: m.home.totalPoints ?? 0, minutesRemaining, players });
+      const { minutesRemaining, score: summedScore, players } = espnTeamLiveStarters(m.home, clocks, currentPeriod);
+      rows.push({ teamId: m.home.teamId, score: m.home.totalPointsLive ?? summedScore, minutesRemaining, players });
       teamIds.push(String(m.home.teamId));
     }
     if (m.away) {
-      const { minutesRemaining, players } = espnTeamLiveStarters(m.away, clocks, currentPeriod);
-      rows.push({ teamId: m.away.teamId, score: m.away.totalPoints ?? 0, minutesRemaining, players });
+      const { minutesRemaining, score: summedScore, players } = espnTeamLiveStarters(m.away, clocks, currentPeriod);
+      rows.push({ teamId: m.away.teamId, score: m.away.totalPointsLive ?? summedScore, minutesRemaining, players });
       teamIds.push(String(m.away.teamId));
     }
     if (teamIds.length) matchups.push({ teamIds });

@@ -112,6 +112,32 @@
 // Fill in results here after running.
 // ===================================================================
 //
+// ===================================================================
+// RUN 3 — 2026-09-13, week 1, live Sunday slate, ~00:48 UTC. Added after
+// fetchEspnScoring switched from trusting schedule[].home/away.totalPoints
+// (confirmed on 2026-09-12 to sit flat at 0 for hours while several
+// starters' games had already gone final — a batched figure, not a live
+// one) to summing each starter's own appliedStatTotal instead. Question:
+// does ESPN expose a genuinely live team total field, and where?
+//
+// CONFIRMED: totalPointsLive exists, and lives on the SIDE object
+// (home/away), not the matchup — matchup-level keys carried no such field
+// (`away, home, id, matchupPeriodId, winner` only), while each side's own
+// keys included `totalPointsLive` and `totalProjectedPointsLive` right
+// alongside the stale `totalPoints`. Real numbers from this run:
+//   home.totalPoints = 0        (the stale/batched field — confirms RUN 1's
+//                                 finding again, worse: hours in, not seconds)
+//   home.totalPointsLive = 26.2
+//   sum of non-bench/IR appliedStatTotal for the same side = 26.20
+//   home.totalProjectedPointsLive = 126.98949738  (full-week projection,
+//                                 not a candidate for the live score)
+//   away.totalPoints = 0; away.totalPointsLive = 18
+// totalPointsLive matched the summed total exactly, so fetchEspnScoring now
+// reads totalPointsLive as the primary source (it's ESPN's own number, so it
+// would also carry a team-level manual scoring adjustment a pure sum can't
+// see) and keeps the sum only as a fallback for a response that omits it.
+// ===================================================================
+//
 // Read-only. Run from the Actions tab (probe-live-scoring-players.yml).
 import {
   mflLogin,
@@ -250,12 +276,24 @@ if (ESPN_LEAGUE_ID) {
       proTeamId: e.playerPoolEntry?.player?.proTeamId,
       injuryStatus: e.playerPoolEntry?.player?.injuryStatus,
     })), null, 2));
-    console.log(`\nside.totalPoints = ${side?.totalPoints}; sum of non-bench/IR appliedStatTotal = ${
-      entries
-        .filter((e) => e.lineupSlotId !== 20 && e.lineupSlotId !== 21)
-        .reduce((acc, e) => acc + Number(e.playerPoolEntry?.appliedStatTotal ?? 0), 0)
-        .toFixed(2)
-    }`);
+    const summedScore = entries
+      .filter((e) => e.lineupSlotId !== 20 && e.lineupSlotId !== 21)
+      .reduce((acc, e) => acc + Number(e.playerPoolEntry?.appliedStatTotal ?? 0), 0);
+    console.log(`\nside.totalPoints = ${side?.totalPoints}; sum of non-bench/IR appliedStatTotal = ${summedScore.toFixed(2)}`);
+
+    // RUN 3: does either the matchup object or the side itself carry a
+    // totalPointsLive (or totalProjectedPointsLive)? Dumped for BOTH sides,
+    // and both matchup-level and side-level keys, since community docs
+    // disagree on where a live total would live and neither has been
+    // checked against a real league here.
+    console.log(`\n--- RUN 3: hunting for totalPointsLive ---`);
+    console.log(`matchup-level keys: ${keysOf(m)}`);
+    console.log(`home-side keys: ${keysOf(m?.home)}`);
+    console.log(`away-side keys: ${keysOf(m?.away)}`);
+    console.log(`matchup.totalPointsLive = ${m?.totalPointsLive}; matchup.totalProjectedPointsLive = ${m?.totalProjectedPointsLive}`);
+    console.log(`home.totalPoints = ${m?.home?.totalPoints}; home.totalPointsLive = ${m?.home?.totalPointsLive}; home.totalProjectedPointsLive = ${m?.home?.totalProjectedPointsLive}`);
+    console.log(`away.totalPoints = ${m?.away?.totalPoints}; away.totalPointsLive = ${m?.away?.totalPointsLive}; away.totalProjectedPointsLive = ${m?.away?.totalProjectedPointsLive}`);
+    console.log(`(for comparison) summed non-bench/IR appliedStatTotal for the side dumped above = ${summedScore.toFixed(2)}`);
 
     // RUN 2: does this response carry a per-CATEGORY breakdown (raw stat id
     // -> value, and points per stat id), or only the single appliedStatTotal
