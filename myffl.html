@@ -1774,7 +1774,12 @@
 		.now-playing-row {
 			display: flex;
 			justify-content: space-between;
-			align-items: baseline;
+			/* center, not baseline: .now-playing-name is two lines once the
+			   game-clock line is present (name+count, then the clock), and
+			   center is what lines the score up against the whole block —
+			   same choice .scoring-matchup-row makes for its own two-line
+			   name column next to a single-line score. */
+			align-items: center;
 			gap: 0.5rem;
 			padding: 0.3rem 0.5rem;
 			font-size: 0.85rem;
@@ -7050,6 +7055,18 @@
 		// not what's rostered) filtered down to isPlayerLive and the one
 		// team per league that's isMe.
 		//
+		// Kickers and defenses never appear here, on user request — neither
+		// swings meaningfully play-to-play the way a skill-position player's
+		// score does, and on a full Sunday slate they were buying two more
+		// mostly-one-row mini-cards for the least actionable positions on
+		// the page. A separate exclusion list rather than reusing
+		// POSITION_ORDER's own ordering (that list still needs PK/Def in it
+		// for every other card that ranks a whole roster, Team Needs
+		// included) or WIRE_EXCLUDED_POSITIONS-style constant elsewhere,
+		// since this card is the only place on the page that drops them
+		// from a *live* view rather than a wire or a ranking.
+		const NOW_PLAYING_EXCLUDED_POSITIONS = new Set(['PK', 'Def']);
+
 		// Keyed by normalizeName, same join computePlayerExposure uses for
 		// the Analytics cards — a player started in more than one of your
 		// leagues (a dynasty QB who's also your salary-cap QB) is one row,
@@ -7067,6 +7084,7 @@
 				if (!mine) continue;
 				for (const p of mine.players || []) {
 					if (!isPlayerLive(p)) continue;
+					if (NOW_PLAYING_EXCLUDED_POSITIONS.has(p.position)) continue;
 					const key = normalizeName(p.name) || p.name;
 					if (!byPlayer.has(key)) {
 						byPlayer.set(key, { name: p.name, position: p.position, team: p.team, entries: [] });
@@ -7113,7 +7131,7 @@
 		// position on the tab predictable instead of having it pop in and
 		// out as leagues answer.
 		//
-		// Grouped into one mini-card per position (QB/RB/WR/.../Def) rather
+		// Grouped into one mini-card per position (QB/RB/WR/TE) rather
 		// than a single table, on user feedback: a Sunday slate can be
 		// dozens of rows, and a four-column table wastes width on Player/Pos/
 		// My Teams cells that are mostly whitespace while forcing every row
@@ -7195,10 +7213,16 @@
 					posCard.appendChild(el('div', { class: 'now-playing-position-head', text: pos }));
 					for (const r of group) {
 						const row = el('div', { class: 'now-playing-row' });
-						const nameLine = el('span', { class: 'now-playing-name' });
-						nameLine.appendChild(document.createTextNode(r.name));
-						if (r.team) appendTeamSuffix(nameLine, r.team);
-						nameLine.appendChild(document.createTextNode(' '));
+						// A block, not a span: the game-clock line below needs
+						// its own row inside this cell, and the score sibling
+						// aligns itself against the whole two-line block via
+						// .now-playing-row's own align-items (see that rule's
+						// comment) rather than either line individually.
+						const nameLine = el('div', { class: 'now-playing-name' });
+						const firstLine = el('div');
+						firstLine.appendChild(document.createTextNode(r.name));
+						if (r.team) appendTeamSuffix(firstLine, r.team);
+						firstLine.appendChild(document.createTextNode(' '));
 						// Always the popover, even at N=1 — see this
 						// function's own comment on why: with no My Teams
 						// column, this is the only place the league's name
@@ -7217,7 +7241,15 @@
 								r.entries.map((en) => ({ left: en.league.name, right: en.score == null ? '–' : en.score.toFixed(2) }))
 							);
 						});
-						nameLine.appendChild(countBtn);
+						firstLine.appendChild(countBtn);
+						nameLine.appendChild(firstLine);
+						// The same live game line the matchup drawer shows
+						// under a starter's name — free, since it's the same
+						// liveGames map, and it's exactly the context
+						// "currently playing" implies: what quarter, what the
+						// clock says.
+						const game = playerGameLine(r.team);
+						if (game) nameLine.appendChild(el('div', { class: 'scoring-matchup-meta', text: game }));
 						row.appendChild(nameLine);
 						row.appendChild(el('span', {
 							class: 'now-playing-score',
