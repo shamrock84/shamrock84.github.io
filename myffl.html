@@ -2854,11 +2854,17 @@
 		   than the shrink-to-fit the other five popovers get from their
 		   rows: an input has no natural content width to shrink to, and
 		   this keeps Save/Cancel from reflowing against a wide category
-		   value. The popover's own left-edge clamp (see makePopover's
-		   position()) is what actually keeps this off-screen on a phone —
-		   nothing here needs to know the viewport width itself. */
+		   value. 14rem was cramped enough on desktop to make the text
+		   field feel like a phone input even with the whole card free —
+		   26rem gives the text and category fields room to actually show
+		   what's typed. The popover's own left-edge clamp (see makePopover's
+		   position()) keeps this off-screen to the left on a phone, but that
+		   clamp only ever slides the box — it can't shrink it — so the
+		   max-width here is what stops a 26rem box overrunning a viewport
+		   narrower than that. */
 		.task-popover {
-			width: 14rem;
+			width: 26rem;
+			max-width: calc(100vw - 1rem);
 		}
 		.planning-task-popover-form {
 			display: flex;
