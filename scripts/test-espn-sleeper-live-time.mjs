@@ -201,7 +201,16 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
       matchupPeriodId: 1,
       home: {
         teamId: 1,
+        // Deliberately stale/wrong decoys: probe-live-scoring-players.yml RUN 3
+        // confirmed totalPoints is a batched figure (read flat 0 hours into a
+        // live Sunday while starters already carried real scores), so
+        // fetchEspnScoring must never read it. totalPointsLive is the
+        // confirmed-live field and must win even though it disagrees with the
+        // starters' own summed appliedStatTotal (12.5) below — that's the
+        // point: it can include a team-level manual scoring adjustment a pure
+        // sum would miss.
         totalPoints: 20,
+        totalPointsLive: 40,
         rosterForCurrentScoringPeriod: {
           entries: [
             rosterEntry(26, 3, 'Seattle Starter', 12.5, 3), // SEA starter (proTeamId 26 = SEA), WR
@@ -212,6 +221,9 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
       },
       away: {
         teamId: 2,
+        // No totalPointsLive at all — pins the fallback path (sum of
+        // non-bench/IR appliedStatTotal, here 0 since the one starter's
+        // points field is itself missing) for a response that omits it.
         totalPoints: 15,
         rosterForCurrentScoringPeriod: {
           entries: [
@@ -232,6 +244,8 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
 
   const home = result.teams.find((t) => t.franchiseId === '1');
   const away = result.teams.find((t) => t.franchiseId === '2');
+  assert.equal(home.score, '40.00', 'totalPointsLive (40) wins over both totalPoints (20, stale) and the starters’ own summed appliedStatTotal (12.5)');
+  assert.equal(away.score, '0.00', 'no totalPointsLive on this side falls back to the summed appliedStatTotal, here 0 since the one starter carries no points field');
   assert.equal(home.minutesRemaining, 30, 'SEA (1800s) + NE (0s) = 1800s = 30 minutes; the benched KC entry is excluded');
   assert.equal(away.minutesRemaining, 60, 'KC alone, full 3600s = 60 minutes');
   assert.equal(home.winProb + away.winProb, 100);

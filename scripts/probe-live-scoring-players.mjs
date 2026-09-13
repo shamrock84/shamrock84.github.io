@@ -113,20 +113,29 @@
 // ===================================================================
 //
 // ===================================================================
-// RUN 3 — added after fetchEspnScoring switched from trusting
-// schedule[].home/away.totalPoints (confirmed on 2026-09-12 to sit flat at
-// 0 for hours while several starters' games had already gone final — a
-// batched figure, not a live one) to summing each starter's own
-// appliedStatTotal instead. Community docs for the ESPN API describe a
-// separate `totalPointsLive` (and `totalProjectedPointsLive`) field meant
-// to be the actual live-updating number, unconfirmed against any league
-// here. This run dumps every candidate location for it (the matchup object
-// itself and each side) plus the full key sets, so the question is answered
-// off real data rather than another guess: does the field exist at all,
-// where does it live, and does it already match (or improve on) the summed
-// total the code now computes?
+// RUN 3 — 2026-09-13, week 1, live Sunday slate, ~00:48 UTC. Added after
+// fetchEspnScoring switched from trusting schedule[].home/away.totalPoints
+// (confirmed on 2026-09-12 to sit flat at 0 for hours while several
+// starters' games had already gone final — a batched figure, not a live
+// one) to summing each starter's own appliedStatTotal instead. Question:
+// does ESPN expose a genuinely live team total field, and where?
 //
-// Fill in results here after running.
+// CONFIRMED: totalPointsLive exists, and lives on the SIDE object
+// (home/away), not the matchup — matchup-level keys carried no such field
+// (`away, home, id, matchupPeriodId, winner` only), while each side's own
+// keys included `totalPointsLive` and `totalProjectedPointsLive` right
+// alongside the stale `totalPoints`. Real numbers from this run:
+//   home.totalPoints = 0        (the stale/batched field — confirms RUN 1's
+//                                 finding again, worse: hours in, not seconds)
+//   home.totalPointsLive = 26.2
+//   sum of non-bench/IR appliedStatTotal for the same side = 26.20
+//   home.totalProjectedPointsLive = 126.98949738  (full-week projection,
+//                                 not a candidate for the live score)
+//   away.totalPoints = 0; away.totalPointsLive = 18
+// totalPointsLive matched the summed total exactly, so fetchEspnScoring now
+// reads totalPointsLive as the primary source (it's ESPN's own number, so it
+// would also carry a team-level manual scoring adjustment a pure sum can't
+// see) and keeps the sum only as a fallback for a response that omits it.
 // ===================================================================
 //
 // Read-only. Run from the Actions tab (probe-live-scoring-players.yml).
