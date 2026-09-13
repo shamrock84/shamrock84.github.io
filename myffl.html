@@ -1711,6 +1711,85 @@
 		.now-playing-card {
 			grid-column: 1 / -1;
 		}
+		/* The subtitle row carries both the live count and the Score sort
+		   toggle — space-between rather than stacked, since a phone-width
+		   card has room for both on one line and a wider one would otherwise
+		   leave the toggle stranded on the far right with nothing near it. */
+		.now-playing-subtitle {
+			display: flex;
+			flex-wrap: wrap;
+			justify-content: space-between;
+			align-items: baseline;
+			gap: 0.3rem 0.6rem;
+		}
+		/* Small and muted like the subtitle text it sits in, accent-colored
+		   only for the "this is clickable" cue every other link-button on
+		   this page uses — not .starters-link/.now-playing-count-link's
+		   underline, which would read as too heavy against a subtitle. */
+		.now-playing-sort-btn {
+			font: inherit;
+			font-size: 0.78rem;
+			color: var(--accent);
+			background: none;
+			border: none;
+			padding: 0;
+			cursor: pointer;
+		}
+		/* One mini-card per position (QB/RB/WR/.../Def), side by side rather
+		   than one long vertical list — the whole reason this exists (see
+		   renderNowPlayingCard's own comment): a Sunday slate is dozens of
+		   rows, and grouping by position both removes the need for a Pos
+		   column and turns that length into width instead of scroll. Same
+		   flex-wrap/bounded-box shape as Depth Charts' .depth-chart-positions/
+		   .depth-chart-position, and for the same reason — plain adjacent
+		   lists with no border between them would blend into one block. */
+		.now-playing-positions {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 1rem;
+		}
+		.now-playing-position {
+			flex: 1 1 240px;
+			min-width: 0;
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			overflow: hidden;
+		}
+		/* Same accent-on-chip-bg banner Depth Charts' own position header
+		   uses (.depth-chart-table thead tr:first-child th) — reused rather
+		   than a new color, so "this band means position" reads the same
+		   way in both places. */
+		.now-playing-position-head {
+			font-size: 0.78rem;
+			font-weight: 700;
+			color: var(--accent);
+			background: var(--chip-bg);
+			padding: 0.35rem 0.5rem;
+		}
+		/* One line per player: name (plus NFL team and league count) on the
+		   left, score on the right — the "same info without columns" the
+		   feature request asked for. No table, just two flex children per
+		   row, which is what lets this collapse to one line instead of the
+		   two a table cell layout needed for the same content. */
+		.now-playing-row {
+			display: flex;
+			justify-content: space-between;
+			align-items: baseline;
+			gap: 0.5rem;
+			padding: 0.3rem 0.5rem;
+			font-size: 0.85rem;
+		}
+		.now-playing-row + .now-playing-row {
+			border-top: 1px solid var(--border);
+		}
+		.now-playing-name {
+			min-width: 0;
+			overflow-wrap: break-word;
+		}
+		.now-playing-score {
+			flex-shrink: 0;
+			font-variant-numeric: tabular-nums;
+		}
 		/* Scoring tab, matchup view: each two-team (or lone bye) matchup is its
 		   own small card — the exact border/radius/background .card already
 		   uses everywhere else, not a table row carrying a colored border or
@@ -2173,13 +2252,15 @@
 			text-underline-offset: 0.15rem;
 			cursor: pointer;
 		}
-		/* Now Playing's Score column, when a player is a live starter in more
-		   than one of your leagues at once — same shape as .salary-link/
-		   .finances-link, its own class for the same "nothing to gain from
-		   coupling them" reasoning those two keep separate. The popover it
-		   opens (nowPlayingPopover) is what shows the per-league scores a
-		   single number can't. */
-		.live-score-link {
+		/* Now Playing's "(N)" — every row's own league count, always
+		   clickable (even at N=1: with no My Teams column any more, this
+		   popover is the only place the league's NAME lives at all) — same
+		   shape as .salary-link/.finances-link, its own class for the same
+		   "nothing to gain from coupling them" reasoning those two keep
+		   separate. The popover it opens (nowPlayingPopover) is what shows
+		   which league(s) and, when they disagree, the per-league score a
+		   single number on the row can't. */
+		.now-playing-count-link {
 			background: none;
 			border: none;
 			padding: 0;
@@ -6960,25 +7041,24 @@
 
 		// --- Scoring tab: the Now Playing card ---
 		//
-		// One full-width table, first on the Scoring tab, answering "who of
-		// mine is on the field right now" without opening every league's own
-		// matchup drawer to find out. Built from the exact same `t.players[]`
-		// the drawer above reads (live-only, starters-only — see that
-		// section's own comment on why bench players never appear here: a
-		// benched player can't move your score, and this card is about
-		// what's live, not what's rostered) filtered down to isPlayerLive
-		// and the one team per league that's isMe.
+		// First on the Scoring tab, full-width, answering "who of mine is on
+		// the field right now" without opening every league's own matchup
+		// drawer to find out. Built from the exact same `t.players[]` the
+		// drawer above reads (live-only, starters-only — see that section's
+		// own comment on why bench players never appear here: a benched
+		// player can't move your score, and this card is about what's live,
+		// not what's rostered) filtered down to isPlayerLive and the one
+		// team per league that's isMe.
 		//
 		// Keyed by normalizeName, same join computePlayerExposure uses for
 		// the Analytics cards — a player started in more than one of your
 		// leagues (a dynasty QB who's also your salary-cap QB) is one row,
-		// not two, with every league that has him live listed under "My
-		// Teams". Real-world performance can still show a DIFFERENT fantasy
+		// not two. Real-world performance can still show a DIFFERENT fantasy
 		// score per league (PPR vs standard, most commonly), so the raw
 		// per-league scores ride along in `entries` rather than being
 		// collapsed into one number that would just be wrong for one of
-		// them — the table shows the best of them, and a click reveals the
-		// rest whenever there's more than one to reveal.
+		// them — the row shows the best of them, and the "(N)" league count
+		// (see renderNowPlayingCard) opens the rest.
 		function computeNowPlaying(leagues) {
 			const byPlayer = new Map();
 			for (const league of leagues) {
@@ -7001,12 +7081,11 @@
 				const scored = r.entries.map((e) => e.score).filter((s) => s != null);
 				return { ...r, score: scored.length ? Math.max(...scored) : null };
 			});
-			// The default order before any header is clicked — best score
-			// leads, same "most notable first" reasoning as every other
-			// card's default. missingLast's job, done by hand here since this
-			// sort runs before makeTableSort exists: a score not in yet
-			// (kickoff was seconds ago) sinks to the bottom either way rather
-			// than sorting as a 0.
+			// The default order before the sort toggle (see
+			// renderNowPlayingCard) touches anything — best score leads,
+			// same "most notable first" reasoning as every other card's
+			// default. A score not in yet (kickoff was seconds ago) sinks to
+			// the bottom either way rather than sorting as a 0.
 			rows.sort((a, b) => {
 				if (a.score == null && b.score == null) return 0;
 				if (a.score == null) return 1;
@@ -7016,10 +7095,11 @@
 			return rows;
 		}
 
-		// A second, dedicated makePopover instance — this card's Score
-		// column is the one place on the Scoring tab a single number can't
-		// say everything, so a click reveals the per-league breakdown the
-		// same way Salary by Year/Won Breakdown do for theirs.
+		// One dedicated makePopover instance for the "(N)" league count on
+		// every row — the one place this card names a league at all, now
+		// that there's no My Teams column to spell it out in. Doubles as the
+		// per-league score breakdown when the leagues disagree (see
+		// computeNowPlaying's own comment on why that's possible at all).
 		const nowPlayingPopover = makePopover('nowPlaying');
 
 		// Login-gated like the matchup drawer above and every other card
@@ -7032,6 +7112,18 @@
 		// nothing to rank): the loading/empty states below keep this card's
 		// position on the tab predictable instead of having it pop in and
 		// out as leagues answer.
+		//
+		// Grouped into one mini-card per position (QB/RB/WR/.../Def) rather
+		// than a single table, on user feedback: a Sunday slate can be
+		// dozens of rows, and a four-column table wastes width on Player/Pos/
+		// My Teams cells that are mostly whitespace while forcing every row
+		// onto its own table line. Folding the position into a group heading
+		// and the league count into a "(N)" popover gets each player down to
+		// one line — "Patrick Mahomes KC (3)" opposite his score — and
+		// spreads the list sideways across position boxes instead of
+		// scrolling it vertically. Same visual idiom as Depth Charts' own
+		// .depth-chart-positions/.depth-chart-position (bordered mini-boxes,
+		// flex-wrapped), reused rather than invented fresh.
 		function renderNowPlayingCard(leagues) {
 			if (!isLoggedIn()) return null;
 			const card = el('div', { class: 'card now-playing-card', 'data-view': 'scoring', 'data-league-type': '' });
@@ -7049,85 +7141,94 @@
 				card.appendChild(el('div', { class: 'team card-collapse-visible', text: 'No players currently playing.' }));
 				return card;
 			}
-			card.appendChild(el('div', {
-				class: 'team card-collapse-visible',
-				text: `${rows.length} player${rows.length === 1 ? '' : 's'} live right now`,
-			}));
 
-			const table = el('table', { class: 'standings' });
-			card.appendChild(table);
-
-			// Same three-rule click-to-sort every other card on this page
-			// uses (see makeTableSort) — Score is the one the feature request
-			// actually asked for, both directions; Player/Pos/My Teams ride
-			// along for free since the machinery doesn't care whose columns
-			// they are.
-			const SORTS = {
-				name: { dir: 1, value: (r) => r.name.toLowerCase() },
-				pos: { dir: 1, value: (r) => positionRank(r.position) },
-				teams: { dir: -1, value: (r) => r.entries.length },
-				score: { dir: -1, value: (r) => r.score, missingLast: true },
+			// Score is the only sortable dimension left once Player/Pos/My
+			// Teams stopped being columns of their own — so rather than pull
+			// in makeTableSort's <th>-shaped sortableHeader, this is the same
+			// three-state cycle (natural -> reverse -> back to the card's own
+			// default order) hand-rolled small, the way Power Rankings' own
+			// comment describes doing when a card's shape doesn't fit that
+			// helper. 0 is the unsorted state, using computeNowPlaying's own
+			// best-first order; -1/1 are explicit descending/ascending.
+			let sortDir = 0;
+			const sortBtn = el('button', { type: 'button', class: 'now-playing-sort-btn' });
+			const updateSortBtn = () => {
+				sortBtn.textContent = sortDir === 0 ? 'Sort by score' : `Score ${sortDir === 1 ? '▲' : '▼'}`;
 			};
-			const { sortedRows, sortableHeader } = makeTableSort(rows, SORTS, renderBody);
+			updateSortBtn();
+			sortBtn.addEventListener('click', () => {
+				sortDir = sortDir === 0 ? -1 : sortDir === -1 ? 1 : 0;
+				updateSortBtn();
+				renderBody();
+			});
+
+			const subtitle = el('div', { class: 'team card-collapse-visible now-playing-subtitle' });
+			subtitle.appendChild(el('span', { text: `${rows.length} player${rows.length === 1 ? '' : 's'} live right now` }));
+			subtitle.appendChild(sortBtn);
+			card.appendChild(subtitle);
+
+			const positionsWrap = el('div', { class: 'now-playing-positions' });
+			card.appendChild(positionsWrap);
 
 			function renderBody() {
-				table.innerHTML = '';
-				const headRow = el('tr');
-				headRow.appendChild(sortableHeader('Player', 'name'));
-				headRow.appendChild(sortableHeader('Pos', 'pos'));
-				headRow.appendChild(sortableHeader('My Teams', 'teams'));
-				headRow.appendChild(sortableHeader('Score', 'score'));
-				table.appendChild(headRow);
+				positionsWrap.innerHTML = '';
+				// One global sort, then bucket by position — Array#sort is
+				// stable, so each position's own bucket keeps whatever
+				// relative order this pass produced rather than needing a
+				// second sort per group.
+				const sorted = sortDir === 0 ? rows : [...rows].sort((a, b) => {
+					if (a.score == null && b.score == null) return 0;
+					if (a.score == null) return 1;
+					if (b.score == null) return -1;
+					return (a.score - b.score) * sortDir;
+				});
+				const groups = new Map();
+				for (const r of sorted) {
+					const pos = r.position || '—';
+					if (!groups.has(pos)) groups.set(pos, []);
+					groups.get(pos).push(r);
+				}
+				const orderedGroups = [...groups.entries()].sort((a, b) => positionRank(a[0]) - positionRank(b[0]));
 
-				for (const r of sortedRows()) {
-					const row = el('tr');
-					const nameCell = el('td');
-					const nameLine = el('div', {}, [document.createTextNode(r.name)]);
-					if (r.team) appendTeamSuffix(nameLine, r.team);
-					nameCell.appendChild(nameLine);
-					// The same live game line the matchup drawer shows under a
-					// starter's name — free, since it's the same liveGames map,
-					// and it's exactly the context "currently playing" implies:
-					// what quarter, what the clock says.
-					const game = playerGameLine(r.team);
-					if (game) nameCell.appendChild(el('div', { class: 'scoring-matchup-meta', text: game }));
-					row.appendChild(nameCell);
-					row.appendChild(el('td', { text: r.position || '-' }));
-
-					const teamsCell = el('td');
-					r.entries.forEach((e, i) => {
-						if (i > 0) teamsCell.appendChild(document.createTextNode(', '));
-						teamsCell.appendChild(leagueNameNode(e.league.name, e.league.url));
-					});
-					row.appendChild(teamsCell);
-
-					const scoreCell = el('td');
-					if (r.score == null) {
-						// Not yet known, same "never a confident 0" rule as the
-						// matchup drawer — the game just started and no
-						// provider has posted a score for him yet.
-						scoreCell.textContent = '–';
-					} else if (r.entries.length > 1) {
-						const btn = el('button', {
+				for (const [pos, group] of orderedGroups) {
+					const posCard = el('div', { class: 'now-playing-position' });
+					posCard.appendChild(el('div', { class: 'now-playing-position-head', text: pos }));
+					for (const r of group) {
+						const row = el('div', { class: 'now-playing-row' });
+						const nameLine = el('span', { class: 'now-playing-name' });
+						nameLine.appendChild(document.createTextNode(r.name));
+						if (r.team) appendTeamSuffix(nameLine, r.team);
+						nameLine.appendChild(document.createTextNode(' '));
+						// Always the popover, even at N=1 — see this
+						// function's own comment on why: with no My Teams
+						// column, this is the only place the league's name
+						// is ever shown.
+						const countBtn = el('button', {
 							type: 'button',
-							class: 'live-score-link',
-							title: 'Scores by league differ — click to see each',
-							text: r.score.toFixed(2),
+							class: 'now-playing-count-link',
+							title: r.entries.length > 1 ? 'Held in multiple leagues — click to see which, and each score' : 'Click to see which league',
+							text: `(${r.entries.length})`,
 						});
-						btn.addEventListener('click', (e) => {
+						countBtn.addEventListener('click', (e) => {
 							e.stopPropagation();
 							nowPlayingPopover.toggle(
-								btn,
-								`${r.name} — Score by League`,
+								countBtn,
+								`${r.name} — Leagues`,
 								r.entries.map((en) => ({ left: en.league.name, right: en.score == null ? '–' : en.score.toFixed(2) }))
 							);
 						});
-						scoreCell.appendChild(btn);
-					} else {
-						scoreCell.textContent = r.score.toFixed(2);
+						nameLine.appendChild(countBtn);
+						row.appendChild(nameLine);
+						row.appendChild(el('span', {
+							class: 'now-playing-score',
+							// Not yet known, same "never a confident 0" rule
+							// as the matchup drawer — the game just started
+							// and no provider has posted a score for him yet.
+							text: r.score == null ? '–' : r.score.toFixed(2),
+						}));
+						posCard.appendChild(row);
 					}
-					row.appendChild(scoreCell);
-					table.appendChild(row);
+					positionsWrap.appendChild(posCard);
 				}
 			}
 
