@@ -1755,11 +1755,28 @@
 			border-radius: 8px;
 			overflow: hidden;
 		}
+		/* .roster-group's own vertical-stack spacing (see its comment) is
+		   for a Rosters card's status groups, stacked one under the next —
+		   it doesn't apply to a flex-wrapped row of mini-cards, so this
+		   zeroes it back out. Two classes beats .roster-group's one on
+		   specificity regardless of rule order. */
+		.now-playing-position.roster-group {
+			margin-top: 0;
+		}
 		/* Same accent-on-chip-bg banner Depth Charts' own position header
 		   uses (.depth-chart-table thead tr:first-child th) — reused rather
 		   than a new color, so "this band means position" reads the same
-		   way in both places. */
+		   way in both places. Also this group's own collapse toggle (see
+		   makeGroupCollapsible) — flex/cursor/gap laid on directly rather
+		   than through the shared .group-label.roster-group-label rule,
+		   since that rule's own uppercase/muted look would fight this
+		   banner's rather than sit on top of it. */
 		.now-playing-position-head {
+			display: flex;
+			align-items: center;
+			gap: 0.3rem;
+			cursor: pointer;
+			user-select: none;
 			font-size: 0.78rem;
 			font-weight: 700;
 			color: var(--accent);
@@ -7209,8 +7226,21 @@
 				const orderedGroups = [...groups.entries()].sort((a, b) => positionRank(a[0]) - positionRank(b[0]));
 
 				for (const [pos, group] of orderedGroups) {
-					const posCard = el('div', { class: 'now-playing-position' });
-					posCard.appendChild(el('div', { class: 'now-playing-position-head', text: pos }));
+					// Collapsible one level down, same idiom as a Rosters
+					// card's own status groups (see makeGroupCollapsible) —
+					// a manager who only cares about his QBs right now has
+					// no reason to also lose the WR box, so each position
+					// collapses on its own rather than the whole card doing
+					// it. `roster-group`/`roster-group-content` are the
+					// shared class names that machinery's CSS keys off of;
+					// `.now-playing-position.roster-group` overrides the
+					// vertical-stack margin that pair normally carries,
+					// which doesn't apply to a flex-wrapped row of mini-cards.
+					const posCard = el('div', { class: 'now-playing-position roster-group' });
+					const posLabel = el('div', { class: 'now-playing-position-head', text: `${pos} (${group.length})` });
+					const posContent = el('div', { class: 'roster-group-content' });
+					makeGroupCollapsible(posCard, posLabel, `now-playing:${pos}`);
+					posCard.appendChild(posLabel);
 					for (const r of group) {
 						const row = el('div', { class: 'now-playing-row' });
 						// A block, not a span: the game-clock line below needs
@@ -7258,8 +7288,9 @@
 							// and no provider has posted a score for him yet.
 							text: r.score == null ? '–' : r.score.toFixed(2),
 						}));
-						posCard.appendChild(row);
+						posContent.appendChild(row);
 					}
+					posCard.appendChild(posContent);
 					positionsWrap.appendChild(posCard);
 				}
 			}
