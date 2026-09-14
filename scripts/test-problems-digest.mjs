@@ -39,7 +39,14 @@
 //   - a starter whose own NFL game has already started (live or final) gets
 //     no row at all, whatever the sync says about his slot or injury status —
 //     the lineup is locked either way, so flagging it describes nothing
-//     anyone can still act on (see playerGameStarted).
+//     anyone can still act on (see playerGameStarted);
+//   - every per-starter check waits until gameStatesAttempted is true before
+//     answering at all, rather than guessing "nobody's started" the instant
+//     the page loads and correcting itself a render later — that guess-then-
+//     correct was itself a noise source, flashing an already-moot row on
+//     every single page load. League-level checks (sync error, roster
+//     limits, empty/short lineup) are unaffected — they have no per-starter
+//     game clock to wait on.
 //
 // As in test-injury-exposure.mjs there is no DOM here: the page's script
 // block is evaluated in a vm with the browser globals stubbed, so this runs
@@ -86,6 +93,14 @@ const context = {
 };
 vm.createContext(context);
 vm.runInContext(scriptSource, context);
+// Every test below exercises the steady state — a moment after page load,
+// once refreshDigestGameStates has settled — except the dedicated section
+// pinning the pre-settle behavior itself, which passes `attempted: false`
+// explicitly rather than touching this module flag. gameStatesAttempted is a
+// `let` binding, so (like leagueConfig in test-admin-dirty.mjs) it has to be
+// set by running a snippet inside the vm rather than through the context
+// object.
+vm.runInContext('gameStatesAttempted = true;', context);
 
 const { computeLeagueProblems, computeProblemsDigest, parseLineupMinimums, rosterLimitProblems } = context;
 
@@ -240,6 +255,55 @@ const kinds = (problems) => [...problems].map((p) => p.kind);
 	const roster = [player('1', { slot: 'TAXI_SQUAD' })];
 	const l = league({ starters: ['1'], startingLineup: null, players: roster });
 	assert.equal(computeLeagueProblems(l, YEAR, { BUF: { state: 'in' } }).length, 0, 'ineligible-slot row is suppressed too');
+}
+
+// ---- Before refreshDigestGameStates has settled, per-starter checks wait --
+//
+// The bug this section pins: on every page load, computeLeagueProblems used
+// to run with `games` still {} because the one-shot NFL-scoreboard fetch
+// hasn't answered yet — indistinguishable from "confirmed nobody's game has
+// started" — so an injury/ineligible/bye row would flash on screen and then
+// vanish a moment later once the real answer came in and the page
+// re-rendered. `attempted` (computeLeagueProblems' fourth, normally-
+// defaulted parameter, gameStatesAttempted in production) is what tells the
+// difference between "haven't asked" and "asked and nothing's live" — passed
+// explicitly false here, the same way `games` is passed explicitly above,
+// since gameStatesAttempted itself isn't reachable from outside the vm.
+
+{
+	const roster = [player('1', { injury: 'O' })];
+	const l = league({ starters: ['1'], startingLineup: null, players: roster });
+	// Even with a `games` map that would otherwise clear this player (state
+	// 'pre', or simply no entry for his team), attempted:false must still
+	// suppress the row rather than guessing either way.
+	assert.equal(computeLeagueProblems(l, YEAR, {}, false).length, 0, 'not attempted yet: no per-starter row, not even a correct one');
+	assert.equal(computeLeagueProblems(l, YEAR, { BUF: { state: 'pre' } }, false).length, 0, 'still nothing before the fetch has settled');
+	assert.deepEqual(kinds(computeLeagueProblems(l, YEAR, {}, true)), ['injury'], 'once attempted, the same league answers normally again');
+}
+
+{
+	// The ineligible-slot and bye checks wait the same way.
+	const ineligible = league({ starters: ['1'], startingLineup: null, players: [player('1', { slot: 'TAXI_SQUAD' })] });
+	assert.equal(computeLeagueProblems(ineligible, YEAR, {}, false).length, 0, 'ineligible-slot row also waits');
+
+	const onBye = league({ lineupWeek: 8, starters: ['1'], startingLineup: null, players: [player('1', { bye: '8' })] });
+	assert.equal(computeLeagueProblems(onBye, YEAR, {}, false).length, 0, 'bye row also waits, even though it never depended on game state');
+}
+
+{
+	// League-level checks are NOT gated on `attempted` — they have nothing to
+	// do with any individual player's game clock, so they must keep showing
+	// immediately rather than waiting on a fetch that's irrelevant to them.
+	const roster = [player('1', { injury: 'O' })];
+	const broken = league({ starters: ['1'], startingLineup: null, players: roster, error: 'ESPN request failed (401)' });
+	assert.deepEqual(kinds(computeLeagueProblems(broken, YEAR, {}, false)), ['sync'], 'a sync error still shows immediately');
+
+	const empty = league({ starters: [], players: [player('1')] });
+	assert.deepEqual(kinds(computeLeagueProblems(empty, YEAR, {}, false)), ['empty'], 'an empty lineup still shows immediately');
+
+	const roster9 = Array.from({ length: 9 }, (_, i) => player(String(i + 1)));
+	const short = league({ starters: ['1', '2', '3', '4', '5', '6', '7'], players: roster9 });
+	assert.deepEqual(kinds(computeLeagueProblems(short, YEAR, {}, false)), ['short'], 'a short lineup still shows immediately');
 }
 
 // ---- Absence of lineup data is "not asked", never "empty lineup" ----------
