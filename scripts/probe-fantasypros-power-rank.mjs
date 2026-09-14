@@ -109,6 +109,25 @@ const projections = await probe(
 // (does the week=0 list still get republished once games count?) and
 // whether week=0's total drops as weeks are played (rest-of-season) or
 // holds at its August value (frozen).
+//
+// ANSWERED, RUN 2026-09-14 (four days after kickoff, one week of games
+// played): frozen. Josh Allen's week=0 top-QB total is 367.15 pts,
+// byte-identical to the pre-kickoff run on 2026-09-10 — the earlier two
+// "post-kickoff" runs (2026-09-09, 2026-09-10) both actually predate any
+// played game, so they never tested this. week=1, a genuine single-week
+// slice, moved in the same window (21.03 -> 20.32 pts for its own top
+// player), so the list is being maintained — week=0 specifically stopped
+// updating.
+//
+// Also answered the natural follow-up: does this endpoint have a native
+// rest-of-season mode, so nothing has to be summed by hand? Yes and no —
+// `ros=true` is real (the response echoes `"ros_projections":true`, so
+// FantasyPros recognizes it), but this project's key gets back
+// `"public_api_limited":true,"tier":"premium","players":null,"count":"0"`.
+// It's a premium-tier feature this key can't use, not a decorative no-op.
+// So the only paths from here are summing the remaining weeks (1..17) by
+// hand, or upgrading the API key's tier — there is no free native ROS call
+// to switch to.
 async function projectionSample(week) {
   const url = `${FP_BASE}/nfl/${season}/projections?position=QB&week=${week}`;
   try {

@@ -6390,12 +6390,14 @@
 		// itself — the one way this card can be quietly, badly wrong.
 		//
 		// The sync asks FantasyPros for week=0, the preseason projection slot.
-		// What that serves once games are played is not yet known (see
-		// fetchProjections, and probe-fantasypros-power-rank.yml, which is
-		// meant to be re-run after kickoff); if it keeps serving August
-		// numbers, every rank here is computed from projections that predate
-		// every injury and breakout of the season, and nothing else on screen
-		// would say so — the ranks stay plausible small integers.
+		// Confirmed frozen (see fetchProjections in fantasypros.mjs and
+		// probe-fantasypros-power-rank.yml's 2026-09-14 run): every rank here
+		// is computed from projections that predate every injury and
+		// breakout of the season, and nothing else on screen would say so —
+		// the ranks stay plausible small integers. FantasyPros' own
+		// rest-of-season mode (`ros=true`) exists but sits behind a premium
+		// API tier this project's key doesn't have, so this banner is the
+		// mitigation, not a placeholder for a fix already in flight.
 		//
 		// Deliberately not a freshness date: the projections endpoint carries
 		// no `last_updated` at all, unlike consensus-rankings, so a date-based
