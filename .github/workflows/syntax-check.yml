@@ -358,6 +358,13 @@ jobs:
       - name: Test the Now Playing card
         run: node scripts/test-now-playing.mjs
 
+      # The W-L(-T) suffix appended to a team's name on Rosters and Scoring
+      # (currentRecord/appendRecord). Every failure mode here is silent — a
+      # wrong franchiseId join renders a plausible record for the wrong
+      # team, and a missing 0-0-0 guard clutters every card in Week 1.
+      - name: Test the team-name record suffix
+        run: node scripts/test-team-record-suffix.mjs
+
       - name: Validate config/leagues.json
         run: |
           node --input-type=module -e '
