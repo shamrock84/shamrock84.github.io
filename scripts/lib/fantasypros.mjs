@@ -641,13 +641,18 @@ export function buildProjectionIndex(playersByPosition) {
 //
 // The same probe run also checked for a native rest-of-season mode on this
 // endpoint rather than assuming one has to be built: `ros=true` is real
-// (FantasyPros echoes `ros_projections: true`), but this project's key
-// gets `public_api_limited: true, tier: "premium", players: null` back —
-// it's a paid-tier feature this key can't reach, not a free switch. `week`
-// stays a parameter rather than a literal for the same reason it always
-// was: the fix, when one ships, is summing points across the remaining
-// weeks (1..17) rather than reading week=0, and that's a call-site change,
-// not a rewrite of this function's shape.
+// (it's in FantasyPros' own OpenAPI spec, and the response echoes
+// `ros_projections: true`), but comes back `public_api_limited: true,
+// tier: "premium", players: null` regardless of key. This project first
+// misread that as a paid-tier gate and chased a Premium-plan activation
+// that changed nothing; FantasyPros support (2026-09-15) confirmed
+// `public_api_limited` is `true` on every tier and `ros=true` simply
+// wasn't live yet, expected "later this week" as of that reply. So for
+// now the fix, when one ships, is summing points across the remaining
+// weeks (1..17) rather than reading week=0 — a call-site change, not a
+// rewrite of this function's shape — unless `ros=true` goes live and
+// returns real players first, which would be cheaper to switch to.
+// `week` stays a parameter rather than a literal for exactly that reason.
 //
 // The guard below is what makes the third case loud rather than quiet. An
 // empty position means the endpoint stopped answering the way it did when

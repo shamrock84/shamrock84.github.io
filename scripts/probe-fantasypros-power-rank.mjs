@@ -120,14 +120,25 @@ const projections = await probe(
 // updating.
 //
 // Also answered the natural follow-up: does this endpoint have a native
-// rest-of-season mode, so nothing has to be summed by hand? Yes and no —
-// `ros=true` is real (the response echoes `"ros_projections":true`, so
-// FantasyPros recognizes it), but this project's key gets back
-// `"public_api_limited":true,"tier":"premium","players":null,"count":"0"`.
-// It's a premium-tier feature this key can't use, not a decorative no-op.
-// So the only paths from here are summing the remaining weeks (1..17) by
-// hand, or upgrading the API key's tier — there is no free native ROS call
-// to switch to.
+// rest-of-season mode, so nothing has to be summed by hand? `ros=true` is
+// real — it's in FantasyPros' own OpenAPI spec as a boolean on this
+// endpoint, and the response echoes `"ros_projections":true` — but comes
+// back `"public_api_limited":true,"tier":"premium","players":null,
+// "count":"0"` regardless of key.
+//
+// FIRST READ WAS WRONG: this project initially took `tier:"premium"` to
+// mean the feature was gated behind a paid tier this key lacked, prompted
+// a real Premium-plan activation, and re-tested against a key confirmed
+// active on the Premium tier — same response, unchanged. FantasyPros
+// support (ticket resolved 2026-09-15, contact Bradley) confirmed the
+// actual cause: `public_api_limited` is returned `true` for every tier,
+// premium included, and `ros=true` simply isn't live yet — expected
+// "later this week" as of that reply. Nothing wrong with this project's
+// key or tier; the feature hadn't shipped.
+//
+// RE-RUN THIS once FantasyPros confirms ros=true is live, to check
+// whether it returns real players before switching fetchProjections to
+// use it over summing weeks 1..17 by hand.
 async function projectionSample(week) {
   const url = `${FP_BASE}/nfl/${season}/projections?position=QB&week=${week}`;
   try {
