@@ -35,7 +35,11 @@
 //     lineup editor still has a roster that can go over its limits; they
 //     share the lineup checks' mid-draft and trailing-season gates but not
 //     its lineup-data gate, and a roster over more than one limit at once
-//     gets one row per limit rather than a single collapsed line.
+//     gets one row per limit rather than a single collapsed line;
+//   - a starter whose own NFL game has already started (live or final) gets
+//     no row at all, whatever the sync says about his slot or injury status —
+//     the lineup is locked either way, so flagging it describes nothing
+//     anyone can still act on (see playerGameStarted).
 //
 // As in test-injury-exposure.mjs there is no DOM here: the page's script
 // block is evaluated in a vm with the browser globals stubbed, so this runs
@@ -205,6 +209,37 @@ const kinds = (problems) => [...problems].map((p) => p.kind);
 	const problems = computeLeagueProblems(l, YEAR);
 	assert.deepEqual(kinds(problems), ['bye']);
 	assert.equal(problems[0].player.id, '1');
+}
+
+// ---- A starter whose own game has already started gets no row at all -----
+//
+// The Kyler-Murray case: an injury picked up mid-game (or just after) still
+// carries the same designation for the rest of that week, but by then the
+// lineup is locked and there's nothing left an edit could fix — so the row
+// is dropped entirely rather than rendered as if it still mattered. `games`
+// is computeLeagueProblems' third, normally-defaulted parameter — passed
+// explicitly here since the page's own liveGames global isn't reachable
+// from outside the vm (see the DIGEST_ALERT_KINDS comment above).
+
+{
+	const roster = [player('1', { injury: 'O' })];
+	const l = league({ starters: ['1'], startingLineup: null, players: roster });
+	assert.deepEqual(kinds(computeLeagueProblems(l, YEAR, {})), ['injury'], 'no game data at all: still flagged');
+	assert.deepEqual(
+		kinds(computeLeagueProblems(l, YEAR, { BUF: { state: 'pre' } })),
+		['injury'],
+		"game hasn't kicked off yet: still flagged"
+	);
+	assert.equal(computeLeagueProblems(l, YEAR, { BUF: { state: 'in' } }).length, 0, 'game live: nothing left to fix');
+	assert.equal(computeLeagueProblems(l, YEAR, { BUF: { state: 'post' } }).length, 0, 'game already final: nothing left to fix');
+}
+
+{
+	// The gate applies to an ineligible-slot row the same way — once the
+	// game is underway the slot can't be fixed by editing the lineup either.
+	const roster = [player('1', { slot: 'TAXI_SQUAD' })];
+	const l = league({ starters: ['1'], startingLineup: null, players: roster });
+	assert.equal(computeLeagueProblems(l, YEAR, { BUF: { state: 'in' } }).length, 0, 'ineligible-slot row is suppressed too');
 }
 
 // ---- Absence of lineup data is "not asked", never "empty lineup" ----------

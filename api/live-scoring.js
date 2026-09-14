@@ -326,6 +326,25 @@ export default async function handler(req, res) {
     return;
   }
 
+  // The page's Problems Digest needs to know whether a flagged starter's own
+  // NFL game has already kicked off, and needs that on every page load —
+  // not just while the Scoring tab is open, since that tab's own polling
+  // below is deliberately gated behind the tab to protect MFL's rate limit
+  // (see LIVE_SCORING_MFL_INTERVAL_MS). This branch never touches MFL — no
+  // login, no per-league fetch — so it can run unconditionally on every
+  // page load without costing the pacing scheme anything: same "one cheap,
+  // unauthenticated request" reasoning as nflGames itself carries below.
+  if (req.query.gamesOnly) {
+    let nflGames = new Map();
+    try {
+      nflGames = await fetchNflGames();
+    } catch {
+      // degrade silently — an empty map just leaves the digest's gate as it was.
+    }
+    res.status(200).json({ generatedAt: new Date().toISOString(), games: Object.fromEntries(nflGames) });
+    return;
+  }
+
   const username = process.env.MFL_USERNAME;
   const password = process.env.MFL_PASSWORD;
   if (!username || !password) {
