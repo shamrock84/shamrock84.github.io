@@ -371,6 +371,21 @@ export default async function handler(req, res) {
     return;
   }
 
+  // Which leagues want the Scoring tab's bench drawer this poll — see
+  // benchDetailLeagueIds' own comment in myffl.html. Unlike starters
+  // (`players`, always computed off the same fetch every league's score
+  // already needs), MFL's bench costs a genuine extra request per league
+  // every poll (mflBenchFromRoster's own comment in providers.mjs), so it's
+  // only fetched for leagues actually named here — an absent or malformed
+  // param just means nobody gets bench this poll, same as before this
+  // gating existed for a league whose drawer nobody has opened yet.
+  const benchLeagueIds = new Set(
+    String(req.query.benchLeagues || '')
+      .split(',')
+      .map((id) => id.trim())
+      .filter(Boolean)
+  );
+
   const username = process.env.MFL_USERNAME;
   const password = process.env.MFL_PASSWORD;
   if (!username || !password) {
@@ -540,21 +555,29 @@ export default async function handler(req, res) {
         }
         // Both bench-only inputs (see mflBenchFromRoster in providers.mjs) —
         // a failure in either costs this league's bench only, never its
-        // scores. mflRosterIds is cached (getMflRosterIds); mflWeekScores
-        // is NOT, since it's the one genuinely live part of the bench
-        // drawer and has to be asked for fresh every poll.
+        // scores. Both are also skipped ENTIRELY unless this league's bench
+        // drawer is actually open (benchLeagueIds, above) — mflWeekScores is
+        // a real, uncached MFL request every poll, and fetching it for
+        // every MFL league regardless of who was looking measurably slowed
+        // every poll down. mflRosterIds is cached (getMflRosterIds) so
+        // skipping it saves little on its own, but there's no reason to pay
+        // even a cache lookup for a league nobody asked about, and it keeps
+        // both bench inputs gated by the same condition rather than two
+        // slightly different ones.
         let mflRosterIds;
-        try {
-          mflRosterIds = await getMflRosterIds(league, mflCookie);
-        } catch {
-          // degrade silently — see comment above.
-        }
         let mflWeekScores = null;
-        if (mflWeek) {
+        if (benchLeagueIds.has(String(league.id))) {
           try {
-            mflWeekScores = await fetchMflWeekPlayerScores(league, mflWeek, mflCookie);
+            mflRosterIds = await getMflRosterIds(league, mflCookie);
           } catch {
             // degrade silently — see comment above.
+          }
+          if (mflWeek) {
+            try {
+              mflWeekScores = await fetchMflWeekPlayerScores(league, mflWeek, mflCookie);
+            } catch {
+              // degrade silently — see comment above.
+            }
           }
         }
         const scoring = await fetchScoring(
