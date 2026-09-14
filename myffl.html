@@ -6809,6 +6809,21 @@
 			return liveGames[player.team]?.state === 'in';
 		}
 
+		// Whether a player's own NFL game has already kicked off — live ('in')
+		// or final ('post') — off the same map isPlayerLive reads. Once a game
+		// is underway there is nothing left a lineup edit could fix, so the
+		// Problems Digest (computeLeagueProblems, below) uses this to stop
+		// flagging a starter's slot/injury/bye as something to act on. `games`
+		// defaults to the module-level liveGames so production call sites don't
+		// have to thread it through, and is overridable for tests. A team with
+		// no entry (a bye, or the map not loaded yet) reads as not-started
+		// rather than skipped — "not asked" must never read as "safe to skip".
+		function playerGameStarted(player, games = liveGames) {
+			if (!player || !player.team) return false;
+			const state = games[player.team]?.state;
+			return state === 'in' || state === 'post';
+		}
+
 		// Stable across the 30s re-render, distinct per matchup, and naturally
 		// different once the week's pairings change — the franchise ids are
 		// sorted so the same two teams key identically regardless of which one
@@ -7746,7 +7761,16 @@
 		// starter id that doesn't resolve to a rostered player is skipped
 		// silently — a same-sync race between the two MFL exports, and there
 		// is nothing useful to say about a player we can't name.
-		function computeLeagueProblems(league, year) {
+		//
+		// A starter whose own NFL game has already started (playerGameStarted)
+		// gets no row at all, whatever the roster sync says about him: the
+		// lineup is locked either way, so a slot/injury/bye flag at that point
+		// describes something nobody can still act on. This is what stops a
+		// mid-game injury (picked up by the next sync, still "this week's"
+		// designation for the rest of the week) from sitting in the digest as
+		// if it were still actionable. `games` defaults to the live module
+		// state; the digest's own render call never passes it explicitly.
+		function computeLeagueProblems(league, year, games = liveGames) {
 			const problems = [];
 			if (league.error) {
 				problems.push({ kind: 'sync', player: null, label: `Roster sync failing — showing older data (${league.error})` });
@@ -7767,6 +7791,7 @@
 			for (const id of league.starters) {
 				const p = byId.get(String(id));
 				if (!p) continue;
+				if (playerGameStarted(p, games)) continue;
 				if (p.status && !DIGEST_STARTABLE_STATUSES.includes(p.status)) {
 					const slot = (STATUS_GROUPS.find((g) => g.key === p.status) || {}).label || p.status;
 					problems.push({ kind: 'ineligible', player: p, label: `in the week ${wk} lineup but on the ${slot}` });
@@ -11210,6 +11235,27 @@
 			updateVisibility();
 		}
 
+		// A one-shot fetch of just the NFL scoreboard, independent of the
+		// Scoring tab — the Problems Digest needs to know whether a flagged
+		// starter's game has already started on every page load, not only
+		// once someone opens Scoring and starts its 30s poll. `gamesOnly=1`
+		// makes api/live-scoring.js skip MFL entirely, so calling this
+		// unconditionally costs nothing the rate-limit pacing cares about.
+		// Not awaited by its caller — the digest is fine rendering once with
+		// the pre-kickoff assumption and correcting itself a moment later.
+		async function refreshDigestGameStates() {
+			if (!LIVE_SCORING_URL || !pageData) return;
+			try {
+				const res = await fetch(`${LIVE_SCORING_URL}?gamesOnly=1&t=${Date.now()}`, { cache: 'no-store' });
+				if (!res.ok) return;
+				const data = await res.json();
+				liveGames = data.games || {};
+				renderProblemsDigest();
+			} catch {
+				// degrade silently — the digest just keeps showing what it knew before.
+			}
+		}
+
 		async function refreshLiveScoring() {
 			if (!LIVE_SCORING_URL || !pageData) return;
 			// Captured before this attempt touches the flag — only the FIRST
@@ -12819,6 +12865,10 @@
 				// on another device. Not awaited — a slow or unreachable store
 				// must not hold up the page.
 				syncPlans();
+				// Same reasoning — the digest already rendered off the sync
+				// snapshot alone, and this only refines it once game states
+				// are in.
+				refreshDigestGameStates();
 			} catch (err) {
 				statusEl.textContent = `Couldn't load roster data: ${err.message}`;
 				updatedEl.textContent = '';
