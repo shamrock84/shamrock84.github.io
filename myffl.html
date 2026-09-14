@@ -1850,6 +1850,19 @@
 			border-radius: 12px;
 			overflow: hidden;
 		}
+		/* Collapsing a Scoring card is how a manager gets every OTHER
+		   league's matchups out of the way — it shouldn't take their own
+		   game with it too. .scoring-matchup-pills itself carries
+		   .card-collapse-visible (see the generic collapse rule above) so it
+		   isn't blanket-hidden with everything else, and this narrows inside
+		   it: every pill collapses away except the one holding the isMe team
+		   (.me-matchup, set alongside .me-row in renderScoringCard). A
+		   descendant selector, not the direct-child one the generic rule
+		   uses, since a pill sits one level under the wrapper rather than
+		   being a direct child of .card itself. */
+		.card.card-collapsed .scoring-matchup-pill:not(.me-matchup) {
+			display: none;
+		}
 		.scoring-matchup-row {
 			display: flex;
 			justify-content: space-between;
@@ -6513,8 +6526,6 @@
 			if (league.scoring?.week) {
 				card.appendChild(el('div', { class: 'team card-collapse-visible', text: `Week ${league.scoring.week}` }));
 			}
-			const myLine = myMatchupLine(league);
-			if (myLine) card.appendChild(el('div', { class: 'team card-collapse-visible', text: myLine }));
 
 			const matchups = league.scoring?.matchups;
 
@@ -6550,7 +6561,11 @@
 				header.appendChild(el('span', { text: 'Score' }));
 				card.appendChild(header);
 
-				const pills = el('div', { class: 'scoring-matchup-pills' });
+				// card-collapse-visible so the wrapper itself isn't blanket-
+				// hidden by the generic collapse rule — which pill inside it
+				// actually stays visible is the .me-matchup CSS rule's job
+				// (see that rule's own comment), not this element's.
+				const pills = el('div', { class: 'scoring-matchup-pills card-collapse-visible' });
 				// My own matchup leads the stack — everything else keeps the
 				// provider's original order behind it. Array#sort is stable
 				// (spec-guaranteed since ES2019), so a single isMe/not-isMe
@@ -6567,7 +6582,11 @@
 					return aMe - bMe;
 				});
 				matchupGroups.forEach(({ group }) => {
-					const pill = el('div', { class: 'scoring-matchup-pill' });
+					// me-matchup is what the CSS collapse rule keys off — see
+					// its own comment — to keep exactly this one pill on
+					// screen when the rest of the card collapses away.
+					const isMyMatchup = group.some((t) => t.isMe);
+					const pill = el('div', { class: `scoring-matchup-pill${isMyMatchup ? ' me-matchup' : ''}` });
 					group.forEach((t) => {
 						const row = el('div', { class: `scoring-matchup-row${t.isMe ? ' me-row' : ''}` });
 						const nameCol = el('div', { class: 'scoring-matchup-name' });
@@ -6658,39 +6677,6 @@
 			if (t.minutesRemaining != null) parts.push(`${t.minutesRemaining} min left`);
 			if (t.winProb != null) parts.push(`Win ${t.winProb}%`);
 			return parts.join(' · ');
-		}
-
-		// The one-line summary of the manager's own matchup — "Rick's Team
-		// 24.50 – Rival 19.80" — rendered as a .team.card-collapse-visible
-		// subtitle so it survives collapsing the card the same way "Week 4"
-		// already does (see that rule's own comment). Eighteen leagues'
-		// worth of matchups is exactly what collapsing a card is for getting
-		// out of the way; the one matchup a manager actually cares about
-		// shouldn't disappear along with the other seventeen teams' scores.
-		// Nothing here is login-gated — the pills below already show every
-		// team's score to a logged-out visitor too (only the starter-detail
-		// drawer is gated), so this surfaces data that's already public, just
-		// more prominently.
-		// Returns null when there's no "me" team to build a line about — a
-		// league this MFL/ESPN/Sleeper login doesn't actually own a
-		// franchise in is a real, unremarkable case, not a bug.
-		function myMatchupLine(league) {
-			const teams = league.scoring?.teams || [];
-			const myTeam = teams.find((t) => t.isMe);
-			if (!myTeam) return null;
-			const matchups = league.scoring?.matchups;
-			let oppTeam = null;
-			if (matchups && matchups.length) {
-				const teamById = new Map(teams.map((t) => [t.franchiseId, t]));
-				const mine = matchups.find((m) => m.teamIds.includes(myTeam.franchiseId));
-				if (mine) oppTeam = mine.teamIds.map((id) => teamById.get(id)).find((t) => t && !t.isMe) || null;
-			}
-			// A bye (matchup pairing exists but my own group has no second
-			// team) and a flat leaderboard (no matchup pairing at all — an
-			// older cached sync predating that field, see renderScoringCard's
-			// own comment) both land here: just my own score, no opponent.
-			if (!oppTeam) return `${teamNameWithOwner(myTeam)} ${myTeam.score}`;
-			return `${teamNameWithOwner(myTeam)} ${myTeam.score} – ${teamNameWithOwner(oppTeam)} ${oppTeam.score}`;
 		}
 
 		// --- Scoring tab: the per-matchup detail drawer ---
