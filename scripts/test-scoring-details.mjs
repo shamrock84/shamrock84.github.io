@@ -96,7 +96,11 @@ function makeContext(seed = {}) {
 		},
 		setTimeout, clearTimeout, setInterval, clearInterval,
 		document: {
-			addEventListener() {},
+			// Real enough to drive the visibilitychange pause/resume suite:
+			// recorded per event type rather than a no-op, so a test can fire
+			// what the real event would trigger.
+			__listeners: {},
+			addEventListener(type, fn) { (this.__listeners[type] = this.__listeners[type] || []).push(fn); },
 			getElementById: () => domNode(),
 			createElement: (t) => domNode(t),
 			createTextNode: (t) => { const n = domNode('#text'); n.textContent = t; return n; },
@@ -126,6 +130,14 @@ const LOGGED_IN = { mflAuthToken: 'test-token' };
 function setLiveGames(ctx, games) {
 	ctx.__testGames = games;
 	vm.runInContext('liveGames = __testGames;', ctx);
+}
+
+// Drives the document.visibilitychange listener registered alongside the
+// live-scoring poll (see its own comment), the same way a real background/
+// foreground tab switch would.
+function fireVisibilityChange(ctx, state) {
+	ctx.document.visibilityState = state;
+	(ctx.document.__listeners.visibilitychange || []).forEach((fn) => fn());
 }
 
 function findAll(n, pred, out = []) {
@@ -920,6 +932,70 @@ function leagueWithMatchup() {
 
 	await ctx.refreshLiveScoring();
 	assert.ok(!capturedUrl.includes('benchLeagues'), `expected no benchLeagues param when nothing is open, got ${capturedUrl}`);
+}
+
+// --- nextLiveScoringDelayMs: fast while something's live, the slow
+// fallback otherwise (nearly all of a week, since games are live only a
+// handful of hours) — pins the actual threshold, not just "some number",
+// and that the fallback really is slower rather than a copy-paste of the
+// fast constant.
+{
+	const ctx = makeContext();
+	const fastMs = vm.runInContext('LIVE_SCORING_POLL_MS', ctx);
+	const idleMs = vm.runInContext('LIVE_SCORING_IDLE_POLL_MS', ctx);
+	assert.ok(idleMs > fastMs, 'the idle fallback is genuinely slower than the live cadence');
+
+	setLiveGames(ctx, {});
+	assert.equal(ctx.nextLiveScoringDelayMs(), idleMs, 'no games at all: the slow fallback');
+
+	setLiveGames(ctx, { CIN: { state: 'pre' }, ATL: { state: 'post' } });
+	assert.equal(ctx.nextLiveScoringDelayMs(), idleMs, 'scheduled and final are not "live" — still the fallback');
+
+	setLiveGames(ctx, { CIN: { state: 'pre' }, SEA: { state: 'in' } });
+	assert.equal(ctx.nextLiveScoringDelayMs(), fastMs, 'one genuinely live game anywhere is enough to stay fast');
+}
+
+// --- Pausing the live-scoring poll while the browser tab is backgrounded ---
+// A manager who leaves the Scoring tab open in a hidden browser tab must not
+// keep polling MFL every 30s for a screen nobody is looking at, and must
+// pick back up immediately — not wait out the interval — the moment it's
+// visible again.
+{
+	const ctx = makeContext(LOGGED_IN);
+	vm.runInContext("currentView = 'scoring';", ctx);
+	let calls = 0;
+	ctx.__spy = () => { calls++; };
+	vm.runInContext('refreshLiveScoring = __spy;', ctx);
+
+	ctx.startLiveScoringPolling();
+	assert.equal(calls, 1, 'starting polling fires an immediate poll');
+	assert.equal(vm.runInContext('liveScoringPollingEnabled', ctx), true);
+
+	fireVisibilityChange(ctx, 'hidden');
+	assert.equal(vm.runInContext('liveScoringPollingEnabled', ctx), false, 'backgrounding the tab pauses polling');
+	assert.equal(calls, 1, 'and does not itself trigger a poll');
+
+	fireVisibilityChange(ctx, 'visible');
+	assert.equal(calls, 2, 'coming back resumes with an immediate poll rather than waiting out the interval');
+	assert.equal(vm.runInContext('liveScoringPollingEnabled', ctx), true);
+}
+
+// The pause/resume listener must never act for a reader who backgrounds the
+// browser from some OTHER tab (Rosters, say) — switchToView's own
+// start/stopLiveScoringPolling calls already own that transition, and this
+// listener firing there too would be at best redundant and at worst wrong
+// if the two ever disagreed.
+{
+	const ctx = makeContext(LOGGED_IN);
+	// currentView defaults to 'rosters' — deliberately left untouched.
+	let calls = 0;
+	ctx.__spy = () => { calls++; };
+	vm.runInContext('refreshLiveScoring = __spy;', ctx);
+
+	fireVisibilityChange(ctx, 'hidden');
+	fireVisibilityChange(ctx, 'visible');
+	assert.equal(calls, 0, 'polling was never started for this view, so visibility changes are a no-op');
+	assert.equal(vm.runInContext('liveScoringPollingEnabled', ctx), false);
 }
 
 console.log('test-scoring-details.mjs OK');
