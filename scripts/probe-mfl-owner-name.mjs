@@ -89,6 +89,27 @@
 // alongside the existing api.myfantasyleague.com read, to see whether the
 // correctly-hosted request reliably surfaces owner_name where the generic
 // host doesn't.
+//
+// RUN #4 RESULTS (confirmed): every single one of the 15 MFL leagues in
+// config/leagues.json returned real owner_name (and a real, populated
+// `abilities` response — not the "API requires logged in user" error the
+// generic host gave on almost every league) when queried directly against
+// its own baseURL, with zero exceptions and zero failed requests. The
+// generic host that run showed owner_name for only 2 of 15 (a different 2
+// than run #3's 3, which was a different 4 than the committed snapshot's
+// 4 — three runs, three different random subsets, no stable pattern).
+// Verdict: this was never about who is or isn't the commissioner of a
+// league. It was mflGet's hardcoded api.myfantasyleague.com host randomly
+// failing to carry a genuinely privileged session through to MFL's
+// backend for that specific league — exactly what mflLoginForImport's own
+// comment already described, just never fixed on the read side. Fixed in
+// this commit: fetchMflOwnerNames (providers.mjs) re-requests TYPE=league
+// against each league's own baseURL specifically to extract owner names,
+// wired into fetch-rosters.mjs's mflFranchiseInfoById and into
+// fetchMflFranchiseNames (shared with api/live-scoring.js). One extra MFL
+// request per MFL league where owner names are actually read — never on
+// the hot path, and it degrades to an empty map (never throws) on failure,
+// same as every other MFL fetch in this project.
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { mflLogin, mflGet, seasonOf } from './lib/providers.mjs';

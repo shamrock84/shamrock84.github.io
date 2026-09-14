@@ -46,7 +46,7 @@ import {
   fetchMflWeekScores,
   fetchMflLeagueData,
   mflFranchiseNames,
-  mflFranchiseOwnerNames,
+  fetchMflOwnerNames,
   setMflRequestInterval,
   fetchNflGameClocks,
 } from './lib/providers.mjs';
@@ -1091,11 +1091,15 @@ async function main() {
   // own when handed nothing, so a league whose rosters failed can still get
   // standings, exactly as before.
   //
-  // Carries { nameById, ownerById } per league rather than a bare name map —
-  // ownerById is almost always all-null (see mflOwnerName's own comment: MFL
-  // only fills owner_name in for a league this project's login commissions),
-  // but it rides along for free off the exact same TYPE=league response, so
-  // there's no reason to fetch it separately for the two leagues where it isn't.
+  // Carries { nameById, ownerById } per league rather than a bare name map.
+  // nameById rides along for free off the exact same TYPE=league response
+  // already fetched below; ownerById costs one extra request per MFL league
+  // (fetchMflOwnerNames re-reads TYPE=league against the league's own
+  // regional host, since MFL's generic api.myfantasyleague.com host doesn't
+  // reliably recognize a privileged session for owner_name — see that
+  // function's own comment, and mflFranchiseOwnerNames' for the full story
+  // of how this project used to believe that was gated by commissioner
+  // access instead).
   const mflFranchiseInfoById = new Map();
 
   let frozenDraftonly = 0;
@@ -1145,7 +1149,7 @@ async function main() {
         mflLeagueData = await fetchMflLeagueData(league, cookie);
         mflFranchiseInfoById.set(league.id, {
           nameById: mflFranchiseNames(mflLeagueData),
-          ownerById: mflFranchiseOwnerNames(mflLeagueData),
+          ownerById: await fetchMflOwnerNames(league, cookie, mflLeagueData),
         });
       }
       // A finished draft-only league keeps the roster it already has, at the
