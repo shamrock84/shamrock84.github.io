@@ -1762,6 +1762,18 @@ export async function fetchNflGames() {
         // reader of this map (gameClocksFromGames, playerGameLine) reads
         // only the fields above, so this is additive.
         id: event.id,
+        // This competitor's own abbreviation, kept alongside `opponent` so
+        // a consumer can dedupe the map back down to one row per GAME
+        // rather than one per team — the NFL tab's scoreboard cards do
+        // this (buildNflGamesList in myffl.html): every alias of this team
+        // (see nflTeamKeys below) points at the SAME entry object, so
+        // `abbr` alone would still be ambiguous once aliased, but `id`
+        // plus `isHome` plus this field is enough to pair the two sides
+        // back up. Additive, same as `id` above.
+        team: abbr,
+        // The scoreboard's own running score, a string ("0" pregame) cast
+        // to a number here so a consumer never has to. Additive.
+        score: c.score != null ? Number(c.score) : null,
       };
       for (const key of nflTeamKeys(abbr)) games.set(key, entry);
     }
