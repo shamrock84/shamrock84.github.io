@@ -117,6 +117,15 @@ const liveScoringResponse = {
 		],
 		'the nonstarter is excluded — only starters feed the remaining-points model; stats is [] with no boxscore index/rates passed (see test-mfl-boxscore-breakdown.mjs for that case)'
 	);
+	// The nonstarter excluded above isn't dropped — it's the OTHER half of
+	// the same split, for the Scoring tab's nested "Show bench" drawer. No
+	// second request: this is the exact same players.player list fetchScoring
+	// already fetched for the starters, just filtered the other way.
+	assert.deepEqual(
+		me.bench,
+		[{ id: '9003', secondsRemaining: 0, name: null, position: null, team: null, points: 4, stats: [] }],
+		'the nonstarter that never feeds the win-probability model is exactly what the bench drawer renders'
+	);
 
 	// With a playerMap in hand, the same starters carry what the drawer
 	// needs beside each name.
@@ -134,6 +143,7 @@ const liveScoringResponse = {
 	const teamD = result.teams.find((t) => t.franchiseId === '0008');
 	assert.equal(teamD.minutesRemaining, 480, '28800 seconds is 480 minutes');
 	assert.deepEqual(teamD.players, [], 'an empty players node ({}) reads as no starters, not a crash');
+	assert.deepEqual(teamD.bench, [], 'and no bench either');
 	assert.equal(me.winProb + teamD.winProb, 100, 'a matchup pair\'s win probabilities always sum to 100');
 	assert.ok(me.winProb > 50, 'the team ahead on both score and remaining time is favored');
 

@@ -227,6 +227,9 @@ function leagueWithMatchup() {
 						{ id: '111', name: 'Joe Burrow', position: 'QB', team: 'CIN', points: 18.4 },
 						{ id: '222', name: 'James Cook', position: 'RB', team: 'BUF', points: null },
 					],
+					bench: [
+						{ id: '666', name: 'Bench One', position: 'WR', team: 'MIA', points: 2 },
+					],
 				},
 				{
 					franchiseId: '2', teamName: 'Team Two', score: '10.0',
@@ -234,6 +237,9 @@ function leagueWithMatchup() {
 						{ id: '333', name: 'Trevor Lawrence', position: 'QB', team: 'JAX', points: 0 },
 						{ id: '444', name: 'Bijan Robinson', position: 'RB', team: 'ATL', points: 7.25 },
 						{ id: '555', name: 'Drake London', position: 'WR', team: 'ATL', points: 3 },
+					],
+					bench: [
+						{ id: '777', name: 'Bench Two', position: 'TE', team: 'DAL', points: 5 },
 					],
 				},
 			],
@@ -715,6 +721,117 @@ function leagueWithMatchup() {
 	assert.equal(fullText(rows[0].children[1]), '12.0');
 	assert.equal(fullText(rows[1].children[0]), '2 Passing Touchdowns');
 	assert.equal(fullText(rows[1].children[1]), '12.0');
+}
+
+// --- The nested "Show bench" drawer (appendBenchDetail) ---
+// A second toggle inside the starter drawer's own body, for t.bench[] — the
+// same drawer machinery (pairStartersByPosition, appendDetailSide, the
+// empty-state message, localStorage round-tripping) reused rather than
+// duplicated, since a bench player renders no differently from a starter
+// once you have one in hand.
+{
+	const ctx = makeContext(LOGGED_IN);
+	ctx.liveScoringAttempted = true;
+	const card = ctx.renderScoringCard(leagueWithMatchup());
+
+	// Before the starter drawer is even opened, nothing bench-related exists
+	// yet — appendBenchDetail is only called from inside fill(), same lazy
+	// posture as the starter rows themselves.
+	assert.equal(findAll(card, hasClass('scoring-bench-toggle')).length, 0, 'no bench toggle before the starter drawer opens');
+
+	const outerToggle = findAll(card, hasClass('scoring-detail-toggle'))[0];
+	outerToggle.listeners.click[0]();
+
+	// The starter grid fills as usual — three rows (QB, RB, and the WR only
+	// Team Two started) — before the bench toggle has been touched at all.
+	const starterBody = findAll(card, hasClass('scoring-detail-body'))[0];
+	assert.equal(findAll(starterBody, hasClass('scoring-detail-row')).length, 3);
+
+	const benchToggle = findAll(card, hasClass('scoring-bench-toggle'))[0];
+	assert.ok(benchToggle, 'opening the starter drawer builds the nested bench toggle');
+	assert.equal(benchToggle.getAttribute('aria-expanded'), 'false', 'the bench drawer starts closed independently of the starter drawer above it');
+	assert.match(fullText(benchToggle), /Show bench/);
+	// It's still a .scoring-detail-toggle (shares the base styling/markup),
+	// just never carries the starter toggle's own live-flag modifier — see
+	// appendBenchDetail's own comment for why a bench player's real-world
+	// game state isn't "notable" the way a starter's is.
+	assert.ok(benchToggle.cls.split(/\s+/).includes('scoring-detail-toggle'));
+	assert.ok(!benchToggle.cls.split(/\s+/).includes('scoring-detail-live'));
+
+	const benchBody = findAll(card, hasClass('scoring-bench-body'))[0];
+	assert.ok(benchBody, 'the bench body exists');
+	assert.equal(benchBody.hidden, true, 'and is hidden while closed');
+	assert.equal(findAll(benchBody, hasClass('scoring-detail-row')).length, 0, 'closed bench drawer builds no rows');
+
+	// Open it.
+	benchToggle.listeners.click[0]();
+	assert.equal(benchBody.hidden, false);
+	assert.equal(benchToggle.getAttribute('aria-expanded'), 'true');
+	assert.match(fullText(benchToggle), /Hide bench/);
+
+	const benchRows = findAll(benchBody, hasClass('scoring-detail-row'));
+	assert.equal(benchRows.length, 2, 'the WR bench player on one side and the TE on the other, unpaired by position');
+	const benchNames = benchRows.map((r) => findAll(r, hasClass('scoring-detail-name')).map(fullText));
+	// Same abbreviatePlayerName treatment as any starter's name — nothing
+	// about being on the bench changes how a name renders.
+	assert.match(benchNames[0][0], /B\. One/, "Team One's bench player renders through the exact same name pipeline as a starter");
+	assert.equal(benchNames[0][1], '', 'no Team Two bench player at WR — the padded side');
+	assert.match(benchNames[1][1], /B\. Two/);
+
+	// The starter grid above is completely unaffected by opening the nested
+	// drawer — the bench body nests inside the starter body's own DOM
+	// subtree (hence 3 + 2 here), but the starter rows built above are still
+	// exactly the same three; nothing was rebuilt or duplicated.
+	assert.equal(findAll(starterBody, hasClass('scoring-detail-row')).length, 5, '3 starter rows plus the 2 bench rows nested inside the same body');
+}
+
+// The bench toggle's own open state round-trips through localStorage, under
+// its own key (the starter drawer's key plus a suffix) — independently of
+// the starter drawer, which is the whole point of nesting a SECOND toggle
+// rather than one flag for the whole body.
+{
+	const ctx = makeContext(LOGGED_IN);
+	ctx.liveScoringAttempted = true;
+
+	const card1 = ctx.renderScoringCard(leagueWithMatchup());
+	findAll(card1, hasClass('scoring-detail-toggle'))[0].listeners.click[0]();
+	findAll(card1, hasClass('scoring-bench-toggle'))[0].listeners.click[0]();
+
+	const keys = [...ctx.__store.keys()].filter((k) => k.startsWith('myfflScoringDetailOpen'));
+	assert.equal(keys.length, 2, 'the starter drawer and the bench drawer each write their own key');
+	assert.ok(keys.some((k) => k.endsWith(':bench')), 'the bench key is the starter key with a :bench suffix');
+
+	// Re-render, the same way a poll would — both stay open, and the bench
+	// grid is filled immediately rather than reopening empty.
+	const card2 = ctx.renderScoringCard(leagueWithMatchup());
+	const benchBody2 = findAll(card2, hasClass('scoring-bench-body'))[0];
+	assert.equal(benchBody2.hidden, false, 'the rebuilt bench drawer comes back open');
+	assert.equal(findAll(benchBody2, hasClass('scoring-detail-row')).length, 2);
+
+	// Closing only the bench toggle leaves the starter drawer's own key
+	// alone.
+	findAll(card2, hasClass('scoring-bench-toggle'))[0].listeners.click[0]();
+	const keysAfter = [...ctx.__store.keys()].filter((k) => k.startsWith('myfflScoringDetailOpen'));
+	assert.equal(keysAfter.length, 1, 'closing the bench drawer removes only its own key');
+	assert.ok(!keysAfter[0].endsWith(':bench'));
+}
+
+// Before the first live poll answers (or a provider matchup carries no
+// bench at all), the bench grid says so rather than opening onto nothing —
+// same posture as the starter grid's own "No starter detail yet" message.
+{
+	const ctx = makeContext(LOGGED_IN);
+	ctx.liveScoringAttempted = true;
+	const league = leagueWithMatchup();
+	for (const t of league.scoring.teams) delete t.bench;
+	const card = ctx.renderScoringCard(league);
+	findAll(card, hasClass('scoring-detail-toggle'))[0].listeners.click[0]();
+	findAll(card, hasClass('scoring-bench-toggle'))[0].listeners.click[0]();
+	const benchBody = findAll(card, hasClass('scoring-bench-body'))[0];
+	assert.equal(findAll(benchBody, hasClass('scoring-detail-row')).length, 0);
+	const empty = findAll(benchBody, hasClass('scoring-detail-empty'))[0];
+	assert.ok(empty, 'an explanatory line instead');
+	assert.match(fullText(empty), /No bench detail yet/);
 }
 
 console.log('test-scoring-details.mjs OK');

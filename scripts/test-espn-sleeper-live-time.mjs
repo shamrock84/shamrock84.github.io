@@ -265,6 +265,17 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
     away.players,
     [{ name: 'Chief Starter', secondsRemaining: 3600, position: 'QB', team: 'KC', points: null, stats: [] }]
   );
+  // The benched entry excluded from players above isn't dropped — it's the
+  // Scoring tab's nested "Show bench" drawer's own data, same shape as a
+  // starter (secondsRemaining still reads off clockMap, it's just not
+  // summed into minutesRemaining/score), off the same view=mRoster read
+  // fetchEspnScoring already made for the starters.
+  assert.deepEqual(
+    home.bench,
+    [{ name: 'Bench Guy', secondsRemaining: 3600, position: 'WR', team: 'KC', points: 99, stats: [] }],
+    'the benched KC entry lands in bench instead of vanishing'
+  );
+  assert.deepEqual(away.bench, [], 'no benched entries on this roster');
 }
 
 // --- fetchSleeperScoring: join against clockMap via playerMap, starters only ---
@@ -321,6 +332,17 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
     [{ name: 'Eagle Starter', secondsRemaining: 3600, position: 'QB', team: 'PHI', points: null, stats: [] }],
     'no players_points on this roster means null points, not a fabricated 0'
   );
+  // Roster 1's own `players` field (['100', '102']) is its full roster for
+  // the week — id 102 isn't in `starters`, so it's the bench drawer's
+  // entry, joined by playerMap/clockMap/players_points exactly like a
+  // starter. No second request: `players` rides along on the same
+  // /matchups/1 read fetchSleeperScoring already made.
+  assert.deepEqual(
+    home.bench,
+    [{ name: 'Cowboy Bench', secondsRemaining: 900, position: 'WR', team: 'DAL', points: 4.5, stats: [] }],
+    'the rostered-but-not-starting id lands in bench'
+  );
+  assert.deepEqual(away.bench, [], 'roster 2 carries no `players` field at all — bench degrades to empty, not a crash');
 }
 
 console.log('test-espn-sleeper-live-time.mjs OK');
