@@ -2088,6 +2088,24 @@
 			font-size: 0.75rem;
 			padding: 0.3rem 0.7rem;
 		}
+		/* The nested "Show bench" toggle inside the starter drawer's own
+		   body (appendBenchDetail) — a dashed rule and a smaller size mark it
+		   as a step further into the same drawer rather than a sibling of
+		   equal weight to the "Show detail" toggle above it. Deliberately
+		   never carries .scoring-detail-live's gold treatment — see
+		   appendBenchDetail's own comment on why a bench player's live game
+		   state isn't "notable" the way a starter's is. */
+		.scoring-bench-toggle {
+			border-top: 1px dashed var(--border);
+			font-size: 0.65rem;
+			padding: 0.25rem 0.7rem;
+		}
+		/* Same grid as .scoring-detail-body, indented slightly so its rows
+		   read as nested under the starter grid above rather than a second,
+		   unrelated table sharing the pill. */
+		.scoring-bench-body {
+			padding-left: 0.5rem;
+		}
 		table.standings th:not(:first-child),
 		table.standings td:not(:first-child) {
 			text-align: right;
@@ -6695,6 +6713,13 @@
 		// page-load budget reasoning), so a drawer opened before the first
 		// api/live-scoring.js poll answers has nothing to show and says so
 		// rather than rendering an empty grid.
+		//
+		// A second, nested toggle inside this drawer's own body — "Show
+		// bench" — opens the same grid built from `t.bench[]` instead:
+		// everyone rostered but not currently starting (see
+		// appendBenchDetail below). It stays collapsed independently, so
+		// opening the starter breakdown for a close game doesn't also
+		// dump a whole bench onto the screen.
 
 		// The drawer defaults CLOSED — the opposite polarity from every other
 		// collapse on this page, all of which default open and store "this one
@@ -7043,6 +7068,76 @@
 			}
 		}
 
+		// A second toggle, nested inside the starter drawer's own body rather
+		// than sitting beside it as a sibling — "show bench" is more of the
+		// same detail the reader already asked to see, not a second,
+		// independent drawer competing for attention on the pill. Its own
+		// open state is stored under its own key (the outer key plus a
+		// suffix) so a manager can leave the bench closed while the starter
+		// breakdown for a close, live matchup stays open, or the reverse.
+		// Everything else — lazy fill, the empty-state message, position
+		// pairing, live highlighting, the stat-breakdown popover — is the
+		// exact same machinery appendMatchupDetail's own starter half uses,
+		// reused rather than duplicated, since a bench player renders no
+		// differently from a starter once you have one in hand.
+		function appendBenchDetail(container, key, group) {
+			const benchKey = `${key}:bench`;
+			const open = isScoringDetailOpen(benchKey);
+
+			const body = el('div', { class: 'scoring-detail-body scoring-bench-body' });
+
+			let filled = false;
+			const fill = () => {
+				if (filled) return;
+				filled = true;
+				const rows = pairStartersByPosition(group[0]?.bench, group[1]?.bench);
+				if (rows.length === 0) {
+					body.appendChild(el('div', {
+						class: 'scoring-detail-empty',
+						text: 'No bench detail yet — waiting on the next live update.',
+					}));
+					return;
+				}
+				rows.forEach((r) => {
+					const row = el('div', { class: 'scoring-detail-row' });
+					appendDetailSide(row, r.left, 'left');
+					row.appendChild(el('div', { class: 'scoring-detail-pos', text: r.position }));
+					appendDetailSide(row, r.right, 'right');
+					body.appendChild(row);
+				});
+			};
+
+			const chevron = el('span', { class: 'scoring-detail-chevron', 'aria-hidden': 'true', text: '▾' });
+			const label = el('span', { text: open ? 'Hide bench' : 'Show bench' });
+			// No live-highlight modifier here, unlike the outer toggle's own
+			// scoring-detail-live — see isPlayerLive's own comment: that flag
+			// means "something can still move THIS matchup's score", and a
+			// bench player's own game state has no bearing on that regardless
+			// of whether his real-world game happens to be live right now.
+			const toggle = el('button', {
+				type: 'button',
+				class: 'scoring-detail-toggle scoring-bench-toggle',
+				'aria-expanded': String(open),
+			});
+			toggle.appendChild(chevron);
+			toggle.appendChild(label);
+
+			body.hidden = !open;
+			if (open) fill();
+
+			toggle.addEventListener('click', () => {
+				const next = body.hidden;
+				if (next) fill();
+				body.hidden = !next;
+				toggle.setAttribute('aria-expanded', String(next));
+				label.textContent = next ? 'Hide bench' : 'Show bench';
+				setScoringDetailOpen(benchKey, next);
+			});
+
+			container.appendChild(toggle);
+			container.appendChild(body);
+		}
+
 		// Builds the toggle strip and the drawer body, and appends both into
 		// the pill. `group` is the same score-sorted array of teams the pill's
 		// own rows were rendered from, so left/right here match top/bottom
@@ -7082,15 +7177,19 @@
 						class: 'scoring-detail-empty',
 						text: 'No starter detail yet — waiting on the next live update.',
 					}));
-					return;
+				} else {
+					rows.forEach((r) => {
+						const row = el('div', { class: 'scoring-detail-row' });
+						appendDetailSide(row, r.left, 'left');
+						row.appendChild(el('div', { class: 'scoring-detail-pos', text: r.position }));
+						appendDetailSide(row, r.right, 'right');
+						body.appendChild(row);
+					});
 				}
-				rows.forEach((r) => {
-					const row = el('div', { class: 'scoring-detail-row' });
-					appendDetailSide(row, r.left, 'left');
-					row.appendChild(el('div', { class: 'scoring-detail-pos', text: r.position }));
-					appendDetailSide(row, r.right, 'right');
-					body.appendChild(row);
-				});
+				// Nested inside this same body — see appendBenchDetail's own
+				// comment for why it's a second, independently-collapsed
+				// toggle rather than folded into the rows above.
+				appendBenchDetail(body, key, group);
 			};
 
 			const chevron = el('span', { class: 'scoring-detail-chevron', 'aria-hidden': 'true', text: '▾' });

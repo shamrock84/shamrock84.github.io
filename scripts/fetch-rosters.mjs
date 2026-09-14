@@ -109,7 +109,12 @@ function stripScoringPlayers(scoring) {
   if (!scoring || !Array.isArray(scoring.teams)) return scoring;
   return {
     ...scoring,
-    teams: scoring.teams.map(({ players, ...rest }) => rest),
+    // bench rides the same fetch as players (see mflBenchPlayers /
+    // espnTeamLiveStarters / sleeperTeamLiveStarters in providers.mjs) for
+    // the Scoring tab's nested "Show bench" drawer, and is exactly as
+    // LIVE-ONLY as players — stripped here for the same page-load-budget
+    // reason, never written to data/rosters.json.
+    teams: scoring.teams.map(({ players, bench, ...rest }) => rest),
   };
 }
 

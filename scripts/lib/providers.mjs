@@ -1903,15 +1903,19 @@ export async function fetchNflGameClocks() {
   return gameClocksFromGames(await fetchNflGames());
 }
 
-// Every currently-set starter on one franchise's liveScoring entry, for the
-// remaining-points win-probability model (estimateWinProbability's caller)
-// to value against FantasyPros projections instead of a flat per-minute
-// rate. `players.player` carries the WHOLE roster here, not just starters —
-// `status` is 'starter' or 'nonstarter' — so this filters to starters only:
-// a bench player's remaining game clock has nothing to do with this
-// matchup's outcome. Object-or-array-or-absent, the same shape every other
-// MFL list export uses (see mflRosterPlayers). `id` is the same MFL
-// player-id space fetchProjections' `byMflId` already joins against.
+// Every rostered player on one franchise's liveScoring entry, filtered down
+// to one status half — 'starter' for the remaining-points win-probability
+// model (estimateWinProbability's caller) to value against FantasyPros
+// projections instead of a flat per-minute rate, 'nonstarter' for the
+// Scoring tab's nested "Show bench" drawer (appendBenchDetail in
+// myffl.html). `players.player` carries the WHOLE roster in one read either
+// way — a bench player's remaining game clock has nothing to do with this
+// matchup's OUTCOME, which is why only the starter half feeds the
+// win-probability model, but MFL never has to be asked twice for it: the
+// bench half is free, the same fetch filtered the other way. Object-or-
+// array-or-absent, the same shape every other MFL list export uses (see
+// mflRosterPlayers). `id` is the same MFL player-id space fetchProjections'
+// `byMflId` already joins against.
 //
 // Also carries what the Scoring tab's per-matchup detail drawer renders:
 // `name`/`position`/`team` (resolved through the optional `playerMap` from
@@ -1925,11 +1929,11 @@ export async function fetchNflGameClocks() {
 // scoreboard shows for a player whose game hasn't started). A missing
 // points field must degrade to a dash rather than a confident 0.0, which
 // would read as "played and scored nothing".
-function mflLiveStarters(f, playerMap, boxscoreStatIndex, mflRatesByPosition) {
+function mflRosterPlayersByStatus(f, status, playerMap, boxscoreStatIndex, mflRatesByPosition) {
   const raw = f.players?.player;
   const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
   return list
-    .filter((p) => String(p.status).toLowerCase() === 'starter')
+    .filter((p) => String(p.status).toLowerCase() === status)
     .map((p) => {
       const info = playerMap?.get(String(p.id));
       return {
@@ -1946,6 +1950,14 @@ function mflLiveStarters(f, playerMap, boxscoreStatIndex, mflRatesByPosition) {
         stats: mflStatBreakdownFromBoxscore(info?.name, info?.position, boxscoreStatIndex, mflRatesByPosition),
       };
     });
+}
+
+function mflLiveStarters(f, playerMap, boxscoreStatIndex, mflRatesByPosition) {
+  return mflRosterPlayersByStatus(f, 'starter', playerMap, boxscoreStatIndex, mflRatesByPosition);
+}
+
+function mflBenchPlayers(f, playerMap, boxscoreStatIndex, mflRatesByPosition) {
+  return mflRosterPlayersByStatus(f, 'nonstarter', playerMap, boxscoreStatIndex, mflRatesByPosition);
 }
 
 // projectPlayer is optional — see attachWinProbabilities' own comment for
@@ -2011,6 +2023,7 @@ export async function fetchScoring(league, cookie, franchiseInfo, projectPlayer,
     minutesRemaining: Math.round(Number(f.gameSecondsRemaining ?? 0) / 60),
     isMe: f.id === league.franchiseId,
     players: mflLiveStarters(f, playerMap, boxscoreStatIndex, mflRatesByPosition),
+    bench: mflBenchPlayers(f, playerMap, boxscoreStatIndex, mflRatesByPosition),
   }));
 
   attachWinProbabilities(teams, matchups, projectPlayer);
@@ -2309,6 +2322,15 @@ export async function fetchEspnStandings(league) {
 // elsewhere, so the drawer groups by real `position` instead — which every
 // provider agrees on — and lets probe-live-scoring-players.yml's slot
 // histogram be the thing that eventually answers it off real data.
+//
+// Those same two slot ids are also what routes an entry to `bench` instead
+// of `players` below, for the Scoring tab's nested "Show bench" drawer
+// (appendBenchDetail in myffl.html) — bench and IR are lumped into one
+// bucket there, matching the single granularity MFL's own 'nonstarter'
+// status offers (see mflRosterPlayersByStatus), rather than splitting IR
+// out as a third list no other provider could fill in. No second request:
+// `entries` already carries every one of these slots, the same view=mRoster
+// read fetchEspnScoring's caller makes for the starters alone today.
 // Labels for the ESPN stat-category ids behind the Scoring tab's per-player
 // stat-breakdown popover ("7.4 points for 74 Receiving Yards"). 42/43/53 are
 // CONFIRMED live — probe-live-scoring-players.yml RUN 2 (week 1, 2026) read
@@ -2375,24 +2397,28 @@ function espnTeamLiveStarters(teamSide, clockMap, currentPeriod) {
   let seconds = 0;
   let summedScore = 0;
   const players = [];
+  const bench = [];
   for (const e of entries) {
-    if (e.lineupSlotId === ESPN_BENCH_SLOT_ID || e.lineupSlotId === ESPN_IR_SLOT_ID) continue;
     const p = e.playerPoolEntry?.player;
     const abbr = ESPN_PRO_TEAM_MAP[p?.proTeamId];
-    const secondsRemaining = clockMap.get(abbr) ?? 0;
-    seconds += secondsRemaining;
     const points = e.playerPoolEntry?.appliedStatTotal;
-    summedScore += points == null ? 0 : Number(points);
-    players.push({
+    const playerOut = {
       name: p?.fullName || '',
-      secondsRemaining,
+      secondsRemaining: clockMap.get(abbr) ?? 0,
       position: ESPN_POSITION_MAP[p?.defaultPositionId] ?? null,
       team: abbr ?? null,
       points: points == null ? null : Number(points),
       stats: espnStatBreakdown(p?.stats, currentPeriod),
-    });
+    };
+    if (e.lineupSlotId === ESPN_BENCH_SLOT_ID || e.lineupSlotId === ESPN_IR_SLOT_ID) {
+      bench.push(playerOut);
+      continue;
+    }
+    seconds += playerOut.secondsRemaining;
+    summedScore += points == null ? 0 : Number(points);
+    players.push(playerOut);
   }
-  return { minutesRemaining: Math.round(seconds / 60), score: summedScore, players };
+  return { minutesRemaining: Math.round(seconds / 60), score: summedScore, players, bench };
 }
 
 // clockMap is optional — pass one from fetchNflGameClocks (shared across
@@ -2434,13 +2460,13 @@ export async function fetchEspnScoring(league, clockMap, projectPlayer) {
   for (const m of schedule) {
     const teamIds = [];
     if (m.home) {
-      const { minutesRemaining, score: summedScore, players } = espnTeamLiveStarters(m.home, clocks, currentPeriod);
-      rows.push({ teamId: m.home.teamId, score: m.home.totalPointsLive ?? summedScore, minutesRemaining, players });
+      const { minutesRemaining, score: summedScore, players, bench } = espnTeamLiveStarters(m.home, clocks, currentPeriod);
+      rows.push({ teamId: m.home.teamId, score: m.home.totalPointsLive ?? summedScore, minutesRemaining, players, bench });
       teamIds.push(String(m.home.teamId));
     }
     if (m.away) {
-      const { minutesRemaining, score: summedScore, players } = espnTeamLiveStarters(m.away, clocks, currentPeriod);
-      rows.push({ teamId: m.away.teamId, score: m.away.totalPointsLive ?? summedScore, minutesRemaining, players });
+      const { minutesRemaining, score: summedScore, players, bench } = espnTeamLiveStarters(m.away, clocks, currentPeriod);
+      rows.push({ teamId: m.away.teamId, score: m.away.totalPointsLive ?? summedScore, minutesRemaining, players, bench });
       teamIds.push(String(m.away.teamId));
     }
     if (teamIds.length) matchups.push({ teamIds });
@@ -2457,6 +2483,7 @@ export async function fetchEspnScoring(league, clockMap, projectPlayer) {
     minutesRemaining: r.minutesRemaining,
     isMe: String(r.teamId) === String(league.franchiseId),
     players: r.players,
+    bench: r.bench,
   }));
 
   attachWinProbabilities(teams, matchups, projectPlayer);
@@ -2801,24 +2828,46 @@ function sleeperStatBreakdown(playerId, weeklyStats, scoringSettings) {
 // probed, and a drawer that labelled slots for one provider and positions
 // for another would be two different cards wearing one name. Position is
 // what all three agree on.
-function sleeperTeamLiveStarters(starterIds, playerMap, clockMap, pointsById, weeklyStats, scoringSettings) {
+//
+// One entry, shared by both the starters loop and the bench one below —
+// same fields either way, only which half of the roster they're built for
+// differs.
+function sleeperRosterPlayerEntry(id, playerMap, clockMap, pointsById, weeklyStats, scoringSettings) {
+  const info = playerMap.get(String(id));
+  const points = pointsById?.[String(id)];
+  return {
+    name: info?.name || '',
+    secondsRemaining: clockMap.get(info?.team) ?? 0,
+    position: info?.position ?? null,
+    team: info?.team ?? null,
+    points: points == null ? null : Number(points),
+    stats: sleeperStatBreakdown(id, weeklyStats, scoringSettings),
+  };
+}
+
+// rosterIds is Sleeper's own `players` field on the matchup entry — the
+// franchise's FULL roster for the week, riding along on the exact same
+// `/matchups/<week>` read fetchSleeperScoring already makes for
+// `players_points` (see that field's own comment). Bench, for the Scoring
+// tab's nested "Show bench" drawer (appendBenchDetail in myffl.html), is
+// simply whichever of those ids isn't also in `starters` — no second
+// request, unlike loadSleeperPlayerMap/fetchSleeperWeekStats, which really
+// are separate global fetches.
+function sleeperTeamLiveStarters(starterIds, rosterIds, playerMap, clockMap, pointsById, weeklyStats, scoringSettings) {
   let seconds = 0;
   const players = [];
   for (const id of starterIds || []) {
-    const info = playerMap.get(String(id));
-    const secondsRemaining = clockMap.get(info?.team) ?? 0;
-    seconds += secondsRemaining;
-    const points = pointsById?.[String(id)];
-    players.push({
-      name: info?.name || '',
-      secondsRemaining,
-      position: info?.position ?? null,
-      team: info?.team ?? null,
-      points: points == null ? null : Number(points),
-      stats: sleeperStatBreakdown(id, weeklyStats, scoringSettings),
-    });
+    const entry = sleeperRosterPlayerEntry(id, playerMap, clockMap, pointsById, weeklyStats, scoringSettings);
+    seconds += entry.secondsRemaining;
+    players.push(entry);
   }
-  return { minutesRemaining: Math.round(seconds / 60), players };
+
+  const starterSet = new Set((starterIds || []).map(String));
+  const bench = (rosterIds || [])
+    .filter((id) => !starterSet.has(String(id)))
+    .map((id) => sleeperRosterPlayerEntry(id, playerMap, clockMap, pointsById, weeklyStats, scoringSettings));
+
+  return { minutesRemaining: Math.round(seconds / 60), players, bench };
 }
 
 // The public per-player weekly raw-stat endpoint behind the Sleeper half of
@@ -2863,7 +2912,7 @@ export async function fetchSleeperScoring(league, clockMap, playerMap, projectPl
 
   const scoringSettings = leagueData?.scoring_settings || null;
   const teams = rawMatchups.map((m) => {
-    const live = sleeperTeamLiveStarters(m.starters, players, clocks, m.players_points, weeklyStats, scoringSettings);
+    const live = sleeperTeamLiveStarters(m.starters, m.players, players, clocks, m.players_points, weeklyStats, scoringSettings);
     return {
       franchiseId: String(m.roster_id),
       teamName: names.get(String(m.roster_id)) || `Team ${m.roster_id}`,
@@ -2872,6 +2921,7 @@ export async function fetchSleeperScoring(league, clockMap, playerMap, projectPl
       minutesRemaining: live.minutesRemaining,
       isMe: String(m.roster_id) === String(league.franchiseId),
       players: live.players,
+      bench: live.bench,
     };
   });
 
