@@ -5912,7 +5912,10 @@
 			}
 
 			card.appendChild(buildCardHead(card, league, formatBadgeLabels(league)));
-			card.appendChild(el('div', { class: 'team card-collapse-visible', text: league.teamName || '' }));
+			const teamNameText = league.teamName
+				? appendRecord(league.teamName, currentRecord(league, league.franchiseId))
+				: '';
+			card.appendChild(el('div', { class: 'team card-collapse-visible', text: teamNameText }));
 
 			if (league.error && (!league.players || league.players.length === 0)) {
 				card.appendChild(el('div', { class: 'error-box', text: `Couldn't load this league: ${league.error}` }));
@@ -6628,7 +6631,7 @@
 					group.forEach((t) => {
 						const row = el('div', { class: `scoring-matchup-row${t.isMe ? ' me-row' : ''}` });
 						const nameCol = el('div', { class: 'scoring-matchup-name' });
-						nameCol.appendChild(el('div', { text: teamNameWithOwner(t) }));
+						nameCol.appendChild(el('div', { text: appendRecord(teamNameWithOwner(t), currentRecord(league, t.franchiseId)) }));
 						const meta = scoringMetaLine(t);
 						if (meta) nameCol.appendChild(el('div', { class: 'scoring-matchup-meta', text: meta }));
 						row.appendChild(nameCol);
@@ -6667,7 +6670,7 @@
 					const row = el('tr', { class: t.isMe ? 'me-row' : '' });
 					row.appendChild(el('td', { text: String(i + 1) }));
 					const nameCell = el('td');
-					nameCell.appendChild(el('div', { text: teamNameWithOwner(t) }));
+					nameCell.appendChild(el('div', { text: appendRecord(teamNameWithOwner(t), currentRecord(league, t.franchiseId)) }));
 					const meta = scoringMetaLine(t);
 					if (meta) nameCell.appendChild(el('div', { class: 'scoring-matchup-meta', text: meta }));
 					row.appendChild(nameCell);
@@ -6708,6 +6711,30 @@
 		// none of those just renders unchanged.
 		function teamNameWithOwner(t) {
 			return t.ownerName ? `${t.teamName} (${t.ownerName})` : t.teamName;
+		}
+
+		// A team's current W-L(-T), read off this league's own standings
+		// (league.standings — already fetched for the Standings tab's own
+		// record column, so this costs nothing extra) and appended on Rosters
+		// and Scoring, where a manager is looking at one team at a time (their
+		// own roster, or a live matchup) rather than a whole league table.
+		// Standings itself is left alone — it already has a dedicated W-L-T
+		// column, so repeating the record in the name there would say the
+		// same thing twice.
+		//
+		// Omitted entirely at 0-0-0: a season-opening "0-0" on every row is
+		// noise, not information, and this is also what keeps a draftonly
+		// league silent here without a separate check — its h2h fields are
+		// always zero (see showRecord in renderStandingsCard), so it never
+		// clears this gate either.
+		function currentRecord(league, franchiseId) {
+			const r = (league.standings || []).find((row) => row.franchiseId === franchiseId);
+			if (!r || (r.wins === 0 && r.losses === 0 && r.ties === 0)) return null;
+			return `${r.wins}-${r.losses}${r.ties ? '-' + r.ties : ''}`;
+		}
+
+		function appendRecord(name, record) {
+			return record ? `${name} (${record})` : name;
 		}
 
 		function scoringMetaLine(t) {
