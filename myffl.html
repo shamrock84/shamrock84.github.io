@@ -6734,6 +6734,22 @@
 		// boundary to drift.
 		let liveGames = {};
 
+		// Whether refreshDigestGameStates has settled at least once (success
+		// or failure) since page load. `liveGames = {}` is indistinguishable
+		// from "every game is confirmed not started yet" — nothing marks it
+		// as "haven't asked" the way `null` does for available/starters
+		// elsewhere on this page — so computeLeagueProblems used to flag an
+		// already-underway injury on the very first render (before this
+		// fetch has had a chance to answer), then un-flag it a moment later
+		// once liveGames was actually populated. That's a flash-then-correct
+		// on every page load, not a one-time bug: the fetch is fast but never
+		// instant, and the digest renders before it can possibly have
+		// answered. Gating the per-starter checks on this flag is what turns
+		// that into a single, correct render instead — same "not asked, not
+		// answered" reasoning as the absence-of-lineup-data gates already in
+		// computeLeagueProblems, just for a different kind of missing data.
+		let gameStatesAttempted = false;
+
 		// A team defense, in any provider's spelling. Both halves of the test
 		// are load-bearing: the position half catches MFL's "Baltimore
 		// Ravens", which carries nothing in the name to recognise it by, and
@@ -7803,7 +7819,20 @@
 		// designation for the rest of the week) from sitting in the digest as
 		// if it were still actionable. `games` defaults to the live module
 		// state; the digest's own render call never passes it explicitly.
-		function computeLeagueProblems(league, year, games = liveGames) {
+		//
+		// The per-starter loop itself is skipped entirely until `attempted`
+		// (gameStatesAttempted by default) is true — before that, `games` is
+		// indistinguishable between "confirmed nobody's game has started" and
+		// "haven't asked yet", and guessing the former on every page load is
+		// exactly what used to flash an already-moot injury row for the
+		// instant before the real answer arrived. Skipping the loop (rather
+		// than answering with the empty-map assumption) means the digest
+		// renders once, correctly, instead of rendering wrong and then
+		// correcting itself a moment later. This does NOT gate the "empty"/
+		// "short" lineup checks below — those are counts off the synced
+		// snapshot, unrelated to any individual player's game clock, and
+		// have never had anything to flicker.
+		function computeLeagueProblems(league, year, games = liveGames, attempted = gameStatesAttempted) {
 			const problems = [];
 			if (league.error) {
 				problems.push({ kind: 'sync', player: null, label: `Roster sync failing — showing older data (${league.error})` });
@@ -7820,24 +7849,26 @@
 			if ((league.players || []).length === 0) return problems;
 
 			const wk = league.lineupWeek;
-			const byId = new Map((league.players || []).map((p) => [String(p.id), p]));
-			for (const id of league.starters) {
-				const p = byId.get(String(id));
-				if (!p) continue;
-				if (playerGameStarted(p, games)) continue;
-				if (p.status && !DIGEST_STARTABLE_STATUSES.includes(p.status)) {
-					const slot = (STATUS_GROUPS.find((g) => g.key === p.status) || {}).label || p.status;
-					problems.push({ kind: 'ineligible', player: p, label: `in the week ${wk} lineup but on the ${slot}` });
-					continue;
-				}
-				const inj = p.injuryStatus;
-				if (inj && (INJURY_SETTLED.includes(inj) || DIGEST_ALSO_FLAGGED.includes(inj) || injurySeverityRank(inj) >= injurySeverityRank(DIGEST_INJURY_FLOOR))) {
-					const part = p.injuryDetail && p.injuryDetail.part ? ` — ${p.injuryDetail.part}` : '';
-					problems.push({ kind: 'injury', player: p, label: `in the week ${wk} lineup but listed ${inj}${part}` });
-					continue;
-				}
-				if (Number(p.bye) > 0 && Number(p.bye) === Number(wk)) {
-					problems.push({ kind: 'bye', player: p, label: `in the week ${wk} lineup but on bye` });
+			if (attempted) {
+				const byId = new Map((league.players || []).map((p) => [String(p.id), p]));
+				for (const id of league.starters) {
+					const p = byId.get(String(id));
+					if (!p) continue;
+					if (playerGameStarted(p, games)) continue;
+					if (p.status && !DIGEST_STARTABLE_STATUSES.includes(p.status)) {
+						const slot = (STATUS_GROUPS.find((g) => g.key === p.status) || {}).label || p.status;
+						problems.push({ kind: 'ineligible', player: p, label: `in the week ${wk} lineup but on the ${slot}` });
+						continue;
+					}
+					const inj = p.injuryStatus;
+					if (inj && (INJURY_SETTLED.includes(inj) || DIGEST_ALSO_FLAGGED.includes(inj) || injurySeverityRank(inj) >= injurySeverityRank(DIGEST_INJURY_FLOOR))) {
+						const part = p.injuryDetail && p.injuryDetail.part ? ` — ${p.injuryDetail.part}` : '';
+						problems.push({ kind: 'injury', player: p, label: `in the week ${wk} lineup but listed ${inj}${part}` });
+						continue;
+					}
+					if (Number(p.bye) > 0 && Number(p.bye) === Number(wk)) {
+						problems.push({ kind: 'bye', player: p, label: `in the week ${wk} lineup but on bye` });
+					}
 				}
 			}
 
@@ -11285,12 +11316,23 @@
 			if (!LIVE_SCORING_URL || !pageData) return;
 			try {
 				const res = await fetch(`${LIVE_SCORING_URL}?gamesOnly=1&t=${Date.now()}`, { cache: 'no-store' });
-				if (!res.ok) return;
-				const data = await res.json();
-				liveGames = data.games || {};
-				renderGrid();
+				if (res.ok) {
+					const data = await res.json();
+					liveGames = data.games || {};
+				}
+				// A non-OK response falls through to the finally below with
+				// liveGames left at {} — same as a genuine "nothing's live
+				// yet" answer, and the same fallback this feature had before
+				// gameStatesAttempted existed.
 			} catch {
-				// degrade silently — the digest just keeps showing what it knew before.
+				// degrade silently — liveGames stays whatever it already was.
+			} finally {
+				// Set — and re-rendered off of — regardless of outcome: a
+				// failed fetch must still let computeLeagueProblems commit to
+				// an answer instead of holding every per-starter check open
+				// forever waiting on a request that already failed.
+				gameStatesAttempted = true;
+				renderGrid();
 			}
 		}
 
