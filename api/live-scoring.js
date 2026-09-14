@@ -26,6 +26,8 @@ import {
   fetchEspnBoxscore,
   addBoxscoreToStatIndex,
   fetchMflSkillPositionRates,
+  fetchMflLeagueRosterIds,
+  fetchMflWeekPlayerScores,
 } from '../scripts/lib/providers.mjs';
 import { applyCors } from './lib/cors.mjs';
 // scripts/lib/fantasypros.mjs is a new import boundary for api/ — see
@@ -68,6 +70,8 @@ const cache = {
   espnBoxscores: new Map(), // eventId -> { boxscore, final } — see getEspnBoxscore
   mflRates: new Map(), // leagueId -> Map<position, Map<eventCode, rate>>
   mflRatesAt: new Map(), // leagueId -> timestamp
+  mflRosterIds: new Map(), // leagueId -> Map<franchiseId, playerId[]> — see getMflRosterIds
+  mflRosterIdsAt: new Map(), // leagueId -> timestamp
 };
 
 const COOKIE_TTL_MS = 20 * 60 * 1000; // 20 min
@@ -283,6 +287,25 @@ async function getMflRatesByPosition(league, cookie) {
   return rates;
 }
 
+// Who's on each franchise's roster at all, for the Scoring tab's nested
+// "Show bench" drawer — see mflBenchFromRoster's own comment in
+// providers.mjs for why this needs its own request (TYPE=liveScoring
+// doesn't carry it) and the same NAMES_TTL_MS caching every other mostly-
+// static MFL read in this file uses: roster composition barely moves
+// mid-week, so a warm instance pays this once an hour per league rather
+// than once per ~30s poll.
+async function getMflRosterIds(league, cookie) {
+  const at = cache.mflRosterIdsAt.get(league.id) || 0;
+  const cached = cache.mflRosterIds.get(league.id);
+  if (cached && Date.now() - at < NAMES_TTL_MS) {
+    return cached;
+  }
+  const rosterIds = await fetchMflLeagueRosterIds(league, cookie);
+  cache.mflRosterIds.set(league.id, rosterIds);
+  cache.mflRosterIdsAt.set(league.id, Date.now());
+  return rosterIds;
+}
+
 // Once a game has gone final its boxscore never changes again, so a copy
 // captured while `final` is true is reused for the rest of this warm
 // instance's life rather than re-fetched every ~30s poll — the same
@@ -470,6 +493,22 @@ export default async function handler(req, res) {
     }
   }
 
+  // The week fetchMflWeekPlayerScores needs for the Scoring tab's bench
+  // drawer (see mflBenchFromRoster's own comment in providers.mjs) — reused
+  // from the SAME getCurrentNflWeek() projections/Sleeper already resolve
+  // above rather than asked for again, so this file never carries two
+  // different ideas of "the current week" for the same poll. A failure or
+  // an unresolved week just means every MFL league's bench comes back
+  // empty this poll, same degrade-not-fail posture as everything else here.
+  let mflWeek = null;
+  if (mflCookie && anyMflLeague) {
+    try {
+      mflWeek = await getCurrentNflWeek();
+    } catch {
+      // degrade silently — see comment above.
+    }
+  }
+
   const results = await Promise.allSettled(
     leagues
       .filter(hasLiveScoring)
@@ -499,8 +538,28 @@ export default async function handler(req, res) {
         } catch {
           // degrade silently — see comment above.
         }
+        // Both bench-only inputs (see mflBenchFromRoster in providers.mjs) —
+        // a failure in either costs this league's bench only, never its
+        // scores. mflRosterIds is cached (getMflRosterIds); mflWeekScores
+        // is NOT, since it's the one genuinely live part of the bench
+        // drawer and has to be asked for fresh every poll.
+        let mflRosterIds;
+        try {
+          mflRosterIds = await getMflRosterIds(league, mflCookie);
+        } catch {
+          // degrade silently — see comment above.
+        }
+        let mflWeekScores = null;
+        if (mflWeek) {
+          try {
+            mflWeekScores = await fetchMflWeekPlayerScores(league, mflWeek, mflCookie);
+          } catch {
+            // degrade silently — see comment above.
+          }
+        }
         const scoring = await fetchScoring(
-          league, mflCookie, franchiseInfo, projectPlayer, mflPlayerMap, mflBoxscoreStatIndex, mflRatesByPosition
+          league, mflCookie, franchiseInfo, projectPlayer, mflPlayerMap, mflBoxscoreStatIndex, mflRatesByPosition,
+          mflRosterIds, mflWeekScores
         );
         return { id: league.id, name: league.name, scoring, scoringError: null };
       })

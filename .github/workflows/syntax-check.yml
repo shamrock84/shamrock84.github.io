@@ -324,6 +324,19 @@ jobs:
       - name: Test the MFL boxscore-derived stat breakdown
         run: node scripts/test-mfl-boxscore-breakdown.mjs
 
+      # The MFL half of the Scoring tab's nested "Show bench" drawer.
+      # TYPE=liveScoring's players.player list was assumed to carry the
+      # whole roster (starters and bench both) but a probe against a real
+      # league found it carries only the 9 starters, never a bench entry —
+      # so bench identity comes from TYPE=rosters and each bench player's
+      # live score from TYPE=playerScores&RULES=1 instead, joined against
+      # the starter ids fetchScoring already found. Every failure mode here
+      # is silent — a starter wrongly counted as bench, a genuine 0 score
+      # collapsed to null, or a roster id with no known score rendered as a
+      # missing player instead of an unresolved one.
+      - name: Test the MFL bench drawer
+        run: node scripts/test-mfl-bench.mjs
+
       # The quick-link toolbar's red task-count footnote and its
       # Rosters/Standings/Scoring card counterpart: exact-category,
       # open-tasks-only summing (quickLinkTaskCounts), that the marker is
