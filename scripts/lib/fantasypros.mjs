@@ -631,16 +631,28 @@ export function buildProjectionIndex(playersByPosition) {
 // week=0 is FantasyPros' preseason slot, same as draft/dynasty rankings
 // use, and is what the probe actually asked.
 //
-// WHAT HAPPENS IN-SEASON IS NOT YET KNOWN, and it is the open question
-// hanging over this whole feature. Three answers are possible once games
-// are played: week=0 keeps serving frozen August numbers (stale, and
-// silently — the card goes on rendering plausible ranks off projections
-// that predate every injury and breakout of the season), it starts
-// serving rest-of-season numbers (ideal), or it empties out.
-// probe-fantasypros-power-rank.yml asks the questions that distinguish
-// these and is meant to be re-run after kickoff; `week` is a parameter
-// here rather than a literal so the answer costs a call-site change
-// rather than a rewrite.
+// WHAT HAPPENS IN-SEASON IS NOW KNOWN: week=0 freezes. probe-fantasypros-
+// power-rank.yml, re-run 2026-09-14 (a week into the season) against its
+// own 2026-09-10 (pre-kickoff) numbers, found the same top QB at the same
+// point total to two decimals, while week=1 — a genuine single-week slice
+// — moved in the same window. So the power score currently runs on
+// projections that predate every injury and breakout of the season, and
+// nothing about that changes on its own as more weeks are played.
+//
+// The same probe run also checked for a native rest-of-season mode on this
+// endpoint rather than assuming one has to be built: `ros=true` is real
+// (it's in FantasyPros' own OpenAPI spec, and the response echoes
+// `ros_projections: true`), but comes back `public_api_limited: true,
+// tier: "premium", players: null` regardless of key. This project first
+// misread that as a paid-tier gate and chased a Premium-plan activation
+// that changed nothing; FantasyPros support (2026-09-15) confirmed
+// `public_api_limited` is `true` on every tier and `ros=true` simply
+// wasn't live yet, expected "later this week" as of that reply. So for
+// now the fix, when one ships, is summing points across the remaining
+// weeks (1..17) rather than reading week=0 — a call-site change, not a
+// rewrite of this function's shape — unless `ros=true` goes live and
+// returns real players first, which would be cheaper to switch to.
+// `week` stays a parameter rather than a literal for exactly that reason.
 //
 // The guard below is what makes the third case loud rather than quiet. An
 // empty position means the endpoint stopped answering the way it did when
