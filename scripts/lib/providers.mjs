@@ -269,15 +269,21 @@ function paceMflRequest() {
 // (429) — retry with a short backoff instead of failing leagues that just
 // happened to be later in the sync. Retries recurse through here, so they are
 // paced like any other request.
-export async function mflGet(path, cookie, year = YEAR, attempt = 1) {
+//
+// host defaults to the generic api.myfantasyleague.com — every existing
+// caller keeps that behavior unchanged. fetchMflOwnerNames is the one caller
+// that passes a league's own regional host (its `baseURL`, e.g.
+// "https://www43.myfantasyleague.com") instead — see that function's own
+// comment for why the generic host can't be trusted for privileged fields.
+export async function mflGet(path, cookie, year = YEAR, attempt = 1, host = 'https://api.myfantasyleague.com') {
   await paceMflRequest();
-  const res = await fetch(`https://api.myfantasyleague.com/${year}${path}`, {
+  const res = await fetch(`${host}/${year}${path}`, {
     headers: cookie ? { Cookie: cookie } : {},
     redirect: 'follow',
   });
   if (res.status === 429 && attempt < 4) {
     await sleep(attempt * 1500);
-    return mflGet(path, cookie, year, attempt + 1);
+    return mflGet(path, cookie, year, attempt + 1, host);
   }
   if (!res.ok) {
     // The status rides on the error because one caller has to tell a definitive
@@ -1412,19 +1418,7 @@ export function mflFranchiseNames(leagueData) {
 
 // The real person behind an MFL franchise, mirroring espnOwnerName's role
 // for the Standings/Scoring cards' "Team Name (Owner)" treatment
-// (teamNameWithOwner in myffl.html). Unlike ESPN, this is NOT a sync-time
-// given: probe-mfl-owner-name.mjs and MFL's own API docs (pasted by the
-// project's manager mid-session) confirmed a franchise's `owner_name`
-// (plus email) only appears in TYPE=league's response when the request's
-// session cookie belongs to a user with COMMISSIONER access to that
-// specific league — a per-league fact having nothing to do with league
-// type, and unrelated to the FRANCHISE_ID/PASSWORD request params an
-// earlier (wrong) theory, borrowed from python-mfl's docstring, chased
-// first. Running the probe against every MFL league in config/leagues.json
-// found exactly two where this project's login commissions the league;
-// every other franchise object simply never carries `owner_name` at all,
-// so this degrades to null there automatically — no per-league gating
-// needed in this project's own code, MFL's API already does it.
+// (teamNameWithOwner in myffl.html).
 //
 // First name only, matching espnOwnerName's own reasoning: a parenthetical
 // read at a glance next to a score or a record doesn't need the owner's
@@ -1437,25 +1431,70 @@ export function mflOwnerName(franchise) {
   return String(raw).trim().split(/\s+/)[0] || null;
 }
 
-// Sibling to mflFranchiseNames, off the exact same already-fetched
-// TYPE=league response — never a second request. Most entries resolve to
-// null (see mflOwnerName's own comment for why that's the expected common
-// case, not a failure) since this account only commissions a couple of the
-// leagues in this config.
+// Pure extraction off an already-fetched TYPE=league response — does NOT
+// fetch anything itself. Kept separate from fetchMflOwnerNames below because
+// probes and tests want to build this map off a fixture response without a
+// network call.
+//
+// CORRECTION (2026-09-14): this project previously believed `owner_name`
+// only appears when the request's session cookie belongs to a user with
+// COMMISSIONER access to that specific league, per MFL's own docs and
+// probe-mfl-owner-name.mjs's runs #1-#2. That verdict inferred commissioner
+// access from owner_name's presence itself, and was never checked against
+// anything independent. The project's manager confirmed directly that the
+// account is NOT commissioner on several leagues that showed owner_name and
+// IS commissioner on several that didn't — the opposite of the theory — and
+// run #3 caught the set of leagues showing it changing entirely between two
+// reads taken the same day, which no stable per-league fact (commissioner
+// access or otherwise) can explain. The real cause, confirmed by run #4:
+// every MFL request in this project goes through mflGet's hardcoded
+// api.myfantasyleague.com host, and MFL's session/privilege recognition is
+// tied to a league's own regional host (`baseURL`, e.g. "www43") — the
+// same host-routing problem mflLoginForImport's own comment already
+// diagnosed for lineup submission, just never applied to reads. Queried
+// against its own baseURL, every single MFL league in this config returned
+// real owner_name for every franchise — see fetchMflOwnerNames.
 export function mflFranchiseOwnerNames(leagueData) {
   const franchises = leagueData?.league?.franchises?.franchise ?? [];
   const franchiseList = Array.isArray(franchises) ? franchises : [franchises];
   return new Map(franchiseList.map((f) => [f.id, mflOwnerName(f)]));
 }
 
+// The host-corrected fetch that actually gets real owner names — see
+// mflFranchiseOwnerNames' own comment for the full story. Takes the
+// generic-host TYPE=league response the caller already has (for its
+// `baseURL`) and issues ONE MORE TYPE=league request, this time directly
+// against that league's own regional host, and extracts owner names from
+// THAT response instead. Paced through the same mflGet gate as every other
+// MFL request, so it inherits whatever interval the sync/live-scoring
+// already set.
+//
+// Degrades to an empty map — never throws — on a missing baseURL or a
+// failed request, matching "the sync degrades, it never fails": a league
+// whose owner names can't be fetched this way just renders with no owner
+// annotations, exactly like before this fix existed.
+export async function fetchMflOwnerNames(league, cookie, leagueData) {
+  const baseURL = leagueData?.league?.baseURL;
+  if (!baseURL) return new Map();
+  try {
+    const hostData = await mflGet(`/export?TYPE=league&L=${league.id}&JSON=1`, cookie, seasonOf(league), 1, baseURL);
+    return mflFranchiseOwnerNames(hostData);
+  } catch {
+    return new Map();
+  }
+}
+
 // Fetches the franchise-id -> name AND franchise-id -> owner-name maps for
 // an MFL league (the part of TYPE=league that fetchStandings/fetchScoring
-// need) off a single request. Callers that already have this cached (e.g.
-// the live-scoring proxy, or the sync's own already-fetched TYPE=league
-// read for the roster pass) can skip re-fetching it every poll/pass.
+// need). Names come off the generic-host response as always; owner names go
+// through fetchMflOwnerNames' extra, host-corrected request. Callers that
+// already have both maps cached (e.g. the sync's own already-fetched
+// TYPE=league read for the roster pass) build them directly instead — see
+// fetch-rosters.mjs's mflFranchiseInfoById.
 export async function fetchMflFranchiseNames(league, cookie) {
   const leagueData = await fetchMflLeagueData(league, cookie);
-  return { nameById: mflFranchiseNames(leagueData), ownerById: mflFranchiseOwnerNames(leagueData) };
+  const [nameById, ownerById] = [mflFranchiseNames(leagueData), await fetchMflOwnerNames(league, cookie, leagueData)];
+  return { nameById, ownerById };
 }
 
 // franchiseInfo ({ nameById, ownerById }) is optional — pass a cached one

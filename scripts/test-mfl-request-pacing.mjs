@@ -30,6 +30,7 @@ import {
 	fetchLeagueRoster,
 	mflFranchiseNames,
 	mflFranchiseOwnerNames,
+	fetchMflOwnerNames,
 } from './lib/providers.mjs';
 
 // Records the moment each request *starts*, which is what the gate spaces out.
@@ -230,6 +231,54 @@ const league = { id: '26696', name: 'MNMx Dynasty', type: 'dynasty', franchiseId
 		0,
 		'a cached TYPE=league response must not be re-fetched'
 	);
+}
+
+// --- fetchMflOwnerNames targets the league's own host, not the generic one --
+// This is the fix for the owner-name bug traced in probe-mfl-owner-name.mjs:
+// mflGet's hardcoded api.myfantasyleague.com host randomly fails to carry
+// even a genuinely privileged session through to MFL's backend for a given
+// league, so owner names now come off a second request sent directly to
+// that league's own baseURL. A silent regression here (falling back to the
+// generic host, or swallowing a real baseURL) means owner names quietly go
+// back to missing in production, the same way this bug shipped undetected
+// the first time.
+{
+	const genericLeagueData = {
+		league: { id: '26696', baseURL: 'https://www43.myfantasyleague.com' },
+	};
+	const hostLeagueData = {
+		league: { franchises: { franchise: [{ id: '0001', name: 'Rumble Fish', owner_name: 'Jeff Melbostad' }] } },
+	};
+	const { paths } = stubFetch((url) =>
+		url.startsWith('https://www43.myfantasyleague.com/') ? okJson(hostLeagueData) : okJson({})
+	);
+	const ownerById = await fetchMflOwnerNames(league, null, genericLeagueData);
+	assert.equal(paths.length, 1, 'exactly one extra request for owner names');
+	assert.ok(
+		paths[0].startsWith('https://www43.myfantasyleague.com/'),
+		"the request must target the league's own baseURL, not the generic host"
+	);
+	assert.equal(ownerById.get('0001'), 'Jeff', 'owner name resolves off the host-specific response');
+}
+
+// No baseURL on the already-fetched generic response -> no request at all,
+// and an empty map rather than a throw.
+{
+	const { paths } = stubFetch(() => okJson({}));
+	const ownerById = await fetchMflOwnerNames(league, null, { league: { id: '26696' } });
+	assert.equal(paths.length, 0, 'a missing baseURL must not attempt a request');
+	assert.equal(ownerById.size, 0);
+}
+
+// A failed own-host request degrades to an empty map rather than throwing —
+// "the sync degrades, it never fails" applies here too: a league whose owner
+// names can't be fetched this way must not take the rest of the sync down.
+{
+	stubFetch(() => ({ ok: false, status: 500, json: async () => ({}), text: async () => '' }));
+	const ownerById = await fetchMflOwnerNames(league, null, {
+		league: { id: '26696', baseURL: 'https://www43.myfantasyleague.com' },
+	});
+	assert.equal(ownerById.size, 0, 'a failed own-host request must degrade to an empty map, not throw');
 }
 
 // --- api/live-scoring.js opts in, at its own interval -----------------------

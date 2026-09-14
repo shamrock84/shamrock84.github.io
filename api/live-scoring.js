@@ -249,9 +249,12 @@ async function getMflCookie(username, password) {
 }
 
 // Returns { nameById, ownerById } — see fetchMflFranchiseNames's own comment.
-// ownerById is almost always all-null (MFL only fills owner_name in for a
-// league this project's login commissions), but it costs nothing extra to
-// cache alongside the names: same TYPE=league response, same TTL.
+// nameById is free (the same TYPE=league response this call already needs);
+// ownerById costs one extra request per league (fetchMflOwnerNames re-reads
+// TYPE=league against the league's own regional host — MFL's generic host
+// doesn't reliably recognize a privileged session for owner_name). That
+// extra cost is paid once per league per NAMES_TTL_MS, same as the names
+// themselves, not once per ~30s poll.
 async function getMflNames(league, cookie) {
   const at = cache.mflNamesAt.get(league.id) || 0;
   const cached = cache.mflNames.get(league.id);
