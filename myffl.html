@@ -4975,11 +4975,21 @@
 				prevPosition = p.position;
 				const row = el('tr', { class: `player-row${posBoundary ? ' pos-boundary' : ''}`, 'data-name': p.name.toLowerCase() });
 
+				// Once a player's own game is underway, MFL has already locked
+				// whatever lineup he's part of — checking or unchecking him now
+				// changes nothing a Submit would actually apply. Disabling the
+				// box up front says so before a click finds out the hard way,
+				// same reasoning as the Problems Digest dropping his row (see
+				// playerGameStarted's own comment) — it doesn't force his
+				// checked state either way, since "which slot he was actually
+				// in" is still worth showing even though it can't be edited.
+				const gameStarted = playerGameStarted(p);
 				let checkbox = null;
 				if (visible) {
 					checkbox = el('input', { type: 'checkbox' });
 					checkbox.checked = starterIdSet.has(p.id);
-					checkbox.disabled = !writable;
+					checkbox.disabled = !writable || gameStarted;
+					if (gameStarted) checkbox.title = "This player's game has already started — the lineup is locked.";
 					checkbox.dataset.playerId = p.id;
 					checkboxes.push(checkbox);
 					row.appendChild(el('td', {}, [checkbox]));
@@ -5010,7 +5020,7 @@
 						const cutSelect = cutCell.querySelector('select');
 						const syncStarterCheckbox = () => {
 							const planned = !!cutSelect.value;
-							checkbox.disabled = !writable || planned;
+							checkbox.disabled = !writable || planned || gameStarted;
 							if (planned) checkbox.checked = false;
 						};
 						cutSelect.addEventListener('change', syncStarterCheckbox);
@@ -6811,12 +6821,14 @@
 
 		// Whether a player's own NFL game has already kicked off — live ('in')
 		// or final ('post') — off the same map isPlayerLive reads. Once a game
-		// is underway there is nothing left a lineup edit could fix, so the
-		// Problems Digest (computeLeagueProblems, below) uses this to stop
-		// flagging a starter's slot/injury/bye as something to act on. `games`
-		// defaults to the module-level liveGames so production call sites don't
-		// have to thread it through, and is overridable for tests. A team with
-		// no entry (a bye, or the map not loaded yet) reads as not-started
+		// is underway there is nothing left a lineup edit could fix, so this
+		// backs two independent gates: the Problems Digest
+		// (computeLeagueProblems, below) stops flagging a starter's
+		// slot/injury/bye as something to act on, and buildLineupEditor
+		// disables that player's own starter checkbox. `games` defaults to
+		// the module-level liveGames so production call sites don't have to
+		// thread it through, and is overridable for tests. A team with no
+		// entry (a bye, or the map not loaded yet) reads as not-started
 		// rather than skipped — "not asked" must never read as "safe to skip".
 		function playerGameStarted(player, games = liveGames) {
 			if (!player || !player.team) return false;
@@ -11236,13 +11248,18 @@
 		}
 
 		// A one-shot fetch of just the NFL scoreboard, independent of the
-		// Scoring tab — the Problems Digest needs to know whether a flagged
-		// starter's game has already started on every page load, not only
+		// Scoring tab — both the Problems Digest and the lineup editor's own
+		// starter checkboxes (playerGameStarted) need to know whether a
+		// player's game has already started on every page load, not only
 		// once someone opens Scoring and starts its 30s poll. `gamesOnly=1`
 		// makes api/live-scoring.js skip MFL entirely, so calling this
 		// unconditionally costs nothing the rate-limit pacing cares about.
-		// Not awaited by its caller — the digest is fine rendering once with
+		// Not awaited by its caller — the page is fine rendering once with
 		// the pre-kickoff assumption and correcting itself a moment later.
+		// A full renderGrid() (rather than just the digest) is what actually
+		// updates the checkboxes — same re-render this editor's own Submit
+		// button already triggers on success, so this isn't a new class of
+		// disruption to an in-progress edit, just an earlier one.
 		async function refreshDigestGameStates() {
 			if (!LIVE_SCORING_URL || !pageData) return;
 			try {
@@ -11250,7 +11267,7 @@
 				if (!res.ok) return;
 				const data = await res.json();
 				liveGames = data.games || {};
-				renderProblemsDigest();
+				renderGrid();
 			} catch {
 				// degrade silently — the digest just keeps showing what it knew before.
 			}
