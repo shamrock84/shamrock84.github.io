@@ -53,6 +53,42 @@
 // ground-truth commissioner signal than inferring it from owner_name).
 // Compare the dumps between a league that shows owner names and one that
 // doesn't to find what actually differs.
+//
+// RUN #3 RESULTS (actual): the set of leagues showing owner_name was
+// COMPLETELY DIFFERENT from the committed data/rosters.json snapshot taken
+// hours earlier — May Rookies/July Semiquincentennial/July FFL for Dummies
+// showed it this time, where the snapshot had shown Iron Bank/Wise
+// Guys/April Pre-NFL Draft/June Tecmo Ball instead, with zero overlap. A
+// per-league fact (privacy setting, commissioner assignment, anything MFL
+// stores against the league) cannot change between two reads taken the same
+// day with nothing in between editing it — so run #2's frame ("this is a
+// property of the league") was ALSO wrong, not just "commissioner access"
+// specifically. And `abilities` — which requires the request to be
+// recognized as a logged-in league member at all — came back "API requires
+// logged in user" for 12 of 15 leagues, including leagues this project's own
+// browser session is unquestionably the commissioner of (league 26696 /
+// MNMx Dynasty: the Request Details PDF was captured mid-session while
+// logged in as "melbosffl: Rumble Fish (Logout | Become Commissioner)" on
+// that exact league). A session that IS privileged in the browser reading
+// back as anonymous over the API, inconsistently across requests, points at
+// a transport problem, not a permissions one.
+//
+// mflLoginForImport's own comment (same file, ~line 186) already diagnosed
+// this exact failure mode for a different call: "the generic
+// api.myfantasyleague.com host doesn't recognize the league-scoped session
+// even though the cookie itself is domain-wide (.myfantasyleague.com) and
+// present either way" — which is why lineup submission logs in scoped to
+// L=<leagueId> and sends the import to the host that login redirects to,
+// rather than the shared host. mflGet — used for every read in this
+// project, including every owner-name-bearing call above — always targets
+// the hardcoded `api.myfantasyleague.com`, never a league's own `baseURL`
+// (present in every league object dumped above, e.g. "www43", "www46").
+// Nothing about reads was ever changed to match the fix imports already
+// needed. Run #4 tests exactly this: re-request TYPE=league for every
+// league directly against its own baseURL (same cookie, no new login)
+// alongside the existing api.myfantasyleague.com read, to see whether the
+// correctly-hosted request reliably surfaces owner_name where the generic
+// host doesn't.
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { mflLogin, mflGet, seasonOf } from './lib/providers.mjs';
@@ -68,10 +104,34 @@ if (mflLeagues.length === 0) {
 
 const OWNER_KEY = /owner_name/i;
 
+// Bypasses mflGet's hardcoded api.myfantasyleague.com host — this is the
+// whole point of run #4. Same cookie, same request, only the host differs.
+async function hostGet(host, path, cookie) {
+  const res = await fetch(`${host}${path}`, { headers: cookie ? { Cookie: cookie } : {}, redirect: 'follow' });
+  if (!res.ok) {
+    const err = new Error(`request failed (${res.status}): ${host}${path}`);
+    err.status = res.status;
+    throw err;
+  }
+  return res.json();
+}
+
+function franchiseListOf(data) {
+  const franchises = data?.league?.franchises?.franchise ?? [];
+  return Array.isArray(franchises) ? franchises : franchises ? [franchises] : [];
+}
+
+function hasOwnerName(franchiseList) {
+  return franchiseList.some((f) => OWNER_KEY.test(Object.keys(f).join(',')) && f.owner_name);
+}
+
 const cookie = await mflLogin(process.env.MFL_USERNAME, process.env.MFL_PASSWORD);
 
-const showsOwnerName = [];
-const doesNotShowOwnerName = [];
+const genericShows = [];
+const genericNo = [];
+const hostShows = [];
+const hostNo = [];
+const hostFailed = [];
 
 for (const league of mflLeagues) {
   console.log(`\n=== ${league.name} (${league.id}, type=${league.type}, our franchiseId=${league.franchiseId}) ===`);
@@ -80,27 +140,54 @@ for (const league of mflLeagues) {
 
     const leagueObj = data?.league || {};
     const { franchises, divisions, ...leagueRest } = leagueObj;
-    console.log('  FULL league-level object (minus franchises/divisions):', JSON.stringify(leagueRest));
+    console.log('  [generic host] FULL league-level object (minus franchises/divisions):', JSON.stringify(leagueRest));
 
-    const franchiseList = Array.isArray(franchises?.franchise)
-      ? franchises.franchise
-      : franchises?.franchise
-        ? [franchises.franchise]
-        : [];
-    const anyOwnerName = franchiseList.some((f) => OWNER_KEY.test(Object.keys(f).join(',')) && f.owner_name);
-    (anyOwnerName ? showsOwnerName : doesNotShowOwnerName).push(league.name);
+    const franchiseList = franchiseListOf(data);
+    const genericOwnerName = hasOwnerName(franchiseList);
+    (genericOwnerName ? genericShows : genericNo).push(league.name);
 
-    console.log(`  owner_name present: ${anyOwnerName ? 'YES' : 'no'}`);
-    console.log(`  FULL raw franchise list (${franchiseList.length}):`);
+    console.log(`  [generic host] owner_name present: ${genericOwnerName ? 'YES' : 'no'}`);
+    console.log(`  [generic host] FULL raw franchise list (${franchiseList.length}):`);
     for (const f of franchiseList) {
       console.log(`    ${JSON.stringify(f)}`);
     }
 
     try {
       const abilities = await mflGet(`/export?TYPE=abilities&L=${league.id}&DETAILS=1&JSON=1`, cookie, seasonOf(league));
-      console.log('  abilities (current franchise):', JSON.stringify(abilities));
+      console.log('  [generic host] abilities (current franchise):', JSON.stringify(abilities));
     } catch (err) {
-      console.log(`  abilities FAILED: ${err.message}`);
+      console.log(`  [generic host] abilities FAILED: ${err.message}`);
+    }
+
+    // RUN #4: re-request the exact same TYPE=league call, same cookie, but
+    // sent directly to this league's own baseURL instead of the shared
+    // api.myfantasyleague.com host — testing mflLoginForImport's own
+    // diagnosis of the identical problem on a different call.
+    const year = seasonOf(league);
+    const baseURL = leagueRest.baseURL;
+    if (!baseURL) {
+      console.log('  [own host] no baseURL on the league object — cannot test.');
+      continue;
+    }
+    try {
+      const hostData = await hostGet(baseURL, `/${year}/export?TYPE=league&L=${league.id}&JSON=1`, cookie);
+      const hostFranchiseList = franchiseListOf(hostData);
+      const hostOwnerName = hasOwnerName(hostFranchiseList);
+      (hostOwnerName ? hostShows : hostNo).push(league.name);
+      console.log(`  [own host ${baseURL}] owner_name present: ${hostOwnerName ? 'YES' : 'no'}`);
+      if (hostOwnerName !== genericOwnerName) {
+        console.log(`  [own host ${baseURL}] *** DIFFERS from generic-host result *** raw franchises:`);
+        for (const f of hostFranchiseList) console.log(`    ${JSON.stringify(f)}`);
+      }
+      try {
+        const hostAbilities = await hostGet(baseURL, `/${year}/export?TYPE=abilities&L=${league.id}&DETAILS=1&JSON=1`, cookie);
+        console.log(`  [own host ${baseURL}] abilities:`, JSON.stringify(hostAbilities));
+      } catch (err) {
+        console.log(`  [own host ${baseURL}] abilities FAILED: ${err.message}`);
+      }
+    } catch (err) {
+      hostFailed.push(league.name);
+      console.log(`  [own host ${baseURL}] FAILED: ${err.message}`);
     }
   } catch (err) {
     console.log(`  FAILED: ${err.message}`);
@@ -108,9 +195,12 @@ for (const league of mflLeagues) {
 }
 
 console.log('\n=== verdict ===');
-console.log('Shows owner_name:', showsOwnerName.join(', ') || '(none)');
-console.log('Does NOT show owner_name:', doesNotShowOwnerName.join(', ') || '(none)');
-console.log('Cross-reference this against which leagues the manager actually commissions (told directly, not');
-console.log('inferred) and diff the FULL league-level and franchise dumps above between a showing and a');
-console.log('non-showing league to find the real distinguishing field — do not re-assume commissioner access');
-console.log('gates this without an independent confirmation this time.');
+console.log('Generic host (api.myfantasyleague.com) shows owner_name:', genericShows.join(', ') || '(none)');
+console.log('Generic host does NOT show owner_name:', genericNo.join(', ') || '(none)');
+console.log("League's own baseURL host shows owner_name:", hostShows.join(', ') || '(none)');
+console.log("League's own baseURL host does NOT show owner_name:", hostNo.join(', ') || '(none)');
+console.log('Own-host requests that failed outright:', hostFailed.join(', ') || '(none)');
+console.log('If the own-host column reliably shows owner_name for leagues the manager actually commissions');
+console.log('(regardless of what the generic host showed), that confirms mflGet\'s hardcoded');
+console.log('api.myfantasyleague.com host is the real bug — the same host-routing problem');
+console.log('mflLoginForImport already documented and worked around for lineup submission, never applied to reads.');
