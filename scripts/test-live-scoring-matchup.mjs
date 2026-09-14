@@ -94,9 +94,11 @@ const liveScoringResponse = {
 	assert.equal(me.teamName, 'My Team');
 	assert.equal(me.score, '12.40');
 	assert.equal(me.minutesRemaining, 540, '32400 seconds is 540 minutes');
-	// The nonstarter is excluded — only starters feed the remaining-points
-	// model, and only starters are what the Scoring tab's detail drawer
-	// renders.
+	// A 'nonstarter' entry is excluded from `players` — only starters feed
+	// the remaining-points model. In real MFL responses this list never
+	// actually contains a nonstarter at all (see mflLiveStarters' own
+	// comment and test-mfl-bench.mjs for why), but the filter still holds
+	// defensively if one ever showed up.
 	//
 	// `points` comes off each player entry's own `score`, which the real
 	// captured response this fixture is trimmed from does carry (see the
@@ -115,17 +117,14 @@ const liveScoringResponse = {
 			{ id: '9001', secondsRemaining: 1800, name: null, position: null, team: null, points: 6.2, stats: [] },
 			{ id: '9002', secondsRemaining: 3600, name: null, position: null, team: null, points: 0, stats: [] },
 		],
-		'the nonstarter is excluded — only starters feed the remaining-points model; stats is [] with no boxscore index/rates passed (see test-mfl-boxscore-breakdown.mjs for that case)'
+		'the nonstarter is excluded from starters; stats is [] with no boxscore index/rates passed (see test-mfl-boxscore-breakdown.mjs for that case)'
 	);
-	// The nonstarter excluded above isn't dropped — it's the OTHER half of
-	// the same split, for the Scoring tab's nested "Show bench" drawer. No
-	// second request: this is the exact same players.player list fetchScoring
-	// already fetched for the starters, just filtered the other way.
-	assert.deepEqual(
-		me.bench,
-		[{ id: '9003', secondsRemaining: 0, name: null, position: null, team: null, points: 4, stats: [] }],
-		'the nonstarter that never feeds the win-probability model is exactly what the bench drawer renders'
-	);
+	// Bench comes back empty when mflRosterIds/mflWeekScores aren't passed —
+	// same graceful-absence posture as playerMap/boxscoreStatIndex/
+	// mflRatesByPosition. See test-mfl-bench.mjs for bench actually
+	// populated from those two inputs (mflBenchFromRoster's own test
+	// coverage) — it no longer comes from this liveScoring fixture at all.
+	assert.deepEqual(me.bench, [], 'bench is empty without mflRosterIds/mflWeekScores');
 
 	// With a playerMap in hand, the same starters carry what the drawer
 	// needs beside each name.

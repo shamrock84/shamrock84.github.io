@@ -1903,19 +1903,26 @@ export async function fetchNflGameClocks() {
   return gameClocksFromGames(await fetchNflGames());
 }
 
-// Every rostered player on one franchise's liveScoring entry, filtered down
-// to one status half — 'starter' for the remaining-points win-probability
-// model (estimateWinProbability's caller) to value against FantasyPros
-// projections instead of a flat per-minute rate, 'nonstarter' for the
-// Scoring tab's nested "Show bench" drawer (appendBenchDetail in
-// myffl.html). `players.player` carries the WHOLE roster in one read either
-// way — a bench player's remaining game clock has nothing to do with this
-// matchup's OUTCOME, which is why only the starter half feeds the
-// win-probability model, but MFL never has to be asked twice for it: the
-// bench half is free, the same fetch filtered the other way. Object-or-
-// array-or-absent, the same shape every other MFL list export uses (see
-// mflRosterPlayers). `id` is the same MFL player-id space fetchProjections'
-// `byMflId` already joins against.
+// Every currently-set starter on one franchise's liveScoring entry, for the
+// remaining-points win-probability model (estimateWinProbability's caller)
+// to value against FantasyPros projections instead of a flat per-minute
+// rate, and for the Scoring tab's per-matchup detail drawer.
+//
+// `players.player` was once assumed to carry the WHOLE roster here (starter
+// and nonstarter both, filtered by `status`) — that assumption is WRONG.
+// probe-live-scoring-players.yml RUN 1 (2026-09-10) already found this
+// response carrying only 9 entries — the 9 starters, zero nonstarters — on
+// a dynasty roster that certainly has a bench, for this exact league. A
+// second run on 2026-09-14, days later with the week's games long final,
+// confirmed the same thing again: 9 entries, all status 'starter', none
+// 'nonstarter'. So `status` isn't lying — every entry here really is a
+// starter — there is simply nothing else in this list to filter for. See
+// mflBenchFromRoster below for where the bench half actually comes from
+// now, and don't reintroduce a 'nonstarter' filter over this list; it will
+// silently do nothing, the same way the first version of this feature did.
+// Object-or-array-or-absent, the same shape every other MFL list export
+// uses (see mflRosterPlayers). `id` is the same MFL player-id space
+// fetchProjections' `byMflId` already joins against.
 //
 // Also carries what the Scoring tab's per-matchup detail drawer renders:
 // `name`/`position`/`team` (resolved through the optional `playerMap` from
@@ -1929,11 +1936,11 @@ export async function fetchNflGameClocks() {
 // scoreboard shows for a player whose game hasn't started). A missing
 // points field must degrade to a dash rather than a confident 0.0, which
 // would read as "played and scored nothing".
-function mflRosterPlayersByStatus(f, status, playerMap, boxscoreStatIndex, mflRatesByPosition) {
+function mflLiveStarters(f, playerMap, boxscoreStatIndex, mflRatesByPosition) {
   const raw = f.players?.player;
   const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
   return list
-    .filter((p) => String(p.status).toLowerCase() === status)
+    .filter((p) => String(p.status).toLowerCase() === 'starter')
     .map((p) => {
       const info = playerMap?.get(String(p.id));
       return {
@@ -1952,12 +1959,93 @@ function mflRosterPlayersByStatus(f, status, playerMap, boxscoreStatIndex, mflRa
     });
 }
 
-function mflLiveStarters(f, playerMap, boxscoreStatIndex, mflRatesByPosition) {
-  return mflRosterPlayersByStatus(f, 'starter', playerMap, boxscoreStatIndex, mflRatesByPosition);
+// Every franchise's full roster on this league, as bare player ids — for
+// mflBenchFromRoster below, which needs to know who is even ON a team
+// before it can tell "everyone but the starters mflLiveStarters already
+// found" apart from "everyone". One request for the WHOLE league (every
+// franchise in one response), the same TYPE=rosters export
+// fetchMflRosteredNames already uses for the sync's availability pass —
+// deliberately a separate, simpler read here rather than reusing that
+// function: it drops any player playerMap can't name, which would silently
+// remove a real bench player from the count instead of falling back to
+// "#id" the way the drawer does for an unresolved starter.
+export async function fetchMflLeagueRosterIds(league, cookie) {
+  const data = await mflGet(`/export?TYPE=rosters&L=${league.id}&JSON=1`, cookie, seasonOf(league));
+  const rawFranchises = Array.isArray(data?.rosters?.franchise)
+    ? data.rosters.franchise
+    : data?.rosters?.franchise
+    ? [data.rosters.franchise]
+    : [];
+  const byFranchise = new Map();
+  for (const f of rawFranchises) {
+    byFranchise.set(String(f.id), mflRosterPlayers(f).map((p) => String(p.id)));
+  }
+  return byFranchise;
 }
 
-function mflBenchPlayers(f, playerMap, boxscoreStatIndex, mflRatesByPosition) {
-  return mflRosterPlayersByStatus(f, 'nonstarter', playerMap, boxscoreStatIndex, mflRatesByPosition);
+// Every player MFL has a current score for, league-wide — not just this
+// league's starters. This is what a bench player's own live point value
+// joins against, since TYPE=liveScoring never carries one (see
+// mflLiveStarters' own comment). TYPE=playerScores with RULES=1 asks MFL to
+// recalculate each player's score under THIS league's own scoring rules —
+// confirmed live by probe-live-scoring-players.yml RUN 4 (452 entries, 320
+// with a real nonzero score, for league 26696 week 1) — so unlike
+// TYPE=players (loadPlayerMap) this is genuinely per-league, not a global
+// request every league could share; it must be fetched fresh, per league,
+// every poll. RUN 4 also confirmed this endpoint carries only the one
+// recalculated total (id/isAvailable/score/week) — no per-rule breakdown,
+// which is why a bench player's `stats` still comes from
+// mflStatBreakdownFromBoxscore, same as a starter's.
+export async function fetchMflWeekPlayerScores(league, week, cookie) {
+  const data = await mflGet(
+    `/export?TYPE=playerScores&L=${league.id}&W=${week}&RULES=1&JSON=1`,
+    cookie,
+    seasonOf(league)
+  );
+  const raw = data?.playerScores?.playerScore;
+  const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
+  const scores = new Map();
+  for (const p of list) {
+    if (p?.id == null || p.score == null || p.score === '') continue;
+    scores.set(String(p.id), Number(p.score));
+  }
+  return scores;
+}
+
+// The bench half of the Scoring tab's nested "Show bench" drawer
+// (appendBenchDetail in myffl.html) — everyone rosterIdsByFranchise says is
+// on this franchise who ISN'T one of the ids mflLiveStarters already found
+// (starterIds, passed in rather than recomputed, so the two lists can
+// never disagree about who's starting). Both rosterIdsByFranchise
+// (fetchMflLeagueRosterIds) and weekScores (fetchMflWeekPlayerScores) are
+// optional; either missing degrades this to [] — same graceful-absence
+// posture as playerMap/boxscoreStatIndex/mflRatesByPosition below, and the
+// same "the sync degrades, it never fails" rule the live poll follows too.
+//
+// secondsRemaining is always 0 — a bench player's remaining game clock has
+// no bearing on this matchup's OUTCOME (only starters ever feed
+// estimateWinProbability), and getting it right would mean threading the
+// global NFL game-clock map into a function that otherwise has no use for
+// it. Nothing reads a bench entry's secondsRemaining today; the field
+// stays only so a bench row and a starter row share one shape.
+function mflBenchFromRoster(franchiseId, rosterIdsByFranchise, starterIds, playerMap, weekScores, boxscoreStatIndex, mflRatesByPosition) {
+  const rosterIds = rosterIdsByFranchise?.get(String(franchiseId)) || [];
+  const starterSet = new Set(starterIds.map(String));
+  return rosterIds
+    .filter((id) => !starterSet.has(String(id)))
+    .map((id) => {
+      const info = playerMap?.get(String(id));
+      const score = weekScores?.get(String(id));
+      return {
+        id: String(id),
+        secondsRemaining: 0,
+        name: info?.name ?? null,
+        position: info?.position ?? null,
+        team: info?.team ?? null,
+        points: score == null ? null : score,
+        stats: mflStatBreakdownFromBoxscore(info?.name, info?.position, boxscoreStatIndex, mflRatesByPosition),
+      };
+    });
 }
 
 // projectPlayer is optional — see attachWinProbabilities' own comment for
@@ -1982,7 +2070,18 @@ function mflBenchPlayers(f, playerMap, boxscoreStatIndex, mflRatesByPosition) {
 // essentially never change in-season) are both optional too — omitted,
 // every starter's `stats` comes back [] via mflStatBreakdownFromBoxscore,
 // same as before this feature existed.
-export async function fetchScoring(league, cookie, franchiseInfo, projectPlayer, playerMap, boxscoreStatIndex, mflRatesByPosition) {
+//
+// mflRosterIds (fetchMflLeagueRosterIds) and mflWeekScores
+// (fetchMflWeekPlayerScores) are both optional too, and feed ONLY the
+// bench half of the drawer (mflBenchFromRoster) — omitted, every team's
+// bench comes back [], same graceful-absence posture as everything else
+// here. Deliberately NOT fetched inside this function, unlike everything
+// this function DOES fetch itself: mflWeekScores needs the CURRENT NFL
+// week, and api/live-scoring.js already resolves that once per poll
+// (getCurrentNflWeek) and shares it with Sleeper's own weekly-stats fetch —
+// fetching it again from in here would risk this function's idea of "the
+// current week" disagreeing with that one.
+export async function fetchScoring(league, cookie, franchiseInfo, projectPlayer, playerMap, boxscoreStatIndex, mflRatesByPosition, mflRosterIds, mflWeekScores) {
   const [{ nameById, ownerById }, liveData] = await Promise.all([
     franchiseInfo ? Promise.resolve(franchiseInfo) : fetchMflFranchiseNames(league, cookie),
     mflGet(`/export?TYPE=liveScoring&L=${league.id}&JSON=1`, cookie, seasonOf(league)),
@@ -2013,18 +2112,23 @@ export async function fetchScoring(league, cookie, franchiseInfo, projectPlayer,
   // fresh 9-starter lineup reads 32400 = 9 x 3600, confirmed against the
   // same real capture fetchScoring's matchup fix used) — so this is exactly
   // "how many player-minutes has this team not played yet", no extra fetch.
-  const teams = rows.map((f) => ({
-    franchiseId: f.id,
-    teamName: nameById.get(f.id) || f.id,
-    // Almost always null — see mflOwnerName's own comment for why. Read the
-    // same way ESPN's ownerName is (teamNameWithOwner in myffl.html).
-    ownerName: ownerById.get(f.id) || null,
-    score: Number(f.score ?? 0),
-    minutesRemaining: Math.round(Number(f.gameSecondsRemaining ?? 0) / 60),
-    isMe: f.id === league.franchiseId,
-    players: mflLiveStarters(f, playerMap, boxscoreStatIndex, mflRatesByPosition),
-    bench: mflBenchPlayers(f, playerMap, boxscoreStatIndex, mflRatesByPosition),
-  }));
+  const teams = rows.map((f) => {
+    const starters = mflLiveStarters(f, playerMap, boxscoreStatIndex, mflRatesByPosition);
+    return {
+      franchiseId: f.id,
+      teamName: nameById.get(f.id) || f.id,
+      // Almost always null — see mflOwnerName's own comment for why. Read
+      // the same way ESPN's ownerName is (teamNameWithOwner in myffl.html).
+      ownerName: ownerById.get(f.id) || null,
+      score: Number(f.score ?? 0),
+      minutesRemaining: Math.round(Number(f.gameSecondsRemaining ?? 0) / 60),
+      isMe: f.id === league.franchiseId,
+      players: starters,
+      bench: mflBenchFromRoster(
+        f.id, mflRosterIds, starters.map((p) => p.id), playerMap, mflWeekScores, boxscoreStatIndex, mflRatesByPosition
+      ),
+    };
+  });
 
   attachWinProbabilities(teams, matchups, projectPlayer);
 
@@ -2326,11 +2430,13 @@ export async function fetchEspnStandings(league) {
 // Those same two slot ids are also what routes an entry to `bench` instead
 // of `players` below, for the Scoring tab's nested "Show bench" drawer
 // (appendBenchDetail in myffl.html) — bench and IR are lumped into one
-// bucket there, matching the single granularity MFL's own 'nonstarter'
-// status offers (see mflRosterPlayersByStatus), rather than splitting IR
-// out as a third list no other provider could fill in. No second request:
-// `entries` already carries every one of these slots, the same view=mRoster
-// read fetchEspnScoring's caller makes for the starters alone today.
+// bucket there rather than splitting IR out as a third list no other
+// provider could fill in. No second request: `entries` already carries
+// every one of these slots, the same view=mRoster read fetchEspnScoring's
+// caller makes for the starters alone today. MFL's bench, by contrast,
+// genuinely does need extra requests — see mflBenchFromRoster's own
+// comment for why TYPE=liveScoring can't answer this the way ESPN's
+// mRoster can.
 // Labels for the ESPN stat-category ids behind the Scoring tab's per-player
 // stat-breakdown popover ("7.4 points for 74 Receiving Yards"). 42/43/53 are
 // CONFIRMED live — probe-live-scoring-players.yml RUN 2 (week 1, 2026) read
