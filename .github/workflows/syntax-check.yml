@@ -281,6 +281,13 @@ jobs:
       - name: Test Scoring tab matchup ordering
         run: node scripts/test-scoring-matchup-order.mjs
 
+      # The Scoring card's own "My Team 24.50 – Rival 19.80" subtitle — the
+      # one line collapsing the card is not allowed to hide, since that's
+      # exactly the matchup a manager collapsed seventeen OTHER leagues'
+      # worth of scores to still be able to see at a glance.
+      - name: Test the Scoring tab's my-matchup subtitle
+        run: node scripts/test-scoring-my-matchup-line.mjs
+
       # The Scoring tab's per-matchup detail drawer: how the two lineups are
       # paired into rows, and the login/bye gates on showing it at all. Every
       # way this breaks is silent — a starter dropped from the grid, one
