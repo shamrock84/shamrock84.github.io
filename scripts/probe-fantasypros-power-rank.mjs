@@ -158,6 +158,35 @@ if (season0?.count > 0 && week1?.count > 0 && season0.topPoints > 0 && week1.top
   weekShape = ratio < 0.2 ? 'single-week slices' : ratio > 0.8 ? 'week param appears decorative' : 'inconclusive';
 }
 
+// --- Does the endpoint have a native rest-of-season mode? ---
+//
+// Third-party documentation of this same public v2 API (not FantasyPros'
+// own — theirs is unreachable from a sandbox, same as everywhere else in
+// this project) describes a `ros=true` flag on this endpoint as an
+// alternative to `week=N`. If real, that is a materially better fix than
+// summing remaining weeks client-side: one request per position instead of
+// up to seventeen, and FantasyPros' own model rather than a naive sum this
+// project would have to maintain. Asked for directly here rather than
+// trusted, the same standard every other claim in this file is held to.
+const rosProbe = await probe(
+  'ros=true (claimed rest-of-season mode, unverified against this key)',
+  `${FP_BASE}/nfl/${season}/projections?position=QB&ros=true`
+);
+let rosTop = null;
+if (rosProbe.status === 200) {
+  try {
+    const data = JSON.parse(rosProbe.body);
+    const players = data?.players || [];
+    const top = [...players].sort(
+      (a, b) => (Number(b?.stats?.points_ppr) || 0) - (Number(a?.stats?.points_ppr) || 0)
+    )[0];
+    rosTop = { echoedWeek: data?.week ?? '—', count: players.length, name: top?.name ?? '—', points: Number(top?.stats?.points_ppr) || 0 };
+    console.log(`  ros=true: echoed_week=${rosTop.echoedWeek}  players=${rosTop.count}  top=${rosTop.name} ${rosTop.points} pts`);
+  } catch (err) {
+    console.log(`  ros=true: response was not JSON (${err.message})`);
+  }
+}
+
 console.log('\n=== verdict ===');
 console.log(anyHit
   ? 'At least one team-level candidate answered 200 — read its body above before building anything.'
@@ -171,3 +200,6 @@ console.log(
     ? 'In-season, rest-of-season value can be summed from the remaining weeks if week=0 turns out to be frozen.'
     : 'If week=0 freezes in-season and weeks are not slices, in-season freshness needs another source — check the ROS rankings path.'
 );
+console.log(rosProbe.status === 200
+  ? `ros=true IS reachable with this key (echoed week=${rosTop?.echoedWeek}, top QB ${rosTop?.name} ${rosTop?.points} pts) — compare that total against week=0's ${season0?.topPoints ?? '—'} pts above: identical means the flag is decorative here, materially lower means it is a real native ROS mode and should replace week=0 outright rather than summing weeks by hand.`
+  : `ros=true is NOT reachable with this key (HTTP ${rosProbe.status}) — the third-party doc describing it does not hold for this API version/key, so summing remaining weeks (or the ECR fallback) is the only path.`);
