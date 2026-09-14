@@ -4036,7 +4036,16 @@
 			}
 		}
 		let pageData = null;
+		// A setTimeout handle, not setInterval's — the delay between polls
+		// varies (see nextLiveScoringDelayMs), so each poll schedules its own
+		// next one rather than ticking on a fixed cadence.
 		let liveScoringTimer = null;
+		// True only between startLiveScoringPolling and stopLiveScoringPolling
+		// (or a visibilitychange pause — see its own listener below) — what
+		// refreshLiveScoring checks before rescheduling itself, so a poll
+		// already in flight when the reader leaves the Scoring tab or backgrounds
+		// the browser tab doesn't restart the chain once it resolves.
+		let liveScoringPollingEnabled = false;
 		// False until the first /api/live-scoring poll has completed, success or
 		// failure. renderScoringCard reads this to decide whether an empty/error
 		// scoring state is trustworthy: before the first poll lands, `scoring`/
@@ -4057,6 +4066,17 @@
 		// deployed; polling is a no-op while this is empty.
 		const LIVE_SCORING_URL = 'https://shamrock84-github-io.vercel.app/api/live-scoring';
 		const LIVE_SCORING_POLL_MS = 30000;
+		// The fallback cadence for the rest of the week, when the last poll's
+		// own `games` map said nothing was actually live (see
+		// nextLiveScoringDelayMs) — nearly all of a Scoring tab's open time,
+		// since games are live only a handful of hours a week. Polling MFL
+		// every 30s Tuesday afternoon for scores that cannot have changed was
+		// pure waste on top of the drawer-gating fix. A starting point, not a
+		// measured one, same caveat every MFL pacing interval in this project
+		// carries — short enough that an upcoming kickoff is still caught
+		// within a couple of minutes, long enough to cut off-peak polling to
+		// a small fraction of what it was.
+		const LIVE_SCORING_IDLE_POLL_MS = 120000;
 
 		// Same Vercel deployment, different endpoint: kicks off a fresh GitHub
 		// Actions sync run on demand instead of waiting up to 4 hours.
@@ -7179,9 +7199,11 @@
 				// LAST poll never asked api/live-scoring.js for this league's
 				// bench (see benchDetailLeagueIds) — kick an immediate refresh
 				// rather than leaving the reader looking at "waiting on the
-				// next live update" for up to LIVE_SCORING_POLL_MS. Closing
-				// needs no such nudge: the data already in hand doesn't go
-				// stale by being hidden.
+				// next live update" for up to the current poll interval, which
+				// (see nextLiveScoringDelayMs) can be the multi-minute idle
+				// fallback rather than the fast one. Closing needs no such
+				// nudge: the data already in hand doesn't go stale by being
+				// hidden.
 				if (next) refreshLiveScoring();
 			});
 
@@ -11486,6 +11508,29 @@
 			}
 		}
 
+		// How long until the NEXT poll, decided from what the LAST one found —
+		// liveGames is set inside refreshLiveScoring's own try block below on
+		// success, before this ever runs. Fast (LIVE_SCORING_POLL_MS) the
+		// moment anything is genuinely live; the slow fallback otherwise,
+		// which is most of a week. A failed poll leaves liveGames exactly as
+		// it was (refreshLiveScoring's catch block never touches it), so this
+		// reads it the same way as a successful one that found nothing live —
+		// retrying a broken poll every 30s forever would be its own way of
+		// hammering a dead endpoint.
+		function nextLiveScoringDelayMs() {
+			const anyLive = Object.values(liveGames).some((g) => g.state === 'in');
+			return anyLive ? LIVE_SCORING_POLL_MS : LIVE_SCORING_IDLE_POLL_MS;
+		}
+
+		// Replaces any pending poll rather than stacking a second one — the
+		// bench-drawer-open nudge (appendBenchDetail's own click handler) calls
+		// refreshLiveScoring ad hoc between scheduled polls, and without this
+		// the regular chain's own next tick would still fire moments later.
+		function scheduleLiveScoringPoll() {
+			if (liveScoringTimer) clearTimeout(liveScoringTimer);
+			liveScoringTimer = setTimeout(refreshLiveScoring, nextLiveScoringDelayMs());
+		}
+
 		async function refreshLiveScoring() {
 			if (!LIVE_SCORING_URL || !pageData) return;
 			// Captured before this attempt touches the flag — only the FIRST
@@ -11533,24 +11578,54 @@
 				// later failure, by contrast, leaves already-real cards alone.
 				if (wasFirstAttempt) rerenderScoringCards();
 				setLiveStatus(`Live update failed: ${err.message}`, true);
+			} finally {
+				// Covers both branches above identically, and also the ad-hoc
+				// call appendBenchDetail's click handler makes between
+				// scheduled polls — reschedule only while polling is actually
+				// still wanted (see liveScoringPollingEnabled's own comment),
+				// so a poll that was already in flight when the reader left
+				// the Scoring tab or backgrounded the browser tab doesn't
+				// restart the chain once it resolves.
+				if (liveScoringPollingEnabled) scheduleLiveScoringPoll();
 			}
 		}
 
 		function startLiveScoringPolling() {
 			if (!LIVE_SCORING_URL) return;
 			document.getElementById('live-status').classList.remove('hidden');
-			if (liveScoringTimer) return;
+			if (liveScoringPollingEnabled) return;
+			liveScoringPollingEnabled = true;
 			refreshLiveScoring();
-			liveScoringTimer = setInterval(refreshLiveScoring, LIVE_SCORING_POLL_MS);
 		}
 
 		function stopLiveScoringPolling() {
 			document.getElementById('live-status').classList.add('hidden');
+			liveScoringPollingEnabled = false;
 			if (liveScoringTimer) {
-				clearInterval(liveScoringTimer);
+				clearTimeout(liveScoringTimer);
 				liveScoringTimer = null;
 			}
 		}
+
+		// A manager who leaves the Scoring tab open in a backgrounded browser
+		// tab was polling MFL every 30s for a screen nobody was looking at —
+		// pause the whole chain while hidden and pick back up the moment it's
+		// visible again, same start/stop machinery switchToView already uses
+		// for leaving the Scoring tab entirely. Gated on currentView so this
+		// never starts polling for a reader who backgrounded the browser from
+		// some OTHER tab — switchToView's own stopLiveScoringPolling call
+		// already handled that case, and this must not undo it. A separate
+		// listener from flushPlanPush's own visibilitychange handler above:
+		// unrelated concerns, and combining them would make either harder to
+		// read in isolation.
+		document.addEventListener('visibilitychange', () => {
+			if (currentView !== 'scoring') return;
+			if (document.visibilityState === 'hidden') {
+				stopLiveScoringPolling();
+			} else {
+				startLiveScoringPolling();
+			}
+		});
 
 		// Everything a tab switch entails beyond setting currentView — shared by
 		// the tab strip's own click handler and any same-page jump to a
