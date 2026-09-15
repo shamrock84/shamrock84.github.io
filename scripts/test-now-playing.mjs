@@ -265,6 +265,52 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 	assert.equal(rows.length, 1, 'exactly one row — mine, not the opponent\'s');
 }
 
+// --- The score as a Stat Breakdown link ---
+//
+// Same idiom, same gate as appendDetailSide's own score cell in the matchup
+// drawer (test-scoring-details.mjs pins that one): a player carrying
+// providers.mjs' `stats` array gets a clickable score that opens the same
+// Stat Breakdown popover; a player with none — including PK/Def, since
+// providers.mjs only ever populates `stats` for skill-position offense —
+// keeps a plain-text score exactly as before this feature existed. No
+// exclusion list needed here to match that; it falls out of the same field.
+{
+	const ctx = makeContext(LOGGED_IN);
+	setLiveScoringAttempted(ctx, true);
+	setLiveGames(ctx, { BAL: { state: 'in' } });
+	const withStats = league('L10', '0001', [
+		{
+			name: 'Stat Guy', position: 'QB', team: 'BAL', points: 18.4,
+			stats: [
+				{ label: 'Passing Yards', raw: 300, points: 12 },
+				{ label: 'Passing Touchdowns', raw: 2, points: 12 },
+			],
+		},
+		{ name: 'Kicker Guy', position: 'PK', team: 'BAL', points: 8 },
+	]);
+	const card = ctx.renderNowPlayingCard([withStats]);
+
+	const links = findAll(card, hasClass('scoring-detail-pts-link'));
+	assert.equal(links.length, 1, 'only the starter carrying a stats array gets a clickable score');
+	assert.equal(fullText(links[0]), '18.40', 'the button still shows the same formatted score plain text would');
+
+	const rows = findAll(card, hasClass('now-playing-row'));
+	const kickerRow = rows.find((r) => fullText(r).includes('Kicker Guy'));
+	assert.equal(findAll(kickerRow, hasClass('scoring-detail-pts-link')).length, 0, 'PK keeps a plain-text score');
+	assert.ok(fullText(kickerRow).includes('8.00'), 'the plain-text score still shows');
+
+	links[0].listeners.click[0]({ stopPropagation() {} });
+	const popover = findAll(ctx.document.body, hasClass('scoringDetail-popover'))[0];
+	assert.ok(popover, 'clicking the score opens the Stat Breakdown popover');
+	assert.match(fullText(findAll(popover, hasClass('popover-title'))[0]), /Stat Guy — Stat Breakdown/);
+	const popoverRows = findAll(popover, hasClass('popover-row'));
+	assert.equal(popoverRows.length, 2);
+	assert.equal(fullText(popoverRows[0].children[0]), '300 Passing Yards');
+	assert.equal(fullText(popoverRows[0].children[1]), '12.0');
+	assert.equal(fullText(popoverRows[1].children[0]), '2 Passing Touchdowns');
+	assert.equal(fullText(popoverRows[1].children[1]), '12.0');
+}
+
 // Logged out: the card doesn't render at all, same gate as the matchup
 // drawer — this is lineup data, not just team-level scores.
 {
