@@ -7621,17 +7621,13 @@
 		// not what's rostered) filtered down to isPlayerLive and the one
 		// team per league that's isMe.
 		//
-		// Kickers and defenses never appear here, on user request — neither
-		// swings meaningfully play-to-play the way a skill-position player's
-		// score does, and on a full Sunday slate they were buying two more
-		// mostly-one-row mini-cards for the least actionable positions on
-		// the page. A separate exclusion list rather than reusing
-		// POSITION_ORDER's own ordering (that list still needs PK/Def in it
-		// for every other card that ranks a whole roster, Team Needs
-		// included) or WIRE_EXCLUDED_POSITIONS-style constant elsewhere,
-		// since this card is the only place on the page that drops them
-		// from a *live* view rather than a wire or a ranking.
-		const NOW_PLAYING_EXCLUDED_POSITIONS = new Set(['PK', 'Def']);
+		// Kickers and defenses used to be excluded here — neither swings
+		// meaningfully play-to-play the way a skill-position player's score
+		// does — but the manager asked for them back in, so every live
+		// starter counts regardless of position. No exclusion list to
+		// maintain as a result; positionRank (POSITION_ORDER) still puts
+		// PK/Def last in the grouped display, same as every other card
+		// that ranks a whole roster.
 
 		// Keyed by normalizeName, same join computePlayerExposure uses for
 		// the Analytics cards — a player started in more than one of your
@@ -7650,7 +7646,6 @@
 				if (!mine) continue;
 				for (const p of mine.players || []) {
 					if (!isPlayerLive(p)) continue;
-					if (NOW_PLAYING_EXCLUDED_POSITIONS.has(p.position)) continue;
 					const key = normalizeName(p.name) || p.name;
 					if (!byPlayer.has(key)) {
 						byPlayer.set(key, { name: p.name, position: p.position, team: p.team, entries: [] });
@@ -7697,7 +7692,7 @@
 		// position on the tab predictable instead of having it pop in and
 		// out as leagues answer.
 		//
-		// Grouped into one mini-card per position (QB/RB/WR/TE) rather
+		// Grouped into one mini-card per position (QB/RB/WR/TE/PK/Def) rather
 		// than a single table, on user feedback: a Sunday slate can be
 		// dozens of rows, and a four-column table wastes width on Player/Pos/
 		// My Teams cells that are mostly whitespace while forcing every row

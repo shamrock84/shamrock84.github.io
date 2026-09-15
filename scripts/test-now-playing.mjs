@@ -16,7 +16,8 @@
 //     watching) contributes nothing, not every team in it.
 //   * isPlayerLive still gates entry — a benched-in-time-but-not-yet-kicked-
 //     off starter of mine doesn't appear just because he's mine.
-//   * kickers and defenses are excluded outright, mine or not.
+//   * kickers and defenses appear the same as any other live starter of
+//     mine — no position is excluded from this card.
 //   * draftonly leagues (no live scoring at all) contribute nothing.
 //   * the cross-league merge by normalizeName only ever merges MY OWN
 //     entries across leagues — a same-named player an opponent owns in a
@@ -198,7 +199,7 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 	assert.equal(rows.length, 0, "mine but not live yet doesn't count");
 }
 
-// Kickers and defenses are excluded outright, mine or not, live or not.
+// Kickers and defenses appear here like any other live starter of mine.
 {
 	const ctx = makeContext();
 	setLiveGames(ctx, { BAL: { state: 'in' } });
@@ -206,7 +207,9 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 		{ name: 'Kicker Guy', position: 'PK', team: 'BAL', points: 8 },
 		{ name: 'Some Defense', position: 'Def', team: 'BAL', points: 5 },
 	])]);
-	assert.equal(rows.length, 0, 'kickers and defenses never appear here');
+	assert.equal(rows.length, 2, 'kickers and defenses appear here now');
+	assert.ok(rows.some((r) => r.name === 'Kicker Guy' && r.position === 'PK'));
+	assert.ok(rows.some((r) => r.name === 'Some Defense' && r.position === 'Def'));
 }
 
 // draftonly leagues never produce live scoring at all (see
