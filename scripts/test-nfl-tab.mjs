@@ -430,6 +430,22 @@ function fireClick(node) {
 	assert.equal(drawer.hidden, false, 'opens on click');
 }
 
+// The toggle flags a live game gold the same way the Scoring tab's own
+// scoring-detail-live does — before the drawer is even opened, so a manager
+// sees it without a click. Fixed off game.state at build time, so this
+// checks all three states rather than just confirming 'in' looks right.
+{
+	const ctx = makeDrawerContext();
+	const stateToggleClass = (state) => {
+		const game = { id: `g-${state}`, state, kickoff: '2026-09-14T17:00:00Z', away: { team: 'DAL', score: 0 }, home: { team: 'PHI', score: 0 } };
+		const pill = ctx.renderNflGameRow(game);
+		return findAll(pill, hasClass('nfl-boxscore-toggle'))[0].cls;
+	};
+	assert.ok(stateToggleClass('in').includes('nfl-boxscore-live'), 'a live game gets the gold modifier');
+	assert.ok(!stateToggleClass('pre').includes('nfl-boxscore-live'), 'a game that has not started does not');
+	assert.ok(!stateToggleClass('post').includes('nfl-boxscore-live'), 'a final game does not');
+}
+
 // A pre-kickoff game's drawer says so without ever needing nflBoxscores at
 // all — api/live-scoring.js never fetches one for a game that hasn't
 // started (nothing to fetch yet), and the drawer must say why rather than

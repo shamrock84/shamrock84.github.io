@@ -1939,6 +1939,19 @@
 		.nfl-boxscore-toggle:hover {
 			color: var(--text);
 		}
+		/* Same --gold-chip-bg/--gold-chip-text pairing and the same reason
+		   as .scoring-detail-toggle.scoring-detail-live: shown collapsed,
+		   before the drawer is even opened, so a game's own live state is
+		   visible without a click. The explicit :hover rule is what keeps
+		   it filled on pointer-over rather than fading toward the plain
+		   .nfl-boxscore-toggle:hover rule above — same specificity, so
+		   source order alone isn't a safe enough guarantee to skip it,
+		   exactly as that rule's own comment notes. */
+		.nfl-boxscore-toggle.nfl-boxscore-live,
+		.nfl-boxscore-toggle.nfl-boxscore-live:hover {
+			background: var(--gold-chip-bg);
+			color: var(--gold-chip-text);
+		}
 		.nfl-boxscore-chevron {
 			display: inline-block;
 			font-size: 0.85em;
@@ -10575,7 +10588,16 @@
 
 			const chevron = el('span', { class: 'nfl-boxscore-chevron', 'aria-hidden': 'true', text: '▾' });
 			const label = el('span', { text: open ? 'Hide detail' : 'Show detail' });
-			const toggle = el('button', { type: 'button', class: 'nfl-boxscore-toggle', 'aria-expanded': String(open) });
+			// Same gold-for-live treatment .scoring-detail-toggle's own
+			// scoring-detail-live modifier uses, and the same reasoning: a
+			// manager should see a game is live without opening the drawer
+			// first. Fixed at build time off game.state — unlike the Scoring
+			// tab's isPlayerLive (which can flip mid-render as a poll updates
+			// a starter's own game), rerenderNflCards tears this whole card
+			// down and rebuilds it every poll, so a state change already
+			// gets a fresh toggle rather than needing to be re-evaluated here.
+			const toggleClass = `nfl-boxscore-toggle${game.state === 'in' ? ' nfl-boxscore-live' : ''}`;
+			const toggle = el('button', { type: 'button', class: toggleClass, 'aria-expanded': String(open) });
 			toggle.appendChild(chevron);
 			toggle.appendChild(label);
 
