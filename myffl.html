@@ -2192,22 +2192,6 @@
 			font-size: 0.72rem;
 			margin-top: 0.1rem;
 		}
-		/* A finished matchup (0 minutes left on both sides, so winProb has
-		   resolved to the deterministic 100/0 — see estimateWinProbability's
-		   own comment on when that happens, never a tie's 50/50) colors the
-		   team's own name and score the same gain/loss pair Results and
-		   Finances already use — see .results-trend-up/-down's comment on
-		   why this page reuses that pairing rather than inventing a third
-		   meaning for green/red. Set directly on the name and score
-		   elements (scoringResultClass), not the row, so it wins over
-		   .scoring-matchup-row.me-row's inherited purple without needing
-		   extra specificity. */
-		.scoring-result-win {
-			color: var(--gain-text);
-		}
-		.scoring-result-loss {
-			color: var(--ir-text);
-		}
 		/* The per-matchup detail drawer: each pill's own starter-by-starter
 		   breakdown, opened by the toggle strip at its foot. Modelled on
 		   ESPN's live scoreboard — the two teams side by side with the
@@ -7051,12 +7035,11 @@
 					group.forEach((t) => {
 						const row = el('div', { class: `scoring-matchup-row${t.isMe ? ' me-row' : ''}` });
 						const nameCol = el('div', { class: 'scoring-matchup-name' });
-						const resultCls = scoringResultClass(t);
-						nameCol.appendChild(el('div', { class: resultCls, text: appendRecord(teamNameWithOwner(t), currentRecord(league, t.franchiseId)) }));
+						nameCol.appendChild(el('div', { text: appendRecord(teamNameWithOwner(t), currentRecord(league, t.franchiseId)) }));
 						const meta = scoringMetaLine(t);
 						if (meta) nameCol.appendChild(el('div', { class: 'scoring-matchup-meta', text: meta }));
 						row.appendChild(nameCol);
-						row.appendChild(el('span', { class: resultCls, text: t.score }));
+						row.appendChild(el('span', { text: t.score }));
 						pill.appendChild(row);
 					});
 					// The starter-by-starter drawer, but only for a real
@@ -7163,19 +7146,6 @@
 			if (t.minutesRemaining != null) parts.push(`${t.minutesRemaining} min left`);
 			if (t.winProb != null) parts.push(`Win ${t.winProb}%`);
 			return parts.join(' · ');
-		}
-
-		// Win/loss text color for a finished matchup — see the CSS comment on
-		// .scoring-result-win/-loss. estimateWinProbability (providers.mjs)
-		// only ever resolves to the exact 100/0 once both teams show zero
-		// minutes left, so checking minutesRemaining here is belt-and-braces
-		// against that invariant ever drifting, not a second independent
-		// condition. A tie's 50/50 gets neither color.
-		function scoringResultClass(t) {
-			if (t.minutesRemaining !== 0 || t.winProb == null) return '';
-			if (t.winProb === 100) return 'scoring-result-win';
-			if (t.winProb === 0) return 'scoring-result-loss';
-			return '';
 		}
 
 		// --- Scoring tab: the per-matchup detail drawer ---
