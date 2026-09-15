@@ -428,6 +428,16 @@
 			padding: 0;
 			margin: 0 0 1rem;
 		}
+		/* .search-wrap moves into the Depth Charts card while NFL is the
+		   active view (see relocateSearchControls), landing right after the
+		   division pills above and before the team cards. `.controls`' own
+		   max-width normally narrows it at the page level; the card has no
+		   such constraint of its own, so this gives it the same cap directly
+		   rather than letting the input stretch to the full card width. */
+		[data-depth-charts-wrap] > .search-wrap {
+			max-width: 480px;
+			margin: 0 0 1rem;
+		}
 		.controls {
 			max-width: 480px;
 			margin: 1rem auto 0;
@@ -12414,6 +12424,10 @@
 		// The NFL tab's own Now Playing/Matchups cards carry no player rows
 		// either, so a query never affects them — see updateVisibility's own
 		// comment on why the generic branch below is a no-op for those two.
+		// That's also why NFL isn't in SEARCHABLE_VIEWS below despite having
+		// a placeholder: the search box itself lives inside the Depth Charts
+		// card on this view now (see relocateSearchControls), not the
+		// page-level `.controls` bar SEARCHABLE_VIEWS controls.
 		//
 		// Rosters, Depth Charts and Analytics also each match a second,
 		// card-level thing, read off a dataset field rather than re-derived
@@ -12442,7 +12456,7 @@
 		// elsewhere the second thing would silently match nothing, so it
 		// stays unmentioned rather than promising a filter that tab doesn't
 		// offer.
-		const SEARCHABLE_VIEWS = new Set(['rosters', 'nfl', 'analytics']);
+		const SEARCHABLE_VIEWS = new Set(['rosters', 'analytics']);
 		const DEFAULT_SEARCH_PLACEHOLDER = 'Filter by player name…';
 		const ROSTERS_SEARCH_PLACEHOLDER = 'Filter by player, league or team name…';
 		const NFL_SEARCH_PLACEHOLDER = 'Filter by player or NFL team…';
@@ -12452,9 +12466,49 @@
 			nfl: NFL_SEARCH_PLACEHOLDER,
 			analytics: ANALYTICS_SEARCH_PLACEHOLDER,
 		};
+
+		// Search only ever does anything on the Depth Charts card now that
+		// it's the one thing left on the NFL tab with player rows to filter
+		// (Now Playing/Matchups have none — see SEARCHABLE_VIEWS' own
+		// comment), so its box moved from the page-level `.controls` bar to
+		// live inside that card, the same relocation the division pill row
+		// went through first (renderDepthChartSubTabs). Unlike the pills,
+		// though, search can't just be rebuilt fresh in each new card: it's
+		// the same `.search-wrap` node every other searchable view also
+		// uses, and moving the ACTUAL node (not rebuilding a lookalike) is
+		// what keeps its typed value, focus and the input/clear listeners
+		// bound once at the bottom of this script intact across the move —
+		// rebuilding it here would silently orphan those listeners on a
+		// detached node the moment the real one got created fresh alongside
+		// it. `.controls` is the fallback home: every other searchable view
+		// keeps using it exactly as before (its own visibility still keyed
+		// off SEARCHABLE_VIEWS), and it's also where the box parks on the
+		// NFL tab itself when no Depth Charts card exists yet to hold it
+		// (no synced depth-chart data), invisible there since 'nfl' isn't
+		// in SEARCHABLE_VIEWS — better than leaving the node with nowhere
+		// to go. Idempotent: called on every tab switch and every
+		// renderGrid(), so a call that doesn't need to move anything must
+		// not needlessly reparent the node either, since insertBefore/
+		// appendChild on a node already exactly there can still cost a
+		// reflow and, on some browsers, focus.
+		function relocateSearchControls() {
+			const searchWrap = document.querySelector('.search-wrap');
+			const depthChartsWrap = document.querySelector('[data-depth-charts-wrap]');
+			const teamsWrap = depthChartsWrap?.querySelector('.depth-chart-teams');
+			if (currentView === 'nfl' && teamsWrap) {
+				if (searchWrap.parentElement !== depthChartsWrap || searchWrap.nextElementSibling !== teamsWrap) {
+					depthChartsWrap.insertBefore(searchWrap, teamsWrap);
+				}
+			} else {
+				const controls = document.querySelector('.controls');
+				if (searchWrap.parentElement !== controls) controls.appendChild(searchWrap);
+			}
+		}
+
 		function updateSearchVisibility() {
 			document.querySelector('.controls').classList.toggle('hidden', !SEARCHABLE_VIEWS.has(currentView));
 			document.getElementById('search').placeholder = SEARCH_PLACEHOLDERS[currentView] || DEFAULT_SEARCH_PLACEHOLDER;
+			relocateSearchControls();
 		}
 
 		// `warning`, when given, rides along as its own em-dash-joined segment
@@ -14183,6 +14237,19 @@
 			// below), so any refresher registered by the previous render is a
 			// closure over a table that no longer exists.
 			searchAwareRefreshers = [];
+
+			// The search box may currently be living INSIDE the Depth Charts
+			// card from the last render (see relocateSearchControls) — that
+			// whole card is about to be destroyed along with everything else
+			// in gridEl, and gridEl.innerHTML='' doesn't move descendants out
+			// first, it discards them. Parking the actual node back in the
+			// static `.controls` bar before the wipe is what keeps it (and
+			// the input/clear listeners bound to it once at page load) alive
+			// to be relocated again once the new cards — Depth Charts
+			// included — exist; relocateSearchControls itself runs too late
+			// for this, since it needs a NEW card to move the box into and
+			// there isn't one yet.
+			document.querySelector('.controls').appendChild(document.querySelector('.search-wrap'));
 
 			renderQuickLinks();
 			renderAuthControl();
