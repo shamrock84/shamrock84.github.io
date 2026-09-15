@@ -1939,6 +1939,19 @@
 		.nfl-boxscore-toggle:hover {
 			color: var(--text);
 		}
+		/* Same --gold-chip-bg/--gold-chip-text pairing and the same reason
+		   as .scoring-detail-toggle.scoring-detail-live: shown collapsed,
+		   before the drawer is even opened, so a game's own live state is
+		   visible without a click. The explicit :hover rule is what keeps
+		   it filled on pointer-over rather than fading toward the plain
+		   .nfl-boxscore-toggle:hover rule above — same specificity, so
+		   source order alone isn't a safe enough guarantee to skip it,
+		   exactly as that rule's own comment notes. */
+		.nfl-boxscore-toggle.nfl-boxscore-live,
+		.nfl-boxscore-toggle.nfl-boxscore-live:hover {
+			background: var(--gold-chip-bg);
+			color: var(--gold-chip-text);
+		}
 		.nfl-boxscore-chevron {
 			display: inline-block;
 			font-size: 0.85em;
@@ -2037,6 +2050,36 @@
 			padding: 0.15rem 0.4rem;
 			font-variant-numeric: tabular-nums;
 			border-top: 1px solid var(--border);
+		}
+		/* Same treatment as tr.me-row — the page's purple badge pairing for
+		   "this is mine," here meaning a rostered player rather than a
+		   fantasy team, on any of my leagues' rosters. Only ever applied
+		   when logged in (see myRosteredPlayerNames' own comment), so a
+		   logged-out visitor's table never carries this class at all. */
+		tr.nfl-boxscore-mine td {
+			background: var(--chip-bg);
+			color: var(--accent);
+			font-weight: 700;
+		}
+		/* Same shape as .now-playing-count-link/.depth-chart-link — its own
+		   class rather than reusing either, for the "nothing to gain from
+		   coupling them" reasoning .salary-link/.finances-link already
+		   established. Sits on a .nfl-boxscore-mine row's own already-accent
+		   text, so the dotted underline (not the color, which no longer
+		   stands out against text that's accent-colored too) is what marks
+		   it clickable here — inherited font-weight keeps it exactly as
+		   bold as the name it follows, rather than a change of its own. */
+		.nfl-boxscore-own-link {
+			background: none;
+			border: none;
+			padding: 0;
+			margin: 0;
+			font: inherit;
+			font-variant-numeric: tabular-nums;
+			color: inherit;
+			text-decoration: underline dotted;
+			text-underline-offset: 0.15rem;
+			cursor: pointer;
 		}
 		/* Scoring tab, matchup view: each two-team (or lone bye) matchup is its
 		   own small card — the exact border/radius/background .card already
@@ -10497,7 +10540,37 @@
 		// page that reads a provider's own wording rather than inventing one.
 		const NFL_BOXSCORE_CATEGORY_LABELS = { passing: 'Passing', rushing: 'Rushing', receiving: 'Receiving' };
 
-		function buildNflBoxscoreTable(category) {
+		// Cross-league "which of my leagues own this player" lookup for the
+		// box score drawer's own purple highlight and its "(N)" popover —
+		// reuses buildDepthChartOwnership outright rather than a second
+		// name-to-leagues join, so the two tabs can never disagree about
+		// what "owned" means (same normalizeName join, same draftonly
+		// exclusion — a draftonly roster is fixed the moment its draft
+		// ends, so "owned in" there answers a question with no action
+		// behind it, exactly as that function's own comment argues, and
+		// there is no reason that reasoning would flip on this tab and not
+		// the other). Login-gated the same way every function reading
+		// roster data is (see CLAUDE.md's Auth note): the names are already
+		// sitting in the public data/rosters.json regardless of login, but
+		// rendering "this specific real name is one Claude/this manager
+		// owns, in these leagues" on an otherwise-ungated tab is exactly
+		// the roster-shaped fact that gate exists for, so a logged-out
+		// visitor gets a plain table, not a silently-ungated one.
+		// Recomputed per drawer fill rather than cached — one pass over
+		// ~18 leagues' rosters, and this never runs more than once per
+		// open (or per poll while open), never per row.
+		function nflBoxscoreOwnership() {
+			if (!isLoggedIn() || !pageData?.leagues) return new Map();
+			return buildDepthChartOwnership(pageData.leagues);
+		}
+
+		// Same instance role as depthChartsPopover — a dedicated popover
+		// rather than reusing that one, matching this page's own six-and-
+		// counting convention of one instance per feature even when the
+		// content shape (a league name per row) is identical.
+		const nflBoxscoreOwnPopover = makePopover('nflBoxscoreOwn');
+
+		function buildNflBoxscoreTable(category, ownership) {
 			const wrap = el('div', { class: 'nfl-boxscore-table-wrap' });
 			const table = el('table', { class: 'nfl-boxscore-table' });
 			const thead = el('thead');
@@ -10508,8 +10581,32 @@
 			table.appendChild(thead);
 			const tbody = el('tbody');
 			for (const athlete of category.athletes) {
-				const tr = el('tr');
-				tr.appendChild(el('td', { text: athlete.name }));
+				const ownedLeagues = ownership.get(normalizeName(athlete.name)) || [];
+				const tr = el('tr', ownedLeagues.length > 0 ? { class: 'nfl-boxscore-mine' } : {});
+				const nameCell = el('td', { text: athlete.name });
+				if (ownedLeagues.length > 0) {
+					// Same "(N)" idiom as the Scoring tab's Now Playing card
+					// (now-playing-count-link) — always the popover, even at
+					// N=1, since this is the only place on this row a league's
+					// own name is shown at all.
+					nameCell.appendChild(document.createTextNode(' '));
+					const countBtn = el('button', {
+						type: 'button',
+						class: 'nfl-boxscore-own-link',
+						title: ownedLeagues.length > 1 ? 'Owned in multiple leagues — click to see which' : 'Click to see which league',
+						text: `(${ownedLeagues.length})`,
+					});
+					countBtn.addEventListener('click', (e) => {
+						e.stopPropagation();
+						nflBoxscoreOwnPopover.toggle(
+							countBtn,
+							`Own In — ${athlete.name}`,
+							ownedLeagues.map((l) => ({ left: l.name, right: '' }))
+						);
+					});
+					nameCell.appendChild(countBtn);
+				}
+				tr.appendChild(nameCell);
 				for (const stat of athlete.stats) tr.appendChild(el('td', { text: String(stat) }));
 				tbody.appendChild(tr);
 			}
@@ -10542,6 +10639,7 @@
 				body.appendChild(el('div', { class: 'nfl-boxscore-empty', text: 'No stats recorded yet.' }));
 				return;
 			}
+			const ownership = nflBoxscoreOwnership();
 			const teamsWrap = el('div', { class: 'nfl-boxscore-teams' });
 			for (const team of teams) {
 				const teamBox = el('div', { class: 'nfl-boxscore-team' });
@@ -10551,7 +10649,7 @@
 						class: 'nfl-boxscore-category-label',
 						text: NFL_BOXSCORE_CATEGORY_LABELS[category.name] || category.name,
 					}));
-					teamBox.appendChild(buildNflBoxscoreTable(category));
+					teamBox.appendChild(buildNflBoxscoreTable(category, ownership));
 				}
 				teamsWrap.appendChild(teamBox);
 			}
@@ -10575,7 +10673,16 @@
 
 			const chevron = el('span', { class: 'nfl-boxscore-chevron', 'aria-hidden': 'true', text: '▾' });
 			const label = el('span', { text: open ? 'Hide detail' : 'Show detail' });
-			const toggle = el('button', { type: 'button', class: 'nfl-boxscore-toggle', 'aria-expanded': String(open) });
+			// Same gold-for-live treatment .scoring-detail-toggle's own
+			// scoring-detail-live modifier uses, and the same reasoning: a
+			// manager should see a game is live without opening the drawer
+			// first. Fixed at build time off game.state — unlike the Scoring
+			// tab's isPlayerLive (which can flip mid-render as a poll updates
+			// a starter's own game), rerenderNflCards tears this whole card
+			// down and rebuilds it every poll, so a state change already
+			// gets a fresh toggle rather than needing to be re-evaluated here.
+			const toggleClass = `nfl-boxscore-toggle${game.state === 'in' ? ' nfl-boxscore-live' : ''}`;
+			const toggle = el('button', { type: 'button', class: toggleClass, 'aria-expanded': String(open) });
 			toggle.appendChild(chevron);
 			toggle.appendChild(label);
 

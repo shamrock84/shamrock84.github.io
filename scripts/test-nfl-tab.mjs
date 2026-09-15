@@ -66,6 +66,7 @@ function domNode(tag = 'div') {
 		set innerHTML(v) { if (v === '') n.children.length = 0; },
 		get textContent() { return n._text; },
 		set textContent(v) { n._text = v; },
+		getBoundingClientRect: () => ({ top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0 }),
 	};
 	return n;
 }
@@ -114,6 +115,11 @@ function findAll(n, pred, out = []) {
 	return out;
 }
 const hasClass = (c) => (n) => n.cls.split(/\s+/).includes(c);
+function fullText(node) {
+	if (!node) return '';
+	if (!node.children || node.children.length === 0) return node._text || '';
+	return (node._text || '') + node.children.map(fullText).join('');
+}
 
 // --- buildNflGamesList -------------------------------------------------
 
@@ -323,10 +329,13 @@ const hasClass = (c) => (n) => n.cls.split(/\s+/).includes(c);
 assert.deepEqual(nflBoxscorePlayerLines(null), []);
 assert.deepEqual(nflBoxscorePlayerLines(undefined), []);
 
-// SACKS and LONG are dropped wherever they appear, on user request — and
-// since stats are positional (parallel to labels), removing a column has to
-// shift every OTHER value into the right place too, not just delete the
-// dropped one and leave the rest misaligned under the wrong header.
+// SACKS, LONG and RTG are dropped wherever they appear, on user request —
+// and since stats are positional (parallel to labels), removing a column
+// has to shift every OTHER value into the right place too, not just delete
+// the dropped ones and leave the rest misaligned under the wrong header.
+// RTG sits BETWEEN two kept columns here (not trailing, like SACKS) so a
+// regression that only handled a dropped trailing column would still be
+// caught: TD must still line up with TD's own value, not RTG's old slot.
 {
 	const boxscore = {
 		players: [{
@@ -334,9 +343,9 @@ assert.deepEqual(nflBoxscorePlayerLines(undefined), []);
 			statistics: [
 				{
 					name: 'passing',
-					keys: ['completions/passingAttempts', 'passingYards', 'passingTouchdowns', 'sacks'],
-					labels: ['C/ATT', 'YDS', 'TD', 'SACKS'],
-					athletes: [{ athlete: { displayName: 'Josh Allen' }, stats: ['22/31', '275', '2', '3'] }],
+					keys: ['completions/passingAttempts', 'passingYards', 'QBRating', 'passingTouchdowns', 'sacks'],
+					labels: ['C/ATT', 'YDS', 'RTG', 'TD', 'SACKS'],
+					athletes: [{ athlete: { displayName: 'Josh Allen' }, stats: ['22/31', '275', '118.4', '2', '3'] }],
 				},
 				{
 					name: 'rushing',
@@ -355,8 +364,8 @@ assert.deepEqual(nflBoxscorePlayerLines(undefined), []);
 	};
 	const [team] = nflBoxscorePlayerLines(boxscore);
 	const [passing, rushing, receiving] = team.categories;
-	assert.deepEqual(passing.labels, ['C/ATT', 'YDS', 'TD'], 'SACKS is dropped from passing');
-	assert.deepEqual(passing.athletes[0].stats, ['22/31', '275', '2'], "Josh Allen's own SACKS value is dropped, not just its header");
+	assert.deepEqual(passing.labels, ['C/ATT', 'YDS', 'TD'], 'RTG and SACKS are both dropped from passing');
+	assert.deepEqual(passing.athletes[0].stats, ['22/31', '275', '2'], "TD's own value (2) survives in TD's own slot, not RTG's old one");
 	assert.deepEqual(rushing.labels, ['CAR', 'YDS'], "rushing's LONG (longRushing) is dropped");
 	assert.deepEqual(rushing.athletes[0].stats, ['14', '82']);
 	assert.deepEqual(receiving.labels, ['REC', 'YDS'], "receiving's LONG (longReception) — a DIFFERENT key, same label — is dropped too");
@@ -374,8 +383,8 @@ assert.deepEqual(nflBoxscorePlayerLines(undefined), []);
 // isCardCollapsed/setCardCollapsed swallow the resulting throw and quietly
 // report "closed" — fine for tests that never open a drawer, wrong for
 // these, which need the real open/closed value back).
-function makeDrawerContext() {
-	const store = new Map();
+function makeDrawerContext(seed = {}) {
+	const store = new Map(Object.entries(seed));
 	const ctx = {
 		console,
 		localStorage: {
@@ -405,7 +414,8 @@ function makeDrawerContext() {
 }
 
 function fireClick(node) {
-	(node.listeners.click || []).forEach((fn) => fn());
+	const event = { stopPropagation() {}, preventDefault() {} };
+	(node.listeners.click || []).forEach((fn) => fn(event));
 }
 
 // The drawer lives INSIDE the same pill — a second, floating box below it
@@ -425,6 +435,22 @@ function fireClick(node) {
 	fireClick(toggle);
 	assert.ok(pill.cls.includes('nfl-boxscore-open'), 'opening claims the full row for this SAME card (see .nfl-boxscore-open\'s own CSS comment)');
 	assert.equal(drawer.hidden, false, 'opens on click');
+}
+
+// The toggle flags a live game gold the same way the Scoring tab's own
+// scoring-detail-live does — before the drawer is even opened, so a manager
+// sees it without a click. Fixed off game.state at build time, so this
+// checks all three states rather than just confirming 'in' looks right.
+{
+	const ctx = makeDrawerContext();
+	const stateToggleClass = (state) => {
+		const game = { id: `g-${state}`, state, kickoff: '2026-09-14T17:00:00Z', away: { team: 'DAL', score: 0 }, home: { team: 'PHI', score: 0 } };
+		const pill = ctx.renderNflGameRow(game);
+		return findAll(pill, hasClass('nfl-boxscore-toggle'))[0].cls;
+	};
+	assert.ok(stateToggleClass('in').includes('nfl-boxscore-live'), 'a live game gets the gold modifier');
+	assert.ok(!stateToggleClass('pre').includes('nfl-boxscore-live'), 'a game that has not started does not');
+	assert.ok(!stateToggleClass('post').includes('nfl-boxscore-live'), 'a final game does not');
 }
 
 // A pre-kickoff game's drawer says so without ever needing nflBoxscores at
@@ -488,6 +514,82 @@ function fireClick(node) {
 	assert.deepEqual(headerCells, ['Player', 'C/ATT', 'YDS', 'TD']);
 	const dataCells = findAll(pill, (n) => n.tag === 'td').map((n) => n._text);
 	assert.deepEqual(dataCells, ['Josh Allen', '20/28', '245', '2']);
+}
+
+// A rostered player's row is flagged purple, joined by the same
+// normalizeName every cross-provider match on this page uses — so ESPN's
+// own "Stefon Diggs" resolves against a rostering provider's own spelling
+// of the same name. An unrostered player on the same table gets no flag.
+// Owned in two leagues gets "(2)" and a link; owned in one gets "(1)" and a
+// link too (always the popover, even at N=1 — the only place a league's own
+// name shows on this row at all); a draftonly league is excluded from the
+// count entirely, same as buildDepthChartOwnership's own exclusion (a
+// draftonly roster is fixed the moment its draft ends, so "owned in" there
+// answers nothing actionable) — reused outright rather than re-decided here.
+{
+	const ctx = makeDrawerContext({ mflAuthToken: 'test-token' });
+	ctx.__leagues = [
+		{ id: 'L1', name: 'Dynasty League', type: 'dynasty', url: 'https://example.com/l1', players: [{ name: 'Stefon Diggs' }] },
+		{ id: 'L2', name: 'Salary Cap League', type: 'salarycap', url: 'https://example.com/l2', players: [{ name: 'Stefon Diggs' }] },
+		{ id: 'L3', name: 'Redraft League', type: 'redraft', url: 'https://example.com/l3', players: [{ name: 'James Cook' }] },
+		{ id: 'L4', name: 'Draft Only League', type: 'draftonly', url: 'https://example.com/l4', players: [{ name: 'Dalton Kincaid' }] },
+	];
+	vm.runInContext('pageData = { leagues: __leagues };', ctx);
+	ctx.__teams = [{ team: 'BUF', categories: [{ name: 'receiving', labels: ['YDS'], athletes: [
+		{ name: 'Stefon Diggs', stats: ['98'] },
+		{ name: 'James Cook', stats: ['22'] },
+		{ name: 'Dalton Kincaid', stats: ['54'] },
+		{ name: 'Khalil Shakir', stats: ['12'] },
+	] }] }];
+	vm.runInContext('nflBoxscores = { g6: __teams };', ctx);
+	const game = { id: 'g6', state: 'in', kickoff: '2026-09-14T17:00:00Z', away: { team: 'BUF', score: 14 }, home: { team: 'MIA', score: 7 } };
+	const pill = ctx.renderNflGameRow(game);
+	fireClick(findAll(pill, hasClass('nfl-boxscore-toggle'))[0]);
+
+	const rows = findAll(pill, (n) => n.tag === 'tr').filter((r) => findAll(r, (n) => n.tag === 'td').length > 0);
+	const rowFor = (name) => rows.find((r) => r.children[0]._text === name);
+	const diggsRow = rowFor('Stefon Diggs');
+	const cookRow = rowFor('James Cook');
+	const kincaidRow = rowFor('Dalton Kincaid');
+	const shakirRow = rowFor('Khalil Shakir');
+
+	assert.ok(diggsRow.cls.includes('nfl-boxscore-mine'), 'owned in two leagues: flagged');
+	assert.equal(findAll(diggsRow, hasClass('nfl-boxscore-own-link'))[0]._text, '(2)');
+	assert.ok(cookRow.cls.includes('nfl-boxscore-mine'), 'owned in one (non-draftonly) league: still flagged');
+	assert.equal(findAll(cookRow, hasClass('nfl-boxscore-own-link'))[0]._text, '(1)', 'the popover link shows even at N=1');
+	assert.ok(!kincaidRow.cls.includes('nfl-boxscore-mine'), 'owned ONLY in a draftonly league: not flagged at all');
+	assert.equal(findAll(kincaidRow, hasClass('nfl-boxscore-own-link')).length, 0, 'and gets no count link either');
+	assert.ok(!shakirRow.cls.includes('nfl-boxscore-mine'), 'unrostered anywhere: not flagged');
+
+	// Clicking the link opens the SAME popover shape Depth Charts' own "Own
+	// In" uses — a title naming the player, one row per league, nothing on
+	// the right (that column is Now Playing's own per-league-score idiom,
+	// not this one's).
+	fireClick(findAll(diggsRow, hasClass('nfl-boxscore-own-link'))[0]);
+	const popover = ctx.document.body.children.find(hasClass('nflBoxscoreOwn-popover'));
+	assert.ok(popover && !popover.cls.includes('hidden'), 'the popover opens');
+	const title = findAll(popover, hasClass('popover-title'))[0];
+	assert.equal(fullText(title), 'Own In — Stefon Diggs');
+	const popoverRows = findAll(popover, hasClass('popover-row'));
+	assert.deepEqual(popoverRows.map((r) => fullText(r.children[0])), ['Dynasty League', 'Salary Cap League']);
+	assert.ok(popoverRows.every((r) => fullText(r.children[1]) === ''), 'no right-hand column, unlike Now Playing\'s own per-league score');
+}
+
+// Logged OUT, the same rostered player gets no flag AND no count link at
+// all — roster ownership is exactly the fact the login gate exists for (see
+// CLAUDE.md's own Auth note), and this is the one place on an
+// otherwise-ungated tab that touches it.
+{
+	const ctx = makeDrawerContext();
+	ctx.__leagues = [{ id: 'L1', name: 'Dynasty League', type: 'dynasty', players: [{ name: 'Stefon Diggs' }] }];
+	vm.runInContext('pageData = { leagues: __leagues };', ctx);
+	ctx.__teams = [{ team: 'BUF', categories: [{ name: 'receiving', labels: ['YDS'], athletes: [{ name: 'Stefon Diggs', stats: ['98'] }] }] }];
+	vm.runInContext('nflBoxscores = { g7: __teams };', ctx);
+	const game = { id: 'g7', state: 'in', kickoff: '2026-09-14T17:00:00Z', away: { team: 'BUF', score: 14 }, home: { team: 'MIA', score: 7 } };
+	const pill = ctx.renderNflGameRow(game);
+	fireClick(findAll(pill, hasClass('nfl-boxscore-toggle'))[0]);
+	assert.equal(findAll(pill, hasClass('nfl-boxscore-mine')).length, 0, 'logged out, nobody is flagged even though the roster data says so');
+	assert.equal(findAll(pill, hasClass('nfl-boxscore-own-link')).length, 0, 'and no count link renders either');
 }
 
 // Toggling closed and back open again re-derives from the same nflBoxscores
