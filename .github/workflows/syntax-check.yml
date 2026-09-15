@@ -147,6 +147,13 @@ jobs:
       - name: Test the page's plan reconciliation
         run: node scripts/test-plan-sync.mjs
 
+      # The read-through cache behind the three per-player plan getters. It is
+      # keyed on the raw stored string precisely so no writer has to remember
+      # to invalidate it, and the cases that never touch a setter are what pin
+      # that: a stale contract length renders as a perfectly plausible number.
+      - name: Test the plan getter cache
+        run: node scripts/test-plan-cache.mjs
+
       # The Dynasty cut-planning dropdown's own offseason boundary, narrower
       # than nflInSeason() and with its own year-wraparound math (the last
       # game of Week 17 crosses the new year in some seasons and not others).

@@ -66,7 +66,7 @@ async function fetchJson(url) {
 // maintained here — a wrong hardcoded id would silently 404 forever, where
 // deriving it from ESPN's own listing can't drift. Costs one extra request
 // against a completely separate rate-limit budget from MFL/ESPN-fantasy.
-export async function fetchTeamList() {
+async function fetchTeamList() {
   const data = await fetchJson(`${SITE_BASE}/teams`);
   const teams = [];
   for (const sport of data?.sports || []) {
@@ -156,7 +156,7 @@ export function extractDepthChartEntries(depthChartData, posKey, rosterById) {
 // "nothing here" the same way every other omitted field in this project
 // does. Throws on either request failing; the caller in fetchAllDepthCharts
 // catches per-team so one team's ESPN hiccup doesn't blank the other 31.
-export async function fetchTeamDepthChart(team, season) {
+async function fetchTeamDepthChart(team, season) {
   const [depthChart, roster] = await Promise.all([
     fetchJson(`${CORE_BASE}/seasons/${season}/teams/${team.id}/depthcharts`),
     fetchJson(`${SITE_BASE}/teams/${team.abbr.toLowerCase()}/roster`),

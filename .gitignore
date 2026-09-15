@@ -1,0 +1,20 @@
+# This repo is dependency-free by design (see CLAUDE.md: "no build step, no
+# test framework, no linter, and no dependencies"), so there is deliberately
+# very little here. Every entry is something a tool drops in the working tree
+# that would otherwise be committed by a plain `git add -A`.
+
+# CLAUDE.md's own "Verifying changes" section tells you to install Playwright
+# with `npm install --no-save` to drive the Admin tab in a headless browser,
+# and to delete node_modules afterwards. Until this file existed, forgetting
+# that second step meant committing a few hundred MB of dependencies to a
+# repo whose whole premise is having none — and one already large enough that
+# every workflow now checks out blobless and sparse to avoid its weight.
+node_modules/
+
+# Vercel CLI scratch state (project linkage, local build output). The real
+# deployment is driven from the Vercel side; nothing here belongs in git.
+.vercel/
+
+# macOS Finder metadata. The site's static art is edited on a Mac (see
+# mfl/PSD), so these turn up inside image directories rather than at the root.
+.DS_Store

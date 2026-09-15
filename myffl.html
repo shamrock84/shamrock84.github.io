@@ -3770,6 +3770,48 @@
 		// up from a sync it always wins and the dropdown simply stops
 		// rendering for that player — any leftover saved plan is harmless and
 		// isn't proactively cleaned up.
+		// Read-through cache behind the three per-player plan getters below
+		// (getContractPlan/getSalaryPlan/getCutPlan). Each of those is called
+		// once per rostered player per render — roughly 400 times across a
+		// full renderGrid(), and renderGrid runs on every tab and sub-tab
+		// click — and each call used to re-read localStorage AND re-parse the
+		// whole plan map to pull out one short string.
+		//
+		// Keyed on the RAW STORED STRING rather than invalidated by hand.
+		// That is the whole point: there are several writers (each setter
+		// below, writePlansLocal on a sync answer, a logout, another tab), and
+		// a cache that has to be told about all of them is one missed call
+		// away from rendering a plan the user already changed. Comparing the
+		// stored string cannot go stale by construction — any write by any
+		// path changes it and the next read re-parses.
+		//
+		// Deliberately NOT used by the setters or by localPlansDocument: those
+		// take the map and mutate it, and handing them a shared object would
+		// introduce aliasing this file does not have today. They keep calling
+		// the plain load* functions and always get their own fresh copy.
+		// Honest about the size of this: at ~400 players it was never a
+		// measurable cost, and this is a tidiness change with a safety
+		// property, not a fix for an observed slowdown.
+		const planMapCache = new Map();
+		function readPlanMapCached(storageKey) {
+			let raw;
+			try {
+				raw = localStorage.getItem(storageKey) || '{}';
+			} catch {
+				return {};
+			}
+			const hit = planMapCache.get(storageKey);
+			if (hit && hit.raw === raw) return hit.parsed;
+			let parsed;
+			try {
+				parsed = JSON.parse(raw);
+			} catch {
+				parsed = {};
+			}
+			planMapCache.set(storageKey, { raw, parsed });
+			return parsed;
+		}
+
 		const CONTRACT_PLAN_STORAGE_KEY = 'myfflContractPlans';
 		function loadContractPlans() {
 			try {
@@ -3779,7 +3821,7 @@
 			}
 		}
 		function getContractPlan(leagueId, playerId) {
-			return loadContractPlans()[leagueId]?.[playerId] || '';
+			return readPlanMapCached(CONTRACT_PLAN_STORAGE_KEY)[leagueId]?.[playerId] || '';
 		}
 		function setContractPlan(leagueId, playerId, years) {
 			const plans = loadContractPlans();
@@ -3812,7 +3854,7 @@
 			}
 		}
 		function getSalaryPlan(leagueId, playerId) {
-			return loadSalaryPlans()[leagueId]?.[playerId] || '';
+			return readPlanMapCached(SALARY_PLAN_STORAGE_KEY)[leagueId]?.[playerId] || '';
 		}
 		function setSalaryPlan(leagueId, playerId, salary) {
 			const plans = loadSalaryPlans();
@@ -3854,7 +3896,7 @@
 			}
 		}
 		function getCutPlan(leagueId, playerId) {
-			return loadCutPlans()[leagueId]?.[playerId] || '';
+			return readPlanMapCached(CUT_PLAN_STORAGE_KEY)[leagueId]?.[playerId] || '';
 		}
 		function setCutPlan(leagueId, playerId, value) {
 			const plans = loadCutPlans();
