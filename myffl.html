@@ -1971,20 +1971,29 @@
 			font-size: 0.8rem;
 			padding: 0.2rem 0.5rem;
 		}
-		/* Two fixed columns, away always left and home always right, same
-		   "never collapses to one column" idiom .scoring-detail-row uses for
-		   its own left/right pairing — that one shrinks its two name tracks
-		   under pressure rather than stacking, and this does the same
-		   through each category table's own .nfl-boxscore-table-wrap
-		   horizontal scroll instead of a second name column, since a whole
-		   multi-column stat table has no single dimension to shrink the way
-		   one name string does. flex-wrap let the two sides stack vertically
-		   below ~600px of available width, which is exactly the case a
-		   phone-width open drawer hits every time. */
+		/* Two fixed columns above the mobile breakpoint, away always left and
+		   home always right — same "never collapses" idiom .scoring-detail-
+		   row uses for its own left/right pairing. That one can hold the
+		   line at any width because each side shrinks a single name string;
+		   a whole 5-6 column stat table has no comparable single dimension
+		   to give up, so squeezing two of them into half-width columns
+		   trades full-width readability for a horizontal scroll inside
+		   every one of them (.nfl-boxscore-table-wrap's own fallback). Worth
+		   paying on a wide screen, where there's room to spare; not worth it
+		   on a phone, where the drawer is opened tight to begin with — so
+		   this reverts to one full-width column per side below 600px, the
+		   same boundary cardCollapseStorageKey's own matchMedia call already
+		   treats as the mobile/desktop line, rather than inventing a second
+		   one this file would have to keep in step with it by hand. */
 		.nfl-boxscore-teams {
 			display: grid;
 			grid-template-columns: 1fr 1fr;
 			gap: 1rem;
+		}
+		@media (max-width: 600px) {
+			.nfl-boxscore-teams {
+				grid-template-columns: 1fr;
+			}
 		}
 		.nfl-boxscore-team {
 			min-width: 0;
