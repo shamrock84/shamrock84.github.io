@@ -198,6 +198,19 @@
 		#quicklinks .quicklink-tasknote.task-badge-link:focus-visible {
 			text-decoration: underline;
 		}
+		/* The label the tasknote above is appended to gets the same red, so
+		   the flagged entry stands out on its own rather than relying on the
+		   small superscript alone (see appendQuickLink). Plain entries have
+		   no inner span, so the color goes straight on the <a>; gold/purple
+		   entries carry it a level deeper since .quicklink-gold/-purple span
+		   already set their own text color. */
+		#quicklinks a.quicklink-flagged {
+			color: var(--ir-text);
+		}
+		#quicklinks a.quicklink-flagged.quicklink-gold span,
+		#quicklinks a.quicklink-flagged.quicklink-purple span {
+			color: var(--ir-text);
+		}
 		/* Sixteen-plus toolbar entries (every league plus Quick Links) wrap to
 		   three rows at iPhone width — the same overcrowding the .tabs media
 		   query above solves for the eight main tabs. Trimming gap, type
@@ -5788,11 +5801,14 @@
 		// least one open task filed under this entry's own label. Clickable
 		// (attachTaskBadgeClick) straight to the Tasks card — it overrides the
 		// title and swallows the click that would otherwise follow the link's
-		// own href out to the league's site.
+		// own href out to the league's site. The label itself turns the same
+		// red (quicklink-flagged) so the entry stands out at a glance, not
+		// just its small superscript.
 		function appendQuickLink(bar, { url, label, title, style, taskCount }) {
 			const cls = style === 'gold' ? 'quicklink-gold' : style === 'purple' ? 'quicklink-purple' : '';
 			const attrs = { href: url, target: '_blank', rel: 'noopener' };
-			if (cls) attrs.class = cls;
+			const classes = [cls, taskCount ? 'quicklink-flagged' : ''].filter(Boolean).join(' ');
+			if (classes) attrs.class = classes;
 			const link = el('a', attrs);
 			if (title) link.title = title;
 			if (cls) link.appendChild(el('span', { text: label }));
