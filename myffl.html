@@ -1828,15 +1828,27 @@
 		   peers." A single stacked-row list here left most of a desktop-width
 		   card empty on either side of a short score line; wrapping lets a
 		   wide screen show a whole slate across in 5-6 columns instead of
-		   one, while still degrading to one column at phone width for free. */
+		   one, AND two per row down to a ~360px-wide phone rather than
+		   falling back to one — the wrap decision goes by this hypothetical
+		   (flex-basis) size, not the min-width floor, so a wider basis would
+		   wrap to one per row on a phone-width card content area even
+		   though narrower pills would still have fit two comfortably.
+		   135px is measured against the card's own real content width
+		   (viewport minus card padding and the page's outer gutter, ~69px
+		   total) at the common small-phone floor this site otherwise
+		   targets: 2×135px + the 0.5rem gap clears a 360px-wide phone with
+		   room to grow, and still reads fine bold at that width. Below
+		   ~340px (pre-SE-2 hardware, essentially gone) this degrades to one
+		   per row on its own, which is the same graceful wrap every other
+		   width relies on rather than a special case. */
 		.nfl-scoreboard {
 			display: flex;
 			flex-wrap: wrap;
-			gap: 0.7rem;
+			gap: 0.5rem;
 		}
 		.nfl-game-row {
-			flex: 1 1 170px;
-			min-width: 150px;
+			flex: 1 1 135px;
+			min-width: 120px;
 			display: flex;
 			flex-direction: column;
 			gap: 0.3rem;
