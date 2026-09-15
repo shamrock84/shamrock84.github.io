@@ -21,12 +21,19 @@
 //   * the loading state (gameStatesAttempted still false) never renders "no
 //     games" — that would be a false all-clear before the first fetch even
 //     resolved.
+//
+// Also pins nflBoxscorePlayerLines (scripts/lib/providers.mjs) and the
+// per-game stat drawer it feeds (renderNflGameRow/appendNflBoxscoreToggle):
+// the category allowlist/order, and the drawer's three empty states
+// (pre-kickoff, not-yet-fetched, fetched-but-empty) each meaning something
+// different that a reader must not mistake for one of the others.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
+import { nflBoxscorePlayerLines } from './lib/providers.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const html = fs.readFileSync(path.join(root, 'myffl.html'), 'utf8');
@@ -223,6 +230,224 @@ const hasClass = (c) => (n) => n.cls.split(/\s+/).includes(c);
 	const links = findAll(grid, hasClass('nfl-boxscore-link'));
 	assert.ok(links.every((a) => /^https:\/\/www\.espn\.com\/nfl\/boxscore\/_\/gameid\/(live1|later)$/.test(a.attrs.href)));
 	assert.ok(links.every((a) => a.attrs.target === '_blank' && a.attrs.rel === 'noopener'));
+}
+
+// --- nflBoxscorePlayerLines: the drawer's own human box score lines -----
+
+{
+	const boxscore = {
+		players: [
+			{
+				team: { abbreviation: 'NE' },
+				statistics: [
+					{
+						name: 'passing',
+						keys: ['completions/passingAttempts', 'passingYards', 'yardsPerPassAttempt', 'passingTouchdowns', 'interceptions'],
+						labels: ['C/ATT', 'YDS', 'AVG', 'TD', 'INT'],
+						athletes: [{ athlete: { displayName: 'Drake Maye' }, stats: ['23/33', '178', '5.4', '1', '3'] }],
+					},
+					// Out of scope (see ESPN_BOXSCORE_TO_MFL_EVENT's own comment on
+					// why kicking/team-defense aren't covered) — must not leak in.
+					{
+						name: 'defensive',
+						keys: ['totalTackles', 'sacks'],
+						labels: ['TOT', 'SACK'],
+						athletes: [{ athlete: { displayName: 'Robert Spillane' }, stats: ['8', '0'] }],
+					},
+				],
+			},
+			{
+				team: { abbreviation: 'SEA' },
+				statistics: [
+					// Listed receiving-then-rushing here, the opposite of the
+					// display order — this project has never confirmed ESPN's own
+					// statistics[] array order is stable, so the fixed order below
+					// must not depend on it.
+					{
+						name: 'receiving',
+						keys: ['receptions', 'receivingYards', 'yardsPerReception', 'receivingTouchdowns', 'longReception', 'receivingTargets'],
+						labels: ['REC', 'YDS', 'AVG', 'TD', 'LONG', 'TGTS'],
+						athletes: [{ athlete: { displayName: 'Jaxon Smith-Njigba' }, stats: ['8', '122', '15.3', '1', '45', '11'] }],
+					},
+					{
+						name: 'rushing',
+						keys: ['rushingAttempts', 'rushingYards', 'yardsPerRushAttempt', 'rushingTouchdowns', 'longRushing'],
+						labels: ['CAR', 'YDS', 'AVG', 'TD', 'LONG'],
+						athletes: [{ athlete: { displayName: 'Jadarian Price' }, stats: ['10', '52', '5.2', '0', '13'] }],
+					},
+				],
+			},
+			// A team with nothing in scope at all (e.g. only special-teams/
+			// defensive categories recorded so far) contributes no entry, not an
+			// empty one a caller would still have to filter.
+			{
+				team: { abbreviation: 'BYE' },
+				statistics: [{ name: 'defensive', keys: ['totalTackles'], labels: ['TOT'], athletes: [{ athlete: { displayName: 'Nobody Relevant' }, stats: ['4'] }] }],
+			},
+		],
+	};
+
+	const teams = nflBoxscorePlayerLines(boxscore);
+	assert.equal(teams.length, 2, 'a team with nothing in scope is dropped entirely');
+	assert.equal(teams[0].team, 'NE');
+	assert.equal(teams[0].categories.length, 1, 'the defensive category never crosses into scope');
+	assert.equal(teams[0].categories[0].name, 'passing');
+	assert.deepEqual(teams[0].categories[0].labels, ['C/ATT', 'YDS', 'AVG', 'TD', 'INT'], "ESPN's own column labels are used verbatim");
+	assert.deepEqual(
+		teams[0].categories[0].athletes,
+		[{ name: 'Drake Maye', stats: ['23/33', '178', '5.4', '1', '3'] }],
+		'a combined stat like "23/33" stays one string — never decomposed the way the MFL join does'
+	);
+
+	// Fixed display order (passing, rushing, receiving) regardless of the raw
+	// response's own array order.
+	assert.deepEqual(
+		teams[1].categories.map((c) => c.name),
+		['rushing', 'receiving'],
+		'category order is fixed, not the order ESPN happened to list them in'
+	);
+}
+
+// A category whose only athlete carries no usable name is dropped — same
+// "don't render a blank" posture as buildNflGamesList's own filter.
+{
+	const boxscore = {
+		players: [{ team: { abbreviation: 'KC' }, statistics: [
+			{ name: 'passing', keys: ['passingYards'], labels: ['YDS'], athletes: [{ athlete: {}, stats: ['10'] }] },
+		] }],
+	};
+	assert.deepEqual(nflBoxscorePlayerLines(boxscore), [], 'an athlete with no displayName produces no row, and an empty category produces no team entry');
+}
+
+// A boxscore that's missing entirely (a failed fetch) degrades to [], never a throw.
+assert.deepEqual(nflBoxscorePlayerLines(null), []);
+assert.deepEqual(nflBoxscorePlayerLines(undefined), []);
+
+// --- The per-game stat drawer --------------------------------------------
+
+// A fuller localStorage stub than makeContext's read-only-null one: this
+// needs a real backing store (round-tripping the toggle's open state) PLUS
+// the Storage iteration pair, key()/length, since nflBoxscoreOpenGameIds
+// scans every stored key — mirrors test-scoring-details.mjs's identical
+// stub for benchDetailLeagueIds. window.matchMedia is real here too (the
+// other tests' stub omits it, which is harmless there only because
+// isCardCollapsed/setCardCollapsed swallow the resulting throw and quietly
+// report "closed" — fine for tests that never open a drawer, wrong for
+// these, which need the real open/closed value back).
+function makeDrawerContext() {
+	const store = new Map();
+	const ctx = {
+		console,
+		localStorage: {
+			getItem: (k) => (store.has(k) ? store.get(k) : null),
+			setItem(k, v) { store.set(k, String(v)); },
+			removeItem(k) { store.delete(k); },
+			key(i) { return [...store.keys()][i] ?? null; },
+			get length() { return store.size; },
+		},
+		setTimeout, clearTimeout, setInterval, clearInterval,
+		document: {
+			addEventListener() {},
+			getElementById: () => domNode(),
+			createElement: (t) => domNode(t),
+			createTextNode: (t) => { const n = domNode('#text'); n.textContent = t; return n; },
+			querySelector: () => null,
+			querySelectorAll: () => [],
+			visibilityState: 'visible',
+			body: domNode(),
+		},
+		window: { addEventListener() {}, matchMedia: () => ({ matches: false }) },
+		fetch: async () => ({ ok: false, status: 503, json: async () => ({}) }),
+	};
+	vm.createContext(ctx);
+	vm.runInContext(scriptSource, ctx);
+	return ctx;
+}
+
+function fireClick(node) {
+	(node.listeners.click || []).forEach((fn) => fn());
+}
+
+// A pre-kickoff game's drawer says so without ever needing nflBoxscores at
+// all — api/live-scoring.js never fetches one for a game that hasn't
+// started (nothing to fetch yet), and the drawer must say why rather than
+// showing "loading" forever.
+{
+	const ctx = makeDrawerContext();
+	const game = { id: 'g1', state: 'pre', kickoff: '2026-09-14T17:00:00Z', away: { team: 'DAL', score: 0 }, home: { team: 'PHI', score: 0 } };
+	const [pill, drawer] = ctx.renderNflGameRow(game);
+	const toggle = findAll(pill, hasClass('nfl-boxscore-toggle'))[0];
+	assert.equal(drawer.hidden, true, 'closed by default');
+	fireClick(toggle);
+	assert.equal(drawer.hidden, false, 'opens on click');
+	assert.equal(toggle.attrs['aria-expanded'], 'true');
+	assert.equal(findAll(drawer, hasClass('nfl-boxscore-empty'))[0]._text, "Game hasn't started yet.");
+}
+
+// A live game with no boxscore fetched yet (this poll hasn't answered, or
+// the fetch failed) reads as "loading" — "not asked" must never look like
+// "nothing happened", same reasoning as the Scoring drawer's own empty state.
+{
+	const ctx = makeDrawerContext();
+	const game = { id: 'g2', state: 'in', kickoff: '2026-09-14T17:00:00Z', away: { team: 'BUF', score: 10 }, home: { team: 'MIA', score: 7 } };
+	const [pill, drawer] = ctx.renderNflGameRow(game);
+	fireClick(findAll(pill, hasClass('nfl-boxscore-toggle'))[0]);
+	assert.equal(findAll(drawer, hasClass('nfl-boxscore-empty'))[0]._text, 'Loading box score…');
+}
+
+// A live game with a boxscore in hand but nothing recorded in scope yet
+// (moments after kickoff) reads as "no stats yet", not a loading message
+// and not an empty table.
+{
+	const ctx = makeDrawerContext();
+	ctx.__teams = [];
+	vm.runInContext('nflBoxscores = { g3: __teams };', ctx);
+	const game = { id: 'g3', state: 'in', kickoff: '2026-09-14T17:00:00Z', away: { team: 'BUF', score: 0 }, home: { team: 'MIA', score: 0 } };
+	const [pill, drawer] = ctx.renderNflGameRow(game);
+	fireClick(findAll(pill, hasClass('nfl-boxscore-toggle'))[0]);
+	assert.equal(findAll(drawer, hasClass('nfl-boxscore-empty'))[0]._text, 'No stats recorded yet.');
+}
+
+// The real case: a populated boxscore renders one table per category,
+// headed by ESPN's own labels alongside a Player column this project adds,
+// one row per athlete — and the section heading is human-worded rather than
+// the raw category name.
+{
+	const ctx = makeDrawerContext();
+	ctx.__teams = [
+		{ team: 'BUF', categories: [{ name: 'passing', labels: ['C/ATT', 'YDS', 'TD'], athletes: [{ name: 'Josh Allen', stats: ['20/28', '245', '2'] }] }] },
+	];
+	vm.runInContext('nflBoxscores = { g4: __teams };', ctx);
+	const game = { id: 'g4', state: 'in', kickoff: '2026-09-14T17:00:00Z', away: { team: 'BUF', score: 14 }, home: { team: 'MIA', score: 7 } };
+	const [pill, drawer] = ctx.renderNflGameRow(game);
+	fireClick(findAll(pill, hasClass('nfl-boxscore-toggle'))[0]);
+
+	assert.equal(findAll(drawer, hasClass('nfl-boxscore-team-head'))[0]._text, 'BUF');
+	assert.equal(findAll(drawer, hasClass('nfl-boxscore-category-label'))[0]._text, 'Passing', 'the section heading is human-worded, not the raw category name');
+	const headerCells = findAll(drawer, (n) => n.tag === 'th').map((n) => n._text);
+	assert.deepEqual(headerCells, ['Player', 'C/ATT', 'YDS', 'TD']);
+	const dataCells = findAll(drawer, (n) => n.tag === 'td').map((n) => n._text);
+	assert.deepEqual(dataCells, ['Josh Allen', '20/28', '245', '2']);
+}
+
+// Toggling closed and back open again re-derives from the same nflBoxscores
+// rather than getting stuck on whatever the first open showed — there is no
+// `filled`-style guard here (see appendNflBoxscoreToggle's own comment), so
+// this pins that the re-fill actually happens.
+{
+	const ctx = makeDrawerContext();
+	ctx.__teams = [{ team: 'BUF', categories: [{ name: 'passing', labels: ['YDS'], athletes: [{ name: 'Josh Allen', stats: ['245'] }] }] }];
+	vm.runInContext('nflBoxscores = { g5: __teams };', ctx);
+	const game = { id: 'g5', state: 'in', kickoff: '2026-09-14T17:00:00Z', away: { team: 'BUF', score: 14 }, home: { team: 'MIA', score: 7 } };
+	const [pill, drawer] = ctx.renderNflGameRow(game);
+	const toggle = findAll(pill, hasClass('nfl-boxscore-toggle'))[0];
+	fireClick(toggle); // open
+	fireClick(toggle); // close
+	assert.equal(drawer.hidden, true);
+	assert.equal(toggle.attrs['aria-expanded'], 'false');
+	fireClick(toggle); // open again
+	assert.equal(drawer.hidden, false);
+	assert.equal(findAll(drawer, hasClass('nfl-boxscore-team-head'))[0]._text, 'BUF', 'still renders correctly the second time open');
 }
 
 console.log('test-nfl-tab.mjs OK');

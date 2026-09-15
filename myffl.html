@@ -1886,8 +1886,40 @@
 			color: var(--gold-chip-text);
 			font-weight: 700;
 		}
+		/* The pill's bottom line: the on-site Stats toggle (primary) and the
+		   ESPN link (secondary — still the only place for kicking/team-
+		   defense stats, see nflBoxscorePlayerLines' own comment) side by
+		   side rather than stacked, so adding the toggle didn't grow the
+		   pill by a whole extra row. */
+		.nfl-game-actions {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 0.35rem;
+		}
+		.nfl-game-actions-sep {
+			color: var(--muted);
+		}
+		.nfl-boxscore-toggle {
+			display: flex;
+			align-items: center;
+			gap: 0.2rem;
+			font: inherit;
+			font-size: 0.75rem;
+			color: var(--accent);
+			background: none;
+			border: none;
+			padding: 0;
+			cursor: pointer;
+		}
+		.nfl-boxscore-chevron {
+			display: inline-block;
+			transition: transform 0.15s ease;
+		}
+		.nfl-boxscore-toggle[aria-expanded="true"] .nfl-boxscore-chevron {
+			transform: rotate(180deg);
+		}
 		.nfl-boxscore-link {
-			align-self: center;
 			font-size: 0.75rem;
 			color: var(--accent);
 			text-decoration: none;
@@ -1895,6 +1927,76 @@
 		}
 		.nfl-boxscore-link:hover {
 			text-decoration: underline;
+		}
+		/* The stat drawer is a SIBLING of its pill in .nfl-scoreboard, not a
+		   child — a multi-column stat table has no room in a ~150-200px
+		   pill. flex: 1 0 100% claims a full row of its own in the
+		   flex-wrapped scoreboard regardless of how many pills came before
+		   it on the current row, which is what actually pushes it onto its
+		   own line under the pill it belongs to. Deliberately no `display`
+		   of its own: the native `hidden` attribute's default `display:none`
+		   would lose a fight with any author rule of equal specificity that
+		   set one here, and a flex item's outer box still honors flex-basis
+		   regardless of its own inner display type — the two-team layout
+		   below gets its own flex context instead. */
+		.nfl-boxscore-body {
+			flex: 1 0 100%;
+			border-top: 1px solid var(--border);
+			padding: 0.6rem 0.2rem 0.1rem;
+		}
+		.nfl-boxscore-empty {
+			color: var(--muted);
+			font-size: 0.8rem;
+			padding: 0.2rem 0.5rem;
+		}
+		.nfl-boxscore-teams {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 1rem;
+		}
+		.nfl-boxscore-team {
+			flex: 1 1 260px;
+			min-width: 0;
+		}
+		.nfl-boxscore-team-head {
+			font-weight: 700;
+			font-size: 0.85rem;
+			margin-bottom: 0.3rem;
+		}
+		.nfl-boxscore-category-label {
+			font-size: 0.72rem;
+			text-transform: uppercase;
+			letter-spacing: 0.04em;
+			color: var(--muted);
+			margin: 0.5rem 0 0.2rem;
+		}
+		/* A passing line alone can run 6-7 columns wide — this is the one
+		   place on the NFL tab that scrolls sideways rather than the whole
+		   page, same idiom as every other wide table on this site. */
+		.nfl-boxscore-table-wrap {
+			overflow-x: auto;
+		}
+		.nfl-boxscore-table {
+			width: 100%;
+			border-collapse: collapse;
+			font-size: 0.78rem;
+			white-space: nowrap;
+		}
+		.nfl-boxscore-table th {
+			text-align: right;
+			font-weight: 400;
+			color: var(--muted);
+			padding: 0.15rem 0.4rem;
+		}
+		.nfl-boxscore-table th:first-child,
+		.nfl-boxscore-table td:first-child {
+			text-align: left;
+		}
+		.nfl-boxscore-table td {
+			text-align: right;
+			padding: 0.15rem 0.4rem;
+			font-variant-numeric: tabular-nums;
+			border-top: 1px solid var(--border);
 		}
 		/* Scoring tab, matchup view: each two-team (or lone bye) matchup is its
 		   own small card — the exact border/radius/background .card already
@@ -10302,6 +10404,167 @@
 		// (showScore) — a 'pre' game's "0" from the scoreboard is a
 		// placeholder, not a real score, so it stays hidden in favor of the
 		// kickoff time formatGameWhen renders instead.
+		// Per-game player stat lines, off nflBoxscorePlayerLines in
+		// providers.mjs — a human box score built from ESPN's public boxscore,
+		// skill-position offense only (passing/rushing/receiving; see that
+		// function's own comment for why kicking/defense are out of scope).
+		// Keyed by event id, filled in by refreshNflScoreboard only for games
+		// whose drawer is actually open (see nflBoxscoreOpenGameIds below) —
+		// api/live-scoring.js won't even ask ESPN for one nobody requested.
+		let nflBoxscores = {};
+
+		// The drawer defaults CLOSED, same polarity and same reasoning as the
+		// Scoring tab's own SCORING_DETAIL_NS (see its comment): storing
+		// "open" rather than "collapsed" means a game nobody ever expanded
+		// costs nothing in storage, and it's what makes an open drawer
+		// survive rerenderNflCards tearing down and rebuilding every NFL card
+		// on each poll. A separate namespace (not a reuse of
+		// SCORING_DETAIL_NS) since these keys are event ids, not the
+		// franchise-id matchup keys that namespace's other entries use.
+		const NFL_BOXSCORE_NS = 'myfflNflBoxscoreOpen';
+		function isNflBoxscoreOpen(gameId) {
+			return isCardCollapsed(gameId, NFL_BOXSCORE_NS);
+		}
+		function setNflBoxscoreOpen(gameId, open) {
+			setCardCollapsed(gameId, open, NFL_BOXSCORE_NS);
+		}
+
+		// Which games currently have a stat drawer open, for refreshNflScoreboard
+		// to tell api/live-scoring.js — same reasoning and same
+		// localStorage-scanning shape as benchDetailLeagueIds above: a full
+		// per-player boxscore is a real ESPN request per game, so it's only
+		// fetched for a game someone is actually looking at.
+		function nflBoxscoreOpenGameIds() {
+			const ids = new Set();
+			try {
+				const bucket = window.matchMedia('(max-width: 600px)').matches ? 'mobile' : 'desktop';
+				const prefix = `${NFL_BOXSCORE_NS}:${bucket}:`;
+				for (let i = 0; i < localStorage.length; i++) {
+					const k = localStorage.key(i);
+					if (!k || !k.startsWith(prefix)) continue;
+					const id = k.slice(prefix.length);
+					if (id) ids.add(id);
+				}
+			} catch {
+				// Private browsing or similar — see benchDetailLeagueIds' own comment.
+			}
+			return ids;
+		}
+
+		// Section headings inside the drawer — ESPN's own category name isn't
+		// meant for display. The column headers underneath (category.labels)
+		// ARE ESPN's own words, used verbatim same as everywhere else on this
+		// page that reads a provider's own wording rather than inventing one.
+		const NFL_BOXSCORE_CATEGORY_LABELS = { passing: 'Passing', rushing: 'Rushing', receiving: 'Receiving' };
+
+		function buildNflBoxscoreTable(category) {
+			const wrap = el('div', { class: 'nfl-boxscore-table-wrap' });
+			const table = el('table', { class: 'nfl-boxscore-table' });
+			const thead = el('thead');
+			const headRow = el('tr');
+			headRow.appendChild(el('th', { text: 'Player' }));
+			for (const label of category.labels) headRow.appendChild(el('th', { text: label }));
+			thead.appendChild(headRow);
+			table.appendChild(thead);
+			const tbody = el('tbody');
+			for (const athlete of category.athletes) {
+				const tr = el('tr');
+				tr.appendChild(el('td', { text: athlete.name }));
+				for (const stat of athlete.stats) tr.appendChild(el('td', { text: String(stat) }));
+				tbody.appendChild(tr);
+			}
+			table.appendChild(tbody);
+			wrap.appendChild(table);
+			return wrap;
+		}
+
+		// Rebuilt from scratch on every open and on every poll while open —
+		// unlike appendMatchupDetail's `filled` guard (protecting ~18 rows
+		// from a same-render double-build), rerenderNflCards already tears
+		// this whole card down every poll regardless, and two skill-position
+		// tables are cheap enough that a same-render re-open costs nothing
+		// worth guarding.
+		function fillNflBoxscoreBody(body, game) {
+			body.innerHTML = '';
+			if (game.state === 'pre') {
+				body.appendChild(el('div', { class: 'nfl-boxscore-empty', text: "Game hasn't started yet." }));
+				return;
+			}
+			const teams = nflBoxscores[game.id];
+			if (!teams) {
+				// Either this poll hasn't answered yet, or the last one failed —
+				// either way "not asked" must never read as "nothing happened",
+				// same reasoning as the Scoring drawer's own empty state.
+				body.appendChild(el('div', { class: 'nfl-boxscore-empty', text: 'Loading box score…' }));
+				return;
+			}
+			if (teams.length === 0) {
+				body.appendChild(el('div', { class: 'nfl-boxscore-empty', text: 'No stats recorded yet.' }));
+				return;
+			}
+			const teamsWrap = el('div', { class: 'nfl-boxscore-teams' });
+			for (const team of teams) {
+				const teamBox = el('div', { class: 'nfl-boxscore-team' });
+				teamBox.appendChild(el('div', { class: 'nfl-boxscore-team-head', text: team.team || '' }));
+				for (const category of team.categories) {
+					teamBox.appendChild(el('div', {
+						class: 'nfl-boxscore-category-label',
+						text: NFL_BOXSCORE_CATEGORY_LABELS[category.name] || category.name,
+					}));
+					teamBox.appendChild(buildNflBoxscoreTable(category));
+				}
+				teamsWrap.appendChild(teamBox);
+			}
+			body.appendChild(teamsWrap);
+		}
+
+		// Appends the "Stats" toggle into `actions` (the pill's own compact
+		// action row) and returns the drawer body — a SIBLING of the pill in
+		// the caller (renderNflGameRow), not a child of it, since a
+		// multi-column stat table needs real width and the pill itself tops
+		// out around 150-200px (see .nfl-boxscore-body's own CSS comment for
+		// how it claims a full row of its own inside the flex-wrapped
+		// scoreboard).
+		function appendNflBoxscoreToggle(actions, game) {
+			const key = game.id;
+			const open = isNflBoxscoreOpen(key);
+			const body = el('div', { class: 'nfl-boxscore-body' });
+
+			const chevron = el('span', { class: 'nfl-boxscore-chevron', 'aria-hidden': 'true', text: '▾' });
+			const label = el('span', { text: open ? 'Hide stats' : 'Stats' });
+			const toggle = el('button', { type: 'button', class: 'nfl-boxscore-toggle', 'aria-expanded': String(open) });
+			toggle.appendChild(chevron);
+			toggle.appendChild(label);
+
+			body.hidden = !open;
+			if (open) fillNflBoxscoreBody(body, game);
+
+			toggle.addEventListener('click', () => {
+				const next = body.hidden;
+				setNflBoxscoreOpen(key, next);
+				if (next) fillNflBoxscoreBody(body, game);
+				body.hidden = !next;
+				toggle.setAttribute('aria-expanded', String(next));
+				label.textContent = next ? 'Hide stats' : 'Stats';
+				// Opening a drawer that wasn't already open means the LAST
+				// poll never asked api/live-scoring.js for this game's
+				// boxscore (see nflBoxscoreOpenGameIds) — kick an immediate
+				// refresh rather than leaving the reader looking at "Loading
+				// box score…" for up to the idle poll interval, same nudge
+				// appendBenchDetail's own click handler uses. Closing needs
+				// no such nudge: the data already in hand doesn't go stale by
+				// being hidden.
+				if (next) refreshNflScoreboard();
+			});
+
+			actions.appendChild(toggle);
+			return body;
+		}
+
+		// Builds the pill and its stat drawer as a PAIR — renderNflScoreCard
+		// appends both, in that order, straight into the flex-wrapped
+		// .nfl-scoreboard rather than nesting the drawer inside the narrow
+		// pill.
 		function renderNflGameRow(game) {
 			const showScore = game.state !== 'pre' && game.away.score != null && game.home.score != null;
 			const row = el('div', { class: `nfl-game-row${game.state === 'in' ? ' nfl-game-live' : ''}` });
@@ -10313,22 +10576,26 @@
 			if (showScore) teams.appendChild(el('span', { class: 'nfl-game-score', text: String(game.home.score) }));
 			row.appendChild(teams);
 			row.appendChild(el('div', { class: 'nfl-game-status', text: formatGameWhen(game) }));
-			// Every game gets one, even pre-kickoff — ESPN's own box score
-			// page for a game that hasn't started yet just shows the
-			// schedule/preview, so the link is never dead, only early. This
-			// is the "link to ESPN box score for now" half of the feature
-			// request; a future pass can add the offensive box score inline
-			// (fetchEspnBoxscore in providers.mjs already pulls the same
-			// per-player data for the MFL stat-breakdown popover) rather
-			// than sending the reader away for it.
-			row.appendChild(el('a', {
+
+			// Stats (on-site, via the drawer) is the primary action now; the
+			// ESPN link stays as a secondary escape hatch for the official
+			// page's video/logos rather than being removed outright — see
+			// nflBoxscorePlayerLines' own comment on why kicking/defense
+			// still aren't covered here, which is exactly what that link is
+			// still good for.
+			const actions = el('div', { class: 'nfl-game-actions' });
+			const drawer = appendNflBoxscoreToggle(actions, game);
+			actions.appendChild(el('span', { class: 'nfl-game-actions-sep', 'aria-hidden': 'true', text: '·' }));
+			actions.appendChild(el('a', {
 				class: 'nfl-boxscore-link',
 				href: `https://www.espn.com/nfl/boxscore/_/gameid/${game.id}`,
 				target: '_blank',
 				rel: 'noopener',
-				text: 'Box score ↗',
+				text: 'ESPN ↗',
 			}));
-			return row;
+			row.appendChild(actions);
+
+			return [row, drawer];
 		}
 
 		function renderNflScoreCard(id, heading, games, emptyText) {
@@ -10340,7 +10607,11 @@
 			if (games.length === 0) {
 				body.appendChild(el('div', { class: 'team card-collapse-visible', text: emptyText }));
 			} else {
-				for (const game of games) body.appendChild(renderNflGameRow(game));
+				for (const game of games) {
+					const [pill, drawer] = renderNflGameRow(game);
+					body.appendChild(pill);
+					body.appendChild(drawer);
+				}
 			}
 			card.appendChild(body);
 			return card;
@@ -10408,16 +10679,26 @@
 		async function refreshNflScoreboard() {
 			if (!LIVE_SCORING_URL) return;
 			try {
-				const res = await fetch(`${LIVE_SCORING_URL}?gamesOnly=1&t=${Date.now()}`, { cache: 'no-store' });
+				// Omitted entirely when nobody has a stat drawer open, same
+				// idiom as refreshLiveScoring's own benchLeagues param — the
+				// common case is one shorter URL, not a query string with
+				// nothing in it.
+				const boxscoreIds = [...nflBoxscoreOpenGameIds()];
+				const boxscoreParam = boxscoreIds.length
+					? `&boxscoreGames=${encodeURIComponent(boxscoreIds.join(','))}`
+					: '';
+				const res = await fetch(`${LIVE_SCORING_URL}?gamesOnly=1&t=${Date.now()}${boxscoreParam}`, { cache: 'no-store' });
 				if (res.ok) {
 					const data = await res.json();
 					liveGames = data.games || {};
+					nflBoxscores = data.boxscores || {};
 					gameStatesAttempted = true;
 					rerenderNflCards();
 				}
 			} catch {
 				// degrade silently — same posture as refreshDigestGameStates:
-				// leave liveGames exactly as it was and let the next poll retry.
+				// leave liveGames/nflBoxscores exactly as they were and let
+				// the next poll retry.
 			} finally {
 				if (nflPollingEnabled) scheduleNflPoll();
 			}

@@ -1901,6 +1901,50 @@ export function addBoxscoreToStatIndex(boxscore, into = new Map()) {
   return into;
 }
 
+// A human box score has passing above rushing above receiving regardless of
+// what order ESPN's own statistics[] array happens to list them in — this
+// project has never confirmed that order is stable (the MFL join above
+// doesn't care, since it keys by category name), so display order is
+// decided here rather than trusted off the wire.
+const BOXSCORE_CATEGORY_ORDER = ['passing', 'rushing', 'receiving'];
+
+// Player-level box score lines for the NFL tab's own per-game drawer
+// (buildNflGamesList's cards in myffl.html) — a human-readable rendering of
+// the same raw boxscore addBoxscoreToStatIndex above reduces to MFL event
+// codes. Deliberately a separate function rather than a second consumer of
+// that one: this keeps ESPN's own column labels and values verbatim (a
+// passing line's "23/33" stays one string, never decomposed into
+// completions/attempts), where the MFL join needs the opposite — numeric
+// values it can price against a league's own scoring rules. Same
+// skill-position-offense scope as that join (passing/rushing/receiving
+// only — see ESPN_BOXSCORE_TO_MFL_EVENT's own comment for why kicking and
+// team defense are excluded), read off that exact same category allowlist
+// (its keys, not a second literal list) so the two can never scope-drift
+// apart. Only what a display needs crosses into the return value — never
+// the athlete ids/headshots/jersey numbers ESPN's response also carries.
+// Returns [] for a team with nothing in scope (e.g. a defense-only
+// showing so far), never a placeholder entry a caller would have to filter.
+export function nflBoxscorePlayerLines(boxscore) {
+  const categoryNames = new Set(Object.keys(ESPN_BOXSCORE_TO_MFL_EVENT));
+  const teams = [];
+  for (const team of boxscore?.players || []) {
+    const byName = new Map();
+    for (const category of team.statistics || []) {
+      if (!categoryNames.has(category.name)) continue;
+      const athletes = (category.athletes || [])
+        .map((a) => ({ name: a.athlete?.displayName || null, stats: a.stats || [] }))
+        .filter((a) => a.name);
+      if (athletes.length > 0) byName.set(category.name, { labels: category.labels || [], athletes });
+    }
+    if (byName.size === 0) continue;
+    const categories = BOXSCORE_CATEGORY_ORDER
+      .filter((name) => byName.has(name))
+      .map((name) => ({ name, ...byName.get(name) }));
+    teams.push({ team: team.team?.abbreviation || null, categories });
+  }
+  return teams;
+}
+
 // Projects the games map down to what the win-probability model consumes:
 // team abbreviation -> seconds left in that team's game. Pure, so a caller
 // that already has the games map (api/live-scoring.js does) pays one request

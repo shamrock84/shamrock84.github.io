@@ -25,6 +25,7 @@ import {
   currentNflWeek,
   fetchEspnBoxscore,
   addBoxscoreToStatIndex,
+  nflBoxscorePlayerLines,
   fetchMflSkillPositionRates,
   fetchMflLeagueRosterIds,
   fetchMflWeekPlayerScores,
@@ -367,7 +368,51 @@ export default async function handler(req, res) {
     } catch {
       // degrade silently — an empty map just leaves the digest's gate as it was.
     }
-    res.status(200).json({ generatedAt: new Date().toISOString(), games: Object.fromEntries(nflGames) });
+
+    // The NFL tab's own per-game stat drawer (nflBoxscorePlayerLines, and
+    // renderNflGameRow's own drawer in myffl.html) — gated to games a
+    // drawer is actually open for, same reasoning as benchLeagues further
+    // down: fetching every game's full boxscore on every poll whether or
+    // not anyone had a drawer open would be pure waste. Shares the exact
+    // same getEspnBoxscore cache the MFL stat-breakdown path below uses
+    // (keyed by event id, cached hard once a game reads 'post'), so a game
+    // already fetched there this warm instance costs nothing here either,
+    // and vice versa.
+    const boxscoreGameIds = String(req.query.boxscoreGames || '')
+      .split(',')
+      .map((id) => id.trim())
+      .filter(Boolean);
+    const boxscores = {};
+    if (boxscoreGameIds.length) {
+      const stateById = new Map();
+      for (const g of nflGames.values()) {
+        if (g.id) stateById.set(g.id, g.state);
+      }
+      await Promise.all(
+        boxscoreGameIds.map(async (id) => {
+          // A game that hasn't kicked off (or one this poll's scoreboard
+          // read doesn't recognize at all) has no boxscore to fetch yet —
+          // asking ESPN anyway would only ever come back empty. The drawer
+          // renders its own "hasn't started" message for this case without
+          // needing an entry here at all.
+          const state = stateById.get(id);
+          if (state !== 'in' && state !== 'post') return;
+          try {
+            const boxscore = await getEspnBoxscore(id, state === 'post');
+            boxscores[id] = nflBoxscorePlayerLines(boxscore);
+          } catch {
+            // degrade silently — that one game's drawer says so instead of
+            // costing anything else on this poll.
+          }
+        })
+      );
+    }
+
+    res.status(200).json({
+      generatedAt: new Date().toISOString(),
+      games: Object.fromEntries(nflGames),
+      boxscores,
+    });
     return;
   }
 
