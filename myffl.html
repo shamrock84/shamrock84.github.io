@@ -6344,9 +6344,8 @@
 				teamLine.appendChild(document.createTextNode(league.teamName));
 				const record = recordDetails(league, league.franchiseId);
 				if (record) {
-					teamLine.appendChild(document.createTextNode(' ('));
-					teamLine.appendChild(el('span', { class: record.cls, text: record.text }));
-					teamLine.appendChild(document.createTextNode(')'));
+					teamLine.appendChild(document.createTextNode(' '));
+					teamLine.appendChild(el('span', { class: record.cls, text: `(${record.text})` }));
 				}
 			}
 			card.appendChild(teamLine);
