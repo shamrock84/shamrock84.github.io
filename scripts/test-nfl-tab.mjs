@@ -368,6 +368,25 @@ function fireClick(node) {
 	(node.listeners.click || []).forEach((fn) => fn());
 }
 
+// The drawer lives INSIDE the same pill — a second, floating box below it
+// (rather than the same bordered card growing to hold it) was rejected on
+// sight, so this is the one assertion that actually pins the requested
+// layout: renderNflGameRow returns ONE element, and everything the toggle
+// controls is a descendant of it, not a sibling.
+{
+	const ctx = makeDrawerContext();
+	const game = { id: 'g0', state: 'pre', kickoff: '2026-09-14T17:00:00Z', away: { team: 'DAL', score: 0 }, home: { team: 'PHI', score: 0 } };
+	const pill = ctx.renderNflGameRow(game);
+	assert.ok(!Array.isArray(pill), 'renderNflGameRow returns the one bordered card, not a [pill, drawer] pair');
+	const toggle = findAll(pill, hasClass('nfl-boxscore-toggle'))[0];
+	const drawer = findAll(pill, hasClass('nfl-boxscore-body'))[0];
+	assert.ok(drawer, 'the drawer body is a descendant of the pill');
+	assert.ok(!pill.cls.includes('nfl-boxscore-open'), 'closed by default, so the pill has not grown yet');
+	fireClick(toggle);
+	assert.ok(pill.cls.includes('nfl-boxscore-open'), 'opening claims the full row for this SAME card (see .nfl-boxscore-open\'s own CSS comment)');
+	assert.equal(drawer.hidden, false, 'opens on click');
+}
+
 // A pre-kickoff game's drawer says so without ever needing nflBoxscores at
 // all — api/live-scoring.js never fetches one for a game that hasn't
 // started (nothing to fetch yet), and the drawer must say why rather than
@@ -375,8 +394,9 @@ function fireClick(node) {
 {
 	const ctx = makeDrawerContext();
 	const game = { id: 'g1', state: 'pre', kickoff: '2026-09-14T17:00:00Z', away: { team: 'DAL', score: 0 }, home: { team: 'PHI', score: 0 } };
-	const [pill, drawer] = ctx.renderNflGameRow(game);
+	const pill = ctx.renderNflGameRow(game);
 	const toggle = findAll(pill, hasClass('nfl-boxscore-toggle'))[0];
+	const drawer = findAll(pill, hasClass('nfl-boxscore-body'))[0];
 	assert.equal(drawer.hidden, true, 'closed by default');
 	fireClick(toggle);
 	assert.equal(drawer.hidden, false, 'opens on click');
@@ -390,9 +410,9 @@ function fireClick(node) {
 {
 	const ctx = makeDrawerContext();
 	const game = { id: 'g2', state: 'in', kickoff: '2026-09-14T17:00:00Z', away: { team: 'BUF', score: 10 }, home: { team: 'MIA', score: 7 } };
-	const [pill, drawer] = ctx.renderNflGameRow(game);
+	const pill = ctx.renderNflGameRow(game);
 	fireClick(findAll(pill, hasClass('nfl-boxscore-toggle'))[0]);
-	assert.equal(findAll(drawer, hasClass('nfl-boxscore-empty'))[0]._text, 'Loading box score…');
+	assert.equal(findAll(pill, hasClass('nfl-boxscore-empty'))[0]._text, 'Loading box score…');
 }
 
 // A live game with a boxscore in hand but nothing recorded in scope yet
@@ -403,9 +423,9 @@ function fireClick(node) {
 	ctx.__teams = [];
 	vm.runInContext('nflBoxscores = { g3: __teams };', ctx);
 	const game = { id: 'g3', state: 'in', kickoff: '2026-09-14T17:00:00Z', away: { team: 'BUF', score: 0 }, home: { team: 'MIA', score: 0 } };
-	const [pill, drawer] = ctx.renderNflGameRow(game);
+	const pill = ctx.renderNflGameRow(game);
 	fireClick(findAll(pill, hasClass('nfl-boxscore-toggle'))[0]);
-	assert.equal(findAll(drawer, hasClass('nfl-boxscore-empty'))[0]._text, 'No stats recorded yet.');
+	assert.equal(findAll(pill, hasClass('nfl-boxscore-empty'))[0]._text, 'No stats recorded yet.');
 }
 
 // The real case: a populated boxscore renders one table per category,
@@ -419,35 +439,39 @@ function fireClick(node) {
 	];
 	vm.runInContext('nflBoxscores = { g4: __teams };', ctx);
 	const game = { id: 'g4', state: 'in', kickoff: '2026-09-14T17:00:00Z', away: { team: 'BUF', score: 14 }, home: { team: 'MIA', score: 7 } };
-	const [pill, drawer] = ctx.renderNflGameRow(game);
+	const pill = ctx.renderNflGameRow(game);
 	fireClick(findAll(pill, hasClass('nfl-boxscore-toggle'))[0]);
 
-	assert.equal(findAll(drawer, hasClass('nfl-boxscore-team-head'))[0]._text, 'BUF');
-	assert.equal(findAll(drawer, hasClass('nfl-boxscore-category-label'))[0]._text, 'Passing', 'the section heading is human-worded, not the raw category name');
-	const headerCells = findAll(drawer, (n) => n.tag === 'th').map((n) => n._text);
+	assert.equal(findAll(pill, hasClass('nfl-boxscore-team-head'))[0]._text, 'BUF');
+	assert.equal(findAll(pill, hasClass('nfl-boxscore-category-label'))[0]._text, 'Passing', 'the section heading is human-worded, not the raw category name');
+	const headerCells = findAll(pill, (n) => n.tag === 'th').map((n) => n._text);
 	assert.deepEqual(headerCells, ['Player', 'C/ATT', 'YDS', 'TD']);
-	const dataCells = findAll(drawer, (n) => n.tag === 'td').map((n) => n._text);
+	const dataCells = findAll(pill, (n) => n.tag === 'td').map((n) => n._text);
 	assert.deepEqual(dataCells, ['Josh Allen', '20/28', '245', '2']);
 }
 
 // Toggling closed and back open again re-derives from the same nflBoxscores
 // rather than getting stuck on whatever the first open showed — there is no
 // `filled`-style guard here (see appendNflBoxscoreToggle's own comment), so
-// this pins that the re-fill actually happens.
+// this pins that the re-fill actually happens. Also pins that closing
+// shrinks the pill back down rather than leaving it stuck full-width.
 {
 	const ctx = makeDrawerContext();
 	ctx.__teams = [{ team: 'BUF', categories: [{ name: 'passing', labels: ['YDS'], athletes: [{ name: 'Josh Allen', stats: ['245'] }] }] }];
 	vm.runInContext('nflBoxscores = { g5: __teams };', ctx);
 	const game = { id: 'g5', state: 'in', kickoff: '2026-09-14T17:00:00Z', away: { team: 'BUF', score: 14 }, home: { team: 'MIA', score: 7 } };
-	const [pill, drawer] = ctx.renderNflGameRow(game);
+	const pill = ctx.renderNflGameRow(game);
 	const toggle = findAll(pill, hasClass('nfl-boxscore-toggle'))[0];
+	const drawer = findAll(pill, hasClass('nfl-boxscore-body'))[0];
 	fireClick(toggle); // open
 	fireClick(toggle); // close
 	assert.equal(drawer.hidden, true);
 	assert.equal(toggle.attrs['aria-expanded'], 'false');
+	assert.ok(!pill.cls.includes('nfl-boxscore-open'), 'closing shrinks the card back down');
 	fireClick(toggle); // open again
 	assert.equal(drawer.hidden, false);
-	assert.equal(findAll(drawer, hasClass('nfl-boxscore-team-head'))[0]._text, 'BUF', 'still renders correctly the second time open');
+	assert.ok(pill.cls.includes('nfl-boxscore-open'));
+	assert.equal(findAll(pill, hasClass('nfl-boxscore-team-head'))[0]._text, 'BUF', 'still renders correctly the second time open');
 }
 
 console.log('test-nfl-tab.mjs OK');

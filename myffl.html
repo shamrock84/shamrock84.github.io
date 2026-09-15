@@ -1939,19 +1939,22 @@
 		.nfl-boxscore-toggle[aria-expanded="true"] .nfl-boxscore-chevron {
 			transform: rotate(180deg);
 		}
-		/* The stat drawer is a SIBLING of its pill in .nfl-scoreboard, not a
-		   child — a multi-column stat table has no room in a ~150-200px
-		   pill. flex: 1 0 100% claims a full row of its own in the
-		   flex-wrapped scoreboard regardless of how many pills came before
-		   it on the current row, which is what actually pushes it onto its
-		   own line under the pill it belongs to. Deliberately no `display`
-		   of its own: the native `hidden` attribute's default `display:none`
-		   would lose a fight with any author rule of equal specificity that
-		   set one here, and a flex item's outer box still honors flex-basis
-		   regardless of its own inner display type — the two-team layout
-		   below gets its own flex context instead. */
-		.nfl-boxscore-body {
+		/* Opening a game's stats grows THAT pill to fill its own row — the
+		   drawer content lives inside the SAME bordered card, never a
+		   separate block hanging below it. This is what was actually asked
+		   for: the Scoring tab's own matchup pill doesn't sprout a floating
+		   second box either, it just gets taller, because that pill is
+		   already full-width so there was nothing to solve there. Ours
+		   isn't (see .nfl-game-row's own ~135px flex-basis), so the open
+		   state has to do explicitly what full width gave that one for
+		   free: 1 0 100% claims a full row of its own in the flex-wrapped
+		   scoreboard regardless of how many pills came before it on the
+		   current line, pushing everything after it onto a fresh line
+		   rather than leaving a gap. */
+		.nfl-game-row.nfl-boxscore-open {
 			flex: 1 0 100%;
+		}
+		.nfl-boxscore-body {
 			border-top: 1px solid var(--border);
 			padding: 0.6rem 0.2rem 0.1rem;
 		}
@@ -10531,13 +10534,14 @@
 
 		// Appends the toggle directly onto `pill` — a full-width "Show
 		// detail"/"Hide detail" strip, same look, same copy, same
-		// interaction as the Scoring tab's own appendMatchupDetail (this is
-		// exactly what was asked for: the same drawer UX, not a lookalike).
-		// Returns the drawer body, a SIBLING of the pill in the caller
-		// (renderNflGameRow), not a child of it — a multi-column stat table
-		// needs real width the pill itself can't offer at ~150-200px (see
-		// .nfl-boxscore-body's own CSS comment for how it claims a full row
-		// of its own inside the flex-wrapped scoreboard).
+		// interaction as the Scoring tab's own appendMatchupDetail — and,
+		// like that one, appended straight into the pill itself, which is
+		// what keeps the drawer inside the SAME bordered card rather than a
+		// second box hanging below it. `pill` also picks up
+		// .nfl-boxscore-open while expanded, which is what actually makes
+		// that card grow to fill its own row (see the class's own CSS
+		// comment) — the Scoring tab's own pill never needed an equivalent
+		// class because it's already full width before any drawer opens.
 		function appendNflBoxscoreToggle(pill, game) {
 			const key = game.id;
 			const open = isNflBoxscoreOpen(key);
@@ -10549,6 +10553,7 @@
 			toggle.appendChild(chevron);
 			toggle.appendChild(label);
 
+			pill.classList.toggle('nfl-boxscore-open', open);
 			body.hidden = !open;
 			if (open) fillNflBoxscoreBody(body, game);
 
@@ -10556,6 +10561,7 @@
 				const next = body.hidden;
 				setNflBoxscoreOpen(key, next);
 				if (next) fillNflBoxscoreBody(body, game);
+				pill.classList.toggle('nfl-boxscore-open', next);
 				body.hidden = !next;
 				toggle.setAttribute('aria-expanded', String(next));
 				label.textContent = next ? 'Hide detail' : 'Show detail';
@@ -10571,13 +10577,9 @@
 			});
 
 			pill.appendChild(toggle);
-			return body;
+			pill.appendChild(body);
 		}
 
-		// Builds the pill and its stat drawer as a PAIR — renderNflScoreCard
-		// appends both, in that order, straight into the flex-wrapped
-		// .nfl-scoreboard rather than nesting the drawer inside the narrow
-		// pill.
 		function renderNflGameRow(game) {
 			const showScore = game.state !== 'pre' && game.away.score != null && game.home.score != null;
 			const row = el('div', { class: `nfl-game-row${game.state === 'in' ? ' nfl-game-live' : ''}` });
@@ -10602,9 +10604,9 @@
 				rel: 'noopener',
 				text: 'ESPN ↗',
 			}));
-			const drawer = appendNflBoxscoreToggle(row, game);
+			appendNflBoxscoreToggle(row, game);
 
-			return [row, drawer];
+			return row;
 		}
 
 		function renderNflScoreCard(id, heading, games, emptyText) {
@@ -10616,11 +10618,7 @@
 			if (games.length === 0) {
 				body.appendChild(el('div', { class: 'team card-collapse-visible', text: emptyText }));
 			} else {
-				for (const game of games) {
-					const [pill, drawer] = renderNflGameRow(game);
-					body.appendChild(pill);
-					body.appendChild(drawer);
-				}
+				for (const game of games) body.appendChild(renderNflGameRow(game));
 			}
 			card.appendChild(body);
 			return card;
