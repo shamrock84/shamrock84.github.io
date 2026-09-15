@@ -12316,7 +12316,15 @@
 
 				liveScoringAttempted = true;
 				rerenderScoringCards();
-				setLiveStatus(`Live updates on — last refreshed ${timeAgo(live.generatedAt)}`, false);
+				// The reload warning rides along with the freshness text
+				// rather than replacing it — a manager watching this line
+				// stall at the same "X ago" would otherwise have no way to
+				// tell a dead poll from a live one, and reloading the page
+				// is exactly the wrong response to either: it re-fetches
+				// the full data/rosters.json snapshot for nothing (the poll
+				// already keeps live.js current) and, on a phone, is the
+				// instinct this line exists to head off.
+				setLiveStatus(`Live updates on — last refreshed ${timeAgo(live.generatedAt)}. No need to manually refresh.`, false);
 			} catch (err) {
 				console.warn(`Live scoring refresh failed: ${err.message}`);
 				liveScoringAttempted = true;
