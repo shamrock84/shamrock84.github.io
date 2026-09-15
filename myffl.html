@@ -4327,6 +4327,28 @@
 		// data rather than leaving them stuck.
 		let liveScoringAttempted = false;
 		let syncPollTimer = null;
+		// The `generatedAt` from the last SUCCESSFUL poll — kept separately
+		// from liveScoringAttempted because the live-status line needs to
+		// keep counting "X min ago" up between polls, not just at the
+		// instant one lands. Left stale (not cleared) by a failure, same as
+		// the "leave already-real cards alone" rule refreshLiveScoring's own
+		// comment describes for the cards themselves.
+		let lastLiveGeneratedAt = null;
+		// A ticking setInterval, separate from liveScoringTimer's own
+		// setTimeout chain (see that variable's comment on why polling
+		// itself isn't on a fixed interval) — this one only repaints the
+		// live-status text from lastLiveGeneratedAt, no network involved.
+		// It exists because LIVE_SCORING_IDLE_POLL_MS stretches the gap
+		// between polls to 30 minutes: without a separate clock, the status
+		// line would freeze at whatever it said the moment the last poll
+		// landed (usually "just now", since a poll's own generatedAt is
+		// fresh) and silently lie for the next 29 minutes. Cleared whenever
+		// a poll fails (see refreshLiveScoring) so it can't overwrite the
+		// failure text with a stale "Live updates on" a tick later, and
+		// whenever polling stops (stopLiveScoringPolling) so it isn't
+		// repainting a hidden or backgrounded tab for nothing.
+		let liveStatusTickTimer = null;
+		const LIVE_STATUS_TICK_MS = 15000;
 
 		// Live-scoring proxy (Vercel), separate from the 4-hour GitHub Actions
 		// sync — polled only while the Scoring tab is open. Filled in once
@@ -12303,6 +12325,16 @@
 			liveScoringTimer = setTimeout(refreshLiveScoring, nextLiveScoringDelayMs());
 		}
 
+		// Repaints the live-status line from lastLiveGeneratedAt — shared by
+		// refreshLiveScoring's success branch (first paint, right after a
+		// poll lands) and liveStatusTickTimer (every LIVE_STATUS_TICK_MS
+		// after), so "last refreshed X ago" keeps counting up between polls
+		// instead of freezing at whatever it said the moment the last one
+		// completed.
+		function renderLiveStatusFreshness() {
+			setLiveStatus(`Live updates on — last refreshed ${timeAgo(lastLiveGeneratedAt)}`, false, 'No need to manually refresh');
+		}
+
 		async function refreshLiveScoring() {
 			if (!LIVE_SCORING_URL || !pageData) return;
 			// Captured before this attempt touches the flag — only the FIRST
@@ -12341,6 +12373,7 @@
 
 				liveScoringAttempted = true;
 				rerenderScoringCards();
+				lastLiveGeneratedAt = live.generatedAt;
 				// The reload warning rides along with the freshness text as
 				// its own em-dash segment rather than replacing it — a
 				// manager watching this line stall at the same "X ago"
@@ -12350,7 +12383,21 @@
 				// data/rosters.json snapshot for nothing (the poll already
 				// keeps live scoring current) and, on a phone, is the
 				// instinct this line exists to head off.
-				setLiveStatus(`Live updates on — last refreshed ${timeAgo(live.generatedAt)}`, false, 'No need to manually refresh');
+				renderLiveStatusFreshness();
+				// Started here rather than alongside liveScoringTimer in
+				// scheduleLiveScoringPoll — this ticks the DISPLAY, not the
+				// network, on its own fixed cadence regardless of how far
+				// apart the actual polls are (LIVE_SCORING_IDLE_POLL_MS can
+				// be 30 minutes). Guarded on liveScoringPollingEnabled, same
+				// as the reschedule below, so a one-off refreshLiveScoring
+				// call outside the regular chain (a test driving this
+				// function directly with polling never started) doesn't
+				// leave a ticker running with nothing to ever stop it; and
+				// guarded on the timer itself so a later poll doesn't stack
+				// a second ticker on top of the one already running.
+				if (liveScoringPollingEnabled && !liveStatusTickTimer) {
+					liveStatusTickTimer = setInterval(renderLiveStatusFreshness, LIVE_STATUS_TICK_MS);
+				}
 			} catch (err) {
 				console.warn(`Live scoring refresh failed: ${err.message}`);
 				liveScoringAttempted = true;
@@ -12358,6 +12405,14 @@
 				// sync's own data rather than leaving them stuck forever — a
 				// later failure, by contrast, leaves already-real cards alone.
 				if (wasFirstAttempt) rerenderScoringCards();
+				// Stopped, not left running: a tick landing after this would
+				// silently overwrite "Live update failed" with the stale
+				// "Live updates on" freshness text a moment later. The next
+				// successful poll starts it again.
+				if (liveStatusTickTimer) {
+					clearInterval(liveStatusTickTimer);
+					liveStatusTickTimer = null;
+				}
 				setLiveStatus(`Live update failed: ${err.message}`, true);
 			} finally {
 				// Covers both branches above identically, and also the ad-hoc
@@ -12385,6 +12440,15 @@
 			if (liveScoringTimer) {
 				clearTimeout(liveScoringTimer);
 				liveScoringTimer = null;
+			}
+			// Same reasoning as liveScoringTimer above, for the display-only
+			// ticker — no point repainting "X min ago" on a status line
+			// that's hidden (this tab left Scoring) or backgrounded, and
+			// startLiveScoringPolling's own refreshLiveScoring call starts a
+			// fresh one the moment a poll actually lands again.
+			if (liveStatusTickTimer) {
+				clearInterval(liveStatusTickTimer);
+				liveStatusTickTimer = null;
 			}
 		}
 
