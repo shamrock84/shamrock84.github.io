@@ -934,6 +934,67 @@ function leagueWithMatchup() {
 	assert.ok(!capturedUrl.includes('benchLeagues'), `expected no benchLeagues param when nothing is open, got ${capturedUrl}`);
 }
 
+// --- Live-status ticking ---
+// LIVE_SCORING_IDLE_POLL_MS can now be 30 minutes (see its own comment) —
+// without a display-only clock independent of the poll itself, "last
+// refreshed X ago" would freeze at whatever it said the instant the last
+// poll landed (almost always "just now") and silently lie for the next 29
+// minutes. renderLiveStatusFreshness is what repaints it from
+// lastLiveGeneratedAt, on liveStatusTickTimer's own interval.
+{
+	const ctx = makeContext();
+	// The shared domNode()/getElementById() stub hands back a fresh blank
+	// node on every call, by id or not — fine for tests that only care
+	// what one call built, useless for one that needs to read the SAME
+	// node back after a later, separate repaint. Overriding just the
+	// 'live-status' id here (not the shared helper, which every other test
+	// in this file still relies on returning a fresh node) is what makes
+	// that observable.
+	const statusNode = domNode();
+	const realGetById = ctx.document.getElementById;
+	ctx.document.getElementById = (id) => (id === 'live-status' ? statusNode : realGetById(id));
+
+	ctx.liveScoringAttempted = true;
+	ctx.fetch = async () => ({ ok: true, json: async () => ({ generatedAt: new Date().toISOString(), games: {}, leagues: [] }) });
+	ctx.__testPageData = { leagues: [] };
+	vm.runInContext('pageData = __testPageData;', ctx);
+	// Mirrors what startLiveScoringPolling sets before its own
+	// refreshLiveScoring call — a direct refreshLiveScoring() call with
+	// polling never started (exactly what the benchLeagues tests above do)
+	// must NOT start a ticker; see the second case below.
+	vm.runInContext('liveScoringPollingEnabled = true;', ctx);
+
+	await ctx.refreshLiveScoring();
+	assert.match(fullText(statusNode), /Live updates on — last refreshed just now — No need to manually refresh/, 'em-dash-joined, no periods, freshly landed');
+	assert.equal(vm.runInContext('!!liveStatusTickTimer', ctx), true, 'the ticker starts once polling is actually enabled');
+
+	// The clock moves on with no new poll landing — the ticker repaints
+	// from the SAME lastLiveGeneratedAt the poll set, not a string frozen
+	// at poll time.
+	vm.runInContext('lastLiveGeneratedAt = new Date(Date.now() - 5 * 60000).toISOString();', ctx);
+	vm.runInContext('renderLiveStatusFreshness();', ctx);
+	assert.match(fullText(statusNode), /last refreshed 5 min ago/, 'a tick repaints from the stored timestamp instead of staying "just now"');
+
+	vm.runInContext('stopLiveScoringPolling();', ctx);
+	assert.equal(vm.runInContext('!!liveStatusTickTimer', ctx), false, 'leaving/backgrounding the Scoring tab clears the ticker');
+}
+
+// A one-off refreshLiveScoring() call outside the regular polling chain —
+// exactly what the benchLeagues tests above do, and exactly the shape a
+// real setInterval left running would have hung this very test file on
+// (Node has nothing else keeping the process open once the script body
+// finishes) — must never start a ticker nobody will ever stop.
+{
+	const ctx = makeContext();
+	ctx.liveScoringAttempted = true;
+	ctx.fetch = async () => ({ ok: true, json: async () => ({ generatedAt: new Date().toISOString(), games: {}, leagues: [] }) });
+	ctx.__testPageData = { leagues: [] };
+	vm.runInContext('pageData = __testPageData;', ctx);
+
+	await ctx.refreshLiveScoring();
+	assert.equal(vm.runInContext('!!liveStatusTickTimer', ctx), false, 'no ticker when polling was never started');
+}
+
 // --- nextLiveScoringDelayMs: fast while something's live, the slow
 // fallback otherwise (nearly all of a week, since games are live only a
 // handful of hours) — pins the actual threshold, not just "some number",
