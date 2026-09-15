@@ -499,15 +499,28 @@
 		.grid[data-view="scoring"] {
 			grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
 		}
-		/* A team card holds up to four position mini-tables side by side —
-		   wider than the 440px default floor needs to go, or every card would
-		   wrap down to one column on anything short of a very wide desktop.
-		   The mini-tables themselves flex-wrap inside the card (see
+		/* Depth Charts used to be its own top-level tab, its 32 team cards
+		   sized via the grid's own auto-fill column. They're nested inside
+		   one full-width "Depth Charts" wrapper card now (see
+		   renderDepthChartCards) — the wrapper is the grid item, not the team
+		   cards inside it — so what the grid-column floor used to do for
+		   them moves here, onto their own flex-basis within .depth-chart-teams,
+		   the wrapper's own flex-wrap container. A team card holds up to four
+		   position mini-tables side by side — wider than the 440px default
+		   grid floor needs to go, or every team card would wrap down to one
+		   column on anything short of a very wide desktop. The mini-tables
+		   themselves flex-wrap inside the team card (see
 		   .depth-chart-positions), which is what actually handles narrower
-		   viewports — this floor is about giving the wrap somewhere to start
-		   from at two-or-more-per-row rather than one. */
-		.grid[data-view="depthcharts"] {
-			grid-template-columns: repeat(auto-fill, minmax(min(640px, 100%), 1fr));
+		   viewports — this floor is about giving that inner wrap somewhere to
+		   start from at two-or-more-per-row rather than one. */
+		.depth-chart-teams {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 1rem;
+		}
+		.depth-chart-team-card {
+			flex: 1 1 min(640px, 100%);
+			min-width: 0;
 		}
 		.depth-chart-positions {
 			display: flex;
@@ -3463,14 +3476,17 @@
 		// logged in — renderGrid simply doesn't build the cards otherwise, and
 		// the tab list is derived from the cards that exist, so logging out
 		// removes the tab with no extra work.
-		// depthcharts and nfl are deliberately ungated (see renderGrid) — both
-		// tabs show even logged out, unlike analytics/history/admin, which is
-		// why they're listed here with those but built outside the
-		// isLoggedIn() blocks. Neither is fantasy data (roster, ranking,
-		// finance, lineup) — real NFL games and real NFL depth charts are
-		// generic sports information, same category as a public scores site.
-		const VIEW_LABELS = { rosters: 'Rosters', scoring: 'Scores', standings: 'Standings', analytics: 'Analytics', nfl: 'NFL', depthcharts: 'Depth Charts', history: 'History', admin: 'Admin' };
-		const VIEW_ORDER = ['rosters', 'scoring', 'standings', 'analytics', 'nfl', 'depthcharts', 'history', 'admin'];
+		// nfl is deliberately ungated (see renderGrid) — it shows even logged
+		// out, unlike analytics/history/admin, which is why it's listed here
+		// with those but built outside the isLoggedIn() blocks. It isn't
+		// fantasy data (roster, ranking, finance, lineup) — real NFL games and
+		// real NFL depth charts are generic sports information, same category
+		// as a public scores site. Depth Charts used to be its own ungated tab
+		// here for the same reason; it no longer needs a tab of its own now
+		// that NFL exists, so its 32 team cards render as one collapsible
+		// section inside the NFL view instead — see renderDepthChartCards.
+		const VIEW_LABELS = { rosters: 'Rosters', scoring: 'Scores', standings: 'Standings', analytics: 'Analytics', nfl: 'NFL', history: 'History', admin: 'Admin' };
+		const VIEW_ORDER = ['rosters', 'scoring', 'standings', 'analytics', 'nfl', 'history', 'admin'];
 		// Per-league type — still what individual Rosters cards badge
 		// themselves with (a Salary Cap league's card says "Salary", not
 		// "Dynasty/Salary Cap"), just no longer what any sub-tab is named
@@ -3571,15 +3587,19 @@
 		// separately.
 		const TOP_AVAILABLE_LABEL_OVERRIDES = { dynasty: 'Dynasty/Salary Cap' };
 
-		// The Depth Charts view's sub-tab strip reuses this exact same
-		// mechanism, repurposed for NFL divisions instead of league types —
-		// renderSubTabs only ever asks "what distinct data-league-type values
-		// are on the cards in the current view", so a card's data-league-type
-		// can just as well hold a division key as a league type, and the two
-		// never collide because a division key never appears on a Rosters/
-		// Analytics/etc. card and vice versa. Real, stable NFL alignment
-		// (unchanged since the 2002 realignment); not sourced from ESPN's API,
-		// since nothing this project has probed has needed it.
+		// The NFL view's sub-tab strip reuses this exact same mechanism,
+		// repurposed for NFL divisions instead of league types — renderSubTabs
+		// only ever asks "what distinct data-league-type values are on the
+		// cards in the current view", so a card's data-league-type can just as
+		// well hold a division key as a league type, and the two never
+		// collide because a division key never appears on a Rosters/
+		// Analytics/etc. card and vice versa. It only ever shows up on the
+		// Depth Charts section's own team cards (see renderDepthChartCards),
+		// nested inside the NFL view's single Depth Charts wrapper card — Now
+		// Playing and Matchups carry no data-league-type at all, so they're
+		// never touched by this filter. Real, stable NFL alignment (unchanged
+		// since the 2002 realignment); not sourced from ESPN's API, since
+		// nothing this project has probed has needed it.
 		const DEPTH_CHART_DIVISIONS = {
 			BUF: 'afc-east', MIA: 'afc-east', NE: 'afc-east', NYJ: 'afc-east',
 			BAL: 'afc-north', CIN: 'afc-north', CLE: 'afc-north', PIT: 'afc-north',
@@ -10213,7 +10233,7 @@
 			return card;
 		}
 
-		// ---- Depth Charts tab -----------------------------------------------
+		// ---- Depth Charts (a section of the NFL tab) -------------------------
 		// Ungated, unlike every card above — see renderGrid, where these cards
 		// are built outside the isLoggedIn() blocks. The "Own In" column does
 		// read your own roster data, the same category of data Analytics is
@@ -10225,6 +10245,22 @@
 		// comment above on that same point). If a future card here reads
 		// finance or planning data, gate it; ownership counts alone don't
 		// earn the gate on their own.
+		//
+		// Used to be its own top-level tab; it no longer needs one now that
+		// the NFL tab exists (see VIEW_LABELS' own comment) — renderGrid
+		// nests all 32 team cards inside one collapsible "Depth Charts"
+		// wrapper card (renderDepthChartCards, below), placed after the Now
+		// Playing and Matchups cards. The functions below still build each
+		// team's own card exactly as before (same data-view="nfl" a plain
+		// NFL card carries, same data-league-type division, same
+		// data-team-name) — only renderDepthChartCards' own shape changed,
+		// so search and the division sub-tab strip still work against the
+		// individual team cards with no change to updateVisibility's
+		// existing depth-chart branch. See updateVisibility's own comment on
+		// the wrapper for the one piece that did need a change: deciding the
+		// WRAPPER's visibility from its nested team cards' own outcomes,
+		// since a card nested inside another card would otherwise be
+		// double-processed by the generic per-card loop.
 		//
 		// One card per NFL team (32 total), grouped into division sub-tabs via
 		// DEPTH_CHART_DIVISIONS — see that constant's own comment for how it
@@ -10434,7 +10470,14 @@
 			if (Object.keys(positions).length === 0) return null;
 
 			const division = DEPTH_CHART_DIVISIONS[abbr] || null;
-			const card = el('div', { class: 'card', 'data-view': 'depthcharts' });
+			// depth-chart-team-card is the flex-basis sizing hook for nesting
+			// inside the "Depth Charts" wrapper card's own flex-wrap (see
+			// .depth-chart-teams' own CSS comment) — everything else about
+			// this card (the plain `card` class, data-view) stays the same as
+			// any other NFL-tab card, which is what lets the existing sub-tab
+			// and search machinery treat this team card no differently than
+			// it did back when it was a top-level grid card.
+			const card = el('div', { class: 'card depth-chart-team-card', 'data-view': 'nfl' });
 			if (division) card.dataset.leagueType = division;
 			const teamLabel = team.name || abbr;
 			// Read back in updateVisibility() so a search for the team itself
@@ -10457,18 +10500,42 @@
 			return card;
 		}
 
-		// Every team card for the tab — called unconditionally from renderGrid,
-		// no isLoggedIn() gate. Absent data.depthCharts (a snapshot from
-		// before this existed, or a sync that never got a clean run) renders
-		// nothing rather than an empty tab full of blank cards.
+		// Every team card, nested inside one collapsible "Depth Charts" wrapper
+		// card rather than appended to the grid directly as 32 top-level cards
+		// — see this section's own intro comment above. Called unconditionally
+		// from renderGrid, no isLoggedIn() gate. Absent data.depthCharts (a
+		// snapshot from before this existed, or a sync that never got a clean
+		// run) appends nothing at all, rather than an empty wrapper with a
+		// heading and no teams.
 		function renderDepthChartCards(gridEl, data) {
 			if (!data.depthCharts?.teams) return;
 			const ecrPools = buildDepthChartEcrPools(data.rankingPools, data.depthChartEcrType);
 			const ownership = buildDepthChartOwnership(data.leagues);
+			const teamsWrap = el('div', { class: 'depth-chart-teams' });
 			for (const [abbr, team] of Object.entries(data.depthCharts.teams)) {
 				const card = renderDepthChartTeamCard(abbr, team, ecrPools, ownership);
-				if (card) gridEl.appendChild(card);
+				if (card) teamsWrap.appendChild(card);
 			}
+			if (teamsWrap.children.length === 0) return;
+
+			// The wrapper carries data-view="nfl" so presentViews (renderGrid)
+			// and rerenderNflCards' own removal query still find it, but it is
+			// NEVER matched by updateVisibility's generic per-card branches —
+			// see data-depth-charts-wrap's own comment there. Nesting a `.card`
+			// (32 of them) inside another `.card` would otherwise double-process
+			// every team card: the wrapper has no data-team-name of its own, so
+			// a search for a team by name (rather than a player on it) would
+			// find no match at the wrapper level and hide the whole section even
+			// though a nested team card matched. The wrapper's own visibility is
+			// decided after that loop instead, from whether any team card inside
+			// it ended up visible.
+			const wrap = el('div', { class: 'card nfl-card', 'data-view': 'nfl' });
+			wrap.dataset.depthChartsWrap = 'true';
+			const heading = el('h2', { class: 'card-heading', text: 'Depth Charts' });
+			wrap.appendChild(heading);
+			makeCollapsible(wrap, heading, 'nfl-depth-charts');
+			wrap.appendChild(teamsWrap);
+			gridEl.appendChild(wrap);
 		}
 
 		// ---- NFL tab ---------------------------------------------------------
@@ -10823,7 +10890,12 @@
 
 		function rerenderNflCards() {
 			const gridEl = document.getElementById('grid');
-			gridEl.querySelectorAll('.card[data-view="nfl"]').forEach((c) => c.remove());
+			// Excludes the Depth Charts wrapper card (data-depth-charts-wrap) —
+			// it's also data-view="nfl", but it's built once from the synced
+			// snapshot (renderDepthChartCards, called from renderGrid only) and
+			// doesn't need tearing down and rebuilding on every live-scoreboard
+			// poll the way the games cards do.
+			gridEl.querySelectorAll('.card[data-view="nfl"]:not([data-depth-charts-wrap])').forEach((c) => c.remove());
 			renderNflCards(gridEl);
 			updateVisibility();
 		}
@@ -11929,6 +12001,22 @@
 			// stays hidden, same as an ordinary visit always looked.
 			const showAnalyticsGroupLabel = currentView === 'analytics' && selectedTypes && selectedTypes.size > 1;
 			document.querySelectorAll('.card').forEach((card) => {
+				// The Depth Charts wrapper card (renderDepthChartCards) nests 32
+				// team cards inside itself rather than sitting beside them as a
+				// top-level grid card — see that function's own comment. Every
+				// nested team card is ALSO matched by this same '.card' selector,
+				// on its own, with its own dataset.view/leagueType/teamName, so
+				// running the branches below against the wrapper too would
+				// double-process them: the wrapper carries no data-team-name of
+				// its own, so a search for a team BY NAME (rather than a player
+				// on it) would fail to match at the wrapper level and hide the
+				// whole section even though a nested team card matched moments
+				// earlier or later in this very pass. The wrapper is skipped
+				// here and its own visibility is decided once, below, from
+				// whether any team card nested inside it is still visible once
+				// every other card (including every team card) has been through
+				// this loop.
+				if (card.dataset.depthChartsWrap) return;
 				const viewMatch = card.dataset.view === currentView;
 				const cardType = card.dataset.leagueType;
 				// Almost always one value; the merged Top Available card is the
@@ -12059,6 +12147,19 @@
 				if (q && card.dataset.searchEmpty === 'true') searchMatch = false;
 				card.classList.toggle('hidden', !viewMatch || !typeMatch || !searchMatch);
 			});
+			// The Depth Charts wrapper, skipped above — visible only on the NFL
+			// tab, and only once at least one team card nested inside it made it
+			// through the loop above still visible (division sub-tab filtering
+			// and search both run at the team-card level, same as before this
+			// was nested — see that skip's own comment). Every nested team card
+			// is a real '.card', so this is exactly the same query the skipped
+			// generic branch would have used, just re-run after those team
+			// cards' own outcomes are final rather than racing them.
+			const depthChartsWrap = document.querySelector('[data-depth-charts-wrap]');
+			if (depthChartsWrap) {
+				const anyTeamVisible = [...depthChartsWrap.querySelectorAll('.card')].some((c) => !c.classList.contains('hidden'));
+				depthChartsWrap.classList.toggle('hidden', currentView !== 'nfl' || !anyTeamVisible);
+			}
 		}
 
 		// Sub-tabs are scoped to whichever top-level view is active, so they're
@@ -12182,16 +12283,19 @@
 			};
 		}
 
-		// Player search applies to Rosters, Depth Charts, and the three
-		// player-listing Analytics tables (Player/Injury Exposure, Top
-		// Available) — every card with real player-row tables. It's left off
-		// Scoring, Standings and History, none of which are a list of players
-		// a name filter could narrow.
+		// Player search applies to Rosters, NFL (Depth Charts' own team cards
+		// — see below), and the three player-listing Analytics tables
+		// (Player/Injury Exposure, Top Available) — every view with real
+		// player-row tables. It's left off Scoring, Standings and History,
+		// none of which are a list of players a name filter could narrow.
+		// The NFL tab's own Now Playing/Matchups cards carry no player rows
+		// either, so a query never affects them — see updateVisibility's own
+		// comment on why the generic branch below is a no-op for those two.
 		//
-		// Each of those three also matches a second, card-level thing, read
-		// off a dataset field rather than re-derived from the rendered text
-		// — the entity that actually identifies the card, one level up from
-		// the players on it:
+		// Rosters, Depth Charts and Analytics also each match a second,
+		// card-level thing, read off a dataset field rather than re-derived
+		// from the rendered text — the entity that actually identifies the
+		// card, one level up from the players on it:
 		//   - Rosters matches the league or fantasy team name —
 		//     card.dataset.leagueName, set in renderCard and read back in
 		//     updateVisibility's rosters branch — so "MNMx" or "Da Bears"
@@ -12201,7 +12305,11 @@
 		//     renderDepthChartTeamCard and read back in updateVisibility's
 		//     positionBoxes branch — so "Chiefs" or "KC" keeps every
 		//     position box on that team's card up rather than narrowing to
-		//     whichever box also happens to have a name match.
+		//     whichever box also happens to have a name match. This applies
+		//     per team card, not to the NFL tab as a whole — see
+		//     updateVisibility's own comment on the Depth Charts wrapper for
+		//     how the section's own visibility is decided from its team
+		//     cards' outcomes.
 		//   - Analytics matches a league name — see filteredSortedRows
 		//     (Player/Injury Exposure, Top Available) and the searchNames
 		//     built into Power Rankings/Team Needs' own rows — so "MNMx"
@@ -12211,14 +12319,14 @@
 		// elsewhere the second thing would silently match nothing, so it
 		// stays unmentioned rather than promising a filter that tab doesn't
 		// offer.
-		const SEARCHABLE_VIEWS = new Set(['rosters', 'depthcharts', 'analytics']);
+		const SEARCHABLE_VIEWS = new Set(['rosters', 'nfl', 'analytics']);
 		const DEFAULT_SEARCH_PLACEHOLDER = 'Filter by player name…';
 		const ROSTERS_SEARCH_PLACEHOLDER = 'Filter by player, league or team name…';
-		const DEPTHCHARTS_SEARCH_PLACEHOLDER = 'Filter by player or NFL team…';
+		const NFL_SEARCH_PLACEHOLDER = 'Filter by player or NFL team…';
 		const ANALYTICS_SEARCH_PLACEHOLDER = 'Filter by player or league name…';
 		const SEARCH_PLACEHOLDERS = {
 			rosters: ROSTERS_SEARCH_PLACEHOLDER,
-			depthcharts: DEPTHCHARTS_SEARCH_PLACEHOLDER,
+			nfl: NFL_SEARCH_PLACEHOLDER,
 			analytics: ANALYTICS_SEARCH_PLACEHOLDER,
 		};
 		function updateSearchVisibility() {
@@ -13988,12 +14096,15 @@
 				}
 			}
 
-			// Ungated — see the Depth Charts tab's own comment above for why.
-			renderDepthChartCards(gridEl, data);
-
-			// Also ungated, same reasoning — see the NFL tab's own comment
-			// above renderNflCards.
+			// Both ungated — see the NFL tab's own comment above renderNflCards
+			// and the Depth Charts section's own comment above
+			// renderDepthChartCards. renderNflCards first, then
+			// renderDepthChartCards, since DOM order is what puts the Now
+			// Playing/Matchups cards ahead of the Depth Charts wrapper card on
+			// the NFL tab — the same auto-fill-grid-follows-DOM-order idiom
+			// .now-playing-card's own comment already relies on.
 			renderNflCards(gridEl);
+			renderDepthChartCards(gridEl, data);
 
 			// Logged-out visitors never get any analytics card, so 'analytics'
 			// never makes it into presentViews below and the tab simply isn't
