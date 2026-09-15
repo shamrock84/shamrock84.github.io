@@ -7653,12 +7653,24 @@
 					byPlayer.get(key).entries.push({
 						league: { name: leagueDisplayName(league), url: league.url },
 						score: p.points,
+						// Carried through so the row's own score can open the
+						// same Stat Breakdown popover the matchup drawer's
+						// score does (see renderNowPlayingCard) — providers.mjs
+						// only ever populates this for skill-position offense
+						// (see ESPN_BOXSCORE_TO_MFL_EVENT's own comment), so a
+						// PK/Def row naturally never gets one, with no
+						// exclusion list needed here to match that.
+						stats: p.stats,
 					});
 				}
 			}
 			const rows = [...byPlayer.values()].map((r) => {
-				const scored = r.entries.map((e) => e.score).filter((s) => s != null);
-				return { ...r, score: scored.length ? Math.max(...scored) : null };
+				const scored = r.entries.filter((e) => e.score != null);
+				// The entry behind the displayed (best) score, so the popover
+				// it opens breaks down the same number on the row rather than
+				// some other league's — ties keep the first one found.
+				const best = scored.length ? scored.reduce((a, b) => (b.score > a.score ? b : a)) : null;
+				return { ...r, score: best ? best.score : null, stats: best ? best.stats : null };
 			});
 			// The default order before the sort toggle (see
 			// renderNowPlayingCard) touches anything — best score leads,
@@ -7825,13 +7837,40 @@
 						const game = playerGameLine(r.team);
 						if (game) nameLine.appendChild(el('div', { class: 'scoring-matchup-meta', text: game }));
 						row.appendChild(nameLine);
-						row.appendChild(el('span', {
-							class: 'now-playing-score',
+						const scoreCell = el('span', { class: 'now-playing-score' });
+						if (r.score == null) {
 							// Not yet known, same "never a confident 0" rule
 							// as the matchup drawer — the game just started
 							// and no provider has posted a score for him yet.
-							text: r.score == null ? '–' : r.score.toFixed(2),
-						}));
+							scoreCell.textContent = '–';
+						} else {
+							const text = r.score.toFixed(2);
+							// Same clickable-score idiom as appendDetailSide's
+							// own score cell, and the same gate: only a player
+							// carrying a `stats` array gets the popover, which
+							// is why PK/Def rows never do (see
+							// computeNowPlaying's own comment).
+							if (r.stats && r.stats.length) {
+								const scoreBtn = el('button', {
+									type: 'button',
+									class: 'scoring-detail-pts-link',
+									title: 'Stat breakdown',
+									text,
+								});
+								scoreBtn.addEventListener('click', (e) => {
+									e.stopPropagation();
+									scoringDetailPopover.toggle(
+										scoreBtn,
+										`${r.name} — Stat Breakdown`,
+										r.stats.map((s) => ({ left: statBreakdownLine(s), right: s.points.toFixed(1) }))
+									);
+								});
+								scoreCell.appendChild(scoreBtn);
+							} else {
+								scoreCell.textContent = text;
+							}
+						}
+						row.appendChild(scoreCell);
 						posContent.appendChild(row);
 					}
 					posCard.appendChild(posContent);
