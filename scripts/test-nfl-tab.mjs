@@ -323,10 +323,13 @@ const hasClass = (c) => (n) => n.cls.split(/\s+/).includes(c);
 assert.deepEqual(nflBoxscorePlayerLines(null), []);
 assert.deepEqual(nflBoxscorePlayerLines(undefined), []);
 
-// SACKS and LONG are dropped wherever they appear, on user request — and
-// since stats are positional (parallel to labels), removing a column has to
-// shift every OTHER value into the right place too, not just delete the
-// dropped one and leave the rest misaligned under the wrong header.
+// SACKS, LONG and RTG are dropped wherever they appear, on user request —
+// and since stats are positional (parallel to labels), removing a column
+// has to shift every OTHER value into the right place too, not just delete
+// the dropped ones and leave the rest misaligned under the wrong header.
+// RTG sits BETWEEN two kept columns here (not trailing, like SACKS) so a
+// regression that only handled a dropped trailing column would still be
+// caught: TD must still line up with TD's own value, not RTG's old slot.
 {
 	const boxscore = {
 		players: [{
@@ -334,9 +337,9 @@ assert.deepEqual(nflBoxscorePlayerLines(undefined), []);
 			statistics: [
 				{
 					name: 'passing',
-					keys: ['completions/passingAttempts', 'passingYards', 'passingTouchdowns', 'sacks'],
-					labels: ['C/ATT', 'YDS', 'TD', 'SACKS'],
-					athletes: [{ athlete: { displayName: 'Josh Allen' }, stats: ['22/31', '275', '2', '3'] }],
+					keys: ['completions/passingAttempts', 'passingYards', 'QBRating', 'passingTouchdowns', 'sacks'],
+					labels: ['C/ATT', 'YDS', 'RTG', 'TD', 'SACKS'],
+					athletes: [{ athlete: { displayName: 'Josh Allen' }, stats: ['22/31', '275', '118.4', '2', '3'] }],
 				},
 				{
 					name: 'rushing',
@@ -355,8 +358,8 @@ assert.deepEqual(nflBoxscorePlayerLines(undefined), []);
 	};
 	const [team] = nflBoxscorePlayerLines(boxscore);
 	const [passing, rushing, receiving] = team.categories;
-	assert.deepEqual(passing.labels, ['C/ATT', 'YDS', 'TD'], 'SACKS is dropped from passing');
-	assert.deepEqual(passing.athletes[0].stats, ['22/31', '275', '2'], "Josh Allen's own SACKS value is dropped, not just its header");
+	assert.deepEqual(passing.labels, ['C/ATT', 'YDS', 'TD'], 'RTG and SACKS are both dropped from passing');
+	assert.deepEqual(passing.athletes[0].stats, ['22/31', '275', '2'], "TD's own value (2) survives in TD's own slot, not RTG's old one");
 	assert.deepEqual(rushing.labels, ['CAR', 'YDS'], "rushing's LONG (longRushing) is dropped");
 	assert.deepEqual(rushing.athletes[0].stats, ['14', '82']);
 	assert.deepEqual(receiving.labels, ['REC', 'YDS'], "receiving's LONG (longReception) — a DIFFERENT key, same label — is dropped too");

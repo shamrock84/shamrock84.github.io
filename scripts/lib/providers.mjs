@@ -1909,16 +1909,18 @@ export function addBoxscoreToStatIndex(boxscore, into = new Map()) {
 const BOXSCORE_CATEGORY_ORDER = ['passing', 'rushing', 'receiving'];
 
 // Columns dropped from the drawer on user request — not wrong, just not
-// wanted: a QB's own SACKS count and a category's LONG (longest single
-// play) read as secondary next to C/ATT/YDS/TD, and cutting them narrows
-// every table by two columns, which is real width back on a phone-width
-// drawer. Matched by ESPN's own label text rather than a key name, since
-// that's the one thing confirmed identical wherever either column
-// appears (rushing's and receiving's LONG are two different keys —
+// wanted: a QB's own SACKS count, a category's LONG (longest single play),
+// and passing's own RTG (the NFL's own composite passer rating, a derived
+// stat rather than a raw count like everything else on the line) all read
+// as secondary next to C/ATT/YDS/TD, and cutting them narrows every table
+// by a column each, which is real width back on a phone-width drawer.
+// Matched by ESPN's own label text rather than a key name, since that's
+// the one thing confirmed identical wherever a column appears more than
+// once (rushing's and receiving's LONG are two different keys —
 // longRushing/longReception — but the same label); a column keyed
 // differently under the same label is still excluded, which is the
 // intent, not a coincidence to guard against.
-const BOXSCORE_EXCLUDED_LABELS = new Set(['SACKS', 'LONG']);
+const BOXSCORE_EXCLUDED_LABELS = new Set(['SACKS', 'LONG', 'RTG']);
 
 // Player-level box score lines for the NFL tab's own per-game drawer
 // (buildNflGamesList's cards in myffl.html) — a human-readable rendering of
