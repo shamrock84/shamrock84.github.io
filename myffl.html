@@ -340,6 +340,14 @@
 		#live-status.live-error {
 			color: var(--ir-text);
 		}
+		/* The reload warning on an otherwise-muted success line — same IR
+		   red as `.live-error` above (CLAUDE.md's "needs a look" color, not
+		   a failure state here, just the one phrase worth a manager's eye)
+		   rather than turning the whole line red the way an actual failed
+		   poll does. */
+		.live-status-warning {
+			color: var(--ir-text);
+		}
 		.tabs {
 			display: flex;
 			justify-content: center;
@@ -12186,10 +12194,24 @@
 			document.getElementById('search').placeholder = SEARCH_PLACEHOLDERS[currentView] || DEFAULT_SEARCH_PLACEHOLDER;
 		}
 
-		function setLiveStatus(text, isError) {
-			const el = document.getElementById('live-status');
-			el.textContent = text;
-			el.classList.toggle('live-error', !!isError);
+		// `warning`, when given, rides along as its own em-dash-joined segment
+		// in `.live-status-warning` (red, see that class's own comment)
+		// rather than being folded into `text` — the failure branch below
+		// has no use for it (the whole line already reads red via
+		// `.live-error`), so this stays a plain optional third argument
+		// rather than every caller building a segment list.
+		function setLiveStatus(text, isError, warning) {
+			const statusEl = document.getElementById('live-status');
+			statusEl.textContent = '';
+			statusEl.classList.toggle('live-error', !!isError);
+			statusEl.appendChild(document.createTextNode(text));
+			if (warning) {
+				statusEl.appendChild(document.createTextNode(' — '));
+				const warnEl = document.createElement('span');
+				warnEl.className = 'live-status-warning';
+				warnEl.textContent = warning;
+				statusEl.appendChild(warnEl);
+			}
 		}
 
 		// Shared by both refreshLiveScoring outcomes below — a tear-down/rebuild
@@ -12316,15 +12338,16 @@
 
 				liveScoringAttempted = true;
 				rerenderScoringCards();
-				// The reload warning rides along with the freshness text
-				// rather than replacing it — a manager watching this line
-				// stall at the same "X ago" would otherwise have no way to
-				// tell a dead poll from a live one, and reloading the page
-				// is exactly the wrong response to either: it re-fetches
-				// the full data/rosters.json snapshot for nothing (the poll
-				// already keeps live.js current) and, on a phone, is the
+				// The reload warning rides along with the freshness text as
+				// its own em-dash segment rather than replacing it — a
+				// manager watching this line stall at the same "X ago"
+				// would otherwise have no way to tell a dead poll from a
+				// live one, and reloading the page is exactly the wrong
+				// response to either: it re-fetches the full
+				// data/rosters.json snapshot for nothing (the poll already
+				// keeps live scoring current) and, on a phone, is the
 				// instinct this line exists to head off.
-				setLiveStatus(`Live updates on — last refreshed ${timeAgo(live.generatedAt)}. No need to manually refresh.`, false);
+				setLiveStatus(`Live updates on — last refreshed ${timeAgo(live.generatedAt)}`, false, 'No need to manually refresh');
 			} catch (err) {
 				console.warn(`Live scoring refresh failed: ${err.message}`);
 				liveScoringAttempted = true;
