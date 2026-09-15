@@ -10964,28 +10964,54 @@
 		// set by refreshDigestGameStates on page load): before that first
 		// fetch resolves, "no games" would be a false all-clear rather than
 		// "haven't asked yet".
+		// Appends (or, on a rerenderNflCards() call, re-appends) Now Playing
+		// and Matchups — but "append" can't just mean gridEl.appendChild
+		// once the Depth Charts wrapper exists: that card is built ONCE by
+		// renderGrid and left standing across every later poll (see
+		// rerenderNflCards' own comment), sitting AFTER these two in the
+		// DOM. A poll that blindly appended fresh cards would land them
+		// AFTER that already-present wrapper instead of before it, visibly
+		// reordering the tab to Depth Charts / Now Playing / Matchups the
+		// moment the first poll landed. Inserting ahead of the wrapper when
+		// it's already there — and falling back to a plain append when it
+		// isn't (the very first renderGrid() call, before
+		// renderDepthChartCards has run yet) — keeps the order stable
+		// either way.
+		function appendNflCard(gridEl, card) {
+			const depthChartsWrap = gridEl.querySelector('[data-depth-charts-wrap]');
+			if (depthChartsWrap) gridEl.insertBefore(card, depthChartsWrap);
+			else gridEl.appendChild(card);
+		}
+
 		function renderNflCards(gridEl) {
 			if (!gameStatesAttempted) {
 				const card = el('div', { class: 'card nfl-card', 'data-view': 'nfl' });
 				card.appendChild(el('h2', { class: 'card-heading', text: 'NFL' }));
 				card.appendChild(el('div', { class: 'loading-box', text: 'Loading games…' }));
-				gridEl.appendChild(card);
+				appendNflCard(gridEl, card);
 				return;
 			}
 			const games = buildNflGamesList(liveGames);
 			const live = games.filter((g) => g.state === 'in');
-			gridEl.appendChild(renderNflScoreCard('nfl-now-playing', 'Now Playing', live, 'No games in progress right now.'));
-			gridEl.appendChild(renderNflScoreCard('nfl-matchups', 'Matchups', games, 'No games scheduled this week.'));
+			appendNflCard(gridEl, renderNflScoreCard('nfl-now-playing', 'Now Playing', live, 'No games in progress right now.'));
+			appendNflCard(gridEl, renderNflScoreCard('nfl-matchups', 'Matchups', games, 'No games scheduled this week.'));
 		}
 
 		function rerenderNflCards() {
 			const gridEl = document.getElementById('grid');
-			// Excludes the Depth Charts wrapper card (data-depth-charts-wrap) —
-			// it's also data-view="nfl", but it's built once from the synced
-			// snapshot (renderDepthChartCards, called from renderGrid only) and
-			// doesn't need tearing down and rebuilding on every live-scoreboard
-			// poll the way the games cards do.
-			gridEl.querySelectorAll('.card[data-view="nfl"]:not([data-depth-charts-wrap])').forEach((c) => c.remove());
+			// :scope > restricts this to gridEl's own DIRECT children —
+			// Now Playing, Matchups, or the loading-state "NFL" card, and
+			// (but for the :not) the Depth Charts wrapper itself. Without
+			// it, this same '.card[data-view="nfl"]' selector also matches
+			// every one of the 32 team cards NESTED inside that wrapper —
+			// they carry data-view="nfl" too (see renderDepthChartTeamCard)
+			// and are not the wrapper, so :not([data-depth-charts-wrap])
+			// alone doesn't exclude them. That bug shipped once: every
+			// ~30s poll silently deleted the whole Depth Charts section
+			// (renderNflCards never rebuilds it, so nothing replaced what
+			// this line removed), leaving the "no teams match" empty state
+			// permanently on screen after the first poll landed.
+			gridEl.querySelectorAll(':scope > .card[data-view="nfl"]:not([data-depth-charts-wrap])').forEach((c) => c.remove());
 			renderNflCards(gridEl);
 			updateVisibility();
 		}
