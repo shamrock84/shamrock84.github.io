@@ -1908,6 +1908,18 @@ export function addBoxscoreToStatIndex(boxscore, into = new Map()) {
 // decided here rather than trusted off the wire.
 const BOXSCORE_CATEGORY_ORDER = ['passing', 'rushing', 'receiving'];
 
+// Columns dropped from the drawer on user request — not wrong, just not
+// wanted: a QB's own SACKS count and a category's LONG (longest single
+// play) read as secondary next to C/ATT/YDS/TD, and cutting them narrows
+// every table by two columns, which is real width back on a phone-width
+// drawer. Matched by ESPN's own label text rather than a key name, since
+// that's the one thing confirmed identical wherever either column
+// appears (rushing's and receiving's LONG are two different keys —
+// longRushing/longReception — but the same label); a column keyed
+// differently under the same label is still excluded, which is the
+// intent, not a coincidence to guard against.
+const BOXSCORE_EXCLUDED_LABELS = new Set(['SACKS', 'LONG']);
+
 // Player-level box score lines for the NFL tab's own per-game drawer
 // (buildNflGamesList's cards in myffl.html) — a human-readable rendering of
 // the same raw boxscore addBoxscoreToStatIndex above reduces to MFL event
@@ -1931,10 +1943,19 @@ export function nflBoxscorePlayerLines(boxscore) {
     const byName = new Map();
     for (const category of team.statistics || []) {
       if (!categoryNames.has(category.name)) continue;
+      const labels = category.labels || [];
+      // Index-based, not a second pass over labels after the fact — stats
+      // are positional (parallel to labels), so a dropped column has to
+      // drop the same index out of every athlete's own stats array or the
+      // remaining values shift under the wrong header.
+      const keepIndexes = labels.reduce((acc, label, i) => {
+        if (!BOXSCORE_EXCLUDED_LABELS.has(label)) acc.push(i);
+        return acc;
+      }, []);
       const athletes = (category.athletes || [])
-        .map((a) => ({ name: a.athlete?.displayName || null, stats: a.stats || [] }))
+        .map((a) => ({ name: a.athlete?.displayName || null, stats: keepIndexes.map((i) => (a.stats || [])[i]) }))
         .filter((a) => a.name);
-      if (athletes.length > 0) byName.set(category.name, { labels: category.labels || [], athletes });
+      if (athletes.length > 0) byName.set(category.name, { labels: keepIndexes.map((i) => labels[i]), athletes });
     }
     if (byName.size === 0) continue;
     const categories = BOXSCORE_CATEGORY_ORDER
