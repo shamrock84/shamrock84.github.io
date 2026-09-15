@@ -365,6 +365,16 @@ jobs:
       - name: Test the team-name record suffix
         run: node scripts/test-team-record-suffix.mjs
 
+      # The NFL tab's own scoreboard cards (buildNflGamesList/formatGameWhen/
+      # renderNflCards). The one thing worth pinning: liveGames is keyed by
+      # team abbreviation with every alias of a team pointing at the same
+      # entry object, so a single real game would silently double-list on
+      # the Matchups card if that collapse back to one row per game ever
+      # broke. Also covers the Now Playing/Matchups split, the loading state
+      # before the first scoreboard fetch resolves, and the box score link.
+      - name: Test the NFL tab
+        run: node scripts/test-nfl-tab.mjs
+
       - name: Validate config/leagues.json
         run: |
           node --input-type=module -e '

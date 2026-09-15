@@ -1812,6 +1812,90 @@
 			flex-shrink: 0;
 			font-variant-numeric: tabular-nums;
 		}
+		/* NFL tab: two full-width cards (Now Playing, Matchups) listing real
+		   NFL games — distinct from .now-playing-card above, which lists a
+		   manager's own fantasy players currently live. grid-column: 1/-1
+		   for the same reason .now-playing-card spans the grid: this isn't
+		   one team's card, it's the whole week's slate. */
+		.nfl-card {
+			grid-column: 1 / -1;
+		}
+		/* Each game its own bordered mini-card, flex-wrapped rather than one
+		   long vertical list — the same idiom Depth Charts' own
+		   .depth-chart-positions/.depth-chart-position and Now Playing's own
+		   .now-playing-positions/.now-playing-position already use for "a
+		   full-width card whose content is naturally a set of small, equal
+		   peers." A single stacked-row list here left most of a desktop-width
+		   card empty on either side of a short score line; wrapping lets a
+		   wide screen show a whole slate across in 5-6 columns instead of
+		   one, AND two per row down to a ~360px-wide phone rather than
+		   falling back to one — the wrap decision goes by this hypothetical
+		   (flex-basis) size, not the min-width floor, so a wider basis would
+		   wrap to one per row on a phone-width card content area even
+		   though narrower pills would still have fit two comfortably.
+		   135px is measured against the card's own real content width
+		   (viewport minus card padding and the page's outer gutter, ~69px
+		   total) at the common small-phone floor this site otherwise
+		   targets: 2×135px + the 0.5rem gap clears a 360px-wide phone with
+		   room to grow, and still reads fine bold at that width. Below
+		   ~340px (pre-SE-2 hardware, essentially gone) this degrades to one
+		   per row on its own, which is the same graceful wrap every other
+		   width relies on rather than a special case. */
+		.nfl-scoreboard {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 0.5rem;
+		}
+		.nfl-game-row {
+			flex: 1 1 135px;
+			min-width: 120px;
+			display: flex;
+			flex-direction: column;
+			gap: 0.3rem;
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			padding: 0.55rem 0.65rem;
+			font-size: 0.85rem;
+		}
+		.nfl-game-teams {
+			display: flex;
+			align-items: baseline;
+			justify-content: center;
+			gap: 0.35rem;
+			font-variant-numeric: tabular-nums;
+		}
+		.nfl-game-team {
+			font-weight: 700;
+		}
+		.nfl-game-score {
+			color: var(--muted);
+		}
+		.nfl-game-at {
+			color: var(--muted);
+			font-weight: 400;
+		}
+		.nfl-game-status {
+			text-align: center;
+			color: var(--muted);
+			font-size: 0.78rem;
+		}
+		/* Same gold treatment .scoring-detail-live already uses for "this
+		   game is still live" — reused rather than a new color, so the cue
+		   means the same thing everywhere it appears on the site. */
+		.nfl-game-row.nfl-game-live .nfl-game-status {
+			color: var(--gold-chip-text);
+			font-weight: 700;
+		}
+		.nfl-boxscore-link {
+			align-self: center;
+			font-size: 0.75rem;
+			color: var(--accent);
+			text-decoration: none;
+			white-space: nowrap;
+		}
+		.nfl-boxscore-link:hover {
+			text-decoration: underline;
+		}
 		/* Scoring tab, matchup view: each two-team (or lone bye) matchup is its
 		   own small card — the exact border/radius/background .card already
 		   uses everywhere else, not a table row carrying a colored border or
@@ -3199,11 +3283,14 @@
 		// logged in — renderGrid simply doesn't build the cards otherwise, and
 		// the tab list is derived from the cards that exist, so logging out
 		// removes the tab with no extra work.
-		// depthcharts is deliberately ungated (see renderGrid) — the tab shows
-		// even logged out, unlike analytics/history/admin, which is why it's
-		// listed here with those but built outside the isLoggedIn() blocks.
-		const VIEW_LABELS = { rosters: 'Rosters', standings: 'Standings', scoring: 'Scores', depthcharts: 'Depth Charts', analytics: 'Analytics', history: 'History', admin: 'Admin' };
-		const VIEW_ORDER = ['rosters', 'scoring', 'standings', 'analytics', 'depthcharts', 'history', 'admin'];
+		// depthcharts and nfl are deliberately ungated (see renderGrid) — both
+		// tabs show even logged out, unlike analytics/history/admin, which is
+		// why they're listed here with those but built outside the
+		// isLoggedIn() blocks. Neither is fantasy data (roster, ranking,
+		// finance, lineup) — real NFL games and real NFL depth charts are
+		// generic sports information, same category as a public scores site.
+		const VIEW_LABELS = { rosters: 'Rosters', scoring: 'Scores', nfl: 'NFL', standings: 'Standings', analytics: 'Analytics', depthcharts: 'Depth Charts', history: 'History', admin: 'Admin' };
+		const VIEW_ORDER = ['rosters', 'scoring', 'nfl', 'standings', 'analytics', 'depthcharts', 'history', 'admin'];
 		// Per-league type — still what individual Rosters cards badge
 		// themselves with (a Salary Cap league's card says "Salary", not
 		// "Dynasty/Salary Cap"), just no longer what any sub-tab is named
@@ -6935,21 +7022,32 @@
 		// mean reinventing how it words halftime and overtime.
 		// Returns null for a player on a bye or otherwise not in the map, and
 		// the caller omits the line entirely rather than printing an empty one.
-		function playerGameLine(team) {
-			const game = team ? liveGames[team] : null;
-			if (!game) return null;
-			const side = game.opponent ? `${game.isHome ? '' : '@'}${game.opponent}` : '';
-			let when = '';
+		// Pulled out of playerGameLine so the NFL tab's own scoreboard rows
+		// (renderNflGameRow) can show the same kickoff-or-status wording
+		// without a second copy of the pre/live/final branching — same
+		// "one implementation, several call sites" reasoning as
+		// makeTableSort/makePopover elsewhere on this page. No non-breaking
+		// spaces here (unlike playerGameLine's own return value below): this
+		// is joined with a team's own name/score, not appended after an
+		// opponent code, so that particular wrap hazard doesn't apply here.
+		function formatGameWhen(game) {
 			if (game.state === 'pre') {
 				const at = game.kickoff ? new Date(game.kickoff) : null;
 				if (at && !Number.isNaN(at.getTime())) {
 					// Two calls rather than one toLocaleString, which puts a
 					// comma between the weekday and the time in most locales.
-					when = `${at.toLocaleDateString(undefined, { weekday: 'short' })} ${at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
+					return `${at.toLocaleDateString(undefined, { weekday: 'short' })} ${at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
 				}
-			} else {
-				when = game.detail || '';
+				return '';
 			}
+			return game.detail || '';
+		}
+
+		function playerGameLine(team) {
+			const game = team ? liveGames[team] : null;
+			if (!game) return null;
+			const side = game.opponent ? `${game.isHome ? '' : '@'}${game.opponent}` : '';
+			const when = formatGameWhen(game);
 			// The time is made atomic with non-breaking spaces so the only
 			// place this line may break is between the opponent and the
 			// when — "@HOU Sun 12:00 PM" becomes "@HOU" over
@@ -10151,6 +10249,207 @@
 			}
 		}
 
+		// ---- NFL tab ---------------------------------------------------------
+		// Real NFL games — schedule and live scores — not tied to any fantasy
+		// league. Ungated, same reasoning as Depth Charts above (see
+		// VIEW_LABELS' own comment): this isn't roster/ranking/finance/lineup
+		// data, so the login gate doesn't apply.
+		//
+		// Distinct from the Scoring tab's own "Now Playing" card
+		// (renderNowPlayingCard, the .now-playing-* classes above): that one
+		// lists a manager's own fantasy players currently in a live game,
+		// grouped by position. This one lists actual NFL games, full stop —
+		// different data, different audience, different classes on purpose,
+		// so the two are never at risk of being confused for one feature.
+		//
+		// Both cards below read the SAME liveGames map the Problems Digest and
+		// the Scoring drawer's game line already populate (see
+		// refreshDigestGameStates and playerGameLine above) — the per-team
+		// scoreboard fetch behind api/live-scoring.js's `gamesOnly=1` branch,
+		// which never touches MFL and is cheap and public enough to poll on
+		// its own schedule (see startNflPolling below), independent of the
+		// much heavier per-league Scoring tab poll.
+
+		// liveGames is keyed by team abbreviation, with every alias of a team
+		// pointing at the SAME entry object (see fetchNflGames' own comment
+		// in providers.mjs on nflTeamKeys) — so one real game shows up under
+		// several different keys. This collapses it back down to one row per
+		// GAME, keyed by the scoreboard's own event id, pairing the two
+		// sides via each entry's own `isHome`. A game missing either side
+		// (a malformed entry, or the map mid-fetch) is dropped rather than
+		// rendered half-built; sorted by kickoff so Matchups reads like a
+		// schedule rather than whatever order the map happened to iterate.
+		function buildNflGamesList(games) {
+			const byId = new Map();
+			for (const [abbr, game] of Object.entries(games || {})) {
+				if (!game.id) continue;
+				let entry = byId.get(game.id);
+				if (!entry) {
+					entry = { id: game.id, state: game.state, detail: game.detail, kickoff: game.kickoff, home: null, away: null };
+					byId.set(game.id, entry);
+				}
+				const side = { team: game.team || abbr, score: game.score ?? null };
+				if (game.isHome) entry.home = side; else entry.away = side;
+			}
+			return [...byId.values()]
+				.filter((g) => g.home && g.away)
+				.sort((a, b) => new Date(a.kickoff || 0) - new Date(b.kickoff || 0));
+		}
+
+		// One row, shared by both NFL cards below — they differ only in which
+		// games they include and what they say when there are none. A score
+		// only ever shows once the game is actually under way or over
+		// (showScore) — a 'pre' game's "0" from the scoreboard is a
+		// placeholder, not a real score, so it stays hidden in favor of the
+		// kickoff time formatGameWhen renders instead.
+		function renderNflGameRow(game) {
+			const showScore = game.state !== 'pre' && game.away.score != null && game.home.score != null;
+			const row = el('div', { class: `nfl-game-row${game.state === 'in' ? ' nfl-game-live' : ''}` });
+			const teams = el('div', { class: 'nfl-game-teams' });
+			teams.appendChild(el('span', { class: 'nfl-game-team', text: game.away.team }));
+			if (showScore) teams.appendChild(el('span', { class: 'nfl-game-score', text: String(game.away.score) }));
+			teams.appendChild(el('span', { class: 'nfl-game-at', text: '@' }));
+			teams.appendChild(el('span', { class: 'nfl-game-team', text: game.home.team }));
+			if (showScore) teams.appendChild(el('span', { class: 'nfl-game-score', text: String(game.home.score) }));
+			row.appendChild(teams);
+			row.appendChild(el('div', { class: 'nfl-game-status', text: formatGameWhen(game) }));
+			// Every game gets one, even pre-kickoff — ESPN's own box score
+			// page for a game that hasn't started yet just shows the
+			// schedule/preview, so the link is never dead, only early. This
+			// is the "link to ESPN box score for now" half of the feature
+			// request; a future pass can add the offensive box score inline
+			// (fetchEspnBoxscore in providers.mjs already pulls the same
+			// per-player data for the MFL stat-breakdown popover) rather
+			// than sending the reader away for it.
+			row.appendChild(el('a', {
+				class: 'nfl-boxscore-link',
+				href: `https://www.espn.com/nfl/boxscore/_/gameid/${game.id}`,
+				target: '_blank',
+				rel: 'noopener',
+				text: 'Box score ↗',
+			}));
+			return row;
+		}
+
+		function renderNflScoreCard(id, heading, games, emptyText) {
+			const card = el('div', { class: 'card nfl-card', 'data-view': 'nfl' });
+			const headingEl = el('h2', { class: 'card-heading', text: heading });
+			card.appendChild(headingEl);
+			makeCollapsible(card, headingEl, id);
+			const body = el('div', { class: 'nfl-scoreboard' });
+			if (games.length === 0) {
+				body.appendChild(el('div', { class: 'team card-collapse-visible', text: emptyText }));
+			} else {
+				for (const game of games) body.appendChild(renderNflGameRow(game));
+			}
+			card.appendChild(body);
+			return card;
+		}
+
+		// Now Playing: only games actually under way right now. Matchups: the
+		// whole week's slate regardless of state, so a visitor can see what's
+		// coming up or how something already finished — the "update each
+		// week" half of the feature request, since the schedule itself only
+		// changes once the calendar turns over even though the scores inside
+		// it move all game day. Both read the one shared liveGames map (see
+		// buildNflGamesList's own comment above), so there is nothing here to
+		// keep in sync between the two cards.
+		//
+		// Loading state mirrors the Problems Digest's own (gameStatesAttempted,
+		// set by refreshDigestGameStates on page load): before that first
+		// fetch resolves, "no games" would be a false all-clear rather than
+		// "haven't asked yet".
+		function renderNflCards(gridEl) {
+			if (!gameStatesAttempted) {
+				const card = el('div', { class: 'card nfl-card', 'data-view': 'nfl' });
+				card.appendChild(el('h2', { class: 'card-heading', text: 'NFL' }));
+				card.appendChild(el('div', { class: 'loading-box', text: 'Loading games…' }));
+				gridEl.appendChild(card);
+				return;
+			}
+			const games = buildNflGamesList(liveGames);
+			const live = games.filter((g) => g.state === 'in');
+			gridEl.appendChild(renderNflScoreCard('nfl-now-playing', 'Now Playing', live, 'No games in progress right now.'));
+			gridEl.appendChild(renderNflScoreCard('nfl-matchups', 'Matchups', games, 'No games scheduled this week.'));
+		}
+
+		function rerenderNflCards() {
+			const gridEl = document.getElementById('grid');
+			gridEl.querySelectorAll('.card[data-view="nfl"]').forEach((c) => c.remove());
+			renderNflCards(gridEl);
+			updateVisibility();
+		}
+
+		// Polls the same cheap, MFL-free `gamesOnly=1` endpoint
+		// refreshDigestGameStates already uses for its own one-shot page-load
+		// read (see that function's own comment above) — kept as its own poll
+		// loop rather than folded into refreshLiveScoring/startLiveScoringPolling,
+		// which only runs while the Scoring tab is open and fans out across
+		// every league's full MFL/ESPN/Sleeper scoring on top of the games
+		// fetch. The NFL tab has no use for any of that and shouldn't pay for
+		// it just by being open.
+		let nflPollTimer = null;
+		let nflPollingEnabled = false;
+
+		// Same fast/idle split as nextLiveScoringDelayMs above, and for the
+		// same reason: nearly all of a week has nothing live, so there is no
+		// reason to poll the scoreboard every 30s on a Tuesday afternoon just
+		// because the tab happens to be open.
+		function nextNflPollDelayMs() {
+			const anyLive = Object.values(liveGames).some((g) => g.state === 'in');
+			return anyLive ? LIVE_SCORING_POLL_MS : LIVE_SCORING_IDLE_POLL_MS;
+		}
+
+		function scheduleNflPoll() {
+			if (nflPollTimer) clearTimeout(nflPollTimer);
+			nflPollTimer = setTimeout(refreshNflScoreboard, nextNflPollDelayMs());
+		}
+
+		async function refreshNflScoreboard() {
+			if (!LIVE_SCORING_URL) return;
+			try {
+				const res = await fetch(`${LIVE_SCORING_URL}?gamesOnly=1&t=${Date.now()}`, { cache: 'no-store' });
+				if (res.ok) {
+					const data = await res.json();
+					liveGames = data.games || {};
+					gameStatesAttempted = true;
+					rerenderNflCards();
+				}
+			} catch {
+				// degrade silently — same posture as refreshDigestGameStates:
+				// leave liveGames exactly as it was and let the next poll retry.
+			} finally {
+				if (nflPollingEnabled) scheduleNflPoll();
+			}
+		}
+
+		function startNflPolling() {
+			if (!LIVE_SCORING_URL || nflPollingEnabled) return;
+			nflPollingEnabled = true;
+			refreshNflScoreboard();
+		}
+
+		function stopNflPolling() {
+			nflPollingEnabled = false;
+			if (nflPollTimer) {
+				clearTimeout(nflPollTimer);
+				nflPollTimer = null;
+			}
+		}
+
+		// Same backgrounded-tab pause as the Scoring tab's own listener above
+		// (see its comment) — a separate listener rather than one shared
+		// condition, since folding two unrelated tabs' gating into one branch
+		// would make either harder to read in isolation.
+		document.addEventListener('visibilitychange', () => {
+			if (currentView !== 'nfl') return;
+			if (document.visibilityState === 'hidden') {
+				stopNflPolling();
+			} else {
+				startNflPolling();
+			}
+		});
+
 		// ---- History tab ---------------------------------------------------
 		// Results and Finances are gated behind login the same way Analytics
 		// is, and that gate is deliberate — dues owed, payouts and past
@@ -11674,6 +11973,11 @@
 			} else {
 				stopLiveScoringPolling();
 			}
+			if (currentView === 'nfl') {
+				startNflPolling();
+			} else {
+				stopNflPolling();
+			}
 		}
 
 		function renderViewTabs(views) {
@@ -13107,6 +13411,10 @@
 			// Ungated — see the Depth Charts tab's own comment above for why.
 			renderDepthChartCards(gridEl, data);
 
+			// Also ungated, same reasoning — see the NFL tab's own comment
+			// above renderNflCards.
+			renderNflCards(gridEl);
+
 			// Logged-out visitors never get any analytics card, so 'analytics'
 			// never makes it into presentViews below and the tab simply isn't
 			// offered — the same mechanism that hides the Admin tab. These
@@ -13187,6 +13495,9 @@
 			updateVisibility();
 			if (currentView === 'scoring') {
 				startLiveScoringPolling();
+			}
+			if (currentView === 'nfl') {
+				startNflPolling();
 			}
 		}
 

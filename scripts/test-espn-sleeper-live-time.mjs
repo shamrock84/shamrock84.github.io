@@ -87,8 +87,8 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
           date: '2026-09-13T17:00:00Z',
           status: { type: { state: 'pre', shortDetail: 'Sun 1:00 PM ET' }, period: 0, clock: 0 },
           competitors: [
-            { team: { abbreviation: 'TB' }, homeAway: 'away' },
-            { team: { abbreviation: 'CIN' }, homeAway: 'home' },
+            { team: { abbreviation: 'TB' }, homeAway: 'away', score: '0' },
+            { team: { abbreviation: 'CIN' }, homeAway: 'home', score: '0' },
           ],
         }],
       },
@@ -101,8 +101,8 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
           // reality is the whole point.
           status: { type: { state: 'in', shortDetail: '4:35 - 1st' }, period: 3, clock: 322 },
           competitors: [
-            { team: { abbreviation: 'LV' }, homeAway: 'away' },
-            { team: { abbreviation: 'DEN' }, homeAway: 'home' },
+            { team: { abbreviation: 'LV' }, homeAway: 'away', score: '13' },
+            { team: { abbreviation: 'DEN' }, homeAway: 'home', score: '20' },
           ],
         }],
       },
@@ -143,6 +143,16 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
   assert.equal(games.get('CIN').secondsRemaining, 3600);
   assert.equal(games.get('WSH').secondsRemaining, 0);
 
+  // The NFL tab's scoreboard cards (buildNflGamesList in myffl.html) need
+  // this competitor's own abbreviation and score to pair the two sides of
+  // a game back up from this per-team map — additive fields, confirmed
+  // alongside everything else this map already carried.
+  assert.equal(games.get('LV').team, 'LV', "a team's own abbreviation, not its opponent's");
+  assert.equal(games.get('DEN').team, 'DEN');
+  assert.equal(games.get('LV').score, 13);
+  assert.equal(games.get('DEN').score, 20);
+  assert.equal(games.get('CIN').score, 0, 'a pregame score reads as a real 0, not null');
+
   // THE assertion this whole alias mechanism exists for. Three providers
   // spell the same team three ways; MFL pads to three letters. A map keyed
   // only as the scoreboard published it would give no game line to every
@@ -174,6 +184,7 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
   assert.equal(games.get('SEA').opponent, null, 'a lone competitor has no opponent, and that is not an error');
   assert.equal(games.get('SEA').secondsRemaining, 3600);
   assert.equal(games.get('SEA').detail, null);
+  assert.equal(games.get('SEA').score, null, 'no score field at all reads as null, never a false 0');
 }
 
 // --- fetchEspnScoring: join against clockMap, starters only ---
