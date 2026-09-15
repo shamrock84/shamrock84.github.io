@@ -897,6 +897,16 @@
 		.card[data-view="scoring"] .card-head + .team {
 			margin-top: 0;
 		}
+		/* The Rosters card's own appended record (see recordDetails) is
+		   bolded so it reads as a stat rather than a floating footnote, and
+		   colored with the same gain/loss vocabulary --gain-text/--ir-text
+		   already establish elsewhere (see .results-trend's own comment) —
+		   but only when winning or losing skews the record. A .500 record
+		   isn't a gain or a loss, so it stays the .team line's own muted
+		   color rather than getting a third, meaningless shade. */
+		.roster-record { font-weight: 700; }
+		.roster-record-up { color: var(--gain-text); }
+		.roster-record-down { color: var(--ir-text); }
 		.error-box {
 			background: var(--ir-bg);
 			color: var(--ir-text);
@@ -6329,10 +6339,17 @@
 			}
 
 			card.appendChild(buildCardHead(card, league, formatBadgeLabels(league)));
-			const teamNameText = league.teamName
-				? appendRecord(league.teamName, currentRecord(league, league.franchiseId))
-				: '';
-			card.appendChild(el('div', { class: 'team card-collapse-visible', text: teamNameText }));
+			const teamLine = el('div', { class: 'team card-collapse-visible' });
+			if (league.teamName) {
+				teamLine.appendChild(document.createTextNode(league.teamName));
+				const record = recordDetails(league, league.franchiseId);
+				if (record) {
+					teamLine.appendChild(document.createTextNode(' ('));
+					teamLine.appendChild(el('span', { class: record.cls, text: record.text }));
+					teamLine.appendChild(document.createTextNode(')'));
+				}
+			}
+			card.appendChild(teamLine);
 
 			if (league.error && (!league.players || league.players.length === 0)) {
 				card.appendChild(el('div', { class: 'error-box', text: `Couldn't load this league: ${league.error}` }));
@@ -7159,6 +7176,20 @@
 
 		function appendRecord(name, record) {
 			return record ? `${name} (${record})` : name;
+		}
+
+		// Rosters-only: the plain-text appendRecord above still backs the
+		// Scoring pill's copy of this same record, which sits right beside a
+		// live score already doing the "how's this team doing" job. Here the
+		// record IS the team's status line, so it gets bolded and, unless
+		// the record is exactly even, colored win/loss (see the
+		// .roster-record CSS rule for why .500 stays uncolored).
+		function recordDetails(league, franchiseId) {
+			const record = currentRecord(league, franchiseId);
+			if (!record) return null;
+			const r = (league.standings || []).find((row) => row.franchiseId === franchiseId);
+			const cls = r.wins === r.losses ? 'roster-record' : `roster-record ${r.wins > r.losses ? 'roster-record-up' : 'roster-record-down'}`;
+			return { text: record, cls };
 		}
 
 		function scoringMetaLine(t) {
