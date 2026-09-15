@@ -4338,12 +4338,15 @@
 		// nextLiveScoringDelayMs) — nearly all of a Scoring tab's open time,
 		// since games are live only a handful of hours a week. Polling MFL
 		// every 30s Tuesday afternoon for scores that cannot have changed was
-		// pure waste on top of the drawer-gating fix. A starting point, not a
-		// measured one, same caveat every MFL pacing interval in this project
-		// carries — short enough that an upcoming kickoff is still caught
-		// within a couple of minutes, long enough to cut off-peak polling to
-		// a small fraction of what it was.
-		const LIVE_SCORING_IDLE_POLL_MS = 120000;
+		// pure waste on top of the drawer-gating fix. Raised from an initial
+		// 2 minutes to 30 on the manager's own request — a starting point,
+		// not a measured one, same caveat every MFL pacing interval in this
+		// project carries. A kickoff can now sit undetected for up to half
+		// an hour before the tighter cadence kicks in, which is the deliberate
+		// trade this number makes: idle time is nearly the whole week, and
+		// nothing renders differently while waiting — the live game clock
+		// this delay gates is the only thing that lags, not a wrong score.
+		const LIVE_SCORING_IDLE_POLL_MS = 1800000;
 
 		// Same Vercel deployment, different endpoint: kicks off a fresh GitHub
 		// Actions sync run on demand instead of waiting up to 4 hours.
