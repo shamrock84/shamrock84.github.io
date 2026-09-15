@@ -417,6 +417,17 @@
 			border-color: var(--accent);
 			color: var(--accent);
 		}
+		/* Reuses .subtabs-bar's own layout (centered, wrapping pills flanked
+		   by Select All/None) for the Depth Charts card's own embedded
+		   division filter — see renderDepthChartSubTabs' own comment for why
+		   it moved off the page-level bar. The card already indents its
+		   content via .card's own padding, so the shared rule's horizontal
+		   padding would double it up; zeroed here rather than touching
+		   .subtabs-bar itself, which the page-level bar still uses as-is. */
+		.depth-chart-subtabs {
+			padding: 0;
+			margin: 0 0 1rem;
+		}
 		.controls {
 			max-width: 480px;
 			margin: 1rem auto 0;
@@ -3587,19 +3598,22 @@
 		// separately.
 		const TOP_AVAILABLE_LABEL_OVERRIDES = { dynasty: 'Dynasty/Salary Cap' };
 
-		// The NFL view's sub-tab strip reuses this exact same mechanism,
-		// repurposed for NFL divisions instead of league types — renderSubTabs
-		// only ever asks "what distinct data-league-type values are on the
-		// cards in the current view", so a card's data-league-type can just as
-		// well hold a division key as a league type, and the two never
-		// collide because a division key never appears on a Rosters/
-		// Analytics/etc. card and vice versa. It only ever shows up on the
-		// Depth Charts section's own team cards (see renderDepthChartCards),
-		// nested inside the NFL view's single Depth Charts wrapper card — Now
-		// Playing and Matchups carry no data-league-type at all, so they're
-		// never touched by this filter. Real, stable NFL alignment (unchanged
-		// since the 2002 realignment); not sourced from ESPN's API, since
-		// nothing this project has probed has needed it.
+		// The Depth Charts card's own division pill row (renderDepthChartSubTabs)
+		// reuses this exact same league-type sub-tab mechanism (wireSubtabPills,
+		// selectedLeagueTypesByView), repurposed for NFL divisions instead —
+		// a card's data-league-type can just as well hold a division key as a
+		// league type, and the two never collide because a division key never
+		// appears on a Rosters/Analytics/etc. card and vice versa. It only
+		// ever shows up on the Depth Charts section's own team cards (see
+		// renderDepthChartCards), nested inside the NFL view's single Depth
+		// Charts wrapper card. Unlike every other view, the NFL tab's own
+		// sub-tab control does NOT live in the shared page-level bar — see
+		// renderSubTabs' own early-return for 'nfl' — since Now Playing and
+		// Matchups carry no data-league-type at all and a division filter is
+		// only ever meaningful scoped to the Depth Charts card it filters.
+		// Real, stable NFL alignment (unchanged since the 2002 realignment);
+		// not sourced from ESPN's API, since nothing this project has probed
+		// has needed it.
 		const DEPTH_CHART_DIVISIONS = {
 			BUF: 'afc-east', MIA: 'afc-east', NE: 'afc-east', NYJ: 'afc-east',
 			BAL: 'afc-north', CIN: 'afc-north', CLE: 'afc-north', PIT: 'afc-north',
@@ -10500,6 +10514,44 @@
 			return card;
 		}
 
+		// The division filter used to live in the shared sub-tabs bar above
+		// the grid, back when Depth Charts was its own top-level tab; now
+		// that it's one card on the NFL tab, it's the only thing on that
+		// view a sub-tab filter would ever apply to (Now Playing/Matchups
+		// carry no data-league-type at all — see renderSubTabs' own NFL
+		// early-return), so it moved to live where it actually controls
+		// something: a small pill row at the TOP of the "Depth Charts" card
+		// itself, above the team cards it filters. Built once here
+		// (renderDepthChartCards runs once per full renderGrid, not on
+		// every NFL-tab visit or scoreboard poll — rerenderNflCards never
+		// touches this card, see its own comment) and left in place
+		// across tab switches. Reuses wireSubtabPills — the exact same
+		// selectedLeagueTypesByView['nfl'] set and .tab-btn styling the
+		// shared bar used, so a division a manager already had checked
+		// stays checked after this move. `present` is computed by the
+		// caller from the team cards actually built, the same
+		// data-league-type-off-the-DOM trick renderSubTabs uses for every
+		// other view, just scoped to this card's own children rather than
+		// the whole document.
+		function renderDepthChartSubTabs(present) {
+			const bar = el('div', { class: 'subtabs-bar depth-chart-subtabs' });
+			const buttonsEl = el('div', { class: 'tabs subtabs', role: 'group', 'aria-label': 'NFL division filters' });
+			const selectAllEl = el('a', { href: '#', class: 'subtab-link', text: 'All' });
+			const unselectAllEl = el('a', { href: '#', class: 'subtab-link', text: 'None' });
+			bar.appendChild(selectAllEl);
+			bar.appendChild(buttonsEl);
+			bar.appendChild(unselectAllEl);
+			wireSubtabPills({
+				present,
+				view: 'nfl',
+				buttonsEl,
+				selectAllEl,
+				unselectAllEl,
+				afterChange: updateVisibility,
+			});
+			return bar;
+		}
+
 		// Every team card, nested inside one collapsible "Depth Charts" wrapper
 		// card rather than appended to the grid directly as 32 top-level cards
 		// — see this section's own intro comment above. Called unconditionally
@@ -10526,15 +10578,43 @@
 			// every team card: the wrapper has no data-team-name of its own, so
 			// a search for a team by name (rather than a player on it) would
 			// find no match at the wrapper level and hide the whole section even
-			// though a nested team card matched. The wrapper's own visibility is
-			// decided after that loop instead, from whether any team card inside
-			// it ended up visible.
+			// though a nested team card matched. The wrapper's own visibility
+			// depends only on currentView, deliberately NOT on whether any team
+			// card inside it is currently visible — its own division pill row
+			// (below) lives inside this same card now, and a card that hides
+			// itself the moment its own filter shows zero teams would hide the
+			// only control that could undo that. `.depth-chart-empty` covers
+			// that state instead — see updateVisibility's own comment.
 			const wrap = el('div', { class: 'card nfl-card', 'data-view': 'nfl' });
 			wrap.dataset.depthChartsWrap = 'true';
 			const heading = el('h2', { class: 'card-heading', text: 'Depth Charts' });
 			wrap.appendChild(heading);
 			makeCollapsible(wrap, heading, 'nfl-depth-charts');
+
+			// Same present-groups computation renderSubTabs uses for every
+			// other view's sub-tab strip, scoped to just this card's own team
+			// cards rather than the whole document — see
+			// renderDepthChartSubTabs' own comment for why it lives here now.
+			const typesInTeams = new Set([...teamsWrap.children].map((c) => c.dataset.leagueType).filter(Boolean));
+			const present = SUBTAB_ORDER.filter((t) => typesInTeams.has(t)).concat(
+				[...typesInTeams].filter((t) => !SUBTAB_ORDER.includes(t))
+			);
+			if (present.length > 1) {
+				wrap.appendChild(renderDepthChartSubTabs(present));
+			} else {
+				// Nothing to filter, so nothing to hide behind an unchecked
+				// pill either — same "select everything, persist nothing"
+				// fallback renderSubTabs uses when a view has one group.
+				selectedLeagueTypesByView.nfl = new Set(present);
+			}
+
 			wrap.appendChild(teamsWrap);
+			// Shown by updateVisibility exactly when every team card is
+			// filtered out (an unchecked-everything pill state, or a search
+			// matching no team) — otherwise an all-filtered Depth Charts card
+			// would look like a rendering bug: a heading and a pill row with a
+			// blank gap underneath and no explanation.
+			wrap.appendChild(el('div', { class: 'error-box depth-chart-empty hidden', text: 'No teams match the current filters or search.' }));
 			gridEl.appendChild(wrap);
 		}
 
@@ -12147,18 +12227,26 @@
 				if (q && card.dataset.searchEmpty === 'true') searchMatch = false;
 				card.classList.toggle('hidden', !viewMatch || !typeMatch || !searchMatch);
 			});
-			// The Depth Charts wrapper, skipped above — visible only on the NFL
-			// tab, and only once at least one team card nested inside it made it
-			// through the loop above still visible (division sub-tab filtering
-			// and search both run at the team-card level, same as before this
-			// was nested — see that skip's own comment). Every nested team card
-			// is a real '.card', so this is exactly the same query the skipped
-			// generic branch would have used, just re-run after those team
-			// cards' own outcomes are final rather than racing them.
+			// The Depth Charts wrapper, skipped above — visible whenever the
+			// NFL tab is, full stop, UNLIKE every other card on the page: it
+			// carries its own division pill row now (renderDepthChartSubTabs),
+			// so hiding the wrapper the moment its own filter or a search
+			// leaves zero team cards visible would hide the only control that
+			// could undo that — see renderDepthChartCards' own comment on the
+			// wrapper. `.depth-chart-empty` covers that state visibly instead,
+			// toggled from the same "does any nested team card survive" check
+			// division sub-tab filtering and search both still run at the
+			// team-card level for, unchanged by this move (see that skip's own
+			// comment). Every nested team card is a real '.card', so this is
+			// exactly the same query the skipped generic branch would have
+			// used, just re-run after those team cards' own outcomes are final
+			// rather than racing them.
 			const depthChartsWrap = document.querySelector('[data-depth-charts-wrap]');
 			if (depthChartsWrap) {
+				depthChartsWrap.classList.toggle('hidden', currentView !== 'nfl');
 				const anyTeamVisible = [...depthChartsWrap.querySelectorAll('.card')].some((c) => !c.classList.contains('hidden'));
-				depthChartsWrap.classList.toggle('hidden', currentView !== 'nfl' || !anyTeamVisible);
+				const emptyMsg = depthChartsWrap.querySelector('.depth-chart-empty');
+				if (emptyMsg) emptyMsg.classList.toggle('hidden', anyTeamVisible);
 			}
 		}
 
@@ -12190,10 +12278,88 @@
 			return set;
 		}
 
+		// The button/link-wiring core of a sub-tab pill filter: one toggle
+		// button per entry in `present`, a Select All / None pair, and
+		// `selectedLeagueTypesByView[view]` (the persisted Set every pill
+		// reads and writes) kept in sync between them — shared by the global
+		// sub-tabs bar below (every view except NFL) and the Depth Charts
+		// card's own embedded pill row (renderDepthChartSubTabs), so the two
+		// can never drift on what a pill click actually does. `buttonsEl`/
+		// `selectAllEl`/`unselectAllEl` are handed in rather than looked up
+		// by id, since the embedded version builds its own fresh elements
+		// instead of the page's fixed `#subtabs`/`#subtabs-select-all`/
+		// `#subtabs-unselect-all` trio. `afterChange` runs once after every
+		// click — what happens next differs per view: Analytics also rebuilds
+		// its merged cards, everyone else (NFL included) just re-filters.
+		function wireSubtabPills({ present, view, buttonsEl, selectAllEl, unselectAllEl, afterChange }) {
+			const selected = selectedTypesForView(view, present);
+			const buttons = [];
+			for (const type of present) {
+				const label = SUBTAB_LABEL_OVERRIDES[type] || LEAGUE_TYPE_LABELS[type] || type;
+				const btn = el('button', {
+					class: `tab-btn${selected.has(type) ? ' active' : ''}`,
+					type: 'button',
+					'aria-pressed': String(selected.has(type)),
+					text: label,
+				});
+				// A filter checkbox, not a single-selection tab: toggles this
+				// one group in or out of the view's set rather than replacing
+				// it, so any combination — including none — is reachable, and
+				// every other pill's state is untouched.
+				btn.addEventListener('click', () => {
+					if (selected.has(type)) selected.delete(type);
+					else selected.add(type);
+					saveSelectedLeagueTypes();
+					btn.classList.toggle('active', selected.has(type));
+					btn.setAttribute('aria-pressed', String(selected.has(type)));
+					afterChange();
+				});
+				buttons.push(btn);
+				buttonsEl.appendChild(btn);
+			}
+
+			// Select all / unselect all act on the same set the pills above
+			// toggle one at a time — plain links rather than pills, since
+			// they act on the whole group instead of holding a state of
+			// their own. Reassigned via onclick (not addEventListener) so a
+			// re-render can't stack a second handler from the last one.
+			selectAllEl.onclick = (e) => {
+				e.preventDefault();
+				for (const type of present) selected.add(type);
+				saveSelectedLeagueTypes();
+				for (const btn of buttons) {
+					btn.classList.add('active');
+					btn.setAttribute('aria-pressed', 'true');
+				}
+				afterChange();
+			};
+			unselectAllEl.onclick = (e) => {
+				e.preventDefault();
+				selected.clear();
+				saveSelectedLeagueTypes();
+				for (const btn of buttons) {
+					btn.classList.remove('active');
+					btn.setAttribute('aria-pressed', 'false');
+				}
+				afterChange();
+			};
+		}
+
 		function renderSubTabs() {
 			const subtabsBar = document.getElementById('subtabs-bar');
 			const subtabsEl = document.getElementById('subtabs');
 			subtabsEl.innerHTML = '';
+
+			// NFL has no sub-tab strip of its own here — its only filter is
+			// the Depth Charts section's division pills, which live inside
+			// that card now instead of this shared bar (see
+			// renderDepthChartSubTabs' own comment for why). Now Playing and
+			// Matchups carry no data-league-type at all, so the global bar
+			// would have nothing to show on this view even before that move.
+			if (currentView === 'nfl') {
+				subtabsBar.classList.add('hidden');
+				return;
+			}
 
 			// Analytics can't use the data-league-type-off-the-DOM trick every
 			// other view uses below: its merged cards (see
@@ -12224,63 +12390,20 @@
 			}
 
 			subtabsBar.classList.remove('hidden');
-			const selected = selectedTypesForView(currentView, present);
-			const buttons = [];
-			for (const type of present) {
-				const label = SUBTAB_LABEL_OVERRIDES[type] || LEAGUE_TYPE_LABELS[type] || type;
-				const btn = el('button', {
-					class: `tab-btn${selected.has(type) ? ' active' : ''}`,
-					type: 'button',
-					'aria-pressed': String(selected.has(type)),
-					text: label,
-				});
-				// A filter checkbox, not a single-selection tab: toggles this
-				// one group in or out of the current view's set rather than
-				// replacing it, so any combination — including none — is
-				// reachable, and every other pill's state is untouched.
-				btn.addEventListener('click', () => {
-					if (selected.has(type)) selected.delete(type);
-					else selected.add(type);
-					saveSelectedLeagueTypes();
-					btn.classList.toggle('active', selected.has(type));
-					btn.setAttribute('aria-pressed', String(selected.has(type)));
-					// Power Rankings/Team Needs/Bye Weeks are the one place a
-					// sub-tab toggle changes a card's content rather than just
-					// its visibility — see refreshMergedAnalyticsCards.
+			wireSubtabPills({
+				present,
+				view: currentView,
+				buttonsEl: subtabsEl,
+				selectAllEl: document.getElementById('subtabs-select-all'),
+				unselectAllEl: document.getElementById('subtabs-unselect-all'),
+				// Power Rankings/Team Needs/Bye Weeks are the one place a
+				// sub-tab toggle changes a card's content rather than just its
+				// visibility — see refreshMergedAnalyticsCards.
+				afterChange: () => {
 					if (currentView === 'analytics') refreshMergedAnalyticsCards();
 					updateVisibility();
-				});
-				buttons.push(btn);
-				subtabsEl.appendChild(btn);
-			}
-
-			// Select all / unselect all act on the same set the pills above
-			// toggle one at a time — plain links rather than pills, since
-			// they act on the whole group instead of holding a state of
-			// their own. Reassigned via onclick (not addEventListener) so a
-			// re-render can't stack a second handler from the last one.
-			document.getElementById('subtabs-select-all').onclick = (e) => {
-				e.preventDefault();
-				for (const type of present) selected.add(type);
-				saveSelectedLeagueTypes();
-				for (const btn of buttons) {
-					btn.classList.add('active');
-					btn.setAttribute('aria-pressed', 'true');
-				}
-				if (currentView === 'analytics') refreshMergedAnalyticsCards();
-				updateVisibility();
-			};
-			document.getElementById('subtabs-unselect-all').onclick = (e) => {
-				e.preventDefault();
-				selected.clear();
-				saveSelectedLeagueTypes();
-				for (const btn of buttons) {
-					btn.classList.remove('active');
-					btn.setAttribute('aria-pressed', 'false');
-				}
-				if (currentView === 'analytics') refreshMergedAnalyticsCards();
-				updateVisibility();
-			};
+				},
+			});
 		}
 
 		// Player search applies to Rosters, NFL (Depth Charts' own team cards
