@@ -4334,6 +4334,13 @@
 		// the "leave already-real cards alone" rule refreshLiveScoring's own
 		// comment describes for the cards themselves.
 		let lastLiveGeneratedAt = null;
+		// True only while the LAST completed attempt was a failure — read by
+		// liveScoringDataIsFresh so returning to the Scoring tab always
+		// retries after a failure, rather than silently sitting on a
+		// "Live update failed" message for up to 30 minutes just because
+		// lastLiveGeneratedAt (which a failure never touches) happens to
+		// still look recent.
+		let lastLivePollFailed = false;
 		// A ticking setInterval, separate from liveScoringTimer's own
 		// setTimeout chain (see that variable's comment on why polling
 		// itself isn't on a fixed interval) — this one only repaints the
@@ -12324,13 +12331,40 @@
 			return anyGameLive() ? LIVE_SCORING_POLL_MS : LIVE_SCORING_IDLE_POLL_MS;
 		}
 
+		// How long ago the last SUCCESSFUL poll landed — Infinity when there
+		// hasn't been one yet, so a fresh page load always fails the
+		// liveScoringDataIsFresh check below rather than dividing by "never".
+		function msSinceLastLivePoll() {
+			return lastLiveGeneratedAt ? Date.now() - new Date(lastLiveGeneratedAt).getTime() : Infinity;
+		}
+
+		// Whether the cached poll is still within the SAME cadence window a
+		// fresh one would be judged by (see nextLiveScoringDelayMs) — used by
+		// startLiveScoringPolling to skip a redundant immediate re-fetch when
+		// the reader only glanced away and back (a backgrounded browser tab
+		// regaining focus, or switching to Scoring and straight back), rather
+		// than firing a real network request every single time polling
+		// (re)starts regardless of how recently the last one ran. A failed
+		// last attempt is never "fresh" no matter what the math says — the
+		// status line is still showing "Live update failed", and coming back
+		// to the tab should retry rather than silently sit on that failure
+		// for up to 30 minutes.
+		function liveScoringDataIsFresh() {
+			return !lastLivePollFailed && msSinceLastLivePoll() < nextLiveScoringDelayMs();
+		}
+
 		// Replaces any pending poll rather than stacking a second one — the
 		// bench-drawer-open nudge (appendBenchDetail's own click handler) calls
 		// refreshLiveScoring ad hoc between scheduled polls, and without this
 		// the regular chain's own next tick would still fire moments later.
-		function scheduleLiveScoringPoll() {
+		// `delayMs`, when given, overrides nextLiveScoringDelayMs() — used by
+		// startLiveScoringPolling's resume path to schedule the REMAINDER of
+		// a still-fresh window rather than a full new one, so a real poll
+		// keeps landing on schedule instead of being pushed out every time
+		// the reader glances away and back within that window.
+		function scheduleLiveScoringPoll(delayMs) {
 			if (liveScoringTimer) clearTimeout(liveScoringTimer);
-			liveScoringTimer = setTimeout(refreshLiveScoring, nextLiveScoringDelayMs());
+			liveScoringTimer = setTimeout(refreshLiveScoring, delayMs != null ? delayMs : nextLiveScoringDelayMs());
 		}
 
 		// Repaints the live-status line from lastLiveGeneratedAt — shared by
@@ -12395,6 +12429,7 @@
 				liveScoringAttempted = true;
 				rerenderScoringCards();
 				lastLiveGeneratedAt = live.generatedAt;
+				lastLivePollFailed = false;
 				// See renderLiveStatusFreshness's own comment for the
 				// "Live updates on"/reload-warning framing and why it's
 				// conditional on anyGameLive() rather than always shown.
@@ -12416,6 +12451,7 @@
 			} catch (err) {
 				console.warn(`Live scoring refresh failed: ${err.message}`);
 				liveScoringAttempted = true;
+				lastLivePollFailed = true;
 				// Release any "Loading live scores…" placeholders back to the
 				// sync's own data rather than leaving them stuck forever — a
 				// later failure, by contrast, leaves already-real cards alone.
@@ -12446,7 +12482,20 @@
 			document.getElementById('live-status').classList.remove('hidden');
 			if (liveScoringPollingEnabled) return;
 			liveScoringPollingEnabled = true;
-			refreshLiveScoring();
+			if (liveScoringDataIsFresh()) {
+				// The cached poll is still within its own cadence window —
+				// resume the display from it (it may have sat un-ticked while
+				// polling was stopped) and schedule the NEXT real poll for
+				// what's left of that window, rather than firing a redundant
+				// network request just because the reader glanced away and
+				// back (a backgrounded tab regaining focus, or a quick tab
+				// switch). See liveScoringDataIsFresh's own comment.
+				renderLiveStatusFreshness();
+				if (!liveStatusTickTimer) liveStatusTickTimer = setInterval(renderLiveStatusFreshness, LIVE_STATUS_TICK_MS);
+				scheduleLiveScoringPoll(Math.max(nextLiveScoringDelayMs() - msSinceLastLivePoll(), 0));
+			} else {
+				refreshLiveScoring();
+			}
 		}
 
 		function stopLiveScoringPolling() {

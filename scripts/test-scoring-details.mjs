@@ -1041,8 +1041,12 @@ function leagueWithMatchup() {
 // --- Pausing the live-scoring poll while the browser tab is backgrounded ---
 // A manager who leaves the Scoring tab open in a hidden browser tab must not
 // keep polling MFL every 30s for a screen nobody is looking at, and must
-// pick back up immediately — not wait out the interval — the moment it's
-// visible again.
+// pick back up the moment it's visible again — immediately with a real
+// network poll when there's no cached data still within its own cadence
+// window (this case: refreshLiveScoring is a spy that never sets
+// lastLiveGeneratedAt, so liveScoringDataIsFresh is never true here), or
+// otherwise by resuming the display from that cache — see the
+// liveScoringDataIsFresh cases further below for that branch.
 {
 	const ctx = makeContext(LOGGED_IN);
 	vm.runInContext("currentView = 'scoring';", ctx);
@@ -1061,6 +1065,74 @@ function leagueWithMatchup() {
 	fireVisibilityChange(ctx, 'visible');
 	assert.equal(calls, 2, 'coming back resumes with an immediate poll rather than waiting out the interval');
 	assert.equal(vm.runInContext('liveScoringPollingEnabled', ctx), true);
+}
+
+// --- startLiveScoringPolling skips a redundant immediate re-fetch when the
+// cached poll is still fresh, per liveScoringDataIsFresh ---
+// Landing on/returning to Scoring used to ALWAYS fire an immediate network
+// poll no matter how recently the last one ran — every quick tab switch or
+// backgrounded-tab refocus cost a real MFL/ESPN/Sleeper round trip. Now it
+// only does that when the cache is actually stale for the CURRENT cadence
+// (30s live / 30 minutes idle, from nextLiveScoringDelayMs).
+{
+	const ctx = makeContext(LOGGED_IN);
+	vm.runInContext("currentView = 'scoring';", ctx);
+	ctx.liveScoringAttempted = true;
+	ctx.fetch = async () => ({
+		ok: true,
+		json: async () => ({ generatedAt: new Date().toISOString(), games: { BUF: { state: 'in' } }, leagues: [] }),
+	});
+	ctx.__testPageData = { leagues: [] };
+	vm.runInContext('pageData = __testPageData;', ctx);
+
+	// Seed a real, fresh poll directly — mirrors one that already happened
+	// moments ago, not the startLiveScoringPolling call under test.
+	// liveScoringPollingEnabled is still false at this point (never set),
+	// so refreshLiveScoring's own finally block reschedules nothing and
+	// leaves no timer to clean up.
+	await ctx.refreshLiveScoring();
+
+	let calls = 0;
+	ctx.__spy = () => { calls++; };
+	vm.runInContext('refreshLiveScoring = __spy;', ctx);
+
+	ctx.startLiveScoringPolling();
+	assert.equal(calls, 0, 'the cache is still within its own 30s live window — no redundant immediate poll');
+	assert.equal(vm.runInContext('liveScoringPollingEnabled', ctx), true, 'polling is still considered active');
+	assert.equal(vm.runInContext('!!liveStatusTickTimer', ctx), true, 'the display ticker resumes even though the network poll was skipped');
+
+	// Clean up the real setTimeout/setInterval scheduleLiveScoringPoll and
+	// the ticker just created — left running, they'd keep this test's Node
+	// process alive for up to 30s after the script body finishes (see the
+	// live-status ticking suite's own comment on exactly this failure mode).
+	vm.runInContext('stopLiveScoringPolling();', ctx);
+}
+
+// A failed last attempt is never "fresh", however recent
+// lastLiveGeneratedAt (which a failure never touches) happens to look —
+// returning to the tab must retry rather than silently sit on a
+// "Live update failed" message for up to 30 minutes.
+{
+	const ctx = makeContext(LOGGED_IN);
+	vm.runInContext("currentView = 'scoring';", ctx);
+	ctx.liveScoringAttempted = true;
+	ctx.fetch = async () => ({
+		ok: true,
+		json: async () => ({ generatedAt: new Date().toISOString(), games: { BUF: { state: 'in' } }, leagues: [] }),
+	});
+	ctx.__testPageData = { leagues: [] };
+	vm.runInContext('pageData = __testPageData;', ctx);
+
+	await ctx.refreshLiveScoring(); // succeeds, seeds a fresh lastLiveGeneratedAt
+	ctx.fetch = async () => { throw new Error('boom'); };
+	await ctx.refreshLiveScoring(); // fails — lastLiveGeneratedAt is untouched, but lastLivePollFailed flips true
+
+	let calls = 0;
+	ctx.__spy = () => { calls++; };
+	vm.runInContext('refreshLiveScoring = __spy;', ctx);
+
+	ctx.startLiveScoringPolling();
+	assert.equal(calls, 1, 'the last attempt failed, so returning to the tab retries immediately despite a recent-looking lastLiveGeneratedAt');
 }
 
 // The pause/resume listener must never act for a reader who backgrounds the
