@@ -1711,29 +1711,16 @@
 		.now-playing-card {
 			grid-column: 1 / -1;
 		}
-		/* The subtitle row carries both the live count and the Score sort
-		   toggle — space-between rather than stacked, since a phone-width
-		   card has room for both on one line and a wider one would otherwise
-		   leave the toggle stranded on the far right with nothing near it. */
+		/* Just the live count today — kept as its own flex row (rather than
+		   folded into the heading) since it used to share this line with a
+		   Score sort toggle, and a future subtitle addition has the same
+		   reason to sit here rather than in the heading. */
 		.now-playing-subtitle {
 			display: flex;
 			flex-wrap: wrap;
 			justify-content: space-between;
 			align-items: baseline;
 			gap: 0.3rem 0.6rem;
-		}
-		/* Small and muted like the subtitle text it sits in, accent-colored
-		   only for the "this is clickable" cue every other link-button on
-		   this page uses — not .starters-link/.now-playing-count-link's
-		   underline, which would read as too heavy against a subtitle. */
-		.now-playing-sort-btn {
-			font: inherit;
-			font-size: 0.78rem;
-			color: var(--accent);
-			background: none;
-			border: none;
-			padding: 0;
-			cursor: pointer;
 		}
 		/* One mini-card per position (QB/RB/WR/.../Def), side by side rather
 		   than one long vertical list — the whole reason this exists (see
@@ -7733,29 +7720,8 @@
 				return card;
 			}
 
-			// Score is the only sortable dimension left once Player/Pos/My
-			// Teams stopped being columns of their own — so rather than pull
-			// in makeTableSort's <th>-shaped sortableHeader, this is the same
-			// three-state cycle (natural -> reverse -> back to the card's own
-			// default order) hand-rolled small, the way Power Rankings' own
-			// comment describes doing when a card's shape doesn't fit that
-			// helper. 0 is the unsorted state, using computeNowPlaying's own
-			// best-first order; -1/1 are explicit descending/ascending.
-			let sortDir = 0;
-			const sortBtn = el('button', { type: 'button', class: 'now-playing-sort-btn' });
-			const updateSortBtn = () => {
-				sortBtn.textContent = sortDir === 0 ? 'Sort by score' : `Score ${sortDir === 1 ? '▲' : '▼'}`;
-			};
-			updateSortBtn();
-			sortBtn.addEventListener('click', () => {
-				sortDir = sortDir === 0 ? -1 : sortDir === -1 ? 1 : 0;
-				updateSortBtn();
-				renderBody();
-			});
-
 			const subtitle = el('div', { class: 'team card-collapse-visible now-playing-subtitle' });
 			subtitle.appendChild(el('span', { text: `${rows.length} player${rows.length === 1 ? '' : 's'} live right now` }));
-			subtitle.appendChild(sortBtn);
 			card.appendChild(subtitle);
 
 			const positionsWrap = el('div', { class: 'now-playing-positions' });
@@ -7763,18 +7729,15 @@
 
 			function renderBody() {
 				positionsWrap.innerHTML = '';
-				// One global sort, then bucket by position — Array#sort is
-				// stable, so each position's own bucket keeps whatever
-				// relative order this pass produced rather than needing a
-				// second sort per group.
-				const sorted = sortDir === 0 ? rows : [...rows].sort((a, b) => {
-					if (a.score == null && b.score == null) return 0;
-					if (a.score == null) return 1;
-					if (b.score == null) return -1;
-					return (a.score - b.score) * sortDir;
-				});
+				// No sort toggle any more — always computeNowPlaying's own
+				// best-first order (highest score first, unscored sinking to
+				// the bottom). Bucketing by position preserves that order
+				// within each bucket for free: Array#sort is stable, so a
+				// position's own group keeps the relative order the one
+				// global sort already gave it, without a second per-group
+				// sort.
 				const groups = new Map();
-				for (const r of sorted) {
+				for (const r of rows) {
 					const pos = r.position || '—';
 					if (!groups.has(pos)) groups.set(pos, []);
 					groups.get(pos).push(r);
