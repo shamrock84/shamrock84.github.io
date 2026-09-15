@@ -1886,40 +1886,14 @@
 			color: var(--gold-chip-text);
 			font-weight: 700;
 		}
-		/* The pill's bottom line: the on-site Stats toggle (primary) and the
-		   ESPN link (secondary — still the only place for kicking/team-
-		   defense stats, see nflBoxscorePlayerLines' own comment) side by
-		   side rather than stacked, so adding the toggle didn't grow the
-		   pill by a whole extra row. */
-		.nfl-game-actions {
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			gap: 0.35rem;
-		}
-		.nfl-game-actions-sep {
-			color: var(--muted);
-		}
-		.nfl-boxscore-toggle {
-			display: flex;
-			align-items: center;
-			gap: 0.2rem;
-			font: inherit;
-			font-size: 0.75rem;
-			color: var(--accent);
-			background: none;
-			border: none;
-			padding: 0;
-			cursor: pointer;
-		}
-		.nfl-boxscore-chevron {
-			display: inline-block;
-			transition: transform 0.15s ease;
-		}
-		.nfl-boxscore-toggle[aria-expanded="true"] .nfl-boxscore-chevron {
-			transform: rotate(180deg);
-		}
+		/* The ESPN link keeps its own small line above the toggle — still the
+		   only place for kicking/team-defense stats (see
+		   nflBoxscorePlayerLines' own comment) — so the toggle below can be
+		   the exact same full-width "Show detail"/"Hide detail" strip the
+		   Scoring tab's own .scoring-detail-toggle is, with nothing sharing
+		   its row to compete for width or attention. */
 		.nfl-boxscore-link {
+			align-self: center;
 			font-size: 0.75rem;
 			color: var(--accent);
 			text-decoration: none;
@@ -1927,6 +1901,43 @@
 		}
 		.nfl-boxscore-link:hover {
 			text-decoration: underline;
+		}
+		/* Same look, same interaction, same copy as .scoring-detail-toggle —
+		   a separate class rather than reusing that one (see this file's own
+		   convention on two features sharing a visual form: .results-* vs
+		   .finances-*), since these toggle two unrelated features' drawers,
+		   but the rules themselves are deliberately identical. Negative
+		   margin claws back .nfl-game-row's own padding so the strip still
+		   spans the pill edge-to-edge the way makeCollapsible's whole-heading
+		   click target does — a mis-aimed tap on a phone still opens it. */
+		.nfl-boxscore-toggle {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 0.3rem;
+			width: calc(100% + 1.3rem);
+			margin: 0 -0.65rem -0.55rem;
+			border: none;
+			border-top: 1px solid var(--border);
+			background: none;
+			color: var(--muted);
+			font: inherit;
+			font-size: 0.7rem;
+			text-transform: uppercase;
+			letter-spacing: 0.04em;
+			padding: 0.3rem 0.7rem;
+			cursor: pointer;
+		}
+		.nfl-boxscore-toggle:hover {
+			color: var(--text);
+		}
+		.nfl-boxscore-chevron {
+			display: inline-block;
+			font-size: 0.85em;
+			transition: transform 0.15s ease;
+		}
+		.nfl-boxscore-toggle[aria-expanded="true"] .nfl-boxscore-chevron {
+			transform: rotate(180deg);
 		}
 		/* The stat drawer is a SIBLING of its pill in .nfl-scoreboard, not a
 		   child — a multi-column stat table has no room in a ~150-200px
@@ -10518,20 +10529,22 @@
 			body.appendChild(teamsWrap);
 		}
 
-		// Appends the "Stats" toggle into `actions` (the pill's own compact
-		// action row) and returns the drawer body — a SIBLING of the pill in
-		// the caller (renderNflGameRow), not a child of it, since a
-		// multi-column stat table needs real width and the pill itself tops
-		// out around 150-200px (see .nfl-boxscore-body's own CSS comment for
-		// how it claims a full row of its own inside the flex-wrapped
-		// scoreboard).
-		function appendNflBoxscoreToggle(actions, game) {
+		// Appends the toggle directly onto `pill` — a full-width "Show
+		// detail"/"Hide detail" strip, same look, same copy, same
+		// interaction as the Scoring tab's own appendMatchupDetail (this is
+		// exactly what was asked for: the same drawer UX, not a lookalike).
+		// Returns the drawer body, a SIBLING of the pill in the caller
+		// (renderNflGameRow), not a child of it — a multi-column stat table
+		// needs real width the pill itself can't offer at ~150-200px (see
+		// .nfl-boxscore-body's own CSS comment for how it claims a full row
+		// of its own inside the flex-wrapped scoreboard).
+		function appendNflBoxscoreToggle(pill, game) {
 			const key = game.id;
 			const open = isNflBoxscoreOpen(key);
 			const body = el('div', { class: 'nfl-boxscore-body' });
 
 			const chevron = el('span', { class: 'nfl-boxscore-chevron', 'aria-hidden': 'true', text: '▾' });
-			const label = el('span', { text: open ? 'Hide stats' : 'Stats' });
+			const label = el('span', { text: open ? 'Hide detail' : 'Show detail' });
 			const toggle = el('button', { type: 'button', class: 'nfl-boxscore-toggle', 'aria-expanded': String(open) });
 			toggle.appendChild(chevron);
 			toggle.appendChild(label);
@@ -10545,7 +10558,7 @@
 				if (next) fillNflBoxscoreBody(body, game);
 				body.hidden = !next;
 				toggle.setAttribute('aria-expanded', String(next));
-				label.textContent = next ? 'Hide stats' : 'Stats';
+				label.textContent = next ? 'Hide detail' : 'Show detail';
 				// Opening a drawer that wasn't already open means the LAST
 				// poll never asked api/live-scoring.js for this game's
 				// boxscore (see nflBoxscoreOpenGameIds) — kick an immediate
@@ -10557,7 +10570,7 @@
 				if (next) refreshNflScoreboard();
 			});
 
-			actions.appendChild(toggle);
+			pill.appendChild(toggle);
 			return body;
 		}
 
@@ -10577,23 +10590,19 @@
 			row.appendChild(teams);
 			row.appendChild(el('div', { class: 'nfl-game-status', text: formatGameWhen(game) }));
 
-			// Stats (on-site, via the drawer) is the primary action now; the
-			// ESPN link stays as a secondary escape hatch for the official
-			// page's video/logos rather than being removed outright — see
-			// nflBoxscorePlayerLines' own comment on why kicking/defense
-			// still aren't covered here, which is exactly what that link is
-			// still good for.
-			const actions = el('div', { class: 'nfl-game-actions' });
-			const drawer = appendNflBoxscoreToggle(actions, game);
-			actions.appendChild(el('span', { class: 'nfl-game-actions-sep', 'aria-hidden': 'true', text: '·' }));
-			actions.appendChild(el('a', {
+			// Still the only place for kicking/team-defense stats (see
+			// nflBoxscorePlayerLines' own comment) — its own small line
+			// above the toggle rather than sharing a row with it, so the
+			// toggle below can be the same unshared full-width strip the
+			// Scoring tab's own drawer uses.
+			row.appendChild(el('a', {
 				class: 'nfl-boxscore-link',
 				href: `https://www.espn.com/nfl/boxscore/_/gameid/${game.id}`,
 				target: '_blank',
 				rel: 'noopener',
 				text: 'ESPN ↗',
 			}));
-			row.appendChild(actions);
+			const drawer = appendNflBoxscoreToggle(row, game);
 
 			return [row, drawer];
 		}
