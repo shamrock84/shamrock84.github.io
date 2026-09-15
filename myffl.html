@@ -10936,9 +10936,15 @@
 			return row;
 		}
 
+		// heading carries the game count in parens — same `${label} (${count})`
+		// idiom every other counted heading on this page uses (Rosters' status
+		// groups, Now Playing's own position groups, Analytics' league-list
+		// summaries) — so a manager can tell Now Playing has something to look
+		// at, or how big this week's slate is on Matchups, without opening
+		// either card.
 		function renderNflScoreCard(id, heading, games, emptyText) {
 			const card = el('div', { class: 'card nfl-card', 'data-view': 'nfl' });
-			const headingEl = el('h2', { class: 'card-heading', text: heading });
+			const headingEl = el('h2', { class: 'card-heading', text: `${heading} (${games.length})` });
 			card.appendChild(headingEl);
 			makeCollapsible(card, headingEl, id);
 			const body = el('div', { class: 'nfl-scoreboard' });
