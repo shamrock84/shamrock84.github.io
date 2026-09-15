@@ -1906,17 +1906,25 @@
 		   a separate class rather than reusing that one (see this file's own
 		   convention on two features sharing a visual form: .results-* vs
 		   .finances-*), since these toggle two unrelated features' drawers,
-		   but the rules themselves are deliberately identical. Negative
-		   margin claws back .nfl-game-row's own padding so the strip still
-		   spans the pill edge-to-edge the way makeCollapsible's whole-heading
-		   click target does — a mis-aimed tap on a phone still opens it. */
+		   but the rules themselves are deliberately identical. .scoring-
+		   detail-toggle gets this for free because its own pill carries no
+		   padding of its own; .nfl-game-row does (padding: 0.55rem 0.65rem),
+		   so the negative margin has to claw back BOTH that padding and the
+		   pill's own 1px border — leaving out the border was the bug a
+		   first pass shipped with: the strip stopped exactly 1px short of
+		   each edge, matching the border width exactly, since width:100%
+		   only reaches the padding edge (the border's own INNER face), not
+		   through it. Clawing back the full padding+border is what actually
+		   lines the strip up flush with the pill's outer edge, the same
+		   place its rounded corners are drawn — a mis-aimed tap on a phone
+		   still opens it either way, but only this fully reaches it. */
 		.nfl-boxscore-toggle {
 			display: flex;
 			align-items: center;
 			justify-content: center;
 			gap: 0.3rem;
-			width: calc(100% + 1.3rem);
-			margin: 0 -0.65rem -0.55rem;
+			width: calc(100% + 1.3rem + 2px);
+			margin: 0 calc(-0.65rem - 1px) -0.55rem;
 			border: none;
 			border-top: 1px solid var(--border);
 			background: none;
