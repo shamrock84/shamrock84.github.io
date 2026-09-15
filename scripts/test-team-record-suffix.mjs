@@ -1,15 +1,18 @@
-// Unit test for currentRecord/appendRecord in myffl.html — the W-L(-T)
-// suffix appended to a team's name on the Rosters and Scoring tabs.
+// Unit test for currentRecord/appendRecord in myffl.html — the W-L suffix
+// appended to a team's name on the Rosters and Scoring tabs.
 //
 // The rule is deliberately narrow: read the record off this league's own
 // standings (league.standings, already fetched for the Standings tab's own
-// W-L-T column) and append it only when it isn't 0-0-0. A season-opening
-// "0-0" on every row would be noise rather than information, and it's also
-// what keeps a draftonly league silent here for free — its h2h fields are
-// always zero (see showRecord in renderStandingsCard) — without a separate
-// type check. Every way this can break is silent: a wrong franchiseId join
-// renders a plausible record for the wrong team, and a missing 0-0-0 guard
-// clutters every card in Week 1.
+// W-L column) and append it only when it isn't 0-0. A season-opening "0-0"
+// on every row would be noise rather than information, and it's also what
+// keeps a draftonly league silent here for free — its h2h fields are always
+// zero (see showRecord in renderStandingsCard) — without a separate type
+// check. The provider's own ties field is read nowhere here at all: every
+// league this page tracks runs its own tiebreaker rule instead of letting a
+// matchup stand as tied, so a nonzero ties count (however it got there) is
+// silently dropped rather than rendered as a third number. Every way this
+// can break is silent: a wrong franchiseId join renders a plausible record
+// for the wrong team, and a missing 0-0 guard clutters every card in Week 1.
 //
 // As in test-cut-planning-window.mjs there is no DOM here: the page's
 // script block is evaluated in a vm with the handful of browser globals it
@@ -76,8 +79,8 @@ const league = {
 };
 
 check('a real record formats as W-L', currentRecord(league, '0001') === '5-2');
-check('a tied record appends -T', currentRecord(league, '0002') === '3-3-1');
-check('0-0-0 is omitted, not formatted as "0-0"', currentRecord(league, '0003') === null);
+check('a nonzero ties count is dropped, not appended as -T', currentRecord(league, '0002') === '3-3');
+check('0-0 is omitted, not formatted as "0-0"', currentRecord(league, '0003') === null);
 check('a franchiseId absent from standings is omitted', currentRecord(league, 'ghost') === null);
 check('no standings array at all degrades to omitted, not a crash', currentRecord({ franchiseId: '0001' }, '0001') === null);
 
@@ -89,7 +92,7 @@ check('appendRecord leaves the name alone when the record is null', appendRecord
 check(
 	'record stacks with an owner name rather than replacing it',
 	appendRecord(teamNameWithOwner({ teamName: 'Fall Guys', ownerName: 'Tyler' }), currentRecord(league, '0002'))
-		=== 'Fall Guys (Tyler) (3-3-1)'
+		=== 'Fall Guys (Tyler) (3-3)'
 );
 
 if (failures) {
