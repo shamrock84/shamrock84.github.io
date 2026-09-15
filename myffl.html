@@ -12302,18 +12302,26 @@
 			}
 		}
 
-		// How long until the NEXT poll, decided from what the LAST one found —
-		// liveGames is set inside refreshLiveScoring's own try block below on
-		// success, before this ever runs. Fast (LIVE_SCORING_POLL_MS) the
-		// moment anything is genuinely live; the slow fallback otherwise,
-		// which is most of a week. A failed poll leaves liveGames exactly as
-		// it was (refreshLiveScoring's catch block never touches it), so this
-		// reads it the same way as a successful one that found nothing live —
-		// retrying a broken poll every 30s forever would be its own way of
-		// hammering a dead endpoint.
+		// Whether the LAST poll found anything genuinely underway — liveGames
+		// is set inside refreshLiveScoring's own try block on success, before
+		// either of this function's two callers ever run. A failed poll
+		// leaves liveGames exactly as it was (refreshLiveScoring's catch
+		// block never touches it), so both callers read it the same way a
+		// successful-but-nothing-live poll would: nextLiveScoringDelayMs
+		// falls back to the slow interval rather than hammering a dead
+		// endpoint every 30s, and renderLiveStatusFreshness drops the
+		// "Live updates on" framing rather than claiming a poll that failed
+		// is actively watching anything.
+		function anyGameLive() {
+			return Object.values(liveGames).some((g) => g.state === 'in');
+		}
+
+		// How long until the NEXT poll, decided from what the LAST one found
+		// (see anyGameLive). Fast (LIVE_SCORING_POLL_MS) the moment anything
+		// is genuinely live; the slow fallback otherwise, which is most of a
+		// week.
 		function nextLiveScoringDelayMs() {
-			const anyLive = Object.values(liveGames).some((g) => g.state === 'in');
-			return anyLive ? LIVE_SCORING_POLL_MS : LIVE_SCORING_IDLE_POLL_MS;
+			return anyGameLive() ? LIVE_SCORING_POLL_MS : LIVE_SCORING_IDLE_POLL_MS;
 		}
 
 		// Replaces any pending poll rather than stacking a second one — the
@@ -12331,8 +12339,21 @@
 		// after), so "last refreshed X ago" keeps counting up between polls
 		// instead of freezing at whatever it said the moment the last one
 		// completed.
+		//
+		// The "Live updates on"/"No need to manually refresh" framing only
+		// applies while anyGameLive() — the 30s window, the one case where a
+		// manager watching a close game might actually be tempted to hit
+		// reload waiting for the next point. Outside it (nextLiveScoringDelayMs'
+		// own 30-minute fallback), nothing is actively updating right now, so
+		// claiming otherwise would be the misleading half of exactly what
+		// this line exists to prevent — a bare "Last refreshed X ago" says
+		// only what's actually true.
 		function renderLiveStatusFreshness() {
-			setLiveStatus(`Live updates on — last refreshed ${timeAgo(lastLiveGeneratedAt)}`, false, 'No need to manually refresh');
+			if (anyGameLive()) {
+				setLiveStatus(`Live updates on — last refreshed ${timeAgo(lastLiveGeneratedAt)}`, false, 'No need to manually refresh');
+			} else {
+				setLiveStatus(`Last refreshed ${timeAgo(lastLiveGeneratedAt)}`, false);
+			}
 		}
 
 		async function refreshLiveScoring() {
@@ -12374,15 +12395,9 @@
 				liveScoringAttempted = true;
 				rerenderScoringCards();
 				lastLiveGeneratedAt = live.generatedAt;
-				// The reload warning rides along with the freshness text as
-				// its own em-dash segment rather than replacing it — a
-				// manager watching this line stall at the same "X ago"
-				// would otherwise have no way to tell a dead poll from a
-				// live one, and reloading the page is exactly the wrong
-				// response to either: it re-fetches the full
-				// data/rosters.json snapshot for nothing (the poll already
-				// keeps live scoring current) and, on a phone, is the
-				// instinct this line exists to head off.
+				// See renderLiveStatusFreshness's own comment for the
+				// "Live updates on"/reload-warning framing and why it's
+				// conditional on anyGameLive() rather than always shown.
 				renderLiveStatusFreshness();
 				// Started here rather than alongside liveScoringTimer in
 				// scheduleLiveScoringPoll — this ticks the DISPLAY, not the
