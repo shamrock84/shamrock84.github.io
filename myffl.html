@@ -2192,6 +2192,22 @@
 			font-size: 0.72rem;
 			margin-top: 0.1rem;
 		}
+		/* (W)/(L) appended to the card's own "Week N" line once my own
+		   matchup is finished (0 minutes left, winProb resolved to the
+		   deterministic 100/0 — see estimateWinProbability's own comment
+		   on when that happens). Reuses the gain/loss green/red pair
+		   Results and Finances already use (--gain-text/--ir-text), same
+		   as .results-trend-up/-down, rather than a third meaning for the
+		   colors. Bold, unlike the plain "Week N" text beside it, since
+		   this is the one thing on the card meant to jump out at a glance —
+		   an earlier attempt at coloring the team name and score
+		   themselves for the same fact read as too busy across the whole
+		   card and was backed out. */
+		.scoring-week-result {
+			font-weight: 700;
+		}
+		.scoring-week-win { color: var(--gain-text); }
+		.scoring-week-loss { color: var(--ir-text); }
 		/* The per-matchup detail drawer: each pill's own starter-by-starter
 		   breakdown, opened by the toggle strip at its foot. Modelled on
 		   ESPN's live scoreboard — the two teams side by side with the
@@ -6969,7 +6985,11 @@
 			}
 
 			if (league.scoring?.week) {
-				card.appendChild(el('div', { class: 'team card-collapse-visible', text: `Week ${league.scoring.week}` }));
+				const weekHeader = el('div', { class: 'team card-collapse-visible' });
+				weekHeader.appendChild(document.createTextNode(`Week ${league.scoring.week}`));
+				const resultTag = scoringWeekResultTag(teams);
+				if (resultTag) weekHeader.appendChild(resultTag);
+				card.appendChild(weekHeader);
 			}
 
 			const matchups = league.scoring?.matchups;
@@ -7146,6 +7166,20 @@
 			if (t.minutesRemaining != null) parts.push(`${t.minutesRemaining} min left`);
 			if (t.winProb != null) parts.push(`Win ${t.winProb}%`);
 			return parts.join(' · ');
+		}
+
+		// The bold (W)/(L) appended to the Week N line — see the CSS
+		// comment on .scoring-week-result. Reads my own team straight off
+		// the flat teams list rather than the matchup groups below, so it
+		// renders identically whether or not the provider exposes matchups.
+		// null for a bye (isMe present but no winProb — see attachWinProbabilities'
+		// own comment), an unfinished game, or a tie's 50/50.
+		function scoringWeekResultTag(teams) {
+			const mine = teams.find((t) => t.isMe);
+			if (!mine || mine.minutesRemaining !== 0 || mine.winProb == null) return null;
+			if (mine.winProb === 100) return el('span', { class: 'scoring-week-result scoring-week-win', text: ' (W)' });
+			if (mine.winProb === 0) return el('span', { class: 'scoring-week-result scoring-week-loss', text: ' (L)' });
+			return null;
 		}
 
 		// --- Scoring tab: the per-matchup detail drawer ---
