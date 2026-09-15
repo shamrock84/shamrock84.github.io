@@ -39,8 +39,19 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
+      # Blobless + sparse checkout: skips mfl/PSD and images/, which no
+      # workflow here reads. Same five directories everywhere on purpose;
+      # see sync-fantasy-rosters.yml for the reasoning and the numbers.
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout: |
+            api
+            scripts
+            config
+            data
+            .github
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -60,6 +71,35 @@ jobs:
               echo "  ok    $f"
             else
               echo "  FAIL  $f"
+              fail=1
+            fi
+          done
+          exit $fail
+
+      # Every test in scripts/ is expected to be listed as a step below, and
+      # until this step existed nothing enforced that — a new scripts/test-*.mjs
+      # simply never ran unless whoever added it remembered to come back here
+      # and wire it up. That is the quietest possible failure: the suite goes
+      # green, the badge stays green, and the assertions someone just wrote are
+      # dead weight nobody notices for months.
+      #
+      # test-set-lineup.mjs is the one deliberate exception and always will be:
+      # it performs a real lineup WRITE against MFL, which needs credentials
+      # and must never run unattended on a pull request. It has its own
+      # workflow_dispatch-only workflow (test-set-lineup.yml) for that reason.
+      - name: Check every test is registered in this workflow
+        run: |
+          fail=0
+          for f in scripts/test-*.mjs; do
+            b=$(basename "$f")
+            if [ "$b" = "test-set-lineup.mjs" ]; then
+              echo "  skip  $b (workflow_dispatch-only, real MFL write)"
+              continue
+            fi
+            if grep -qF "scripts/$b" .github/workflows/syntax-check.yml; then
+              echo "  ok    $b"
+            else
+              echo "  FAIL  $b is not run by this workflow — add a step for it below"
               fail=1
             fi
           done
