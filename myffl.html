@@ -2051,6 +2051,16 @@
 			font-variant-numeric: tabular-nums;
 			border-top: 1px solid var(--border);
 		}
+		/* Same treatment as tr.me-row — the page's purple badge pairing for
+		   "this is mine," here meaning a rostered player rather than a
+		   fantasy team, on any of my leagues' rosters. Only ever applied
+		   when logged in (see myRosteredPlayerNames' own comment), so a
+		   logged-out visitor's table never carries this class at all. */
+		tr.nfl-boxscore-mine td {
+			background: var(--chip-bg);
+			color: var(--accent);
+			font-weight: 700;
+		}
 		/* Scoring tab, matchup view: each two-team (or lone bye) matchup is its
 		   own small card — the exact border/radius/background .card already
 		   uses everywhere else, not a table row carrying a colored border or
@@ -10510,7 +10520,33 @@
 		// page that reads a provider's own wording rather than inventing one.
 		const NFL_BOXSCORE_CATEGORY_LABELS = { passing: 'Passing', rushing: 'Rushing', receiving: 'Receiving' };
 
-		function buildNflBoxscoreTable(category) {
+		// Cross-league "is this player one of mine" lookup for the box
+		// score drawer's own purple highlight — the same normalizeName join
+		// computePlayerExposure and every other cross-provider name match on
+		// this page already uses, so ESPN's own spelling of a name still
+		// resolves against whichever provider's spelling the roster carries.
+		// Login-gated the same way every card reading roster data is (see
+		// CLAUDE.md's Auth note): the names are already sitting in the
+		// public data/rosters.json regardless of login, but rendering "this
+		// specific real name is one Claude/this manager owns" on an
+		// otherwise-ungated tab is exactly the roster-shaped fact that gate
+		// exists for, so a logged-out visitor gets a plain table, not a
+		// silently-ungated one. Recomputed per drawer fill rather than
+		// cached — one pass over ~18 leagues' rosters, and this never runs
+		// more than once per open (or per poll while open), never per row.
+		function myRosteredPlayerNames() {
+			const names = new Set();
+			if (!isLoggedIn() || !pageData?.leagues) return names;
+			for (const league of pageData.leagues) {
+				for (const p of league.players || []) {
+					const key = normalizeName(p.name);
+					if (key) names.add(key);
+				}
+			}
+			return names;
+		}
+
+		function buildNflBoxscoreTable(category, myNames) {
 			const wrap = el('div', { class: 'nfl-boxscore-table-wrap' });
 			const table = el('table', { class: 'nfl-boxscore-table' });
 			const thead = el('thead');
@@ -10521,7 +10557,8 @@
 			table.appendChild(thead);
 			const tbody = el('tbody');
 			for (const athlete of category.athletes) {
-				const tr = el('tr');
+				const mine = myNames.has(normalizeName(athlete.name));
+				const tr = el('tr', mine ? { class: 'nfl-boxscore-mine' } : {});
 				tr.appendChild(el('td', { text: athlete.name }));
 				for (const stat of athlete.stats) tr.appendChild(el('td', { text: String(stat) }));
 				tbody.appendChild(tr);
@@ -10555,6 +10592,7 @@
 				body.appendChild(el('div', { class: 'nfl-boxscore-empty', text: 'No stats recorded yet.' }));
 				return;
 			}
+			const myNames = myRosteredPlayerNames();
 			const teamsWrap = el('div', { class: 'nfl-boxscore-teams' });
 			for (const team of teams) {
 				const teamBox = el('div', { class: 'nfl-boxscore-team' });
@@ -10564,7 +10602,7 @@
 						class: 'nfl-boxscore-category-label',
 						text: NFL_BOXSCORE_CATEGORY_LABELS[category.name] || category.name,
 					}));
-					teamBox.appendChild(buildNflBoxscoreTable(category));
+					teamBox.appendChild(buildNflBoxscoreTable(category, myNames));
 				}
 				teamsWrap.appendChild(teamBox);
 			}

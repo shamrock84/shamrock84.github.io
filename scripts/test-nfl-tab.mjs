@@ -377,8 +377,8 @@ assert.deepEqual(nflBoxscorePlayerLines(undefined), []);
 // isCardCollapsed/setCardCollapsed swallow the resulting throw and quietly
 // report "closed" — fine for tests that never open a drawer, wrong for
 // these, which need the real open/closed value back).
-function makeDrawerContext() {
-	const store = new Map();
+function makeDrawerContext(seed = {}) {
+	const store = new Map(Object.entries(seed));
 	const ctx = {
 		console,
 		localStorage: {
@@ -507,6 +507,46 @@ function fireClick(node) {
 	assert.deepEqual(headerCells, ['Player', 'C/ATT', 'YDS', 'TD']);
 	const dataCells = findAll(pill, (n) => n.tag === 'td').map((n) => n._text);
 	assert.deepEqual(dataCells, ['Josh Allen', '20/28', '245', '2']);
+}
+
+// A rostered player's row is flagged purple, joined by the same
+// normalizeName every cross-provider match on this page uses — so ESPN's
+// own "Stefon Diggs" resolves against a rostering provider's own spelling
+// of the same name. An unrostered player on the same table gets no flag.
+{
+	const ctx = makeDrawerContext({ mflAuthToken: 'test-token' });
+	ctx.__leagues = [{ id: 'L1', players: [{ name: 'Stefon Diggs' }] }];
+	vm.runInContext('pageData = { leagues: __leagues };', ctx);
+	ctx.__teams = [{ team: 'BUF', categories: [{ name: 'receiving', labels: ['YDS'], athletes: [
+		{ name: 'Stefon Diggs', stats: ['98'] },
+		{ name: 'Dalton Kincaid', stats: ['54'] },
+	] }] }];
+	vm.runInContext('nflBoxscores = { g6: __teams };', ctx);
+	const game = { id: 'g6', state: 'in', kickoff: '2026-09-14T17:00:00Z', away: { team: 'BUF', score: 14 }, home: { team: 'MIA', score: 7 } };
+	const pill = ctx.renderNflGameRow(game);
+	fireClick(findAll(pill, hasClass('nfl-boxscore-toggle'))[0]);
+
+	const rows = findAll(pill, (n) => n.tag === 'tr').filter((r) => findAll(r, (n) => n.tag === 'td').length > 0);
+	const diggsRow = rows.find((r) => r.children[0]._text === 'Stefon Diggs');
+	const kincaidRow = rows.find((r) => r.children[0]._text === 'Dalton Kincaid');
+	assert.ok(diggsRow.cls.includes('nfl-boxscore-mine'), 'a rostered player is flagged');
+	assert.ok(!kincaidRow.cls.includes('nfl-boxscore-mine'), 'an unrostered player on the same table is not');
+}
+
+// Logged OUT, the same rostered player gets no flag at all — roster
+// ownership is exactly the fact the login gate exists for (see CLAUDE.md's
+// own Auth note), and this is the one place on an otherwise-ungated tab
+// that touches it.
+{
+	const ctx = makeDrawerContext();
+	ctx.__leagues = [{ id: 'L1', players: [{ name: 'Stefon Diggs' }] }];
+	vm.runInContext('pageData = { leagues: __leagues };', ctx);
+	ctx.__teams = [{ team: 'BUF', categories: [{ name: 'receiving', labels: ['YDS'], athletes: [{ name: 'Stefon Diggs', stats: ['98'] }] }] }];
+	vm.runInContext('nflBoxscores = { g7: __teams };', ctx);
+	const game = { id: 'g7', state: 'in', kickoff: '2026-09-14T17:00:00Z', away: { team: 'BUF', score: 14 }, home: { team: 'MIA', score: 7 } };
+	const pill = ctx.renderNflGameRow(game);
+	fireClick(findAll(pill, hasClass('nfl-boxscore-toggle'))[0]);
+	assert.equal(findAll(pill, hasClass('nfl-boxscore-mine')).length, 0, 'logged out, nobody is flagged even though the roster data says so');
 }
 
 // Toggling closed and back open again re-derives from the same nflBoxscores
