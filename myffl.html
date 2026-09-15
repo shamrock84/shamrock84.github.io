@@ -518,7 +518,7 @@
 			grid-template-columns: repeat(auto-fill, minmax(min(440px, 100%), 1fr));
 			gap: 1rem;
 		}
-		/* Standings cards carry only 5 narrow columns (#, Team, W-L-T, PF, PA) —
+		/* Standings cards carry only 5 narrow columns (#, Team, W-L, PF, PA) —
 		   nowhere near what drives the 440px floor above — so they get their own,
 		   tighter minmax to fit a 3rd column on common desktop widths instead of
 		   sitting stuck at 2. 340 rather than 300: a few league titles are one
@@ -6949,7 +6949,7 @@
 
 			const table = el('table', { class: 'standings' });
 			const headRow = el('tr');
-			const headers = showRecord ? ['#', 'Team', 'W-L-T', 'PF', 'PA'] : ['#', 'Team', 'PF', 'PA'];
+			const headers = showRecord ? ['#', 'Team', 'W-L', 'PF', 'PA'] : ['#', 'Team', 'PF', 'PA'];
 			headers.forEach((h) => headRow.appendChild(el('th', { text: h })));
 			table.appendChild(headRow);
 
@@ -6958,7 +6958,7 @@
 				row.appendChild(el('td', { text: String(i + 1) }));
 				row.appendChild(el('td', { text: teamNameWithOwner(r) }));
 				if (showRecord) {
-					row.appendChild(el('td', { text: `${r.wins}-${r.losses}${r.ties ? '-' + r.ties : ''}` }));
+					row.appendChild(el('td', { text: `${r.wins}-${r.losses}` }));
 				}
 				row.appendChild(el('td', { text: r.pointsFor }));
 				row.appendChild(el('td', { text: r.pointsAgainst }));
@@ -7153,24 +7153,31 @@
 			return t.ownerName ? `${t.teamName} (${t.ownerName})` : t.teamName;
 		}
 
-		// A team's current W-L(-T), read off this league's own standings
+		// A team's current W-L, read off this league's own standings
 		// (league.standings — already fetched for the Standings tab's own
 		// record column, so this costs nothing extra) and appended on Rosters
 		// and Scoring, where a manager is looking at one team at a time (their
 		// own roster, or a live matchup) rather than a whole league table.
-		// Standings itself is left alone — it already has a dedicated W-L-T
+		// Standings itself is left alone — it already has a dedicated W-L
 		// column, so repeating the record in the name there would say the
 		// same thing twice.
 		//
-		// Omitted entirely at 0-0-0: a season-opening "0-0" on every row is
+		// No -T: every league here runs its own tiebreaker rule rather than
+		// letting a matchup stand as tied, so the manager's call is to drop
+		// the provider's ties field from this record entirely rather than
+		// carry a count that's expected to always read zero. r.ties is
+		// deliberately never read below — a league that did record one would
+		// have it silently dropped from the count rather than shown.
+		//
+		// Omitted entirely at 0-0: a season-opening "0-0" on every row is
 		// noise, not information, and this is also what keeps a draftonly
 		// league silent here without a separate check — its h2h fields are
 		// always zero (see showRecord in renderStandingsCard), so it never
 		// clears this gate either.
 		function currentRecord(league, franchiseId) {
 			const r = (league.standings || []).find((row) => row.franchiseId === franchiseId);
-			if (!r || (r.wins === 0 && r.losses === 0 && r.ties === 0)) return null;
-			return `${r.wins}-${r.losses}${r.ties ? '-' + r.ties : ''}`;
+			if (!r || (r.wins === 0 && r.losses === 0)) return null;
+			return `${r.wins}-${r.losses}`;
 		}
 
 		function appendRecord(name, record) {
