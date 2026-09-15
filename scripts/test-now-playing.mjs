@@ -311,6 +311,36 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 	assert.equal(fullText(popoverRows[1].children[1]), '12.0');
 }
 
+// --- Always sorted best-first within each position group ---
+//
+// There used to be a Sort by score toggle on this card; it's gone, and each
+// position's own mini-card must always read highest score to lowest with no
+// user action needed. computeNowPlaying already sorts its rows globally by
+// score (nulls last) before renderNowPlayingCard groups them by position —
+// grouping preserves that order (Array#sort is stable), so this pins the
+// visible result rather than the sort call itself.
+{
+	const ctx = makeContext(LOGGED_IN);
+	setLiveScoringAttempted(ctx, true);
+	setLiveGames(ctx, { BUF: { state: 'in' } });
+	const card = ctx.renderNowPlayingCard([
+		league('L11', '0001', [
+			{ name: 'Low WR', position: 'WR', team: 'BUF', points: 4 },
+			{ name: 'High WR', position: 'WR', team: 'BUF', points: 22 },
+			{ name: 'Mid WR', position: 'WR', team: 'BUF', points: 11 },
+			{ name: 'No Score Yet WR', position: 'WR', team: 'BUF', points: null },
+		]),
+	]);
+
+	assert.equal(findAll(card, hasClass('now-playing-sort-btn')).length, 0, 'the sort toggle is gone');
+
+	const order = findAll(card, hasClass('now-playing-row')).map((r) => fullText(r));
+	assert.ok(order[0].includes('High WR'), 'highest score leads');
+	assert.ok(order[1].includes('Mid WR'), 'then the middle score');
+	assert.ok(order[2].includes('Low WR'), 'then the lowest score');
+	assert.ok(order[3].includes('No Score Yet WR'), 'a score not in yet sinks to the bottom, not sorted as a 0');
+}
+
 // Logged out: the card doesn't render at all, same gate as the matchup
 // drawer — this is lineup data, not just team-level scores.
 {
