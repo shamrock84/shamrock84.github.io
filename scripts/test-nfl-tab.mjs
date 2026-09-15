@@ -323,6 +323,46 @@ const hasClass = (c) => (n) => n.cls.split(/\s+/).includes(c);
 assert.deepEqual(nflBoxscorePlayerLines(null), []);
 assert.deepEqual(nflBoxscorePlayerLines(undefined), []);
 
+// SACKS and LONG are dropped wherever they appear, on user request — and
+// since stats are positional (parallel to labels), removing a column has to
+// shift every OTHER value into the right place too, not just delete the
+// dropped one and leave the rest misaligned under the wrong header.
+{
+	const boxscore = {
+		players: [{
+			team: { abbreviation: 'BUF' },
+			statistics: [
+				{
+					name: 'passing',
+					keys: ['completions/passingAttempts', 'passingYards', 'passingTouchdowns', 'sacks'],
+					labels: ['C/ATT', 'YDS', 'TD', 'SACKS'],
+					athletes: [{ athlete: { displayName: 'Josh Allen' }, stats: ['22/31', '275', '2', '3'] }],
+				},
+				{
+					name: 'rushing',
+					keys: ['rushingAttempts', 'rushingYards', 'longRushing'],
+					labels: ['CAR', 'YDS', 'LONG'],
+					athletes: [{ athlete: { displayName: 'James Cook' }, stats: ['14', '82', '22'] }],
+				},
+				{
+					name: 'receiving',
+					keys: ['receptions', 'receivingYards', 'longReception'],
+					labels: ['REC', 'YDS', 'LONG'],
+					athletes: [{ athlete: { displayName: 'Stefon Diggs' }, stats: ['7', '98', '32'] }],
+				},
+			],
+		}],
+	};
+	const [team] = nflBoxscorePlayerLines(boxscore);
+	const [passing, rushing, receiving] = team.categories;
+	assert.deepEqual(passing.labels, ['C/ATT', 'YDS', 'TD'], 'SACKS is dropped from passing');
+	assert.deepEqual(passing.athletes[0].stats, ['22/31', '275', '2'], "Josh Allen's own SACKS value is dropped, not just its header");
+	assert.deepEqual(rushing.labels, ['CAR', 'YDS'], "rushing's LONG (longRushing) is dropped");
+	assert.deepEqual(rushing.athletes[0].stats, ['14', '82']);
+	assert.deepEqual(receiving.labels, ['REC', 'YDS'], "receiving's LONG (longReception) — a DIFFERENT key, same label — is dropped too");
+	assert.deepEqual(receiving.athletes[0].stats, ['7', '98']);
+}
+
 // --- The per-game stat drawer --------------------------------------------
 
 // A fuller localStorage stub than makeContext's read-only-null one: this
