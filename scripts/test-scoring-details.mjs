@@ -64,7 +64,14 @@ function domNode(tag = 'div') {
 		get innerHTML() { return ''; },
 		set innerHTML(v) { if (v === '') n.children.length = 0; },
 		get textContent() { return n._text; },
-		set textContent(v) { n._text = v; },
+		// Real DOM semantics: setting textContent replaces every existing
+		// child, not just the plain-text fallback fullText() reads when
+		// there are none. Needed now that the live-status tests below reuse
+		// one node across several setLiveStatus calls (setLiveStatus itself
+		// clears via `textContent = ''` before appendChild-ing fresh nodes)
+		// — without clearing children here too, those calls would silently
+		// accumulate every prior render's nodes underneath the latest one.
+		set textContent(v) { n._text = v; n.children = []; },
 		// Zeroed rect/offsets — the Stat Breakdown popover's own positioning
 		// math (makePopover's position()) runs against these, but this suite
 		// checks that it opens with the right content, not where it lands on
@@ -934,13 +941,17 @@ function leagueWithMatchup() {
 	assert.ok(!capturedUrl.includes('benchLeagues'), `expected no benchLeagues param when nothing is open, got ${capturedUrl}`);
 }
 
-// --- Live-status ticking ---
+// --- Live-status ticking, and the "Live updates on" framing gated on
+// anyGameLive() ---
 // LIVE_SCORING_IDLE_POLL_MS can now be 30 minutes (see its own comment) —
 // without a display-only clock independent of the poll itself, "last
 // refreshed X ago" would freeze at whatever it said the instant the last
 // poll landed (almost always "just now") and silently lie for the next 29
 // minutes. renderLiveStatusFreshness is what repaints it from
-// lastLiveGeneratedAt, on liveStatusTickTimer's own interval.
+// lastLiveGeneratedAt, on liveStatusTickTimer's own interval — and, since a
+// manager isn't watching anything actually update outside a live game, it
+// shows only the bare freshness fact then, saving the "Live updates on"/
+// reload-warning framing for when a game is genuinely in progress.
 {
 	const ctx = makeContext();
 	// The shared domNode()/getElementById() stub hands back a fresh blank
@@ -955,25 +966,36 @@ function leagueWithMatchup() {
 	ctx.document.getElementById = (id) => (id === 'live-status' ? statusNode : realGetById(id));
 
 	ctx.liveScoringAttempted = true;
-	ctx.fetch = async () => ({ ok: true, json: async () => ({ generatedAt: new Date().toISOString(), games: {}, leagues: [] }) });
+	ctx.fetch = async () => ({
+		ok: true,
+		json: async () => ({ generatedAt: new Date().toISOString(), games: { BUF: { state: 'in' } }, leagues: [] }),
+	});
 	ctx.__testPageData = { leagues: [] };
 	vm.runInContext('pageData = __testPageData;', ctx);
 	// Mirrors what startLiveScoringPolling sets before its own
 	// refreshLiveScoring call — a direct refreshLiveScoring() call with
 	// polling never started (exactly what the benchLeagues tests above do)
-	// must NOT start a ticker; see the second case below.
+	// must NOT start a ticker; see the case below.
 	vm.runInContext('liveScoringPollingEnabled = true;', ctx);
 
 	await ctx.refreshLiveScoring();
-	assert.match(fullText(statusNode), /Live updates on — last refreshed just now — No need to manually refresh/, 'em-dash-joined, no periods, freshly landed');
+	assert.match(fullText(statusNode), /Live updates on — last refreshed just now — No need to manually refresh/, 'em-dash-joined, no periods, freshly landed, a game genuinely live');
 	assert.equal(vm.runInContext('!!liveStatusTickTimer', ctx), true, 'the ticker starts once polling is actually enabled');
 
 	// The clock moves on with no new poll landing — the ticker repaints
 	// from the SAME lastLiveGeneratedAt the poll set, not a string frozen
-	// at poll time.
+	// at poll time. Still framed as "Live updates on" — this game is still
+	// live, from the same poll's own liveGames.
 	vm.runInContext('lastLiveGeneratedAt = new Date(Date.now() - 5 * 60000).toISOString();', ctx);
 	vm.runInContext('renderLiveStatusFreshness();', ctx);
-	assert.match(fullText(statusNode), /last refreshed 5 min ago/, 'a tick repaints from the stored timestamp instead of staying "just now"');
+	assert.match(fullText(statusNode), /Live updates on — last refreshed 5 min ago — No need to manually refresh/, 'a tick repaints from the stored timestamp instead of staying "just now", still framed as live');
+
+	// Nothing live any more (the idle 30-minute fallback window) — the
+	// framing drops to a bare fact rather than continuing to claim
+	// something is actively updating.
+	vm.runInContext('liveGames = {};', ctx);
+	vm.runInContext('renderLiveStatusFreshness();', ctx);
+	assert.equal(fullText(statusNode), 'Last refreshed 5 min ago', 'no game live: just the fact, no "Live updates on" framing or reload warning');
 
 	vm.runInContext('stopLiveScoringPolling();', ctx);
 	assert.equal(vm.runInContext('!!liveStatusTickTimer', ctx), false, 'leaving/backgrounding the Scoring tab clears the ticker');
