@@ -35,7 +35,7 @@ export function positionRank(pos) {
   return idx === -1 ? POSITION_ORDER.length : idx;
 }
 
-export function formatPlayerName(raw) {
+function formatPlayerName(raw) {
   if (!raw) return '';
   const parts = raw.split(', ');
   return parts.length === 2 ? `${parts[1]} ${parts[0]}` : raw;
@@ -504,7 +504,7 @@ function mflStatBreakdownFromBoxscore(name, position, statIndex, ratesByPosition
 }
 
 // statId 53 is receptions. An absent item means the league scores none.
-export async function fetchEspnReceptionPoints(league) {
+async function fetchEspnReceptionPoints(league) {
   const data = await espnGet(league, 'view=mSettings');
   const items = data?.settings?.scoringSettings?.scoringItems || [];
   const rec = items.find((i) => i.statId === 53);
@@ -514,7 +514,7 @@ export async function fetchEspnReceptionPoints(league) {
 
 // scoring_settings.rec. Note bonus_rec_te and rec_fd sit alongside it — those
 // are bonuses on top, not the base rate, so they're deliberately ignored.
-export async function fetchSleeperReceptionPoints(league) {
+async function fetchSleeperReceptionPoints(league) {
   const data = await sleeperGet(`/league/${league.id}`);
   const rec = data?.scoring_settings?.rec;
   const points = rec == null ? 0 : Number(rec);
@@ -610,7 +610,7 @@ export async function fetchMflInjuries(cookie) {
 // league's own scoring rules. MFL requires an explicit PLAYERS= list — a
 // bare league-wide request just returns an empty placeholder. Reads 0 for
 // everyone before the season starts, which is correct (no games played).
-export async function fetchMflSeasonPoints(league, cookie, playerIds) {
+async function fetchMflSeasonPoints(league, cookie, playerIds) {
   if (playerIds.length === 0) return new Map();
   const data = await mflGet(
     `/export?TYPE=playerScores&W=YTD&L=${league.id}&PLAYERS=${playerIds.join(',')}&JSON=1`,
@@ -631,7 +631,7 @@ export async function fetchMflSeasonPoints(league, cookie, playerIds) {
 // resolves fine against last year's API host). Expected to fail for
 // single-season bestball leagues, which get a fresh ID every year; callers
 // should treat failure as "no prior-year data available", not an error.
-export async function fetchMflPriorYearPoints(league, cookie, playerIds) {
+async function fetchMflPriorYearPoints(league, cookie, playerIds) {
   if (playerIds.length === 0) return new Map();
   const priorYear = Number(seasonOf(league)) - 1;
   const data = await mflGet(
@@ -2276,7 +2276,7 @@ export async function submitMflLineup(username, password, league, starterIds, we
 // community — field names/IDs below are best-effort; verified working
 // against real leagues for standings/scoring as of this writing) ---
 
-export const ESPN_POSITION_MAP = { 1: 'QB', 2: 'RB', 3: 'WR', 4: 'TE', 5: 'PK', 16: 'Def' };
+const ESPN_POSITION_MAP = { 1: 'QB', 2: 'RB', 3: 'WR', 4: 'TE', 5: 'PK', 16: 'Def' };
 export const ESPN_PRO_TEAM_MAP = {
   0: 'FA', 1: 'ATL', 2: 'BUF', 3: 'CHI', 4: 'CIN', 5: 'CLE', 6: 'DAL', 7: 'DEN', 8: 'DET', 9: 'GB',
   10: 'TEN', 11: 'IND', 12: 'KC', 13: 'LV', 14: 'LAR', 15: 'MIA', 16: 'MIN', 17: 'NE', 18: 'NO', 19: 'NYG',
@@ -2815,7 +2815,7 @@ const SLEEPER_TEAM_TO_MFL_BYE_KEY = {
 // scoring settings. Summing those across every completed week gives the
 // same "season points under this league's rules" that MFL/ESPN show,
 // without needing to pull raw stats and reimplement scoring ourselves.
-export async function fetchSleeperSeasonPoints(league) {
+async function fetchSleeperSeasonPoints(league) {
   const state = await sleeperGet('/state/nfl');
   // Preseason: state.week is 0 and nothing has been played yet.
   const lastCompletedWeek = state.week > 0 ? state.week : 0;

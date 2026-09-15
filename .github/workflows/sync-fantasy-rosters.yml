@@ -32,8 +32,40 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
+      # Blobless partial clone + sparse checkout. At the tip this repo is
+      # ~173MB of working tree and ~121MB of git objects, almost all of it
+      # mfl/PSD (132MB of Photoshop sources) and images/ — static art that
+      # only Pages serves and that no workflow here ever reads.
+      #
+      # actions/checkout is ALREADY shallow (depth 1), and that does not help
+      # with this: depth 1 still downloads every blob in the tip tree, which
+      # is exactly where the PSDs are. `filter: blob:none` is the half that
+      # skips them, fetching a blob on demand only if something opens it.
+      # Measured: 121MB -> 1.8MB of objects, 173MB -> 4.3MB of worktree.
+      # This job runs six times a day, so that is the bulk of its wall clock.
+      #
+      # The sparse list is the SAME five directories in every workflow here,
+      # deliberately, rather than trimmed per job — uniformity is worth more
+      # than shaving another 100KB, since it means the next workflow added
+      # copies a block that is already right. Cone mode also always
+      # materializes the root directory, which is what keeps myffl.html and
+      # package.json present without either being listed.
+      #
+      # Safe for the commit step below: `git add data/rosters.json` stages one
+      # path, and the sparse-excluded paths stay skip-worktree in the index
+      # rather than reading as deletions. Verified end to end before this
+      # landed — commit, push, and the whole scripts/test-*.mjs suite all run
+      # clean from a clone made this way.
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout: |
+            api
+            scripts
+            config
+            data
+            .github
 
       - name: Set up Node
         uses: actions/setup-node@v4

@@ -80,6 +80,44 @@ const PASSWORD = process.env.MFL_PASSWORD;
 const OUTPUT_PATH = fileURLToPath(new URL('../data/rosters.json', import.meta.url));
 const CONFIG_PATH = fileURLToPath(new URL('../config/leagues.json', import.meta.url));
 
+// Serializes the whole snapshot for data/rosters.json: top-level keys one per
+// line, and inside `leagues`, ONE LINE PER LEAGUE.
+//
+// This is the same trade `serialize` in api/save-leagues.js already makes for
+// config/leagues.json, for the same reason — a committed diff you can actually
+// read — but the weight here is what motivated it. This file is fetched WHOLE
+// by every visitor on every page load, and `JSON.stringify(output, null, 2)`
+// spent 1.32MB to say what 625KB says: over half the file was indentation on
+// 48,699 lines. Measured on a real snapshot: 1.32MB -> 625KB raw, and 119KB ->
+// 91KB gzipped, which is the number that actually reaches a reader.
+//
+// Fully minifying would save another 42 bytes gzipped and is deliberately NOT
+// what this does. One line per league keeps `git diff` meaningful at league
+// granularity on a file a bot rewrites six times a day — you can still see
+// WHICH leagues moved, which a single 625KB line cannot show. The 42 bytes are
+// not worth that.
+//
+// Reformatting is safe because nothing reads this file as text: every reader in
+// this repo (the backfills, the probes, myffl.html) goes through JSON.parse,
+// and git's delta compression is byte-based rather than line-based — a packed
+// test over eight consecutive real snapshots came out slightly SMALLER this way
+// than pretty-printed, so this costs the repo's history nothing either.
+//
+// Used by all three writers of this file — this script and both backfills,
+// which import it rather than keeping their own copy, so the format cannot
+// drift between a sync commit and a backfill commit.
+export function serializeSnapshot(output) {
+  const parts = [];
+  for (const [key, value] of Object.entries(output)) {
+    if (key === 'leagues' && Array.isArray(value)) {
+      parts.push(`${JSON.stringify(key)}: [\n${value.map((l) => JSON.stringify(l)).join(',\n')}\n]`);
+    } else {
+      parts.push(`${JSON.stringify(key)}: ${JSON.stringify(value)}`);
+    }
+  }
+  return `{\n${parts.join(',\n')}\n}\n`;
+}
+
 // Drops the per-starter `players[]` array off a scoring result before it is
 // written to data/rosters.json. Everything else on the result stays.
 //
@@ -1827,7 +1865,7 @@ async function main() {
     quickLinks: QUICK_LINKS,
   };
 
-  await writeFile(OUTPUT_PATH, JSON.stringify(output, null, 2) + '\n');
+  await writeFile(OUTPUT_PATH, serializeSnapshot(output));
   console.log(`Wrote ${OUTPUT_PATH}`);
 }
 

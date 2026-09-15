@@ -31,7 +31,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { mflLogin, setMflRequestInterval } from './lib/providers.mjs';
-import { backfillLeagueScoringRecords, MFL_REQUEST_INTERVAL_MS } from './fetch-rosters.mjs';
+import { backfillLeagueScoringRecords, MFL_REQUEST_INTERVAL_MS, serializeSnapshot } from './fetch-rosters.mjs';
 
 const USERNAME = process.env.MFL_USERNAME;
 const PASSWORD = process.env.MFL_PASSWORD;
@@ -75,7 +75,7 @@ async function main() {
   // writing `leagues` instead would silently drop every league LEAGUE_ID
   // excluded from data/rosters.json entirely.
   const output = { ...previous, generatedAt: new Date().toISOString(), leagues: allLeagues };
-  await writeFile(OUTPUT_PATH, JSON.stringify(output, null, 2) + '\n');
+  await writeFile(OUTPUT_PATH, serializeSnapshot(output));
   console.log(`Wrote ${OUTPUT_PATH}`);
 }
 
