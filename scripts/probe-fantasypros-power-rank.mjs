@@ -226,7 +226,15 @@ if (rosProbe.status === 200) {
 // nothing about whether RB/WR/TE do too.
 console.log('\n--- ros=true across every POWER_POSITIONS entry ---');
 const rosOtherPositions = [];
+// This probe already burns through 429 candidates + 3 week samples + one
+// ros=true call before it gets here — comfortably enough back-to-back
+// FantasyPros requests to trip the same kind of burst rate limit this
+// project already pins for MFL (see paceMflRequest in providers.mjs). A
+// short gap between these three specifically is cheaper than mistaking a
+// 429 for "this position doesn't support ros=true."
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 for (const position of ['RB', 'WR', 'TE']) {
+  await sleep(1000);
   const { status, body } = await probe(
     `ros=true (${position})`,
     `${FP_BASE}/nfl/${season}/projections?position=${position}&ros=true`
