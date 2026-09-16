@@ -12186,12 +12186,36 @@
 				const ids = openTaskIdsByCategory(tasks, key);
 				byCategory.set(key, ids.map((id) => [id, tasks[id]]));
 			}
-			// Uncategorized last regardless of how it sorts alphabetically —
-			// it's the fallback bucket, not a category someone named.
+			// League categories sort first, in the same order the Admin tab's
+			// Leagues card lists them (drag-to-reorder) — the exact league
+			// order pageData.leagues already carries, keyed the same way
+			// quickLinkLabelForLeague files a league's own tasks, so "MNMx"
+			// sorts wherever MNMx sits in that list rather than alphabetically.
+			// Two fixed categories the manager used before per-league
+			// categories existed come next (Manual Task, then Site
+			// Enhancement); anything else — a category none of the above
+			// recognizes, i.e. a new one added later — sorts alphabetically
+			// after those; and Backlog is pinned last of all the named
+			// categories, since it's deliberately the least urgent bucket.
+			const leagueCategoryOrder = new Map((pageData?.leagues || []).map((league, i) => [quickLinkLabelForLeague(league), i]));
+			const categoryTier = (key) => {
+				if (leagueCategoryOrder.has(key)) return 0;
+				if (key === 'Manual Task') return 1;
+				if (key === 'Site Enhancement') return 2;
+				if (key === 'Backlog') return 4;
+				return 3;
+			};
+			// Uncategorized last of all, regardless of how it sorts — it's the
+			// fallback bucket, not a category someone named.
 			const categoryKeys = [...byCategory.keys()].sort((a, b) => {
 				if (a === '') return 1;
 				if (b === '') return -1;
-				return a.localeCompare(b);
+				const tierA = categoryTier(a);
+				const tierB = categoryTier(b);
+				if (tierA !== tierB) return tierA - tierB;
+				if (tierA === 0) return leagueCategoryOrder.get(a) - leagueCategoryOrder.get(b);
+				if (tierA === 3) return a.localeCompare(b);
+				return 0;
 			});
 
 			if (openEntries.length > 0) {
