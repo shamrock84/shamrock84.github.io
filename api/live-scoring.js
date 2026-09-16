@@ -408,62 +408,92 @@ export default async function handler(req, res) {
     return;
   }
 
+  const anyMflLeague = leagues.some((l) => hasLiveScoring(l) && (!l.provider || l.provider === 'mfl'));
+  const anySleeperLeague = leagues.some((l) => hasLiveScoring(l) && l.provider === 'sleeper');
+  const apiKey = fantasyProsApiKey();
+
+  // Cookie login, the public NFL scoreboard and the public Sleeper week
+  // lookup hit three different, unrelated services and none needs another's
+  // result — but used to run one after another anyway, stacking their
+  // latency as a fixed prefix in front of the MFL-paced per-league fan-out
+  // below. That ordering is why a cold poll measured well past what its own
+  // pacing math alone predicted. Running them concurrently costs nothing
+  // (each already degrades independently) and caps this prefix at whichever
+  // of the three is slowest instead of their sum.
   let mflCookie = null;
   let mflLoginError = null;
-  try {
-    mflCookie = await getMflCookie(username, password);
-  } catch (err) {
-    mflLoginError = err.message;
-  }
-
-  // The MFL player map, once per poll and shared across every MFL league —
-  // never inside the fan-out below (it is a global, non-league-scoped
-  // request; see MFL_PLAYER_MAP_TTL_MS). Skipped entirely when the login
-  // failed or no MFL league is in play, so an all-ESPN/Sleeper config never
-  // pays for it. Null on failure — see getMflPlayerMap.
-  const anyMflLeague = leagues.some((l) => hasLiveScoring(l) && (!l.provider || l.provider === 'mfl'));
-  let mflPlayerMap = null;
-  if (mflCookie && anyMflLeague) {
-    mflPlayerMap = await getMflPlayerMap(mflCookie);
-  }
-
-  // One shared fetch of the public NFL scoreboard per poll, not one per
-  // league — see fetchNflGameClocks' own comment. A failure here must not
-  // cost any ESPN/Sleeper league its actual score, so this degrades to an
-  // empty map (every minutesRemaining/winProb comes back 0/undefined for
-  // this poll) rather than rejecting.
   let nflGames = new Map();
   let nflClocks = new Map();
-  try {
-    // fetchNflGames is the richer read of the same single scoreboard request
-    // fetchNflGameClocks used to make — the clocks are projected out of it
-    // (gameClocksFromGames) rather than fetched again, so the drawer's
-    // opponent/kickoff line costs nothing beyond what this poll already paid.
-    nflGames = await fetchNflGames();
-    nflClocks = gameClocksFromGames(nflGames);
-  } catch {
-    // degrade silently — see comment above. An empty map costs every
-    // ESPN/Sleeper league its minutesRemaining/winProb for this poll and the
-    // drawer its game line; neither is worth failing the scores over.
-  }
+  let currentWeek = null;
+  await Promise.all([
+    (async () => {
+      try {
+        mflCookie = await getMflCookie(username, password);
+      } catch (err) {
+        mflLoginError = err.message;
+      }
+    })(),
+    (async () => {
+      // fetchNflGames is the richer read of the same single scoreboard request
+      // fetchNflGameClocks used to make — the clocks are projected out of it
+      // (gameClocksFromGames) rather than fetched again, so the drawer's
+      // opponent/kickoff line costs nothing beyond what this poll already paid.
+      // A failure here must not cost any ESPN/Sleeper league its actual
+      // score, so this degrades to an empty map (every minutesRemaining/
+      // winProb comes back 0/undefined for this poll) rather than rejecting.
+      try {
+        nflGames = await fetchNflGames();
+        nflClocks = gameClocksFromGames(nflGames);
+      } catch {
+        // degrade silently — see comment above.
+      }
+    })(),
+    (async () => {
+      // Feeds both projections and Sleeper's weekly stats below — resolved
+      // once here rather than once per consumer, same as before this was
+      // pulled out of their branches. A miss just skips both.
+      try {
+        currentWeek = await getCurrentNflWeek();
+      } catch {
+        // degrade silently — see comment above.
+      }
+    })(),
+  ]);
 
-  // The MFL half of the stat-breakdown popover (see mfl/README.md): one
-  // ESPN public boxscore fetch per NFL game actually in play this week —
-  // GLOBAL, not per-league, same reasoning as nflGames above, since MFL
-  // rosters players from any team and there's no per-league way to narrow
-  // this down. `nflGames` already carries each entry's event `id`; a game
-  // still `'pre'` has no boxscore yet, so those are skipped rather than
-  // spending a request that can only ever come back empty. Failures are
-  // per-game (see getEspnBoxscore's own try/catch below) so one bad game
-  // costs only its own players' breakdowns, never the whole poll.
+  // Everything below depends only on mflCookie/nflGames/currentWeek, never on
+  // each other, so these run concurrently too rather than one after another.
+  let mflPlayerMap = null;
   let mflBoxscoreStatIndex = null;
-  if (mflCookie && anyMflLeague) {
-    const eventIds = new Map(); // eventId -> isFinal, deduped across every team entry
-    for (const game of nflGames.values()) {
-      if (!game.id || game.state === 'pre') continue;
-      eventIds.set(game.id, game.state === 'post');
-    }
-    if (eventIds.size) {
+  let projections = null;
+  let sleeperWeeklyStats = null;
+  await Promise.all([
+    // The MFL player map, once per poll and shared across every MFL league —
+    // never inside the fan-out below (it is a global, non-league-scoped
+    // request; see MFL_PLAYER_MAP_TTL_MS). Skipped entirely when the login
+    // failed or no MFL league is in play, so an all-ESPN/Sleeper config
+    // never pays for it. Null on failure — see getMflPlayerMap.
+    (async () => {
+      if (mflCookie && anyMflLeague) {
+        mflPlayerMap = await getMflPlayerMap(mflCookie);
+      }
+    })(),
+    // The MFL half of the stat-breakdown popover (see mfl/README.md): one
+    // ESPN public boxscore fetch per NFL game actually in play this week —
+    // GLOBAL, not per-league, same reasoning as nflGames above, since MFL
+    // rosters players from any team and there's no per-league way to narrow
+    // this down. `nflGames` already carries each entry's event `id`; a game
+    // still `'pre'` has no boxscore yet, so those are skipped rather than
+    // spending a request that can only ever come back empty. Failures are
+    // per-game (see getEspnBoxscore's own try/catch below) so one bad game
+    // costs only its own players' breakdowns, never the whole poll.
+    (async () => {
+      if (!mflCookie || !anyMflLeague) return;
+      const eventIds = new Map(); // eventId -> isFinal, deduped across every team entry
+      for (const game of nflGames.values()) {
+        if (!game.id || game.state === 'pre') continue;
+        eventIds.set(game.id, game.state === 'post');
+      }
+      if (!eventIds.size) return;
       mflBoxscoreStatIndex = new Map();
       await Promise.all(
         [...eventIds].map(async ([eventId, isFinal]) => {
@@ -475,45 +505,39 @@ export default async function handler(req, res) {
           }
         })
       );
-    }
-  }
-
-  // Projections are an enrichment on top of the win-probability estimate,
-  // never a dependency of it: no key configured, the week can't be
-  // resolved, or the endpoint is down this poll all land here the same
-  // way, leaving `projections` null. Every fetch*Scoring call below already
-  // treats a missing projectPlayer as "use the flat per-minute rate", the
-  // exact behavior this feature had before FantasyPros entered the picture
-  // — so a failure here costs accuracy, never availability.
-  let projections = null;
-  const apiKey = fantasyProsApiKey();
-  if (apiKey) {
-    try {
-      const week = await getCurrentNflWeek();
-      if (week) projections = await getProjections(apiKey, week);
-    } catch {
-      // degrade silently — see comment above.
-    }
-  }
-
-  // Sleeper's public per-player weekly stats — the raw-category source
-  // behind the drawer's stat-breakdown popover (see SLEEPER_STAT_LABELS'
-  // own comment in providers.mjs). League-independent, so fetched once per
-  // poll and shared across every Sleeper league below, same pattern as
-  // nflGames above; skipped entirely when no Sleeper league is configured.
-  // A failure here costs the popover its Sleeper rows for this poll, never
-  // the scores themselves — same degrade-not-fail posture as projections.
-  let sleeperWeeklyStats = null;
-  const anySleeperLeague = leagues.some((l) => hasLiveScoring(l) && l.provider === 'sleeper');
-  if (anySleeperLeague) {
-    try {
-      const week = await getCurrentNflWeek();
-      const { season } = nflSeasonPhase();
-      if (week) sleeperWeeklyStats = await fetchSleeperWeekStats(season, week);
-    } catch {
-      // degrade silently — see comment above.
-    }
-  }
+    })(),
+    // Projections are an enrichment on top of the win-probability estimate,
+    // never a dependency of it: no key configured, the week can't be
+    // resolved, or the endpoint is down this poll all land here the same
+    // way, leaving `projections` null. Every fetch*Scoring call below already
+    // treats a missing projectPlayer as "use the flat per-minute rate", the
+    // exact behavior this feature had before FantasyPros entered the picture
+    // — so a failure here costs accuracy, never availability.
+    (async () => {
+      if (!apiKey || !currentWeek) return;
+      try {
+        projections = await getProjections(apiKey, currentWeek);
+      } catch {
+        // degrade silently — see comment above.
+      }
+    })(),
+    // Sleeper's public per-player weekly stats — the raw-category source
+    // behind the drawer's stat-breakdown popover (see SLEEPER_STAT_LABELS'
+    // own comment in providers.mjs). League-independent, so fetched once per
+    // poll and shared across every Sleeper league below, same pattern as
+    // nflGames above; skipped entirely when no Sleeper league is configured.
+    // A failure here costs the popover its Sleeper rows for this poll, never
+    // the scores themselves — same degrade-not-fail posture as projections.
+    (async () => {
+      if (!anySleeperLeague || !currentWeek) return;
+      try {
+        const { season } = nflSeasonPhase();
+        sleeperWeeklyStats = await fetchSleeperWeekStats(season, currentWeek);
+      } catch {
+        // degrade silently — see comment above.
+      }
+    })(),
+  ]);
 
   const results = await Promise.allSettled(
     leagues
