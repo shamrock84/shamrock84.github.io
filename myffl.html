@@ -5031,7 +5031,11 @@
 				row.appendChild(nameCell);
 				row.appendChild(el('td', { class: 'bye-cell', text: p.bye ? String(p.bye) : '—' }));
 				if (isLoggedIn()) row.appendChild(buildEcrCell(p));
-				const usingPriorYear = !(p.pts > 0) && p.priorYearPts > 0;
+				// !nflInSeason() is the gate, not just "pts isn't positive yet" — once
+				// the season has kicked off, a real 0 (bye, injury, hasn't played this
+				// week) is this year's true total and must render as such, not get
+				// silently swapped for last year's number.
+				const usingPriorYear = !nflInSeason() && !(p.pts > 0) && p.priorYearPts > 0;
 				const ptsValue = usingPriorYear ? p.priorYearPts : p.pts;
 				const ptsAttrs = { class: `pts-cell${usingPriorYear ? ' pts-prior-year' : ''}`, text: ptsValue != null ? Number(ptsValue).toFixed(2) : '—' };
 				if (usingPriorYear) ptsAttrs.title = `${(pageData?.year ?? new Date().getFullYear()) - 1} season total \u2014 current season hasn't started yet`;
@@ -5478,7 +5482,11 @@
 				row.appendChild(nameCell);
 				row.appendChild(el('td', { class: 'bye-cell', text: p.bye ? String(p.bye) : '—' }));
 				if (visible) row.appendChild(buildEcrCell(p));
-				const usingPriorYear = !(p.pts > 0) && p.priorYearPts > 0;
+				// !nflInSeason() is the gate, not just "pts isn't positive yet" — once
+				// the season has kicked off, a real 0 (bye, injury, hasn't played this
+				// week) is this year's true total and must render as such, not get
+				// silently swapped for last year's number.
+				const usingPriorYear = !nflInSeason() && !(p.pts > 0) && p.priorYearPts > 0;
 				const ptsValue = usingPriorYear ? p.priorYearPts : p.pts;
 				const ptsAttrs = { class: `pts-cell${usingPriorYear ? ' pts-prior-year' : ''}`, text: ptsValue != null ? Number(ptsValue).toFixed(2) : '—' };
 				row.appendChild(el('td', ptsAttrs));
