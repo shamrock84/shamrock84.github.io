@@ -7665,17 +7665,31 @@
 			body.hidden = !open;
 			if (open) fill();
 
-			toggle.addEventListener('click', () => {
-				const next = body.hidden;
-				if (next) fill();
+			const setOpen = (next) => {
 				body.hidden = !next;
 				toggle.setAttribute('aria-expanded', String(next));
 				label.textContent = next ? 'Hide bench' : 'Show bench';
 				setScoringDetailOpen(benchKey, next);
+			};
+
+			toggle.addEventListener('click', () => {
+				const next = body.hidden;
+				if (next) fill();
+				setOpen(next);
 			});
 
 			container.appendChild(toggle);
 			container.appendChild(body);
+
+			// Handed back so the outer starter drawer can force this closed
+			// when IT collapses — see that toggle's own click handler for why
+			// a nested "show more" has to fold up with its parent rather than
+			// silently staying open underneath a collapsed pill.
+			return {
+				collapse: () => {
+					if (!body.hidden) setOpen(false);
+				},
+			};
 		}
 
 		// Builds the toggle strip and the drawer body, and appends both into
@@ -7703,6 +7717,7 @@
 			// re-open case within a single render; the next poll's teardown
 			// resets it along with everything else.
 			let filled = false;
+			let bench = null;
 			const fill = () => {
 				if (filled) return;
 				filled = true;
@@ -7729,7 +7744,7 @@
 				// Nested inside this same body — see appendBenchDetail's own
 				// comment for why it's a second, independently-collapsed
 				// toggle rather than folded into the rows above.
-				appendBenchDetail(body, key, group);
+				bench = appendBenchDetail(body, key, group);
 			};
 
 			const chevron = el('span', { class: 'scoring-detail-chevron', 'aria-hidden': 'true', text: '▾' });
@@ -7752,7 +7767,15 @@
 
 			toggle.addEventListener('click', () => {
 				const next = body.hidden;
-				if (next) fill();
+				if (next) {
+					fill();
+				} else {
+					// Collapsing the starter drawer folds the nested bench
+					// toggle shut with it — leaving it open would strand a
+					// "Hide bench" control (and its localStorage flag) under
+					// a pill that reads as fully collapsed.
+					bench?.collapse();
+				}
 				body.hidden = !next;
 				pill.classList.toggle('scoring-detail-open', next);
 				toggle.setAttribute('aria-expanded', String(next));
