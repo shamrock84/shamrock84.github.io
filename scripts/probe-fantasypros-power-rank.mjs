@@ -136,9 +136,15 @@ const projections = await probe(
 // "later this week" as of that reply. Nothing wrong with this project's
 // key or tier; the feature hadn't shipped.
 //
-// RE-RUN THIS once FantasyPros confirms ros=true is live, to check
-// whether it returns real players before switching fetchProjections to
-// use it over summing weeks 1..17 by hand.
+// CONFIRMED LIVE, RUN 2026-09-16: `ros=true` for QB returned
+// `{"week":"2","count":"66","players":[...real players...]}` — a real,
+// populated response, not the public_api_limited stub. Top QB (Josh
+// Allen) was 358.47 pts against week=0's frozen 367.15, a materially
+// different total consistent with a genuine rest-of-season sum from the
+// current week rather than a decorative echo. fetchProjections in
+// fantasypros.mjs now requests `ros=true` when in season instead of
+// week=0; this probe stays here as the reference for what a healthy
+// `ros=true` response looks like if it ever needs re-verifying.
 async function projectionSample(week) {
   const url = `${FP_BASE}/nfl/${season}/projections?position=QB&week=${week}`;
   try {
@@ -190,16 +196,14 @@ if (season0?.count > 0 && week1?.count > 0 && season0.topPoints > 0 && week1.top
 
 // --- Does the endpoint have a native rest-of-season mode? ---
 //
-// Third-party documentation of this same public v2 API (not FantasyPros'
-// own — theirs is unreachable from a sandbox, same as everywhere else in
-// this project) describes a `ros=true` flag on this endpoint as an
-// alternative to `week=N`. If real, that is a materially better fix than
-// summing remaining weeks client-side: one request per position instead of
-// up to seventeen, and FantasyPros' own model rather than a naive sum this
-// project would have to maintain. Asked for directly here rather than
-// trusted, the same standard every other claim in this file is held to.
+// Confirmed real and live as of 2026-09-16 (see the RE-RUN comment above).
+// fetchProjections in fantasypros.mjs now uses it for every position in
+// POWER_POSITIONS, but this run so far had only checked QB — checking the
+// other three here before that shipped, since a per-position hazard (an
+// empty response on, say, TE) would only ever have surfaced through
+// fetchProjections' own throw-on-empty guard in production otherwise.
 const rosProbe = await probe(
-  'ros=true (claimed rest-of-season mode, unverified against this key)',
+  'ros=true (rest-of-season mode, confirmed live 2026-09-16)',
   `${FP_BASE}/nfl/${season}/projections?position=QB&ros=true`
 );
 let rosTop = null;
@@ -217,6 +221,28 @@ if (rosProbe.status === 200) {
   }
 }
 
+// The other three positions fetchProjections actually loops over in
+// production (POWER_POSITIONS) — QB alone confirming ros=true works says
+// nothing about whether RB/WR/TE do too.
+console.log('\n--- ros=true across every POWER_POSITIONS entry ---');
+const rosOtherPositions = [];
+for (const position of ['RB', 'WR', 'TE']) {
+  const { status, body } = await probe(
+    `ros=true (${position})`,
+    `${FP_BASE}/nfl/${season}/projections?position=${position}&ros=true`
+  );
+  let count = 0;
+  if (status === 200) {
+    try {
+      count = (JSON.parse(body)?.players || []).length;
+    } catch {
+      count = 0;
+    }
+  }
+  rosOtherPositions.push({ position, status, count });
+}
+const rosAllPositionsOk = rosOtherPositions.every((p) => p.status === 200 && p.count > 0);
+
 console.log('\n=== verdict ===');
 console.log(anyHit
   ? 'At least one team-level candidate answered 200 — read its body above before building anything.'
@@ -233,3 +259,9 @@ console.log(
 console.log(rosProbe.status === 200
   ? `ros=true IS reachable with this key (echoed week=${rosTop?.echoedWeek}, top QB ${rosTop?.name} ${rosTop?.points} pts) — compare that total against week=0's ${season0?.topPoints ?? '—'} pts above: identical means the flag is decorative here, materially lower means it is a real native ROS mode and should replace week=0 outright rather than summing weeks by hand.`
   : `ros=true is NOT reachable with this key (HTTP ${rosProbe.status}) — the third-party doc describing it does not hold for this API version/key, so summing remaining weeks (or the ECR fallback) is the only path.`);
+console.log(
+  `ros=true across RB/WR/TE: ${rosOtherPositions.map((p) => `${p.position}=HTTP ${p.status} (${p.count} players)`).join(', ')}`
+);
+console.log(rosAllPositionsOk
+  ? 'All of POWER_POSITIONS returns real players under ros=true — safe for fetchProjections to use unconditionally in season.'
+  : 'At least one of RB/WR/TE did NOT return players under ros=true — fetchProjections would throw on that position every in-season sync until this is re-checked.');

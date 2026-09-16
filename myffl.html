@@ -6836,16 +6836,16 @@
 		// Whether these ranks rest on *preseason* projections during the season
 		// itself — the one way this card can be quietly, badly wrong.
 		//
-		// The sync asks FantasyPros for week=0, the preseason projection slot.
-		// Confirmed frozen (see fetchProjections in fantasypros.mjs and
-		// probe-fantasypros-power-rank.yml's 2026-09-14 run): every rank here
-		// is computed from projections that predate every injury and
-		// breakout of the season, and nothing else on screen would say so —
-		// the ranks stay plausible small integers. FantasyPros' own
-		// rest-of-season mode (`ros=true`) exists but wasn't live as of
-		// 2026-09 (confirmed by their support, not a tier/key issue — see
-		// fetchProjections in fantasypros.mjs), so this banner is the
-		// mitigation, not a placeholder for a fix already in flight.
+		// In season, the sync now asks FantasyPros for `ros=true` (real
+		// rest-of-season totals, confirmed live 2026-09-16 — see
+		// fetchProjections in fantasypros.mjs for the full history of how
+		// that was confirmed) rather than the frozen week=0 preseason slot,
+		// so this predicate should not fire during a healthy sync. It stays
+		// as a guard rather than being deleted: `week: '0'` with
+		// `inSeason: true` and no `ros` flag on the meta is specifically the
+		// signature of that fix silently regressing (a rollback, a call-site
+		// edit that drops `ros`, or FantasyPros pulling the feature) — the
+		// exact quiet failure mode this banner exists to catch.
 		//
 		// Deliberately not a freshness date: the projections endpoint carries
 		// no `last_updated` at all, unlike consensus-rankings, so a date-based

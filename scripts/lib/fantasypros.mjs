@@ -632,46 +632,50 @@ export function buildProjectionIndex(playersByPosition) {
 }
 
 // week=0 is FantasyPros' preseason slot, same as draft/dynasty rankings
-// use, and is what the probe actually asked.
+// use, and is what a non-`ros` call asks for. Live-scoring's own win-
+// probability estimate (api/live-scoring.js) calls this function with a
+// real current-week number instead, for a single week's projection rather
+// than a season-long one — `ros` is never involved there.
 //
-// WHAT HAPPENS IN-SEASON IS NOW KNOWN: week=0 freezes. probe-fantasypros-
-// power-rank.yml, re-run 2026-09-14 (a week into the season) against its
-// own 2026-09-10 (pre-kickoff) numbers, found the same top QB at the same
-// point total to two decimals, while week=1 — a genuine single-week slice
-// — moved in the same window. So the power score currently runs on
-// projections that predate every injury and breakout of the season, and
-// nothing about that changes on its own as more weeks are played.
+// HISTORY, kept because the wrong turn in it is worth not repeating: this
+// project first believed week=0 might refresh in-season and confirmed it
+// doesn't (probe-fantasypros-power-rank.yml, 2026-09-14: byte-identical
+// top-QB total to the pre-kickoff run, while week=1 — a genuine single-week
+// slice — had moved). It then found `ros=true` in FantasyPros' own OpenAPI
+// spec, tried it, and got `public_api_limited: true, tier: "premium",
+// players: null` back — misread as a paid-tier gate, which prompted a real
+// Premium-plan activation that changed nothing. FantasyPros support
+// (2026-09-15) corrected that: `public_api_limited` is `true` on every
+// tier, and `ros=true` simply wasn't live yet. It went live 2026-09-16 —
+// confirmed by the same probe, now returning real players at a materially
+// different (lower) total than week=0's frozen one — and `ros` below is
+// that switch. A sum-the-remaining-weeks fallback was the plan if `ros`
+// never worked; it was never built, since this shipped first.
 //
-// The same probe run also checked for a native rest-of-season mode on this
-// endpoint rather than assuming one has to be built: `ros=true` is real
-// (it's in FantasyPros' own OpenAPI spec, and the response echoes
-// `ros_projections: true`), but comes back `public_api_limited: true,
-// tier: "premium", players: null` regardless of key. This project first
-// misread that as a paid-tier gate and chased a Premium-plan activation
-// that changed nothing; FantasyPros support (2026-09-15) confirmed
-// `public_api_limited` is `true` on every tier and `ros=true` simply
-// wasn't live yet, expected "later this week" as of that reply. So for
-// now the fix, when one ships, is summing points across the remaining
-// weeks (1..17) rather than reading week=0 — a call-site change, not a
-// rewrite of this function's shape — unless `ros=true` goes live and
-// returns real players first, which would be cheaper to switch to.
-// `week` stays a parameter rather than a literal for exactly that reason.
-//
-// The guard below is what makes the third case loud rather than quiet. An
-// empty position means the endpoint stopped answering the way it did when
-// the probe looked, and computing on it would hand every franchise a zero
-// score, every zero would tie, and the card would show every team ranked
-// first — plausible enough to read past. Throwing instead lands in
-// fetch-rosters.mjs's catch, which logs it and leaves the previous sync's
-// power object in place: stale-but-real beats confidently-wrong, the same
-// trade every other fallback here makes.
-export async function fetchProjections({ apiKey, season, week = 0, inSeason = false }) {
+// The guard below is what makes an endpoint regression loud rather than
+// quiet. An empty position means the endpoint stopped answering the way it
+// did when the probe looked, and computing on it would hand every
+// franchise a zero score, every zero would tie, and the card would show
+// every team ranked first — plausible enough to read past. Throwing
+// instead lands in fetch-rosters.mjs's catch, which logs it and leaves the
+// previous sync's power object in place: stale-but-real beats
+// confidently-wrong, the same trade every other fallback here makes.
+export async function fetchProjections({ apiKey, season, week = 0, ros = false, inSeason = false }) {
   const playersByPosition = {};
+  // Echoes the actual week FantasyPros computed `ros` from (confirmed by
+  // the probe: it auto-picks the current NFL week rather than requiring
+  // one), so the metadata below records what really happened rather than
+  // the caller's own guess. Falls back to the requested `week` if a `ros`
+  // response is ever missing it, rather than leaving a hole in the meta.
+  let effectiveWeek = String(week);
   for (const position of POWER_POSITIONS) {
-    const data = await fpGet(`/nfl/${season}/projections?position=${position}&week=${week}`, apiKey);
+    const query = ros ? `position=${position}&ros=true` : `position=${position}&week=${week}`;
+    const data = await fpGet(`/nfl/${season}/projections?${query}`, apiKey);
     const players = data?.players || [];
     if (players.length === 0) {
-      const err = new Error(`projections returned no ${position}s for ${season} week ${week}`);
+      const err = new Error(
+        `projections returned no ${position}s for ${season} ${ros ? 'ros=true' : `week ${week}`}`
+      );
       // Tagged so fetch-rosters.mjs can tell this apart from fpGet's own
       // throw (a non-2xx status, e.g. a 429 rate limit, or bad JSON): both
       // land here as "projections unavailable" and produce the same empty
@@ -680,23 +684,21 @@ export async function fetchProjections({ apiKey, season, week = 0, inSeason = fa
       err.projectionsNotPublished = true;
       throw err;
     }
+    if (ros && data?.week != null) effectiveWeek = String(data.week);
     playersByPosition[position] = players;
   }
   return {
     ...buildProjectionIndex(playersByPosition),
-    // Provenance, carried onto every power object so the page can say when
-    // the ranks rest on preseason numbers during the season itself.
-    //
-    // This is phase-and-week rather than a date on purpose, and the probe is
-    // why: unlike consensus-rankings, the *projections* endpoint carries no
-    // `last_updated` at all (it came back absent for every week asked), so a
+    // Provenance, carried onto every power object so the page can say what
+    // basis the ranks rest on. This is phase-and-slot rather than a date on
+    // purpose, and the probe is why: unlike consensus-rankings, the
+    // *projections* endpoint carries no `last_updated` at all, so a
     // freshness check built on one would never fire and would look like a
-    // working guard. The deterministic question is just as good and needs no
-    // metadata: were we in season, and did we ask for the preseason slot?
-    // That is exactly the dangerous combination, it is knowable here, and it
-    // stops being true the moment the week argument changes — which is the
-    // change the post-kickoff probe is meant to inform.
-    meta: { basis: 'projections', season: String(season), week: String(week), inSeason: !!inSeason },
+    // working guard. `ros: true` plus a real `week` is the healthy in-season
+    // case; `week: '0'` with `inSeason: true` and no `ros` is the frozen
+    // fallback state powerUsesPreseasonProjections (myffl.html) watches for
+    // — reachable today only if a future regression stops passing `ros`.
+    meta: { basis: 'projections', season: String(season), week: effectiveWeek, ros: !!ros, inSeason: !!inSeason },
   };
 }
 
