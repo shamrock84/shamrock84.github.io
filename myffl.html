@@ -1766,6 +1766,12 @@
 			border-bottom: 1px solid var(--border);
 		}
 		table.standings tr:last-child td { border-bottom: none; }
+		/* A browser treats the hyphen in "10-4" as a break opportunity, so at
+		   the narrow end of the standings grid's column width (see the .grid
+		   comment above) the record wraps to "10-" / "4" instead of shrinking
+		   the Team column further. Nowrap here, not on the whole row — the
+		   Team cell still needs to wrap at spaces for a long name. */
+		.standings-record { white-space: nowrap; }
 		/* Now Playing — the Scoring tab's own summary card, same full-width
 		   treatment as .admin-card/.planning-card and for the same reason:
 		   it isn't one league's card, it spans all of them, so it shouldn't
@@ -6958,7 +6964,7 @@
 			const table = el('table', { class: 'standings' });
 			const headRow = el('tr');
 			const headers = showRecord ? ['#', 'Team', 'W-L', 'PF', 'PA'] : ['#', 'Team', 'PF', 'PA'];
-			headers.forEach((h) => headRow.appendChild(el('th', { text: h })));
+			headers.forEach((h) => headRow.appendChild(el('th', { class: h === 'W-L' ? 'standings-record' : '', text: h })));
 			table.appendChild(headRow);
 
 			rows.forEach((r, i) => {
@@ -6966,7 +6972,7 @@
 				row.appendChild(el('td', { text: String(i + 1) }));
 				row.appendChild(el('td', { text: teamNameWithOwner(r) }));
 				if (showRecord) {
-					row.appendChild(el('td', { text: `${r.wins}-${r.losses}` }));
+					row.appendChild(el('td', { class: 'standings-record', text: `${r.wins}-${r.losses}` }));
 				}
 				row.appendChild(el('td', { text: r.pointsFor }));
 				row.appendChild(el('td', { text: r.pointsAgainst }));

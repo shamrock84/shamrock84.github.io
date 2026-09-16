@@ -2166,13 +2166,18 @@ export async function fetchScoring(league, cookie, franchiseInfo, projectPlayer,
 // the season actually being live, so pre-season this uses weeklyResults
 // instead — confirmed against real data that it carries starter/nonstarter
 // status independent of whether the week's games have started.
-// KNOWN LIMITATION: W is hardcoded to 1. Fine while the season hasn't
-// started (there's only ever a week 1 to look at), but needs to track the
-// actual current week once the regular season advances past week 1.
+// `week` comes from the caller (fetch-rosters.mjs resolves it once via
+// currentNflWeek(), the same provider-agnostic Sleeper read used elsewhere)
+// and falls back to 1 only when that resolution itself failed — there is
+// only ever a week 1 to look at before the season starts anyway. This used
+// to hardcode W=1 unconditionally, which meant the digest kept reporting
+// "week 1" problems (bye, injury, ineligible-slot) forever once the real
+// week moved on.
 // Pilot feature: only called for leagues flagged lineupPilot in
 // config/leagues.json, so an API shape surprise here can't break the sync.
-export async function fetchMflLineup(league, cookie) {
-  const weeklyData = await mflGet(`/export?TYPE=weeklyResults&L=${league.id}&W=1&JSON=1`, cookie, seasonOf(league));
+export async function fetchMflLineup(league, cookie, week) {
+  const w = week || 1;
+  const weeklyData = await mflGet(`/export?TYPE=weeklyResults&L=${league.id}&W=${w}&JSON=1`, cookie, seasonOf(league));
   const matchups = weeklyData?.weeklyResults?.matchup;
   const matchupList = Array.isArray(matchups) ? matchups : matchups ? [matchups] : [];
   let mine = null;
@@ -2182,7 +2187,7 @@ export async function fetchMflLineup(league, cookie) {
     if (found) { mine = found; break; }
   }
   if (!mine) {
-    throw new Error('No week-1 weeklyResults data for this franchise yet');
+    throw new Error(`No week-${w} weeklyResults data for this franchise yet`);
   }
 
   const rawPlayers = mine.player
@@ -2192,7 +2197,7 @@ export async function fetchMflLineup(league, cookie) {
     .filter((p) => String(p.status || '').toLowerCase() === 'starter')
     .map((p) => p.id);
 
-  return { week: '1', starterIds };
+  return { week: String(w), starterIds };
 }
 
 // Submits a starting lineup for the given week. Confirmed against MFL's own
