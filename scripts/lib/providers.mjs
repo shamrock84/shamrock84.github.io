@@ -2549,6 +2549,60 @@ function espnTeamLiveStarters(teamSide, clockMap, currentPeriod) {
   return { minutesRemaining: Math.round(seconds / 60), score: summedScore, players, bench };
 }
 
+// `currentPeriod` is ESPN's OWN idea of "the current week," read off
+// data.status verbatim and trusted as-is — this project does not try to
+// hold it back until the new week's games have actually started, and that
+// was a deliberate call, not an oversight, made 2026-09-16 while looking at
+// the manager's screenshot of ESPN's Scoring card already reading "Week 2,
+// 0-0" on a Wednesday while MFL (which sends no explicit week at all — see
+// this function's own bare TYPE=liveScoring call) was still showing week
+// 1's completed matchup. Confirmed live that day: ESPN league 421871710
+// reported `currentMatchupPeriod: 2` with every player's appliedStatTotal
+// at 0, while MFL league 26696's un-parameterized liveScoring call was
+// still returning the SAME week-1 final scores it had days earlier. So the
+// inconsistency is real, not a misreading — each provider's own "current"
+// signal is trusted blind, and nothing here normalizes across them.
+//
+// The idea considered and DECLINED: keep showing the previous week's
+// completed matchup (score, players, bench) until the new period's games
+// are confirmed underway, using the NFL scoreboard this file already
+// fetches (fetchNflGames) rather than currentPeriod alone. Three real
+// costs, not just taste, are why this wasn't built:
+//   1. FEASIBILITY IS UNPROVEN. The roster read this function's own docs
+//      below name (rosterForCurrentScoringPeriod) says "current" in its
+//      own field name. Nobody has probed whether ESPN's API will still
+//      answer for a period after currentMatchupPeriod has moved past it —
+//      if it won't, there is no cheap "just ask for last week again" path,
+//      and everything below is moot until that's checked.
+//   2. IT TRADES FRESHNESS FOR STABILITY. Trusting currentPeriod means a
+//      late scoring correction on last week's stats keeps landing for as
+//      long as ESPN still calls that period current. Freezing on our own
+//      copy the moment the period rolls stops watching for exactly that —
+//      a real (if rare) correctness regression on what would otherwise be
+//      a display-only fix.
+//   3. THE CHEAP VERSION DOESN'T SURVIVE COLD STARTS. The obvious
+//      implementation — keep serving whatever this module's cache last
+//      saw until the new week's first game shows 'in' — relies on the
+//      module-level cache this file already documents as resetting on
+//      cold start. Tuesday-through-Thursday, exactly the window this
+//      would need to hold data across, is also the quietest traffic
+//      window and so the likeliest time for a cold start to wipe that
+//      cache — the fix would silently stop working precisely when it's
+//      supposed to matter, which is worse than not having it, since
+//      nobody would know why it's inconsistent. A version that survives
+//      cold starts means persisting last week's tally somewhere durable
+//      (Upstash, like api/plans.js) — new write surface on what this
+//      file's own header calls a fast path that "only answers requests;
+//      it writes nothing."
+// If this gets revisited: start with a probe on cost #1 (a past-period
+// roster/schedule read against a real ESPN league after its
+// currentMatchupPeriod has advanced) before writing any fetching code —
+// the answer to that decides whether this is a small change or a
+// caching-layer change. Sleeper is presumed to roll the same way ESPN
+// does (same category of provider-owned "current week" flag, read in
+// fetchSleeperScoring below via resolveNflWeek) but was never itself
+// checked live the day this was written.
+//
 // clockMap is optional — pass one from fetchNflGameClocks (shared across
 // every ESPN/Sleeper league in one poll/sync, since it's the same NFL data
 // regardless of league) to skip fetching it again here. projectPlayer is
@@ -3020,6 +3074,14 @@ export async function fetchSleeperWeekStats(season, week) {
 // posture as a missing projectPlayer.
 // Sleeper's starters carry `name`, not an id — see espnTeamLiveStarters'
 // comment for why.
+//
+// `week` here is Sleeper's OWN "current" flag (resolveNflWeek off
+// /state/nfl), trusted as-is with no check for whether that week's games
+// have actually started — same posture as ESPN's currentPeriod, same
+// reason: see fetchEspnScoring's own comment for the considered-and-
+// declined fix and why (unproven feasibility, a freshness tradeoff, a
+// cold-start problem). Never itself confirmed live to roll early the way
+// ESPN was — presumed to, not verified.
 export async function fetchSleeperScoring(league, clockMap, playerMap, projectPlayer, weeklyStats) {
   const [state, { names, ownerById }, clocks, players, leagueData] = await Promise.all([
     sleeperGet('/state/nfl'),
