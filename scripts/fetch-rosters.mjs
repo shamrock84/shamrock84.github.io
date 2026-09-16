@@ -151,9 +151,10 @@ function stripScoringPlayers(scoring) {
     // sleeperTeamLiveStarters in providers.mjs) feeds the Scoring tab's
     // nested "Show bench" drawer and is exactly as LIVE-ONLY as players —
     // stripped here for the same page-load-budget reason, never written to
-    // data/rosters.json. The sync never passes fetchScoring the two extra
-    // MFL inputs bench needs (mflRosterIds/mflWeekScores) in the first
-    // place, so MFL's bench is always empty here regardless; this strip
+    // data/rosters.json. The sync never passes fetchScoring the mflRosterIds
+    // input MFL's bench needs in the first place (mflWeekScores is fetched
+    // internally, gated on that same input — see fetchScoring's own
+    // comment), so MFL's bench is always empty here regardless; this strip
     // still matters for ESPN/Sleeper, whose bench comes for free on the
     // same read as players.
     teams: scoring.teams.map(({ players, bench, ...rest }) => rest),

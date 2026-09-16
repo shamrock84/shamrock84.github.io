@@ -2150,17 +2150,34 @@ function mflBenchFromRoster(franchiseId, rosterIdsByFranchise, starterIds, playe
 // every starter's `stats` comes back [] via mflStatBreakdownFromBoxscore,
 // same as before this feature existed.
 //
-// mflRosterIds (fetchMflLeagueRosterIds) and mflWeekScores
-// (fetchMflWeekPlayerScores) are both optional too, and feed ONLY the
-// bench half of the drawer (mflBenchFromRoster) — omitted, every team's
-// bench comes back [], same graceful-absence posture as everything else
-// here. Deliberately NOT fetched inside this function, unlike everything
-// this function DOES fetch itself: mflWeekScores needs the CURRENT NFL
-// week, and api/live-scoring.js already resolves that once per poll
-// (getCurrentNflWeek) and shares it with Sleeper's own weekly-stats fetch —
-// fetching it again from in here would risk this function's idea of "the
-// current week" disagreeing with that one.
-export async function fetchScoring(league, cookie, franchiseInfo, projectPlayer, playerMap, boxscoreStatIndex, mflRatesByPosition, mflRosterIds, mflWeekScores) {
+// mflRosterIds (fetchMflLeagueRosterIds) is optional too, and feeds ONLY
+// the bench half of the drawer (mflBenchFromRoster) — omitted, every
+// team's bench comes back [], same graceful-absence posture as everything
+// else here.
+//
+// mflWeekScores (fetchMflWeekPlayerScores) is NOT a parameter, even though
+// it also only feeds bench — it used to be, fetched by the caller against
+// api/live-scoring.js's own getCurrentNflWeek() (Sleeper's `/state/nfl`)
+// and passed in, on the theory that "the current NFL week" is one fact
+// this poll should only resolve once. Real production data proved that
+// wrong: on 2026-09-16 (a Wednesday, week 1 fully final) Sleeper's state
+// had already rolled to week 2 while this league's own TYPE=liveScoring
+// was still reporting week 1 — MFL and Sleeper's "current week" are
+// independent clocks that can disagree for the days between one week's
+// games ending and the next kicking off. Querying playerScores&RULES=1
+// for the WRONG week returns cleanly (no error, just an empty score for
+// that week) — the deployed endpoint was calling TYPE=playerScores&W=2 for
+// a league whose bench was still showing week 1, so `points` on the
+// bench came back null for every single player, every poll: the "Bench
+// scoring not working. Showing no scores." bug, confirmed end-to-end by
+// probe-live-scoring-players.mjs RUN 9 hitting the live deployment. RUN 8
+// on the same run confirmed the DATA was never the problem — playerScores
+// for the RIGHT week covered 248 of this league's 283 rostered players.
+// The fix: read the week from THIS SAME liveScoring response (`live.week`,
+// already used below for the result's own `week` field) rather than a
+// week resolved independently elsewhere, so the two calls can't disagree
+// about which week they mean.
+export async function fetchScoring(league, cookie, franchiseInfo, projectPlayer, playerMap, boxscoreStatIndex, mflRatesByPosition, mflRosterIds) {
   const [{ nameById, ownerById }, liveData] = await Promise.all([
     franchiseInfo ? Promise.resolve(franchiseInfo) : fetchMflFranchiseNames(league, cookie),
     mflGet(`/export?TYPE=liveScoring&L=${league.id}&JSON=1`, cookie, seasonOf(league)),
@@ -2184,6 +2201,22 @@ export async function fetchScoring(league, cookie, franchiseInfo, projectPlayer,
 
   if (rows.length === 0) {
     throw new Error('No live scoring available yet');
+  }
+
+  // Fetched here, now that live.week is known, rather than by the caller —
+  // see this function's own comment above for why a week resolved
+  // elsewhere isn't safe to reuse for this call. Gated on mflRosterIds so
+  // a league whose bench drawer nobody has open still costs nothing extra
+  // (same gating api/live-scoring.js already applies to mflRosterIds
+  // itself). A failure here costs this poll's bench points only, same
+  // degrade-not-fail posture as boxscoreStatIndex/mflRatesByPosition above.
+  let mflWeekScores = null;
+  if (mflRosterIds && live?.week) {
+    try {
+      mflWeekScores = await fetchMflWeekPlayerScores(league, live.week, cookie);
+    } catch {
+      // degrade silently — bench points come back null this poll.
+    }
   }
 
   // gameSecondsRemaining is franchise-level in the raw response and already

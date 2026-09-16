@@ -145,6 +145,8 @@ import {
   seasonOf,
   espnGet,
   loadSleeperPlayerMap,
+  fetchMflLeagueRosterIds,
+  fetchMflWeekPlayerScores,
 } from './lib/providers.mjs';
 
 const mflText = (v) => (v && typeof v === 'object' ? v.$t : v);
@@ -673,4 +675,115 @@ if (MFL_LEAGUE_ID) {
   } catch (err) {
     console.log(`  RUN 7 probe failed: ${err.message}`);
   }
+}
+
+// RUN 8 — diagnosing the "Bugs" task "Bench scoring not working. Showing no
+// scores." The shipped bench drawer (mflBenchFromRoster) gets an MFL bench
+// player's points from TYPE=playerScores&RULES=1 (fetchMflWeekPlayerScores),
+// joined against TYPE=rosters (fetchMflLeagueRosterIds) for who's even on
+// the roster. mfl/README.md's own "Other things confirmed from the Request
+// Reference" section already flags that TYPE=liveScoring itself takes a
+// DETAILS=1 argument returning nonstarters too — never tried against real
+// data. This run checks two things: does DETAILS=1 actually add nonstarter
+// entries with a real `score`, and does playerScores&RULES=1 (the field
+// currently feeding the bench drawer) cover the same players at all, or is
+// it silently thinner than the roster it's joined against?
+if (MFL_LEAGUE_ID) {
+  console.log(`\n\n=== RUN 8: TYPE=liveScoring&DETAILS=1 vs playerScores&RULES=1, league ${MFL_LEAGUE_ID} week ${WEEK} ===\n`);
+  try {
+    const cookie = await mflLogin(process.env.MFL_USERNAME, process.env.MFL_PASSWORD);
+    const year = seasonOf({ id: MFL_LEAGUE_ID });
+    const league = { id: MFL_LEAGUE_ID };
+
+    const liveData = await mflGet(`/export?TYPE=liveScoring&L=${MFL_LEAGUE_ID}&W=${WEEK}&DETAILS=1&JSON=1`, cookie, year);
+    const rawMatchups = liveData?.liveScoring?.matchup;
+    const matchupList = Array.isArray(rawMatchups) ? rawMatchups : rawMatchups ? [rawMatchups] : [];
+
+    const allEntries = [];
+    for (const m of matchupList) {
+      const fs = Array.isArray(m.franchise) ? m.franchise : m.franchise ? [m.franchise] : [];
+      for (const fr of fs) {
+        const raw = fr.players?.player;
+        const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
+        for (const p of list) allEntries.push({ franchiseId: fr.id, ...p });
+      }
+    }
+    const starterEntries = allEntries.filter((p) => String(p.status).toLowerCase() === 'starter');
+    const nonstarterEntries = allEntries.filter((p) => String(p.status).toLowerCase() !== 'starter');
+    console.log(`With DETAILS=1: ${allEntries.length} total entries, ${starterEntries.length} starter, ${nonstarterEntries.length} nonstarter`);
+    console.log(`union of nonstarter statuses: ${[...new Set(nonstarterEntries.map((p) => p.status))].join(', ') || '(none)'}`);
+    console.log(`union of ALL nonstarter-entry keys: ${[...new Set(nonstarterEntries.flatMap((p) => Object.keys(p)))].sort().join(', ')}`);
+    const nonstarterScored = nonstarterEntries.filter((p) => p.score != null && p.score !== '');
+    console.log(`nonstarter entries carrying a non-null score: ${nonstarterScored.length} of ${nonstarterEntries.length}`);
+    console.log(`first 5 nonstarter entries verbatim:`);
+    console.log(JSON.stringify(nonstarterEntries.slice(0, 5), null, 2));
+
+    const rosterIdsByFranchise = await fetchMflLeagueRosterIds(league, cookie);
+    let totalRosterSize = 0;
+    for (const ids of rosterIdsByFranchise.values()) totalRosterSize += ids.length;
+    console.log(`\nTYPE=rosters: ${rosterIdsByFranchise.size} franchises, ${totalRosterSize} rostered players total`);
+
+    const weekScores = await fetchMflWeekPlayerScores(league, WEEK, cookie);
+    console.log(`TYPE=playerScores&RULES=1: ${weekScores.size} players carry a score league-wide (not scoped to this league's own roster)`);
+    let rosteredWithWeekScore = 0;
+    for (const ids of rosterIdsByFranchise.values()) {
+      for (const id of ids) if (weekScores.has(String(id))) rosteredWithWeekScore++;
+    }
+    console.log(`Of this league's ${totalRosterSize} rostered players, ${rosteredWithWeekScore} have an entry in playerScores&RULES=1`);
+
+    const liveNonstarterById = new Map(nonstarterEntries.map((p) => [String(p.id), p]));
+    let rosteredWithLiveNonstarterScore = 0;
+    for (const ids of rosterIdsByFranchise.values()) {
+      for (const id of ids) {
+        const entry = liveNonstarterById.get(String(id));
+        if (entry && entry.score != null && entry.score !== '') rosteredWithLiveNonstarterScore++;
+      }
+    }
+    console.log(`Of the same ${totalRosterSize} rostered players, ${rosteredWithLiveNonstarterScore} have a scored entry in liveScoring&DETAILS=1's nonstarter list`);
+  } catch (err) {
+    console.log(`  RUN 8 probe failed: ${err.message}`);
+  }
+} else {
+  console.log('\n\n=== RUN 8 skipped (no PROBE_MFL_LEAGUE_ID) ===');
+}
+
+// RUN 9 — RUN 8 confirmed the DATA exists (playerScores&RULES=1 covers 248
+// of 283 rostered players, liveScoring&DETAILS=1's nonstarter list covers
+// 148 of 283 with a live score every time). Neither of those numbers is
+// zero, so if the shipped drawer is really showing NO scores at all, the
+// break has to be somewhere between that data and what api/live-scoring.js
+// actually serves — hits the deployed endpoint directly, the same way the
+// page's own refreshLiveScoring() does (see benchDetailLeagueIds' comment
+// in myffl.html for the &benchLeagues= query param), and prints this
+// league's own bench array verbatim.
+if (MFL_LEAGUE_ID) {
+  console.log(`\n\n=== RUN 9: the deployed api/live-scoring.js endpoint itself, league ${MFL_LEAGUE_ID} ===\n`);
+  try {
+    const url = `https://shamrock84-github-io.vercel.app/api/live-scoring?t=${Date.now()}&benchLeagues=${MFL_LEAGUE_ID}`;
+    console.log(`GET ${url}`);
+    const res = await fetch(url);
+    console.log(`-> HTTP ${res.status}`);
+    const body = await res.json();
+    const league = (body.leagues || []).find((l) => String(l.id) === String(MFL_LEAGUE_ID));
+    if (!league) {
+      console.log(`league ${MFL_LEAGUE_ID} not found in response; all league ids returned: ${(body.leagues || []).map((l) => l.id).join(', ')}`);
+    } else {
+      console.log(`league ${MFL_LEAGUE_ID}: scoringError = ${league.scoringError}`);
+      const teams = league.scoring?.teams || [];
+      for (const t of teams) {
+        console.log(`  team ${t.franchiseId} (${t.teamName}): score=${t.score}, players=${(t.players || []).length}, bench=${(t.bench || []).length}`);
+      }
+      const withBench = teams.find((t) => (t.bench || []).length);
+      if (withBench) {
+        console.log(`\nfirst team with a nonempty bench (${withBench.franchiseId}), full bench array:`);
+        console.log(JSON.stringify(withBench.bench, null, 2));
+      } else {
+        console.log('\nEVERY team on this league came back with an EMPTY bench array.');
+      }
+    }
+  } catch (err) {
+    console.log(`  RUN 9 probe failed: ${err.message}`);
+  }
+} else {
+  console.log('\n\n=== RUN 9 skipped (no PROBE_MFL_LEAGUE_ID) ===');
 }

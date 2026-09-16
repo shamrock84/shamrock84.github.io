@@ -28,7 +28,6 @@ import {
   nflBoxscorePlayerLines,
   fetchMflSkillPositionRates,
   fetchMflLeagueRosterIds,
-  fetchMflWeekPlayerScores,
 } from '../scripts/lib/providers.mjs';
 import { applyCors } from './lib/cors.mjs';
 // scripts/lib/fantasypros.mjs is a new import boundary for api/ — see
@@ -553,22 +552,6 @@ export default async function handler(req, res) {
     }
   }
 
-  // The week fetchMflWeekPlayerScores needs for the Scoring tab's bench
-  // drawer (see mflBenchFromRoster's own comment in providers.mjs) — reused
-  // from the SAME getCurrentNflWeek() projections/Sleeper already resolve
-  // above rather than asked for again, so this file never carries two
-  // different ideas of "the current week" for the same poll. A failure or
-  // an unresolved week just means every MFL league's bench comes back
-  // empty this poll, same degrade-not-fail posture as everything else here.
-  let mflWeek = null;
-  if (mflCookie && anyMflLeague) {
-    try {
-      mflWeek = await getCurrentNflWeek();
-    } catch {
-      // degrade silently — see comment above.
-    }
-  }
-
   const results = await Promise.allSettled(
     leagues
       .filter(hasLiveScoring)
@@ -598,36 +581,28 @@ export default async function handler(req, res) {
         } catch {
           // degrade silently — see comment above.
         }
-        // Both bench-only inputs (see mflBenchFromRoster in providers.mjs) —
-        // a failure in either costs this league's bench only, never its
-        // scores. Both are also skipped ENTIRELY unless this league's bench
-        // drawer is actually open (benchLeagueIds, above) — mflWeekScores is
-        // a real, uncached MFL request every poll, and fetching it for
-        // every MFL league regardless of who was looking measurably slowed
-        // every poll down. mflRosterIds is cached (getMflRosterIds) so
-        // skipping it saves little on its own, but there's no reason to pay
-        // even a cache lookup for a league nobody asked about, and it keeps
-        // both bench inputs gated by the same condition rather than two
-        // slightly different ones.
+        // Bench identity only (see mflBenchFromRoster in providers.mjs) — a
+        // failure here costs this league's bench only, never its scores.
+        // Skipped ENTIRELY unless this league's bench drawer is actually
+        // open (benchLeagueIds, above); cached (getMflRosterIds) so skipping
+        // it saves little on its own, but there's no reason to pay even a
+        // cache lookup for a league nobody asked about. Bench POINTS
+        // (fetchMflWeekPlayerScores) are no longer fetched here at all —
+        // fetchScoring now fetches them itself, against the week its own
+        // TYPE=liveScoring call reports, rather than this file's
+        // independently-resolved "current NFL week" — see fetchScoring's
+        // own comment for the real production bug that distinction fixes.
         let mflRosterIds;
-        let mflWeekScores = null;
         if (benchLeagueIds.has(String(league.id))) {
           try {
             mflRosterIds = await getMflRosterIds(league, mflCookie);
           } catch {
             // degrade silently — see comment above.
           }
-          if (mflWeek) {
-            try {
-              mflWeekScores = await fetchMflWeekPlayerScores(league, mflWeek, mflCookie);
-            } catch {
-              // degrade silently — see comment above.
-            }
-          }
         }
         const scoring = await fetchScoring(
           league, mflCookie, franchiseInfo, projectPlayer, mflPlayerMap, mflBoxscoreStatIndex, mflRatesByPosition,
-          mflRosterIds, mflWeekScores
+          mflRosterIds
         );
         return { id: league.id, name: league.name, scoring, scoringError: null };
       })
