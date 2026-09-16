@@ -378,7 +378,7 @@ assert.deepEqual(nflBoxscorePlayerLines(undefined), []);
 // needs a real backing store (round-tripping the toggle's open state) PLUS
 // the Storage iteration pair, key()/length, since nflBoxscoreOpenGameIds
 // scans every stored key — mirrors test-scoring-details.mjs's identical
-// stub for benchDetailLeagueIds. window.matchMedia is real here too (the
+// stub for that same function. window.matchMedia is real here too (the
 // other tests' stub omits it, which is harmless there only because
 // isCardCollapsed/setCardCollapsed swallow the resulting throw and quietly
 // report "closed" — fine for tests that never open a drawer, wrong for

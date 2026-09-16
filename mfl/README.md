@@ -121,21 +121,24 @@ Pinned by `test-mfl-boxscore-breakdown.mjs`.
   per-player breakdown either. Full response captured in
   `probe-live-scoring-players.mjs`'s own RUN 4 job log if the shape is
   needed again.
-- `TYPE=liveScoring` takes a `DETAILS=1` argument that returns
-  non-starters too. `mflLiveStarters` currently filters to starters only
-  regardless of what's in the response. **Confirmed against real data** by
-  `probe-live-scoring-players.mjs` RUN 9 (2026-09-16, league 26696, week 1):
-  227 total entries with `DETAILS=1` (79 starter, 148 nonstarter), and every
-  one of the 148 nonstarter entries carried a real, non-null `score`. Not
-  adopted — the bug that prompted the probe (bench points always reading
-  null) turned out to be a week mismatch in the existing rosters+
-  playerScores approach, not missing data (see fetchScoring's own comment
-  in providers.mjs), so switching bench identity/points onto this instead
-  was never necessary. Worth knowing if that approach is ever revisited: it
-  would also drop the two extra requests (`TYPE=rosters` +
-  `TYPE=playerScores`) down to zero, at the cost of never covering taxi
-  squad/IR players — RUN 9 also found `TYPE=rosters` reporting 283 total
-  rostered players against only 227 appearing in `DETAILS=1` at all.
+- `TYPE=liveScoring` takes a `DETAILS=1` argument that returns non-starters
+  too, each carrying a real `score` — **this is now how the Scoring tab's
+  bench drawer gets its MFL data** (`fetchScoring`/`mflNonstarterBench` in
+  providers.mjs). Two earlier approaches were tried and reverted first:
+  filtering the plain (no-`DETAILS`) response for `status: 'nonstarter'`
+  (RUN 1 found that status structurally never appears without the
+  argument), then joining `TYPE=rosters` (identity) against
+  `TYPE=playerScores&RULES=1` (points) — two extra MFL requests per league,
+  every poll a bench drawer was open. RUN 10 (2026-09-16) is why that
+  second approach was abandoned rather than just re-pointed at the right
+  week: of 137 nonstarter ids present in both sources, only 8 agreed and
+  129 disagreed, every disagreement `playerScores` confidently reporting 0
+  for a player `DETAILS=1` showed a real, often large score. `DETAILS=1`
+  costs nothing extra (same call already made for starters) and, per RUN 9,
+  had 148 of 148 nonstarter entries carrying a real score. Known gap: it
+  only covers the active roster — RUN 9 found `TYPE=rosters` reporting 283
+  total rostered players against only 227 appearing in `DETAILS=1` at all,
+  so a taxi squad/IR player simply doesn't appear in the bench drawer.
 - `TYPE=playerScores` (without `RULES`) — "All player scores for a given
   league/week, including all rostered players as well as all free
   agents." Given RUN 4's finding on the `RULES=1` variant's shape, this

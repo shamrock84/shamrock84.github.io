@@ -7243,15 +7243,12 @@
 		// opening the starter breakdown for a close game doesn't also
 		// dump a whole bench onto the screen.
 		//
-		// Unlike starters, bench is fetched ONLY for leagues with a bench
-		// drawer open — see benchDetailLeagueIds and refreshLiveScoring's
-		// own comment. MFL's bench costs a real extra per-league request
-		// every poll (mflBenchFromRoster's own comment in providers.mjs),
-		// so fetching it for all eighteen leagues on every ~30s poll
-		// regardless of whether anyone was looking at it visibly slowed
-		// every poll down. Opening a bench drawer for the first time
-		// therefore kicks an immediate refresh (appendBenchDetail's own
-		// click handler) rather than waiting out the normal interval.
+		// Bench comes for free on the same live-scoring response every
+		// league's score already needs, for all three providers (see
+		// mflPlayerEntry's own comment in providers.mjs for MFL's route to
+		// that — two earlier, gated approaches were tried and reverted),
+		// so it needs no per-league opt-in and no forced extra poll when a
+		// drawer opens for the first time.
 
 		// The drawer defaults CLOSED — the opposite polarity from every other
 		// collapse on this page, all of which default open and store "this one
@@ -7275,39 +7272,6 @@
 		}
 		function setScoringDetailOpen(key, open) {
 			setCardCollapsed(key, open, SCORING_DETAIL_NS);
-		}
-
-		// Which leagues currently have a bench drawer open, for
-		// refreshLiveScoring to tell api/live-scoring.js — unlike the starter
-		// half above, MFL's bench costs a real extra request per league every
-		// poll (see mflBenchFromRoster's own comment in providers.mjs), so it's
-		// only fetched for leagues someone's actually looking at. Read straight
-		// from localStorage rather than tracked incrementally: a bench toggle
-		// click (appendBenchDetail) mutates the stored key directly without a
-		// full re-render, so the stored key is the only thing guaranteed
-		// current between polls — this is read fresh immediately before each
-		// poll request rather than cached, for exactly that reason. The key
-		// shape is cardCollapseStorageKey's own
-		// `${namespace}:${bucket}:${key}`, and appendBenchDetail's own key is
-		// `${league.id}:${franchiseIds}:bench` — so a `:bench`-suffixed key
-		// under this namespace/bucket always has the league id as the first
-		// remaining segment. A private-browsing localStorage throw degrades to
-		// "nobody has bench open," same as if nothing were ever stored.
-		function benchDetailLeagueIds() {
-			const ids = new Set();
-			try {
-				const bucket = window.matchMedia('(max-width: 600px)').matches ? 'mobile' : 'desktop';
-				const prefix = `${SCORING_DETAIL_NS}:${bucket}:`;
-				for (let i = 0; i < localStorage.length; i++) {
-					const k = localStorage.key(i);
-					if (!k || !k.startsWith(prefix) || !k.endsWith(':bench')) continue;
-					const leagueId = k.slice(prefix.length, -':bench'.length).split(':')[0];
-					if (leagueId) ids.add(leagueId);
-				}
-			} catch {
-				// Private browsing or similar — see comment above.
-			}
-			return ids;
 		}
 
 		// The NFL schedule for the current poll, keyed by team abbreviation —
@@ -7708,16 +7672,6 @@
 				toggle.setAttribute('aria-expanded', String(next));
 				label.textContent = next ? 'Hide bench' : 'Show bench';
 				setScoringDetailOpen(benchKey, next);
-				// Opening a bench drawer that wasn't already open means the
-				// LAST poll never asked api/live-scoring.js for this league's
-				// bench (see benchDetailLeagueIds) — kick an immediate refresh
-				// rather than leaving the reader looking at "waiting on the
-				// next live update" for up to the current poll interval, which
-				// (see nextLiveScoringDelayMs) can be the multi-minute idle
-				// fallback rather than the fast one. Closing needs no such
-				// nudge: the data already in hand doesn't go stale by being
-				// hidden.
-				if (next) refreshLiveScoring();
 			});
 
 			container.appendChild(toggle);
@@ -10836,10 +10790,12 @@
 		}
 
 		// Which games currently have a stat drawer open, for refreshNflScoreboard
-		// to tell api/live-scoring.js — same reasoning and same
-		// localStorage-scanning shape as benchDetailLeagueIds above: a full
-		// per-player boxscore is a real ESPN request per game, so it's only
-		// fetched for a game someone is actually looking at.
+		// to tell api/live-scoring.js: a full per-player boxscore is a real
+		// ESPN request per game, so it's only fetched for a game someone is
+		// actually looking at. Read straight from localStorage rather than
+		// tracked incrementally: a drawer toggle click mutates the stored key
+		// directly without a full re-render, so the stored key is the only
+		// thing guaranteed current between polls.
 		function nflBoxscoreOpenGameIds() {
 			const ids = new Set();
 			try {
@@ -10852,7 +10808,7 @@
 					if (id) ids.add(id);
 				}
 			} catch {
-				// Private browsing or similar — see benchDetailLeagueIds' own comment.
+				// Private browsing or similar — a full quota fails the same way.
 			}
 			return ids;
 		}
@@ -11179,8 +11135,7 @@
 		async function refreshNflScoreboard() {
 			if (!LIVE_SCORING_URL) return;
 			try {
-				// Omitted entirely when nobody has a stat drawer open, same
-				// idiom as refreshLiveScoring's own benchLeagues param — the
+				// Omitted entirely when nobody has a stat drawer open — the
 				// common case is one shorter URL, not a query string with
 				// nothing in it.
 				const boxscoreIds = [...nflBoxscoreOpenGameIds()];
@@ -12878,18 +12833,7 @@
 			// leaves the last known-good cards alone rather than blanking them.
 			const wasFirstAttempt = !liveScoringAttempted;
 			try {
-				// Bench, unlike starters, is only fetched for leagues named
-				// here — see benchDetailLeagueIds' own comment for why (MFL's
-				// bench costs a real extra request per league every poll,
-				// which every-league-every-poll was measurably slowing every
-				// poll down). Omitted entirely rather than sent as `=` when
-				// nobody has one open, so the common case is one shorter URL,
-				// not a query string with nothing in it.
-				const benchLeagues = [...benchDetailLeagueIds()];
-				const benchParam = benchLeagues.length
-					? `&benchLeagues=${encodeURIComponent(benchLeagues.join(','))}`
-					: '';
-				const res = await fetch(`${LIVE_SCORING_URL}?t=${Date.now()}${benchParam}`, { cache: 'no-store' });
+				const res = await fetch(`${LIVE_SCORING_URL}?t=${Date.now()}`, { cache: 'no-store' });
 				if (!res.ok) throw new Error(`HTTP ${res.status}`);
 				const live = await res.json();
 				// Set before rerenderScoringCards below, which is what reads

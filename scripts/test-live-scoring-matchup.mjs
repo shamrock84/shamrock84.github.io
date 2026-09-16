@@ -95,10 +95,11 @@ const liveScoringResponse = {
 	assert.equal(me.score, '12.40');
 	assert.equal(me.minutesRemaining, 540, '32400 seconds is 540 minutes');
 	// A 'nonstarter' entry is excluded from `players` — only starters feed
-	// the remaining-points model. In real MFL responses this list never
-	// actually contains a nonstarter at all (see mflLiveStarters' own
-	// comment and test-mfl-bench.mjs for why), but the filter still holds
-	// defensively if one ever showed up.
+	// the remaining-points model — but included in `bench` (see below):
+	// TYPE=liveScoring&DETAILS=1 (what fetchScoring now requests) really
+	// does carry both statuses in one response, unlike the plain call
+	// mflLiveStarters' own comment describes. See test-mfl-bench.mjs for
+	// bench's own dedicated coverage.
 	//
 	// `points` comes off each player entry's own `score`, which the real
 	// captured response this fixture is trimmed from does carry (see the
@@ -119,12 +120,14 @@ const liveScoringResponse = {
 		],
 		'the nonstarter is excluded from starters; stats is [] with no boxscore index/rates passed (see test-mfl-boxscore-breakdown.mjs for that case)'
 	);
-	// Bench comes back empty when mflRosterIds/mflWeekScores aren't passed —
-	// same graceful-absence posture as playerMap/boxscoreStatIndex/
-	// mflRatesByPosition. See test-mfl-bench.mjs for bench actually
-	// populated from those two inputs (mflBenchFromRoster's own test
-	// coverage) — it no longer comes from this liveScoring fixture at all.
-	assert.deepEqual(me.bench, [], 'bench is empty without mflRosterIds/mflWeekScores');
+	// The one nonstarter in this fixture (9003) lands in bench, for free,
+	// off this same response — no extra parameter needed. See
+	// test-mfl-bench.mjs for bench's own dedicated coverage.
+	assert.deepEqual(
+		me.bench,
+		[{ id: '9003', secondsRemaining: 0, name: null, position: null, team: null, points: 4, stats: [] }],
+		'the nonstarter entry is excluded from players but included in bench, with secondsRemaining forced to 0'
+	);
 
 	// With a playerMap in hand, the same starters carry what the drawer
 	// needs beside each name.

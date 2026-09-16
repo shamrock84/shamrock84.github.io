@@ -95,8 +95,8 @@ function makeContext(seed = {}) {
 			getItem: (k) => (store.has(k) ? store.get(k) : null),
 			setItem(k, v) { store.set(k, String(v)); },
 			removeItem(k) { store.delete(k); },
-			// The real Storage interface's iteration pair — benchDetailLeagueIds
-			// scans every stored key to find bench-open ones, so the stub needs
+			// The real Storage interface's iteration pair — nflBoxscoreOpenGameIds
+			// scans every stored key to find open-drawer ones, so the stub needs
 			// these too, not just get/set/remove.
 			key(i) { return [...store.keys()][i] ?? null; },
 			get length() { return store.size; },
@@ -858,39 +858,11 @@ function leagueWithMatchup() {
 	assert.match(fullText(empty), /No bench detail yet/);
 }
 
-// --- benchDetailLeagueIds: which leagues get bench fetched this poll ---
-// Read straight from localStorage (see its own comment for why) rather
-// than tracked incrementally, so this pins the parsing directly: a real
-// bench key counts, a starter-only key or an unrelated namespace's key
-// doesn't, two different leagues both count, and a key stored under the
-// OTHER viewport bucket (matchMedia stubbed to desktop here) is ignored —
-// a phone reader's open bench drawer must not leak into a desktop poll's
-// request and vice versa.
-{
-	const ctx = makeContext({
-		'myfflScoringDetailOpen:desktop:26696:0009v0010:bench': '1',
-		'myfflScoringDetailOpen:desktop:99999:0001v0002:bench': '1',
-		'myfflScoringDetailOpen:desktop:26696:0009v0010': '1', // starter-only, no :bench suffix
-		'myfflScoringDetailOpen:mobile:11111:0003v0004:bench': '1', // wrong bucket
-		'myfflCardCollapsed:desktop:some-other-card': '1', // unrelated namespace
-	});
-	assert.deepEqual([...ctx.benchDetailLeagueIds()].sort(), ['26696', '99999']);
-}
-{
-	// Nothing stored at all — the common case (nobody has any bench drawer
-	// open) — degrades to an empty set, not an error.
-	const ctx = makeContext();
-	assert.deepEqual([...ctx.benchDetailLeagueIds()], []);
-}
-
-// --- Opening a bench drawer kicks an immediate refresh; closing doesn't ---
-// Bench is only ever fetched for leagues named in benchDetailLeagueIds, so
-// the poll that was already in flight when the reader clicked "Show bench"
-// never asked for this league's bench — without this nudge the drawer
-// would sit on "waiting on the next live update" for up to
-// LIVE_SCORING_POLL_MS instead of resolving right away. refreshLiveScoring
-// is a top-level function declaration, reassignable the same way
-// setLiveGames reassigns the `let liveGames` binding.
+// --- Opening or closing a bench drawer never triggers an extra poll ---
+// Bench now rides free on every regular poll response (no per-league
+// opt-in — see mflPlayerEntry's own comment in providers.mjs), so unlike
+// the reverted gated approach, toggling the drawer is a pure DOM/storage
+// operation with no network side effect.
 {
 	const ctx = makeContext(LOGGED_IN);
 	ctx.liveScoringAttempted = true;
@@ -903,13 +875,11 @@ function leagueWithMatchup() {
 	const benchToggle = findAll(card, hasClass('scoring-bench-toggle'))[0];
 
 	benchToggle.listeners.click[0](); // open
-	assert.equal(calls, 1, 'opening a bench drawer kicks an immediate refresh');
-
 	benchToggle.listeners.click[0](); // close
-	assert.equal(calls, 1, 'closing does not — data already in hand does not go stale by being hidden');
+	assert.equal(calls, 0, 'toggling the bench drawer never calls refreshLiveScoring itself');
 }
 
-// --- refreshLiveScoring's own URL carries benchLeagues only when something's open ---
+// --- refreshLiveScoring's own URL carries no bench-related param at all ---
 {
 	const ctx = makeContext({
 		'myfflScoringDetailOpen:desktop:26696:0009v0010:bench': '1',
@@ -924,21 +894,7 @@ function leagueWithMatchup() {
 	vm.runInContext('pageData = __testPageData;', ctx);
 
 	await ctx.refreshLiveScoring();
-	assert.ok(capturedUrl.includes('benchLeagues=26696'), `expected a benchLeagues param, got ${capturedUrl}`);
-}
-{
-	const ctx = makeContext();
-	ctx.liveScoringAttempted = true;
-	let capturedUrl = null;
-	ctx.fetch = async (url) => {
-		capturedUrl = url;
-		return { ok: true, json: async () => ({ generatedAt: new Date().toISOString(), games: {}, leagues: [] }) };
-	};
-	ctx.__testPageData = { leagues: [] };
-	vm.runInContext('pageData = __testPageData;', ctx);
-
-	await ctx.refreshLiveScoring();
-	assert.ok(!capturedUrl.includes('benchLeagues'), `expected no benchLeagues param when nothing is open, got ${capturedUrl}`);
+	assert.ok(!capturedUrl.includes('bench'), `expected no bench-related param regardless of open drawers, got ${capturedUrl}`);
 }
 
 // --- Live-status ticking, and the "Live updates on" framing gated on
@@ -974,8 +930,8 @@ function leagueWithMatchup() {
 	vm.runInContext('pageData = __testPageData;', ctx);
 	// Mirrors what startLiveScoringPolling sets before its own
 	// refreshLiveScoring call — a direct refreshLiveScoring() call with
-	// polling never started (exactly what the benchLeagues tests above do)
-	// must NOT start a ticker; see the case below.
+	// polling never started (exactly what the refreshLiveScoring tests
+	// above do) must NOT start a ticker; see the case below.
 	vm.runInContext('liveScoringPollingEnabled = true;', ctx);
 
 	await ctx.refreshLiveScoring();
@@ -1002,8 +958,8 @@ function leagueWithMatchup() {
 }
 
 // A one-off refreshLiveScoring() call outside the regular polling chain —
-// exactly what the benchLeagues tests above do, and exactly the shape a
-// real setInterval left running would have hung this very test file on
+// exactly what the refreshLiveScoring tests above do, and exactly the
+// shape a real setInterval left running would have hung this very test file on
 // (Node has nothing else keeping the process open once the script body
 // finishes) — must never start a ticker nobody will ever stop.
 {

@@ -145,9 +145,45 @@ import {
   seasonOf,
   espnGet,
   loadSleeperPlayerMap,
-  fetchMflLeagueRosterIds,
-  fetchMflWeekPlayerScores,
 } from './lib/providers.mjs';
+
+// Standalone re-implementations of two functions this project tried,
+// shipped, and deliberately removed from providers.mjs (see mfl/README.md's
+// DETAILS=1 bullet and mflPlayerEntry's own comment for why) — kept here,
+// not imported, so RUN 8/RUN 10 below can still be re-run to confirm
+// playerScores&RULES=1 stays unreliable, without that dead approach having
+// to remain live production code just to stay probeable.
+async function probeMflRosterIdsByFranchise(league, cookie) {
+  const data = await mflGet(`/export?TYPE=rosters&L=${league.id}&JSON=1`, cookie, seasonOf(league));
+  const rawFranchises = Array.isArray(data?.rosters?.franchise)
+    ? data.rosters.franchise
+    : data?.rosters?.franchise
+    ? [data.rosters.franchise]
+    : [];
+  const byFranchise = new Map();
+  for (const f of rawFranchises) {
+    const rawPlayers = f?.player;
+    const players = Array.isArray(rawPlayers) ? rawPlayers : rawPlayers ? [rawPlayers] : [];
+    byFranchise.set(String(f.id), players.map((p) => String(p.id)));
+  }
+  return byFranchise;
+}
+
+async function probeMflWeekPlayerScores(league, week, cookie) {
+  const data = await mflGet(
+    `/export?TYPE=playerScores&L=${league.id}&W=${week}&RULES=1&JSON=1`,
+    cookie,
+    seasonOf(league)
+  );
+  const raw = data?.playerScores?.playerScore;
+  const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
+  const scores = new Map();
+  for (const p of list) {
+    if (p?.id == null || p.score == null || p.score === '') continue;
+    scores.set(String(p.id), Number(p.score));
+  }
+  return scores;
+}
 
 const mflText = (v) => (v && typeof v === 'object' ? v.$t : v);
 const asArray = (v) => (Array.isArray(v) ? v : v == null ? [] : [v]);
@@ -718,12 +754,12 @@ if (MFL_LEAGUE_ID) {
     console.log(`first 5 nonstarter entries verbatim:`);
     console.log(JSON.stringify(nonstarterEntries.slice(0, 5), null, 2));
 
-    const rosterIdsByFranchise = await fetchMflLeagueRosterIds(league, cookie);
+    const rosterIdsByFranchise = await probeMflRosterIdsByFranchise(league, cookie);
     let totalRosterSize = 0;
     for (const ids of rosterIdsByFranchise.values()) totalRosterSize += ids.length;
     console.log(`\nTYPE=rosters: ${rosterIdsByFranchise.size} franchises, ${totalRosterSize} rostered players total`);
 
-    const weekScores = await fetchMflWeekPlayerScores(league, WEEK, cookie);
+    const weekScores = await probeMflWeekPlayerScores(league, WEEK, cookie);
     console.log(`TYPE=playerScores&RULES=1: ${weekScores.size} players carry a score league-wide (not scoped to this league's own roster)`);
     let rosteredWithWeekScore = 0;
     for (const ids of rosterIdsByFranchise.values()) {
@@ -753,13 +789,14 @@ if (MFL_LEAGUE_ID) {
 // zero, so if the shipped drawer is really showing NO scores at all, the
 // break has to be somewhere between that data and what api/live-scoring.js
 // actually serves — hits the deployed endpoint directly, the same way the
-// page's own refreshLiveScoring() does (see benchDetailLeagueIds' comment
-// in myffl.html for the &benchLeagues= query param), and prints this
-// league's own bench array verbatim.
+// page's own refreshLiveScoring() does, and prints this league's own bench
+// array verbatim. (At the time this ran, the endpoint still gated MFL bench
+// behind a now-removed &benchLeagues= query param — see mflPlayerEntry's
+// own comment in providers.mjs; a re-run today needs no such param at all.)
 if (MFL_LEAGUE_ID) {
   console.log(`\n\n=== RUN 9: the deployed api/live-scoring.js endpoint itself, league ${MFL_LEAGUE_ID} ===\n`);
   try {
-    const url = `https://shamrock84-github-io.vercel.app/api/live-scoring?t=${Date.now()}&benchLeagues=${MFL_LEAGUE_ID}`;
+    const url = `https://shamrock84-github-io.vercel.app/api/live-scoring?t=${Date.now()}`;
     console.log(`GET ${url}`);
     const res = await fetch(url);
     console.log(`-> HTTP ${res.status}`);
@@ -836,7 +873,7 @@ if (MFL_LEAGUE_ID) {
       );
       console.log(`liveScoring&DETAILS=1: ${nonstarterScoreById.size} nonstarter entries with a real score`);
 
-      const weekScores = await fetchMflWeekPlayerScores(league, week, cookie);
+      const weekScores = await probeMflWeekPlayerScores(league, week, cookie);
       console.log(`playerScores&RULES=1: ${weekScores.size} players with a real score league-wide`);
 
       let agree = 0;
