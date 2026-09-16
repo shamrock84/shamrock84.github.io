@@ -787,3 +787,80 @@ if (MFL_LEAGUE_ID) {
 } else {
   console.log('\n\n=== RUN 9 skipped (no PROBE_MFL_LEAGUE_ID) ===');
 }
+
+// RUN 10 — RUN 9's fix (query playerScores for live.week, not a separately-
+// resolved week) shipped, but the manager reports bench players STILL
+// showing wrong scores: not null this time, but a CONFIDENT 0.00 that
+// disagrees with the independently-computed (from ESPN's boxscore) stat
+// breakdown sitting right next to it — e.g. a player the breakdown credits
+// with real rushing yards still reads 0.00 for bench points. That points at
+// playerScores&RULES=1 itself being unreliable/stale for some players
+// (bench ids especially) even for a week whose games are Final, which
+// liveScoring&DETAILS=1 (the SAME source starters already trust) might not
+// share, since RUN 8 found DETAILS=1 covering its whole nonstarter list
+// with a real score. This compares the two for every id present in both,
+// for THIS SAME league/week, and prints any mismatch — score present but
+// disagreeing, not just one side missing the id entirely.
+if (MFL_LEAGUE_ID) {
+  console.log(`\n\n=== RUN 10: playerScores&RULES=1 vs liveScoring&DETAILS=1, per-player agreement, league ${MFL_LEAGUE_ID} ===\n`);
+  try {
+    const cookie = await mflLogin(process.env.MFL_USERNAME, process.env.MFL_PASSWORD);
+    const year = seasonOf({ id: MFL_LEAGUE_ID });
+    const league = { id: MFL_LEAGUE_ID };
+
+    // Resolve the SAME week production now uses: live.week off a plain
+    // TYPE=liveScoring call (no DETAILS), exactly what fetchScoring reads.
+    const plainLive = await mflGet(`/export?TYPE=liveScoring&L=${MFL_LEAGUE_ID}&JSON=1`, cookie, year);
+    const week = plainLive?.liveScoring?.week;
+    console.log(`live.week (what fetchScoring now uses for W=): ${week}`);
+    if (!week) {
+      console.log('  no week on this response — nothing to compare');
+    } else {
+      const detailedLive = await mflGet(`/export?TYPE=liveScoring&L=${MFL_LEAGUE_ID}&W=${week}&DETAILS=1&JSON=1`, cookie, year);
+      const rawMatchups = detailedLive?.liveScoring?.matchup;
+      const matchupList = Array.isArray(rawMatchups) ? rawMatchups : rawMatchups ? [rawMatchups] : [];
+      const allEntries = [];
+      for (const m of matchupList) {
+        const fs = Array.isArray(m.franchise) ? m.franchise : m.franchise ? [m.franchise] : [];
+        for (const fr of fs) {
+          const raw = fr.players?.player;
+          const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
+          for (const p of list) allEntries.push(p);
+        }
+      }
+      const nonstarterScoreById = new Map(
+        allEntries
+          .filter((p) => String(p.status).toLowerCase() !== 'starter')
+          .filter((p) => p.score != null && p.score !== '')
+          .map((p) => [String(p.id), Number(p.score)])
+      );
+      console.log(`liveScoring&DETAILS=1: ${nonstarterScoreById.size} nonstarter entries with a real score`);
+
+      const weekScores = await fetchMflWeekPlayerScores(league, week, cookie);
+      console.log(`playerScores&RULES=1: ${weekScores.size} players with a real score league-wide`);
+
+      let agree = 0;
+      let disagree = 0;
+      const mismatches = [];
+      for (const [id, liveScore] of nonstarterScoreById) {
+        if (!weekScores.has(id)) continue; // covered separately by RUN 8's coverage numbers
+        const psScore = weekScores.get(id);
+        if (Math.abs(psScore - liveScore) < 0.05) {
+          agree++;
+        } else {
+          disagree++;
+          mismatches.push({ id, liveScoringDetailsScore: liveScore, playerScoresRulesScore: psScore });
+        }
+      }
+      console.log(`\nOf ids present in BOTH sources: ${agree} agree, ${disagree} disagree`);
+      if (mismatches.length) {
+        console.log(`all mismatches (liveScoring&DETAILS=1 vs playerScores&RULES=1):`);
+        console.log(JSON.stringify(mismatches, null, 2));
+      }
+    }
+  } catch (err) {
+    console.log(`  RUN 10 probe failed: ${err.message}`);
+  }
+} else {
+  console.log('\n\n=== RUN 10 skipped (no PROBE_MFL_LEAGUE_ID) ===');
+}
