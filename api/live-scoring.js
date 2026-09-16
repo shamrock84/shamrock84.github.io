@@ -27,7 +27,6 @@ import {
   addBoxscoreToStatIndex,
   nflBoxscorePlayerLines,
   fetchMflSkillPositionRates,
-  fetchMflLeagueRosterIds,
 } from '../scripts/lib/providers.mjs';
 import { applyCors } from './lib/cors.mjs';
 // scripts/lib/fantasypros.mjs is a new import boundary for api/ — see
@@ -70,8 +69,6 @@ const cache = {
   espnBoxscores: new Map(), // eventId -> { boxscore, final } — see getEspnBoxscore
   mflRates: new Map(), // leagueId -> Map<position, Map<eventCode, rate>>
   mflRatesAt: new Map(), // leagueId -> timestamp
-  mflRosterIds: new Map(), // leagueId -> Map<franchiseId, playerId[]> — see getMflRosterIds
-  mflRosterIdsAt: new Map(), // leagueId -> timestamp
 };
 
 const COOKIE_TTL_MS = 20 * 60 * 1000; // 20 min
@@ -287,25 +284,6 @@ async function getMflRatesByPosition(league, cookie) {
   return rates;
 }
 
-// Who's on each franchise's roster at all, for the Scoring tab's nested
-// "Show bench" drawer — see mflBenchFromRoster's own comment in
-// providers.mjs for why this needs its own request (TYPE=liveScoring
-// doesn't carry it) and the same NAMES_TTL_MS caching every other mostly-
-// static MFL read in this file uses: roster composition barely moves
-// mid-week, so a warm instance pays this once an hour per league rather
-// than once per ~30s poll.
-async function getMflRosterIds(league, cookie) {
-  const at = cache.mflRosterIdsAt.get(league.id) || 0;
-  const cached = cache.mflRosterIds.get(league.id);
-  if (cached && Date.now() - at < NAMES_TTL_MS) {
-    return cached;
-  }
-  const rosterIds = await fetchMflLeagueRosterIds(league, cookie);
-  cache.mflRosterIds.set(league.id, rosterIds);
-  cache.mflRosterIdsAt.set(league.id, Date.now());
-  return rosterIds;
-}
-
 // Once a game has gone final its boxscore never changes again, so a copy
 // captured while `final` is true is reused for the rest of this warm
 // instance's life rather than re-fetched every ~30s poll — the same
@@ -370,9 +348,9 @@ export default async function handler(req, res) {
 
     // The NFL tab's own per-game stat drawer (nflBoxscorePlayerLines, and
     // renderNflGameRow's own drawer in myffl.html) — gated to games a
-    // drawer is actually open for, same reasoning as benchLeagues further
-    // down: fetching every game's full boxscore on every poll whether or
-    // not anyone had a drawer open would be pure waste. Shares the exact
+    // drawer is actually open for: fetching every game's full boxscore on
+    // every poll whether or not anyone had a drawer open would be pure
+    // waste. Shares the exact
     // same getEspnBoxscore cache the MFL stat-breakdown path below uses
     // (keyed by event id, cached hard once a game reads 'post'), so a game
     // already fetched there this warm instance costs nothing here either,
@@ -414,21 +392,6 @@ export default async function handler(req, res) {
     });
     return;
   }
-
-  // Which leagues want the Scoring tab's bench drawer this poll — see
-  // benchDetailLeagueIds' own comment in myffl.html. Unlike starters
-  // (`players`, always computed off the same fetch every league's score
-  // already needs), MFL's bench costs a genuine extra request per league
-  // every poll (mflBenchFromRoster's own comment in providers.mjs), so it's
-  // only fetched for leagues actually named here — an absent or malformed
-  // param just means nobody gets bench this poll, same as before this
-  // gating existed for a league whose drawer nobody has opened yet.
-  const benchLeagueIds = new Set(
-    String(req.query.benchLeagues || '')
-      .split(',')
-      .map((id) => id.trim())
-      .filter(Boolean)
-  );
 
   const username = process.env.MFL_USERNAME;
   const password = process.env.MFL_PASSWORD;
@@ -581,28 +544,13 @@ export default async function handler(req, res) {
         } catch {
           // degrade silently — see comment above.
         }
-        // Bench identity only (see mflBenchFromRoster in providers.mjs) — a
-        // failure here costs this league's bench only, never its scores.
-        // Skipped ENTIRELY unless this league's bench drawer is actually
-        // open (benchLeagueIds, above); cached (getMflRosterIds) so skipping
-        // it saves little on its own, but there's no reason to pay even a
-        // cache lookup for a league nobody asked about. Bench POINTS
-        // (fetchMflWeekPlayerScores) are no longer fetched here at all —
-        // fetchScoring now fetches them itself, against the week its own
-        // TYPE=liveScoring call reports, rather than this file's
-        // independently-resolved "current NFL week" — see fetchScoring's
-        // own comment for the real production bug that distinction fixes.
-        let mflRosterIds;
-        if (benchLeagueIds.has(String(league.id))) {
-          try {
-            mflRosterIds = await getMflRosterIds(league, mflCookie);
-          } catch {
-            // degrade silently — see comment above.
-          }
-        }
+        // Bench now comes for free off the same TYPE=liveScoring&DETAILS=1
+        // call fetchScoring already makes for starters — no extra request,
+        // no gating, same posture as ESPN's mRoster/Sleeper's matchups.
+        // See mflPlayerEntry's own comment in providers.mjs for the two
+        // approaches that were tried and reverted before landing here.
         const scoring = await fetchScoring(
-          league, mflCookie, franchiseInfo, projectPlayer, mflPlayerMap, mflBoxscoreStatIndex, mflRatesByPosition,
-          mflRosterIds
+          league, mflCookie, franchiseInfo, projectPlayer, mflPlayerMap, mflBoxscoreStatIndex, mflRatesByPosition
         );
         return { id: league.id, name: league.name, scoring, scoringError: null };
       })
