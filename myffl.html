@@ -12195,31 +12195,34 @@
 				const ids = openTaskIdsByCategory(tasks, key);
 				byCategory.set(key, ids.map((id) => [id, tasks[id]]));
 			}
-			// League categories sort first, in the same order the Admin tab's
-			// Leagues card lists them (drag-to-reorder) — the exact league
-			// order pageData.leagues already carries, keyed the same way
-			// quickLinkLabelForLeague files a league's own tasks, so "MNMx"
-			// sorts wherever MNMx sits in that list rather than alphabetically.
-			// Two fixed categories the manager used before per-league
-			// categories existed come next (Manual Task, then Site
-			// Enhancement); anything else — a category none of the above
-			// recognizes, i.e. a new one added later — sorts alphabetically
-			// after those; and Backlog is pinned last of all the named
-			// categories, since it's deliberately the least urgent bucket.
+			// Bugs sort first, ahead of even the leagues — a broken page is
+			// more urgent than any one league's own task. League categories
+			// come next, in the same order the Admin tab's Leagues card lists
+			// them (drag-to-reorder) — the exact league order pageData.leagues
+			// already carries, keyed the same way quickLinkLabelForLeague
+			// files a league's own tasks, so "MNMx" sorts wherever MNMx sits
+			// in that list rather than alphabetically. Two fixed categories
+			// the manager used before per-league categories existed come next
+			// (Manual Task, then Site Enhancement); anything else — a
+			// category none of the above recognizes, i.e. a new one added
+			// later — sorts alphabetically after those; and Backlog is
+			// pinned last of all the named categories, since it's
+			// deliberately the least urgent bucket.
 			const leagueCategoryOrder = new Map((pageData?.leagues || []).map((league, i) => [quickLinkLabelForLeague(league), i]));
 			const categoryTier = (key) => {
-				if (leagueCategoryOrder.has(key)) return 0;
-				if (key === 'Manual Task') return 1;
-				if (key === 'Site Enhancement') return 2;
-				if (key === 'Backlog') return 4;
-				return 3;
+				if (key === 'Bugs') return 0;
+				if (leagueCategoryOrder.has(key)) return 1;
+				if (key === 'Manual Task') return 2;
+				if (key === 'Site Enhancement') return 3;
+				if (key === 'Backlog') return 5;
+				return 4;
 			};
 			const categoryKeys = [...byCategory.keys()].sort((a, b) => {
 				const tierA = categoryTier(a);
 				const tierB = categoryTier(b);
 				if (tierA !== tierB) return tierA - tierB;
-				if (tierA === 0) return leagueCategoryOrder.get(a) - leagueCategoryOrder.get(b);
-				if (tierA === 3) return a.localeCompare(b);
+				if (tierA === 1) return leagueCategoryOrder.get(a) - leagueCategoryOrder.get(b);
+				if (tierA === 4) return a.localeCompare(b);
 				return 0;
 			});
 
