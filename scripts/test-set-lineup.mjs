@@ -12,7 +12,7 @@
 
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { mflLogin, fetchMflLineup, submitMflLineup } from './lib/providers.mjs';
+import { mflLogin, fetchMflLineup, submitMflLineup, currentNflWeek } from './lib/providers.mjs';
 
 const CONFIG_PATH = fileURLToPath(new URL('../config/leagues.json', import.meta.url));
 
@@ -30,11 +30,13 @@ async function main() {
 
   // Plain (unscoped) login for the read side — fetchMflLineup works fine
   // against the generic api.myfantasyleague.com host, same as the rest of
-  // the sync.
-  const readCookie = await mflLogin(username, password);
+  // the sync. Week is resolved the same provider-agnostic way fetch-rosters.mjs
+  // and api/submit-lineup.js do now — fetchMflLineup no longer defaults to
+  // week 1 on its own.
+  const [readCookie, week] = await Promise.all([mflLogin(username, password), currentNflWeek()]);
 
-  console.log(`Fetching current starters for ${league.name}...`);
-  const before = await fetchMflLineup(league, readCookie);
+  console.log(`Fetching current starters for ${league.name} (week ${week})...`);
+  const before = await fetchMflLineup(league, readCookie, week);
   console.log(`Current starters (week ${before.week}): ${before.starterIds.join(', ')}`);
 
   if (before.starterIds.length === 0) {
@@ -48,7 +50,7 @@ async function main() {
   console.log(`submitMflLineup raw body:\n${result.bodyText}`);
 
   console.log('Re-fetching to verify nothing changed...');
-  const after = await fetchMflLineup(league, readCookie);
+  const after = await fetchMflLineup(league, readCookie, week);
   console.log(`Starters after submit (week ${after.week}): ${after.starterIds.join(', ')}`);
 
   const beforeSet = new Set(before.starterIds);

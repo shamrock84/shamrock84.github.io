@@ -251,7 +251,10 @@ export function buildRankingIndex(players) {
   return byName;
 }
 
-function lookupPlayer(index, player) {
+// Exported so fetch-rosters.mjs can reuse the exact same name/position/team
+// disambiguation for its per-position fallback join (see attachRankings'
+// caller) rather than duplicating it.
+export function lookupPlayer(index, player) {
   const candidates = index.get(normalizePlayerName(player.name));
   if (!candidates || candidates.length === 0) return null;
   if (candidates.length === 1) return candidates[0];

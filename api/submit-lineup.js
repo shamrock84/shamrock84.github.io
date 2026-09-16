@@ -19,7 +19,7 @@
 
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { fetchMflLineup, mflLogin, submitMflLineup } from '../scripts/lib/providers.mjs';
+import { fetchMflLineup, mflLogin, submitMflLineup, currentNflWeek } from '../scripts/lib/providers.mjs';
 import { verifyToken } from './lib/auth.mjs';
 import { applyCors } from './lib/cors.mjs';
 
@@ -76,9 +76,13 @@ export default async function handler(req, res) {
   try {
     // Read the current week from the same source the Rosters tab uses, so
     // we submit for the week actually being displayed rather than
-    // hardcoding one.
-    const readCookie = await mflLogin(username, password);
-    const current = await fetchMflLineup(league, readCookie);
+    // hardcoding one. fetchMflLineup no longer defaults this itself (see its
+    // own comment) — it used to hardcode week 1 unconditionally, which meant
+    // this endpoint kept submitting week-1 lineups forever once the real
+    // week moved on. currentNflWeek() is the same provider-agnostic Sleeper
+    // read fetch-rosters.mjs and live-scoring.js already trust for this.
+    const [readCookie, week] = await Promise.all([mflLogin(username, password), currentNflWeek()]);
+    const current = await fetchMflLineup(league, readCookie, week);
 
     const result = await submitMflLineup(username, password, league, starterIds, current.week);
     const mflOk = /<status>OK<\/status>/i.test(result.bodyText);

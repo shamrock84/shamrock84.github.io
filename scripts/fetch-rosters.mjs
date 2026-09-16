@@ -49,6 +49,7 @@ import {
   fetchMflOwnerNames,
   setMflRequestInterval,
   fetchNflGameClocks,
+  currentNflWeek,
 } from './lib/providers.mjs';
 import {
   attachRankings,
@@ -64,6 +65,7 @@ import {
   DEFAULT_POWER_SLOTS,
   createRankingsProvider,
   automaticRankingType,
+  lookupPlayer,
 } from './lib/fantasypros.mjs';
 import { fetchAllDepthCharts, DEPTH_CHART_POSITIONS } from './lib/espn-depth-chart.mjs';
 import {
@@ -249,6 +251,47 @@ export function attachInjuryDetail(leagues, injuries, playerMap) {
     }
   }
   return filled;
+}
+
+// Fallback join for attachRankings' per-player `ecr`: FantasyPros' combined
+// ALL-position list is shallower than the union of its own per-position
+// lists — probe-fantasypros-ecr-depth.yml found 518 total vs. 734 querying
+// QB/RB/WR/TE separately — so a deep bench player can be well within
+// FantasyPros' own per-position rankings and still miss the ALL join
+// entirely, leaving no `ecr` and so no FantasyPros link on the roster card.
+// Confirmed live: Drew Allar (a QB ranked 54th at his position) and rookie
+// WRs like Jayden Higgins are both rostered, both ranked and linkable on
+// FantasyPros, and both invisible to the ALL join alone.
+//
+// `positionEcrIndex` is a Map of position ('QB'/'RB'/'WR'/'TE') to the
+// buildRankingIndex() result from querying that position directly — the
+// same per-position responses fetch-rosters.mjs already fetches for the
+// Depth Charts tab's ECR column, reused here rather than fetched again.
+//
+// This only ever fills a player the primary join left untouched
+// (`!player.ecr`); anyone the ALL list already matched keeps that result
+// exactly as attachRankings set it. The number filled in here is that
+// position's own rank (e.g. "54th QB"), not an overall ECR — the two
+// aren't the same scale, but a same-scale overall number doesn't exist for
+// a player the overall list doesn't carry at all, and a position rank plus
+// a real link beats neither. It also always comes from whichever
+// type/scoring positionEcrIndex was built under (fetch-rosters.mjs uses
+// depthChartEcrType/PPR) regardless of the league's own rankingType or
+// scoring — the closest available list, not an exact match.
+export function applyPositionEcrFallback(leagues, positionEcrIndex) {
+  let matched = 0;
+  for (const league of leagues || []) {
+    for (const player of league.players || []) {
+      if (player.ecr) continue;
+      const index = positionEcrIndex.get(player.position);
+      if (!index) continue;
+      const hit = lookupPlayer(index, player);
+      if (!hit) continue;
+      player.ecr = { rank: hit.ecr, posRank: hit.posRank, tier: hit.tier, delta: hit.delta, url: hit.url };
+      matched++;
+    }
+  }
+  return matched;
 }
 
 // How stale a league's free agent list may get before the next sync re-reads
@@ -1351,6 +1394,20 @@ async function main() {
     }
   }
 
+  // fetchMflLineup needs the actual current NFL week (see its own comment) —
+  // resolved once here, off Sleeper's public unauthenticated /state/nfl, the
+  // same provider-agnostic source api/live-scoring.js already trusts for
+  // this. Only fetched when an MFL lineupPilot league actually needs it;
+  // Sleeper/ESPN resolve their own week from their own APIs.
+  let nflWeek = null;
+  if (LEAGUES.some((l) => l.lineupPilot && (!l.provider || l.provider === 'mfl'))) {
+    try {
+      nflWeek = await currentNflWeek();
+    } catch (err) {
+      console.error(`Failed to fetch current NFL week: ${err.message}`);
+    }
+  }
+
   // Pilot: current-week starters/bench, only for leagues flagged
   // lineupPilot in config/leagues.json. See fetchMflLineup's comment for why
   // this can't affect any other league's data. Sleeper and ESPN leagues get
@@ -1366,7 +1423,7 @@ async function main() {
         ? await fetchSleeperLineup(league)
         : league.provider === 'espn'
         ? await fetchEspnLineup(league)
-        : await fetchMflLineup(league, cookie);
+        : await fetchMflLineup(league, cookie, nflWeek);
       target.lineupWeek = week;
       target.starters = starterIds;
       target.lineupError = null;
@@ -1557,13 +1614,23 @@ async function main() {
     // itself (ecrRankingType) so the page can build the pool key without a
     // third copy of this same seasonal rule.
     depthChartEcrType = automaticRankingType({ type: 'redraft' }, now);
+    // Also collected here: the same per-position responses' full index (not
+    // just the truncated pool list), reused below as a fallback for any
+    // rostered player attachRankings' ALL-list join above left with no ecr
+    // at all — see that fallback's own comment for why this under-coverage
+    // means a real, rostered, FantasyPros-linkable player (confirmed live:
+    // Drew Allar, a QB ranked 54th at his position, and rookie WRs like
+    // Jayden Higgins) can otherwise go unlinked despite FantasyPros ranking
+    // him and publishing his page.
+    const positionEcrIndex = new Map();
     try {
       const provider = createRankingsProvider(fpApiKey, season);
       for (const posKey of DEPTH_CHART_POSITIONS) {
         const position = posKey.toUpperCase();
         const key = rankingPoolKey({ type: depthChartEcrType, scoring: 'PPR', position });
-        if (rankingPools[key]) continue; // already covered (e.g. a superflex OP pool won't collide, but don't overwrite either way)
         const set = await provider.getRankings(depthChartEcrType, 'PPR', position);
+        positionEcrIndex.set(position, set?.index || null);
+        if (rankingPools[key]) continue; // already covered (e.g. a superflex OP pool won't collide, but don't overwrite either way)
         if (set?.list?.length > 0) {
           rankingPools[key] = {
             type: depthChartEcrType,
@@ -1577,6 +1644,12 @@ async function main() {
       }
     } catch (err) {
       console.error(`Failed to fetch per-position ranking pools for Depth Charts: ${err.message}`);
+    }
+
+    // See applyPositionEcrFallback's own comment for why this exists.
+    const positionFallbackMatched = applyPositionEcrFallback(leagues, positionEcrIndex);
+    if (positionFallbackMatched > 0) {
+      console.log(`FantasyPros — per-position fallback matched ${positionFallbackMatched} player(s) the ALL-list join missed`);
     }
 
     // Sleepers: a second, independent FantasyPros list layered on the same

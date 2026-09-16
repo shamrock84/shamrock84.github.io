@@ -218,6 +218,13 @@ jobs:
       - name: Test the ranking pool
         run: node scripts/test-ranking-pool.mjs
 
+      # The per-position fallback for a rostered player the ALL-list ECR
+      # join misses entirely (FantasyPros' combined list under-covers any
+      # single position) — silent when wrong in the same way: no crash, just
+      # a real, linkable player left with no FantasyPros link.
+      - name: Test the per-position ECR fallback
+        run: node scripts/test-position-ecr-fallback.mjs
+
       # The History tab's placement derivation: MFL bracket-name
       # classification, the winner/loser walk, and the gap-filling fallback
       # to regular-season order. Silent when wrong in the most consequential
