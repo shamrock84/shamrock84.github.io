@@ -746,3 +746,44 @@ if (MFL_LEAGUE_ID) {
 } else {
   console.log('\n\n=== RUN 8 skipped (no PROBE_MFL_LEAGUE_ID) ===');
 }
+
+// RUN 9 — RUN 8 confirmed the DATA exists (playerScores&RULES=1 covers 248
+// of 283 rostered players, liveScoring&DETAILS=1's nonstarter list covers
+// 148 of 283 with a live score every time). Neither of those numbers is
+// zero, so if the shipped drawer is really showing NO scores at all, the
+// break has to be somewhere between that data and what api/live-scoring.js
+// actually serves — hits the deployed endpoint directly, the same way the
+// page's own refreshLiveScoring() does (see benchDetailLeagueIds' comment
+// in myffl.html for the &benchLeagues= query param), and prints this
+// league's own bench array verbatim.
+if (MFL_LEAGUE_ID) {
+  console.log(`\n\n=== RUN 9: the deployed api/live-scoring.js endpoint itself, league ${MFL_LEAGUE_ID} ===\n`);
+  try {
+    const url = `https://shamrock84-github-io.vercel.app/api/live-scoring?t=${Date.now()}&benchLeagues=${MFL_LEAGUE_ID}`;
+    console.log(`GET ${url}`);
+    const res = await fetch(url);
+    console.log(`-> HTTP ${res.status}`);
+    const body = await res.json();
+    const league = (body.leagues || []).find((l) => String(l.id) === String(MFL_LEAGUE_ID));
+    if (!league) {
+      console.log(`league ${MFL_LEAGUE_ID} not found in response; all league ids returned: ${(body.leagues || []).map((l) => l.id).join(', ')}`);
+    } else {
+      console.log(`league ${MFL_LEAGUE_ID}: scoringError = ${league.scoringError}`);
+      const teams = league.scoring?.teams || [];
+      for (const t of teams) {
+        console.log(`  team ${t.franchiseId} (${t.teamName}): score=${t.score}, players=${(t.players || []).length}, bench=${(t.bench || []).length}`);
+      }
+      const withBench = teams.find((t) => (t.bench || []).length);
+      if (withBench) {
+        console.log(`\nfirst team with a nonempty bench (${withBench.franchiseId}), full bench array:`);
+        console.log(JSON.stringify(withBench.bench, null, 2));
+      } else {
+        console.log('\nEVERY team on this league came back with an EMPTY bench array.');
+      }
+    }
+  } catch (err) {
+    console.log(`  RUN 9 probe failed: ${err.message}`);
+  }
+} else {
+  console.log('\n\n=== RUN 9 skipped (no PROBE_MFL_LEAGUE_ID) ===');
+}
