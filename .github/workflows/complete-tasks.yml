@@ -1,0 +1,45 @@
+name: Complete Tasks Card entries (manual)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here.
+# Runs scripts/complete-tasks.mjs against the deployed API so a Tasks card
+# entry can be marked done from a sandbox where
+# shamrock84-github-io.vercel.app is not on the network egress allowlist.
+# GitHub Actions runners have real internet access. Requires a SITE_PASSWORD
+# repo secret (same value as the Vercel SITE_PASSWORD env var api/login.js
+# checks) — add it under Settings > Secrets and variables > Actions if this
+# run fails with "SITE_PASSWORD is not set".
+on:
+  workflow_dispatch:
+    inputs:
+      task_text:
+        description: 'Exact task text to mark done. Run this workflow again for each additional task.'
+        required: true
+
+jobs:
+  complete:
+    runs-on: ubuntu-latest
+    steps:
+      # Blobless + sparse checkout: skips mfl/PSD and images/, which no
+      # workflow here reads. Same five directories everywhere on purpose;
+      # see sync-fantasy-rosters.yml for the reasoning and the numbers.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout: |
+            api
+            scripts
+            config
+            data
+            .github
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Mark task done
+        env:
+          SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
+          TASK_TEXT: ${{ github.event.inputs.task_text }}
+        run: node scripts/complete-tasks.mjs "$TASK_TEXT"
