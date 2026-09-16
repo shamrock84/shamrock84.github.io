@@ -1672,10 +1672,15 @@ async function main() {
     // below, exactly like `available`. Four projection GETs a sync, shared
     // across all eighteen leagues, and never allowed to fail the run.
     try {
-      // phase.inSeason rides along so a power object can say whether it was
-      // built from preseason projections during the season — see the meta
-      // comment in fetchProjections. The sync is the side that decides this,
-      // the page only describes it, same division as the ranking calendar.
+      // In season, ros:true asks FantasyPros for its own rest-of-season
+      // total per player instead of the frozen preseason (week=0) one —
+      // confirmed live 2026-09-16, see the history comment on
+      // fetchProjections in fantasypros.mjs. Off season, week=0 (the
+      // default when `ros` is omitted) is exactly what's wanted: the
+      // preseason/draft-prep list, matching automaticRankingType's own
+      // offseason behavior. The sync is the side that decides which phase
+      // applies, the page only describes it, same division as the ranking
+      // calendar.
       //
       // Projections are the preferred basis and are not always there:
       // FantasyPros publishes them per season, so from the Super Bowl until
@@ -1694,7 +1699,7 @@ async function main() {
       // wording standing in for both.
       let projectionsUnavailable = null;
       try {
-        projections = await fetchProjections({ apiKey: fpApiKey, season, inSeason: phase.inSeason });
+        projections = await fetchProjections({ apiKey: fpApiKey, season, ros: phase.inSeason, inSeason: phase.inSeason });
       } catch (err) {
         projectionsUnavailable = err.projectionsNotPublished ? 'not_published' : 'fetch_failed';
         console.log(`FantasyPros — projections unavailable (${err.message}); power ranks fall back to consensus rankings`);
