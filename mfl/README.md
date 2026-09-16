@@ -123,7 +123,19 @@ Pinned by `test-mfl-boxscore-breakdown.mjs`.
   needed again.
 - `TYPE=liveScoring` takes a `DETAILS=1` argument that returns
   non-starters too. `mflLiveStarters` currently filters to starters only
-  regardless of what's in the response.
+  regardless of what's in the response. **Confirmed against real data** by
+  `probe-live-scoring-players.mjs` RUN 9 (2026-09-16, league 26696, week 1):
+  227 total entries with `DETAILS=1` (79 starter, 148 nonstarter), and every
+  one of the 148 nonstarter entries carried a real, non-null `score`. Not
+  adopted — the bug that prompted the probe (bench points always reading
+  null) turned out to be a week mismatch in the existing rosters+
+  playerScores approach, not missing data (see fetchScoring's own comment
+  in providers.mjs), so switching bench identity/points onto this instead
+  was never necessary. Worth knowing if that approach is ever revisited: it
+  would also drop the two extra requests (`TYPE=rosters` +
+  `TYPE=playerScores`) down to zero, at the cost of never covering taxi
+  squad/IR players — RUN 9 also found `TYPE=rosters` reporting 283 total
+  rostered players against only 227 appearing in `DETAILS=1` at all.
 - `TYPE=playerScores` (without `RULES`) — "All player scores for a given
   league/week, including all rostered players as well as all free
   agents." Given RUN 4's finding on the `RULES=1` variant's shape, this
