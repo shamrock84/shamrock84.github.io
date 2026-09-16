@@ -897,16 +897,20 @@
 		.card[data-view="scoring"] .card-head + .team {
 			margin-top: 0;
 		}
-		/* The Rosters card's own appended record (see recordDetails) is
+		/* The manager's own team's record — wherever it's shown (Rosters,
+		   Scoring, Standings; see recordDetails/recordSignClass) — is
 		   bolded so it reads as a stat rather than a floating footnote, and
 		   colored with the same gain/loss vocabulary --gain-text/--ir-text
-		   already establish elsewhere (see .results-trend's own comment) —
+		   already establish elsewhere (see .results-trend's own comment),
 		   but only when winning or losing skews the record. A .500 record
-		   isn't a gain or a loss, so it stays the .team line's own muted
-		   color rather than getting a third, meaningless shade. */
-		.roster-record { font-weight: 700; }
-		.roster-record-up { color: var(--gain-text); }
-		.roster-record-down { color: var(--ir-text); }
+		   isn't a gain or a loss, so it stays whatever color the
+		   surrounding text already was rather than getting a third,
+		   meaningless shade. Every other team's record is deliberately left
+		   plain everywhere this appears — the color answers "how am I
+		   doing", not "who in this league is doing well". */
+		.own-record { font-weight: 700; }
+		.own-record-up { color: var(--gain-text); }
+		.own-record-down { color: var(--ir-text); }
 		.error-box {
 			background: var(--ir-bg);
 			color: var(--ir-text);
@@ -6958,7 +6962,13 @@
 				row.appendChild(el('td', { text: String(i + 1) }));
 				row.appendChild(el('td', { text: teamNameWithOwner(r) }));
 				if (showRecord) {
-					row.appendChild(el('td', { text: `${r.wins}-${r.losses}` }));
+					const recordCell = el('td');
+					if (r.isMe) {
+						recordCell.appendChild(el('span', { class: recordSignClass(r.wins, r.losses), text: `${r.wins}-${r.losses}` }));
+					} else {
+						recordCell.textContent = `${r.wins}-${r.losses}`;
+					}
+					row.appendChild(recordCell);
 				}
 				row.appendChild(el('td', { text: r.pointsFor }));
 				row.appendChild(el('td', { text: r.pointsAgainst }));
@@ -7071,7 +7081,9 @@
 					group.forEach((t) => {
 						const row = el('div', { class: `scoring-matchup-row${t.isMe ? ' me-row' : ''}` });
 						const nameCol = el('div', { class: 'scoring-matchup-name' });
-						nameCol.appendChild(el('div', { text: appendRecord(teamNameWithOwner(t), currentRecord(league, t.franchiseId)) }));
+						const nameLine = el('div', {});
+						appendTeamNameWithRecord(nameLine, t, league);
+						nameCol.appendChild(nameLine);
 						const meta = scoringMetaLine(t);
 						if (meta) nameCol.appendChild(el('div', { class: 'scoring-matchup-meta', text: meta }));
 						row.appendChild(nameCol);
@@ -7110,7 +7122,9 @@
 					const row = el('tr', { class: t.isMe ? 'me-row' : '' });
 					row.appendChild(el('td', { text: String(i + 1) }));
 					const nameCell = el('td');
-					nameCell.appendChild(el('div', { text: appendRecord(teamNameWithOwner(t), currentRecord(league, t.franchiseId)) }));
+					const nameLine = el('div', {});
+					appendTeamNameWithRecord(nameLine, t, league);
+					nameCell.appendChild(nameLine);
 					const meta = scoringMetaLine(t);
 					if (meta) nameCell.appendChild(el('div', { class: 'scoring-matchup-meta', text: meta }));
 					row.appendChild(nameCell);
@@ -7184,18 +7198,46 @@
 			return record ? `${name} (${record})` : name;
 		}
 
-		// Rosters-only: the plain-text appendRecord above still backs the
-		// Scoring pill's copy of this same record, which sits right beside a
-		// live score already doing the "how's this team doing" job. Here the
-		// record IS the team's status line, so it gets bolded and, unless
-		// the record is exactly even, colored win/loss (see the
-		// .roster-record CSS rule for why .500 stays uncolored).
+		// Shared by recordDetails below and by the Standings row itself
+		// (which colors its dedicated W-L column rather than a parenthetical
+		// suffix, so it can't call recordDetails' currentRecord-gated null
+		// check — a 0-0 row still gets a real cell there). See .own-record's
+		// own CSS comment for the color rule this implements.
+		function recordSignClass(wins, losses) {
+			if (wins === losses) return 'own-record';
+			return `own-record ${wins > losses ? 'own-record-up' : 'own-record-down'}`;
+		}
+
+		// The manager's own team's record, wherever a name-with-record
+		// string is built as one unit (the Rosters card's team line, the
+		// Scoring tab's per-team name) rather than a dedicated column — see
+		// recordSignClass for the Standings-column case. Bolded and, unless
+		// the record is exactly even, colored win/loss.
 		function recordDetails(league, franchiseId) {
 			const record = currentRecord(league, franchiseId);
 			if (!record) return null;
 			const r = (league.standings || []).find((row) => row.franchiseId === franchiseId);
-			const cls = r.wins === r.losses ? 'roster-record' : `roster-record ${r.wins > r.losses ? 'roster-record-up' : 'roster-record-down'}`;
-			return { text: record, cls };
+			return { text: record, cls: recordSignClass(r.wins, r.losses) };
+		}
+
+		// Builds "Team Name (Owner) (W-L)" as DOM nodes inside `container`
+		// for the Scoring tab, where every team in a matchup or table shows
+		// the same line. Only the manager's own team (team.isMe) gets its
+		// (W-L) bolded and win/loss-colored via recordDetails, matching the
+		// Rosters card's own line; everyone else keeps the plain-text
+		// appendRecord this page has always used, since the color answers
+		// "how am I doing", not "who in this league is doing well".
+		function appendTeamNameWithRecord(container, team, league) {
+			if (!team.isMe) {
+				container.appendChild(document.createTextNode(appendRecord(teamNameWithOwner(team), currentRecord(league, team.franchiseId))));
+				return;
+			}
+			container.appendChild(document.createTextNode(teamNameWithOwner(team)));
+			const record = recordDetails(league, team.franchiseId);
+			if (record) {
+				container.appendChild(document.createTextNode(' '));
+				container.appendChild(el('span', { class: record.cls, text: `(${record.text})` }));
+			}
 		}
 
 		function scoringMetaLine(t) {
