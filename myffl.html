@@ -4033,7 +4033,7 @@
 		// to one category instead of the whole list.
 		function openTaskIdsByCategory(tasks, categoryKey) {
 			return Object.entries(tasks)
-				.filter(([, t]) => !t.done && (t.category || '') === categoryKey)
+				.filter(([, t]) => !t.done && t.category === categoryKey)
 				.sort((a, b) => taskOrderValue(a[1]) - taskOrderValue(b[1]))
 				.map(([id]) => id);
 		}
@@ -4059,7 +4059,7 @@
 			const tasks = loadTasks();
 			const id = makeTaskId();
 			const now = Date.now();
-			const task = { text, category: category || '', done: false, order: now, createdAt: now, completedAt: null };
+			const task = { text, category, done: false, order: now, createdAt: now, completedAt: null };
 			tasks[id] = task;
 			writeTasksLocal(tasks);
 			recordTaskEdit(id, task);
@@ -11960,14 +11960,20 @@
 
 			const addRow = el('div', { class: 'planning-add-row planning-task-add' });
 			const textInput = el('input', { type: 'text', class: 'planning-input', placeholder: 'New task…', autocomplete: 'off', maxlength: String(MAX_TASK_TEXT_LENGTH) });
-			const categoryInput = el('input', { type: 'text', class: 'planning-input', placeholder: 'Category (optional)', autocomplete: 'off' });
+			const categoryInput = el('input', { type: 'text', class: 'planning-input', placeholder: 'Category', autocomplete: 'off' });
 			const existingCategories = [...new Set(Object.values(tasks).map((t) => t.category).filter(Boolean))].sort();
 			const categoryWrap = attachCategorySuggestions(categoryInput, () => existingCategories);
 			const addBtn = el('button', { type: 'button', class: 'planning-add-btn', text: '+ Add' });
+			// Category is mandatory, same as the task text — every category is
+			// either a league (sorted into that league's own place, see
+			// categoryTier below) or one of the fixed buckets, and an
+			// uncategorized task had nowhere principled to sort. Blocking it
+			// here means byCategory below never sees a blank key.
 			const submitTask = () => {
 				const text = textInput.value.trim();
-				if (!text) return;
-				addTask(text, categoryInput.value.trim());
+				const category = categoryInput.value.trim();
+				if (!text || !category) return;
+				addTask(text, category);
 				renderGrid();
 			};
 			addBtn.addEventListener('click', submitTask);
@@ -12037,12 +12043,12 @@
 						// state dismisses the dropdown instead of moving
 						// focus to the next field.
 						const editText = el('input', { type: 'text', class: 'planning-input', value: t.text, autocomplete: 'off', maxlength: String(MAX_TASK_TEXT_LENGTH) });
-						const editCategory = el('input', { type: 'text', class: 'planning-input', value: t.category || '', placeholder: 'Category (optional)', autocomplete: 'off' });
+						const editCategory = el('input', { type: 'text', class: 'planning-input', value: t.category || '', placeholder: 'Category', autocomplete: 'off' });
 						const editCategoryWrap = attachCategorySuggestions(editCategory, () => existingCategories);
 						const save = () => {
 							const text = editText.value.trim();
-							if (!text) return;
 							const category = editCategory.value.trim();
+							if (!text || !category) return;
 							const updates = { text, category };
 							// order is scoped per category (see the note above
 							// TASKS_STORAGE_KEY): a small drag-reorder index
@@ -12181,8 +12187,11 @@
 			// only completed tasks have a completedAt to sort by at all.
 			const doneEntries = entries.filter(([, t]) => t.done).sort((a, b) => (b[1].completedAt || 0) - (a[1].completedAt || 0));
 
+			// Category is mandatory at both write sites (submitTask, the Edit
+			// Task popover's save), so every open task has a real category —
+			// no blank/Uncategorized bucket to carry here.
 			const byCategory = new Map();
-			for (const key of new Set(openEntries.map(([, t]) => t.category || ''))) {
+			for (const key of new Set(openEntries.map(([, t]) => t.category))) {
 				const ids = openTaskIdsByCategory(tasks, key);
 				byCategory.set(key, ids.map((id) => [id, tasks[id]]));
 			}
@@ -12205,11 +12214,7 @@
 				if (key === 'Backlog') return 4;
 				return 3;
 			};
-			// Uncategorized last of all, regardless of how it sorts — it's the
-			// fallback bucket, not a category someone named.
 			const categoryKeys = [...byCategory.keys()].sort((a, b) => {
-				if (a === '') return 1;
-				if (b === '') return -1;
 				const tierA = categoryTier(a);
 				const tierB = categoryTier(b);
 				if (tierA !== tierB) return tierA - tierB;
@@ -12227,7 +12232,7 @@
 					// expected to be working, not somewhere things go once
 					// they're out of the way.
 					const details = el('details', { class: 'planning-task-section', open: 'true' });
-					details.appendChild(el('summary', { text: `${key || 'Uncategorized'} (${groupEntries.length})` }));
+					details.appendChild(el('summary', { text: `${key} (${groupEntries.length})` }));
 					groupEntries.forEach(([id, t], index) => details.appendChild(buildTaskRow(id, t, { key, index, groupEntries })));
 					card.appendChild(details);
 				}
