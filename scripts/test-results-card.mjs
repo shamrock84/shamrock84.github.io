@@ -428,10 +428,10 @@ function fullText(node) {
 // ---- editable guessed ranks (buildResultRankCell / setResultOverride / -----
 // ---- effectiveResults) ------------------------------------------------------
 //
-// A guessed year's Finish cell is editable only when logged in — the tab
-// itself is already gated behind login, but this mirrors the same
-// defensive habit plannedSalary/getContractPlan follow for their own local
-// plan data, so it's worth pinning independently of that outer gate.
+// A guessed year's Finish cell is editable only when logged in — the History
+// tab itself renders regardless of login (see myffl.html's own comment above
+// renderResultsCard), so this is the actual access control on the edit
+// affordance, not a defensive backstop.
 // A fresh vm context, seeded with a token under the same key isLoggedIn()
 // reads (AUTH_TOKEN_KEY in myffl.html), and a real Map-backed localStorage
 // so setResultOverride's write is actually visible to a later read — the

@@ -3538,19 +3538,24 @@
 			return node;
 		}
 
-		// 'admin' (and, the same way, 'history') is only ever in this set when
-		// logged in — renderGrid simply doesn't build the cards otherwise, and
-		// the tab list is derived from the cards that exist, so logging out
-		// removes the tab with no extra work.
-		// nfl is deliberately ungated (see renderGrid) — it shows even logged
-		// out, unlike analytics/history/admin, which is why it's listed here
-		// with those but built outside the isLoggedIn() blocks. It isn't
-		// fantasy data (roster, ranking, finance, lineup) — real NFL games and
-		// real NFL depth charts are generic sports information, same category
-		// as a public scores site. Depth Charts used to be its own ungated tab
-		// here for the same reason; it no longer needs a tab of its own now
-		// that NFL exists, so its 32 team cards render as one collapsible
-		// section inside the NFL view instead — see renderDepthChartCards.
+		// 'admin' is only ever in this set when logged in — renderGrid simply
+		// doesn't build those cards otherwise, and the tab list is derived
+		// from the cards that exist, so logging out removes the tab with no
+		// extra work. 'analytics' works the same way.
+		// nfl and history are both deliberately ungated (see renderGrid) —
+		// they show even logged out, unlike analytics/admin, which is why
+		// they're listed here with those but built outside the isLoggedIn()
+		// blocks. nfl isn't fantasy data (roster, ranking, finance, lineup)
+		// at all — real NFL games and real NFL depth charts are generic
+		// sports information, same category as a public scores site. history
+		// IS fantasy data (past finishes, dues, payouts), but the login gate
+		// around it was only ever a deterrent, not real protection — see the
+		// History tab's own comment above renderResultsCard for why that
+		// made it safe to drop. Depth Charts used to be its own ungated tab
+		// here for the same reason nfl is; it no longer needs a tab of its
+		// own now that NFL exists, so its 32 team cards render as one
+		// collapsible section inside the NFL view instead — see
+		// renderDepthChartCards.
 		const VIEW_LABELS = { rosters: 'Rosters', scoring: 'Scores', standings: 'Standings', analytics: 'Analytics', nfl: 'NFL', history: 'History', admin: 'Admin' };
 		const VIEW_ORDER = ['rosters', 'scoring', 'standings', 'analytics', 'nfl', 'history', 'admin'];
 		// Per-league type — still what individual Rosters cards badge
@@ -11224,19 +11229,25 @@
 		});
 
 		// ---- History tab ---------------------------------------------------
-		// Results and Finances are gated behind login the same way Analytics
-		// is, and that gate is deliberate — dues owed, payouts and past
-		// finishes aren't for a league mate who happens to open the URL. Keep
-		// it on any card added here.
+		// Results and Finances render for every visitor, logged in or not —
+		// unlike Analytics/Admin, which stay behind isLoggedIn(). The login
+		// gate elsewhere on this page was only ever a deterrent (see the
+		// Auth section of CLAUDE.md): dues, payouts and past finishes
+		// already sit in config/leagues.json and data/rosters.json, both
+		// committed to a public repo and served openly, so gating the tab
+		// bought no real privacy, only friction for a manager checking their
+		// own history from a logged-out device. The one thing that stays
+		// gated is editing a guessed finish in place (buildResultRankCell),
+		// since that's a write action for the manager, not a read for a
+		// league mate.
 		//
-		// It is a deterrent rather than a hard boundary, and worth knowing
-		// which: the same numbers ride in config/leagues.json and
-		// data/rosters.json, both committed to a public repo and served
-		// openly, so someone determined can read them there. Accepted on
-		// purpose — none of it is worth a server round-trip — so don't move
-		// this data behind api/ over it, and equally don't put anything that
-		// genuinely must not leak behind this gate alone. Plans are where
-		// that bar is met, by living outside the repo entirely.
+		// The same numbers being publicly readable elsewhere is also why
+		// this was safe to ungate without a server round-trip or any change
+		// to where the data lives — see the login-gate note under Auth in
+		// CLAUDE.md. Don't move this data behind api/ over it, and equally
+		// don't treat this tab's being ungated as license to put something
+		// that genuinely must not leak here. Plans are where that bar is
+		// met, by living outside the repo entirely.
 		//
 		// Unlike every other tab these two don't split by league type — one
 		// Results card and one Finances card, spanning every league at
@@ -11286,10 +11297,13 @@
 		// no separate confirmed flag — so once set, that year's `guessed`
 		// reads false for good; a bad or out-of-range override is ignored
 		// rather than trusted, same as any other malformed local value on
-		// this page.
+		// this page. Read regardless of login state — an override is a
+		// device-local correction, not privileged data, and gating its
+		// read (rather than just its edit UI) would make a confirmed year
+		// render as guessed again the moment the same device logs out.
 		function effectiveResults(league) {
 			const results = Array.isArray(league.results) ? league.results : [];
-			const overrides = isLoggedIn() ? loadResultOverrides()[league.id] : null;
+			const overrides = loadResultOverrides()[league.id];
 			if (!overrides) return results;
 			return results.map((r) => {
 				const raw = overrides[r.year];
@@ -11362,13 +11376,12 @@
 		// the confirmation itself, so a confirmed year can never render red
 		// or editable again on any future render.
 		function buildResultRankCell(league, r) {
-			// Same gate plannedSalary/getContractPlan use for their own local
-			// planning data: the Results/Finances tab already renders only
-			// when logged in (see VIEW_LABELS/VIEW_ORDER's own comment), so
-			// this never actually fires for a logged-out viewer in practice —
-			// it's here so the fallback doesn't depend on that outer gate
-			// alone, the same defensive habit every other local-plan reader
-			// on this page follows.
+			// The History tab itself is ungated (see its own comment above),
+			// so this is the actual gate on the edit affordance, not a
+			// defensive backstop — a logged-out viewer sees the same plain
+			// "guessed" cell a confirmed year gets, never the input/confirm
+			// button, since settling a real bracket result is the manager's
+			// call to make.
 			if (!r.guessed || !isLoggedIn()) {
 				return el('td', {
 					class: r.guessed ? 'results-guessed' : '',
@@ -14568,14 +14581,18 @@
 				if (!nflInSeason()) appendTopAvailableCards();
 			}
 
-			// History: gated behind login the same way and for the same reason
-			// as the Analytics cards above, but unlike Analytics it doesn't
-			// loop over SUBTAB_ORDER — one Results card and one Finances
-			// card across every league type at once (see the History tab
-			// comment above). Both cards read real backfilled data;
-			// Finances' Dues/Won columns are just waiting on
-			// league.dues/league.payouts to be configured anywhere.
-			if (isLoggedIn()) {
+			// History: ungated, like NFL above — see the History tab comment
+			// above for why (the login gate was only ever a deterrent, and
+			// the underlying results/dues/payout numbers already sit in
+			// config/leagues.json and data/rosters.json, both public). One
+			// Results card and one Finances card across every league type at
+			// once, no SUBTAB_ORDER loop unlike Analytics. Both cards read
+			// real backfilled data; Finances' Dues/Won columns are just
+			// waiting on league.dues/league.payouts to be configured
+			// anywhere. The one thing still gated is editing a guessed
+			// finish in place — buildResultRankCell checks isLoggedIn()
+			// itself for that.
+			{
 				const resultsCard = renderResultsCard(data.leagues);
 				if (resultsCard) gridEl.appendChild(resultsCard);
 				const financesCard = renderFinancesCard(data.leagues);
@@ -14584,9 +14601,11 @@
 
 			// Logged-out visitors never get these cards, so 'admin' never makes
 			// it into presentViews below and the tab simply isn't offered. Tasks
-			// is gated for the same reason as Analytics and History above — it's
-			// strategy, not a league mate's business — and is appended here,
-			// first, by appendAdminCards rather than as a separate tab.
+			// is gated for the same reason as Analytics above — it's strategy,
+			// not a league mate's business — and is appended here, first, by
+			// appendAdminCards rather than as a separate tab. History used to
+			// share this reasoning but no longer does — see its own comment
+			// above renderResultsCard.
 			if (isLoggedIn()) appendAdminCards(gridEl);
 
 			const presentViews = new Set([...gridEl.querySelectorAll('.card')].map((c) => c.dataset.view).filter(Boolean));
