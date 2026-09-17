@@ -11068,12 +11068,16 @@
 		// groups, Now Playing's own position groups, Analytics' league-list
 		// summaries) — so a manager can tell Now Playing has something to look
 		// at, or how big this week's slate is on Matchups, without opening
-		// either card.
-		function renderNflScoreCard(id, heading, games, emptyText) {
+		// either card. `subtitle`, when given, uses the same
+		// `.team.card-collapse-visible` idiom every other card's own subtitle
+		// line uses (see that class's own CSS comment) — visible even
+		// collapsed, unlike the row list underneath.
+		function renderNflScoreCard(id, heading, games, emptyText, subtitle) {
 			const card = el('div', { class: 'card nfl-card', 'data-view': 'nfl' });
 			const headingEl = el('h2', { class: 'card-heading', text: `${heading} (${games.length})` });
 			card.appendChild(headingEl);
 			makeCollapsible(card, headingEl, id);
+			if (subtitle) card.appendChild(el('div', { class: 'team card-collapse-visible', text: subtitle }));
 			const body = el('div', { class: 'nfl-scoreboard' });
 			if (games.length === 0) {
 				body.appendChild(el('div', { class: 'team card-collapse-visible', text: emptyText }));
@@ -11084,14 +11088,23 @@
 			return card;
 		}
 
-		// Now Playing: only games actually under way right now. Matchups: the
-		// whole week's slate regardless of state, so a visitor can see what's
-		// coming up or how something already finished — the "update each
-		// week" half of the feature request, since the schedule itself only
-		// changes once the calendar turns over even though the scores inside
-		// it move all game day. Both read the one shared liveGames map (see
-		// buildNflGamesList's own comment above), so there is nothing here to
-		// keep in sync between the two cards.
+		// Now Playing: every game kicking off ON TODAY'S CALENDAR DATE,
+		// regardless of state — pre-kickoff, live, or already final. It used
+		// to mean only state === 'in' (games live RIGHT NOW), but that read
+		// as empty for most of a Sunday: nothing between windows, nothing
+		// before the early slate, nothing after the late games end. Today's
+		// full slate is the useful question on game day. `isGameToday`
+		// compares the kickoff's LOCAL calendar date (matching
+		// formatGameWhen's own local-time rendering below) against the
+		// browser's own "today" — never UTC, which would misdate a Sunday-
+		// night or Monday-night game for a good chunk of the country.
+		// Matchups: the whole week's slate regardless of state or date, so a
+		// visitor can see what's coming up or how something already finished
+		// — the "update each week" half of the feature request, since the
+		// schedule itself only changes once the calendar turns over even
+		// though the scores inside it move all game day. Both read the one
+		// shared liveGames map (see buildNflGamesList's own comment above),
+		// so there is nothing here to keep in sync between the two cards.
 		//
 		// Loading state mirrors the Problems Digest's own (gameStatesAttempted,
 		// set by refreshDigestGameStates on page load): before that first
@@ -11116,6 +11129,14 @@
 			else gridEl.appendChild(card);
 		}
 
+		function isGameToday(game) {
+			if (!game.kickoff) return false;
+			const at = new Date(game.kickoff);
+			if (Number.isNaN(at.getTime())) return false;
+			const now = new Date();
+			return at.getFullYear() === now.getFullYear() && at.getMonth() === now.getMonth() && at.getDate() === now.getDate();
+		}
+
 		function renderNflCards(gridEl) {
 			if (!gameStatesAttempted) {
 				const card = el('div', { class: 'card nfl-card', 'data-view': 'nfl' });
@@ -11125,8 +11146,8 @@
 				return;
 			}
 			const games = buildNflGamesList(liveGames);
-			const live = games.filter((g) => g.state === 'in');
-			appendNflCard(gridEl, renderNflScoreCard('nfl-now-playing', 'Now Playing', live, 'No games in progress right now.'));
+			const today = games.filter(isGameToday);
+			appendNflCard(gridEl, renderNflScoreCard('nfl-now-playing', 'Now Playing', today, 'No games in progress today.', 'Games taking place today'));
 			appendNflCard(gridEl, renderNflScoreCard('nfl-matchups', 'Matchups', games, 'No games scheduled this week.'));
 		}
 

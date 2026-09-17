@@ -15,9 +15,10 @@
 //   * games sort by kickoff, so Matchups reads like a schedule.
 //   * formatGameWhen shows the kickoff time pre-game and the scoreboard's own
 //     status string once live or final — never a score before kickoff.
-//   * Now Playing includes only state 'in' games; Matchups includes every
-//     state. Both must read the same underlying list with nothing to drift
-//     between them.
+//   * Now Playing includes every game kicking off on today's LOCAL calendar
+//     date, any state; Matchups includes every game for the week, any date
+//     or state. Both must read the same underlying list with nothing to
+//     drift between them.
 //   * the loading state (gameStatesAttempted still false) never renders "no
 //     games" — that would be a false all-clear before the first fetch even
 //     resolved.
@@ -208,22 +209,35 @@ function fullText(node) {
 	assert.equal(cards.length, 2, 'Now Playing and Matchups both render even with nothing to show');
 }
 
-// The load-bearing split: Now Playing shows only the live game; Matchups
-// shows both the live one and the not-yet-started one.
+// The load-bearing split: Now Playing shows only games kicking off on
+// today's calendar date; Matchups shows every game for the week regardless
+// of date. Kickoffs are built off the real clock (never a hardcoded date)
+// since isGameToday compares against the actual "now" — a game 3 days out
+// is guaranteed to land on a different local calendar date than right now,
+// whatever day this test happens to run.
 {
 	const ctx = makeContext();
 	setGameStatesAttempted(ctx, true);
+	const now = new Date();
+	const todayKickoff = now.toISOString();
+	const laterKickoff = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString();
 	setLiveGames(ctx, {
-		BUF: { id: 'live1', state: 'in', detail: '4:35 - 1st', kickoff: '2026-09-14T17:00:00Z', isHome: false, team: 'BUF', score: 10 },
-		MIA: { id: 'live1', state: 'in', detail: '4:35 - 1st', kickoff: '2026-09-14T17:00:00Z', isHome: true, team: 'MIA', score: 7 },
-		DAL: { id: 'later', state: 'pre', kickoff: '2026-09-14T20:25:00Z', isHome: false, team: 'DAL', score: 0 },
-		PHI: { id: 'later', state: 'pre', kickoff: '2026-09-14T20:25:00Z', isHome: true, team: 'PHI', score: 0 },
+		BUF: { id: 'today1', state: 'in', detail: '4:35 - 1st', kickoff: todayKickoff, isHome: false, team: 'BUF', score: 10 },
+		MIA: { id: 'today1', state: 'in', detail: '4:35 - 1st', kickoff: todayKickoff, isHome: true, team: 'MIA', score: 7 },
+		DAL: { id: 'later', state: 'pre', kickoff: laterKickoff, isHome: false, team: 'DAL', score: 0 },
+		PHI: { id: 'later', state: 'pre', kickoff: laterKickoff, isHome: true, team: 'PHI', score: 0 },
 	});
 	const grid = domNode();
 	ctx.renderNflCards(grid);
 	const rows = findAll(grid, hasClass('nfl-game-row'));
-	assert.equal(rows.length, 3, '1 live row on Now Playing + 2 rows (live and upcoming) on Matchups');
+	assert.equal(rows.length, 3, "1 row on Now Playing (today's game) + 2 rows (today's and next week's) on Matchups");
 	assert.equal(findAll(grid, hasClass('nfl-game-live')).length, 2, 'the live game is flagged on both cards it appears on');
+
+	// Now Playing's own subtitle only appears on that card, not Matchups.
+	const cards = findAll(grid, hasClass('nfl-card'));
+	const nowPlayingCard = cards.find((c) => findAll(c, () => true).some((n) => n._text === 'Games taking place today'));
+	assert.ok(nowPlayingCard, 'Now Playing carries the "Games taking place today" subtitle');
+	assert.equal(cards.filter((c) => findAll(c, () => true).some((n) => n._text === 'Games taking place today')).length, 1, 'only one card carries that subtitle');
 
 	// The live row's score shows; the pre-game row's doesn't (score 0
 	// pre-kickoff is a placeholder, not a real score).
@@ -234,8 +248,19 @@ function fullText(node) {
 
 	// Every row links to ESPN's own box score by the scoreboard's event id.
 	const links = findAll(grid, hasClass('nfl-boxscore-link'));
-	assert.ok(links.every((a) => /^https:\/\/www\.espn\.com\/nfl\/boxscore\/_\/gameid\/(live1|later)$/.test(a.attrs.href)));
+	assert.ok(links.every((a) => /^https:\/\/www\.espn\.com\/nfl\/boxscore\/_\/gameid\/(today1|later)$/.test(a.attrs.href)));
 	assert.ok(links.every((a) => a.attrs.target === '_blank' && a.attrs.rel === 'noopener'));
+}
+
+// isGameToday itself: a game with no kickoff, or an unparseable one, is
+// never "today" — degrades safely rather than throwing or matching by
+// accident (an invalid Date's getFullYear() etc. are all NaN, which would
+// only accidentally compare unequal, not something to rely on).
+{
+	const ctx = makeContext();
+	assert.equal(ctx.isGameToday({ kickoff: null }), false);
+	assert.equal(ctx.isGameToday({ kickoff: 'not-a-date' }), false);
+	assert.equal(ctx.isGameToday({ kickoff: new Date().toISOString() }), true);
 }
 
 // --- nflBoxscorePlayerLines: the drawer's own human box score lines -----
