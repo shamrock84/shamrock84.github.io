@@ -14372,14 +14372,18 @@
 		// lead instead and the weekly ones sink to the bottom. Both
 		// appendMergedAnalyticsCards and refreshMergedAnalyticsCards call
 		// mergedAnalyticsCards() for this so the two can't disagree about
-		// order, or about order changing mid-session at a rollover.
+		// order, or about order changing mid-session at a rollover. Loss
+		// Exposure stays immediately after Injury Exposure in both orders
+		// — they split one designation vocabulary (INJURY_SETTLED) into
+		// two cards, so reading one without the other beside it misses
+		// half the picture.
 		const MERGED_ANALYTICS_ORDER_IN_SEASON = [
 			'merged-injury-exposure-card',
+			'merged-loss-exposure-card',
 			'merged-bye-weeks-card',
 			'merged-power-rank-card',
 			'merged-team-needs-card',
 			'merged-player-exposure-card',
-			'merged-loss-exposure-card',
 		];
 		const MERGED_ANALYTICS_ORDER_OFFSEASON = [
 			'merged-team-needs-card',
