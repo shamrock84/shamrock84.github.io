@@ -1,0 +1,52 @@
+name: Cleanup Stale Claude Branches
+
+# Runs scripts/cleanup-branches.mjs daily: deletes claude/ branches whose
+# latest commit is more than 2 days old and which have no open pull
+# request. Everything else (main, human-named branches, anything with an
+# open PR) is left alone. See the script's own header for the full rule.
+#
+# workflow_dispatch's dry_run input defaults to true so this can be tested
+# safely without deleting anything; the scheduled run always deletes for
+# real (schedule events carry no inputs, so dry_run is unset there).
+on:
+  schedule:
+    - cron: '17 13 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Preview what would be deleted without deleting anything'
+        required: false
+        default: 'true'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      # Blobless + sparse checkout: skips mfl/PSD and images/, which no
+      # workflow here reads. Same five directories everywhere on purpose;
+      # see sync-fantasy-rosters.yml for the reasoning and the numbers.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout: |
+            api
+            scripts
+            config
+            data
+            .github
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Clean up stale branches
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run || 'false' }}
+        run: node scripts/cleanup-branches.mjs
