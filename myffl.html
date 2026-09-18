@@ -4638,18 +4638,25 @@
 		// to them; logged out, an unset value renders as a plain "—", the
 		// same thing the API itself actually returned.
 		//
-		// The dropdown is also offseason-only (nflInSeason gate, same
-		// boundary as the "due early September" text below it): a real
-		// contract only gets negotiated then, so a player who shows up with
-		// no contractYear during the season — a waiver claim, a trade — has
-		// nothing to plan yet, and letting a manager pencil one in implied a
-		// negotiation that can't actually happen until next September. A
-		// plan already made before kickoff still displays (read-only) so it
-		// isn't lost the moment the season starts; it just can't be changed
-		// until the offseason comes back around.
+		// The whole plan-and-nag workflow is offseason-only (nflInSeason
+		// gate, same boundary as the "due early September" text below): a
+		// real contract only gets negotiated then, so a player who shows up
+		// with no contractYear during the season — a waiver claim, a trade —
+		// has nothing to plan yet, and there's nothing to remind anyone
+		// about until next September either. So in season this cell carries
+		// no warning icon at all, just whatever plain value applies — a plan
+		// already made before kickoff still displays (it isn't lost the
+		// moment the season starts), otherwise the same dash the API itself
+		// would show for an unset field. See the banner gate in renderCard
+		// (contractsMissing's call site), which follows the same rule for
+		// the same reason.
 		function buildYearsCell(p, leagueId, onContractChange, now = new Date()) {
 			if (Number(p.contractYear) > 0) {
 				return el('td', { class: 'years-cell', text: String(p.contractYear) });
+			}
+			if (nflInSeason(now)) {
+				const planned = isLoggedIn() ? getContractPlan(leagueId, p.id) : '';
+				return el('td', { class: 'years-cell', text: planned || '—' });
 			}
 			// Contracts are due every offseason in early September — flag it
 			// with an icon (and see the card-level banner in renderCard)
@@ -4661,15 +4668,6 @@
 			});
 			if (!isLoggedIn()) {
 				return el('td', { class: 'years-cell' }, [warnIcon, el('span', { text: '—' })]);
-			}
-			if (nflInSeason(now)) {
-				const planned = getContractPlan(leagueId, p.id);
-				if (planned) {
-					warnIcon.classList.add('contract-warn-planned');
-					warnIcon.textContent = '✓';
-					warnIcon.title = 'Contract length planned — not official until MFL sets one';
-				}
-				return el('td', { class: 'years-cell' }, [warnIcon, el('span', { text: planned || '—' })]);
 			}
 			const td = el('td', { class: 'years-cell years-cell-plan' }, [warnIcon]);
 			const select = el('select', { class: 'years-select', title: 'Plan a contract length — not official until MFL sets one' });
@@ -6296,7 +6294,13 @@
 			// is strategy — same gate as plannedSalary), so the banner would be
 			// a to-do list with no way to act on it, counting work a viewer
 			// can't see and can't do.
-			if (isAuction && isLoggedIn() && contractsMissing().length > 0) {
+			//
+			// Also hidden in season, same as buildYearsCell's own icon: a
+			// contract is only ever due in the offseason (see nflInSeason),
+			// so a "0/1 contract set" reminder about a player who was only
+			// just acquired mid-season is nagging about work that isn't due
+			// yet, not work that's overdue.
+			if (isAuction && isLoggedIn() && !nflInSeason() && contractsMissing().length > 0) {
 				const banner = el('div', { class: 'needs-contract-banner card-collapse-visible' });
 				contractBannerEl = banner;
 				contractBannerTextEl = el('span', {});
