@@ -2316,15 +2316,28 @@ export async function espnGet(league, viewParams) {
 export async function fetchEspnLeagueRoster(league) {
   // mRoster alone returns team objects with an empty roster.entries unless
   // scoped to a specific team/period — rosterForTeamId + scoringPeriodId
-  // populate it. scoringPeriodId=1 is a safe pre-season default.
+  // populate it. This used to pin scoringPeriodId=1 on the theory that team
+  // MEMBERSHIP was period-agnostic and only lineup slot (start/bench) varied
+  // by week — untested at the time, since both ESPN leagues had 0 players
+  // (no draft yet). Confirmed wrong live 2026-09-18: pinned to period 1,
+  // mRoster returns the roster as it stood in week 1, so a drop/add made in
+  // week 2+ never shows up — two managers each had a since-dropped player
+  // still listed weeks after cutting him. The current matchup period is
+  // therefore read first, off the same mScoreboard view fetchEspnLineup
+  // already reads for the identical reason, then the roster is scoped to
+  // it — pre-draft this is still period 1, so nothing changes before a
+  // season starts.
   // proTeamSchedules_wl is an attempt at getting bye weeks alongside the
   // rest — UNVERIFIED, since both ESPN leagues have 0 players (no draft
   // yet) so there's nothing to check this against. Bye/pts extraction below
   // is defensive and falls back to null on any shape mismatch rather than
   // breaking the roster fetch.
+  const scoreboard = await espnGet(league, 'view=mScoreboard');
+  const period = scoreboard.status?.currentMatchupPeriod || 1;
+
   const data = await espnGet(
     league,
-    `view=mRoster&view=mTeam&view=mSettings&view=proTeamSchedules_wl&rosterForTeamId=${league.franchiseId}&scoringPeriodId=1`
+    `view=mRoster&view=mTeam&view=mSettings&view=proTeamSchedules_wl&rosterForTeamId=${league.franchiseId}&scoringPeriodId=${period}`
   );
 
   const teams = data.teams || [];
@@ -2376,11 +2389,18 @@ export async function fetchEspnLeagueRoster(league) {
 // comment on fetchEspnLeagueRoster). An empty answer is "don't know" rather
 // than "nobody is rostered", since the unscoped view is suspected of
 // returning empty entries.
+// scoringPeriodId is pinned to the current matchup period for the same
+// reason fetchEspnLeagueRoster now is: pinning it to 1 answered with week
+// 1's team membership all season, so a since-dropped player never left this
+// list and a since-added one never joined it — silently corrupting every
+// consumer of "who's rostered" (Top Available, power rankings).
 // Shaped like fetchMflRosteredNames' answer for the same two consumers. ESPN
 // player ids are ESPN's own, useless against the projections — the power
 // score joins these by name.
 export async function fetchEspnRosteredNames(league) {
-  const data = await espnGet(league, 'view=mRoster&scoringPeriodId=1');
+  const scoreboard = await espnGet(league, 'view=mScoreboard');
+  const period = scoreboard.status?.currentMatchupPeriod || 1;
+  const data = await espnGet(league, `view=mRoster&scoringPeriodId=${period}`);
   const names = [];
   const franchises = [];
   for (const team of data.teams || []) {
