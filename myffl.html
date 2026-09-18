@@ -4637,7 +4637,17 @@
 		// contract length is exactly the kind of strategy that shouldn't leak
 		// to them; logged out, an unset value renders as a plain "—", the
 		// same thing the API itself actually returned.
-		function buildYearsCell(p, leagueId, onContractChange) {
+		//
+		// The dropdown is also offseason-only (nflInSeason gate, same
+		// boundary as the "due early September" text below it): a real
+		// contract only gets negotiated then, so a player who shows up with
+		// no contractYear during the season — a waiver claim, a trade — has
+		// nothing to plan yet, and letting a manager pencil one in implied a
+		// negotiation that can't actually happen until next September. A
+		// plan already made before kickoff still displays (read-only) so it
+		// isn't lost the moment the season starts; it just can't be changed
+		// until the offseason comes back around.
+		function buildYearsCell(p, leagueId, onContractChange, now = new Date()) {
 			if (Number(p.contractYear) > 0) {
 				return el('td', { class: 'years-cell', text: String(p.contractYear) });
 			}
@@ -4651,6 +4661,15 @@
 			});
 			if (!isLoggedIn()) {
 				return el('td', { class: 'years-cell' }, [warnIcon, el('span', { text: '—' })]);
+			}
+			if (nflInSeason(now)) {
+				const planned = getContractPlan(leagueId, p.id);
+				if (planned) {
+					warnIcon.classList.add('contract-warn-planned');
+					warnIcon.textContent = '✓';
+					warnIcon.title = 'Contract length planned — not official until MFL sets one';
+				}
+				return el('td', { class: 'years-cell' }, [warnIcon, el('span', { text: planned || '—' })]);
 			}
 			const td = el('td', { class: 'years-cell years-cell-plan' }, [warnIcon]);
 			const select = el('select', { class: 'years-select', title: 'Plan a contract length — not official until MFL sets one' });
