@@ -1,12 +1,17 @@
-// Unit test for buildYearsCell's offseason-only planning gate in myffl.html.
+// Unit test for buildYearsCell's offseason-only planning gate in myffl.html,
+// and the matching gate on the card-level "N/M contracts set" banner
+// (contractsMissing's call site in renderCard).
 //
 // The Yrs cell's planning dropdown (pencil in a contract length before MFL
 // sets a real one) makes sense only in the offseason, when a contract is
 // actually being negotiated. A player who shows up with no contractYear
 // during the season — a waiver claim, a trade — has nothing to plan yet, so
 // nflInSeason must gate the dropdown itself, not just the surrounding banner
-// text. A plan already made before kickoff still has to display (read-only)
-// rather than silently disappearing the moment the season starts.
+// text. The warning icon and the card-level banner are the same nag as the
+// dropdown, just at two different altitudes, so both must go quiet on the
+// same schedule: mid-season neither should appear at all, whether or not a
+// plan was made before kickoff (a made plan still shows as plain text — it
+// isn't lost — just without the ⚠/✓ icon dressing it up as due or done).
 //
 // As in test-cut-planning-window.mjs there is no real DOM here: the page's
 // script block is evaluated in a vm with the handful of browser globals it
@@ -88,49 +93,80 @@ function check(name, cond) {
 }
 
 const hasSelect = (td) => td.children.some((c) => c.tag === 'select');
-// Non-select cells are always [warnIcon, valueSpan] — the value span is
+const hasWarnIcon = (td) => td.children.some((c) => c.tag === 'span' && c.className === 'contract-warn-icon');
+// Off-season, non-select cells are [warnIcon, valueSpan] — the value span is
 // always the second child, so index into it directly rather than searching
-// by textContent (the warnIcon itself carries a truthy ⚠/✓ glyph).
-const dashText = (td) => td.children[1]?.textContent;
+// by textContent (the warnIcon itself carries a truthy ⚠/✓ glyph). In
+// season, the cell is flat (just a td with its own textContent) since there
+// is no icon at all to push the value into a second child.
+const cellText = (td) => (td.children.length ? td.children[1]?.textContent : td.textContent);
 
 // A real contractYear from MFL always wins, in season or out.
 {
 	const ctx = makeContext(LOGGED_IN);
 	const td = ctx.buildYearsCell({ id: 'p1', contractYear: '2' }, 'L1', null, MID_SEASON);
-	check('a real contractYear renders plain, even mid-season', td.textContent === '2' && !hasSelect(td));
+	check('a real contractYear renders plain, even mid-season', td.textContent === '2' && !hasSelect(td) && !hasWarnIcon(td));
 }
 
-// Logged out: never a dropdown, in season or out — unchanged by this fix.
+// Logged out: never a dropdown or icon, in season or out — unchanged by this fix.
 {
 	const ctx = makeContext({});
 	const td = ctx.buildYearsCell({ id: 'p1' }, 'L1', null, OFFSEASON);
-	check('logged out, offseason: no dropdown, plain dash', !hasSelect(td) && dashText(td) === '—');
+	check('logged out, offseason: no dropdown, plain dash with icon', !hasSelect(td) && hasWarnIcon(td) && cellText(td) === '—');
 }
 
-// Logged in, offseason, unset: the planning dropdown is available.
+// Logged in, offseason, unset: the planning dropdown and its warning icon
+// are both available — this is the one state the whole workflow is for.
 {
 	const ctx = makeContext(LOGGED_IN);
 	const td = ctx.buildYearsCell({ id: 'p1' }, 'L1', null, OFFSEASON);
 	check('logged in, offseason, unset: dropdown is available', hasSelect(td));
+	check('logged in, offseason, unset: warning icon is available', hasWarnIcon(td));
 }
 
 // Logged in, mid-season, unset, no plan: the bug — a newly acquired player
-// must NOT be eligible to plan a contract length until the offseason.
+// must NOT be eligible to plan a contract length until the offseason, and
+// must not be nagged about it with the ⚠ icon either.
 {
 	const ctx = makeContext(LOGGED_IN);
 	const td = ctx.buildYearsCell({ id: 'newly-acquired' }, 'L1', null, MID_SEASON);
 	check('logged in, mid-season, no plan: no dropdown', !hasSelect(td));
-	check('logged in, mid-season, no plan: reads as a plain dash', dashText(td) === '—');
+	check('logged in, mid-season, no plan: no warning icon', !hasWarnIcon(td));
+	check('logged in, mid-season, no plan: reads as a plain dash', cellText(td) === '—');
 }
 
-// Logged in, mid-season, a plan already made before kickoff: it must still
-// display (read-only) rather than vanishing the moment the season starts.
+// Logged in, mid-season, a plan already made before kickoff: the value still
+// has to display (read-only) rather than vanishing the moment the season
+// starts, but without the ✓ icon dressing it up as a live to-do item.
 {
 	const ctx = makeContext(LOGGED_IN);
 	ctx.setContractPlan('L1', 'p1', '2');
 	const td = ctx.buildYearsCell({ id: 'p1' }, 'L1', null, MID_SEASON);
 	check('logged in, mid-season, pre-kickoff plan: no dropdown (not editable)', !hasSelect(td));
-	check('logged in, mid-season, pre-kickoff plan: shows the planned value', dashText(td) === '2');
+	check('logged in, mid-season, pre-kickoff plan: no icon', !hasWarnIcon(td));
+	check('logged in, mid-season, pre-kickoff plan: shows the planned value', cellText(td) === '2');
+}
+
+// ---- the card-level "N/M contracts set" banner follows the same gate -----
+// contractsMissing() itself is unconditional (other math — salary escalation,
+// the expiration summary — still needs it year-round); it's specifically the
+// banner's *display* gate in renderCard that must add !nflInSeason(), the
+// same rule as the icon above. That gate is exercised indirectly through
+// nflInSeason itself here, since renderCard needs a full league/page context
+// this suite doesn't build; the literal `!nflInSeason() &&` condition is
+// checked by grepping the source below, the way test-mfl-bench.mjs's own
+// header pins a "never resurrect this" rule against the source text.
+{
+	const ctx = makeContext(LOGGED_IN);
+	check('nflInSeason is false in the offseason (banner would be eligible to show)', !ctx.nflInSeason(OFFSEASON));
+	check('nflInSeason is true mid-season (banner must be suppressed)', ctx.nflInSeason(MID_SEASON));
+}
+{
+	const html = fs.readFileSync(path.join(root, 'myffl.html'), 'utf8');
+	check(
+		'the contracts-missing banner gate includes !nflInSeason()',
+		/isAuction && isLoggedIn\(\) && !nflInSeason\(\) && contractsMissing\(\)\.length > 0/.test(html),
+	);
 }
 
 if (failures) {
