@@ -1,0 +1,39 @@
+name: Mark Task Done (manual, temporary)
+
+# Throwaway workflow living only on a scratch branch, never meant to reach
+# main — see scripts/mark-task-done.mjs's own header for why this isn't a
+# permanent companion to fetch-tasks.yml. workflow_dispatch only.
+on:
+  workflow_dispatch:
+    inputs:
+      category:
+        description: 'Task category (e.g. Bugs)'
+        required: true
+      match:
+        description: 'Distinctive substring of the task text'
+        required: true
+
+jobs:
+  mark-done:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout: |
+            api
+            scripts
+            config
+            data
+            .github
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Mark task done
+        env:
+          SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
+        run: node scripts/mark-task-done.mjs "${{ github.event.inputs.category }}" "${{ github.event.inputs.match }}"
