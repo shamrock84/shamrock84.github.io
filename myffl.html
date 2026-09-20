@@ -11140,6 +11140,16 @@
 		// formatGameWhen's own local-time rendering below) against the
 		// browser's own "today" — never UTC, which would misdate a Sunday-
 		// night or Monday-night game for a good chunk of the country.
+		//
+		// Sunday is the exception: a full Sunday slate is ~13 games, so
+		// "every game today" makes Now Playing all but identical to
+		// Matchups' own this-week list — the two cards said the same thing
+		// twice. On Sundays only, Now Playing narrows to state === 'in'
+		// (actually live right now), which is exactly the reading that was
+		// rejected for every OTHER day above for being too sparse — sparse
+		// is fine on a Sunday because the slate is dense enough that
+		// something is almost always live. `isSunday` reads the browser's
+		// own local day, matching `isGameToday`'s local-date comparison.
 		// Matchups: the whole week's slate regardless of state or date, so a
 		// visitor can see what's coming up or how something already finished
 		// — the "update each week" half of the feature request, since the
@@ -11179,7 +11189,11 @@
 			return at.getFullYear() === now.getFullYear() && at.getMonth() === now.getMonth() && at.getDate() === now.getDate();
 		}
 
-		function renderNflCards(gridEl) {
+		// `now` defaults to the real clock but takes an override, same
+		// pattern as nflInSeason/duringWeeks1Through17/duringIrClearingWindow
+		// — the only way to pin the Sunday branch below to a specific day of
+		// the week in a test without waiting for a real Sunday.
+		function renderNflCards(gridEl, now = new Date()) {
 			if (!gameStatesAttempted) {
 				const card = el('div', { class: 'card nfl-card', 'data-view': 'nfl' });
 				card.appendChild(el('h2', { class: 'card-heading', text: 'NFL' }));
@@ -11188,8 +11202,11 @@
 				return;
 			}
 			const games = buildNflGamesList(liveGames);
-			const today = games.filter(isGameToday);
-			appendNflCard(gridEl, renderNflScoreCard('nfl-now-playing', 'Now Playing', today, 'No games today.', 'Games taking place today'));
+			const isSunday = now.getDay() === 0;
+			const today = games.filter(isGameToday).filter((g) => !isSunday || g.state === 'in');
+			const nowPlayingLabel = isSunday ? 'Games live right now' : 'Games taking place today';
+			const nowPlayingEmpty = isSunday ? 'No games in progress right now.' : 'No games today.';
+			appendNflCard(gridEl, renderNflScoreCard('nfl-now-playing', 'Now Playing', today, nowPlayingEmpty, nowPlayingLabel));
 			appendNflCard(gridEl, renderNflScoreCard('nfl-matchups', 'Matchups', games, 'No games scheduled this week.'));
 		}
 
