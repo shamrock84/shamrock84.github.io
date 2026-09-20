@@ -11170,7 +11170,7 @@
 			}
 			const games = buildNflGamesList(liveGames);
 			const today = games.filter(isGameToday);
-			appendNflCard(gridEl, renderNflScoreCard('nfl-now-playing', 'Now Playing', today, 'No games in progress today.', 'Games taking place today'));
+			appendNflCard(gridEl, renderNflScoreCard('nfl-now-playing', 'Now Playing', today, 'No games today.', 'Games taking place today'));
 			appendNflCard(gridEl, renderNflScoreCard('nfl-matchups', 'Matchups', games, 'No games scheduled this week.'));
 		}
 
