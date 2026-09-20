@@ -7843,12 +7843,24 @@
 		// the Analytics cards — a player started in more than one of your
 		// leagues (a dynasty QB who's also your salary-cap QB) is one row,
 		// not two. Real-world performance can still show a DIFFERENT fantasy
-		// score per league (PPR vs standard, most commonly), so the raw
-		// per-league scores ride along in `entries` rather than being
-		// collapsed into one number that would just be wrong for one of
-		// them — the row shows the best of them, and the per-league nicknames
-		// printed under the name (see renderNowPlayingCard) say which
-		// league(s) it came from.
+		// score per league (PPR vs standard, most commonly, plus each
+		// provider's own scoring quirks — a Scott Fish Bowl Sleeper league's
+		// deliberately nonstandard rules is the concrete case that surfaced
+		// this), so the raw per-league scores ride along in `entries` rather
+		// than being collapsed into one number that would just be wrong for
+		// one of them — the row shows one representative entry, and the
+		// per-league nicknames printed under the name (see
+		// renderNowPlayingCard) say which league(s) it came from.
+		//
+		// That representative entry is picked by PROVIDER, not by score:
+		// MFL first, then ESPN, then Sleeper (NOW_PLAYING_PROVIDER_RANK).
+		// The card used to take the highest score across entries, but a
+		// Sleeper league running unusual scoring can post a number well
+		// above what the same play earns anywhere else, which made an
+		// outlier league's score lead the row instead of the manager's more
+		// standard leagues. Provider order is a proxy for "typical scoring"
+		// here, not a claim that MFL is more correct.
+		const NOW_PLAYING_PROVIDER_RANK = { mfl: 0, espn: 1, sleeper: 2 };
 		function computeNowPlaying(leagues) {
 			const byPlayer = new Map();
 			for (const league of leagues) {
@@ -7869,6 +7881,7 @@
 						// row prints under the player's name, not a popover with
 						// room to spell a whole name out.
 						nickname: quickLinkLabelForLeague(league),
+						provider: league.provider || 'mfl',
 						score: p.points,
 						// Carried through so the row's own score can open the
 						// same Stat Breakdown popover the matchup drawer's
@@ -7883,10 +7896,19 @@
 			}
 			const rows = [...byPlayer.values()].map((r) => {
 				const scored = r.entries.filter((e) => e.score != null);
-				// The entry behind the displayed (best) score, so the popover
-				// it opens breaks down the same number on the row rather than
-				// some other league's — ties keep the first one found.
-				const best = scored.length ? scored.reduce((a, b) => (b.score > a.score ? b : a)) : null;
+				// The entry behind the displayed score, so the popover it
+				// opens breaks down the same number on the row rather than
+				// some other league's. Lowest provider rank wins; a tie
+				// (two leagues on the same provider) falls back to the
+				// higher score, same as the old whole-list rule.
+				const best = scored.length
+					? scored.reduce((a, b) => {
+							const rankA = NOW_PLAYING_PROVIDER_RANK[a.provider] ?? 99;
+							const rankB = NOW_PLAYING_PROVIDER_RANK[b.provider] ?? 99;
+							if (rankA !== rankB) return rankA < rankB ? a : b;
+							return b.score > a.score ? b : a;
+					  })
+					: null;
 				return { ...r, score: best ? best.score : null, stats: best ? best.stats : null };
 			});
 			// The default order before the sort toggle (see

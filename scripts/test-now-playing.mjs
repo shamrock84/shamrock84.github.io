@@ -25,6 +25,12 @@
 //     in, which would silently inflate the league count and the score.
 //   * the rendered card reflects all of the above — an opponent's player
 //     never appears on screen, even when live in the same matchup as mine.
+//   * when a player's cross-league merge spans more than one provider, the
+//     displayed entry is picked by provider (MFL, then ESPN, then Sleeper),
+//     never by whichever league happens to score him highest — a league
+//     running deliberately nonstandard scoring (the concrete case: a Scott
+//     Fish Bowl Sleeper league) must not lead the row just because its
+//     rules pay out more for the same play.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -142,9 +148,9 @@ const hasClass = (c) => (n) => n.cls.split(/\s+/).includes(c);
 // fetchSleeperScoring, all of which return this same { franchiseId,
 // teamName, isMe, players } shape per team, mine included with everyone
 // else's).
-function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynasty', nickname) {
+function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynasty', nickname, provider) {
 	return {
-		id, type, url: `https://example.com/${id}`, displayName: `League ${id}`, nickname,
+		id, type, url: `https://example.com/${id}`, displayName: `League ${id}`, nickname, provider,
 		scoring: {
 			teams: [
 				{ franchiseId, teamName: 'Mine', isMe: true, players: myPlayers },
@@ -240,6 +246,35 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 	assert.equal(rows[0].entries.length, 2, 'the two leagues I actually hold him in — not a third for the opponent who also has him');
 	assert.ok(!rows[0].entries.some((e) => e.score === 999), "the opponent's 999 in L7 must never enter the merge");
 	assert.equal(rows[0].score, 24, 'the best of MY OWN two scores, not the opponent\'s inflated one');
+}
+
+// Cross-provider merge: MFL wins over a higher-scoring Sleeper entry, and
+// ESPN wins over a higher-scoring Sleeper entry — provider order decides,
+// not magnitude. The Sleeper score here is deliberately the largest of the
+// three to prove score is not the tiebreaker when providers differ.
+{
+	const ctx = makeContext();
+	setLiveGames(ctx, { MIN: { state: 'in' } });
+	const rows = ctx.computeNowPlaying([
+		league('L20', '0001', [{ name: 'Justin Jefferson', position: 'WR', team: 'MIN', points: 6 }], [], 'dynasty', 'MFLLeague', 'mfl'),
+		league('L21', '0002', [{ name: 'Justin Jefferson', position: 'WR', team: 'MIN', points: 9 }], [], 'redraft', 'ESPNLeague', 'espn'),
+		league('L22', '0003', [{ name: 'Justin Jefferson', position: 'WR', team: 'MIN', points: 14 }], [], 'redraft', 'SleeperLeague', 'sleeper'),
+	]);
+	assert.equal(rows.length, 1);
+	assert.equal(rows[0].score, 6, 'MFL leads even though Sleeper (14) and ESPN (9) score him higher');
+}
+
+// Same rule with no MFL entry present: ESPN wins over the higher-scoring
+// Sleeper entry.
+{
+	const ctx = makeContext();
+	setLiveGames(ctx, { MIN: { state: 'in' } });
+	const rows = ctx.computeNowPlaying([
+		league('L23', '0002', [{ name: 'Justin Jefferson', position: 'WR', team: 'MIN', points: 9 }], [], 'redraft', 'ESPNLeague', 'espn'),
+		league('L24', '0003', [{ name: 'Justin Jefferson', position: 'WR', team: 'MIN', points: 14 }], [], 'redraft', 'SleeperLeague', 'sleeper'),
+	]);
+	assert.equal(rows.length, 1);
+	assert.equal(rows[0].score, 9, 'ESPN leads over the higher-scoring Sleeper entry when no MFL entry exists');
 }
 
 // --- Owning league(s) print as Toolbar Label text, not the old "(N)" popover ---
