@@ -142,9 +142,9 @@ const hasClass = (c) => (n) => n.cls.split(/\s+/).includes(c);
 // fetchSleeperScoring, all of which return this same { franchiseId,
 // teamName, isMe, players } shape per team, mine included with everyone
 // else's).
-function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynasty') {
+function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynasty', nickname) {
 	return {
-		id, type, url: `https://example.com/${id}`, displayName: `League ${id}`,
+		id, type, url: `https://example.com/${id}`, displayName: `League ${id}`, nickname,
 		scoring: {
 			teams: [
 				{ franchiseId, teamName: 'Mine', isMe: true, players: myPlayers },
@@ -240,6 +240,28 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 	assert.equal(rows[0].entries.length, 2, 'the two leagues I actually hold him in — not a third for the opponent who also has him');
 	assert.ok(!rows[0].entries.some((e) => e.score === 999), "the opponent's 999 in L7 must never enter the merge");
 	assert.equal(rows[0].score, 24, 'the best of MY OWN two scores, not the opponent\'s inflated one');
+}
+
+// --- Owning league(s) print as Toolbar Label text, not the old "(N)" popover ---
+//
+// Replaces a click-through popover that was almost always just "(1)": the
+// row now names the league(s) directly, using the same Toolbar Label ->
+// Display Name fallback chain quickLinkLabelForLeague already uses for the
+// quick-link bar, so a league with no nickname set still prints something.
+{
+	const ctx = makeContext(LOGGED_IN);
+	setLiveScoringAttempted(ctx, true);
+	setLiveGames(ctx, { BUF: { state: 'in' } });
+	const card = ctx.renderNowPlayingCard([
+		league('L12', '0001', [{ name: 'Josh Allen', position: 'QB', team: 'BUF', points: 20 }], [], 'dynasty', 'MNMx'),
+		league('L13', '0002', [{ name: 'Josh Allen', position: 'QB', team: 'BUF', points: 24 }]),
+	]);
+
+	assert.equal(findAll(card, hasClass('now-playing-count-link')).length, 0, 'the old "(N)" popover button is gone');
+
+	const teamsLine = findAll(card, hasClass('now-playing-teams'))[0];
+	assert.ok(teamsLine, 'the owning league(s) print in their own line');
+	assert.equal(fullText(teamsLine), 'MNMx, League L13', 'a set nickname and a displayName fallback, comma-joined');
 }
 
 // --- renderNowPlayingCard: the same rule, as actually rendered ---

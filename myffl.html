@@ -2119,11 +2119,11 @@
 			color: var(--accent);
 			font-weight: 700;
 		}
-		/* Same shape as .now-playing-count-link/.depth-chart-link — its own
-		   class rather than reusing either, for the "nothing to gain from
-		   coupling them" reasoning .salary-link/.finances-link already
-		   established. Sits on a .nfl-boxscore-mine row's own already-accent
-		   text, so the dotted underline (not the color, which no longer
+		/* Same shape as .depth-chart-link — its own class rather than reusing
+		   it, for the "nothing to gain from coupling them" reasoning
+		   .salary-link/.finances-link already established. Sits on a
+		   .nfl-boxscore-mine row's own already-accent text, so the dotted
+		   underline (not the color, which no longer
 		   stands out against text that's accent-colored too) is what marks
 		   it clickable here — inherited font-weight keeps it exactly as
 		   bold as the name it follows, rather than a change of its own. */
@@ -2648,25 +2648,16 @@
 			text-underline-offset: 0.15rem;
 			cursor: pointer;
 		}
-		/* Now Playing's "(N)" — every row's own league count, always
-		   clickable (even at N=1: with no My Teams column any more, this
-		   popover is the only place the league's NAME lives at all) — same
-		   shape as .salary-link/.finances-link, its own class for the same
-		   "nothing to gain from coupling them" reasoning those two keep
-		   separate. The popover it opens (nowPlayingPopover) is what shows
-		   which league(s) and, when they disagree, the per-league score a
-		   single number on the row can't. */
-		.now-playing-count-link {
-			background: none;
-			border: none;
-			padding: 0;
-			margin: 0;
-			font: inherit;
-			font-variant-numeric: tabular-nums;
+		/* Now Playing's own Toolbar Label line — the owning league(s), named
+		   directly under the player's name rather than behind a click (see
+		   renderNowPlayingCard's own comment on why the old "(N)" popover
+		   was retired). Purple like every other "this is mine" marker on
+		   this page (tr.me-row, .needs-players-top, and the rest CLAUDE.md
+		   groups under "the page"'s colour conventions), plain text since
+		   there's nothing left here to click. */
+		.now-playing-teams {
 			color: var(--accent);
-			text-decoration: underline dotted;
-			text-underline-offset: 0.15rem;
-			cursor: pointer;
+			font-size: 0.8em;
 		}
 		/* A net loss — the same token .salary-cap-room's negative state and
 		   Results' "guessed" flag both use for "this number needs a look".
@@ -7855,8 +7846,9 @@
 		// score per league (PPR vs standard, most commonly), so the raw
 		// per-league scores ride along in `entries` rather than being
 		// collapsed into one number that would just be wrong for one of
-		// them — the row shows the best of them, and the "(N)" league count
-		// (see renderNowPlayingCard) opens the rest.
+		// them — the row shows the best of them, and the per-league nicknames
+		// printed under the name (see renderNowPlayingCard) say which
+		// league(s) it came from.
 		function computeNowPlaying(leagues) {
 			const byPlayer = new Map();
 			for (const league of leagues) {
@@ -7871,6 +7863,12 @@
 					}
 					byPlayer.get(key).entries.push({
 						league: { name: leagueDisplayName(league), url: league.url },
+						// Toolbar Label (falling back the same way the quick-link
+						// bar itself does — see quickLinkLabelForLeague) rather
+						// than the full league name: this is the short chip the
+						// row prints under the player's name, not a popover with
+						// room to spell a whole name out.
+						nickname: quickLinkLabelForLeague(league),
 						score: p.points,
 						// Carried through so the row's own score can open the
 						// same Stat Breakdown popover the matchup drawer's
@@ -7905,13 +7903,6 @@
 			return rows;
 		}
 
-		// One dedicated makePopover instance for the "(N)" league count on
-		// every row — the one place this card names a league at all, now
-		// that there's no My Teams column to spell it out in. Doubles as the
-		// per-league score breakdown when the leagues disagree (see
-		// computeNowPlaying's own comment on why that's possible at all).
-		const nowPlayingPopover = makePopover('nowPlaying');
-
 		// Login-gated like the matchup drawer above and every other card
 		// reading roster/lineup data (see CLAUDE.md) — this is every one of
 		// your own starters across every league, which is a step further
@@ -7928,12 +7919,21 @@
 		// dozens of rows, and a four-column table wastes width on Player/Pos/
 		// My Teams cells that are mostly whitespace while forcing every row
 		// onto its own table line. Folding the position into a group heading
-		// and the league count into a "(N)" popover gets each player down to
-		// one line — "Patrick Mahomes KC (3)" opposite his score — and
+		// gets each player down to one line — "Patrick Mahomes KC" opposite
+		// his score, with the owning league(s) named on a second line — and
 		// spreads the list sideways across position boxes instead of
 		// scrolling it vertically. Same visual idiom as Depth Charts' own
 		// .depth-chart-positions/.depth-chart-position (bordered mini-boxes,
 		// flex-wrapped), reused rather than invented fresh.
+		//
+		// The league(s) print as Toolbar Label text under the name rather
+		// than behind the old "(N)" popover — the manager's own read was
+		// that N was almost always 1, so the popover was a click to learn
+		// what could just be printed. That trades away the popover's other
+		// job (surfacing a per-league score when the leagues disagree — see
+		// computeNowPlaying's own comment on why that's possible at all):
+		// the row still shows only the best score, with no drill-down to
+		// the rest any more.
 		function renderNowPlayingCard(leagues) {
 			if (!isLoggedIn()) return null;
 			const card = el('div', { class: 'card now-playing-card', 'data-view': 'scoring', 'data-league-type': '' });
@@ -8003,27 +8003,11 @@
 						const firstLine = el('div');
 						firstLine.appendChild(document.createTextNode(r.name));
 						if (r.team) appendTeamSuffix(firstLine, r.team);
-						firstLine.appendChild(document.createTextNode(' '));
-						// Always the popover, even at N=1 — see this
-						// function's own comment on why: with no My Teams
-						// column, this is the only place the league's name
-						// is ever shown.
-						const countBtn = el('button', {
-							type: 'button',
-							class: 'now-playing-count-link',
-							title: r.entries.length > 1 ? 'Held in multiple leagues — click to see which, and each score' : 'Click to see which league',
-							text: `(${r.entries.length})`,
-						});
-						countBtn.addEventListener('click', (e) => {
-							e.stopPropagation();
-							nowPlayingPopover.toggle(
-								countBtn,
-								`${r.name} — Leagues`,
-								r.entries.map((en) => ({ left: en.league.name, right: en.score == null ? '–' : en.score.toFixed(2) }))
-							);
-						});
-						firstLine.appendChild(countBtn);
 						nameLine.appendChild(firstLine);
+						// Toolbar Label(s) — see this function's own comment on
+						// why this replaced the "(N)" popover — comma-joined
+						// when a player is held in more than one league.
+						nameLine.appendChild(el('div', { class: 'now-playing-teams', text: r.entries.map((en) => en.nickname).join(', ') }));
 						// The same live game line the matchup drawer shows
 						// under a starter's name — free, since it's the same
 						// liveGames map, and it's exactly the context
@@ -10929,10 +10913,13 @@
 				const tr = el('tr', ownedLeagues.length > 0 ? { class: 'nfl-boxscore-mine' } : {});
 				const nameCell = el('td', { text: athlete.name });
 				if (ownedLeagues.length > 0) {
-					// Same "(N)" idiom as the Scoring tab's Now Playing card
-					// (now-playing-count-link) — always the popover, even at
-					// N=1, since this is the only place on this row a league's
-					// own name is shown at all.
+					// Same "(N)" popover idiom the Scoring tab's Now Playing
+					// card used before it switched to printing Toolbar Labels
+					// directly (see renderNowPlayingCard's own comment) —
+					// kept here since this row has no separate line to print
+					// them on. Always the popover, even at N=1, since this is
+					// the only place on this row a league's own name is shown
+					// at all.
 					nameCell.appendChild(document.createTextNode(' '));
 					const countBtn = el('button', {
 						type: 'button',
