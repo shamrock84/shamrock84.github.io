@@ -7867,13 +7867,37 @@
 				if (league.type === 'draftonly') continue;
 				const mine = league.scoring?.teams?.find((t) => t.isMe);
 				if (!mine) continue;
+				// The live-scoring player carries no FantasyPros URL of its own
+				// (see providers.mjs' fetchScoring/fetchEspnScoring/
+				// fetchSleeperScoring — that response is scores, not rankings).
+				// This league's own roster entry for the same player already
+				// has one, attached at sync time by fetch-rosters.mjs' own name
+				// join (see player.ecr there) — this is a second, purely
+				// client-side join onto it, by the SAME normalizeName key
+				// byPlayer itself uses below, so a live-scoring name and this
+				// league's roster spelling of the same player still line up.
+				const rosterByName = new Map();
+				for (const rp of league.players || []) {
+					const rKey = normalizeName(rp.name) || rp.name;
+					if (!rosterByName.has(rKey)) rosterByName.set(rKey, rp);
+				}
 				for (const p of mine.players || []) {
 					if (!isPlayerLive(p)) continue;
 					const key = normalizeName(p.name) || p.name;
 					if (!byPlayer.has(key)) {
-						byPlayer.set(key, { name: p.name, position: p.position, team: p.team, entries: [] });
+						byPlayer.set(key, { name: p.name, position: p.position, team: p.team, url: null, entries: [] });
 					}
-					byPlayer.get(key).entries.push({
+					const row = byPlayer.get(key);
+					// First league to resolve one wins — same player, so any
+					// league's own ecr.url is as good as another's; a player
+					// FantasyPros doesn't rank (or whose name didn't resolve at
+					// sync time) simply never gets one, same fallback
+					// playerNameNode already has for every other card.
+					if (!row.url) {
+						const rosterUrl = rosterByName.get(key)?.ecr?.url;
+						if (rosterUrl) row.url = rosterUrl;
+					}
+					row.entries.push({
 						league: { name: leagueDisplayName(league), url: league.url },
 						// Toolbar Label (falling back the same way the quick-link
 						// bar itself does — see quickLinkLabelForLeague) rather
@@ -8033,7 +8057,11 @@
 						// comment) rather than either line individually.
 						const nameLine = el('div', { class: 'now-playing-name' });
 						const firstLine = el('div');
-						firstLine.appendChild(document.createTextNode(r.name));
+						// Same playerNameNode idiom every other card with a
+						// player name uses — a plain name falls back
+						// automatically when computeNowPlaying couldn't resolve
+						// a url (see that function's own comment).
+						firstLine.appendChild(playerNameNode({ name: r.name, ecr: { url: r.url } }));
 						if (r.team) appendTeamSuffix(firstLine, r.team);
 						nameLine.appendChild(firstLine);
 						// Toolbar Label(s) — see this function's own comment on
