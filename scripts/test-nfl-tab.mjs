@@ -16,15 +16,21 @@
 //   * formatGameWhen shows the kickoff time pre-game and the scoreboard's own
 //     status string once live or final — never a score before kickoff.
 //   * Now Playing includes every game kicking off on today's LOCAL calendar
-//     date, any state; Matchups includes every game for the week, any date
-//     or state. Both must read the same underlying list with nothing to
-//     drift between them.
+//     date, any state; Matchups includes every OTHER game for the week (any
+//     date or state) — deliberately NOT the whole week's slate any more, so
+//     a game showing on Now Playing never also shows on Matchups. Now
+//     Playing's own inclusion rule decides first and never looks at
+//     Matchups, so the exclusion runs one way only: Matchups is `games`
+//     with Now Playing's ids subtracted out.
 //   * the one exception: on a Sunday, a full slate makes "every game today"
 //     read almost identically to Matchups, so Now Playing narrows further to
 //     state === 'in' (actually live right now) — every other day keeps the
-//     any-state rule above. renderNflCards takes an optional `now` so this
-//     can be pinned to a specific day of the week without waiting for an
-//     actual Sunday to run the suite.
+//     any-state rule above. A Sunday game that hasn't kicked off yet (or has
+//     already gone final) is therefore NOT on Now Playing and stays on
+//     Matchups instead — the dedup only pulls a game off Matchups once Now
+//     Playing actually claims it. renderNflCards takes an optional `now` so
+//     this can be pinned to a specific day of the week without waiting for
+//     an actual Sunday to run the suite.
 //   * the loading state (gameStatesAttempted still false) never renders "no
 //     games" — that would be a false all-clear before the first fetch even
 //     resolved.
@@ -216,17 +222,18 @@ function fullText(node) {
 }
 
 // The load-bearing split: Now Playing shows only games kicking off on
-// today's calendar date; Matchups shows every game for the week regardless
-// of date. Kickoffs are built off the real clock (never a hardcoded date)
-// since isGameToday compares against the actual "now" — a game 3 days out
-// is guaranteed to land on a different local calendar date than right now,
-// whatever day this test happens to run. `renderNflCards` is handed a fixed
-// non-Sunday `now` (2026-09-16, a Wednesday) so the any-state weekday rule
-// is exercised regardless of what day this suite actually runs on — the
-// Sunday-only narrowing is pinned separately below. That override only
-// decides the weekday/Sunday branch; it has no bearing on isGameToday's own
-// "is this today" check, which always reads the real clock, so today's game
-// still lands on Now Playing correctly.
+// today's calendar date; Matchups shows every OTHER game for the week — a
+// game claimed by Now Playing must not also render on Matchups. Kickoffs
+// are built off the real clock (never a hardcoded date) since isGameToday
+// compares against the actual "now" — a game 3 days out is guaranteed to
+// land on a different local calendar date than right now, whatever day this
+// test happens to run. `renderNflCards` is handed a fixed non-Sunday `now`
+// (2026-09-16, a Wednesday) so the any-state weekday rule is exercised
+// regardless of what day this suite actually runs on — the Sunday-only
+// narrowing is pinned separately below. That override only decides the
+// weekday/Sunday branch; it has no bearing on isGameToday's own "is this
+// today" check, which always reads the real clock, so today's game still
+// lands on Now Playing correctly.
 {
 	const ctx = makeContext();
 	setGameStatesAttempted(ctx, true);
@@ -243,14 +250,20 @@ function fullText(node) {
 	const grid = domNode();
 	ctx.renderNflCards(grid, weekdayNow);
 	const rows = findAll(grid, hasClass('nfl-game-row'));
-	assert.equal(rows.length, 3, "1 row on Now Playing (today's game) + 2 rows (today's and next week's) on Matchups");
-	assert.equal(findAll(grid, hasClass('nfl-game-live')).length, 2, 'the live game is flagged on both cards it appears on');
+	assert.equal(rows.length, 2, "1 row on Now Playing (today's game) + 1 row on Matchups (next week's) — today's game is not repeated on Matchups");
+	assert.equal(findAll(grid, hasClass('nfl-game-live')).length, 1, "the live game appears exactly once, on Now Playing, not duplicated onto Matchups");
 
 	// Now Playing's own subtitle only appears on that card, not Matchups.
 	const cards = findAll(grid, hasClass('nfl-card'));
 	const nowPlayingCard = cards.find((c) => findAll(c, () => true).some((n) => n._text === 'Games taking place today'));
 	assert.ok(nowPlayingCard, 'Now Playing carries the "Games taking place today" subtitle on a non-Sunday');
 	assert.equal(cards.filter((c) => findAll(c, () => true).some((n) => n._text === 'Games taking place today')).length, 1, 'only one card carries that subtitle');
+	assert.equal(findAll(nowPlayingCard, hasClass('nfl-game-row')).length, 1, "today's game is the only row on Now Playing");
+
+	const matchupsCard = cards.find((c) => c !== nowPlayingCard && findAll(c, hasClass('card-heading')).some((h) => fullText(h).startsWith('Matchups')));
+	assert.ok(matchupsCard, 'Matchups card renders');
+	assert.equal(findAll(matchupsCard, hasClass('nfl-game-row')).length, 1, "Matchups keeps only the game Now Playing didn't already claim");
+	assert.ok(!fullText(matchupsCard).includes('4:35 - 1st'), "today's game (shown on Now Playing) is not repeated on Matchups");
 
 	// The live row's score shows; the pre-game row's doesn't (score 0
 	// pre-kickoff is a placeholder, not a real score).
@@ -265,10 +278,11 @@ function fullText(node) {
 	assert.ok(links.every((a) => a.attrs.target === '_blank' && a.attrs.rel === 'noopener'));
 }
 
-// Sunday-only narrowing: a game kicking off today but not yet live (or
-// already final) belongs on Matchups but must be dropped from Now Playing —
-// the one day it isn't enough to just be today's game. A live one still
-// gets through, and the subtitle/empty-text switch to the live-only wording.
+// Sunday-only narrowing: a game kicking off today but not yet live belongs
+// on Matchups but must be dropped from Now Playing — the one day it isn't
+// enough to just be today's game. A live one still gets through, and once it
+// does, the dedup pulls it OFF Matchups (unlike before this feature existed,
+// when Matchups kept every game regardless of what Now Playing showed).
 {
 	const ctx = makeContext();
 	setGameStatesAttempted(ctx, true);
@@ -293,11 +307,13 @@ function fullText(node) {
 	assert.ok(fullText(nowPlayingCard).includes('4:35 - 1st'), 'the live game is the one that gets through');
 	assert.ok(!fullText(nowPlayingCard).includes('DAL') && !fullText(nowPlayingCard).includes('PHI'), "today's not-yet-live game is excluded from Now Playing on a Sunday");
 
-	// Matchups is untouched by the Sunday narrowing — both of today's games
-	// still show there regardless of state.
+	// Matchups keeps the not-yet-live game (Now Playing never claimed it) but
+	// drops the live one, since Now Playing already claimed that one.
 	const matchupsCard = cards.find((c) => c !== nowPlayingCard && findAll(c, hasClass('card-heading')).some((h) => fullText(h).startsWith('Matchups')));
 	assert.ok(matchupsCard, 'Matchups card renders');
-	assert.equal(findAll(matchupsCard, hasClass('nfl-game-row')).length, 2, "Matchups keeps both of today's games, live or not");
+	assert.equal(findAll(matchupsCard, hasClass('nfl-game-row')).length, 1, "Matchups keeps only the not-yet-live game — the live one moved to Now Playing");
+	assert.ok(fullText(matchupsCard).includes('DAL') || fullText(matchupsCard).includes('PHI'), "the not-yet-live game is still on Matchups");
+	assert.ok(!fullText(matchupsCard).includes('4:35 - 1st'), "the live game (now on Now Playing) is not duplicated onto Matchups");
 }
 
 // isGameToday itself: a game with no kickoff, or an unparseable one, is
