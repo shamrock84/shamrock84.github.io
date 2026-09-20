@@ -368,6 +368,32 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 	assert.equal(fullText(popoverRows[1].children[1]), '12.0');
 }
 
+// --- PK and Def render as one merged sub-card, not two ---
+//
+// Both are typically the thinnest buckets on a slate, so they share one
+// 'PK/Def' mini-card instead of each getting its own — one heading, one
+// group, both players' rows inside it.
+{
+	const ctx = makeContext(LOGGED_IN);
+	setLiveScoringAttempted(ctx, true);
+	setLiveGames(ctx, { BAL: { state: 'in' } });
+	const card = ctx.renderNowPlayingCard([
+		league('L25', '0001', [
+			{ name: 'Kicker Guy', position: 'PK', team: 'BAL', points: 8 },
+			{ name: 'Some Defense', position: 'Def', team: 'BAL', points: 5 },
+		]),
+	]);
+
+	const posCards = findAll(card, hasClass('now-playing-position'));
+	assert.equal(posCards.length, 1, 'PK and Def share one mini-card, not two');
+
+	const head = findAll(card, hasClass('now-playing-position-head'))[0];
+	assert.ok(fullText(head).startsWith('PK/Def (2)'), 'the merged heading names both positions and counts both players');
+
+	const text = fullText(card);
+	assert.ok(text.includes('Kicker Guy') && text.includes('Some Defense'), 'both players render inside the merged card');
+}
+
 // --- Always sorted best-first within each position group ---
 //
 // There used to be a Sort by score toggle on this card; it's gone, and each
