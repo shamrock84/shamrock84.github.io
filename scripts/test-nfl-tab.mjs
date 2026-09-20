@@ -34,6 +34,11 @@
 //   * the loading state (gameStatesAttempted still false) never renders "no
 //     games" — that would be a false all-clear before the first fetch even
 //     resolved.
+//   * an EMPTY Now Playing auto-collapses itself (makeCollapsible's own
+//     `forceCollapsed` argument) — no game today is exactly the moment it's
+//     least worth a full card's space. Matchups never does this: its own
+//     "no games scheduled this week" empty state is informative on its own
+//     merits, not a stale leftover.
 //
 // Also pins nflBoxscorePlayerLines (scripts/lib/providers.mjs) and the
 // per-game stat drawer it feeds (renderNflGameRow/appendNflBoxscoreToggle):
@@ -209,7 +214,10 @@ function fullText(node) {
 }
 
 // No games at all once the fetch has resolved: both cards render their own
-// empty-state text, not a loading box.
+// empty-state text, not a loading box. Now Playing auto-collapses itself
+// when empty (no game today means nothing worth the card's own space);
+// Matchups does not — "no games scheduled this week" is informative there,
+// not a stale leftover of a card with nothing to show.
 {
 	const ctx = makeContext();
 	setGameStatesAttempted(ctx, true);
@@ -219,6 +227,11 @@ function fullText(node) {
 	assert.equal(findAll(grid, hasClass('loading-box')).length, 0);
 	const cards = findAll(grid, hasClass('nfl-card'));
 	assert.equal(cards.length, 2, 'Now Playing and Matchups both render even with nothing to show');
+
+	const nowPlayingCard = cards.find((c) => findAll(c, hasClass('card-heading')).some((h) => fullText(h).startsWith('Now Playing')));
+	const matchupsCard = cards.find((c) => c !== nowPlayingCard);
+	assert.ok(hasClass('card-collapsed')(nowPlayingCard), 'an empty Now Playing auto-collapses');
+	assert.ok(!hasClass('card-collapsed')(matchupsCard), 'an empty Matchups stays expanded');
 }
 
 // The load-bearing split: Now Playing shows only games kicking off on
@@ -259,6 +272,7 @@ function fullText(node) {
 	assert.ok(nowPlayingCard, 'Now Playing carries the "Games taking place today" subtitle on a non-Sunday');
 	assert.equal(cards.filter((c) => findAll(c, () => true).some((n) => n._text === 'Games taking place today')).length, 1, 'only one card carries that subtitle');
 	assert.equal(findAll(nowPlayingCard, hasClass('nfl-game-row')).length, 1, "today's game is the only row on Now Playing");
+	assert.ok(!hasClass('card-collapsed')(nowPlayingCard), 'a non-empty Now Playing stays expanded');
 
 	const matchupsCard = cards.find((c) => c !== nowPlayingCard && findAll(c, hasClass('card-heading')).some((h) => fullText(h).startsWith('Matchups')));
 	assert.ok(matchupsCard, 'Matchups card renders');

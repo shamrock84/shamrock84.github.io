@@ -6034,8 +6034,16 @@
 		// pixel precision. A click landing on an <a> inside the heading (the
 		// league name, the rules-link icon) is left alone so it still
 		// navigates instead of also collapsing the card out from under it.
-		function makeCollapsible(card, heading, key) {
-			const collapsed = isCardCollapsed(key);
+		// `forceCollapsed`, when true, collapses the card for THIS render
+		// regardless of the stored toggle state — never persisted (the toggle
+		// button below still reads/writes the real key), so a card an empty
+		// state forced shut reverts to whatever the manager's own preference
+		// actually is the moment it has something to show again. Used by any
+		// card auto-collapsing itself when there's nothing worth looking at
+		// (see renderNflScoreCard's 'nfl-now-playing' call and
+		// renderNowPlayingCard).
+		function makeCollapsible(card, heading, key, forceCollapsed = false) {
+			const collapsed = forceCollapsed || isCardCollapsed(key);
 			card.classList.toggle('card-collapsed', collapsed);
 			const toggle = el('button', {
 				type: 'button',
@@ -7985,14 +7993,25 @@
 			const card = el('div', { class: 'card now-playing-card', 'data-view': 'scoring', 'data-league-type': '' });
 			const heading = el('h2', { class: 'card-heading', text: 'Now Playing' });
 			card.appendChild(heading);
-			makeCollapsible(card, heading, 'now-playing');
 
 			if (!liveScoringAttempted) {
+				// Loading, not empty — force-collapsing here would read as
+				// "nothing playing" before the first poll even answered, same
+				// false-all-clear this card's loading state already guards
+				// against everywhere else.
+				makeCollapsible(card, heading, 'now-playing');
 				card.appendChild(el('div', { class: 'loading-box', text: 'Loading live scores…' }));
 				return card;
 			}
 
 			const rows = computeNowPlaying(leagues);
+			// Auto-collapse when nobody of mine is live — same reasoning and
+			// same forced-not-persisted mechanism as the NFL tab's own Now
+			// Playing card (see makeCollapsible's own comment): this card
+			// rebuilds on every ~30s live-scoring poll, so a manager's own
+			// toggle preference is never lost, just overridden while there's
+			// nothing here to look at.
+			makeCollapsible(card, heading, 'now-playing', rows.length === 0);
 			if (rows.length === 0) {
 				card.appendChild(el('div', { class: 'team card-collapse-visible', text: 'No players currently playing.' }));
 				return card;
@@ -11142,11 +11161,18 @@
 		// `.team.card-collapse-visible` idiom every other card's own subtitle
 		// line uses (see that class's own CSS comment) — visible even
 		// collapsed, unlike the row list underneath.
-		function renderNflScoreCard(id, heading, games, emptyText, subtitle) {
+		//
+		// `autoCollapseEmpty` is Now Playing's own opt-in (its call site below
+		// passes true; Matchups doesn't) — an empty Now Playing means no game
+		// is on today at all, which is exactly the moment it's least worth the
+		// space a full card costs. Matchups keeps its own empty state
+		// expanded: "no games scheduled this week" is itself informative
+		// there, not a stale leftover.
+		function renderNflScoreCard(id, heading, games, emptyText, subtitle, autoCollapseEmpty = false) {
 			const card = el('div', { class: 'card nfl-card', 'data-view': 'nfl' });
 			const headingEl = el('h2', { class: 'card-heading', text: `${heading} (${games.length})` });
 			card.appendChild(headingEl);
-			makeCollapsible(card, headingEl, id);
+			makeCollapsible(card, headingEl, id, autoCollapseEmpty && games.length === 0);
 			if (subtitle) card.appendChild(el('div', { class: 'team card-collapse-visible', text: subtitle }));
 			const body = el('div', { class: 'nfl-scoreboard' });
 			if (games.length === 0) {
@@ -11243,7 +11269,7 @@
 			const nowPlayingEmpty = isSunday ? 'No games in progress right now.' : 'No games today.';
 			const todayIds = new Set(today.map((g) => g.id));
 			const rest = games.filter((g) => !todayIds.has(g.id));
-			appendNflCard(gridEl, renderNflScoreCard('nfl-now-playing', 'Now Playing', today, nowPlayingEmpty, nowPlayingLabel));
+			appendNflCard(gridEl, renderNflScoreCard('nfl-now-playing', 'Now Playing', today, nowPlayingEmpty, nowPlayingLabel, true));
 			appendNflCard(gridEl, renderNflScoreCard('nfl-matchups', 'Matchups', rest, 'No games scheduled this week.'));
 		}
 
