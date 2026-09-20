@@ -7990,13 +7990,23 @@
 				// position's own group keeps the relative order the one
 				// global sort already gave it, without a second per-group
 				// sort.
+				//
+				// PK and Def fold into one 'PK/Def' sub-card rather than two —
+				// each is typically the thinnest bucket on a slate (one
+				// starter per league, at most), so splitting them wasted two
+				// mini-boxes' worth of border and heading on what's often a
+				// single row apiece. nowPlayingGroupRank sorts the merged
+				// group where PK alone used to sit, so it doesn't jump to the
+				// end of the row now that its own POSITION_ORDER slot ('Def',
+				// the later of the two) no longer applies to the combined key.
 				const groups = new Map();
 				for (const r of rows) {
-					const pos = r.position || '—';
+					const pos = r.position === 'PK' || r.position === 'Def' ? 'PK/Def' : r.position || '—';
 					if (!groups.has(pos)) groups.set(pos, []);
 					groups.get(pos).push(r);
 				}
-				const orderedGroups = [...groups.entries()].sort((a, b) => positionRank(a[0]) - positionRank(b[0]));
+				const nowPlayingGroupRank = (pos) => (pos === 'PK/Def' ? positionRank('PK') : positionRank(pos));
+				const orderedGroups = [...groups.entries()].sort((a, b) => nowPlayingGroupRank(a[0]) - nowPlayingGroupRank(b[0]));
 
 				for (const [pos, group] of orderedGroups) {
 					// Collapsible one level down, same idiom as a Rosters
