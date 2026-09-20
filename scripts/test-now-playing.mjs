@@ -31,6 +31,11 @@
 //     running deliberately nonstandard scoring (the concrete case: a Scott
 //     Fish Bowl Sleeper league) must not lead the row just because its
 //     rules pay out more for the same play.
+//   * a player's name links to FantasyPros the same standard every other
+//     card follows (playerNameNode) — the url comes off THIS league's own
+//     roster entry (league.players[].ecr.url, attached at sync time), never
+//     built from the name, since the live-scoring player itself carries no
+//     such field. No roster match degrades to a plain name, never a guess.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -275,6 +280,64 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 	]);
 	assert.equal(rows.length, 1);
 	assert.equal(rows[0].score, 9, 'ESPN leads over the higher-scoring Sleeper entry when no MFL entry exists');
+}
+
+// --- Player names link to FantasyPros, same standard as every other card ---
+//
+// computeNowPlaying resolves the link from the SAME league's own roster
+// entry (league.players[].ecr.url — the field fetch-rosters.mjs attaches at
+// sync time by joining the FantasyPros rankings pool by name), never from
+// the live-scoring player itself, which carries no such field. This is a
+// second, client-side name join on top of that one, using the same
+// normalizeName key the cross-league merge above already uses.
+{
+	const ctx = makeContext();
+	setLiveGames(ctx, { BUF: { state: 'in' } });
+	const withRoster = league('L30', '0001', [{ name: 'Josh Allen', position: 'QB', team: 'BUF', points: 20 }]);
+	withRoster.players = [{ name: 'Josh Allen', ecr: { url: 'https://www.fantasypros.com/nfl/players/josh-allen.php' } }];
+	const rows = ctx.computeNowPlaying([withRoster]);
+	assert.equal(rows.length, 1);
+	assert.equal(rows[0].url, 'https://www.fantasypros.com/nfl/players/josh-allen.php', "the row's url comes off this league's own roster entry");
+}
+
+// No matching roster entry (never synced, or the name didn't resolve at
+// sync time) — the row simply carries no url, same as any other card's
+// fallback.
+{
+	const ctx = makeContext();
+	setLiveGames(ctx, { BUF: { state: 'in' } });
+	const noRosterMatch = league('L31', '0001', [{ name: 'Obscure Guy', position: 'QB', team: 'BUF', points: 20 }]);
+	noRosterMatch.players = [{ name: 'Someone Else' }];
+	const rows = ctx.computeNowPlaying([noRosterMatch]);
+	assert.equal(rows.length, 1);
+	assert.ok(!rows[0].url, 'no roster match means no url, not a guessed or broken one');
+}
+
+// The rendered card: a resolved url becomes a real player-link anchor to
+// FantasyPros; an unresolved one keeps the plain name playerNameNode always
+// falls back to.
+{
+	const ctx = makeContext(LOGGED_IN);
+	setLiveScoringAttempted(ctx, true);
+	setLiveGames(ctx, { BUF: { state: 'in' }, MIN: { state: 'in' } });
+	const linked = league('L32', '0001', [{ name: 'Josh Allen', position: 'QB', team: 'BUF', points: 20 }]);
+	linked.players = [{ name: 'Josh Allen', ecr: { url: 'https://www.fantasypros.com/nfl/players/josh-allen.php' } }];
+	const unlinked = league('L33', '0002', [{ name: 'Justin Jefferson', position: 'WR', team: 'MIN', points: 15 }]);
+	// No `players` roster at all on this league — the join must degrade
+	// safely rather than throwing on a missing array.
+	const card = ctx.renderNowPlayingCard([linked, unlinked]);
+
+	const links = findAll(card, hasClass('player-link'));
+	assert.equal(links.length, 1, 'only the player with a resolved FantasyPros url gets a link');
+	assert.equal(links[0].attrs.href, 'https://www.fantasypros.com/nfl/players/josh-allen.php');
+	assert.equal(fullText(links[0]), 'Josh Allen');
+	assert.equal(links[0].attrs.target, '_blank');
+	assert.equal(links[0].attrs.rel, 'noopener');
+
+	const rows = findAll(card, hasClass('now-playing-row'));
+	const jeffersonRow = rows.find((r) => fullText(r).includes('Justin Jefferson'));
+	assert.ok(jeffersonRow, 'the unlinked player still renders');
+	assert.equal(findAll(jeffersonRow, hasClass('player-link')).length, 0, 'no roster match keeps a plain, unlinked name');
 }
 
 // --- Owning league(s) print as Toolbar Label text, not the old "(N)" popover ---
