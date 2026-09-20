@@ -36,6 +36,10 @@
 //     roster entry (league.players[].ecr.url, attached at sync time), never
 //     built from the name, since the live-scoring player itself carries no
 //     such field. No roster match degrades to a plain name, never a guess.
+//   * the card auto-collapses itself when nobody of mine is live — but the
+//     loading state (before the first poll answers) is never mistaken for
+//     that, and a manager's own stored toggle preference is never
+//     overwritten, only overridden for the render where the card is empty.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -485,6 +489,46 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 	assert.ok(order[1].includes('Mid WR'), 'then the middle score');
 	assert.ok(order[2].includes('Low WR'), 'then the lowest score');
 	assert.ok(order[3].includes('No Score Yet WR'), 'a score not in yet sinks to the bottom, not sorted as a 0');
+}
+
+// --- Auto-collapse when nobody of mine is live ---
+//
+// Same forced-not-persisted mechanism as the NFL tab's own Now Playing card
+// (makeCollapsible's own `forceCollapsed` argument): an empty card collapses
+// itself for this render without writing to the stored toggle, so it's back
+// to whatever the manager's own preference is the moment someone goes live.
+
+// No leagues live at all: the card collapses itself rather than sitting
+// expanded around one line of "nothing to see here" — and, critically,
+// without writing that collapse to the stored toggle, so it's never
+// mistaken for the manager's own preference.
+{
+	const ctx = makeContext(LOGGED_IN);
+	setLiveScoringAttempted(ctx, true);
+	setLiveGames(ctx, {});
+	const card = ctx.renderNowPlayingCard([]);
+	assert.ok(hasClass('card-collapsed')(card), 'an empty Now Playing auto-collapses');
+	assert.equal(ctx.__store.get('myfflCardCollapsed:desktop:now-playing'), undefined, 'the forced collapse is never persisted to the stored toggle');
+}
+
+// The loading state (before the first live-scoring poll answers) must NOT
+// be treated as empty — that would misrepresent "haven't asked yet" as
+// "nobody's playing" before the card even had a chance to find out.
+{
+	const ctx = makeContext(LOGGED_IN);
+	setLiveScoringAttempted(ctx, false);
+	const card = ctx.renderNowPlayingCard([league('L40', '0001', [{ name: 'Someone', position: 'QB', team: 'BUF', points: 0 }])]);
+	assert.ok(findAll(card, hasClass('loading-box')).length === 1, 'still shows the loading state');
+	assert.ok(!hasClass('card-collapsed')(card), 'the loading state is never force-collapsed');
+}
+
+// At least one live player of mine: the card stays expanded.
+{
+	const ctx = makeContext(LOGGED_IN);
+	setLiveScoringAttempted(ctx, true);
+	setLiveGames(ctx, { BUF: { state: 'in' } });
+	const card = ctx.renderNowPlayingCard([league('L41', '0001', [{ name: 'My Guy', position: 'QB', team: 'BUF', points: 20 }])]);
+	assert.ok(!hasClass('card-collapsed')(card), 'a non-empty Now Playing stays expanded');
 }
 
 // Logged out: the card doesn't render at all, same gate as the matchup
