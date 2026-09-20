@@ -11150,13 +11150,20 @@
 		// is fine on a Sunday because the slate is dense enough that
 		// something is almost always live. `isSunday` reads the browser's
 		// own local day, matching `isGameToday`'s local-date comparison.
-		// Matchups: the whole week's slate regardless of state or date, so a
+		// Matchups: the rest of the week's slate — every game NOT already
+		// shown on Now Playing, regardless of its own state or date — so a
 		// visitor can see what's coming up or how something already finished
-		// — the "update each week" half of the feature request, since the
-		// schedule itself only changes once the calendar turns over even
-		// though the scores inside it move all game day. Both read the one
-		// shared liveGames map (see buildNflGamesList's own comment above),
-		// so there is nothing here to keep in sync between the two cards.
+		// without scrolling past the same game twice. Now Playing decides
+		// first (it's the narrower, more specific read of "what to look at
+		// right now"); Matchups is simply `games` with those ids removed, by
+		// the scoreboard's own event id (`todayIds`, built off `today` right
+		// below). That single subtraction is the whole of the "vice versa" —
+		// there's no separate rule pulling a game out of Now Playing because
+		// Matchups already claimed it, since Now Playing's own inclusion
+		// rule above never depends on Matchups to begin with. Both still
+		// read the one shared liveGames map (see buildNflGamesList's own
+		// comment above), so there is nothing here to keep in sync beyond
+		// this one id set.
 		//
 		// Loading state mirrors the Problems Digest's own (gameStatesAttempted,
 		// set by refreshDigestGameStates on page load): before that first
@@ -11206,8 +11213,10 @@
 			const today = games.filter(isGameToday).filter((g) => !isSunday || g.state === 'in');
 			const nowPlayingLabel = isSunday ? 'Games live right now' : 'Games taking place today';
 			const nowPlayingEmpty = isSunday ? 'No games in progress right now.' : 'No games today.';
+			const todayIds = new Set(today.map((g) => g.id));
+			const rest = games.filter((g) => !todayIds.has(g.id));
 			appendNflCard(gridEl, renderNflScoreCard('nfl-now-playing', 'Now Playing', today, nowPlayingEmpty, nowPlayingLabel));
-			appendNflCard(gridEl, renderNflScoreCard('nfl-matchups', 'Matchups', games, 'No games scheduled this week.'));
+			appendNflCard(gridEl, renderNflScoreCard('nfl-matchups', 'Matchups', rest, 'No games scheduled this week.'));
 		}
 
 		function rerenderNflCards() {
