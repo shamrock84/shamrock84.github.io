@@ -2669,15 +2669,35 @@
 			cursor: pointer;
 		}
 		/* Now Playing's own Toolbar Label line — the owning league(s), named
-		   directly under the player's name rather than behind a click (see
-		   renderNowPlayingCard's own comment on why the old "(N)" popover
-		   was retired). Purple like every other "this is mine" marker on
-		   this page (tr.me-row, .needs-players-top, and the rest CLAUDE.md
-		   groups under "the page"'s colour conventions), plain text since
-		   there's nothing left here to click. */
+		   directly under the player's name rather than always behind a click
+		   (see renderNowPlayingCard's own comment on why the old "(N)"
+		   popover no longer opens from here). Purple like every other "this
+		   is mine" marker on this page (tr.me-row, .needs-players-top, and
+		   the rest CLAUDE.md groups under "the page"'s colour conventions),
+		   plain text since there's nothing to click on THIS line any more —
+		   see .now-playing-scores-link just below for where the popover
+		   moved to. */
 		.now-playing-teams {
 			color: var(--accent);
 			font-size: 0.8em;
+		}
+		/* The old "(N)" popover, relocated to the score cell and gated on
+		   computeNowPlaying's scoresDiffer — see renderNowPlayingCard's own
+		   comment. Small and set off with parens rather than styled like a
+		   full .now-playing-score, since it's a footnote on that number, not
+		   a second number of its own. */
+		.now-playing-scores-link {
+			background: none;
+			border: none;
+			padding: 0;
+			margin-left: 0.25rem;
+			font: inherit;
+			font-size: 0.8em;
+			font-variant-numeric: tabular-nums;
+			color: var(--accent);
+			text-decoration: underline dotted;
+			text-underline-offset: 0.15rem;
+			cursor: pointer;
 		}
 		/* A net loss — the same token .salary-cap-room's negative state and
 		   Results' "guessed" flag both use for "this number needs a look".
@@ -7961,7 +7981,14 @@
 							return b.score > a.score ? b : a;
 					  })
 					: null;
-				return { ...r, score: best ? best.score : null, stats: best ? best.stats : null };
+				// Compared as the same two-decimal string the row itself
+				// displays (see renderNowPlayingCard), not the raw floats —
+				// PPR vs standard (or a Scott Fish Bowl-style Sleeper league,
+				// see above) genuinely disagree, but two leagues scoring
+				// identically must not flag a "differ" link over float noise.
+				// Fewer than two scored entries can't disagree by definition.
+				const scoresDiffer = new Set(scored.map((e) => e.score.toFixed(2))).size > 1;
+				return { ...r, score: best ? best.score : null, stats: best ? best.stats : null, scoresDiffer };
 			});
 			// The default order before the sort toggle (see
 			// renderNowPlayingCard) touches anything — best score leads,
@@ -8003,11 +8030,17 @@
 		// The league(s) print as Toolbar Label text under the name rather
 		// than behind the old "(N)" popover — the manager's own read was
 		// that N was almost always 1, so the popover was a click to learn
-		// what could just be printed. That trades away the popover's other
-		// job (surfacing a per-league score when the leagues disagree — see
-		// computeNowPlaying's own comment on why that's possible at all):
-		// the row still shows only the best score, with no drill-down to
-		// the rest any more.
+		// what could just be printed. The popover survives for the one case
+		// plain text can't cover: when the leagues actually disagree on this
+		// player's score (see computeNowPlaying's own comment on why that's
+		// possible even with a single representative entry chosen by
+		// provider), the score cell grows a second, "(N)" link —
+		// computeNowPlaying's scoresDiffer flag — that opens it. A player
+		// scored the same everywhere gets no link at all, so this stays
+		// interactive only where there's actually something to disagree
+		// about.
+		const nowPlayingPopover = makePopover('nowPlaying');
+
 		function renderNowPlayingCard(leagues) {
 			if (!isLoggedIn()) return null;
 			const card = el('div', { class: 'card now-playing-card', 'data-view': 'scoring', 'data-league-type': '' });
@@ -8104,8 +8137,9 @@
 						if (r.team) appendTeamSuffix(firstLine, r.team);
 						nameLine.appendChild(firstLine);
 						// Toolbar Label(s) — see this function's own comment on
-						// why this replaced the "(N)" popover — comma-joined
-						// when a player is held in more than one league.
+						// why this took over from the "(N)" popover on THIS
+						// line — comma-joined when a player is held in more
+						// than one league.
 						nameLine.appendChild(el('div', { class: 'now-playing-teams', text: r.entries.map((en) => en.nickname).join(', ') }));
 						// The same live game line the matchup drawer shows
 						// under a starter's name — free, since it's the same
@@ -8146,6 +8180,34 @@
 								scoreCell.appendChild(scoreBtn);
 							} else {
 								scoreCell.textContent = text;
+							}
+							// The old "(N)" popover, brought back but gated on
+							// computeNowPlaying's scoresDiffer — this player's
+							// leagues actually posted different scores for him,
+							// so the one representative number above can't be
+							// the whole story. A player scored the same
+							// everywhere (the common case) gets no link, per
+							// this function's own comment on why. Uses the
+							// full league name, not the Toolbar Label already
+							// printed under his name — a drill-down popover
+							// has the room to be unambiguous where the
+							// compact line doesn't need to be.
+							if (r.scoresDiffer) {
+								const diffBtn = el('button', {
+									type: 'button',
+									class: 'now-playing-scores-link',
+									title: 'Scores differ by league — click to see each',
+									text: `(${r.entries.length})`,
+								});
+								diffBtn.addEventListener('click', (e) => {
+									e.stopPropagation();
+									nowPlayingPopover.toggle(
+										diffBtn,
+										`${r.name} — Scores by League`,
+										r.entries.map((en) => ({ left: en.league.name, right: en.score == null ? '–' : en.score.toFixed(2) }))
+									);
+								});
+								scoreCell.appendChild(diffBtn);
 							}
 						}
 						row.appendChild(scoreCell);
