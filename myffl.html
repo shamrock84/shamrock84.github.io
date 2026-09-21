@@ -2210,6 +2210,20 @@
 		.card.card-collapsed .scoring-matchup-pill:not(.me-matchup) {
 			display: none;
 		}
+		/* Same idea, for the Standings tab's plain table: collapsing that
+		   card is how a manager gets every other team's row out of the way,
+		   not the whole card blank — .standings itself carries
+		   .card-collapse-visible (see renderStandingsCard) so it isn't
+		   blanket-hidden, and this narrows inside it to the one row holding
+		   the isMe team (tr.me-row); the header row and every other team's
+		   row collapse away. Scoped to [data-view="standings"] because
+		   Scoring's own fallback leaderboard (used when a provider exposes
+		   no matchup pairing) reuses the same .standings class but has
+		   nothing marking it .card-collapse-visible, so it stays fully
+		   hidden when collapsed as before — this rule must not change that. */
+		.card.card-collapsed[data-view="standings"] .standings tr:not(.me-row) {
+			display: none;
+		}
 		.scoring-matchup-row {
 			display: flex;
 			justify-content: space-between;
@@ -7028,7 +7042,12 @@
 			// applied to a finished season).
 			const showRecord = league.type !== 'draftonly';
 
-			const table = el('table', { class: 'standings' });
+			// card-collapse-visible so the table itself isn't blanket-hidden by
+			// the generic collapse rule (see that rule's own comment) — which
+			// row inside it actually stays visible when collapsed is the
+			// .card[data-view="standings"] tr:not(.me-row) CSS rule's job, not
+			// this element's.
+			const table = el('table', { class: 'standings card-collapse-visible' });
 			const headRow = el('tr');
 			const headers = showRecord ? ['#', 'Team', 'W-L', 'PF', 'PA'] : ['#', 'Team', 'PF', 'PA'];
 			headers.forEach((h) => headRow.appendChild(el('th', { class: h === 'W-L' ? 'standings-record' : '', text: h })));

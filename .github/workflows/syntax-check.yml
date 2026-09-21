@@ -349,6 +349,12 @@ jobs:
       - name: Test the Scoring tab's collapsed-card pill
         run: node scripts/test-scoring-collapse-pill.mjs
 
+      # Collapsing a Standings card must keep exactly the manager's own team
+      # row on screen (and the header row) hidden along with everyone
+      # else's, via the .me-row marker the collapse CSS rule keys off.
+      - name: Test the Standings tab's collapsed-card row
+        run: node scripts/test-standings-collapse-row.mjs
+
       # The Scoring tab's per-matchup detail drawer: how the two lineups are
       # paired into rows, and the login/bye gates on showing it at all. Every
       # way this breaks is silent — a starter dropped from the grid, one
