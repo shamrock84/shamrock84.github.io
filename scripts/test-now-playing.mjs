@@ -350,20 +350,54 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 // row now names the league(s) directly, using the same Toolbar Label ->
 // Display Name fallback chain quickLinkLabelForLeague already uses for the
 // quick-link bar, so a league with no nickname set still prints something.
+// Both leagues score him the same here on purpose, so this stays a clean
+// test of just the Toolbar Label line — see the scoresDiffer block below for
+// the case where the two scores disagree.
 {
 	const ctx = makeContext(LOGGED_IN);
 	setLiveScoringAttempted(ctx, true);
 	setLiveGames(ctx, { BUF: { state: 'in' } });
 	const card = ctx.renderNowPlayingCard([
-		league('L12', '0001', [{ name: 'Josh Allen', position: 'QB', team: 'BUF', points: 20 }], [], 'dynasty', 'MNMx'),
+		league('L12', '0001', [{ name: 'Josh Allen', position: 'QB', team: 'BUF', points: 24 }], [], 'dynasty', 'MNMx'),
 		league('L13', '0002', [{ name: 'Josh Allen', position: 'QB', team: 'BUF', points: 24 }]),
 	]);
 
-	assert.equal(findAll(card, hasClass('now-playing-count-link')).length, 0, 'the old "(N)" popover button is gone');
+	assert.equal(findAll(card, hasClass('now-playing-scores-link')).length, 0, 'scored the same everywhere — no drill-down link');
 
 	const teamsLine = findAll(card, hasClass('now-playing-teams'))[0];
 	assert.ok(teamsLine, 'the owning league(s) print in their own line');
 	assert.equal(fullText(teamsLine), 'MNMx, League L13', 'a set nickname and a displayName fallback, comma-joined');
+}
+
+// --- Leagues disagreeing on this player's score bring the popover back ---
+//
+// The Toolbar Label line above can't show two different scores next to one
+// player, so scoresDiffer (computeNowPlaying) reintroduces a click-through
+// popover, but ONLY on a row where it's actually needed — this is the one
+// case the plain-text line above can't cover.
+{
+	const ctx = makeContext(LOGGED_IN);
+	setLiveScoringAttempted(ctx, true);
+	setLiveGames(ctx, { BUF: { state: 'in' } });
+	const card = ctx.renderNowPlayingCard([
+		league('L25', '0001', [{ name: 'Josh Allen', position: 'QB', team: 'BUF', points: 20 }], [], 'dynasty', 'PPR League'),
+		league('L26', '0002', [{ name: 'Josh Allen', position: 'QB', team: 'BUF', points: 24 }], [], 'dynasty', 'Standard League'),
+	]);
+
+	const links = findAll(card, hasClass('now-playing-scores-link'));
+	assert.equal(links.length, 1, 'a differing score gets exactly one drill-down link');
+	assert.equal(fullText(links[0]), '(2)', 'labelled with the entry count, same as the retired popover');
+
+	links[0].listeners.click[0]({ stopPropagation() {} });
+	const popover = findAll(ctx.document.body, hasClass('nowPlaying-popover'))[0];
+	assert.ok(popover, 'clicking it opens the Now Playing popover');
+	assert.match(fullText(findAll(popover, hasClass('popover-title'))[0]), /Josh Allen — Scores by League/);
+	const popoverRows = findAll(popover, hasClass('popover-row'));
+	assert.equal(popoverRows.length, 2);
+	// Full league names here, not the Toolbar Labels the row itself already
+	// shows — this drill-down has the room to be unambiguous.
+	assert.ok(popoverRows.some((r) => fullText(r.children[0]) === 'League L25' && fullText(r.children[1]) === '20.00'));
+	assert.ok(popoverRows.some((r) => fullText(r.children[0]) === 'League L26' && fullText(r.children[1]) === '24.00'));
 }
 
 // --- renderNowPlayingCard: the same rule, as actually rendered ---
