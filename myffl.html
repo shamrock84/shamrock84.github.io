@@ -1944,6 +1944,26 @@
 			color: var(--gold-chip-text);
 			font-weight: 700;
 		}
+		/* Each sub-card reads its own readiness at a glance: not yet kicked
+		   off is the site's own purple "notable/upcoming" pairing
+		   (--chip-bg/--accent — the same one the Yrs/Sal chips and the
+		   Admin tab's open-league border use, see their own comments);
+		   live right now reuses the same gold as the status text above and
+		   the Problems Digest strip, rather than inventing a second "this
+		   is happening" color; a finished game gets neither — the plain
+		   default border/background already means "nothing to flag" every-
+		   where else on this page, so a finished game needs no rule of its
+		   own here. Applied in renderNflGameRow, so Now Playing and
+		   Matchups (the two cards built from it) can't disagree about what
+		   a given game's own state looks like. */
+		.nfl-game-row.nfl-game-pending {
+			background: var(--chip-bg);
+			border-color: var(--accent);
+		}
+		.nfl-game-row.nfl-game-live {
+			background: var(--gold-chip-bg);
+			border-color: var(--gold);
+		}
 		/* The ESPN link keeps its own small line above the toggle — still the
 		   only place for kicking/team-defense stats (see
 		   nflBoxscorePlayerLines' own comment) — so the toggle below can be
@@ -11125,7 +11145,14 @@
 
 		function renderNflGameRow(game) {
 			const showScore = game.state !== 'pre' && game.away.score != null && game.home.score != null;
-			const row = el('div', { class: `nfl-game-row${game.state === 'in' ? ' nfl-game-live' : ''}` });
+			// Purple/gold/plain reads the same "hasn't played / live /
+			// finished" state as the score and status text below, just at a
+			// glance across the whole sub-card — see .nfl-game-row.nfl-game-
+			// pending/nfl-game-live's own CSS comment for why those two
+			// colors specifically. 'post' gets neither modifier: the plain
+			// default already means "nothing to flag" everywhere else here.
+			const stateClass = game.state === 'in' ? ' nfl-game-live' : game.state === 'pre' ? ' nfl-game-pending' : '';
+			const row = el('div', { class: `nfl-game-row${stateClass}` });
 			const teams = el('div', { class: 'nfl-game-teams' });
 			teams.appendChild(el('span', { class: 'nfl-game-team', text: game.away.team }));
 			if (showScore) teams.appendChild(el('span', { class: 'nfl-game-score', text: String(game.away.score) }));
