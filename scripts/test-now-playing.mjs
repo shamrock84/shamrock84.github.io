@@ -1,23 +1,29 @@
 // Unit test for the Scoring tab's Now Playing card in myffl.html.
 //
 // The one rule this card exists to enforce, stated explicitly by the
-// manager who asked for it: it shows players who are BOTH currently live
-// AND on one of MY OWN teams — never every live player league-wide. That
-// distinction is easy to get quietly wrong, since a league's live-scoring
-// response carries every franchise's starters, not just mine, and every
-// failure mode here renders as a perfectly plausible row: an opponent's
-// star quarterback having a big game looks exactly like one of mine would.
-// So this pins:
+// manager who asked for it: it shows players who are BOTH playing AND on one
+// of MY OWN teams — never every playing player league-wide. That distinction
+// is easy to get quietly wrong, since a league's live-scoring response
+// carries every franchise's starters, not just mine, and every failure mode
+// here renders as a perfectly plausible row: an opponent's star quarterback
+// having a big game looks exactly like one of mine would. So this pins:
 //
 //   * computeNowPlaying only ever reads the ONE team per league flagged
-//     isMe — an opponent's live starter, however live or however big his
-//     score, never produces a row.
+//     isMe — an opponent's starter, however live or however big his score,
+//     never produces a row.
 //   * a league with no isMe team at all (misconfigured, or one you're only
 //     watching) contributes nothing, not every team in it.
-//   * isPlayerLive still gates entry — a benched-in-time-but-not-yet-kicked-
-//     off starter of mine doesn't appear just because he's mine.
-//   * kickers and defenses appear the same as any other live starter of
-//     mine — no position is excluded from this card.
+//   * on every day but Sunday, isPlayerGameToday gates entry — a starter
+//     appears once his game is on today's calendar date, ANY state
+//     (pre-kickoff, live, or already final), not just live right now. A
+//     starter whose game isn't today at all still doesn't appear just
+//     because he's mine.
+//   * Sunday narrows back to isPlayerLive (state === 'in' only), same as the
+//     NFL tab's own Now Playing card and for the same reason — a full Sunday
+//     slate would otherwise put most of a manager's own starters on the card
+//     regardless of whether they've played yet.
+//   * kickers and defenses appear the same as any other starter this card
+//     includes — no position is excluded from this card.
 //   * draftonly leagues (no live scoring at all) contribute nothing.
 //   * the cross-league merge by normalizeName only ever merges MY OWN
 //     entries across leagues — a same-named player an opponent owns in a
@@ -36,9 +42,9 @@
 //     roster entry (league.players[].ecr.url, attached at sync time), never
 //     built from the name, since the live-scoring player itself carries no
 //     such field. No roster match degrades to a plain name, never a guess.
-//   * the card auto-collapses itself when nobody of mine is live — but the
-//     loading state (before the first poll answers) is never mistaken for
-//     that, and a manager's own stored toggle preference is never
+//   * the card auto-collapses itself when nobody of mine is playing — but
+//     the loading state (before the first poll answers) is never mistaken
+//     for that, and a manager's own stored toggle preference is never
 //     overwritten, only overridden for the render where the card is empty.
 
 import assert from 'node:assert/strict';
@@ -117,6 +123,21 @@ function makeContext(seed = {}) {
 
 const LOGGED_IN = { mflAuthToken: 'test-token' };
 
+// Fixed Sunday/non-Sunday clocks, same literal dates test-nfl-tab.mjs's own
+// renderNflCards tests use, for the same reason: the `now` passed to
+// computeNowPlaying/renderNowPlayingCard only picks which branch applies
+// (Sunday-live-only vs. every-other-day-today) — it has NO bearing on
+// isPlayerGameToday's own "is this today" check, which always reads the
+// real clock (see that function's own comment in myffl.html). So a fixture
+// exercising the today-gate must build its kickoff off the REAL `new Date()`
+// (as SUNDAY_NOW/WEEKDAY_NOW below already do via TODAY_KICKOFF), never off
+// these fixed constants, or it would only land on "today" on the one day
+// this suite happens to run.
+const SUNDAY_NOW = new Date('2026-09-20T18:00:00Z');
+const WEEKDAY_NOW = new Date('2026-09-16T12:00:00Z');
+const TODAY_KICKOFF = new Date().toISOString();
+const FAR_OFF_KICKOFF = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+
 // `liveGames` is a top-level `let` in the page's script — see
 // test-scoring-details.mjs's identical helper for why a plain
 // ctx.liveGames assignment wouldn't reach the real binding.
@@ -177,12 +198,16 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 {
 	const ctx = makeContext();
 	setLiveGames(ctx, { BUF: { state: 'in' }, KC: { state: 'in' } });
+	// Pinned to a Sunday so this exercises the live-only gate regardless of
+	// what day this suite actually runs on — neither fixture sets a
+	// kickoff, so the every-other-day today-gate would exclude both
+	// (see SUNDAY_NOW/WEEKDAY_NOW's own comment).
 	const rows = ctx.computeNowPlaying([
 		league('L1', '0001',
 			[{ name: 'My Guy', position: 'QB', team: 'BUF', points: 20 }],
 			[{ name: 'Their Guy', position: 'QB', team: 'KC', points: 99 }]
 		),
-	]);
+	], SUNDAY_NOW);
 	assert.equal(rows.length, 1, 'only my own live starter produces a row');
 	assert.equal(rows[0].name, 'My Guy');
 	assert.ok(!rows.some((r) => r.name === 'Their Guy'), "the opponent's live player never appears, however live or high-scoring");
@@ -201,17 +226,100 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 				{ franchiseId: 'b', teamName: 'B', isMe: false, players: [{ name: 'Y', position: 'QB', team: 'BUF', points: 12 }] },
 			],
 		},
-	}]);
+	}], SUNDAY_NOW);
 	assert.equal(rows.length, 0, 'no isMe team means nothing from this league, no matter who is live');
 }
 
-// isPlayerLive still gates entry — a starter of mine whose game hasn't
-// kicked off doesn't appear just because he's mine.
+// Sunday: isPlayerLive gates entry — a starter of mine whose game hasn't
+// kicked off doesn't appear just because he's mine. No kickoff is set at
+// all here, so this passes on the every-other-day gate too (no data to say
+// it's even today) — see the weekday block further down for the real
+// distinguishing case, where a pre-kickoff starter WITH a today kickoff
+// appears on a weekday but is excluded on Sunday.
 {
 	const ctx = makeContext();
 	setLiveGames(ctx, { BUF: { state: 'pre' } });
-	const rows = ctx.computeNowPlaying([league('L3', '0001', [{ name: 'Not Live Yet', position: 'QB', team: 'BUF', points: 0 }])]);
-	assert.equal(rows.length, 0, "mine but not live yet doesn't count");
+	const rows = ctx.computeNowPlaying([league('L3', '0001', [{ name: 'Not Live Yet', position: 'QB', team: 'BUF', points: 0 }])], SUNDAY_NOW);
+	assert.equal(rows.length, 0, "mine but not live yet doesn't count on Sunday");
+}
+
+// --- The new "today, except Sunday" rule (isPlayerGameToday) ---
+//
+// This is the behavior change: on any day but Sunday, a starter appears the
+// moment his game is on TODAY'S calendar date, any state — not just live
+// right now. Sunday keeps the old live-only reading. Kickoffs here are
+// TODAY_KICKOFF/FAR_OFF_KICKOFF, built off the REAL clock (see that
+// constant's own comment on why a fixed literal would only work on the one
+// day this suite happens to run); WEEKDAY_NOW/SUNDAY_NOW only decide which
+// gate applies.
+
+// Weekday, pre-kickoff: a starter whose game hasn't started yet still
+// appears, since it's on today's calendar date — this is the exact case
+// that used to leave the card looking empty for most of a normal slate day.
+{
+	const ctx = makeContext();
+	setLiveGames(ctx, { BUF: { state: 'pre', kickoff: TODAY_KICKOFF } });
+	const rows = ctx.computeNowPlaying([league('L50', '0001', [{ name: 'Not Kicked Off Yet', position: 'QB', team: 'BUF', points: null }])], WEEKDAY_NOW);
+	assert.equal(rows.length, 1, "a pre-kickoff starter whose game is TODAY appears on a weekday");
+	assert.equal(rows[0].score, null, 'no score yet, never a confident 0');
+}
+
+// Weekday, already final: a starter whose game already finished today still
+// appears, with his real final score — "played today" doesn't stop mattering
+// just because the game ended.
+{
+	const ctx = makeContext();
+	setLiveGames(ctx, { BUF: { state: 'post', kickoff: TODAY_KICKOFF } });
+	const rows = ctx.computeNowPlaying([league('L51', '0001', [{ name: 'Already Final', position: 'QB', team: 'BUF', points: 27 }])], WEEKDAY_NOW);
+	assert.equal(rows.length, 1, 'an already-final starter from a game today still appears');
+	assert.equal(rows[0].score, 27, 'with his real final score');
+}
+
+// Weekday, NOT today: a starter whose game is several days out doesn't
+// appear just because he's mine — isPlayerGameToday still excludes a game
+// that isn't today, on any state.
+{
+	const ctx = makeContext();
+	setLiveGames(ctx, { BUF: { state: 'pre', kickoff: FAR_OFF_KICKOFF } });
+	const rows = ctx.computeNowPlaying([league('L52', '0001', [{ name: 'Not Today', position: 'QB', team: 'BUF', points: 0 }])], WEEKDAY_NOW);
+	assert.equal(rows.length, 0, "a starter whose game isn't today doesn't appear on a weekday");
+}
+
+// Sunday narrowing: the SAME pre-kickoff-today starter that appeared on a
+// weekday above is excluded on Sunday — the one day the card falls back to
+// isPlayerLive, same as the NFL tab's own Now Playing card and for the same
+// reason (a full Sunday slate would otherwise put most of a manager's own
+// starters on the card regardless of whether they've played yet).
+{
+	const ctx = makeContext();
+	setLiveGames(ctx, { BUF: { state: 'pre', kickoff: TODAY_KICKOFF } });
+	const rows = ctx.computeNowPlaying([league('L53', '0001', [{ name: 'Not Kicked Off Yet', position: 'QB', team: 'BUF', points: null }])], SUNDAY_NOW);
+	assert.equal(rows.length, 0, "the same pre-kickoff-today starter is excluded on Sunday");
+}
+
+// Sunday: a starter who IS live still gets through, same as ever.
+{
+	const ctx = makeContext();
+	setLiveGames(ctx, { BUF: { state: 'in', kickoff: TODAY_KICKOFF } });
+	const rows = ctx.computeNowPlaying([league('L54', '0001', [{ name: 'Live Right Now', position: 'QB', team: 'BUF', points: 14 }])], SUNDAY_NOW);
+	assert.equal(rows.length, 1, 'a starter live right now still appears on Sunday');
+}
+
+// The rendered card's subtitle and empty-state text track the same split:
+// "playing today" on a weekday, "live right now" on Sunday.
+{
+	const ctx = makeContext(LOGGED_IN);
+	setLiveScoringAttempted(ctx, true);
+	setLiveGames(ctx, { BUF: { state: 'pre', kickoff: TODAY_KICKOFF } });
+	const weekdayCard = ctx.renderNowPlayingCard([league('L55', '0001', [{ name: 'Not Kicked Off Yet', position: 'QB', team: 'BUF', points: null }])], WEEKDAY_NOW);
+	assert.ok(fullText(weekdayCard).includes('1 player playing today'), 'weekday subtitle reads "playing today"');
+
+	const sundayCard = ctx.renderNowPlayingCard([league('L56', '0001', [{ name: 'Not Kicked Off Yet', position: 'QB', team: 'BUF', points: null }])], SUNDAY_NOW);
+	assert.ok(fullText(sundayCard).includes('No players currently playing.'), 'Sunday empty state keeps the old live-only wording, since the pre-kickoff starter is excluded');
+
+	setLiveGames(ctx, { BUF: { state: 'in', kickoff: TODAY_KICKOFF } });
+	const sundayLiveCard = ctx.renderNowPlayingCard([league('L57', '0001', [{ name: 'Live Guy', position: 'QB', team: 'BUF', points: 14 }])], SUNDAY_NOW);
+	assert.ok(fullText(sundayLiveCard).includes('1 player live right now'), 'Sunday subtitle reads "live right now" once someone actually is');
 }
 
 // Kickers and defenses appear here like any other live starter of mine.
@@ -221,7 +329,7 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 	const rows = ctx.computeNowPlaying([league('L4', '0001', [
 		{ name: 'Kicker Guy', position: 'PK', team: 'BAL', points: 8 },
 		{ name: 'Some Defense', position: 'Def', team: 'BAL', points: 5 },
-	])]);
+	])], SUNDAY_NOW);
 	assert.equal(rows.length, 2, 'kickers and defenses appear here now');
 	assert.ok(rows.some((r) => r.name === 'Kicker Guy' && r.position === 'PK'));
 	assert.ok(rows.some((r) => r.name === 'Some Defense' && r.position === 'Def'));
@@ -233,7 +341,7 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 {
 	const ctx = makeContext();
 	setLiveGames(ctx, { BUF: { state: 'in' } });
-	const rows = ctx.computeNowPlaying([league('L5', '0001', [{ name: 'Draftonly Guy', position: 'QB', team: 'BUF', points: 10 }], [], 'draftonly')]);
+	const rows = ctx.computeNowPlaying([league('L5', '0001', [{ name: 'Draftonly Guy', position: 'QB', team: 'BUF', points: 10 }], [], 'draftonly')], SUNDAY_NOW);
 	assert.equal(rows.length, 0);
 }
 
@@ -250,7 +358,7 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 			[{ name: 'Josh Allen', position: 'QB', team: 'BUF', points: 24 }],
 			[{ name: 'Josh Allen', position: 'QB', team: 'BUF', points: 999 }]
 		),
-	]);
+	], SUNDAY_NOW);
 	assert.equal(rows.length, 1, 'one merged row for the one player');
 	assert.equal(rows[0].entries.length, 2, 'the two leagues I actually hold him in — not a third for the opponent who also has him');
 	assert.ok(!rows[0].entries.some((e) => e.score === 999), "the opponent's 999 in L7 must never enter the merge");
@@ -268,7 +376,7 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 		league('L20', '0001', [{ name: 'Justin Jefferson', position: 'WR', team: 'MIN', points: 6 }], [], 'dynasty', 'MFLLeague', 'mfl'),
 		league('L21', '0002', [{ name: 'Justin Jefferson', position: 'WR', team: 'MIN', points: 9 }], [], 'redraft', 'ESPNLeague', 'espn'),
 		league('L22', '0003', [{ name: 'Justin Jefferson', position: 'WR', team: 'MIN', points: 14 }], [], 'redraft', 'SleeperLeague', 'sleeper'),
-	]);
+	], SUNDAY_NOW);
 	assert.equal(rows.length, 1);
 	assert.equal(rows[0].score, 6, 'MFL leads even though Sleeper (14) and ESPN (9) score him higher');
 }
@@ -281,7 +389,7 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 	const rows = ctx.computeNowPlaying([
 		league('L23', '0002', [{ name: 'Justin Jefferson', position: 'WR', team: 'MIN', points: 9 }], [], 'redraft', 'ESPNLeague', 'espn'),
 		league('L24', '0003', [{ name: 'Justin Jefferson', position: 'WR', team: 'MIN', points: 14 }], [], 'redraft', 'SleeperLeague', 'sleeper'),
-	]);
+	], SUNDAY_NOW);
 	assert.equal(rows.length, 1);
 	assert.equal(rows[0].score, 9, 'ESPN leads over the higher-scoring Sleeper entry when no MFL entry exists');
 }
@@ -299,7 +407,7 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 	setLiveGames(ctx, { BUF: { state: 'in' } });
 	const withRoster = league('L30', '0001', [{ name: 'Josh Allen', position: 'QB', team: 'BUF', points: 20 }]);
 	withRoster.players = [{ name: 'Josh Allen', ecr: { url: 'https://www.fantasypros.com/nfl/players/josh-allen.php' } }];
-	const rows = ctx.computeNowPlaying([withRoster]);
+	const rows = ctx.computeNowPlaying([withRoster], SUNDAY_NOW);
 	assert.equal(rows.length, 1);
 	assert.equal(rows[0].url, 'https://www.fantasypros.com/nfl/players/josh-allen.php', "the row's url comes off this league's own roster entry");
 }
@@ -312,7 +420,7 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 	setLiveGames(ctx, { BUF: { state: 'in' } });
 	const noRosterMatch = league('L31', '0001', [{ name: 'Obscure Guy', position: 'QB', team: 'BUF', points: 20 }]);
 	noRosterMatch.players = [{ name: 'Someone Else' }];
-	const rows = ctx.computeNowPlaying([noRosterMatch]);
+	const rows = ctx.computeNowPlaying([noRosterMatch], SUNDAY_NOW);
 	assert.equal(rows.length, 1);
 	assert.ok(!rows[0].url, 'no roster match means no url, not a guessed or broken one');
 }
@@ -329,7 +437,7 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 	const unlinked = league('L33', '0002', [{ name: 'Justin Jefferson', position: 'WR', team: 'MIN', points: 15 }]);
 	// No `players` roster at all on this league — the join must degrade
 	// safely rather than throwing on a missing array.
-	const card = ctx.renderNowPlayingCard([linked, unlinked]);
+	const card = ctx.renderNowPlayingCard([linked, unlinked], SUNDAY_NOW);
 
 	const links = findAll(card, hasClass('player-link'));
 	assert.equal(links.length, 1, 'only the player with a resolved FantasyPros url gets a link');
@@ -360,7 +468,7 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 	const card = ctx.renderNowPlayingCard([
 		league('L12', '0001', [{ name: 'Josh Allen', position: 'QB', team: 'BUF', points: 24 }], [], 'dynasty', 'MNMx'),
 		league('L13', '0002', [{ name: 'Josh Allen', position: 'QB', team: 'BUF', points: 24 }]),
-	]);
+	], SUNDAY_NOW);
 
 	assert.equal(findAll(card, hasClass('now-playing-scores-link')).length, 0, 'scored the same everywhere — no drill-down link');
 
@@ -382,7 +490,7 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 	const card = ctx.renderNowPlayingCard([
 		league('L25', '0001', [{ name: 'Josh Allen', position: 'QB', team: 'BUF', points: 20 }], [], 'dynasty', 'PPR League'),
 		league('L26', '0002', [{ name: 'Josh Allen', position: 'QB', team: 'BUF', points: 24 }], [], 'dynasty', 'Standard League'),
-	]);
+	], SUNDAY_NOW);
 
 	const links = findAll(card, hasClass('now-playing-scores-link'));
 	assert.equal(links.length, 1, 'a differing score gets exactly one drill-down link');
@@ -414,7 +522,7 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 			[{ name: 'My Guy', position: 'QB', team: 'BUF', points: 20 }],
 			[{ name: 'Their Guy', position: 'QB', team: 'KC', points: 50 }]
 		),
-	]);
+	], SUNDAY_NOW);
 	const text = fullText(card);
 	assert.ok(text.includes('My Guy'), 'my own live starter is on the card');
 	assert.ok(!text.includes('Their Guy'), "the opponent's live starter is never on the card");
@@ -446,7 +554,7 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 		},
 		{ name: 'Kicker Guy', position: 'PK', team: 'BAL', points: 8 },
 	]);
-	const card = ctx.renderNowPlayingCard([withStats]);
+	const card = ctx.renderNowPlayingCard([withStats], SUNDAY_NOW);
 
 	const links = findAll(card, hasClass('scoring-detail-pts-link'));
 	assert.equal(links.length, 1, 'only the starter carrying a stats array gets a clickable score');
@@ -483,7 +591,7 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 			{ name: 'Kicker Guy', position: 'PK', team: 'BAL', points: 8 },
 			{ name: 'Some Defense', position: 'Def', team: 'BAL', points: 5 },
 		]),
-	]);
+	], SUNDAY_NOW);
 
 	const posCards = findAll(card, hasClass('now-playing-position'));
 	assert.equal(posCards.length, 1, 'PK and Def share one mini-card, not two');
@@ -514,7 +622,7 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 			{ name: 'Mid WR', position: 'WR', team: 'BUF', points: 11 },
 			{ name: 'No Score Yet WR', position: 'WR', team: 'BUF', points: null },
 		]),
-	]);
+	], SUNDAY_NOW);
 
 	assert.equal(findAll(card, hasClass('now-playing-sort-btn')).length, 0, 'the sort toggle is gone');
 
@@ -561,7 +669,7 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 	const ctx = makeContext(LOGGED_IN);
 	setLiveScoringAttempted(ctx, true);
 	setLiveGames(ctx, { BUF: { state: 'in' } });
-	const card = ctx.renderNowPlayingCard([league('L41', '0001', [{ name: 'My Guy', position: 'QB', team: 'BUF', points: 20 }])]);
+	const card = ctx.renderNowPlayingCard([league('L41', '0001', [{ name: 'My Guy', position: 'QB', team: 'BUF', points: 20 }])], SUNDAY_NOW);
 	assert.ok(!hasClass('card-collapsed')(card), 'a non-empty Now Playing stays expanded');
 }
 

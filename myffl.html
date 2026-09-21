@@ -7519,6 +7519,30 @@
 			return state === 'in' || state === 'post';
 		}
 
+		// Whether a player's own NFL game kicks off on TODAY'S local calendar
+		// date, any state — pre-kickoff, live, or already final. Backs
+		// computeNowPlaying's own inclusion rule on every day but Sunday (see
+		// that function's own comment on why Sunday is the exception),
+		// mirroring the NFL tab's own isGameToday date comparison exactly —
+		// kept as a separate function rather than shared, since that one
+		// reads a `game` object off buildNflGamesList and this one reads
+		// liveGames by team code directly, same as isPlayerLive/
+		// playerGameStarted just above. Always the real clock, deliberately
+		// NOT the `now` override computeNowPlaying/renderNowPlayingCard take
+		// — same split as isGameToday/renderNflCards: that override only
+		// picks which gate applies (Sunday vs. every other day), never what
+		// "today" means, so a test pinning the Sunday branch still needs a
+		// real, current kickoff to land on this card.
+		function isPlayerGameToday(player) {
+			if (!player || !player.team) return false;
+			const game = liveGames[player.team];
+			if (!game || !game.kickoff) return false;
+			const at = new Date(game.kickoff);
+			const now = new Date();
+			if (Number.isNaN(at.getTime())) return false;
+			return at.getFullYear() === now.getFullYear() && at.getMonth() === now.getMonth() && at.getDate() === now.getDate();
+		}
+
 		// Stable across the 30s re-render, distinct per matchup, and naturally
 		// different once the week's pairings change — the franchise ids are
 		// sorted so the same two teams key identically regardless of which one
@@ -7870,21 +7894,38 @@
 
 		// --- Scoring tab: the Now Playing card ---
 		//
-		// First on the Scoring tab, full-width, answering "who of mine is on
-		// the field right now" without opening every league's own matchup
-		// drawer to find out. Built from the exact same `t.players[]` the
-		// drawer above reads (live-only, starters-only — see that section's
-		// own comment on why bench players never appear here: a benched
-		// player can't move your score, and this card is about what's live,
-		// not what's rostered) filtered down to isPlayerLive and the one
-		// team per league that's isMe.
+		// First on the Scoring tab, full-width, answering "who of mine is
+		// playing" without opening every league's own matchup drawer to find
+		// out. Built from the exact same `t.players[]` the drawer above
+		// reads (starters-only — see that section's own comment on why
+		// bench players never appear here: a benched player can't move your
+		// score, and this card is about starters, not the whole roster)
+		// filtered down to isPlayerGameToday and the one team per league
+		// that's isMe.
+		//
+		// Same "today, except Sunday" rule as the NFL tab's own Now Playing
+		// card (see isGameToday/renderNflCards' own comment): every OTHER
+		// day, a starter appears the moment his game is ON TODAY'S calendar
+		// date, any state — pre-kickoff (a null score, same "never a
+		// confident 0" rule as everywhere else on this card), live, or
+		// already final. Reading only isPlayerLive (state === 'in') used to
+		// leave this card looking empty between windows on a normal
+		// Tue/Thu/Sun-adjacent slate day, the same problem the NFL tab's own
+		// card solved the same way. Sunday keeps the narrower, live-only
+		// reading (isPlayerLive) instead — a full Sunday slate means most of
+		// a manager's own starters would show up here at once regardless of
+		// whether they've played yet, which buries who's actually on the
+		// field right now under a list barely different from just "who's
+		// starting today." `now` defaults to the real clock but takes an
+		// override, same pattern as renderNflCards, so a test can pin a
+		// specific day of the week.
 		//
 		// Kickers and defenses used to be excluded here — neither swings
 		// meaningfully play-to-play the way a skill-position player's score
-		// does — but the manager asked for them back in, so every live
-		// starter counts regardless of position. No exclusion list to
-		// maintain as a result; positionRank (POSITION_ORDER) still puts
-		// PK/Def last in the grouped display, same as every other card
+		// does — but the manager asked for them back in, so every starter
+		// this card includes counts regardless of position. No exclusion
+		// list to maintain as a result; positionRank (POSITION_ORDER) still
+		// puts PK/Def last in the grouped display, same as every other card
 		// that ranks a whole roster.
 
 		// Keyed by normalizeName, same join computePlayerExposure uses for
@@ -7909,7 +7950,8 @@
 		// standard leagues. Provider order is a proxy for "typical scoring"
 		// here, not a claim that MFL is more correct.
 		const NOW_PLAYING_PROVIDER_RANK = { mfl: 0, espn: 1, sleeper: 2 };
-		function computeNowPlaying(leagues) {
+		function computeNowPlaying(leagues, now = new Date()) {
+			const isSunday = now.getDay() === 0;
 			const byPlayer = new Map();
 			for (const league of leagues) {
 				if (league.type === 'draftonly') continue;
@@ -7930,7 +7972,10 @@
 					if (!rosterByName.has(rKey)) rosterByName.set(rKey, rp);
 				}
 				for (const p of mine.players || []) {
-					if (!isPlayerLive(p)) continue;
+					// Sunday narrows to isPlayerLive (state === 'in') instead
+					// of isPlayerGameToday — see this function's own comment
+					// on why.
+					if (isSunday ? !isPlayerLive(p) : !isPlayerGameToday(p)) continue;
 					const key = normalizeName(p.name) || p.name;
 					if (!byPlayer.has(key)) {
 						byPlayer.set(key, { name: p.name, position: p.position, team: p.team, url: null, entries: [] });
@@ -7993,8 +8038,10 @@
 			// The default order before the sort toggle (see
 			// renderNowPlayingCard) touches anything — best score leads,
 			// same "most notable first" reasoning as every other card's
-			// default. A score not in yet (kickoff was seconds ago) sinks to
-			// the bottom either way rather than sorting as a 0.
+			// default. A score not in yet sinks to the bottom either way
+			// rather than sorting as a 0 — no longer just "kickoff was
+			// seconds ago" now that a pre-kickoff starter can appear here at
+			// all (see this function's own comment on isPlayerGameToday).
 			rows.sort((a, b) => {
 				if (a.score == null && b.score == null) return 0;
 				if (a.score == null) return 1;
@@ -8041,7 +8088,7 @@
 		// about.
 		const nowPlayingPopover = makePopover('nowPlaying');
 
-		function renderNowPlayingCard(leagues) {
+		function renderNowPlayingCard(leagues, now = new Date()) {
 			if (!isLoggedIn()) return null;
 			const card = el('div', { class: 'card now-playing-card', 'data-view': 'scoring', 'data-league-type': '' });
 			const heading = el('h2', { class: 'card-heading', text: 'Now Playing' });
@@ -8057,21 +8104,29 @@
 				return card;
 			}
 
-			const rows = computeNowPlaying(leagues);
-			// Auto-collapse when nobody of mine is live — same reasoning and
-			// same forced-not-persisted mechanism as the NFL tab's own Now
-			// Playing card (see makeCollapsible's own comment): this card
+			const rows = computeNowPlaying(leagues, now);
+			// Auto-collapse when nobody of mine is playing — same reasoning
+			// and same forced-not-persisted mechanism as the NFL tab's own
+			// Now Playing card (see makeCollapsible's own comment): this card
 			// rebuilds on every ~30s live-scoring poll, so a manager's own
 			// toggle preference is never lost, just overridden while there's
 			// nothing here to look at.
 			makeCollapsible(card, heading, 'now-playing', rows.length === 0);
+			// Wording matches computeNowPlaying's own Sunday/every-other-day
+			// split (see that function's own comment) — Sunday keeps the
+			// narrower "live right now" reading, every other day widens to
+			// "playing today" now that a pre-kickoff or already-final starter
+			// can appear here too.
+			const isSunday = now.getDay() === 0;
 			if (rows.length === 0) {
-				card.appendChild(el('div', { class: 'team card-collapse-visible', text: 'No players currently playing.' }));
+				const empty = isSunday ? 'No players currently playing.' : 'No players playing today.';
+				card.appendChild(el('div', { class: 'team card-collapse-visible', text: empty }));
 				return card;
 			}
 
 			const subtitle = el('div', { class: 'team card-collapse-visible now-playing-subtitle' });
-			subtitle.appendChild(el('span', { text: `${rows.length} player${rows.length === 1 ? '' : 's'} live right now` }));
+			const subtitleLabel = isSunday ? 'live right now' : 'playing today';
+			subtitle.appendChild(el('span', { text: `${rows.length} player${rows.length === 1 ? '' : 's'} ${subtitleLabel}` }));
 			card.appendChild(subtitle);
 
 			const positionsWrap = el('div', { class: 'now-playing-positions' });
@@ -8152,8 +8207,11 @@
 						const scoreCell = el('span', { class: 'now-playing-score' });
 						if (r.score == null) {
 							// Not yet known, same "never a confident 0" rule
-							// as the matchup drawer — the game just started
-							// and no provider has posted a score for him yet.
+							// as the matchup drawer — either the game just
+							// started and no provider has posted a score yet,
+							// or (every day but Sunday, since isPlayerGameToday
+							// admits a pre-kickoff starter) it hasn't kicked
+							// off at all.
 							scoreCell.textContent = '–';
 						} else {
 							const text = r.score.toFixed(2);
