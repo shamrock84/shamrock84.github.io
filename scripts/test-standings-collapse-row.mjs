@@ -1,10 +1,13 @@
 // Unit test for renderStandingsCard's collapse behavior in myffl.html —
 // collapsing a Standings card is how a manager gets every OTHER team's row
-// out of the way, and it must not blank out their own team's row too. Two
-// markers make that work together (see the CSS rule beside .me-row and the
-// .card.card-collapsed > *:not(...) rule near the top of the file):
+// out of the way, and it must not blank out their own team's row (or the
+// header labeling it) too. Three markers make that work together (see the
+// CSS rule beside .me-row and the .card.card-collapsed > *:not(...) rule
+// near the top of the file):
 //   - the table itself carries .card-collapse-visible, so it isn't
 //     blanket-hidden the way an ungated table would be;
+//   - the header row carries .standings-head-row, so the "#"/"Team"/"W-L"
+//     column labels stay on screen giving the isMe row context;
 //   - the [data-view="standings"] scoping on the nested collapse rule keeps
 //     it from also catching Scoring's own fallback .standings table, which
 //     has nothing marking it .card-collapse-visible and so must stay fully
@@ -103,7 +106,8 @@ function classes(node) {
 	assert.equal(rows.length, 4);
 	const meMarked = rows.filter((r) => classes(r).includes('me-row'));
 	assert.equal(meMarked.length, 1, 'exactly one row is marked as mine');
-	assert.ok(!classes(rows[0]).includes('me-row'), 'the header row is not marked as mine, so it collapses away like the other teams');
+	assert.ok(classes(rows[0]).includes('standings-head-row'), 'the header row is marked so it stays visible alongside the isMe row when collapsed');
+	assert.ok(!classes(rows[0]).includes('me-row'), 'the header row is not itself marked as mine');
 }
 
 {
