@@ -459,6 +459,20 @@
 		.search-wrap {
 			position: relative;
 		}
+		/* A sibling of .controls, not nested inside it — .controls itself
+		   hides on every view outside SEARCHABLE_VIEWS (see
+		   updateSearchVisibility), and these two links have to keep working
+		   on Standings/Scoring/History/Admin/NFL too, where the search box
+		   doesn't. Mirrors .subtabs-bar's Select All / None pair otherwise —
+		   same size, same link styling (.subtab-link). */
+		.card-collapse-links {
+			display: flex;
+			justify-content: center;
+			gap: 1rem;
+			max-width: 480px;
+			margin: 0.5rem auto 0;
+			padding: 0 1rem;
+		}
 		#search {
 			width: 100%;
 			padding: 0.6rem 2.2rem 0.6rem 0.9rem;
@@ -3545,6 +3559,10 @@
 			<button type="button" id="search-clear" class="hidden" aria-label="Clear search">&times;</button>
 		</div>
 	</div>
+	<div class="card-collapse-links">
+		<a href="#" class="subtab-link" id="collapse-all-link">Collapse all</a>
+		<a href="#" class="subtab-link" id="expand-all-link">Expand all</a>
+	</div>
 	<main>
 		<div id="digest" class="problems-digest hidden"></div>
 		<div id="status"></div>
@@ -5075,6 +5093,25 @@
 			});
 		}
 
+		// This league's own roster (league.players, carrying each player's
+		// ecr.url the same way playerNameNode reads it) indexed by
+		// normalizeName, for the one other place on the page that names a
+		// player it didn't get straight off that roster array: the Scoring
+		// tab's live starter/bench drawers (see appendDetailSide), whose
+		// players[] comes from the live-scoring poll and carries no
+		// FantasyPros URL of its own (fetchScoring/fetchEspnScoring/
+		// fetchSleeperScoring build scores, not rankings). First name
+		// occurrence wins, same as computeNowPlaying's own cross-league
+		// merge below, which uses this to resolve the same field.
+		function rosterUrlByName(league) {
+			const map = new Map();
+			for (const rp of league.players || []) {
+				const key = normalizeName(rp.name) || rp.name;
+				if (!map.has(key)) map.set(key, rp.ecr?.url || null);
+			}
+			return map;
+		}
+
 		function buildRosterTable(players, isAuction, statusKey, league, onSalaryChange, onContractChange, showCutColumn, onCutChange) {
 			// roster-auction is about width, not about the team suffix: only the
 			// salary-cap tables carry Salary/Yrs, and only they need the phone
@@ -5891,7 +5928,16 @@
 			const taskCounts = quickLinkTaskCounts();
 			for (const league of leagues) {
 				const label = quickLinkLabelForLeague(league);
-				appendQuickLink(bar, { url: league.url, label, title: leagueDisplayName(league) || label, style: league.style, taskCount: taskCounts[label] });
+				// currentRecord/appendRecord — the same W-L pair already
+				// appended to the team name on Rosters/Scoring (see that
+				// comment for why draftonly is silent here without a separate
+				// check, and why there's no -T). league.franchiseId is this
+				// league's own "my team" id, the same field recordDetails
+				// reads for the Rosters card. The task count above keys off
+				// the PLAIN label, not this display text, so a manager's task
+				// category ("MNMx") still matches regardless of the score.
+				const record = currentRecord(league, league.franchiseId);
+				appendQuickLink(bar, { url: league.url, label: appendRecord(label, record), title: leagueDisplayName(league) || label, style: league.style, taskCount: taskCounts[label] });
 			}
 			for (const extra of pageData?.quickLinks || []) {
 				appendQuickLink(bar, { url: extra.url, label: extra.nickname, style: extra.style, taskCount: taskCounts[extra.nickname] });
@@ -7643,7 +7689,13 @@
 		// One side of one drawer row. A null player is the padding described in
 		// pairStartersByPosition — it still occupies its grid cells so the
 		// centre position column stays centred, it just has nothing in them.
-		function appendDetailSide(row, player, side) {
+		// `urlByName` is this league's rosterUrlByName(league) map, built once
+		// by the caller and passed down rather than rebuilt per row — same
+		// FantasyPros-link idiom as playerNameNode, but the live-scoring
+		// player object here carries no ecr of its own to read it off (see
+		// rosterUrlByName's own comment), so the name is joined against it
+		// instead. Absent (undefined) for callers that haven't wired it up.
+		function appendDetailSide(row, player, side, urlByName) {
 			const nameCell = el('div', { class: `scoring-detail-name ${side}` });
 			const ptsCell = el('div', { class: `scoring-detail-pts ${side}` });
 			if (!player) {
@@ -7662,7 +7714,19 @@
 					? abbreviatePlayerName(player.name, player.position)
 					: `#${player.id || '?'}`;
 				const line = el('div');
-				line.appendChild(document.createTextNode(label));
+				const fpUrl = player.name && urlByName ? urlByName.get(normalizeName(player.name) || player.name) : null;
+				if (fpUrl) {
+					line.appendChild(el('a', {
+						href: fpUrl,
+						target: '_blank',
+						rel: 'noopener',
+						class: 'player-link',
+						title: `${player.name} on FantasyPros`,
+						text: label,
+					}));
+				} else {
+					line.appendChild(document.createTextNode(label));
+				}
 				// The NFL team as a suffix, never its own column — the same
 				// rule every other table that names a player follows, and the
 				// reason this grid fits on a phone at all. A defense gets one
@@ -7749,7 +7813,7 @@
 		// exact same machinery appendMatchupDetail's own starter half uses,
 		// reused rather than duplicated, since a bench player renders no
 		// differently from a starter once you have one in hand.
-		function appendBenchDetail(container, key, group) {
+		function appendBenchDetail(container, key, group, urlByName) {
 			const benchKey = `${key}:bench`;
 			const open = isScoringDetailOpen(benchKey);
 
@@ -7769,9 +7833,9 @@
 				}
 				rows.forEach((r) => {
 					const row = el('div', { class: 'scoring-detail-row' });
-					appendDetailSide(row, r.left, 'left');
+					appendDetailSide(row, r.left, 'left', urlByName);
 					row.appendChild(el('div', { class: 'scoring-detail-pos', text: r.position }));
-					appendDetailSide(row, r.right, 'right');
+					appendDetailSide(row, r.right, 'right', urlByName);
 					body.appendChild(row);
 				});
 			};
@@ -7850,6 +7914,11 @@
 			const fill = () => {
 				if (filled) return;
 				filled = true;
+				// Built once per drawer open, not per row, and handed down to
+				// the bench toggle below too — see rosterUrlByName and
+				// appendDetailSide's own comments for why the live players[]
+				// this drawer is built from needs this second join at all.
+				const urlByName = rosterUrlByName(league);
 				const rows = pairStartersByPosition(group[0]?.players, group[1]?.players);
 				if (rows.length === 0) {
 					// Either the live poll hasn't answered yet (the snapshot
@@ -7864,16 +7933,16 @@
 				} else {
 					rows.forEach((r) => {
 						const row = el('div', { class: 'scoring-detail-row' });
-						appendDetailSide(row, r.left, 'left');
+						appendDetailSide(row, r.left, 'left', urlByName);
 						row.appendChild(el('div', { class: 'scoring-detail-pos', text: r.position }));
-						appendDetailSide(row, r.right, 'right');
+						appendDetailSide(row, r.right, 'right', urlByName);
 						body.appendChild(row);
 					});
 				}
 				// Nested inside this same body — see appendBenchDetail's own
 				// comment for why it's a second, independently-collapsed
 				// toggle rather than folded into the rows above.
-				bench = appendBenchDetail(body, key, group);
+				bench = appendBenchDetail(body, key, group, urlByName);
 			};
 
 			const chevron = el('span', { class: 'scoring-detail-chevron', 'aria-hidden': 'true', text: '▾' });
@@ -7986,15 +8055,12 @@
 				// fetchSleeperScoring — that response is scores, not rankings).
 				// This league's own roster entry for the same player already
 				// has one, attached at sync time by fetch-rosters.mjs' own name
-				// join (see player.ecr there) — this is a second, purely
-				// client-side join onto it, by the SAME normalizeName key
-				// byPlayer itself uses below, so a live-scoring name and this
-				// league's roster spelling of the same player still line up.
-				const rosterByName = new Map();
-				for (const rp of league.players || []) {
-					const rKey = normalizeName(rp.name) || rp.name;
-					if (!rosterByName.has(rKey)) rosterByName.set(rKey, rp);
-				}
+				// join (see player.ecr there) — rosterUrlByName is a second,
+				// purely client-side join onto it, by the SAME normalizeName
+				// key byPlayer itself uses below, so a live-scoring name and
+				// this league's roster spelling of the same player still line
+				// up.
+				const rosterByName = rosterUrlByName(league);
 				for (const p of mine.players || []) {
 					// Sunday narrows to isPlayerLive (state === 'in') instead
 					// of isPlayerGameToday — see this function's own comment
@@ -8011,7 +8077,7 @@
 					// sync time) simply never gets one, same fallback
 					// playerNameNode already has for every other card.
 					if (!row.url) {
-						const rosterUrl = rosterByName.get(key)?.ecr?.url;
+						const rosterUrl = rosterByName.get(key);
 						if (rosterUrl) row.url = rosterUrl;
 					}
 					row.entries.push({
@@ -15050,6 +15116,31 @@
 			searchInput.focus();
 			updateVisibility();
 			updateSearchClearVisibility();
+		});
+
+		// Acts on whatever's actually on screen right now — every '.card' still
+		// carrying not '.hidden' after updateVisibility's view/sub-tab/search
+		// filtering, top-level cards and the Depth Charts wrapper's nested team
+		// cards alike, since both are real '.card' elements with their own
+		// makeCollapsible toggle. `:scope > .card-heading > .card-collapse-toggle`
+		// (not a bare descendant query) is what keeps a wrapper's own toggle
+		// click from also matching a nested team card's, since every heading is
+		// a direct child of its own card. Clicking the button rather than
+		// touching the class directly reuses its own click handling (aria-state,
+		// title, the collapsed-state write) — see makeCollapsible.
+		function setAllVisibleCardsCollapsed(collapsed) {
+			document.querySelectorAll('#grid .card:not(.hidden)').forEach((card) => {
+				if (card.classList.contains('card-collapsed') === collapsed) return;
+				card.querySelector(':scope > .card-heading > .card-collapse-toggle')?.click();
+			});
+		}
+		document.getElementById('collapse-all-link').addEventListener('click', (e) => {
+			e.preventDefault();
+			setAllVisibleCardsCollapsed(true);
+		});
+		document.getElementById('expand-all-link').addEventListener('click', (e) => {
+			e.preventDefault();
+			setAllVisibleCardsCollapsed(false);
 		});
 		init();
 	</script>

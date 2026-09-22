@@ -26,6 +26,11 @@
 //     while their game is actually underway (state 'in') — never for a game
 //     that hasn't kicked off, is already final, or a team the scoreboard
 //     never covered, any of which would otherwise be mistaken for live.
+//   * a starter or bench name links to FantasyPros only when rosterUrlByName
+//     resolves this league's own roster entry for that name — the live
+//     players[] this drawer is built from carries no url of its own (see
+//     rosterUrlByName's comment), so a wrong or missing join must degrade to
+//     a plain name rather than a link to the wrong player or to nowhere.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -335,6 +340,45 @@ function leagueWithMatchup() {
 	// glyph from the "points unknown" en dash, since "no starter here" and
 	// "this starter's points aren't in yet" are different facts.
 	assert.equal(pts[2][0], '—', 'an absent starter is an em dash');
+}
+
+// A starter or bench name links to FantasyPros when this league's own roster
+// (league.players, separate from the live scoring.teams[].players this
+// drawer is otherwise built from) resolved a url for that player — the same
+// rosterUrlByName join computeNowPlaying uses, since the live-scoring
+// response itself carries no FantasyPros url. A name with no roster match
+// (or whose roster entry has no ecr.url) must stay plain text, not a link to
+// nowhere or, worse, to the wrong player.
+{
+	const ctx = makeContext(LOGGED_IN);
+	ctx.liveScoringAttempted = true;
+	const league = leagueWithMatchup();
+	league.players = [
+		{ name: 'Joe Burrow', ecr: { url: 'https://www.fantasypros.com/nfl/players/joe-burrow.php' } },
+		{ name: 'Bench One', ecr: { url: 'https://www.fantasypros.com/nfl/players/bench-one.php' } },
+		{ name: 'Trevor Lawrence' }, // rostered here too, but never ranked
+	];
+	const card = ctx.renderScoringCard(league);
+
+	const toggle = findAll(card, hasClass('scoring-detail-toggle'))[0];
+	toggle.listeners.click[0]();
+	const rows = findAll(card, hasClass('scoring-detail-row'));
+	const qbRow = rows[0];
+	const burrowLink = findAll(qbRow, (n) => n.tag === 'a')[0];
+	assert.ok(burrowLink, "Burrow's roster entry resolved a url, so his name is a real link");
+	assert.equal(burrowLink.attrs.href, 'https://www.fantasypros.com/nfl/players/joe-burrow.php');
+	assert.equal(burrowLink.attrs.target, '_blank');
+	assert.equal(burrowLink.attrs.rel, 'noopener');
+	assert.match(fullText(burrowLink), /J\. Burrow/, 'the link still carries the abbreviated label, not the full name');
+	assert.equal(findAll(qbRow, (n) => n.tag === 'a').length, 1, "Lawrence is rostered but never ranked, so his side stays plain text");
+
+	const benchToggle = findAll(card, hasClass('scoring-bench-toggle'))[0];
+	benchToggle.listeners.click[0]();
+	const benchRows = findAll(findAll(card, hasClass('scoring-bench-body'))[0], hasClass('scoring-detail-row'));
+	const benchLink = findAll(benchRows[0], (n) => n.tag === 'a')[0];
+	assert.ok(benchLink, 'the bench drawer resolves the same roster join, not a separate one');
+	assert.equal(benchLink.attrs.href, 'https://www.fantasypros.com/nfl/players/bench-one.php');
+	assert.equal(findAll(benchRows[1], (n) => n.tag === 'a').length, 0, "Bench Two has no roster entry at all, so it stays plain text");
 }
 
 // Logged out: no drawer at all, but the pill and its scores are untouched.
