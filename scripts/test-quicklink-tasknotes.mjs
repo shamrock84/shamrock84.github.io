@@ -17,6 +17,13 @@
 // that shared key, not two independently-written label fallbacks, is what
 // this file pins for the card side.
 //
+// A gold/purple entry's pill wraps only the label — a .quicklink-pill class
+// on that inner span, not a bare `span` CSS type selector, is what lets the
+// footnote and an appended record (see recordDetails) sit as its siblings
+// without inheriting its background or its flagged-red. This file also pins
+// their order (label, footnote, record) and that the record, on any style,
+// never ends up nested inside the pill.
+//
 // The page's own script block is evaluated in a vm, so this drives the real
 // implementations rather than a copy of them.
 
@@ -137,14 +144,44 @@ function renderedLink(opts) {
 }
 
 {
-	// Gold/purple entries wrap the label in its own inner span (see
-	// appendQuickLink's own comment); the footnote must sit outside that
-	// span so it never inherits the pill's background.
+	// Gold/purple entries wrap the label in its own inner .quicklink-pill
+	// span (see appendQuickLink's own comment); the footnote must sit
+	// outside that span so it never inherits the pill's background.
 	const link = renderedLink({ url: 'https://example.com', label: 'Sleeper App', style: 'gold', taskCount: 1 });
 	const note = link.children.find((c) => c.cls.split(' ').includes('quicklink-tasknote'));
-	const pill = link.children.find((c) => c.tag === 'span');
+	const pill = link.children.find((c) => c.cls.split(' ').includes('quicklink-pill'));
 	assert.ok(note && pill, 'both the pill span and the footnote are present');
 	assert.ok(!pill.children.includes(note), 'the footnote is a sibling of the pill span, not nested inside it');
+}
+
+// ---- appendQuickLink: the record's order and independence from the pill ------
+//
+// A league's own record (see recordDetails) rides along after the footnote,
+// never before it and never nested inside a gold/purple pill — both would
+// let this entry's flagged-red bleed onto, or the pill's own gold/purple
+// bleed onto, a color .roster-record/-up/-down is supposed to own outright.
+
+{
+	const record = { text: '2-0', cls: 'roster-record roster-record-up' };
+	const link = renderedLink({ url: 'https://example.com', label: 'IronBank', style: 'gold', taskCount: 1, record });
+	const pill = link.children.find((c) => c.cls.split(' ').includes('quicklink-pill'));
+	const note = link.children.find((c) => c.cls.split(' ').includes('quicklink-tasknote'));
+	const recordEl = link.children.find((c) => c.cls.split(' ').includes('roster-record'));
+	assert.ok(pill && note && recordEl, 'pill, footnote and record are all present on a flagged gold entry with a record');
+	assert.ok(!pill.children.includes(recordEl), 'the record sits outside the pill span, never inside it');
+	const order = link.children.filter((c) => c === pill || c === note || c === recordEl);
+	assert.deepEqual(order, [pill, note, recordEl], 'the footnote sits between the label pill and the record, not after it');
+}
+
+{
+	// Plain (unstyled) entries have no pill at all, so the same order check
+	// runs directly against the <a>'s own children.
+	const record = { text: '0-2', cls: 'roster-record roster-record-down' };
+	const link = renderedLink({ url: 'https://example.com', label: 'MNMx', taskCount: 1, record });
+	const note = link.children.find((c) => c.cls.split(' ').includes('quicklink-tasknote'));
+	const recordEl = link.children.find((c) => c.cls.split(' ').includes('roster-record'));
+	assert.ok(link.children.indexOf(note) < link.children.indexOf(recordEl),
+		'the footnote comes before the record on a plain flagged entry too, not after it');
 }
 
 // ---- quickLinkLabelForLeague: the shared key --------------------------------
