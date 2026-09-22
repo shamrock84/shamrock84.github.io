@@ -144,33 +144,38 @@
 		   reuses the Dynasty/Salary/Draft Only/Redraft type badge's colors
 		   (--chip-bg/--accent, see .badge) rather than a purple picked fresh
 		   for the toolbar — both are "the same chip elsewhere on the page",
-		   not a new treatment. The pill itself lives on an inner span rather
-		   than the <a> — the divider above is a ::after on the <a>, so putting
-		   the pill's background there too would paint it behind the divider,
-		   making the divider read as swallowed into the pill instead of
-		   sitting between this pill and its neighbor. */
+		   not a new treatment. The pill itself lives on an inner
+		   .quicklink-pill span rather than the <a> — the divider above is a
+		   ::after on the <a>, so putting the pill's background there too
+		   would paint it behind the divider, making the divider read as
+		   swallowed into the pill instead of sitting between this pill and
+		   its neighbor. Targeted by that specific class rather than a bare
+		   `span` type selector because the footnote and the record (both
+		   also spans, see appendQuickLink) sit as its siblings, not inside
+		   it — a type selector would just as happily paint the record's own
+		   green/red/plain chip gold or purple. */
 		#quicklinks a.quicklink-gold,
 		#quicklinks a.quicklink-purple {
 			padding: 0;
 		}
-		#quicklinks a.quicklink-gold span {
+		#quicklinks a.quicklink-gold .quicklink-pill {
 			background: var(--gold-chip-bg);
 			color: var(--gold-chip-text);
 		}
-		#quicklinks a.quicklink-purple span {
+		#quicklinks a.quicklink-purple .quicklink-pill {
 			background: var(--chip-bg);
 			color: var(--accent);
 		}
-		#quicklinks a.quicklink-gold span,
-		#quicklinks a.quicklink-purple span {
+		#quicklinks a.quicklink-gold .quicklink-pill,
+		#quicklinks a.quicklink-purple .quicklink-pill {
 			display: inline-block;
 			border-radius: 999px;
 			padding: 0.15rem 0.55rem;
 		}
-		#quicklinks a.quicklink-gold:hover span,
-		#quicklinks a.quicklink-gold:focus-visible span,
-		#quicklinks a.quicklink-purple:hover span,
-		#quicklinks a.quicklink-purple:focus-visible span {
+		#quicklinks a.quicklink-gold:hover .quicklink-pill,
+		#quicklinks a.quicklink-gold:focus-visible .quicklink-pill,
+		#quicklinks a.quicklink-purple:hover .quicklink-pill,
+		#quicklinks a.quicklink-purple:focus-visible .quicklink-pill {
 			color: var(--text);
 		}
 		/* A footnote-style marker appended after a quick link's own label —
@@ -202,13 +207,18 @@
 		   the flagged entry stands out on its own rather than relying on the
 		   small superscript alone (see appendQuickLink). Plain entries have
 		   no inner span, so the color goes straight on the <a>; gold/purple
-		   entries carry it a level deeper since .quicklink-gold/-purple span
-		   already set their own text color. */
+		   entries target .quicklink-pill specifically rather than the flagged
+		   <a> (which .quicklink-gold/-purple's own .quicklink-pill rule above
+		   would otherwise out-specificity) — and, same reasoning as that base
+		   rule, specifically rather than by a bare `span` type selector, so a
+		   flagged entry's appended record (see appendQuickLink) keeps its own
+		   win/loss/tie color from .roster-record/-up/-down instead of also
+		   turning red. */
 		#quicklinks a.quicklink-flagged {
 			color: var(--ir-text);
 		}
-		#quicklinks a.quicklink-flagged.quicklink-gold span,
-		#quicklinks a.quicklink-flagged.quicklink-purple span {
+		#quicklinks a.quicklink-flagged.quicklink-gold .quicklink-pill,
+		#quicklinks a.quicklink-flagged.quicklink-purple .quicklink-pill {
 			color: var(--ir-text);
 		}
 		/* Sixteen-plus toolbar entries (every league plus Quick Links) wrap to
@@ -231,8 +241,8 @@
 			#quicklinks a::after {
 				margin-left: 0.3rem;
 			}
-			#quicklinks a.quicklink-gold span,
-			#quicklinks a.quicklink-purple span {
+			#quicklinks a.quicklink-gold .quicklink-pill,
+			#quicklinks a.quicklink-purple .quicklink-pill {
 				padding: 0.14rem 0.45rem;
 			}
 		}
@@ -246,8 +256,8 @@
 			#quicklinks a::after {
 				margin-left: 0.25rem;
 			}
-			#quicklinks a.quicklink-gold span,
-			#quicklinks a.quicklink-purple span {
+			#quicklinks a.quicklink-gold .quicklink-pill,
+			#quicklinks a.quicklink-purple .quicklink-pill {
 				padding: 0.12rem 0.35rem;
 			}
 		}
@@ -917,8 +927,13 @@
 		   already establish elsewhere (see .results-trend's own comment) —
 		   but only when winning or losing skews the record. A .500 record
 		   isn't a gain or a loss, so it stays the .team line's own muted
-		   color rather than getting a third, meaningless shade. */
-		.roster-record { font-weight: 700; }
+		   color rather than getting a third, meaningless shade. The color
+		   is explicit here (matching .team's own var(--muted)) rather than
+		   left to inherit it, so the same record span reused on a flagged
+		   quick link (see #quicklinks a.quicklink-flagged) doesn't pick up
+		   that link's red instead — an inherited value always loses to a
+		   rule that targets the element directly, but only if one exists. */
+		.roster-record { font-weight: 700; color: var(--muted); }
 		.roster-record-up { color: var(--gain-text); }
 		.roster-record-down { color: var(--ir-text); }
 		.error-box {
@@ -5953,17 +5968,26 @@
 		// the text, not the divider the shared #quicklinks a::after rule
 		// appends after it (see the .quicklink-gold/-purple CSS comment).
 		// taskCount (see quickLinkTaskCounts) appends a small red footnote
-		// number after the label, outside that pill span, when there's at
-		// least one open task filed under this entry's own label. Clickable
-		// (attachTaskBadgeClick) straight to the Tasks card — it overrides the
-		// title and swallows the click that would otherwise follow the link's
-		// own href out to the league's site. The label itself turns the same
-		// red (quicklink-flagged) so the entry stands out at a glance, not
-		// just its small superscript.
+		// number right after the label, outside that pill span so it never
+		// inherits its background, when there's at least one open task filed
+		// under this entry's own label. Clickable (attachTaskBadgeClick)
+		// straight to the Tasks card — it overrides the title and swallows
+		// the click that would otherwise follow the link's own href out to
+		// the league's site. The label itself turns the same red
+		// (quicklink-flagged) so the entry stands out at a glance, not just
+		// its small superscript.
 		// record (optional, from recordDetails) appends the same bolded,
 		// win/loss-colored W-L span the Rosters card's team line uses — a
 		// Quick Links extra never has one, and a league's own entry omits it
-		// at 0-0 the same way the Rosters card does (see recordDetails).
+		// at 0-0 the same way the Rosters card does (see recordDetails). It
+		// goes last, after the footnote rather than before it, and — for
+		// gold/purple too — outside the pill span alongside the footnote:
+		// the footnote and the flagged-red both belong to the label, and
+		// putting the record between them (or inside the pill, picking up
+		// its background) would visually tangle a "something's pending"
+		// marker with a fact (the record) that keeps its own green/red/plain
+		// color regardless of whether a task is pending (see .roster-record
+		// and the #quicklinks a.quicklink-flagged CSS comments).
 		function appendQuickLink(bar, { url, label, title, style, taskCount, record }) {
 			const cls = style === 'gold' ? 'quicklink-gold' : style === 'purple' ? 'quicklink-purple' : '';
 			const attrs = { href: url, target: '_blank', rel: 'noopener' };
@@ -5971,17 +5995,17 @@
 			if (classes) attrs.class = classes;
 			const link = el('a', attrs);
 			if (title) link.title = title;
-			const labelHost = cls ? el('span', {}) : link;
+			const labelHost = cls ? el('span', { class: 'quicklink-pill' }) : link;
 			if (cls) link.appendChild(labelHost);
 			labelHost.appendChild(document.createTextNode(label));
-			if (record) {
-				labelHost.appendChild(document.createTextNode(' '));
-				labelHost.appendChild(el('span', { class: record.cls, text: `(${record.text})` }));
-			}
 			if (taskCount) {
 				const note = el('sup', { class: 'quicklink-tasknote', text: String(taskCount) });
 				attachTaskBadgeClick(note);
 				link.appendChild(note);
+			}
+			if (record) {
+				link.appendChild(document.createTextNode(' '));
+				link.appendChild(el('span', { class: record.cls, text: `(${record.text})` }));
 			}
 			bar.appendChild(link);
 		}
