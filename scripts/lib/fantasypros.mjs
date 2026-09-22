@@ -386,6 +386,24 @@ export function rankingPoolKey({ type, scoring, position }) {
   return `${type}|${scoring}|${position}`;
 }
 
+// Which of a league's fetched ranking sets (one per spec.positions entry) to
+// treat as its primary list — the first one, in spec.positions order, that
+// actually came back with players. Superflex leagues are spec'd to OP first,
+// but FantasyPros doesn't always have that list populated: a ROS|*|OP request
+// can answer with zero experts and a stale last_updated, meaning nobody's
+// publishing to it right now. Recording that empty list as the league's pool
+// key left the ECR power-rank basis and Top Available both permanently null
+// for every superflex league, even though the ALL list — fetched right
+// alongside it for kickers/defenses/IDP — has real data. Falls through
+// spec.positions' own order rather than always preferring ALL, so a working
+// OP list is still used when FantasyPros has one. A non-superflex league's
+// single-entry positions list has nothing to fall through to, so this always
+// returns 0 there; an all-empty result also returns 0, unchanged from before.
+export function selectPrimaryRankingSet(positions, sets) {
+  const index = (positions || []).findIndex((_, i) => sets[i]?.list?.length > 0);
+  return index >= 0 ? index : 0;
+}
+
 // Attaches an `ecr` object to every player on every league that has one, and
 // records the ranking set used on the league itself so the page can label
 // where the numbers came from. Mutates `leagues` in place.
@@ -435,29 +453,34 @@ export async function attachRankings(leagues, leagueConfigs, { apiKey, season, n
         }
       }
 
+      // The primary list only, in general — a superflex league also draws on
+      // ALL for kickers, defenses and IDP, but those two lists number their
+      // ranks on different scales, so mixing them into one ordered pool would
+      // interleave two rankings that don't compare. The one exception is an
+      // empty primary list (see selectPrimaryRankingSet): there's nothing of
+      // its own scale to protect, and falling back to ALL for the pool key
+      // beats a permanently-null one.
+      const primaryIndex = selectPrimaryRankingSet(spec.positions, sets);
+      const primaryPosition = spec.positions[primaryIndex];
+      const primary = sets[primaryIndex];
+
       league.rankings = {
         type: spec.type,
         scoring: spec.scoring,
-        // The primary list only. A superflex league also draws on ALL for
-        // kickers, defenses and IDP, but those two lists number their ranks
-        // on different scales, so mixing them into one ordered pool would
-        // interleave two rankings that don't compare. The overall list is
-        // the one the analytics cards are ordered by.
-        position: spec.positions[0],
-        lastUpdated: sets[0]?.lastUpdated ?? null,
-        totalExperts: sets[0]?.totalExperts ?? null,
+        position: primaryPosition,
+        lastUpdated: primary?.lastUpdated ?? null,
+        totalExperts: primary?.totalExperts ?? null,
         matched,
         total: league.players.length,
       };
       league.rankingsError = null;
 
-      const primary = sets[0];
       const key = rankingPoolKey(league.rankings);
       if (primary?.list?.length > 0 && !pools[key]) {
         pools[key] = {
           type: spec.type,
           scoring: spec.scoring,
-          position: spec.positions[0],
+          position: primaryPosition,
           lastUpdated: primary.lastUpdated ?? null,
           players: primary.list,
         };
