@@ -5928,16 +5928,17 @@
 			const taskCounts = quickLinkTaskCounts();
 			for (const league of leagues) {
 				const label = quickLinkLabelForLeague(league);
-				// currentRecord/appendRecord — the same W-L pair already
-				// appended to the team name on Rosters/Scoring (see that
-				// comment for why draftonly is silent here without a separate
-				// check, and why there's no -T). league.franchiseId is this
-				// league's own "my team" id, the same field recordDetails
-				// reads for the Rosters card. The task count above keys off
-				// the PLAIN label, not this display text, so a manager's task
-				// category ("MNMx") still matches regardless of the score.
-				const record = currentRecord(league, league.franchiseId);
-				appendQuickLink(bar, { url: league.url, label: appendRecord(label, record), title: leagueDisplayName(league) || label, style: league.style, taskCount: taskCounts[label] });
+				// recordDetails — the same W-L pair, bolded and colored
+				// win/loss (.500 left uncolored), already appended to the
+				// team name on Rosters (see that comment for why draftonly
+				// is silent here without a separate check, and why there's
+				// no -T). league.franchiseId is this league's own "my team"
+				// id, the same field recordDetails reads for the Rosters
+				// card. The task count above keys off the PLAIN label, not
+				// this display text, so a manager's task category ("MNMx")
+				// still matches regardless of the score.
+				const record = recordDetails(league, league.franchiseId);
+				appendQuickLink(bar, { url: league.url, label, record, title: leagueDisplayName(league) || label, style: league.style, taskCount: taskCounts[label] });
 			}
 			for (const extra of pageData?.quickLinks || []) {
 				appendQuickLink(bar, { url: extra.url, label: extra.nickname, style: extra.style, taskCount: taskCounts[extra.nickname] });
@@ -5959,15 +5960,24 @@
 		// own href out to the league's site. The label itself turns the same
 		// red (quicklink-flagged) so the entry stands out at a glance, not
 		// just its small superscript.
-		function appendQuickLink(bar, { url, label, title, style, taskCount }) {
+		// record (optional, from recordDetails) appends the same bolded,
+		// win/loss-colored W-L span the Rosters card's team line uses — a
+		// Quick Links extra never has one, and a league's own entry omits it
+		// at 0-0 the same way the Rosters card does (see recordDetails).
+		function appendQuickLink(bar, { url, label, title, style, taskCount, record }) {
 			const cls = style === 'gold' ? 'quicklink-gold' : style === 'purple' ? 'quicklink-purple' : '';
 			const attrs = { href: url, target: '_blank', rel: 'noopener' };
 			const classes = [cls, taskCount ? 'quicklink-flagged' : ''].filter(Boolean).join(' ');
 			if (classes) attrs.class = classes;
 			const link = el('a', attrs);
 			if (title) link.title = title;
-			if (cls) link.appendChild(el('span', { text: label }));
-			else link.textContent = label;
+			const labelHost = cls ? el('span', {}) : link;
+			if (cls) link.appendChild(labelHost);
+			labelHost.appendChild(document.createTextNode(label));
+			if (record) {
+				labelHost.appendChild(document.createTextNode(' '));
+				labelHost.appendChild(el('span', { class: record.cls, text: `(${record.text})` }));
+			}
 			if (taskCount) {
 				const note = el('sup', { class: 'quicklink-tasknote', text: String(taskCount) });
 				attachTaskBadgeClick(note);
