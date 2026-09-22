@@ -1,0 +1,44 @@
+name: Mark Tasks Card Items Done (manual)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here.
+# Runs scripts/mark-tasks-done.mjs, which WRITES to api/plans.js's shared
+# store (see that script's own header for the mode:'replace' reasoning).
+# Same SITE_PASSWORD repo secret fetch-tasks.yml uses.
+#
+# The `tasks` input is newline-separated exact task text, one task per line,
+# matched against the Tasks card's own `text` field — copy it verbatim
+# (including punctuation) from a fetch-tasks.yml run. Passed through as an
+# env var rather than a shell argument so a task's own apostrophe or quote
+# marks can't break the run step's quoting.
+on:
+  workflow_dispatch:
+    inputs:
+      tasks:
+        description: 'Exact task text to mark done, one per line'
+        required: true
+
+jobs:
+  mark-done:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout: |
+            api
+            scripts
+            config
+            data
+            .github
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Mark tasks done
+        env:
+          SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
+          TASK_TEXTS: ${{ github.event.inputs.tasks }}
+        run: node scripts/mark-tasks-done.mjs
