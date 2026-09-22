@@ -203,12 +203,17 @@
 		   small superscript alone (see appendQuickLink). Plain entries have
 		   no inner span, so the color goes straight on the <a>; gold/purple
 		   entries carry it a level deeper since .quicklink-gold/-purple span
-		   already set their own text color. */
+		   already set their own text color. That gold/purple rule targets
+		   only the label's own pill span (`>` child combinator), never a
+		   descendant one — a league's appended record (see appendQuickLink's
+		   own comment) is a further-nested span, and a plain descendant
+		   selector here would repaint its win/loss/tie color red along with
+		   the label, which .roster-record/-up/-down already own. */
 		#quicklinks a.quicklink-flagged {
 			color: var(--ir-text);
 		}
-		#quicklinks a.quicklink-flagged.quicklink-gold span,
-		#quicklinks a.quicklink-flagged.quicklink-purple span {
+		#quicklinks a.quicklink-flagged.quicklink-gold > span,
+		#quicklinks a.quicklink-flagged.quicklink-purple > span {
 			color: var(--ir-text);
 		}
 		/* Sixteen-plus toolbar entries (every league plus Quick Links) wrap to
@@ -917,8 +922,13 @@
 		   already establish elsewhere (see .results-trend's own comment) —
 		   but only when winning or losing skews the record. A .500 record
 		   isn't a gain or a loss, so it stays the .team line's own muted
-		   color rather than getting a third, meaningless shade. */
-		.roster-record { font-weight: 700; }
+		   color rather than getting a third, meaningless shade. The color
+		   is explicit here (matching .team's own var(--muted)) rather than
+		   left to inherit it, so the same record span reused on a flagged
+		   quick link (see #quicklinks a.quicklink-flagged) doesn't pick up
+		   that link's red instead — an inherited value always loses to a
+		   rule that targets the element directly, but only if one exists. */
+		.roster-record { font-weight: 700; color: var(--muted); }
 		.roster-record-up { color: var(--gain-text); }
 		.roster-record-down { color: var(--ir-text); }
 		.error-box {
