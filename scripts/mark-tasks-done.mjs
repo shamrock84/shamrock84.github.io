@@ -1,9 +1,9 @@
-// One-off write CLI, the counterpart to the read-only scripts/fetch-tasks.mjs
-// — marks a fixed list of Tasks-card items done after the code implementing
-// them has been merged. Not meant to be a general "mark any task done" tool:
-// TARGETS below is edited per use, matched by exact (category, text) so a
-// near-miss (a task edited slightly since it was read) is silently skipped
-// rather than marking the wrong one.
+// Write CLI, the counterpart to the read-only scripts/fetch-tasks.mjs — marks
+// one or more Tasks-card items done once the code implementing them has
+// merged. Matched by exact `text` (case-sensitive, whitespace included) —
+// there is no id to pass from the command line, so an exact-text collision
+// between two tasks marks both; that is a real but narrow risk worth taking
+// over inventing a second lookup key nothing else on the page uses.
 //
 // Requires SITE_PASSWORD in the environment, same as fetch-tasks.mjs.
 //
@@ -16,32 +16,34 @@
 // just tasks, so this fetches the current document first and round-trips it
 // unchanged except for the matched tasks' `done`/`completedAt` — every other
 // plan kind (contractPlans/salaryPlans/cutPlans/resultOverrides) and every
-// other task passes through exactly as read.
+// other task passes through exactly as read. If nothing matches, nothing is
+// posted — the store is a read-only pass-through in that case.
 //
 // Usage:
-//   SITE_PASSWORD=... node scripts/mark-tasks-done.mjs
+//   SITE_PASSWORD=... node scripts/mark-tasks-done.mjs "Exact task text" ["Another exact task text" ...]
+//   SITE_PASSWORD=... TASK_TEXTS=$'Exact task text\nAnother exact task text' node scripts/mark-tasks-done.mjs
+//
+// TASK_TEXTS (newline-separated) takes precedence over argv when set — it's
+// what mark-tasks-done.yml passes a multiline workflow_dispatch input
+// through as, sidestepping shell quoting entirely for task text that
+// contains an apostrophe or other shell-special character.
 
 const API_BASE = process.env.MYFFL_API_BASE || 'https://shamrock84-github-io.vercel.app';
-
-const TARGETS = [
-	{
-		category: 'Site Enhancement',
-		text: 'Add a collapse all link to each tab that will collapse all cards. Also an expand all that expands all cards.',
-	},
-	{
-		category: 'Site Enhancement',
-		text: 'Append team’s record to the quick link at the top. Share a screenshot before merging this one. Worried about space.',
-	},
-	{
-		category: 'Site Enhancement',
-		text: 'On scores tab under show details and show bench each player name should link to their FP profile.',
-	},
-];
 
 async function main() {
 	const password = process.env.SITE_PASSWORD;
 	if (!password) {
 		console.error('SITE_PASSWORD is not set in the environment.');
+		process.exitCode = 1;
+		return;
+	}
+
+	const targets = (process.env.TASK_TEXTS
+		? process.env.TASK_TEXTS.split('\n')
+		: process.argv.slice(2)
+	).map((s) => s.trim()).filter(Boolean);
+	if (targets.length === 0) {
+		console.error('Usage: node scripts/mark-tasks-done.mjs "Exact task text" ["Another exact task text" ...]');
 		process.exitCode = 1;
 		return;
 	}
@@ -69,25 +71,22 @@ async function main() {
 	const plans = getBody.plans;
 
 	const now = Date.now();
+	const remaining = new Set(targets);
 	let matched = 0;
-	let alreadyDone = 0;
 	for (const task of Object.values(plans.tasks || {})) {
-		const hit = TARGETS.some((t) => t.category === (task.category || '') && t.text === task.text);
-		if (!hit) continue;
+		if (!remaining.has(task.text)) continue;
+		remaining.delete(task.text);
 		if (task.done) {
-			alreadyDone++;
-			console.log(`Already done: [${task.category}] ${task.text}`);
+			console.log(`Already done: [${task.category || '(no category)'}] ${task.text}`);
 			continue;
 		}
 		task.done = true;
 		task.completedAt = now;
 		matched++;
-		console.log(`Marking done: [${task.category}] ${task.text}`);
+		console.log(`Marking done: [${task.category || '(no category)'}] ${task.text}`);
 	}
-
-	const unmatched = TARGETS.length - matched - alreadyDone;
-	if (unmatched > 0) {
-		console.log(`${unmatched} target(s) not found on the card (text may have changed) — left untouched.`);
+	for (const text of remaining) {
+		console.log(`Not found on the card, left untouched: ${text}`);
 	}
 
 	if (matched === 0) {
