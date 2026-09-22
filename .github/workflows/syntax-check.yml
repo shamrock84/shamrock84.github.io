@@ -233,6 +233,13 @@ jobs:
       - name: Test the per-position ECR fallback
         run: node scripts/test-position-ecr-fallback.mjs
 
+      # Which fetched ranking list (OP or ALL) a superflex league's pool key
+      # and ECR power-rank basis is built from. Silent when wrong: an empty
+      # OP list from FantasyPros left the pool never built and the whole
+      # league's ECR column permanently TBD instead of falling back to ALL.
+      - name: Test the ranking-set fallback
+        run: node scripts/test-ranking-set-fallback.mjs
+
       # The History tab's placement derivation: MFL bracket-name
       # classification, the winner/loser walk, and the gap-filling fallback
       # to regular-season order. Silent when wrong in the most consequential
