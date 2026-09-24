@@ -8025,12 +8025,24 @@
 		//
 		// First on the Scoring tab, full-width, answering "who of mine is
 		// playing" without opening every league's own matchup drawer to find
-		// out. Built from the exact same `t.players[]` the drawer above
-		// reads (starters-only — see that section's own comment on why
-		// bench players never appear here: a benched player can't move your
-		// score, and this card is about starters, not the whole roster)
-		// filtered down to isPlayerGameToday and the one team per league
-		// that's isMe.
+		// out. Built from the same `t.players[]`/`t.bench[]` the drawer
+		// above reads, filtered down to isPlayerGameToday and the one team
+		// per league that's isMe. Bench used to be excluded outright (a
+		// benched player can't move your score), but the manager wants to
+		// see them too, collapsed out of the way — bench rides the same
+		// live-scoring poll as starters (see CLAUDE.md's bench-detail
+		// section: "never gated, for any provider"), so including it here
+		// costs nothing extra. Each position's mini-card (see
+		// renderNowPlayingCard) splits into two sub-groups, Starters then
+		// Bench, collapsible independently via the same makeGroupCollapsible
+		// idiom a Rosters card's own status groups use — a manager who only
+		// cares who's starting has no reason to keep scrolling past a
+		// benched punt returner. A player started in one league and benched
+		// in another is classified a starter (see this function's own
+		// `starter` field below) — the more actionable of the two facts
+		// wins the row's placement, and an empty sub-group (nobody of yours
+		// is benched-and-playing right now) is omitted rather than shown
+		// with nothing in it, same as every other empty state on this card.
 		//
 		// Same "today, except Sunday" rule as the NFL tab's own Now Playing
 		// card (see isGameToday/renderNflCards' own comment): every OTHER
@@ -8097,45 +8109,56 @@
 				// this league's roster spelling of the same player still line
 				// up.
 				const rosterByName = rosterUrlByName(league);
-				for (const p of mine.players || []) {
-					// Sunday narrows to isPlayerLive (state === 'in') instead
-					// of isPlayerGameToday — see this function's own comment
-					// on why.
-					if (isSunday ? !isPlayerLive(p) : !isPlayerGameToday(p)) continue;
-					const key = normalizeName(p.name) || p.name;
-					if (!byPlayer.has(key)) {
-						byPlayer.set(key, { name: p.name, position: p.position, team: p.team, url: null, entries: [] });
+				// One body shared by the players[] (starter) and bench[]
+				// pass below — same filter, same join, same entry shape,
+				// differing only in the `starter` flag stamped onto each
+				// entry (see renderNowPlayingCard's own comment on how a
+				// row's overall `starter` classification is derived from
+				// it).
+				const addFrom = (list, starter) => {
+					for (const p of list || []) {
+						// Sunday narrows to isPlayerLive (state === 'in') instead
+						// of isPlayerGameToday — see this function's own comment
+						// on why.
+						if (isSunday ? !isPlayerLive(p) : !isPlayerGameToday(p)) continue;
+						const key = normalizeName(p.name) || p.name;
+						if (!byPlayer.has(key)) {
+							byPlayer.set(key, { name: p.name, position: p.position, team: p.team, url: null, entries: [] });
+						}
+						const row = byPlayer.get(key);
+						// First league to resolve one wins — same player, so any
+						// league's own ecr.url is as good as another's; a player
+						// FantasyPros doesn't rank (or whose name didn't resolve at
+						// sync time) simply never gets one, same fallback
+						// playerNameNode already has for every other card.
+						if (!row.url) {
+							const rosterUrl = rosterByName.get(key);
+							if (rosterUrl) row.url = rosterUrl;
+						}
+						row.entries.push({
+							league: { name: leagueDisplayName(league), url: league.url },
+							// Toolbar Label (falling back the same way the quick-link
+							// bar itself does — see quickLinkLabelForLeague) rather
+							// than the full league name: this is the short chip the
+							// row prints under the player's name, not a popover with
+							// room to spell a whole name out.
+							nickname: quickLinkLabelForLeague(league),
+							provider: league.provider || 'mfl',
+							score: p.points,
+							// Carried through so the row's own score can open the
+							// same Stat Breakdown popover the matchup drawer's
+							// score does (see renderNowPlayingCard) — providers.mjs
+							// only ever populates this for skill-position offense
+							// (see ESPN_BOXSCORE_TO_MFL_EVENT's own comment), so a
+							// PK/Def row naturally never gets one, with no
+							// exclusion list needed here to match that.
+							stats: p.stats,
+							starter,
+						});
 					}
-					const row = byPlayer.get(key);
-					// First league to resolve one wins — same player, so any
-					// league's own ecr.url is as good as another's; a player
-					// FantasyPros doesn't rank (or whose name didn't resolve at
-					// sync time) simply never gets one, same fallback
-					// playerNameNode already has for every other card.
-					if (!row.url) {
-						const rosterUrl = rosterByName.get(key);
-						if (rosterUrl) row.url = rosterUrl;
-					}
-					row.entries.push({
-						league: { name: leagueDisplayName(league), url: league.url },
-						// Toolbar Label (falling back the same way the quick-link
-						// bar itself does — see quickLinkLabelForLeague) rather
-						// than the full league name: this is the short chip the
-						// row prints under the player's name, not a popover with
-						// room to spell a whole name out.
-						nickname: quickLinkLabelForLeague(league),
-						provider: league.provider || 'mfl',
-						score: p.points,
-						// Carried through so the row's own score can open the
-						// same Stat Breakdown popover the matchup drawer's
-						// score does (see renderNowPlayingCard) — providers.mjs
-						// only ever populates this for skill-position offense
-						// (see ESPN_BOXSCORE_TO_MFL_EVENT's own comment), so a
-						// PK/Def row naturally never gets one, with no
-						// exclusion list needed here to match that.
-						stats: p.stats,
-					});
-				}
+				};
+				addFrom(mine.players, true);
+				addFrom(mine.bench, false);
 			}
 			const rows = [...byPlayer.values()].map((r) => {
 				const scored = r.entries.filter((e) => e.score != null);
@@ -8159,7 +8182,13 @@
 				// identically must not flag a "differ" link over float noise.
 				// Fewer than two scored entries can't disagree by definition.
 				const scoresDiffer = new Set(scored.map((e) => e.score.toFixed(2))).size > 1;
-				return { ...r, score: best ? best.score : null, stats: best ? best.stats : null, scoresDiffer };
+				// A row started in ANY of the manager's leagues counts as a
+				// starter — the more actionable fact when the same player is
+				// started in one league and benched in another. Only a
+				// player benched everywhere he's held falls to the Bench
+				// sub-group.
+				const starter = r.entries.some((e) => e.starter);
+				return { ...r, score: best ? best.score : null, stats: best ? best.stats : null, scoresDiffer, starter };
 			});
 			// The default order before the sort toggle (see
 			// renderNowPlayingCard) touches anything — best score leads,
@@ -8301,7 +8330,10 @@
 					const posContent = el('div', { class: 'roster-group-content' });
 					makeGroupCollapsible(posCard, posLabel, `now-playing:${pos}`);
 					posCard.appendChild(posLabel);
-					for (const r of group) {
+					// One row builder shared by both sub-groups below — a
+					// starter and a benched player render identically, the
+					// only difference is which bucket sorts them in.
+					function appendRow(container, r) {
 						const row = el('div', { class: 'now-playing-row' });
 						// A block, not a span: the game-clock line below needs
 						// its own row inside this cell, and the score sibling
@@ -8395,8 +8427,36 @@
 							}
 						}
 						row.appendChild(scoreCell);
-						posContent.appendChild(row);
+						container.appendChild(row);
 					}
+					// Starters then Bench, each its own collapsible sub-group
+					// nested one level inside the position mini-card — see
+					// this card's own header comment on why bench rides
+					// along at all and why a row lands in one bucket or the
+					// other. `.group-label`/`.roster-group` are the same
+					// classes a Rosters card's own status groups use
+					// (makeGroupCollapsible adds `.roster-group-label` on
+					// top), reused rather than a third bespoke disclosure —
+					// nesting the label inside its own wrapper is what makes
+					// `.group-label:first-of-type` zero out the top margin
+					// on the FIRST sub-group only, same reasoning as
+					// .roster-group's own comment. A sub-group with nothing
+					// in it (nobody of yours is benched-and-playing right
+					// now, the common case) is omitted rather than shown
+					// empty.
+					const starters = group.filter((r) => r.starter);
+					const bench = group.filter((r) => !r.starter);
+					[['Starters', starters, 'starters'], ['Bench', bench, 'bench']].forEach(([label, subRows, subKey]) => {
+						if (subRows.length === 0) return;
+						const subWrap = el('div', { class: 'roster-group' });
+						const subLabel = el('div', { class: 'group-label', text: `${label} (${subRows.length})` });
+						const subContent = el('div', { class: 'roster-group-content' });
+						makeGroupCollapsible(subWrap, subLabel, `now-playing:${pos}:${subKey}`);
+						subWrap.appendChild(subLabel);
+						subRows.forEach((r) => appendRow(subContent, r));
+						subWrap.appendChild(subContent);
+						posContent.appendChild(subWrap);
+					});
 					posCard.appendChild(posContent);
 					positionsWrap.appendChild(posCard);
 				}
