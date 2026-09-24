@@ -39,10 +39,10 @@
 //     least worth a full card's space. Matchups never does this: its own
 //     "no games scheduled this week" empty state is informative on its own
 //     merits, not a stale leftover.
-//   * renderNflGameRow's own state colour: a 'pre' game carries
-//     nfl-game-pending (purple), an 'in' game carries nfl-game-live (gold,
-//     already pinned above for the status text), and 'post' carries
-//     neither — the plain default. One rule in one function, so Now
+//   * renderNflGameRow's own state colour: a 'pre' game carries neither
+//     modifier — the plain default — an 'in' game carries nfl-game-live
+//     (gold, already pinned above for the status text), and a 'post' game
+//     carries nfl-game-final (purple). One rule in one function, so Now
 //     Playing and Matchups can't disagree about what a given game's state
 //     looks like.
 //
@@ -337,10 +337,10 @@ function fullText(node) {
 }
 
 // renderNflGameRow's own state colour, exercised directly rather than
-// through renderNflCards — pre = purple (nfl-game-pending), in = gold
+// through renderNflCards — pre = neither, the plain default every other
+// "nothing to flag" state on this page already uses, in = gold
 // (nfl-game-live, same class the status-text CSS above already keys off),
-// post = neither, the plain default every other "nothing to flag" state on
-// this page already uses.
+// post = purple (nfl-game-final).
 {
 	function fakeGame(state) {
 		return {
@@ -356,11 +356,11 @@ function fullText(node) {
 	const pre = ctx.renderNflGameRow(fakeGame('pre'));
 	const live = ctx.renderNflGameRow(fakeGame('in'));
 	const post = ctx.renderNflGameRow(fakeGame('post'));
-	assert.ok(hasClass('nfl-game-pending')(pre), "a game that hasn't kicked off carries nfl-game-pending");
-	assert.ok(!hasClass('nfl-game-live')(pre), 'and not nfl-game-live');
+	assert.ok(!hasClass('nfl-game-final')(pre) && !hasClass('nfl-game-live')(pre), "a game that hasn't kicked off carries neither modifier");
 	assert.ok(hasClass('nfl-game-live')(live), 'a live game carries nfl-game-live');
-	assert.ok(!hasClass('nfl-game-pending')(live), 'and not nfl-game-pending');
-	assert.ok(!hasClass('nfl-game-pending')(post) && !hasClass('nfl-game-live')(post), 'a finished game carries neither modifier');
+	assert.ok(!hasClass('nfl-game-final')(live), 'and not nfl-game-final');
+	assert.ok(hasClass('nfl-game-final')(post), 'a finished game carries nfl-game-final');
+	assert.ok(!hasClass('nfl-game-live')(post), 'and not nfl-game-live');
 }
 
 // isGameToday itself: a game with no kickoff, or an unparseable one, is
