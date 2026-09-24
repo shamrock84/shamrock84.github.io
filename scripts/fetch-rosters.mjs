@@ -49,6 +49,7 @@ import {
   fetchMflOwnerNames,
   setMflRequestInterval,
   fetchNflGameClocks,
+  isPastWeeklyRolloverCutoff,
   currentNflWeek,
 } from './lib/providers.mjs';
 import {
@@ -1366,6 +1367,9 @@ async function main() {
   // for this run, same as the "sync degrades, never fails" rule everywhere
   // else in this file.
   let nflClocks = new Map();
+  // Pure wall-clock math (isPastWeeklyRolloverCutoff), not fetched — see that
+  // function's own comment for the Wednesday-noon-Central-Time rule.
+  const pastRolloverCutoff = isPastWeeklyRolloverCutoff();
   if (LEAGUES.some((l) => l.franchiseId && (l.provider === 'espn' || l.provider === 'sleeper'))) {
     try {
       nflClocks = await fetchNflGameClocks();
@@ -1379,9 +1383,9 @@ async function main() {
     if (!target || !league.franchiseId) continue;
     try {
       const scoring = league.provider === 'espn'
-        ? await fetchEspnScoring(league, nflClocks)
+        ? await fetchEspnScoring(league, nflClocks, undefined, pastRolloverCutoff)
         : league.provider === 'sleeper'
-        ? await fetchSleeperScoring(league, nflClocks, sleeperPlayerMap)
+        ? await fetchSleeperScoring(league, nflClocks, sleeperPlayerMap, undefined, undefined, pastRolloverCutoff)
         : await fetchScoring(league, cookie, mflFranchiseInfoById.get(league.id));
       target.scoring = stripScoringPlayers(scoring);
       target.scoringError = null;

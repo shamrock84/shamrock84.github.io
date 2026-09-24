@@ -20,6 +20,7 @@ import {
   fetchSleeperWeekStats,
   fetchNflGames,
   gameClocksFromGames,
+  isPastWeeklyRolloverCutoff,
   loadSleeperPlayerMap,
   setMflRequestInterval,
   currentNflWeek,
@@ -424,6 +425,10 @@ export default async function handler(req, res) {
   let mflLoginError = null;
   let nflGames = new Map();
   let nflClocks = new Map();
+  // Pure wall-clock math (isPastWeeklyRolloverCutoff), not fetched — see that
+  // function's own comment for the Wednesday-noon-Central-Time rule. Safe to
+  // compute up front rather than inside the Promise.all below.
+  const pastRolloverCutoff = isPastWeeklyRolloverCutoff();
   let currentWeek = null;
   await Promise.all([
     (async () => {
@@ -545,13 +550,13 @@ export default async function handler(req, res) {
       .map(async (league) => {
         if (league.provider === 'espn') {
           const projectPlayer = makeProjectPlayer(projections, 'espn', league.scoring);
-          const scoring = await fetchEspnScoring(league, nflClocks, projectPlayer);
+          const scoring = await fetchEspnScoring(league, nflClocks, projectPlayer, pastRolloverCutoff);
           return { id: league.id, name: league.name, scoring, scoringError: null };
         }
         if (league.provider === 'sleeper') {
           const players = await getSleeperPlayerMap();
           const projectPlayer = makeProjectPlayer(projections, 'sleeper', league.scoring);
-          const scoring = await fetchSleeperScoring(league, nflClocks, players, projectPlayer, sleeperWeeklyStats);
+          const scoring = await fetchSleeperScoring(league, nflClocks, players, projectPlayer, sleeperWeeklyStats, pastRolloverCutoff);
           return { id: league.id, name: league.name, scoring, scoringError: null };
         }
         if (mflLoginError) {
