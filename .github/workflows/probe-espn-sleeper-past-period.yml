@@ -1,0 +1,43 @@
+name: Probe ESPN/Sleeper Past-Period Scoring (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here,
+# the same rule the other manual workflows follow. Answers cost #1 from
+# fetchEspnScoring's own comment (providers.mjs) before writing any fetching
+# code for the declined "hold ESPN/Sleeper on the prior week until its games
+# start" fix: can a past scoring period still be read back explicitly once a
+# provider's own "current week" flag has rolled past it? See
+# scripts/probe-espn-sleeper-past-period.mjs for the full rationale.
+#
+# Read-only: ESPN's fantasy API (extra scoringPeriodId-scoped views) and
+# Sleeper's public matchups endpoint. Nothing is written.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      # Blobless + sparse checkout: skips mfl/PSD and images/, which no
+      # workflow here reads. Same five directories everywhere on purpose;
+      # see sync-fantasy-rosters.yml for the reasoning and the numbers.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout: |
+            api
+            scripts
+            config
+            data
+            .github
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check ESPN/Sleeper past-period scoring reads
+        env:
+          ESPN_S2: ${{ secrets.ESPN_S2 }}
+          ESPN_SWID: ${{ secrets.ESPN_SWID }}
+        run: node scripts/probe-espn-sleeper-past-period.mjs
