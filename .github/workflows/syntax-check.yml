@@ -381,6 +381,14 @@ jobs:
       - name: Test ESPN/Sleeper live-time join
         run: node scripts/test-espn-sleeper-live-time.mjs
 
+      # weekStarted's hold-on-the-previous-week branch in fetchEspnScoring/
+      # fetchSleeperScoring (see that function's own comment for the full
+      # history — probe-espn-sleeper-past-period.yml confirmed both
+      # providers answer for an explicit past period, which is what made
+      # this feasible without a cache).
+      - name: Test the Scoring week-hold behavior
+        run: node scripts/test-scoring-week-hold.mjs
+
       # The stat-breakdown popover behind a clicked score in the drawer:
       # espnStatBreakdown/sleeperStatBreakdown in providers.mjs. Every
       # failure mode here is silent — the wrong week's stat line, a
