@@ -48,9 +48,8 @@ import {
   mflFranchiseNames,
   fetchMflOwnerNames,
   setMflRequestInterval,
-  fetchNflGames,
-  gameClocksFromGames,
-  nflWeekHasStarted,
+  fetchNflGameClocks,
+  isPastWednesdayNoonCT,
   currentNflWeek,
 } from './lib/providers.mjs';
 import {
@@ -1368,16 +1367,12 @@ async function main() {
   // for this run, same as the "sync degrades, never fails" rule everywhere
   // else in this file.
   let nflClocks = new Map();
-  // Defaults to true (trust currentPeriod/state.week unconditionally) for
-  // the same reason api/live-scoring.js does — see its own comment: a
-  // failed scoreboard fetch must not be misread as "the new week hasn't
-  // started," which would wrongly hold ESPN/Sleeper on a stale week.
-  let nflWeekStarted = true;
+  // Pure wall-clock math (isPastWednesdayNoonCT), not fetched — see that
+  // function's own comment for the Wednesday-noon-Central-Time rule.
+  const pastRolloverCutoff = isPastWednesdayNoonCT();
   if (LEAGUES.some((l) => l.franchiseId && (l.provider === 'espn' || l.provider === 'sleeper'))) {
     try {
-      const nflGames = await fetchNflGames();
-      nflClocks = gameClocksFromGames(nflGames);
-      nflWeekStarted = nflWeekHasStarted(nflGames);
+      nflClocks = await fetchNflGameClocks();
     } catch (err) {
       console.error(`Failed to fetch NFL game clocks: ${err.message}`);
     }
@@ -1388,9 +1383,9 @@ async function main() {
     if (!target || !league.franchiseId) continue;
     try {
       const scoring = league.provider === 'espn'
-        ? await fetchEspnScoring(league, nflClocks, undefined, nflWeekStarted)
+        ? await fetchEspnScoring(league, nflClocks, undefined, pastRolloverCutoff)
         : league.provider === 'sleeper'
-        ? await fetchSleeperScoring(league, nflClocks, sleeperPlayerMap, undefined, undefined, nflWeekStarted)
+        ? await fetchSleeperScoring(league, nflClocks, sleeperPlayerMap, undefined, undefined, pastRolloverCutoff)
         : await fetchScoring(league, cookie, mflFranchiseInfoById.get(league.id));
       target.scoring = stripScoringPlayers(scoring);
       target.scoringError = null;

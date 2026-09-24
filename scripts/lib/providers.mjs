@@ -1982,21 +1982,47 @@ export async function fetchNflGameClocks() {
   return gameClocksFromGames(await fetchNflGames());
 }
 
-// The `weekStarted` signal fetchEspnScoring/fetchSleeperScoring use to
-// decide whether it's still safe to hold a provider's own "current" week
+// The `pastRolloverCutoff` signal fetchEspnScoring/fetchSleeperScoring use
+// to decide whether it's still safe to hold a provider's own "current" week
 // and keep answering for its predecessor instead — see fetchEspnScoring's
-// own comment for the full history. Projects the same games map every
-// other NFL-scoreboard consumer here already shares (one request per poll,
-// not one per check), so a caller that already has `games` pays nothing
-// extra to also compute this. An empty/all-'pre' map (the ordinary case for
-// the whole Tuesday-through-Thursday window before this week's early games)
-// reads as "not started," same degrade-not-fail posture as everything else
-// this map feeds — never throws.
-export function nflWeekHasStarted(games) {
-  for (const game of games.values()) {
-    if (game.state === 'in' || game.state === 'post') return true;
-  }
-  return false;
+// own comment for the full history. This shipped 2026-09-24 gated on
+// whether the new week's first real NFL game had kicked off
+// (nflWeekHasStarted, since removed); the manager's own week-to-week
+// observation is that MFL itself appears to roll over well before
+// Thursday's kickoff, so this now pins a fixed wall-clock cutoff instead —
+// Wednesday 12:00 Central Time — chosen by the manager, who is watching how
+// MFL actually behaves and may ask for this to move. MFL's own trigger has
+// never been probed and can't be inferred: its TYPE=liveScoring call takes
+// no week parameter at all, so whatever decides when IT switches is
+// entirely internal to MFL's servers.
+//
+// Central Time is read via Intl's own IANA tz database (America/Chicago)
+// rather than a fixed UTC offset, so this needs no DST table of its own.
+// Deliberately NOT the pattern nflSeasonPhase's kickoff/offseason dates use
+// (pure UTC day arithmetic, in fantasypros.mjs) — those only ever compare
+// whole calendar days, where a timezone can't change which day a moment
+// falls on. This compares a specific HOUR within a specific day, which DST
+// genuinely shifts by an hour twice a year, so it has to ask a real
+// timezone rather than hardcode either offset.
+//
+// Held Tuesday through the first 12 hours of Wednesday; open the rest of
+// the week. In practice this is never asked to hold a week that hasn't
+// actually finished — see fetchEspnScoring's own comment: each provider's
+// own "current period" signal already advances "the moment the previous
+// week is fully scored," and Monday Night Football is always over well
+// before Tuesday.
+export function isPastWednesdayNoonCT(now = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Chicago',
+    weekday: 'short',
+    hour: 'numeric',
+    hourCycle: 'h23',
+  }).formatToParts(now);
+  const weekday = parts.find((p) => p.type === 'weekday')?.value;
+  const hour = Number(parts.find((p) => p.type === 'hour')?.value);
+  if (weekday === 'Tue') return false;
+  if (weekday === 'Wed') return hour >= 12;
+  return true;
 }
 
 // Every currently-set starter on one franchise's liveScoring entry, for the
@@ -2615,21 +2641,21 @@ function espnTeamLiveStarters(teamSide, clockMap, currentPeriod) {
 // a cold start), not just cost #1: the "obvious implementation" that
 // worried about cold starts was going to CACHE last week's tally in memory
 // to survive past the rollover. Since ESPN answers for the explicit past
-// period on demand, no caching is needed at all — `weekStarted === false`
-// below just asks for `currentPeriod - 1` instead of "current," fresh,
-// every poll, same one request this function already made. That also
+// period on demand, no caching is needed at all — `pastRolloverCutoff ===
+// false` below just asks for `currentPeriod - 1` instead of "current,"
+// fresh, every poll, same one request this function already made. That also
 // dissolves cost #2 (the freshness/staleness tradeoff): a late correction
 // to last week's stats still lands, because every poll re-reads that
 // period live rather than freezing a snapshot the moment it rolled.
 //
-// `weekStarted` is the caller's answer to "has the new period's own NFL
-// games actually kicked off yet" (fetchNflGames' own `state`, not this
-// scoring period) — computed once per poll from the same NFL scoreboard
-// read already shared across every ESPN/Sleeper league, so this function
-// never fetches it itself. Defaults to true (today's original behavior —
-// always trust currentPeriod blind) so a caller that hasn't been updated
-// to pass it is unaffected. Sleeper is presumed to roll the same way (see
-// fetchSleeperScoring below) and was confirmed live by the same probe run.
+// `pastRolloverCutoff` is the caller's answer to "is it safe to show the
+// new period yet" — see isPastWednesdayNoonCT's own comment for what
+// decides that (a fixed Wednesday-noon-Central-Time cutoff, not NFL game
+// state) and why. Computed once per poll, not fetched, so this function
+// never needs to call it itself. Defaults to true (today's original
+// behavior — always trust currentPeriod blind) so a caller that hasn't been
+// updated to pass it is unaffected. Sleeper gets the identical rule (see
+// fetchSleeperScoring below).
 //
 // clockMap is optional — pass one from fetchNflGameClocks (shared across
 // every ESPN/Sleeper league in one poll/sync, since it's the same NFL data
@@ -2668,7 +2694,7 @@ function espnTeamLiveStarters(teamSide, clockMap, currentPeriod) {
 // genuinely finished current week already produces, so the Scoring tab's
 // existing green/red win-loss styling (0 minutes, 100% win prob) applies
 // with no new rendering path.
-export async function fetchEspnScoring(league, clockMap, projectPlayer, weekStarted = true) {
+export async function fetchEspnScoring(league, clockMap, projectPlayer, pastRolloverCutoff = true) {
   const [data, clocks] = await Promise.all([
     espnGet(league, 'view=mScoreboard&view=mTeam&view=mRoster'),
     clockMap ? Promise.resolve(clockMap) : fetchNflGameClocks(),
@@ -2677,7 +2703,7 @@ export async function fetchEspnScoring(league, clockMap, projectPlayer, weekStar
   const ownerById = new Map((data.teams || []).map((t) => [t.id, espnOwnerName(t, data.members)]));
   const currentPeriod = data.status?.currentMatchupPeriod;
 
-  const holdPrevious = weekStarted === false && currentPeriod > 1;
+  const holdPrevious = pastRolloverCutoff === false && currentPeriod > 1;
   const period = holdPrevious ? currentPeriod - 1 : currentPeriod;
   const scheduleSource = holdPrevious
     ? await espnGet(league, `view=mScoreboard&view=mTeam&view=mRoster&scoringPeriodId=${period}`)
@@ -3134,15 +3160,16 @@ export async function fetchSleeperWeekStats(season, week) {
 // `/state/nfl` has ticked past it, with real final `points`/
 // `starters_points`/`players_points` (2,629.7 summed points across a real
 // league's week 2, read the same day state.week already read 3) — so
-// Sleeper gets the same `weekStarted` treatment ESPN does, for the same
-// reason (no caching needed; each poll just asks for `week - 1` instead of
-// "current" while the new week's games haven't kicked off).
+// Sleeper gets the same `pastRolloverCutoff` treatment ESPN does, for the
+// same reason (no caching needed; each poll just asks for `week - 1`
+// instead of "current" while the cutoff hasn't passed yet).
 //
-// `weekStarted` is the caller's answer to "has the new week's own NFL games
-// actually started" (fetchNflGames' `state`) — computed once per poll and
+// `pastRolloverCutoff` is the caller's answer to "is it safe to show the
+// new week yet" — see isPastWednesdayNoonCT's own comment for the rule
+// (a fixed Wednesday-noon-Central-Time cutoff). Computed once per poll and
 // shared across every ESPN/Sleeper league, never fetched here. Defaults to
 // true so a caller that hasn't been updated is unaffected.
-export async function fetchSleeperScoring(league, clockMap, playerMap, projectPlayer, weeklyStats, weekStarted = true) {
+export async function fetchSleeperScoring(league, clockMap, playerMap, projectPlayer, weeklyStats, pastRolloverCutoff = true) {
   const [state, { names, ownerById }, clocks, players, leagueData] = await Promise.all([
     sleeperGet('/state/nfl'),
     sleeperTeamNames(league),
@@ -3154,7 +3181,7 @@ export async function fetchSleeperScoring(league, clockMap, playerMap, projectPl
   if (!currentWeek) {
     throw new Error('No live scoring available yet');
   }
-  const holdPrevious = weekStarted === false && currentWeek > 1;
+  const holdPrevious = pastRolloverCutoff === false && currentWeek > 1;
   const week = holdPrevious ? currentWeek - 1 : currentWeek;
 
   const rawMatchups = await sleeperGet(`/league/${league.id}/matchups/${week}`);

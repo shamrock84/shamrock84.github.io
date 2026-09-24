@@ -20,7 +20,7 @@ import {
   fetchSleeperWeekStats,
   fetchNflGames,
   gameClocksFromGames,
-  nflWeekHasStarted,
+  isPastWednesdayNoonCT,
   loadSleeperPlayerMap,
   setMflRequestInterval,
   currentNflWeek,
@@ -425,14 +425,10 @@ export default async function handler(req, res) {
   let mflLoginError = null;
   let nflGames = new Map();
   let nflClocks = new Map();
-  // Defaults to true (the original, unconditional "always trust
-  // currentPeriod/state.week" behavior) rather than false: a failed
-  // scoreboard fetch leaves nflGames empty, and nflWeekHasStarted(empty map)
-  // would read that as "not started," which is the wrong direction to guess
-  // wrong in — it would hold ESPN/Sleeper on a stale previous week with no
-  // actual signal that the new one hasn't kicked off. Only flipped to a real
-  // computed value below once the scoreboard fetch actually succeeds.
-  let nflWeekStarted = true;
+  // Pure wall-clock math (isPastWednesdayNoonCT), not fetched — see that
+  // function's own comment for the Wednesday-noon-Central-Time rule. Safe to
+  // compute up front rather than inside the Promise.all below.
+  const pastRolloverCutoff = isPastWednesdayNoonCT();
   let currentWeek = null;
   await Promise.all([
     (async () => {
@@ -447,15 +443,12 @@ export default async function handler(req, res) {
       // fetchNflGameClocks used to make — the clocks are projected out of it
       // (gameClocksFromGames) rather than fetched again, so the drawer's
       // opponent/kickoff line costs nothing beyond what this poll already paid.
-      // nflWeekHasStarted is a third, equally free projection of the same
-      // map — see fetchEspnScoring's own comment for what it feeds.
       // A failure here must not cost any ESPN/Sleeper league its actual
       // score, so this degrades to an empty map (every minutesRemaining/
       // winProb comes back 0/undefined for this poll) rather than rejecting.
       try {
         nflGames = await fetchNflGames();
         nflClocks = gameClocksFromGames(nflGames);
-        nflWeekStarted = nflWeekHasStarted(nflGames);
       } catch {
         // degrade silently — see comment above.
       }
@@ -557,13 +550,13 @@ export default async function handler(req, res) {
       .map(async (league) => {
         if (league.provider === 'espn') {
           const projectPlayer = makeProjectPlayer(projections, 'espn', league.scoring);
-          const scoring = await fetchEspnScoring(league, nflClocks, projectPlayer, nflWeekStarted);
+          const scoring = await fetchEspnScoring(league, nflClocks, projectPlayer, pastRolloverCutoff);
           return { id: league.id, name: league.name, scoring, scoringError: null };
         }
         if (league.provider === 'sleeper') {
           const players = await getSleeperPlayerMap();
           const projectPlayer = makeProjectPlayer(projections, 'sleeper', league.scoring);
-          const scoring = await fetchSleeperScoring(league, nflClocks, players, projectPlayer, sleeperWeeklyStats, nflWeekStarted);
+          const scoring = await fetchSleeperScoring(league, nflClocks, players, projectPlayer, sleeperWeeklyStats, pastRolloverCutoff);
           return { id: league.id, name: league.name, scoring, scoringError: null };
         }
         if (mflLoginError) {
