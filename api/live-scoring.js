@@ -20,7 +20,7 @@ import {
   fetchSleeperWeekStats,
   fetchNflGames,
   gameClocksFromGames,
-  isPastWednesdayNoonCT,
+  isPastWeeklyRolloverCutoff,
   loadSleeperPlayerMap,
   setMflRequestInterval,
   currentNflWeek,
@@ -425,10 +425,10 @@ export default async function handler(req, res) {
   let mflLoginError = null;
   let nflGames = new Map();
   let nflClocks = new Map();
-  // Pure wall-clock math (isPastWednesdayNoonCT), not fetched — see that
+  // Pure wall-clock math (isPastWeeklyRolloverCutoff), not fetched — see that
   // function's own comment for the Wednesday-noon-Central-Time rule. Safe to
   // compute up front rather than inside the Promise.all below.
-  const pastRolloverCutoff = isPastWednesdayNoonCT();
+  const pastRolloverCutoff = isPastWeeklyRolloverCutoff();
   let currentWeek = null;
   await Promise.all([
     (async () => {

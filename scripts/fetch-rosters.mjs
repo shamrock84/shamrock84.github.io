@@ -49,7 +49,7 @@ import {
   fetchMflOwnerNames,
   setMflRequestInterval,
   fetchNflGameClocks,
-  isPastWednesdayNoonCT,
+  isPastWeeklyRolloverCutoff,
   currentNflWeek,
 } from './lib/providers.mjs';
 import {
@@ -1367,9 +1367,9 @@ async function main() {
   // for this run, same as the "sync degrades, never fails" rule everywhere
   // else in this file.
   let nflClocks = new Map();
-  // Pure wall-clock math (isPastWednesdayNoonCT), not fetched — see that
+  // Pure wall-clock math (isPastWeeklyRolloverCutoff), not fetched — see that
   // function's own comment for the Wednesday-noon-Central-Time rule.
-  const pastRolloverCutoff = isPastWednesdayNoonCT();
+  const pastRolloverCutoff = isPastWeeklyRolloverCutoff();
   if (LEAGUES.some((l) => l.franchiseId && (l.provider === 'espn' || l.provider === 'sleeper'))) {
     try {
       nflClocks = await fetchNflGameClocks();

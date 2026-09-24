@@ -1982,6 +1982,18 @@ export async function fetchNflGameClocks() {
   return gameClocksFromGames(await fetchNflGames());
 }
 
+// The single place to move the weekly rollover cutoff below — a day and an
+// hour, both in Central Time, nothing else to touch. Currently Wednesday at
+// noon, the manager's own choice; they're watching how MFL itself actually
+// behaves week to week and may ask for this to move, which is the entire
+// reason these are named constants here rather than literals buried in the
+// comparison logic. ROLLOVER_CUTOFF_WEEKDAY must be one of Intl's short
+// weekday spellings (Sun/Mon/Tue/Wed/Thu/Fri/Sat); ROLLOVER_CUTOFF_HOUR_CT
+// is 0-23. After editing either, re-run test-scoring-week-hold.mjs, which
+// pins today's Tue/Wed-noon values — it will need updating to match.
+const ROLLOVER_CUTOFF_WEEKDAY = 'Wed';
+const ROLLOVER_CUTOFF_HOUR_CT = 12;
+
 // The `pastRolloverCutoff` signal fetchEspnScoring/fetchSleeperScoring use
 // to decide whether it's still safe to hold a provider's own "current" week
 // and keep answering for its predecessor instead — see fetchEspnScoring's
@@ -1989,12 +2001,12 @@ export async function fetchNflGameClocks() {
 // whether the new week's first real NFL game had kicked off
 // (nflWeekHasStarted, since removed); the manager's own week-to-week
 // observation is that MFL itself appears to roll over well before
-// Thursday's kickoff, so this now pins a fixed wall-clock cutoff instead —
-// Wednesday 12:00 Central Time — chosen by the manager, who is watching how
-// MFL actually behaves and may ask for this to move. MFL's own trigger has
-// never been probed and can't be inferred: its TYPE=liveScoring call takes
-// no week parameter at all, so whatever decides when IT switches is
-// entirely internal to MFL's servers.
+// Thursday's kickoff, so this now pins a fixed wall-clock cutoff instead,
+// configured by the two constants just above. MFL's own trigger has never
+// been probed and can't be inferred: its TYPE=liveScoring call takes no
+// week parameter at all, so whatever decides when IT switches is entirely
+// internal to MFL's servers (confirmed by reading MFL's own developer docs,
+// mfl/README.md — nothing there names a rollover time either).
 //
 // Central Time is read via Intl's own IANA tz database (America/Chicago)
 // rather than a fixed UTC offset, so this needs no DST table of its own.
@@ -2005,13 +2017,21 @@ export async function fetchNflGameClocks() {
 // genuinely shifts by an hour twice a year, so it has to ask a real
 // timezone rather than hardcode either offset.
 //
-// Held Tuesday through the first 12 hours of Wednesday; open the rest of
-// the week. In practice this is never asked to hold a week that hasn't
-// actually finished — see fetchEspnScoring's own comment: each provider's
-// own "current period" signal already advances "the moment the previous
-// week is fully scored," and Monday Night Football is always over well
-// before Tuesday.
-export function isPastWednesdayNoonCT(now = new Date()) {
+// WEEK_ORDER_FROM_TUESDAY anchors the 7-day comparison at Tuesday rather
+// than the calendar's own Sunday start, since the hold window can only ever
+// fall in the Tuesday-through-cutoff span: NFL games run Thursday/Sunday/
+// Monday (occasionally Saturday late season), so every provider's own
+// "current period" signal has always already advanced by Tuesday morning —
+// see fetchEspnScoring's own comment, "the moment the previous week is
+// fully scored," and Monday Night Football is always over well before
+// Tuesday. Anchoring here, rather than comparing weekday NAMES directly,
+// is what makes the cutoff genuinely movable to any day/hour rather than
+// only correct for the one Tue/Wed pair this shipped with — a cutoff moved
+// to, say, Thursday would correctly hold all of Tuesday and Wednesday too,
+// not just skip straight to checking Thursday's hour.
+const WEEK_ORDER_FROM_TUESDAY = ['Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun', 'Mon'];
+
+export function isPastWeeklyRolloverCutoff(now = new Date()) {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/Chicago',
     weekday: 'short',
@@ -2020,9 +2040,11 @@ export function isPastWednesdayNoonCT(now = new Date()) {
   }).formatToParts(now);
   const weekday = parts.find((p) => p.type === 'weekday')?.value;
   const hour = Number(parts.find((p) => p.type === 'hour')?.value);
-  if (weekday === 'Tue') return false;
-  if (weekday === 'Wed') return hour >= 12;
-  return true;
+  const dayIndex = WEEK_ORDER_FROM_TUESDAY.indexOf(weekday);
+  const cutoffIndex = WEEK_ORDER_FROM_TUESDAY.indexOf(ROLLOVER_CUTOFF_WEEKDAY);
+  if (dayIndex < cutoffIndex) return false;
+  if (dayIndex > cutoffIndex) return true;
+  return hour >= ROLLOVER_CUTOFF_HOUR_CT;
 }
 
 // Every currently-set starter on one franchise's liveScoring entry, for the
@@ -2649,7 +2671,7 @@ function espnTeamLiveStarters(teamSide, clockMap, currentPeriod) {
 // period live rather than freezing a snapshot the moment it rolled.
 //
 // `pastRolloverCutoff` is the caller's answer to "is it safe to show the
-// new period yet" — see isPastWednesdayNoonCT's own comment for what
+// new period yet" — see isPastWeeklyRolloverCutoff's own comment for what
 // decides that (a fixed Wednesday-noon-Central-Time cutoff, not NFL game
 // state) and why. Computed once per poll, not fetched, so this function
 // never needs to call it itself. Defaults to true (today's original
@@ -3165,7 +3187,7 @@ export async function fetchSleeperWeekStats(season, week) {
 // instead of "current" while the cutoff hasn't passed yet).
 //
 // `pastRolloverCutoff` is the caller's answer to "is it safe to show the
-// new week yet" — see isPastWednesdayNoonCT's own comment for the rule
+// new week yet" — see isPastWeeklyRolloverCutoff's own comment for the rule
 // (a fixed Wednesday-noon-Central-Time cutoff). Computed once per poll and
 // shared across every ESPN/Sleeper league, never fetched here. Defaults to
 // true so a caller that hasn't been updated is unaffected.
