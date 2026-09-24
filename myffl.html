@@ -1973,19 +1973,21 @@
 			color: var(--gold-chip-text);
 			font-weight: 700;
 		}
-		/* Each sub-card reads its own readiness at a glance: not yet kicked
-		   off is the site's own purple "notable/upcoming" pairing
-		   (--chip-bg/--accent — the same one the Yrs/Sal chips and the
-		   Admin tab's open-league border use, see their own comments);
-		   live right now reuses the same gold as the status text above and
-		   the Problems Digest strip, rather than inventing a second "this
-		   is happening" color; a finished game gets neither — the plain
-		   default border/background already means "nothing to flag" every-
-		   where else on this page, so a finished game needs no rule of its
-		   own here. Applied in renderNflGameRow, so Now Playing and
-		   Matchups (the two cards built from it) can't disagree about what
-		   a given game's own state looks like. */
-		.nfl-game-row.nfl-game-pending {
+		/* Each sub-card reads its own readiness at a glance: a game not yet
+		   kicked off gets neither modifier — the plain default border/
+		   background already means "nothing to flag" everywhere else on
+		   this page, and there's nothing yet to flag about a game that
+		   hasn't started; live right now reuses the same gold as the
+		   status text above and the Problems Digest strip, rather than
+		   inventing a second "this is happening" color; a finished game
+		   gets the site's own purple "notable" pairing (--chip-bg/--accent
+		   — the same one the Yrs/Sal chips and the Admin tab's open-league
+		   border use, see their own comments) so a completed result stands
+		   out from the pre-kickoff pack rather than the other way around.
+		   Applied in renderNflGameRow, so Now Playing and Matchups (the
+		   two cards built from it) can't disagree about what a given
+		   game's own state looks like. */
+		.nfl-game-row.nfl-game-final {
 			background: var(--chip-bg);
 			border-color: var(--accent);
 		}
@@ -11389,13 +11391,13 @@
 
 		function renderNflGameRow(game) {
 			const showScore = game.state !== 'pre' && game.away.score != null && game.home.score != null;
-			// Purple/gold/plain reads the same "hasn't played / live /
+			// Plain/gold/purple reads the same "hasn't played / live /
 			// finished" state as the score and status text below, just at a
 			// glance across the whole sub-card — see .nfl-game-row.nfl-game-
-			// pending/nfl-game-live's own CSS comment for why those two
-			// colors specifically. 'post' gets neither modifier: the plain
+			// live/nfl-game-final's own CSS comment for why those two
+			// colors specifically. 'pre' gets neither modifier: the plain
 			// default already means "nothing to flag" everywhere else here.
-			const stateClass = game.state === 'in' ? ' nfl-game-live' : game.state === 'pre' ? ' nfl-game-pending' : '';
+			const stateClass = game.state === 'in' ? ' nfl-game-live' : game.state === 'post' ? ' nfl-game-final' : '';
 			const row = el('div', { class: `nfl-game-row${stateClass}` });
 			const teams = el('div', { class: 'nfl-game-teams' });
 			teams.appendChild(el('span', { class: 'nfl-game-team', text: game.away.team }));
