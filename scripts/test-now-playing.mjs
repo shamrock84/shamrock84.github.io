@@ -176,14 +176,15 @@ const hasClass = (c) => (n) => n.cls.split(/\s+/).includes(c);
 // shaped exactly like the live-scoring response's teams[] (see
 // scripts/lib/providers.mjs' fetchScoring/fetchEspnScoring/
 // fetchSleeperScoring, all of which return this same { franchiseId,
-// teamName, isMe, players } shape per team, mine included with everyone
-// else's).
-function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynasty', nickname, provider) {
+// teamName, isMe, players, bench } shape per team, mine included with
+// everyone else's — bench is never gated behind isMe any more than players
+// is, see CLAUDE.md's own bench-detail section).
+function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynasty', nickname, provider, myBench = []) {
 	return {
 		id, type, url: `https://example.com/${id}`, displayName: `League ${id}`, nickname, provider,
 		scoring: {
 			teams: [
-				{ franchiseId, teamName: 'Mine', isMe: true, players: myPlayers },
+				{ franchiseId, teamName: 'Mine', isMe: true, players: myPlayers, bench: myBench },
 				{ franchiseId: `${franchiseId}-opp`, teamName: 'Opponent', isMe: false, players: opponentPlayers },
 			],
 		},
@@ -333,6 +334,103 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 	assert.equal(rows.length, 2, 'kickers and defenses appear here now');
 	assert.ok(rows.some((r) => r.name === 'Kicker Guy' && r.position === 'PK'));
 	assert.ok(rows.some((r) => r.name === 'Some Defense' && r.position === 'Def'));
+}
+
+// --- Bench players ride along, tagged, never merged as opponents ---
+//
+// Bench used to be excluded from this card outright; it's included now,
+// filtered by the same isPlayerGameToday/isPlayerLive gate as a starter, and
+// each entry carries a `starter` flag so renderNowPlayingCard can split
+// Starters from Bench inside a position's mini-card (see that function's own
+// comment on why).
+{
+	const ctx = makeContext();
+	setLiveGames(ctx, { BUF: { state: 'in' } });
+	const rows = ctx.computeNowPlaying([
+		league('L60', '0001',
+			[{ name: 'Starting Guy', position: 'QB', team: 'BUF', points: 20 }],
+			[],
+			'dynasty', undefined, undefined,
+			[{ name: 'Benched Guy', position: 'QB', team: 'BUF', points: 6 }]
+		),
+	], SUNDAY_NOW);
+	assert.equal(rows.length, 2, 'both the starter and the bench player produce a row');
+	const starterRow = rows.find((r) => r.name === 'Starting Guy');
+	const benchRow = rows.find((r) => r.name === 'Benched Guy');
+	assert.equal(starterRow.starter, true, 'a starter is classified starter');
+	assert.equal(benchRow.starter, false, 'a bench player is classified not-starter');
+}
+
+// A bench player not on today's calendar date is excluded exactly like a
+// starter would be — bench gets no special exemption from the gate.
+{
+	const ctx = makeContext();
+	setLiveGames(ctx, { BUF: { state: 'pre', kickoff: FAR_OFF_KICKOFF } });
+	const rows = ctx.computeNowPlaying([
+		league('L61', '0001', [], [], 'dynasty', undefined, undefined, [{ name: 'Not Today Bench', position: 'QB', team: 'BUF', points: 0 }]),
+	], WEEKDAY_NOW);
+	assert.equal(rows.length, 0, "a bench player whose game isn't today doesn't appear either");
+}
+
+// A player started in one league and benched in another is classified a
+// starter overall — the more actionable of the two facts wins the row's
+// placement (see computeNowPlaying's own comment on this).
+{
+	const ctx = makeContext();
+	setLiveGames(ctx, { BUF: { state: 'in' } });
+	const rows = ctx.computeNowPlaying([
+		league('L62', '0001', [{ name: 'Split Guy', position: 'QB', team: 'BUF', points: 20 }]),
+		league('L63', '0002', [], [], 'dynasty', undefined, undefined, [{ name: 'Split Guy', position: 'QB', team: 'BUF', points: 20 }]),
+	], SUNDAY_NOW);
+	assert.equal(rows.length, 1, 'the two leagues merge into one row, same as any other cross-league merge');
+	assert.equal(rows[0].starter, true, 'started in even one league outranks benched in another');
+}
+
+// --- renderNowPlayingCard: Starters and Bench render as separate,
+// independently collapsible sub-groups inside each position's mini-card ---
+{
+	const ctx = makeContext(LOGGED_IN);
+	setLiveScoringAttempted(ctx, true);
+	setLiveGames(ctx, { BUF: { state: 'in' } });
+	const card = ctx.renderNowPlayingCard([
+		league('L64', '0001',
+			[{ name: 'Starting QB', position: 'QB', team: 'BUF', points: 20 }],
+			[],
+			'dynasty', undefined, undefined,
+			[{ name: 'Benched QB', position: 'QB', team: 'BUF', points: 6 }]
+		),
+	], SUNDAY_NOW);
+
+	// startsWith, not equality — makeGroupCollapsible's chevron span lands
+	// after the label text here (see this test harness's own insertBefore,
+	// which just appends), same reason the PK/Def merged-heading test below
+	// checks its text the same way.
+	const groupLabels = findAll(card, hasClass('group-label')).map(fullText);
+	assert.ok(groupLabels.some((t) => t.startsWith('Starters (1)')), 'the Starters sub-group is labelled and counted');
+	assert.ok(groupLabels.some((t) => t.startsWith('Bench (1)')), 'the Bench sub-group is labelled and counted');
+
+	// Each sub-group is its own makeGroupCollapsible instance — collapsing
+	// Bench must not touch Starters.
+	const subGroups = findAll(card, (n) => hasClass('roster-group')(n) && !hasClass('now-playing-position')(n));
+	assert.equal(subGroups.length, 2, 'Starters and Bench are two independent collapsible groups');
+	const benchGroup = subGroups.find((g) => fullText(g).includes('Benched QB'));
+	const starterGroup = subGroups.find((g) => fullText(g).includes('Starting QB'));
+	benchGroup.children.find((c) => hasClass('group-label')(c)).listeners.click[0]();
+	assert.ok(hasClass('roster-group-collapsed')(benchGroup), 'collapsing Bench folds it');
+	assert.ok(!hasClass('roster-group-collapsed')(starterGroup), 'Starters is unaffected by collapsing Bench');
+}
+
+// A position with nobody benched-and-playing omits the Bench sub-group
+// entirely, rather than showing it empty — same "omit rather than print
+// empty" idiom this card already applies elsewhere (e.g. scoresDiffer).
+{
+	const ctx = makeContext(LOGGED_IN);
+	setLiveScoringAttempted(ctx, true);
+	setLiveGames(ctx, { BUF: { state: 'in' } });
+	const card = ctx.renderNowPlayingCard([league('L65', '0001', [{ name: 'Only Starter', position: 'QB', team: 'BUF', points: 20 }])], SUNDAY_NOW);
+	const groupLabels = findAll(card, hasClass('group-label')).map(fullText);
+	assert.ok(groupLabels.some((t) => t.startsWith('Starters (1)')), 'Starters still renders');
+	assert.ok(!groupLabels.some((t) => t.startsWith('Bench')), 'no Bench sub-group when nobody of mine is benched-and-playing');
 }
 
 // draftonly leagues never produce live scoring at all (see
