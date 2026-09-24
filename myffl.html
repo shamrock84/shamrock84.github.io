@@ -6133,21 +6133,30 @@
 			return `${namespace}:${bucket}:${key}`;
 		}
 
-		function isCardCollapsed(key, namespace = 'myfflCardCollapsed') {
+		// `defaultValue` is what an UNTOUCHED key means — false (expanded) for
+		// every existing caller, which is why it's the default parameter
+		// value and every one of them reads identically to before this
+		// existed. makeGroupCollapsible's Bench sub-group (see its own
+		// comment) is the one caller that passes true, since a manager who's
+		// never touched that toggle wants it collapsed out of the way.
+		function isCardCollapsed(key, namespace = 'myfflCardCollapsed', defaultValue = false) {
 			try {
-				return localStorage.getItem(cardCollapseStorageKey(key, namespace)) === '1';
+				const stored = localStorage.getItem(cardCollapseStorageKey(key, namespace));
+				return stored === null ? defaultValue : stored === '1';
 			} catch {
-				return false;
+				return defaultValue;
 			}
 		}
 
-		function setCardCollapsed(key, collapsed, namespace = 'myfflCardCollapsed') {
+		function setCardCollapsed(key, collapsed, namespace = 'myfflCardCollapsed', defaultValue = false) {
 			try {
-				// Absence is the default (expanded), so a card nobody ever
-				// touched costs nothing in storage and a stale key doesn't
-				// linger once someone expands it back.
-				if (collapsed) localStorage.setItem(cardCollapseStorageKey(key, namespace), '1');
-				else localStorage.removeItem(cardCollapseStorageKey(key, namespace));
+				// Absence means "whatever defaultValue says", so a card
+				// nobody ever touched costs nothing in storage and a stale
+				// key doesn't linger once someone toggles it back to that
+				// same default — only a toggle that actually DISAGREES with
+				// the default is worth persisting.
+				if (collapsed === defaultValue) localStorage.removeItem(cardCollapseStorageKey(key, namespace));
+				else localStorage.setItem(cardCollapseStorageKey(key, namespace), collapsed ? '1' : '0');
 			} catch {
 				// Private browsing or a full quota — the toggle still works
 				// for this render, it just won't survive a reload.
@@ -6226,8 +6235,15 @@
 		// whole-card collapse state keyed the same way. `key` must be unique
 		// per league+group across renders (`${league.id}:${group.key}` at
 		// the call site) for the same reason makeCollapsible's key must.
-		function makeGroupCollapsible(wrap, label, key) {
-			const collapsed = isCardCollapsed(key, 'myfflGroupCollapsed');
+		// `defaultCollapsed`, when true, makes a group nobody has ever
+		// toggled start collapsed instead of expanded — the Now Playing
+		// card's Bench sub-group is the one caller that passes it (see
+		// renderNowPlayingCard's own comment on why), so a manager who's
+		// never touched that toggle sees Starters open and Bench tucked
+		// away, while every Rosters status group keeps the plain
+		// default-expanded behavior it always had.
+		function makeGroupCollapsible(wrap, label, key, defaultCollapsed = false) {
+			const collapsed = isCardCollapsed(key, 'myfflGroupCollapsed', defaultCollapsed);
 			wrap.classList.toggle('roster-group-collapsed', collapsed);
 			label.classList.add('roster-group-label');
 			label.setAttribute('role', 'button');
@@ -6245,7 +6261,7 @@
 				const next = !wrap.classList.contains('roster-group-collapsed');
 				wrap.classList.toggle('roster-group-collapsed', next);
 				label.setAttribute('aria-expanded', String(!next));
-				setCardCollapsed(key, next, 'myfflGroupCollapsed');
+				setCardCollapsed(key, next, 'myfflGroupCollapsed', defaultCollapsed);
 			};
 			label.addEventListener('click', toggleCollapse);
 			// Keyboard parity with the mouse target: role="button" doesn't
@@ -8029,20 +8045,25 @@
 		// above reads, filtered down to isPlayerGameToday and the one team
 		// per league that's isMe. Bench used to be excluded outright (a
 		// benched player can't move your score), but the manager wants to
-		// see them too, collapsed out of the way — bench rides the same
-		// live-scoring poll as starters (see CLAUDE.md's bench-detail
+		// see them too, tucked out of the way by default — bench rides the
+		// same live-scoring poll as starters (see CLAUDE.md's bench-detail
 		// section: "never gated, for any provider"), so including it here
 		// costs nothing extra. Each position's mini-card (see
 		// renderNowPlayingCard) splits into two sub-groups, Starters then
 		// Bench, collapsible independently via the same makeGroupCollapsible
 		// idiom a Rosters card's own status groups use — a manager who only
 		// cares who's starting has no reason to keep scrolling past a
-		// benched punt returner. A player started in one league and benched
-		// in another is classified a starter (see this function's own
-		// `starter` field below) — the more actionable of the two facts
-		// wins the row's placement, and an empty sub-group (nobody of yours
-		// is benched-and-playing right now) is omitted rather than shown
-		// with nothing in it, same as every other empty state on this card.
+		// benched punt returner. Bench alone opts into
+		// makeGroupCollapsible's `defaultCollapsed` argument, so a manager
+		// who's never touched the toggle sees it collapsed on first load;
+		// Starters stays open, same default-expanded behavior every other
+		// collapsible group on this page has. A player started in one
+		// league and benched in another is classified a starter (see this
+		// function's own `starter` field below) — the more actionable of
+		// the two facts wins the row's placement, and an empty sub-group
+		// (nobody of yours is benched-and-playing right now) is omitted
+		// rather than shown with nothing in it, same as every other empty
+		// state on this card.
 		//
 		// Same "today, except Sunday" rule as the NFL tab's own Now Playing
 		// card (see isGameToday/renderNflCards' own comment): every OTHER
@@ -8443,15 +8464,22 @@
 					// .roster-group's own comment. A sub-group with nothing
 					// in it (nobody of yours is benched-and-playing right
 					// now, the common case) is omitted rather than shown
-					// empty.
+					// empty. Bench defaults COLLAPSED (makeGroupCollapsible's
+					// own `defaultCollapsed` argument) — a benched player is
+					// the less actionable of the two facts (see this card's
+					// own header comment), so a manager who's never touched
+					// this toggle sees Starters open and Bench tucked away,
+					// one tap from being checked. Starters keeps the
+					// ordinary default-expanded behavior every other
+					// collapsible group on this page uses.
 					const starters = group.filter((r) => r.starter);
 					const bench = group.filter((r) => !r.starter);
-					[['Starters', starters, 'starters'], ['Bench', bench, 'bench']].forEach(([label, subRows, subKey]) => {
+					[['Starters', starters, 'starters', false], ['Bench', bench, 'bench', true]].forEach(([label, subRows, subKey, defaultCollapsed]) => {
 						if (subRows.length === 0) return;
 						const subWrap = el('div', { class: 'roster-group' });
 						const subLabel = el('div', { class: 'group-label', text: `${label} (${subRows.length})` });
 						const subContent = el('div', { class: 'roster-group-content' });
-						makeGroupCollapsible(subWrap, subLabel, `now-playing:${pos}:${subKey}`);
+						makeGroupCollapsible(subWrap, subLabel, `now-playing:${pos}:${subKey}`, defaultCollapsed);
 						subWrap.appendChild(subLabel);
 						subRows.forEach((r) => appendRow(subContent, r));
 						subWrap.appendChild(subContent);

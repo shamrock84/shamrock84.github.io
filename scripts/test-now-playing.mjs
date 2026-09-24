@@ -409,15 +409,29 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 	assert.ok(groupLabels.some((t) => t.startsWith('Starters (1)')), 'the Starters sub-group is labelled and counted');
 	assert.ok(groupLabels.some((t) => t.startsWith('Bench (1)')), 'the Bench sub-group is labelled and counted');
 
-	// Each sub-group is its own makeGroupCollapsible instance — collapsing
+	// Each sub-group is its own makeGroupCollapsible instance — toggling
 	// Bench must not touch Starters.
 	const subGroups = findAll(card, (n) => hasClass('roster-group')(n) && !hasClass('now-playing-position')(n));
 	assert.equal(subGroups.length, 2, 'Starters and Bench are two independent collapsible groups');
 	const benchGroup = subGroups.find((g) => fullText(g).includes('Benched QB'));
 	const starterGroup = subGroups.find((g) => fullText(g).includes('Starting QB'));
-	benchGroup.children.find((c) => hasClass('group-label')(c)).listeners.click[0]();
-	assert.ok(hasClass('roster-group-collapsed')(benchGroup), 'collapsing Bench folds it');
-	assert.ok(!hasClass('roster-group-collapsed')(starterGroup), 'Starters is unaffected by collapsing Bench');
+	// Bench defaults COLLAPSED on a fresh load (nobody has touched the
+	// toggle yet — see makeGroupCollapsible's own `defaultCollapsed`
+	// argument and this card's own header comment on why); Starters keeps
+	// the ordinary default-expanded behavior every other collapsible group
+	// on the page has.
+	assert.ok(hasClass('roster-group-collapsed')(benchGroup), 'Bench starts collapsed by default, untouched');
+	assert.ok(!hasClass('roster-group-collapsed')(starterGroup), 'Starters starts expanded, same as ever');
+
+	const benchLabel = benchGroup.children.find((c) => hasClass('group-label')(c));
+	benchLabel.listeners.click[0]();
+	assert.ok(!hasClass('roster-group-collapsed')(benchGroup), 'clicking Bench expands it');
+	assert.ok(!hasClass('roster-group-collapsed')(starterGroup), 'Starters is unaffected by expanding Bench');
+	assert.equal(ctx.__store.get('myfflGroupCollapsed:desktop:now-playing:QB:bench'), '0', 'expanding away from the default is what actually gets persisted');
+
+	benchLabel.listeners.click[0]();
+	assert.ok(hasClass('roster-group-collapsed')(benchGroup), 'clicking it again re-collapses');
+	assert.equal(ctx.__store.get('myfflGroupCollapsed:desktop:now-playing:QB:bench'), undefined, 'collapsing back to the default removes the stored key rather than writing "1"');
 }
 
 // A position with nobody benched-and-playing omits the Bench sub-group
