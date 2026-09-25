@@ -2610,8 +2610,12 @@
 		   the UI. */
 		.results-rank-input {
 			font: inherit;
-			font-size: 0.82rem;
-			width: 2.4rem;
+			/* 16px, not the 0.82rem this cell would otherwise inherit — iOS
+			   Safari zooms the page in on focus of any text input under
+			   16px (see .admin-input for the same fix). Width is bumped to
+			   match so two digits still fit without crowding. */
+			font-size: 16px;
+			width: 2.8rem;
 			color: var(--ir-text);
 			background: var(--ir-bg);
 			border: 1px solid color-mix(in srgb, var(--ir-text) 35%, var(--border));
