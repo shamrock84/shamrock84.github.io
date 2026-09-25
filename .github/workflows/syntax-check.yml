@@ -441,6 +441,15 @@ jobs:
       - name: Test the Now Playing card
         run: node scripts/test-now-playing.mjs
 
+      # The Game-Time Watchlist replaces a phone alarm per injured starter, so
+      # its failure that matters is a missing row — a Questionable starter
+      # that never appears reads exactly like "nothing to check". Pins who
+      # qualifies (starters only, any designation, game not yet started),
+      # the cross-league merge, kickoff ordering and the check-at lead, and
+      # that "not asked yet" renders as loading rather than empty.
+      - name: Test the Game-Time Watchlist
+        run: node scripts/test-game-time-watchlist.mjs
+
       # The W-L(-T) suffix appended to a team's name on Rosters and Scoring
       # (currentRecord/appendRecord). Every failure mode here is silent — a
       # wrong franchiseId join renders a plausible record for the wrong
