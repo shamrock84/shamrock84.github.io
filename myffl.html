@@ -1899,6 +1899,77 @@
 			flex-shrink: 0;
 			font-variant-numeric: tabular-nums;
 		}
+		/* Game-Time Watchlist — full width for the same reason as
+		   .now-playing-card, and the same bordered mini-box per group, keyed by
+		   kickoff instead of position. Separate classes rather than borrowing
+		   .now-playing-*, per this file's convention for two features that
+		   share a shape. */
+		.watchlist-card {
+			grid-column: 1 / -1;
+		}
+		.watchlist-slots {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 1rem;
+			margin-top: 0.5rem;
+		}
+		.watchlist-slot {
+			flex: 1 1 260px;
+			min-width: 0;
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			overflow: hidden;
+		}
+		.watchlist-slot-head {
+			display: flex;
+			justify-content: space-between;
+			gap: 0.5rem;
+			font-size: 0.78rem;
+			font-weight: 700;
+			color: var(--accent);
+			background: var(--chip-bg);
+			padding: 0.35rem 0.5rem;
+		}
+		/* The time to look, not a second heading — muted and lighter so the
+		   kickoff reads first. */
+		.watchlist-check-at {
+			font-weight: 400;
+			color: var(--muted);
+		}
+		.watchlist-row {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			gap: 0.5rem;
+			padding: 0.3rem 0.5rem;
+			font-size: 0.85rem;
+		}
+		.watchlist-row + .watchlist-row {
+			border-top: 1px solid var(--border);
+		}
+		.watchlist-name {
+			min-width: 0;
+			overflow-wrap: break-word;
+		}
+		.watchlist-opponent {
+			flex-shrink: 0;
+			color: var(--muted);
+			font-size: 0.8em;
+		}
+		.watchlist-leagues {
+			font-size: 0.8em;
+		}
+		/* Purple like every other "this is mine" marker, and a button because
+		   it navigates to that league's lineup editor. */
+		.watchlist-league-link {
+			background: none;
+			border: none;
+			padding: 0;
+			font: inherit;
+			color: var(--accent);
+			cursor: pointer;
+			text-decoration: underline dotted;
+		}
 		/* NFL tab: two full-width cards (Now Playing, Matchups) listing real
 		   NFL games — distinct from .now-playing-card above, which lists a
 		   manager's own fantasy players currently live. grid-column: 1/-1
@@ -8494,6 +8565,176 @@
 			return card;
 		}
 
+		// ---- Game-Time Watchlist -----------------------------------------
+		// Every starter of mine, across every league with a lineup, who carries
+		// an NFL injury designation and whose game hasn't kicked off yet —
+		// grouped by kickoff, so a Sunday reads as "at 1:00, these three; at
+		// 4:25, this one". It replaces a phone alarm set per player and a
+		// bookmark-bar note of who to look at: the list the manager used to
+		// assemble by hand each week is already in the snapshot.
+		//
+		// The lineup is the SNAPSHOT's (league.starters, the same list the
+		// Problems Digest reads), never the live poll's teams[].players.
+		// Pre-kickoff is exactly when the live poll can't be trusted for this:
+		// ESPN and Sleeper hold the previous week until the new week's games
+		// start (isPastWeeklyRolloverCutoff), and MFL's un-parameterized
+		// liveScoring is known to lag a week the same way. The cost is that a
+		// swap made on the provider's own site leaves the player here until
+		// the next sync — the direction that errs toward checking once too
+		// often rather than not at all.
+		//
+		// Every designation counts, not only Q/D/P. An Out starter is the one
+		// that most needs the swap, and the digest flagging it too is not a
+		// duplicate: the digest says the lineup is wrong, this says when it
+		// stops being fixable. Worst first within a slot (INJURY_SEVERITY,
+		// same scale the digest and Injury Exposure read), so O leads Q.
+		//
+		// Three silent exclusions, each deliberate:
+		//   - a game already under way or final (playerGameStarted): the
+		//     lineup is locked, so there is nothing left to check. This is what
+		//     makes the card empty itself out over a Sunday.
+		//   - a player with no game in the map at all: a bye, which the digest
+		//     already flags, or games not loaded yet — which is why the card
+		//     shows a loading state until gameStatesAttempted rather than
+		//     reading "not asked" as "nothing to watch".
+		//   - the same league-state gates as computeLeagueProblems: mid-draft,
+		//     trailing season, no roster. draftonly and best-ball leagues fall
+		//     out on their own, since neither syncs a lineup.
+		//
+		// Merged across leagues by normalizeName within one kickoff, the same
+		// join Now Playing and the exposure cards use — a Q running back you
+		// start in two leagues is one thing to check, not two.
+		const WATCHLIST_CHECK_LEAD_MINUTES = 80;
+
+		function computeGameTimeWatchlist(leagues, year, games = liveGames) {
+			const bySlot = new Map();
+			for (const league of leagues || []) {
+				if (league.type === 'draftonly') continue;
+				if (!Array.isArray(league.starters) || league.lineupWeek == null) continue;
+				if (league.draftInProgress === true) continue;
+				if (Number(league.season) < Number(year)) continue;
+				const byId = new Map((league.players || []).map((p) => [String(p.id), p]));
+				for (const id of league.starters) {
+					const p = byId.get(String(id));
+					if (!p || !p.injuryStatus || !p.team) continue;
+					const game = games[p.team];
+					if (!game || !game.kickoff) continue;
+					if (playerGameStarted(p, games)) continue;
+					if (!bySlot.has(game.kickoff)) bySlot.set(game.kickoff, new Map());
+					const slot = bySlot.get(game.kickoff);
+					const key = normalizeName(p.name) || p.name;
+					if (!slot.has(key)) {
+						slot.set(key, { player: p, status: p.injuryStatus, game, entries: [] });
+					}
+					const row = slot.get(key);
+					// Providers can disagree on the designation for the same
+					// body — keep the worse one, same arbitration rule as
+					// collectInjuryDesignations.
+					if (injurySeverityRank(p.injuryStatus) > injurySeverityRank(row.status)) {
+						row.status = p.injuryStatus;
+						row.player = p;
+					}
+					row.entries.push({ league, nickname: quickLinkLabelForLeague(league) });
+				}
+			}
+			return [...bySlot.entries()]
+				.map(([kickoff, rows]) => ({
+					kickoff,
+					rows: [...rows.values()].sort((a, b) => injurySeverityRank(b.status) - injurySeverityRank(a.status) || a.player.name.localeCompare(b.player.name)),
+				}))
+				.sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
+		}
+
+		// "Sun 1:00 PM" for a slot heading and "11:40 AM" for when to look,
+		// both in the viewer's own zone for the same reason formatGameWhen
+		// formats in the browser: the kickoff crosses the wire as ISO.
+		function watchlistSlotLabel(kickoff) {
+			const at = new Date(kickoff);
+			if (Number.isNaN(at.getTime())) return { when: '', checkAt: '' };
+			const check = new Date(at.getTime() - WATCHLIST_CHECK_LEAD_MINUTES * 60000);
+			const time = (d) => d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+			return { when: `${at.toLocaleDateString(undefined, { weekday: 'short' })} ${time(at)}`, checkAt: time(check) };
+		}
+
+		// Login-gated like Now Playing: it is every one of your own starters.
+		// Placed first on the Scoring tab, ahead of Now Playing — before
+		// kickoff it's the more actionable of the two, and once every game has
+		// started it empties itself and collapses out of the way. Always
+		// rendered once logged in (loading/empty states rather than null), for
+		// the same position-stability reason Now Playing gives.
+		//
+		// Reachable directly at myffl.html#watchlist (see init), which is the
+		// link a game-day alert will carry.
+		function renderGameTimeWatchlistCard(leagues, year) {
+			if (!isLoggedIn()) return null;
+			const card = el('div', { class: 'card watchlist-card', id: 'watchlist', 'data-view': 'scoring', 'data-league-type': '' });
+			const heading = el('h2', { class: 'card-heading', text: 'Game-Time Watchlist' });
+			card.appendChild(heading);
+
+			if (!gameStatesAttempted) {
+				makeCollapsible(card, heading, 'watchlist');
+				card.appendChild(el('div', { class: 'loading-box', text: 'Loading kickoff times…' }));
+				return card;
+			}
+
+			const slots = computeGameTimeWatchlist(leagues, year);
+			makeCollapsible(card, heading, 'watchlist', slots.length === 0);
+			if (slots.length === 0) {
+				card.appendChild(el('div', { class: 'team card-collapse-visible', text: 'No injured starters in games still to kick off.' }));
+				return card;
+			}
+
+			const count = slots.reduce((n, s) => n + s.rows.length, 0);
+			card.appendChild(el('div', {
+				class: 'team card-collapse-visible',
+				text: `${count} starter${count === 1 ? '' : 's'} to check — inactives are announced about 90 minutes before kickoff`,
+			}));
+
+			const slotsWrap = el('div', { class: 'watchlist-slots' });
+			for (const slot of slots) {
+				const { when, checkAt } = watchlistSlotLabel(slot.kickoff);
+				const slotEl = el('div', { class: 'watchlist-slot' });
+				const head = el('div', { class: 'watchlist-slot-head' });
+				head.appendChild(el('span', { text: when }));
+				if (checkAt) head.appendChild(el('span', { class: 'watchlist-check-at', text: `check at ${checkAt}` }));
+				slotEl.appendChild(head);
+				for (const r of slot.rows) {
+					const p = r.player;
+					const row = el('div', { class: 'watchlist-row' });
+					const nameLine = el('div', { class: 'watchlist-name' });
+					const first = el('div');
+					first.appendChild(playerNameNode(p));
+					if (p.team) appendTeamSuffix(first, p.team);
+					first.appendChild(document.createTextNode(' '));
+					first.appendChild(el('span', { class: 'injury-badge', text: `(${r.status})` }));
+					nameLine.appendChild(first);
+					const detail = injuryDetailLine(p.injuryDetail);
+					if (detail) nameLine.appendChild(el('div', { class: 'injury-detail', text: detail }));
+					// Each league is its own link to that league's Rosters card,
+					// where the lineup editor is — the swap is the action this
+					// row exists to prompt.
+					const leaguesLine = el('div', { class: 'watchlist-leagues' });
+					r.entries.forEach((en, i) => {
+						if (i > 0) leaguesLine.appendChild(document.createTextNode(', '));
+						const btn = el('button', { type: 'button', class: 'watchlist-league-link', title: 'Go to this lineup', text: en.nickname });
+						btn.addEventListener('click', (e) => {
+							e.stopPropagation();
+							jumpToLeagueCard(en.league);
+						});
+						leaguesLine.appendChild(btn);
+					});
+					nameLine.appendChild(leaguesLine);
+					row.appendChild(nameLine);
+					const side = r.game.opponent ? `${r.game.isHome ? 'vs' : '@'} ${r.game.opponent}` : '';
+					row.appendChild(el('span', { class: 'watchlist-opponent', text: side }));
+					slotEl.appendChild(row);
+				}
+				slotsWrap.appendChild(slotEl);
+			}
+			card.appendChild(slotsWrap);
+			return card;
+		}
+
 		// Exposure: how many of your leagues (within this one group — exposure
 		// across leagues you actively manage and exposure across draft-and-leave
 		// leagues aren't the same question) roster a given player, as a share of
@@ -13249,6 +13490,8 @@
 			gridEl.querySelectorAll('.card[data-view="scoring"]').forEach((c) => c.remove());
 			// First, and outside the per-league loop — see .now-playing-card's
 			// own comment for why DOM order is what actually puts it there.
+			const watchlist = renderGameTimeWatchlistCard(pageData.leagues, pageData.year);
+			if (watchlist) gridEl.appendChild(watchlist);
 			const nowPlaying = renderNowPlayingCard(pageData.leagues);
 			if (nowPlaying) gridEl.appendChild(nowPlaying);
 			for (const league of pageData.leagues) {
@@ -14999,6 +15242,8 @@
 			// First, and outside the per-league loop below — see
 			// .now-playing-card's own comment for why DOM order is what
 			// actually puts it first among data-view="scoring" cards.
+			const watchlist = renderGameTimeWatchlistCard(data.leagues, data.year);
+			if (watchlist) gridEl.appendChild(watchlist);
 			const nowPlaying = renderNowPlayingCard(data.leagues);
 			if (nowPlaying) gridEl.appendChild(nowPlaying);
 			for (const league of data.leagues) {
@@ -15142,6 +15387,17 @@
 					? `Last synced ${timeAgo(data.generatedAt)}`
 					: 'Not yet synced — run the "Sync Fantasy Rosters" GitHub Action.';
 
+				// myffl.html#watchlist — the link a game-day alert carries —
+				// lands on the Scoring tab, where the Game-Time Watchlist is
+				// the first card. No scroll: it's already in view on a phone,
+				// and scrolling it to the top would tuck its heading under
+				// the sticky quick-link bar. `location` is guarded because the
+				// tests run this script in a vm with no location at all.
+				const wantsWatchlist = typeof location !== 'undefined' && location.hash === '#watchlist';
+				if (wantsWatchlist) {
+					currentView = 'scoring';
+					localStorage.setItem(VIEW_STORAGE_KEY, currentView);
+				}
 				renderGrid();
 				// After the render, not before it: the roster is already on
 				// screen from the local copy, and this only pulls in plans made

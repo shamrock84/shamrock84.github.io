@@ -1,0 +1,61 @@
+name: Probe Gameday Inactives (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here,
+# the same rule the other manual workflows follow. Measures which source
+# (ESPN summary, ESPN core roster, ESPN injuries, MFL, Sleeper) reflects the
+# NFL's gameday inactive list, and how many minutes after it's published —
+# the question a "check my Q starters for me" alert has to answer before
+# any of it is built. See scripts/probe-inactives.mjs for the rationale.
+#
+# Dispatch about two hours before the first kickoff of a slate; the default
+# 300 minutes covers a Sunday's 1:00 and 4:25 inactives windows. A short
+# run during a game already under way is also useful: it shows whether
+# each source carries an inactive marker at all.
+#
+# Read-only: public ESPN endpoints, MFL's TYPE=injuries (already read by
+# every sync), and Sleeper's player dump. Nothing is written.
+on:
+  workflow_dispatch:
+    inputs:
+      duration_minutes:
+        description: How long to poll, in minutes (max ~340)
+        default: '300'
+      interval_minutes:
+        description: Minutes between polls
+        default: '5'
+      sleeper_interval_minutes:
+        description: Minutes between Sleeper player-dump reads
+        default: '15'
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      # Blobless + sparse checkout: skips mfl/PSD and images/, which no
+      # workflow here reads. Same five directories everywhere on purpose;
+      # see sync-fantasy-rosters.yml for the reasoning and the numbers.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout: |
+            api
+            scripts
+            config
+            data
+            .github
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Poll every source through the inactives window
+        env:
+          MFL_USERNAME: ${{ secrets.MFL_USERNAME }}
+          MFL_PASSWORD: ${{ secrets.MFL_PASSWORD }}
+          DURATION_MINUTES: ${{ inputs.duration_minutes }}
+          INTERVAL_MINUTES: ${{ inputs.interval_minutes }}
+          SLEEPER_INTERVAL_MINUTES: ${{ inputs.sleeper_interval_minutes }}
+        run: node scripts/probe-inactives.mjs
