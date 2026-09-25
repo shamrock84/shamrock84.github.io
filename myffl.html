@@ -1252,7 +1252,10 @@
 			border: 1px solid var(--border);
 			background: var(--card-bg);
 			color: var(--text);
-			font-size: 0.85rem;
+			/* 16px, not the 0.85rem the button beside it uses — iOS Safari
+			   zooms the page in on focus of any text input under 16px (see
+			   .admin-input and .planning-input for the same fix). */
+			font-size: 16px;
 		}
 		.lineup-login-form button[type="submit"] {
 			border: 1px solid var(--accent);
