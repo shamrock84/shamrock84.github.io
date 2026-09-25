@@ -1973,6 +1973,16 @@
 			cursor: pointer;
 			text-decoration: underline dotted;
 		}
+		/* Starters/Bench sub-groups, same .roster-group/.group-label pair
+		   Now Playing's own position groups use (see renderGameTimeWatchlistCard's
+		   own comment). Unlike a plain card, .watchlist-slot carries no padding
+		   of its own — every direct child (the head, each row) insets itself —
+		   so the label needs the same 0.5rem horizontal inset explicitly, or it
+		   would sit flush against the slot's border instead of lining up with
+		   the head and rows above and below it. */
+		.watchlist-slot .group-label {
+			padding: 0 0.5rem;
+		}
 		/* NFL tab: two full-width cards (Now Playing, Matchups) listing real
 		   NFL games — distinct from .now-playing-card above, which lists a
 		   manager's own fantasy players currently live. grid-column: 1/-1
@@ -8611,6 +8621,18 @@
 		// Merged across leagues by normalizeName within one kickoff, the same
 		// join Now Playing and the exposure cards use — a Q running back you
 		// start in two leagues is one thing to check, not two.
+		//
+		// Covers the whole Active Roster, not just league.starters — same
+		// widening Now Playing already made from "players[]" to
+		// "players[] + bench[]" (see computeNowPlaying's own addFrom), and
+		// for the same reason: a benched injured player is worth a look
+		// too, either because he should be swapped IN if a starter goes
+		// down, or because the manager wants to know before deciding to
+		// bench him again next week. Taxi/practice-squad/IR players are
+		// left out — they can't be started this week, so there's no swap
+		// decision here for one of them to prompt. `starter` is a
+		// per-league fact, folded to "true if started in ANY league",
+		// the same "more actionable fact wins" rule computeNowPlaying uses.
 		const WATCHLIST_CHECK_LEAD_MINUTES = 80;
 
 		function computeGameTimeWatchlist(leagues, year, games = liveGames) {
@@ -8620,18 +8642,19 @@
 				if (!Array.isArray(league.starters) || league.lineupWeek == null) continue;
 				if (league.draftInProgress === true) continue;
 				if (Number(league.season) < Number(year)) continue;
-				const byId = new Map((league.players || []).map((p) => [String(p.id), p]));
-				for (const id of league.starters) {
-					const p = byId.get(String(id));
-					if (!p || !p.injuryStatus || !p.team) continue;
+				const starterIdSet = new Set(league.starters.map(String));
+				for (const p of league.players || []) {
+					if ((p.status || 'ROSTER').toUpperCase() !== 'ROSTER') continue;
+					if (!p.injuryStatus || !p.team) continue;
 					const game = games[p.team];
 					if (!game || !game.kickoff) continue;
 					if (playerGameStarted(p, games)) continue;
+					const starter = starterIdSet.has(String(p.id));
 					if (!bySlot.has(game.kickoff)) bySlot.set(game.kickoff, new Map());
 					const slot = bySlot.get(game.kickoff);
 					const key = normalizeName(p.name) || p.name;
 					if (!slot.has(key)) {
-						slot.set(key, { player: p, status: p.injuryStatus, game, entries: [] });
+						slot.set(key, { player: p, status: p.injuryStatus, game, entries: [], starter: false });
 					}
 					const row = slot.get(key);
 					// Providers can disagree on the designation for the same
@@ -8641,7 +8664,8 @@
 						row.status = p.injuryStatus;
 						row.player = p;
 					}
-					row.entries.push({ league, nickname: quickLinkLabelForLeague(league) });
+					if (starter) row.starter = true;
+					row.entries.push({ league, nickname: quickLinkLabelForLeague(league), starter });
 				}
 			}
 			return [...bySlot.entries()]
@@ -8663,7 +8687,7 @@
 			return { when: `${at.toLocaleDateString(undefined, { weekday: 'short' })} ${time(at)}`, checkAt: time(check) };
 		}
 
-		// Login-gated like Now Playing: it is every one of your own starters.
+		// Login-gated like Now Playing: it is every one of your own roster.
 		// Placed first on the Scoring tab, ahead of Now Playing — before
 		// kickoff it's the more actionable of the two, and once every game has
 		// started it empties itself and collapses out of the way. Always
@@ -8687,17 +8711,52 @@
 			const slots = computeGameTimeWatchlist(leagues, year);
 			makeCollapsible(card, heading, 'watchlist', slots.length === 0);
 			if (slots.length === 0) {
-				card.appendChild(el('div', { class: 'team card-collapse-visible', text: 'No injured starters in games still to kick off.' }));
+				card.appendChild(el('div', { class: 'team card-collapse-visible', text: 'No injured players in games still to kick off.' }));
 				return card;
 			}
 
 			const count = slots.reduce((n, s) => n + s.rows.length, 0);
 			card.appendChild(el('div', {
 				class: 'team card-collapse-visible',
-				text: `${count} starter${count === 1 ? '' : 's'} to check — inactives are announced about 90 minutes before kickoff`,
+				text: `${count} player${count === 1 ? '' : 's'} to check — inactives are announced about 90 minutes before kickoff`,
 			}));
 
 			const slotsWrap = el('div', { class: 'watchlist-slots' });
+			// One row builder shared by both sub-groups below, same idiom as
+			// Now Playing's own appendRow — a starter and a benched player
+			// render identically, the only difference is which bucket sorts
+			// them in.
+			function appendRow(container, r) {
+				const p = r.player;
+				const row = el('div', { class: 'watchlist-row' });
+				const nameLine = el('div', { class: 'watchlist-name' });
+				const first = el('div');
+				first.appendChild(playerNameNode(p));
+				if (p.team) appendTeamSuffix(first, p.team);
+				first.appendChild(document.createTextNode(' '));
+				first.appendChild(el('span', { class: 'injury-badge', text: `(${r.status})` }));
+				nameLine.appendChild(first);
+				const detail = injuryDetailLine(p.injuryDetail);
+				if (detail) nameLine.appendChild(el('div', { class: 'injury-detail', text: detail }));
+				// Each league is its own link to that league's Rosters card,
+				// where the lineup editor is — the swap is the action this
+				// row exists to prompt.
+				const leaguesLine = el('div', { class: 'watchlist-leagues' });
+				r.entries.forEach((en, i) => {
+					if (i > 0) leaguesLine.appendChild(document.createTextNode(', '));
+					const btn = el('button', { type: 'button', class: 'watchlist-league-link', title: 'Go to this lineup', text: en.nickname });
+					btn.addEventListener('click', (e) => {
+						e.stopPropagation();
+						jumpToLeagueCard(en.league);
+					});
+					leaguesLine.appendChild(btn);
+				});
+				nameLine.appendChild(leaguesLine);
+				row.appendChild(nameLine);
+				const side = r.game.opponent ? `${r.game.isHome ? 'vs' : '@'} ${r.game.opponent}` : '';
+				row.appendChild(el('span', { class: 'watchlist-opponent', text: side }));
+				container.appendChild(row);
+			}
 			for (const slot of slots) {
 				const { when, checkAt } = watchlistSlotLabel(slot.kickoff);
 				const slotEl = el('div', { class: 'watchlist-slot' });
@@ -8705,37 +8764,28 @@
 				head.appendChild(el('span', { text: when }));
 				if (checkAt) head.appendChild(el('span', { class: 'watchlist-check-at', text: `check at ${checkAt}` }));
 				slotEl.appendChild(head);
-				for (const r of slot.rows) {
-					const p = r.player;
-					const row = el('div', { class: 'watchlist-row' });
-					const nameLine = el('div', { class: 'watchlist-name' });
-					const first = el('div');
-					first.appendChild(playerNameNode(p));
-					if (p.team) appendTeamSuffix(first, p.team);
-					first.appendChild(document.createTextNode(' '));
-					first.appendChild(el('span', { class: 'injury-badge', text: `(${r.status})` }));
-					nameLine.appendChild(first);
-					const detail = injuryDetailLine(p.injuryDetail);
-					if (detail) nameLine.appendChild(el('div', { class: 'injury-detail', text: detail }));
-					// Each league is its own link to that league's Rosters card,
-					// where the lineup editor is — the swap is the action this
-					// row exists to prompt.
-					const leaguesLine = el('div', { class: 'watchlist-leagues' });
-					r.entries.forEach((en, i) => {
-						if (i > 0) leaguesLine.appendChild(document.createTextNode(', '));
-						const btn = el('button', { type: 'button', class: 'watchlist-league-link', title: 'Go to this lineup', text: en.nickname });
-						btn.addEventListener('click', (e) => {
-							e.stopPropagation();
-							jumpToLeagueCard(en.league);
-						});
-						leaguesLine.appendChild(btn);
-					});
-					nameLine.appendChild(leaguesLine);
-					row.appendChild(nameLine);
-					const side = r.game.opponent ? `${r.game.isHome ? 'vs' : '@'} ${r.game.opponent}` : '';
-					row.appendChild(el('span', { class: 'watchlist-opponent', text: side }));
-					slotEl.appendChild(row);
-				}
+				// Starters then Bench, each its own collapsible sub-group,
+				// same idiom (and same key scheme) as Now Playing's own
+				// per-position split — see computeGameTimeWatchlist's own
+				// comment for why bench rides along at all and why a row
+				// lands in one bucket or the other. Bench defaults COLLAPSED:
+				// a benched player is the less actionable of the two facts,
+				// so a manager who's never touched this toggle sees Starters
+				// open and Bench tucked away. A sub-group with nothing in it
+				// is omitted rather than shown empty.
+				const starters = slot.rows.filter((r) => r.starter);
+				const bench = slot.rows.filter((r) => !r.starter);
+				[['Starters', starters, 'starters', false], ['Bench', bench, 'bench', true]].forEach(([label, subRows, subKey, defaultCollapsed]) => {
+					if (subRows.length === 0) return;
+					const subWrap = el('div', { class: 'roster-group' });
+					const subLabel = el('div', { class: 'group-label', text: `${label} (${subRows.length})` });
+					const subContent = el('div', { class: 'roster-group-content' });
+					makeGroupCollapsible(subWrap, subLabel, `watchlist:${slot.kickoff}:${subKey}`, defaultCollapsed);
+					subWrap.appendChild(subLabel);
+					subRows.forEach((r) => appendRow(subContent, r));
+					subWrap.appendChild(subContent);
+					slotEl.appendChild(subWrap);
+				});
 				slotsWrap.appendChild(slotEl);
 			}
 			card.appendChild(slotsWrap);

@@ -5,8 +5,13 @@
 // that matters is a MISSING row: a Questionable starter that silently
 // never appears reads exactly like "nothing to check". Pinned here:
 //
-//   * a starter with a designation whose game hasn't kicked off appears;
-//     the same player on the bench does not.
+//   * a starter with a designation whose game hasn't kicked off appears,
+//     and so does a benched player with one — each carries its own
+//     `starter` flag (folded true if started in ANY league, same rule
+//     computeNowPlaying uses), so the card can split Starters from Bench
+//     the way Now Playing splits its own position groups.
+//   * a taxi-squad/practice-squad/IR player with a designation is excluded
+//     — none of those can be started this week.
 //   * every designation counts (an O starter is the one most needing a swap)
 //     and a slot lists the worst first.
 //   * a game already under way or final drops the row — the lineup is locked.
@@ -136,14 +141,21 @@ const YEAR = '2026';
 // treats as different prototypes; round-trip to compare values only.
 const plain = (x) => JSON.parse(JSON.stringify(x));
 
-// A Q starter pre-kickoff appears; the same designation on the bench doesn't.
+// A Q starter pre-kickoff appears, and so does the same designation on the
+// bench — each keeps its own `starter` flag, and a taxi/practice/IR player
+// with a designation is excluded even though his game hasn't kicked off.
 {
 	const ctx = makeContext();
 	const games = { PHI: game('LAR', true, EARLY), LAR: game('PHI', false, EARLY) };
-	const l = league('1', [player('a', 'Saquon Barkley', 'PHI', 'Q'), player('b', 'Bench Guy', 'LAR', 'Q')], ['a']);
+	const l = league('1', [
+		player('a', 'Saquon Barkley', 'PHI', 'Q'),
+		player('b', 'Bench Guy', 'LAR', 'Q'),
+		player('c', 'Taxi Guy', 'LAR', 'Q', { status: 'TAXI_SQUAD' }),
+	], ['a']);
 	const slots = ctx.computeGameTimeWatchlist([l], YEAR, games);
 	assert.equal(slots.length, 1);
-	assert.deepEqual(plain(slots[0].rows.map((r) => r.player.name)), ['Saquon Barkley']);
+	const byName = Object.fromEntries(slots[0].rows.map((r) => [r.player.name, r.starter]));
+	assert.deepEqual(plain(byName), { 'Saquon Barkley': true, 'Bench Guy': false });
 	assert.equal(slots[0].kickoff, EARLY);
 }
 
@@ -236,7 +248,7 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	setGames(ctx, {});
 	const empty = ctx.renderGameTimeWatchlistCard([], YEAR);
 	assert.ok(empty.classList.contains('card-collapsed'));
-	assert.match(fullText(empty), /No injured starters/);
+	assert.match(fullText(empty), /No injured players/);
 
 	setGames(ctx, { PHI: game('LAR', true, EARLY) });
 	const full = ctx.renderGameTimeWatchlistCard([league('1', [player('a', 'Saquon Barkley', 'PHI', 'Q')], ['a'])], YEAR);
@@ -247,6 +259,48 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	assert.match(text, /\(Q\)/);
 	assert.match(text, /vs LAR/);
 	assert.equal(findAll(full, hasClass('watchlist-league-link')).length, 1);
+	// Starters-only slate: a Starters sub-group, no Bench one (a sub-group
+	// with nothing in it is omitted, same as Now Playing's own).
+	//
+	// startsWith, not equality — makeGroupCollapsible's chevron span lands
+	// after the label text here (see this test harness's own insertBefore,
+	// which just appends), same reasoning test-now-playing.mjs's own
+	// equivalent check carries.
+	const groupLabels = findAll(full, hasClass('group-label')).map(fullText);
+	assert.ok(groupLabels.some((t) => t.startsWith('Starters (1)')), 'the Starters sub-group is labelled and counted');
+	assert.ok(!groupLabels.some((t) => t.startsWith('Bench')), 'no Bench sub-group when nobody of mine is benched');
+}
+
+// Starters and Bench render as separate collapsible sub-groups per slot,
+// same idiom (and same "Bench defaults collapsed" rule) Now Playing uses
+// per position — see test-now-playing.mjs's own equivalent for the pattern
+// this mirrors.
+{
+	const ctx = makeContext(LOGGED_IN);
+	setGames(ctx, { PHI: game('LAR', true, EARLY) });
+	const l = league('1', [
+		player('a', 'Saquon Barkley', 'PHI', 'Q'),
+		player('b', 'Bench Guy', 'PHI', 'D'),
+	], ['a']);
+	const full = ctx.renderGameTimeWatchlistCard([l], YEAR);
+	const groupLabels = findAll(full, hasClass('group-label')).map(fullText);
+	assert.ok(groupLabels.some((t) => t.startsWith('Starters (1)')), 'the Starters sub-group is labelled and counted');
+	assert.ok(groupLabels.some((t) => t.startsWith('Bench (1)')), 'the Bench sub-group is labelled and counted');
+
+	// Each sub-group is its own makeGroupCollapsible instance, keyed by
+	// kickoff — toggling Bench must not touch Starters.
+	const subGroups = findAll(full, (n) => hasClass('roster-group')(n) && !hasClass('watchlist-slot')(n));
+	assert.equal(subGroups.length, 2, 'Starters and Bench are two independent collapsible groups');
+	const benchGroup = subGroups.find((g) => fullText(g).includes('Bench Guy'));
+	const starterGroup = subGroups.find((g) => fullText(g).includes('Saquon Barkley'));
+	assert.ok(hasClass('roster-group-collapsed')(benchGroup), 'Bench starts collapsed by default, untouched');
+	assert.ok(!hasClass('roster-group-collapsed')(starterGroup), 'Starters starts expanded, same as ever');
+
+	const benchLabel = benchGroup.children.find((c) => hasClass('group-label')(c));
+	benchLabel.listeners.click[0]();
+	assert.ok(!hasClass('roster-group-collapsed')(benchGroup), 'clicking Bench expands it');
+	assert.ok(!hasClass('roster-group-collapsed')(starterGroup), 'Starters is unaffected by expanding Bench');
+	assert.equal(ctx.__store.get(`myfflGroupCollapsed:desktop:watchlist:${EARLY}:bench`), '0', 'expanding away from the default is what actually gets persisted');
 }
 
 console.log('Game-Time Watchlist tests passed');
