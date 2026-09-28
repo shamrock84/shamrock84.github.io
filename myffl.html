@@ -8633,7 +8633,14 @@
 		// decision here for one of them to prompt. `starter` is a
 		// per-league fact, folded to "true if started in ANY league",
 		// the same "more actionable fact wins" rule computeNowPlaying uses.
-		const WATCHLIST_CHECK_LEAD_MINUTES = 80;
+		//
+		// The "check at" lead is 45 minutes, measured rather than guessed.
+		// The NFL releases inactives 90 minutes out, but probe-inactives.yml's
+		// 2026-09-27 run found them reaching any feed only 5-45 minutes after
+		// that: each team's list first showed between T-84 and T-47, and at
+		// T-80 (this constant's first value) only about three of 24 teams had
+		// posted. At 45 every list was visible, with time still left to swap.
+		const WATCHLIST_CHECK_LEAD_MINUTES = 45;
 
 		function computeGameTimeWatchlist(leagues, year, games = liveGames) {
 			const bySlot = new Map();
@@ -8718,7 +8725,7 @@
 			const count = slots.reduce((n, s) => n + s.rows.length, 0);
 			card.appendChild(el('div', {
 				class: 'team card-collapse-visible',
-				text: `${count} player${count === 1 ? '' : 's'} to check — inactives are announced about 90 minutes before kickoff`,
+				text: `${count} player${count === 1 ? '' : 's'} to check — inactive lists are usually all posted by 45 minutes before kickoff`,
 			}));
 
 			const slotsWrap = el('div', { class: 'watchlist-slots' });
