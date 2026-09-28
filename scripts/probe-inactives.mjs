@@ -47,6 +47,37 @@
 // before the first kickoff of a slate. Inputs: DURATION_MINUTES (how long to
 // poll), INTERVAL_MINUTES, SLEEPER_INTERVAL_MINUTES. MFL is skipped, with a
 // line saying so, when MFL_USERNAME/MFL_PASSWORD are absent.
+//
+// RUN 1 — 2026-09-27, 11:00 AM-4:00 PM ET, 5-minute polls (Sleeper 15).
+// Only the log's last 5,000 of 22,909 lines were readable (the MCP log tool
+// tails, and the blob download host is blocked from the sandbox), which kept
+// the full end-of-run summary but lost the first-tick shape dumps.
+//
+//   * 14 players listed Q/D went inactive on gameday. Minutes before kickoff
+//     each source showed it (median / earliest / latest):
+//       ESPN league injuries   69 / 84 / 49
+//       ESPN summary           69 / 84 / 4   (details.fantasyStatus reads
+//                                             "INACTIVE"; one straggler)
+//       MFL TYPE=injuries      59 / 59 / 54  (updates roughly hourly)
+//       Sleeper                59 / 74 / hours after kickoff for one player
+//     ESPN's injuries feed is the best single source, MFL a good cross-check,
+//     Sleeper too slow to rely on.
+//   * ESPN's injuries feed also flips a cleared Q player to "Active" (Bowers,
+//     Flowers, Pittman and ~20 others, typically T-73..T-54) — but not
+//     reliably: Jalen Coker never got it pre-game while MFL dropped him from
+//     its report at T-59. So no "Active" flag does NOT mean inactive.
+//   * Each team's list first appeared between T-84 and T-47; at T-80 only
+//     about three of 24 had. In every one of the 14 cases the ruled player
+//     showed at or before his team's first scratch, so "team list visible
+//     and he isn't on it" produced no false "active" in this sample.
+//   * The core per-competitor roster is useless as captured: entries carry
+//     surnames only (displayName "Collins"), so the name join collided, and
+//     `active` read false even for starters. Not worth fixing — the injuries
+//     feed answers the question.
+//
+// Hence WATCHLIST_CHECK_LEAD_MINUTES = 45 in myffl.html, and a future
+// checker's rule: inactive if ANY source says Out/INACTIVE; "playing" only
+// once the team's list is visible; otherwise "list not out yet", re-check.
 
 import { readFile, appendFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';

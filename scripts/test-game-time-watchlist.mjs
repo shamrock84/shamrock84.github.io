@@ -212,7 +212,7 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 {
 	const ctx = makeContext();
 	const lead = vm.runInContext('WATCHLIST_CHECK_LEAD_MINUTES', ctx);
-	assert.equal(lead, 80);
+	assert.equal(lead, 45);
 	const { checkAt } = ctx.watchlistSlotLabel(EARLY);
 	const expected = new Date(new Date(EARLY).getTime() - lead * 60000).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 	assert.equal(checkAt, expected);
