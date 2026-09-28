@@ -1910,6 +1910,9 @@
 		.watchlist-card {
 			grid-column: 1 / -1;
 		}
+		.watchlist-starter-count {
+			color: var(--ir-text);
+		}
 		.watchlist-slots {
 			display: flex;
 			flex-wrap: wrap;
@@ -8729,12 +8732,18 @@
 			const allRows = slots.flatMap((s) => s.rows);
 			const starterCount = allRows.filter((r) => r.starter).length;
 			const benchCount = allRows.length - starterCount;
-			const parts = [];
-			if (starterCount > 0) parts.push(`${starterCount} injured starter${starterCount === 1 ? '' : 's'}`);
-			if (benchCount > 0) parts.push(`${benchCount} ${starterCount > 0 ? '' : 'injured '}on the bench`);
-			let summary = parts.join(', ');
-			if (starterCount > 0) summary += ` · Starters auto-checked from ${WATCHLIST_CHECK_LEAD_MINUTES} min before kickoff`;
-			card.appendChild(el('div', { class: 'team card-collapse-visible', text: summary }));
+			// The starter count is IR red ("needs a look"): a starter is the
+			// one whose swap decision is on the clock, so it's the part of
+			// this line the eye should land on first.
+			const summary = el('div', { class: 'team card-collapse-visible' });
+			if (starterCount > 0) {
+				summary.appendChild(el('span', { class: 'watchlist-starter-count', text: `${starterCount} injured starter${starterCount === 1 ? '' : 's'}` }));
+			}
+			let rest = '';
+			if (benchCount > 0) rest += `${starterCount > 0 ? ', ' : ''}${benchCount} ${starterCount > 0 ? '' : 'injured '}on the bench`;
+			if (starterCount > 0) rest += ` · Starters auto-checked from ${WATCHLIST_CHECK_LEAD_MINUTES} min before kickoff`;
+			if (rest) summary.appendChild(document.createTextNode(rest));
+			card.appendChild(summary);
 
 			const slotsWrap = el('div', { class: 'watchlist-slots' });
 			// One row builder shared by both sub-groups below, same idiom as
