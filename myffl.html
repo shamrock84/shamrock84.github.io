@@ -8722,11 +8722,19 @@
 				return card;
 			}
 
-			const count = slots.reduce((n, s) => n + s.rows.length, 0);
-			card.appendChild(el('div', {
-				class: 'team card-collapse-visible',
-				text: `${count} player${count === 1 ? '' : 's'} to check — inactive lists are usually all posted by 45 minutes before kickoff`,
-			}));
+			// Starters and bench counted apart because only starters get the
+			// automated push (api/lib/gametime.mjs watches starters alone), so
+			// the auto-check note is left off when there are none to promise
+			// it for. `starter` is already folded to "started in ANY league".
+			const allRows = slots.flatMap((s) => s.rows);
+			const starterCount = allRows.filter((r) => r.starter).length;
+			const benchCount = allRows.length - starterCount;
+			const parts = [];
+			if (starterCount > 0) parts.push(`${starterCount} injured starter${starterCount === 1 ? '' : 's'}`);
+			if (benchCount > 0) parts.push(`${benchCount} ${starterCount > 0 ? '' : 'injured '}on the bench`);
+			let summary = parts.join(', ');
+			if (starterCount > 0) summary += ` · Starters auto-checked from ${WATCHLIST_CHECK_LEAD_MINUTES} min before kickoff`;
+			card.appendChild(el('div', { class: 'team card-collapse-visible', text: summary }));
 
 			const slotsWrap = el('div', { class: 'watchlist-slots' });
 			// One row builder shared by both sub-groups below, same idiom as
