@@ -450,6 +450,16 @@ jobs:
       - name: Test the Game-Time Watchlist
         run: node scripts/test-game-time-watchlist.mjs
 
+      # The game-time checker pushes "playing" or "OUT — swap him" to the
+      # manager's phone, so its failure that matters is a confident wrong
+      # answer. Pins that a missing ESPN Active flag reads as pending, never
+      # playing; that any one source saying out wins; that a failed feed or a
+      # same-named player elsewhere can't produce "playing"; and the
+      # notification rules (first look always sends, then only on change,
+      # one final call for anyone still pending).
+      - name: Test the game-time injury checker
+        run: node scripts/test-game-time-check.mjs
+
       # The W-L(-T) suffix appended to a team's name on Rosters and Scoring
       # (currentRecord/appendRecord). Every failure mode here is silent — a
       # wrong franchiseId join renders a plausible record for the wrong
