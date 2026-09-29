@@ -1857,7 +1857,8 @@
 		   it doesn't apply to a flex-wrapped row of mini-cards, so this
 		   zeroes it back out. Two classes beats .roster-group's one on
 		   specificity regardless of rule order. */
-		.now-playing-position.roster-group {
+		.now-playing-position.roster-group,
+		.nfl-standings-division.roster-group {
 			margin-top: 0;
 		}
 		/* Same accent-on-chip-bg banner Depth Charts' own position header
@@ -2014,6 +2015,24 @@
 		   gives four divisions a row on a desktop card, one on a phone. */
 		.nfl-standings-division {
 			flex-basis: 260px;
+		}
+		/* The banner <th> is the collapse toggle (see renderNflStandingsBox);
+		   makeGroupCollapsible's own label rule is scoped to .group-label, so
+		   the pointer is set here. Collapsed, the box is just its banner. */
+		.nfl-standings-division .roster-group-label {
+			cursor: pointer;
+			user-select: none;
+		}
+		/* The flex row stretches every box to its tallest neighbour, which
+		   left a collapsed one as an empty bordered block. Collapsed, it
+		   shrinks to its banner instead. */
+		.nfl-standings-division.roster-group-collapsed {
+			align-self: flex-start;
+		}
+		/* The flex gap .group-label.roster-group-label gives Now Playing's
+		   chevron doesn't apply to a table cell. */
+		.nfl-standings-division .roster-group-chevron {
+			margin-right: 0.3rem;
 		}
 		/* Conference view's 1..16 rank ahead of the abbreviation — muted
 		   like the seed, fixed width so the abbreviations line up. */
@@ -12007,9 +12026,8 @@
 
 		// NFL Standings: one card off the snapshot's `nflStandings`
 		// (scripts/lib/espn-standings.mjs) — as fresh as the last sync, up
-		// to four hours, and the subtitle says when that was rather than
-		// implying a live read. Standings only move when a game goes final,
-		// so polling them with the scoreboard would buy nothing. Ungated
+		// to four hours. Standings only move when a game goes final, so
+		// polling them with the scoreboard would buy nothing. Ungated
 		// like the rest of this tab: real NFL data.
 		//
 		// Two groupings behind a Conference | Division toggle, as ESPN's own
@@ -12096,15 +12114,25 @@
 		// then the column labels. `ranked` (the Conference view) prefixes a
 		// 1..16 rank instead of the seed superscript, which would only
 		// repeat it.
-		function renderNflStandingsBox(label, teams, showDiv, ranked) {
-			const box = el('div', { class: 'nfl-standings-division' });
+		//
+		// Each box collapses on its own, the same makeGroupCollapsible idiom
+		// Now Playing's position boxes use. The banner stays a table row
+		// rather than moving into a separate label div, so the Depth Charts
+		// table styling applies unchanged; its <th> is the toggle, and the
+		// column-label row and body are the `roster-group-content` it hides.
+		// Keyed per view as well as per box, so collapsing AFC East leaves
+		// the Conference view's AFC box alone.
+		function renderNflStandingsBox(label, teams, showDiv, ranked, view) {
+			const box = el('div', { class: 'nfl-standings-division roster-group' });
 			const table = el('table', { class: 'standings depth-chart-table nfl-standings-table' });
 			const columns = ['Team', 'W-L', ...(showDiv ? ['Div'] : []), 'PF', 'PA', 'Strk'];
-			const banner = el('tr', {}, [el('th', { colspan: String(columns.length), text: label })]);
-			const head = el('tr');
+			const bannerCell = el('th', { colspan: String(columns.length), text: label });
+			const banner = el('tr', {}, [bannerCell]);
+			const head = el('tr', { class: 'roster-group-content' });
 			for (const col of columns) head.appendChild(el('th', { text: col }));
 			table.appendChild(el('thead', {}, [banner, head]));
-			const tbody = el('tbody');
+			makeGroupCollapsible(box, bannerCell, `nfl-standings:${view}:${label}`);
+			const tbody = el('tbody', { class: 'roster-group-content' });
 			teams.forEach((t, i) => {
 				const row = el('tr');
 				const nameCell = el('td', { title: t.name || t.abbr });
@@ -12133,7 +12161,7 @@
 			const showDiv = groups.some(([, teams]) => teams.some((t) => t.div));
 			const body = el('div', { class: `nfl-standings nfl-standings-by-${view}` });
 			for (const [label, teams] of groups) {
-				if (teams.length > 0) body.appendChild(renderNflStandingsBox(label, teams, showDiv, view === 'conference'));
+				if (teams.length > 0) body.appendChild(renderNflStandingsBox(label, teams, showDiv, view === 'conference', view));
 			}
 			return body;
 		}
@@ -12144,11 +12172,6 @@
 			const headingEl = el('h2', { class: 'card-heading', text: 'Standings' });
 			card.appendChild(headingEl);
 			makeCollapsible(card, headingEl, 'nfl-standings');
-			const at = new Date(standings.generatedAt);
-			if (!Number.isNaN(at.getTime())) {
-				const when = at.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-				card.appendChild(el('div', { class: 'team card-collapse-visible', text: `As of the last sync, ${when}` }));
-			}
 			// Single-select, unlike the Depth Charts division pills whose look
 			// it borrows: exactly one grouping is ever pressed. Switching
 			// swaps just the body — the card itself is never rebuilt after

@@ -15,6 +15,9 @@
 //     whatever their record, as ESPN's own conference view does), seeded
 //     ahead of unseeded, then win pct, then ESPN's order — and the toggle
 //     swaps the body and remembers the choice.
+//   * each box collapses on its banner (makeGroupCollapsible), remembered
+//     per view, so a division collapsed in one view doesn't collapse the
+//     conference box in the other; no "as of" line on the card.
 //   * no `nflStandings` on the snapshot means no card at all.
 //   * rerenderNflCards' removal query excludes the card — a poll must not
 //     delete it, since nothing on the poll path rebuilds it (the same bug
@@ -80,7 +83,12 @@ const entry = (abbr, w, l, t, extra = []) => ({
 function domNode(tag = 'div') {
 	const n = {
 		tag, children: [], attrs: {}, cls: '', _text: '', dataset: {}, style: {},
-		classList: { add() {}, remove() {}, toggle() {}, contains: () => false },
+		classList: {
+			add(c) { const t = n.cls.split(/\s+/).filter(Boolean); if (!t.includes(c)) n.cls = [...t, c].join(' '); },
+			remove(c) { n.cls = n.cls.split(/\s+/).filter((x) => x && x !== c).join(' '); },
+			toggle(c, force) { const want = force === undefined ? !this.contains(c) : force; if (want) this.add(c); else this.remove(c); },
+			contains: (c) => n.cls.split(/\s+/).includes(c),
+		},
 		listeners: {}, addEventListener(t, fn) { (n.listeners[t] = n.listeners[t] || []).push(fn); }, removeEventListener() {},
 		setAttribute(k, v) { n.attrs[k] = v; }, getAttribute(k) { return n.attrs[k]; },
 		appendChild(c) { n.children.push(c); c.parent = n; return c; },
@@ -104,7 +112,7 @@ const ctx = {
 		createTextNode: (t) => { const n = domNode('#text'); n.textContent = t; return n; },
 		querySelector: () => null, querySelectorAll: () => [], visibilityState: 'visible', body: domNode(),
 	},
-	window: { addEventListener() {} },
+	window: { addEventListener() {}, matchMedia: () => ({ matches: false }) },
 	fetch: async () => ({ ok: false, status: 503, json: async () => ({}) }),
 };
 vm.createContext(ctx);
@@ -180,7 +188,8 @@ const text = (n) => (n._text || '') + (n.children || []).map(text).join('');
 	const card = ctx.renderNflStandingsCard(standings);
 	const boxes = () => findAll(card, (n) => n.cls.split(/\s+/).includes('nfl-standings-division'));
 	assert.equal(boxes().length, 5, 'Division view by default: AFC East/North/South/West + NFC East');
-	const btn = (key) => findAll(card, (n) => n.dataset?.standingsView === key)[0];
+	const btn2 = (root, key) => findAll(root, (n) => n.dataset?.standingsView === key)[0];
+	const btn = (key) => btn2(card, key);
 	assert.equal(btn('division').attrs['aria-pressed'], 'true');
 	btn('conference').listeners.click[0]();
 	assert.equal(boxes().length, 2, 'Conference view: one box per conference');
@@ -191,9 +200,26 @@ const text = (n) => (n._text || '') + (n.children || []).map(text).join('');
 	assert.deepEqual(afcRanks.slice(0, 5), ['1', '2', '3', '4', '5']);
 	assert.equal(findAll(boxes()[0], (n) => n.cls === 'nfl-standings-seed').length, 0, 'no seed superscript beside a rank that already says it');
 
+	// Collapsing a box: the banner <th> toggles it, the column labels and
+	// body are what hides, and it survives a rebuild. Keyed per view.
+	const afcBox = boxes()[0];
+	const bannerTh = findAll(afcBox, (n) => n.tag === 'th' && n.attrs.colspan)[0];
+	assert.equal(bannerTh.attrs.role, 'button');
+	assert.equal(findAll(afcBox, (n) => n.cls === 'roster-group-content').length, 2, 'column-label row and tbody are the collapsible content');
+	bannerTh.listeners.click[0]();
+	assert.ok(afcBox.classList.contains('roster-group-collapsed'));
+	assert.equal(bannerTh.attrs['aria-expanded'], 'false');
+
 	// A reload reads the saved choice back.
 	const again = ctx.renderNflStandingsCard(standings);
-	assert.equal(findAll(again, (n) => n.cls.split(/\s+/).includes('nfl-standings-division')).length, 2);
+	const againBoxes = findAll(again, (n) => n.cls.split(/\s+/).includes('nfl-standings-division'));
+	assert.equal(againBoxes.length, 2);
+	assert.ok(againBoxes[0].classList.contains('roster-group-collapsed'), 'AFC stays collapsed across a rebuild');
+	assert.ok(!againBoxes[1].classList.contains('roster-group-collapsed'), 'NFC was never touched');
+	btn2(again, 'division').listeners.click[0]();
+	const divBoxes = findAll(again, (n) => n.cls.split(/\s+/).includes('nfl-standings-division'));
+	assert.ok(!divBoxes.some((b) => b.classList.contains('roster-group-collapsed')), 'collapsing AFC in Conference view collapses nothing in Division view');
+	assert.ok(!text(again).includes('As of'), 'no last-sync line on the card');
 	store.clear();
 }
 
