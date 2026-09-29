@@ -12128,7 +12128,8 @@
 		function renderNflStandingsBody(standings, view) {
 			const groups = buildNflStandingsGroups(standings, view);
 			// Division record only earns a column when ESPN actually sent one
-			// for somebody — the field is unconfirmed (see espn-standings.mjs).
+			// for somebody. probe-nfl-standings.mjs RUN 1 found it on all 32
+			// teams, so this only matters if ESPN drops it later.
 			const showDiv = groups.some(([, teams]) => teams.some((t) => t.div));
 			const body = el('div', { class: `nfl-standings nfl-standings-by-${view}` });
 			for (const [label, teams] of groups) {

@@ -5,17 +5,18 @@
 // request per sync, never competing with MFL's rate limit.
 //
 // Note the path is /apis/v2/..., not /apis/site/v2/... like every other
-// ESPN public read in this project — the site/v2 standings path returns a
-// stub pointing elsewhere. The shape parsed below is the commonly
-// reverse-engineered one (a tree of `children` groups, each carrying
-// `standings.entries[]` of `{ team, stats: [{ name, type, value,
-// displayValue }] }`); probe-nfl-standings.mjs is what confirms it against
-// the real endpoint, since this host is unreachable from the sandbox this
-// repo is edited from. Read that probe's header before changing the parse.
+// ESPN public read in this project; /apis/v2/ is the path
+// probe-nfl-standings.mjs confirmed (RUN 1). The /site/v2/ variant has never
+// been tried here. The response is a tree of `children` groups, each
+// carrying `standings.entries[]` of `{ team, stats: [{ name, type, value,
+// displayValue }] }` — every stat name read below was confirmed present
+// for all 32 teams by that probe. This host is unreachable from the sandbox
+// this repo is edited from, so read the probe's header before changing the
+// parse.
 //
-// Deliberately NOT relying on how deep the tree goes: by default the
-// endpoint groups by conference, with a `level` parameter for divisions,
-// and which one comes back is exactly the kind of thing that changes
+// Deliberately NOT relying on how deep the tree goes: RUN 1 confirmed the
+// endpoint groups by conference by default and by division with `level=3`,
+// and which one comes back is exactly the kind of thing that could change
 // without notice. extractStandings walks the whole tree and collects every
 // entry wherever it sits; the page groups teams into divisions itself from
 // its own DEPTH_CHART_DIVISIONS map rather than trusting ESPN's grouping.
@@ -48,9 +49,11 @@ export function extractStandings(data) {
       for (const s of entry.stats || []) {
         if (s?.name) statsByName.set(s.name, s);
       }
-      // Division record carries no stable `name` across the variants seen
-      // reported; its `type` ('vsdiv') is the steadier handle. Only a real
-      // "W-L" / "W-L-T" string is accepted, anything else is left null.
+      // ESPN sends the division record twice — `type: 'vsdiv'` (name
+      // "vs. Div.") and `name: 'divisionRecord'` — with the same
+      // displayValue on every team probe-nfl-standings.mjs RUN 1 saw, so
+      // either one matching is fine. Only a real "W-L" / "W-L-T" string is
+      // accepted, anything else is left null.
       const divStat = (entry.stats || []).find((s) => s?.type === 'vsdiv' || s?.name === 'divisionRecord');
       const div = /^\d+-\d+(-\d+)?$/.test(divStat?.displayValue || '') ? divStat.displayValue : null;
       const streak = statsByName.get('streak')?.displayValue || null;
