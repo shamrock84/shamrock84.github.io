@@ -16,7 +16,24 @@
 //     abbreviation myffl.html's DEPTH_CHART_DIVISIONS wouldn't recognise,
 //     and which fields came back null for every team (a wrong stat name).
 //
-// RUN 1: not yet run. Record results here.
+// RUN 1 (2026-09-29, week 4 of the 2026 season): HTTP 200 on both URLs.
+//   - Default grouping is by conference: root "National Football League"
+//     -> "American Football Conference" / "National Football Conference",
+//     16 entries each. `level=3` nests one deeper: each conference ->
+//     its four divisions, 4 entries each.
+//   - Stats per entry, by `name` (type in parens where it differs):
+//     differential, gamesBehind, losses, playoffSeed, pointDifferential,
+//     pointsAgainst, pointsFor, streak (value 3, displayValue "W3"), ties,
+//     winPercent, wins, divisionLosses, divisionRecord (displayValue
+//     "1-0"), divisionTies, divisionWins, lockedDivRank, overall (type
+//     total, "3-0"), Home (home), Road (road), "vs. Div." (vsdiv, "1-0"),
+//     "vs. Conf." (vsconf, "3-0").
+//   - extractStandings: 32 teams on both URLs, every abbreviation in
+//     DEPTH_CHART_DIVISIONS, and w/l/t/pf/pa/streak/seed/div null for 0/32.
+//     `playoffSeed` is present for all 32 teams, not only the 7 playoff
+//     seeds, so the Conference view's seed-first ranking covers 1-16.
+//   - Sample: KC 3-0, seed 1, PF 88, PA 50, W3, division 1-0; BUF 3-0,
+//     seed 2 — the same as ESPN's own app on the same day.
 
 import { extractStandings } from './lib/espn-standings.mjs';
 
