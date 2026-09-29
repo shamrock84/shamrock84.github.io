@@ -1994,6 +1994,60 @@
 		.nfl-card {
 			grid-column: 1 / -1;
 		}
+		/* Standings: eight division tables wrapped like .nfl-scoreboard's
+		   game pills — four across on a desktop card, one per row on a
+		   phone. 250px basis fits Team/W-L/Div/PF/PA/Strk at 0.85rem with
+		   room for a 3-digit points total. */
+		.nfl-standings {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 0.75rem;
+		}
+		.nfl-standings-division {
+			flex: 1 1 250px;
+			min-width: 0;
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			padding: 0.55rem 0.65rem;
+		}
+		.nfl-standings-title {
+			margin: 0 0 0.35rem;
+			font-size: 0.9rem;
+		}
+		.nfl-standings-table {
+			width: 100%;
+			border-collapse: collapse;
+			font-size: 0.85rem;
+			font-variant-numeric: tabular-nums;
+		}
+		.nfl-standings-table th,
+		.nfl-standings-table td {
+			padding: 0.2rem 0.3rem;
+			text-align: right;
+			white-space: nowrap;
+		}
+		.nfl-standings-table th:first-child,
+		.nfl-standings-table td:first-child {
+			text-align: left;
+		}
+		.nfl-standings-table th {
+			font-weight: 600;
+			color: var(--muted);
+			border-bottom: 1px solid var(--border);
+		}
+		.nfl-standings-team {
+			font-weight: 600;
+		}
+		.nfl-standings-seed {
+			margin-left: 0.3rem;
+			font-size: 0.7rem;
+			font-weight: 400;
+			color: var(--muted);
+			/* Raised by offset rather than vertical-align: super, which
+			   grows the line box and makes seeded rows taller than the rest. */
+			position: relative;
+			top: -0.4em;
+		}
 		/* Each game its own bordered mini-card, flex-wrapped rather than one
 		   long vertical list — the same idiom Depth Charts' own
 		   .depth-chart-positions/.depth-chart-position and Now Playing's own
@@ -11927,9 +11981,13 @@
 		// isn't (the very first renderGrid() call, before
 		// renderDepthChartCards has run yet) — keeps the order stable
 		// either way.
+		// The Standings card (renderNflStandingsCard) is built once by
+		// renderGrid and left standing exactly like the Depth Charts wrapper,
+		// and sits between Matchups and that wrapper — so a poll's fresh
+		// cards go ahead of whichever of the two comes first in the DOM.
 		function appendNflCard(gridEl, card) {
-			const depthChartsWrap = gridEl.querySelector('[data-depth-charts-wrap]');
-			if (depthChartsWrap) gridEl.insertBefore(card, depthChartsWrap);
+			const anchor = gridEl.querySelector(':scope > [data-nfl-standings], :scope > [data-depth-charts-wrap]');
+			if (anchor) gridEl.insertBefore(card, anchor);
 			else gridEl.appendChild(card);
 		}
 
@@ -11964,6 +12022,99 @@
 			appendNflCard(gridEl, renderNflScoreCard('nfl-matchups', 'Matchups', rest, 'No games scheduled this week.'));
 		}
 
+		// NFL Standings: one card, eight division tables, off the snapshot's
+		// `nflStandings` (scripts/lib/espn-standings.mjs) — so it is as fresh
+		// as the last sync, up to four hours, and the subtitle says when that
+		// was rather than implying a live read. Standings only move when a
+		// game goes final, so polling them with the scoreboard would buy
+		// nothing. Ungated like the rest of this tab: real NFL data.
+		//
+		// Divisions come from DEPTH_CHART_DIVISIONS, never from ESPN's own
+		// grouping (see espn-standings.mjs on why the tree depth isn't
+		// trusted). A team ESPN returns under an abbreviation that map
+		// doesn't know is left out rather than guessed into a division; an
+		// absent `nflStandings` (a snapshot from before this existed) renders
+		// no card at all.
+		//
+		// Order within a division: win percentage (a tie counts half, the
+		// NFL's own rule), then conference seed when both teams have one,
+		// then ESPN's own response order — ESPN applies the real
+		// tiebreakers and this page does not try to.
+		function nflStandingsPct(t) {
+			const games = (t.w ?? 0) + (t.l ?? 0) + (t.t ?? 0);
+			return games > 0 ? ((t.w ?? 0) + 0.5 * (t.t ?? 0)) / games : null;
+		}
+		function compareNflStandings(a, b) {
+			const pa = nflStandingsPct(a), pb = nflStandingsPct(b);
+			if (pa != null && pb != null && pa !== pb) return pb - pa;
+			if (a.seed != null && b.seed != null && a.seed !== b.seed) return a.seed - b.seed;
+			return (a.order ?? 0) - (b.order ?? 0);
+		}
+		function buildNflStandingsByDivision(standings) {
+			const byDivision = new Map(DEPTH_CHART_DIVISION_ORDER.map((d) => [d, []]));
+			for (const [abbr, team] of Object.entries(standings?.teams || {})) {
+				const division = DEPTH_CHART_DIVISIONS[abbr];
+				if (division) byDivision.get(division).push({ abbr, ...team });
+			}
+			for (const teams of byDivision.values()) teams.sort(compareNflStandings);
+			return byDivision;
+		}
+		function formatNflRecord(t) {
+			if (t.w == null || t.l == null) return '—';
+			return t.t ? `${t.w}-${t.l}-${t.t}` : `${t.w}-${t.l}`;
+		}
+		function renderNflStandingsCard(standings) {
+			if (!standings?.teams) return null;
+			const byDivision = buildNflStandingsByDivision(standings);
+			const card = el('div', { class: 'card nfl-card', 'data-view': 'nfl' });
+			card.dataset.nflStandings = 'true';
+			const headingEl = el('h2', { class: 'card-heading', text: 'Standings' });
+			card.appendChild(headingEl);
+			makeCollapsible(card, headingEl, 'nfl-standings');
+			const at = new Date(standings.generatedAt);
+			if (!Number.isNaN(at.getTime())) {
+				const when = at.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+				card.appendChild(el('div', { class: 'team card-collapse-visible', text: `As of the last sync, ${when}` }));
+			}
+			// Division record only earns a column when ESPN actually sent one
+			// for somebody — the field is unconfirmed (see espn-standings.mjs).
+			const allTeams = [...byDivision.values()].flat();
+			const showDiv = allTeams.some((t) => t.div);
+			const body = el('div', { class: 'nfl-standings' });
+			for (const [division, teams] of byDivision) {
+				if (teams.length === 0) continue;
+				const box = el('div', { class: 'nfl-standings-division' });
+				box.appendChild(el('h3', { class: 'nfl-standings-title', text: SUBTAB_LABEL_OVERRIDES[division] || division }));
+				const table = el('table', { class: 'nfl-standings-table' });
+				const head = el('tr');
+				for (const label of ['Team', 'W-L', ...(showDiv ? ['Div'] : []), 'PF', 'PA', 'Strk']) {
+					head.appendChild(el('th', { text: label }));
+				}
+				table.appendChild(el('thead', {}, [head]));
+				const tbody = el('tbody');
+				for (const t of teams) {
+					const row = el('tr');
+					const nameCell = el('td', { class: 'nfl-standings-team', title: t.name || t.abbr });
+					nameCell.appendChild(el('span', { text: t.abbr }));
+					if (t.seed != null) {
+						nameCell.appendChild(el('span', { class: 'nfl-standings-seed', title: `Conference seed ${t.seed}`, text: String(t.seed) }));
+					}
+					row.appendChild(nameCell);
+					row.appendChild(el('td', { text: formatNflRecord(t) }));
+					if (showDiv) row.appendChild(el('td', { text: t.div || '—' }));
+					row.appendChild(el('td', { text: t.pf != null ? String(t.pf) : '—' }));
+					row.appendChild(el('td', { text: t.pa != null ? String(t.pa) : '—' }));
+					row.appendChild(el('td', { text: t.streak || '—' }));
+					tbody.appendChild(row);
+				}
+				table.appendChild(tbody);
+				box.appendChild(table);
+				body.appendChild(box);
+			}
+			card.appendChild(body);
+			return card;
+		}
+
 		function rerenderNflCards() {
 			const gridEl = document.getElementById('grid');
 			// :scope > restricts this to gridEl's own DIRECT children —
@@ -11978,7 +12129,10 @@
 			// (renderNflCards never rebuilds it, so nothing replaced what
 			// this line removed), leaving the "no teams match" empty state
 			// permanently on screen after the first poll landed.
-			gridEl.querySelectorAll(':scope > .card[data-view="nfl"]:not([data-depth-charts-wrap])').forEach((c) => c.remove());
+			// The Standings card is excluded for the same reason as the
+			// wrapper: it reads the snapshot, not this poll, and nothing
+			// here would rebuild it.
+			gridEl.querySelectorAll(':scope > .card[data-view="nfl"]:not([data-depth-charts-wrap]):not([data-nfl-standings])').forEach((c) => c.remove());
 			renderNflCards(gridEl);
 			updateVisibility();
 		}
@@ -15354,6 +15508,8 @@
 			// the NFL tab — the same auto-fill-grid-follows-DOM-order idiom
 			// .now-playing-card's own comment already relies on.
 			renderNflCards(gridEl);
+			const nflStandingsCard = renderNflStandingsCard(data.nflStandings);
+			if (nflStandingsCard) gridEl.appendChild(nflStandingsCard);
 			renderDepthChartCards(gridEl, data);
 
 			// Logged-out visitors never get any analytics card, so 'analytics'

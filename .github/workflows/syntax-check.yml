@@ -477,6 +477,12 @@ jobs:
       - name: Test the NFL tab
         run: node scripts/test-nfl-tab.mjs
 
+      # The NFL tab's Standings card: ESPN's standings tree is walked at any
+      # depth, missing stats stay null, divisions come from the page's own
+      # map, and a scoreboard poll never deletes the card.
+      - name: Test NFL standings
+        run: node scripts/test-nfl-standings.mjs
+
       - name: Validate config/leagues.json
         run: |
           node --input-type=module -e '

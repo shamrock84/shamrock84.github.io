@@ -69,6 +69,7 @@ import {
   lookupPlayer,
 } from './lib/fantasypros.mjs';
 import { fetchAllDepthCharts, DEPTH_CHART_POSITIONS } from './lib/espn-depth-chart.mjs';
+import { fetchNflStandings } from './lib/espn-standings.mjs';
 import {
   computeMflSeasonPlacements,
   computeMflSeasonPlacementsByPoints,
@@ -1840,6 +1841,17 @@ async function main() {
     console.error(`Failed to fetch depth charts: ${err.message}`);
   }
 
+  // NFL standings for the NFL tab's Standings card — same public ESPN host
+  // and same never-fail posture as the depth charts above, one request.
+  // See scripts/lib/espn-standings.mjs.
+  let nflStandings = null;
+  try {
+    nflStandings = await fetchNflStandings({ season: process.env.MFL_YEAR || String(targetSeason) });
+    console.log(`NFL standings — ${Object.keys(nflStandings.teams).length} team(s)`);
+  } catch (err) {
+    console.error(`Failed to fetch NFL standings: ${err.message}`);
+  }
+
   // Degrade the same way everything else here does: a league that couldn't be
   // read keeps the availability it last had, and a run with no rankings at all
   // keeps the previous pools rather than emptying the two cards that need
@@ -1906,6 +1918,9 @@ async function main() {
   if (!depthCharts && previous?.depthCharts) {
     depthCharts = previous.depthCharts;
   }
+  if (!nflStandings && previous?.nflStandings) {
+    nflStandings = previous.nflStandings;
+  }
   // Carried alongside depthCharts specifically when THIS run had no key to
   // fetch fresh per-position pools with — matches whichever pools actually
   // ended up in rankingPools (either fresh above, or carried forward too).
@@ -1938,6 +1953,8 @@ async function main() {
     // (no FANTASYPROS_API_KEY this run and no carried-forward type either).
     depthCharts,
     depthChartEcrType,
+    // NFL-wide too — the NFL tab's Standings card. ~3KB.
+    nflStandings,
     leagues,
     // Extra header-toolbar links, carried through from config/leagues.json
     // verbatim — see loadLeagueConfig above and renderQuickLinks in
