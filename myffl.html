@@ -7097,6 +7097,33 @@
 				.sort((a, b) => a.sleeper.rank - b.sleeper.rank);
 		}
 
+		// Win column: the team's current record as a rank-scale number, so it can
+		// sit in the Avg beside four real ranks. Win% 1.000 maps to 1 and 0.000
+		// maps to the league's size, linear in between — the same 1..size scale
+		// a rank ordinal lives on, though it is not an ordinal (two teams at
+		// .667 get the same number, fractions included). A tie counts as half a
+		// win. Null — and so left out of the Avg entirely — when there is no
+		// record to read: offseason 0-0, a draftonly league (no head-to-head
+		// schedule, its h2h fields are always zero), or a league with no
+		// standings. `size` is the league's power-team count, the same one the
+		// League column prints in parentheses.
+		function powerWinRank(league, size) {
+			if (!(size > 1)) return null;
+			const r = (league.standings || []).find((row) => row.franchiseId === league.franchiseId);
+			if (!r) return null;
+			const w = Number(r.wins) || 0;
+			const l = Number(r.losses) || 0;
+			const t = Number(r.ties) || 0;
+			const games = w + l + t;
+			if (games === 0) return null;
+			const pct = (w + t / 2) / games;
+			return {
+				value: 1 + (1 - pct) * (size - 1),
+				record: t > 0 ? `${w}-${l}-${t}` : `${w}-${l}`,
+				pct,
+			};
+		}
+
 		function computeMyPowerRows(leagues, types, year) {
 			const rows = [];
 			for (const league of leagues || []) {
@@ -7125,6 +7152,9 @@
 					size: projRanks ? projRanks.size : ecrRanks ? ecrRanks.size : null,
 					proj,
 					ecr,
+					// Suppressed with the ranks: a trailing redraft league's
+					// standings are last season's.
+					win: trailing || !(proj || ecr) ? null : powerWinRank(league, projRanks ? projRanks.size : ecrRanks.size),
 					// Set only on a row with no ranks at all — the two bases
 					// have their own explanations when just one is missing.
 					reason: proj || ecr ? null : powerUnrankedReason(league, trailing),
@@ -7244,7 +7274,8 @@
 			return (rows || []).some((r) => r.proj) ? 'projections' : 'ecr';
 		}
 
-		// The row's summary number: the mean of ECR, Starters and Depth.
+		// The row's summary number: the mean of ECR, Starters, Depth and Win
+		// (the current record on the same 1..size scale; see powerWinRank).
 		//
 		// Proj is deliberately *not* in it, which is worth stating because the
 		// obvious reading of an "average" column is "the average of the numbers
@@ -7268,6 +7299,9 @@
 				if (detail.depth != null) parts.push(detail.depth);
 			}
 			if (parts.length === 0) return null;
+			// Joins only a row that already has ranks, and counts as one part
+			// like any other — equal weight to ECR, Start and Ben.
+			if (row.win) parts.push(row.win.value);
 			return parts.reduce((sum, v) => sum + v, 0) / parts.length;
 		}
 
@@ -10833,6 +10867,7 @@
 					},
 					missingLast: true,
 				},
+				win: { dir: 1, value: (r) => (r.win ? r.win.value : null), missingLast: true },
 				avg: { dir: 1, value: (r) => (r.avg == null ? null : r.avg), missingLast: true },
 			};
 			const { sortedRows, sortableHeader } = makeTableSort(rows, SORTS, () => renderBody());
@@ -10850,12 +10885,13 @@
 				headRow.appendChild(sortableHeader('League', 'league', 'Team count in parentheses'));
 				headRow.appendChild(sortableHeader('Proj', 'proj', 'Rank by projected points of the best legal lineup, plus bench'));
 				headRow.appendChild(sortableHeader('ECR', 'ecr', 'Rank by consensus ranking of the same roster'));
-				// Abbreviated so six columns fit a phone without wrapping. The
+				// Abbreviated so seven columns fit a phone without wrapping. The
 				// tooltips carry the full words, which is where "Ben" earns its
 				// keep — on its own it could be read as a name.
 				headRow.appendChild(sortableHeader('Start', 'starters', `Starters: lineup rank, by ${detailLabel}`));
 				headRow.appendChild(sortableHeader('Ben', 'depth', `Bench: depth rank, by ${detailLabel}`));
-				headRow.appendChild(sortableHeader('Avg', 'avg', 'Mean of ECR, Start and Ben'));
+				headRow.appendChild(sortableHeader('Win', 'win', 'Current record on the rank scale: 1 = undefeated, league size = winless'));
+				headRow.appendChild(sortableHeader('Avg', 'avg', 'Mean of ECR, Start, Ben and Win (Win only once games have been played)'));
 				table.appendChild(headRow);
 
 				for (const r of sortedRows()) {
@@ -10941,6 +10977,13 @@
 					} else {
 						row.appendChild(el('td', { text: String(detail.depth) }));
 					}
+					// A dash, not TBD: no record is the normal offseason state and
+					// the Avg simply leaves it out.
+					row.appendChild(
+						r.win
+							? el('td', { text: r.win.value.toFixed(1), title: `Record ${r.win.record}` })
+							: el('td', { class: 'power-tbd', text: '—', title: 'No games played yet — left out of Avg' })
+					);
 					row.appendChild(
 						r.avg == null
 							? el('td', { class: 'power-tbd', text: 'TBD' })
