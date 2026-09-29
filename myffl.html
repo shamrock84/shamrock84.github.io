@@ -8721,7 +8721,7 @@
 			const slots = computeGameTimeWatchlist(leagues, year);
 			makeCollapsible(card, heading, 'watchlist', slots.length === 0);
 			if (slots.length === 0) {
-				card.appendChild(el('div', { class: 'team card-collapse-visible', text: 'No injured players in games still to kick off.' }));
+				card.appendChild(el('div', { class: 'team card-collapse-visible', text: 'No injured players in games yet to kick off.' }));
 				return card;
 			}
 
