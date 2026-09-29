@@ -1,0 +1,38 @@
+name: Probe NFL Standings (manual, read-only, no secrets needed)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here, the
+# same rule the other manual workflows follow.
+#
+# Confirms the shape scripts/lib/espn-standings.mjs parses from ESPN's public
+# standings endpoint, which is unreachable from the sandbox this repo is
+# normally edited from. See scripts/probe-nfl-standings.mjs's header.
+#
+# Read-only: two GETs.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      # Blobless + sparse checkout: skips mfl/PSD and images/, which no
+      # workflow here reads. Same five directories everywhere on purpose;
+      # see sync-fantasy-rosters.yml for the reasoning and the numbers.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout: |
+            api
+            scripts
+            config
+            data
+            .github
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Probe ESPN's public standings endpoint
+        run: node scripts/probe-nfl-standings.mjs
