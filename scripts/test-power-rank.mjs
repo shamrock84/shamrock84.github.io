@@ -1335,4 +1335,36 @@ const labelsOf = (card) =>
 	assert.ok(popover.cls.includes('hidden'), 'clicking the same button again closes it (toggle)');
 }
 
+// Win column: current record on a 1..size scale, joined into the Avg as an
+// equal part. 1.000 -> 1, 0.000 -> league size, a tie is half a win, and no
+// record (0-0, or no standings) leaves it out of the Avg instead of skewing it.
+{
+	const teams = (n) => Array.from({ length: n }, (_, i) => ({ franchiseId: i === 0 ? '1' : `x${i}`, score: 1000 - i * 10, depth: 0 }));
+	const mkWin = (standings, type = 'dynasty') => ({
+		id: 'W', name: 'Win', type, season: '2026', franchiseId: '1', players: [], standings,
+		power: {
+			projections: { source: { basis: 'projections' }, teams: teams(10) },
+			ecr: { source: { basis: 'ecr' }, teams: teams(10) },
+		},
+	});
+	const me = (wins, losses, ties = 0) => [{ franchiseId: '1', wins, losses, ties }];
+	const run = (standings, type) => computeMyPowerRows([mkWin(standings, type)], ['dynasty', 'draftonly'], 2026)[0];
+
+	const undefeated = run(me(3, 0));
+	assert.equal(undefeated.win.value, 1, '1.000 maps to 1');
+	assert.equal(run(me(0, 3)).win.value, 10, '0.000 maps to the league size');
+	assert.equal(run(me(1, 1)).win.value, 5.5, '.500 lands midway on a 10-team scale');
+	assert.equal(run(me(1, 1, 2)).win.value, 5.5, 'a tie counts as half a win');
+	assert.equal(run(me(2, 1)).win.record, '2-1');
+
+	// Equal weight: ECR, Start, Ben and Win are four parts of the mean.
+	const base = run(undefined);
+	assert.equal(base.win, null, 'no standings, no Win');
+	const wp = base.avg * 3;
+	assert.equal(undefeated.avg, (wp + 1) / 4, 'Win is a fourth equal part of the average');
+
+	assert.equal(run(me(0, 0)).win, null, 'an offseason 0-0 is left out');
+	assert.equal(run(me(0, 0)).avg, base.avg, '...and does not change the average');
+}
+
 console.log('test-power-rank: all assertions passed');
