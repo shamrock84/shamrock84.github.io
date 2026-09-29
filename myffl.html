@@ -1994,46 +1994,28 @@
 		.nfl-card {
 			grid-column: 1 / -1;
 		}
-		/* Standings: eight division tables wrapped like .nfl-scoreboard's
-		   game pills — four across on a desktop card, one per row on a
-		   phone. 250px basis fits Team/W-L/Div/PF/PA/Strk at 0.85rem with
-		   room for a 3-digit points total. */
+		/* Standings: eight division cards nested inside the one full-width
+		   Standings card, styled exactly like the Depth Charts section's own
+		   team cards (.depth-chart-teams/.depth-chart-team-card) — a plain
+		   .card each, with a table.standings inside, so the two sections on
+		   this tab read as the same kind of thing. Four across on a desktop
+		   card, one per row on a phone; the 280px basis fits Team/W-L/Div/
+		   PF/PA/Strk plus the card's own padding. */
 		.nfl-standings {
 			display: flex;
 			flex-wrap: wrap;
-			gap: 0.75rem;
+			gap: 1rem;
 		}
 		.nfl-standings-division {
-			flex: 1 1 250px;
+			flex: 1 1 280px;
 			min-width: 0;
-			border: 1px solid var(--border);
-			border-radius: 8px;
-			padding: 0.55rem 0.65rem;
-		}
-		.nfl-standings-title {
-			margin: 0 0 0.35rem;
-			font-size: 0.9rem;
 		}
 		.nfl-standings-table {
-			width: 100%;
-			border-collapse: collapse;
-			font-size: 0.85rem;
 			font-variant-numeric: tabular-nums;
 		}
 		.nfl-standings-table th,
 		.nfl-standings-table td {
-			padding: 0.2rem 0.3rem;
-			text-align: right;
 			white-space: nowrap;
-		}
-		.nfl-standings-table th:first-child,
-		.nfl-standings-table td:first-child {
-			text-align: left;
-		}
-		.nfl-standings-table th {
-			font-weight: 600;
-			color: var(--muted);
-			border-bottom: 1px solid var(--border);
 		}
 		.nfl-standings-team {
 			font-weight: 600;
@@ -12083,9 +12065,16 @@
 			const body = el('div', { class: 'nfl-standings' });
 			for (const [division, teams] of byDivision) {
 				if (teams.length === 0) continue;
-				const box = el('div', { class: 'nfl-standings-division' });
-				box.appendChild(el('h3', { class: 'nfl-standings-title', text: SUBTAB_LABEL_OVERRIDES[division] || division }));
-				const table = el('table', { class: 'nfl-standings-table' });
+				// A full nested .card, like renderDepthChartTeamCard's: it
+				// carries data-view="nfl" because updateVisibility walks every
+				// .card on the page and would hide one without it. No
+				// data-league-type — the Depth Charts division pills filter
+				// that card only, never this one.
+				const box = el('div', { class: 'card nfl-standings-division', 'data-view': 'nfl' });
+				const boxHeading = el('h2', { class: 'card-heading', text: SUBTAB_LABEL_OVERRIDES[division] || division });
+				box.appendChild(boxHeading);
+				makeCollapsible(box, boxHeading, `nflstandings:${division}`);
+				const table = el('table', { class: 'standings nfl-standings-table' });
 				const head = el('tr');
 				for (const label of ['Team', 'W-L', ...(showDiv ? ['Div'] : []), 'PF', 'PA', 'Strk']) {
 					head.appendChild(el('th', { text: label }));
@@ -12100,7 +12089,7 @@
 						nameCell.appendChild(el('span', { class: 'nfl-standings-seed', title: `Conference seed ${t.seed}`, text: String(t.seed) }));
 					}
 					row.appendChild(nameCell);
-					row.appendChild(el('td', { text: formatNflRecord(t) }));
+					row.appendChild(el('td', { class: 'standings-record', text: formatNflRecord(t) }));
 					if (showDiv) row.appendChild(el('td', { text: t.div || '—' }));
 					row.appendChild(el('td', { text: t.pf != null ? String(t.pf) : '—' }));
 					row.appendChild(el('td', { text: t.pa != null ? String(t.pa) : '—' }));
