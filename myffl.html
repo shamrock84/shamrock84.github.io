@@ -2105,22 +2105,27 @@
 		   but the rules themselves are deliberately identical. .scoring-
 		   detail-toggle gets this for free because its own pill carries no
 		   padding of its own; .nfl-game-row does (padding: 0.55rem 0.65rem),
-		   so the negative margin has to claw back BOTH that padding and the
-		   pill's own 1px border — leaving out the border was the bug a
-		   first pass shipped with: the strip stopped exactly 1px short of
-		   each edge, matching the border width exactly, since width:100%
-		   only reaches the padding edge (the border's own INNER face), not
-		   through it. Clawing back the full padding+border is what actually
-		   lines the strip up flush with the pill's outer edge, the same
-		   place its rounded corners are drawn — a mis-aimed tap on a phone
-		   still opens it either way, but only this fully reaches it. */
+		   so the negative margin claws back exactly that padding and no
+		   more — the strip stops at the pill border's own INNER face. A
+		   first pass also clawed back the 1px border, so the strip ran
+		   flush with the pill's outer edge; that looked right on a plain
+		   pill (transparent background) but on a live one the strip's
+		   gold fill painted straight over the pill's gold side borders,
+		   breaking the outline at exactly the Show detail row — most
+		   visible in dark mode, where --gold-chip-bg is dark against a
+		   bright --gold border. Stopping inside the border is what the
+		   Scoring tab's own width:100% strip does too; its border-top
+		   simply meets the side borders. Collapsed, the strip is the
+		   pill's last visible row, so its bottom corners take the pill's
+		   inner radius (8px outer - 1px border) or its fill would poke
+		   square corners out past the rounded ones. */
 		.nfl-boxscore-toggle {
 			display: flex;
 			align-items: center;
 			justify-content: center;
 			gap: 0.3rem;
-			width: calc(100% + 1.3rem + 2px);
-			margin: 0 calc(-0.65rem - 1px) -0.55rem;
+			width: calc(100% + 1.3rem);
+			margin: 0 -0.65rem -0.55rem;
 			border: none;
 			border-top: 1px solid var(--border);
 			background: none;
@@ -2131,6 +2136,9 @@
 			letter-spacing: 0.04em;
 			padding: 0.3rem 0.7rem;
 			cursor: pointer;
+		}
+		.nfl-game-row:not(.nfl-boxscore-open) .nfl-boxscore-toggle {
+			border-radius: 0 0 7px 7px;
 		}
 		.nfl-boxscore-toggle:hover {
 			color: var(--text);
