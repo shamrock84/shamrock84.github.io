@@ -134,7 +134,7 @@ const text = (n) => (n._text || '') + (n.children || []).map(text).join('');
 	assert.equal(card.attrs['data-view'], 'nfl');
 	const boxes = findAll(card, (n) => n.cls.split(/\s+/).includes('nfl-standings-division'));
 	assert.equal(boxes.length, 1, 'a division with no teams renders no box');
-	assert.equal(boxes[0].attrs['data-view'], 'nfl', 'a nested division .card needs data-view or updateVisibility hides it');
+	assert.ok(!boxes[0].cls.includes('depth-chart-position'), 'must not carry the Depth Charts search hook class');
 	assert.ok(text(boxes[0]).includes('AFC East'));
 	assert.ok(text(boxes[0]).includes('2-1-1'), 'a tie shows as W-L-T');
 	assert.ok(!text(boxes[0]).includes('Div'), 'no Div column when ESPN sent no division record for anyone');

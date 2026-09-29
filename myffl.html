@@ -580,7 +580,12 @@
 			flex: 1 1 min(640px, 100%);
 			min-width: 0;
 		}
-		.depth-chart-positions {
+		/* .nfl-standings/.nfl-standings-division share these two rules rather
+		   than reusing the class names: .depth-chart-position is also a
+		   search hook in updateVisibility (its positionBoxes branch), which
+		   the Standings card must not trip. */
+		.depth-chart-positions,
+		.nfl-standings {
 			display: flex;
 			flex-wrap: wrap;
 			gap: 1rem;
@@ -589,7 +594,8 @@
 		   plain adjacent tables with no border read as one continuous block on
 		   a team card that's carrying four of them, which is exactly the
 		   "blends together" problem this exists to fix. */
-		.depth-chart-position {
+		.depth-chart-position,
+		.nfl-standings-division {
 			flex: 1 1 220px;
 			min-width: 0;
 			border: 1px solid var(--border);
@@ -1994,36 +2000,23 @@
 		.nfl-card {
 			grid-column: 1 / -1;
 		}
-		/* Standings: eight division cards nested inside the one full-width
-		   Standings card, styled exactly like the Depth Charts section's own
-		   team cards (.depth-chart-teams/.depth-chart-team-card) — a plain
-		   .card each, with a table.standings inside, so the two sections on
-		   this tab read as the same kind of thing. Four across on a desktop
-		   card, one per row on a phone; the 280px basis fits Team/W-L/Div/
-		   PF/PA/Strk plus the card's own padding. */
-		.nfl-standings {
-			display: flex;
-			flex-wrap: wrap;
-			gap: 1rem;
-		}
-		.nfl-standings-division {
-			flex: 1 1 280px;
-			min-width: 0;
-		}
-		.nfl-standings-table {
-			font-variant-numeric: tabular-nums;
-		}
+		/* The rest of the Standings card's look is the Depth Charts position
+		   box and table verbatim (see .depth-chart-position and
+		   .depth-chart-table). Only nowrap is its own: "2-1-1" and "W2"
+		   must not break. */
 		.nfl-standings-table th,
 		.nfl-standings-table td {
 			white-space: nowrap;
 		}
-		.nfl-standings-team {
-			font-weight: 600;
+		/* Width is the one thing not shared with .depth-chart-position: six
+		   columns don't fit its 220px basis (Strk clips, "W-L" wraps). 260px
+		   gives four divisions a row on a desktop card, one on a phone. */
+		.nfl-standings-division {
+			flex-basis: 260px;
 		}
 		.nfl-standings-seed {
 			margin-left: 0.3rem;
 			font-size: 0.7rem;
-			font-weight: 400;
 			color: var(--muted);
 			/* Raised by offset rather than vertical-align: super, which
 			   grows the line box and makes seeded rows taller than the rest. */
@@ -12065,25 +12058,19 @@
 			const body = el('div', { class: 'nfl-standings' });
 			for (const [division, teams] of byDivision) {
 				if (teams.length === 0) continue;
-				// A full nested .card, like renderDepthChartTeamCard's: it
-				// carries data-view="nfl" because updateVisibility walks every
-				// .card on the page and would hide one without it. No
-				// data-league-type — the Depth Charts division pills filter
-				// that card only, never this one.
-				const box = el('div', { class: 'card nfl-standings-division', 'data-view': 'nfl' });
-				const boxHeading = el('h2', { class: 'card-heading', text: SUBTAB_LABEL_OVERRIDES[division] || division });
-				box.appendChild(boxHeading);
-				makeCollapsible(box, boxHeading, `nflstandings:${division}`);
-				const table = el('table', { class: 'standings nfl-standings-table' });
+				// Same box and table as buildDepthChartPositionTable: the
+				// division name is the banner row, then the column labels.
+				const box = el('div', { class: 'nfl-standings-division' });
+				const table = el('table', { class: 'standings depth-chart-table nfl-standings-table' });
+				const columns = ['Team', 'W-L', ...(showDiv ? ['Div'] : []), 'PF', 'PA', 'Strk'];
+				const banner = el('tr', {}, [el('th', { colspan: String(columns.length), text: SUBTAB_LABEL_OVERRIDES[division] || division })]);
 				const head = el('tr');
-				for (const label of ['Team', 'W-L', ...(showDiv ? ['Div'] : []), 'PF', 'PA', 'Strk']) {
-					head.appendChild(el('th', { text: label }));
-				}
-				table.appendChild(el('thead', {}, [head]));
+				for (const label of columns) head.appendChild(el('th', { text: label }));
+				table.appendChild(el('thead', {}, [banner, head]));
 				const tbody = el('tbody');
 				for (const t of teams) {
 					const row = el('tr');
-					const nameCell = el('td', { class: 'nfl-standings-team', title: t.name || t.abbr });
+					const nameCell = el('td', { title: t.name || t.abbr });
 					nameCell.appendChild(el('span', { text: t.abbr }));
 					if (t.seed != null) {
 						nameCell.appendChild(el('span', { class: 'nfl-standings-seed', title: `Conference seed ${t.seed}`, text: String(t.seed) }));
