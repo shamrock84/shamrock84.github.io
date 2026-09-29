@@ -447,7 +447,8 @@
 		   content via .card's own padding, so the shared rule's horizontal
 		   padding would double it up; zeroed here rather than touching
 		   .subtabs-bar itself, which the page-level bar still uses as-is. */
-		.depth-chart-subtabs {
+		.depth-chart-subtabs,
+		.nfl-standings-toggle {
 			padding: 0;
 			margin: 0 0 1rem;
 		}
@@ -2013,6 +2014,13 @@
 		   gives four divisions a row on a desktop card, one on a phone. */
 		.nfl-standings-division {
 			flex-basis: 260px;
+		}
+		/* Conference view's 1..16 rank ahead of the abbreviation — muted
+		   like the seed, fixed width so the abbreviations line up. */
+		.nfl-standings-rank {
+			display: inline-block;
+			min-width: 1.6em;
+			color: var(--muted);
 		}
 		.nfl-standings-seed {
 			margin-left: 0.3rem;
@@ -11997,24 +12005,49 @@
 			appendNflCard(gridEl, renderNflScoreCard('nfl-matchups', 'Matchups', rest, 'No games scheduled this week.'));
 		}
 
-		// NFL Standings: one card, eight division tables, off the snapshot's
-		// `nflStandings` (scripts/lib/espn-standings.mjs) — so it is as fresh
-		// as the last sync, up to four hours, and the subtitle says when that
-		// was rather than implying a live read. Standings only move when a
-		// game goes final, so polling them with the scoreboard would buy
-		// nothing. Ungated like the rest of this tab: real NFL data.
+		// NFL Standings: one card off the snapshot's `nflStandings`
+		// (scripts/lib/espn-standings.mjs) — as fresh as the last sync, up
+		// to four hours, and the subtitle says when that was rather than
+		// implying a live read. Standings only move when a game goes final,
+		// so polling them with the scoreboard would buy nothing. Ungated
+		// like the rest of this tab: real NFL data.
 		//
-		// Divisions come from DEPTH_CHART_DIVISIONS, never from ESPN's own
-		// grouping (see espn-standings.mjs on why the tree depth isn't
-		// trusted). A team ESPN returns under an abbreviation that map
-		// doesn't know is left out rather than guessed into a division; an
-		// absent `nflStandings` (a snapshot from before this existed) renders
-		// no card at all.
+		// Two groupings behind a Conference | Division toggle, as ESPN's own
+		// app offers: eight division boxes, or two conference boxes with
+		// every team ranked. Both come from DEPTH_CHART_DIVISIONS (a
+		// conference is the division key's prefix), never from ESPN's own
+		// grouping — see espn-standings.mjs on why the tree depth isn't
+		// trusted. A team under an abbreviation that map doesn't know is
+		// left out rather than guessed into a group; an absent
+		// `nflStandings` (a snapshot from before this existed) renders no
+		// card at all.
 		//
-		// Order within a division: win percentage (a tie counts half, the
-		// NFL's own rule), then conference seed when both teams have one,
-		// then ESPN's own response order — ESPN applies the real
-		// tiebreakers and this page does not try to.
+		// Neither order tries to apply the NFL's tiebreakers; ESPN already
+		// did, and its answers are what `seed` and `order` carry.
+		//   * Division: win percentage (a tie counts half, the NFL's own
+		//     rule), then conference seed, then ESPN's response order.
+		//   * Conference: seed first, because that is what a conference
+		//     ranking IS — division winners hold 1-4 regardless of record,
+		//     so a 3-0 wild card ranks below a 2-1 division leader (ESPN's
+		//     own conference view does exactly this). Seeded teams ahead of
+		//     unseeded ones, then win percentage, then ESPN's order.
+		const NFL_STANDINGS_VIEW_KEY = 'myfflNflStandingsView';
+		const NFL_STANDINGS_VIEWS = [['conference', 'Conference'], ['division', 'Division']];
+		function readNflStandingsView() {
+			try {
+				return localStorage.getItem(NFL_STANDINGS_VIEW_KEY) === 'conference' ? 'conference' : 'division';
+			} catch {
+				return 'division';
+			}
+		}
+		function saveNflStandingsView(view) {
+			try {
+				localStorage.setItem(NFL_STANDINGS_VIEW_KEY, view);
+			} catch {
+				// Private browsing or a full quota — the toggle still works
+				// for this render, it just won't survive a reload.
+			}
+		}
 		function nflStandingsPct(t) {
 			const games = (t.w ?? 0) + (t.l ?? 0) + (t.t ?? 0);
 			return games > 0 ? ((t.w ?? 0) + 0.5 * (t.t ?? 0)) / games : null;
@@ -12025,6 +12058,12 @@
 			if (a.seed != null && b.seed != null && a.seed !== b.seed) return a.seed - b.seed;
 			return (a.order ?? 0) - (b.order ?? 0);
 		}
+		function compareNflConferenceStandings(a, b) {
+			if (a.seed != null && b.seed != null) return a.seed - b.seed || (a.order ?? 0) - (b.order ?? 0);
+			if (a.seed != null) return -1;
+			if (b.seed != null) return 1;
+			return compareNflStandings(a, b);
+		}
 		function buildNflStandingsByDivision(standings) {
 			const byDivision = new Map(DEPTH_CHART_DIVISION_ORDER.map((d) => [d, []]));
 			for (const [abbr, team] of Object.entries(standings?.teams || {})) {
@@ -12034,13 +12073,71 @@
 			for (const teams of byDivision.values()) teams.sort(compareNflStandings);
 			return byDivision;
 		}
+		// [label, teams] pairs in display order, for either grouping.
+		function buildNflStandingsGroups(standings, view) {
+			const byDivision = buildNflStandingsByDivision(standings);
+			if (view !== 'conference') {
+				return [...byDivision].map(([division, teams]) => [SUBTAB_LABEL_OVERRIDES[division] || division, teams]);
+			}
+			return ['afc', 'nfc'].map((conf) => {
+				const teams = [...byDivision]
+					.filter(([division]) => division.startsWith(`${conf}-`))
+					.flatMap(([, divTeams]) => divTeams)
+					.sort(compareNflConferenceStandings);
+				return [conf.toUpperCase(), teams];
+			});
+		}
 		function formatNflRecord(t) {
 			if (t.w == null || t.l == null) return '—';
 			return t.t ? `${t.w}-${t.l}-${t.t}` : `${t.w}-${t.l}`;
 		}
+		// One group's box — the same box and table as
+		// buildDepthChartPositionTable: the group name is the banner row,
+		// then the column labels. `ranked` (the Conference view) prefixes a
+		// 1..16 rank instead of the seed superscript, which would only
+		// repeat it.
+		function renderNflStandingsBox(label, teams, showDiv, ranked) {
+			const box = el('div', { class: 'nfl-standings-division' });
+			const table = el('table', { class: 'standings depth-chart-table nfl-standings-table' });
+			const columns = ['Team', 'W-L', ...(showDiv ? ['Div'] : []), 'PF', 'PA', 'Strk'];
+			const banner = el('tr', {}, [el('th', { colspan: String(columns.length), text: label })]);
+			const head = el('tr');
+			for (const col of columns) head.appendChild(el('th', { text: col }));
+			table.appendChild(el('thead', {}, [banner, head]));
+			const tbody = el('tbody');
+			teams.forEach((t, i) => {
+				const row = el('tr');
+				const nameCell = el('td', { title: t.name || t.abbr });
+				if (ranked) nameCell.appendChild(el('span', { class: 'nfl-standings-rank', text: String(i + 1) }));
+				nameCell.appendChild(el('span', { text: t.abbr }));
+				if (!ranked && t.seed != null) {
+					nameCell.appendChild(el('span', { class: 'nfl-standings-seed', title: `Conference seed ${t.seed}`, text: String(t.seed) }));
+				}
+				row.appendChild(nameCell);
+				row.appendChild(el('td', { class: 'standings-record', text: formatNflRecord(t) }));
+				if (showDiv) row.appendChild(el('td', { text: t.div || '—' }));
+				row.appendChild(el('td', { text: t.pf != null ? String(t.pf) : '—' }));
+				row.appendChild(el('td', { text: t.pa != null ? String(t.pa) : '—' }));
+				row.appendChild(el('td', { text: t.streak || '—' }));
+				tbody.appendChild(row);
+			});
+			table.appendChild(tbody);
+			box.appendChild(table);
+			return box;
+		}
+		function renderNflStandingsBody(standings, view) {
+			const groups = buildNflStandingsGroups(standings, view);
+			// Division record only earns a column when ESPN actually sent one
+			// for somebody — the field is unconfirmed (see espn-standings.mjs).
+			const showDiv = groups.some(([, teams]) => teams.some((t) => t.div));
+			const body = el('div', { class: `nfl-standings nfl-standings-by-${view}` });
+			for (const [label, teams] of groups) {
+				if (teams.length > 0) body.appendChild(renderNflStandingsBox(label, teams, showDiv, view === 'conference'));
+			}
+			return body;
+		}
 		function renderNflStandingsCard(standings) {
 			if (!standings?.teams) return null;
-			const byDivision = buildNflStandingsByDivision(standings);
 			const card = el('div', { class: 'card nfl-card', 'data-view': 'nfl' });
 			card.dataset.nflStandings = 'true';
 			const headingEl = el('h2', { class: 'card-heading', text: 'Standings' });
@@ -12051,42 +12148,35 @@
 				const when = at.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 				card.appendChild(el('div', { class: 'team card-collapse-visible', text: `As of the last sync, ${when}` }));
 			}
-			// Division record only earns a column when ESPN actually sent one
-			// for somebody — the field is unconfirmed (see espn-standings.mjs).
-			const allTeams = [...byDivision.values()].flat();
-			const showDiv = allTeams.some((t) => t.div);
-			const body = el('div', { class: 'nfl-standings' });
-			for (const [division, teams] of byDivision) {
-				if (teams.length === 0) continue;
-				// Same box and table as buildDepthChartPositionTable: the
-				// division name is the banner row, then the column labels.
-				const box = el('div', { class: 'nfl-standings-division' });
-				const table = el('table', { class: 'standings depth-chart-table nfl-standings-table' });
-				const columns = ['Team', 'W-L', ...(showDiv ? ['Div'] : []), 'PF', 'PA', 'Strk'];
-				const banner = el('tr', {}, [el('th', { colspan: String(columns.length), text: SUBTAB_LABEL_OVERRIDES[division] || division })]);
-				const head = el('tr');
-				for (const label of columns) head.appendChild(el('th', { text: label }));
-				table.appendChild(el('thead', {}, [banner, head]));
-				const tbody = el('tbody');
-				for (const t of teams) {
-					const row = el('tr');
-					const nameCell = el('td', { title: t.name || t.abbr });
-					nameCell.appendChild(el('span', { text: t.abbr }));
-					if (t.seed != null) {
-						nameCell.appendChild(el('span', { class: 'nfl-standings-seed', title: `Conference seed ${t.seed}`, text: String(t.seed) }));
+			// Single-select, unlike the Depth Charts division pills whose look
+			// it borrows: exactly one grouping is ever pressed. Switching
+			// swaps just the body — the card itself is never rebuilt after
+			// renderGrid (see rerenderNflCards' exclusion of it).
+			let view = readNflStandingsView();
+			let body = renderNflStandingsBody(standings, view);
+			const bar = el('div', { class: 'subtabs-bar nfl-standings-toggle' });
+			const buttonsEl = el('div', { class: 'tabs subtabs', role: 'group', 'aria-label': 'Standings grouping' });
+			const buttons = NFL_STANDINGS_VIEWS.map(([key, label]) => {
+				const btn = el('button', { class: `tab-btn${key === view ? ' active' : ''}`, type: 'button', 'aria-pressed': String(key === view), text: label });
+				btn.dataset.standingsView = key;
+				btn.addEventListener('click', () => {
+					if (key === view) return;
+					view = key;
+					saveNflStandingsView(view);
+					for (const b of buttons) {
+						const on = b.dataset.standingsView === view;
+						b.classList.toggle('active', on);
+						b.setAttribute('aria-pressed', String(on));
 					}
-					row.appendChild(nameCell);
-					row.appendChild(el('td', { class: 'standings-record', text: formatNflRecord(t) }));
-					if (showDiv) row.appendChild(el('td', { text: t.div || '—' }));
-					row.appendChild(el('td', { text: t.pf != null ? String(t.pf) : '—' }));
-					row.appendChild(el('td', { text: t.pa != null ? String(t.pa) : '—' }));
-					row.appendChild(el('td', { text: t.streak || '—' }));
-					tbody.appendChild(row);
-				}
-				table.appendChild(tbody);
-				box.appendChild(table);
-				body.appendChild(box);
-			}
+					const next = renderNflStandingsBody(standings, view);
+					body.replaceWith(next);
+					body = next;
+				});
+				buttonsEl.appendChild(btn);
+				return btn;
+			});
+			bar.appendChild(buttonsEl);
+			card.appendChild(bar);
 			card.appendChild(body);
 			return card;
 		}

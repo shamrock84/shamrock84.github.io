@@ -11,6 +11,10 @@
 //   * the page groups by its own DEPTH_CHART_DIVISIONS, drops an unknown
 //     abbreviation rather than guessing, and sorts by win pct (a tie counts
 //     half), then conference seed, then ESPN's own response order.
+//   * the Conference view ranks by seed first (division winners hold 1-4
+//     whatever their record, as ESPN's own conference view does), seeded
+//     ahead of unseeded, then win pct, then ESPN's order — and the toggle
+//     swaps the body and remembers the choice.
 //   * no `nflStandings` on the snapshot means no card at all.
 //   * rerenderNflCards' removal query excludes the card — a poll must not
 //     delete it, since nothing on the poll path rebuilds it (the same bug
@@ -77,10 +81,11 @@ function domNode(tag = 'div') {
 	const n = {
 		tag, children: [], attrs: {}, cls: '', _text: '', dataset: {}, style: {},
 		classList: { add() {}, remove() {}, toggle() {}, contains: () => false },
-		addEventListener() {}, removeEventListener() {},
+		listeners: {}, addEventListener(t, fn) { (n.listeners[t] = n.listeners[t] || []).push(fn); }, removeEventListener() {},
 		setAttribute(k, v) { n.attrs[k] = v; }, getAttribute(k) { return n.attrs[k]; },
-		appendChild(c) { n.children.push(c); return c; },
+		appendChild(c) { n.children.push(c); c.parent = n; return c; },
 		insertBefore(c) { n.children.push(c); return c; },
+		replaceWith(next) { const i = n.parent.children.indexOf(n); n.parent.children[i] = next; next.parent = n.parent; },
 		querySelector: () => null, querySelectorAll: () => [], closest: () => null, remove() {},
 		get className() { return n.cls; }, set className(v) { n.cls = v; },
 		get innerHTML() { return ''; }, set innerHTML(v) { if (v === '') n.children.length = 0; },
@@ -89,9 +94,10 @@ function domNode(tag = 'div') {
 	};
 	return n;
 }
+const store = new Map();
 const ctx = {
 	console,
-	localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
+	localStorage: { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) },
 	setTimeout, clearTimeout, setInterval, clearInterval,
 	document: {
 		addEventListener() {}, getElementById: () => domNode(), createElement: (t) => domNode(t),
@@ -140,6 +146,55 @@ const text = (n) => (n._text || '') + (n.children || []).map(text).join('');
 	assert.ok(!text(boxes[0]).includes('Div'), 'no Div column when ESPN sent no division record for anyone');
 	// PF/PA/Strk absent on these fixtures render as dashes.
 	assert.ok(text(boxes[0]).includes('—'));
+}
+
+// --- Conference view ---------------------------------------------------------
+
+{
+	const standings = {
+		generatedAt: '2026-09-29T12:00:00Z',
+		teams: {
+			// The screenshot's case: LV is 3-0 but a wild card (seed 5), so it
+			// ranks below 2-1 division leaders JAX (3) and PIT (4).
+			KC: { w: 3, l: 0, t: 0, seed: 1, order: 0 },
+			BUF: { w: 3, l: 0, t: 0, seed: 2, order: 1 },
+			JAX: { w: 2, l: 1, t: 0, seed: 3, order: 2 },
+			PIT: { w: 2, l: 1, t: 0, seed: 4, order: 3 },
+			LV: { w: 3, l: 0, t: 0, seed: 5, order: 4 },
+			// Unseeded: win pct, then ESPN order.
+			MIA: { w: 0, l: 3, t: 0, order: 6 },
+			NYJ: { w: 1, l: 2, t: 0, order: 7 },
+			HOU: { w: 0, l: 3, t: 0, order: 5 },
+			// NFC team — must not land in the AFC box.
+			DAL: { w: 3, l: 0, t: 0, seed: 1, order: 8 },
+		},
+	};
+	const groups = ctx.buildNflStandingsGroups(standings, 'conference');
+	assert.deepEqual([...groups].map(([label]) => label), ['AFC', 'NFC']);
+	assert.deepEqual([...groups[0][1]].map((t) => t.abbr), ['KC', 'BUF', 'JAX', 'PIT', 'LV', 'NYJ', 'HOU', 'MIA']);
+	assert.deepEqual([...groups[1][1]].map((t) => t.abbr), ['DAL']);
+
+	// Toggle: default Division (eight-box view, only non-empty boxes drawn);
+	// clicking Conference swaps the body to two ranked boxes and persists.
+	store.clear();
+	const card = ctx.renderNflStandingsCard(standings);
+	const boxes = () => findAll(card, (n) => n.cls.split(/\s+/).includes('nfl-standings-division'));
+	assert.equal(boxes().length, 5, 'Division view by default: AFC East/North/South/West + NFC East');
+	const btn = (key) => findAll(card, (n) => n.dataset?.standingsView === key)[0];
+	assert.equal(btn('division').attrs['aria-pressed'], 'true');
+	btn('conference').listeners.click[0]();
+	assert.equal(boxes().length, 2, 'Conference view: one box per conference');
+	assert.equal(btn('conference').attrs['aria-pressed'], 'true');
+	assert.equal(btn('division').attrs['aria-pressed'], 'false');
+	assert.equal(store.get('myfflNflStandingsView'), 'conference');
+	const afcRanks = findAll(boxes()[0], (n) => n.cls === 'nfl-standings-rank').map((n) => n._text);
+	assert.deepEqual(afcRanks.slice(0, 5), ['1', '2', '3', '4', '5']);
+	assert.equal(findAll(boxes()[0], (n) => n.cls === 'nfl-standings-seed').length, 0, 'no seed superscript beside a rank that already says it');
+
+	// A reload reads the saved choice back.
+	const again = ctx.renderNflStandingsCard(standings);
+	assert.equal(findAll(again, (n) => n.cls.split(/\s+/).includes('nfl-standings-division')).length, 2);
+	store.clear();
 }
 
 assert.equal(ctx.renderNflStandingsCard(undefined), null, 'no nflStandings on the snapshot means no card');
