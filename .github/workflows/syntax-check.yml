@@ -420,6 +420,12 @@ jobs:
       - name: Test the MFL bench drawer
         run: node scripts/test-mfl-bench.mjs
 
+      # Best-ball win probability: the projected score is the best legal lineup
+      # over the whole roster, so an unplayed bench player can displace a
+      # starter. Non-BestBall leagues keep the starter-only estimate.
+      - name: Test the best-ball win probability
+        run: node scripts/test-best-ball-win-prob.mjs
+
       # The quick-link toolbar's red task-count footnote and its
       # Rosters/Standings/Scoring card counterpart: exact-category,
       # open-tasks-only summing (quickLinkTaskCounts), that the marker is

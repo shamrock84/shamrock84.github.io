@@ -1494,7 +1494,9 @@ export async function fetchMflOwnerNames(league, cookie, leagueData) {
 export async function fetchMflFranchiseNames(league, cookie) {
   const leagueData = await fetchMflLeagueData(league, cookie);
   const [nameById, ownerById] = [mflFranchiseNames(leagueData), await fetchMflOwnerNames(league, cookie, leagueData)];
-  return { nameById, ownerById };
+  // Rides on the same cached pair for free — it is read off the TYPE=league
+  // response already in hand. Only fetchScoring's best-ball path reads it.
+  return { nameById, ownerById, lineupSpec: bestBallLineupSpec(leagueData) };
 }
 
 // franchiseInfo ({ nameById, ownerById }) is optional — pass a cached one
@@ -1621,6 +1623,96 @@ export function estimateRemainingPoints(players, projectPlayer) {
   return total;
 }
 
+// ---- Best ball ---------------------------------------------------------
+// A best-ball league (tag 'BestBall') has no lineup to set: the platform
+// re-picks the highest-scoring legal lineup from the WHOLE roster every week.
+// Two things in the starter-only estimate above go wrong there. A bench
+// player who has not played yet can still displace a starter, and a starter
+// who has already played can still be displaced — so the projected final
+// score is the best legal lineup over everyone, not "score so far plus what
+// today's starters have left".
+//
+// The lineup shape is MFL's per-position range plus a total ("1-2 QB, 2-4 RB,
+// 3-5 WR, 1-3 TE" with starters.count 9): every position's minimum is filled
+// first, then the remaining slots go to the best players left, never past a
+// position's own maximum. That is exact for this shape, not merely greedy.
+// A league with a multi-position (flex) slot, or no readable count, returns
+// null and stays on the starter-only estimate rather than guessing.
+export function bestBallLineupSpec(leagueData) {
+  const rawSlots = leagueData?.league?.starters?.position;
+  const slots = Array.isArray(rawSlots) ? rawSlots : rawSlots ? [rawSlots] : [];
+  const total = Number(leagueData?.league?.starters?.count);
+  if (slots.length === 0 || !Number.isFinite(total) || total <= 0) return null;
+  const positions = {};
+  for (const slot of slots) {
+    const name = String(slot.name || '').trim();
+    if (!name) continue;
+    if (name.includes('+')) return null;
+    const [minStr, maxStr] = String(slot.limit ?? '').split('-');
+    const min = Number(minStr) || 0;
+    const max = maxStr !== undefined ? (Number(maxStr) || min) : min;
+    if (min === 0 && max === 0) continue;
+    const at = positions[name] || { min: 0, max: 0 };
+    positions[name] = { min: at.min + min, max: at.max + max };
+  }
+  return Object.keys(positions).length > 0 ? { positions, total } : null;
+}
+
+// Sum of the best legal lineup's values. `entries` are {position, value}.
+// A position with fewer players than its minimum simply seats fewer.
+export function bestBallLineupTotal(entries, spec) {
+  const byPos = new Map();
+  for (const e of entries) {
+    if (!spec.positions[e.position]) continue;
+    if (!byPos.has(e.position)) byPos.set(e.position, []);
+    byPos.get(e.position).push(e.value);
+  }
+  let total = 0;
+  let seated = 0;
+  const rest = [];
+  for (const [pos, list] of byPos) {
+    list.sort((a, b) => b - a);
+    const { min, max } = spec.positions[pos];
+    list.slice(0, min).forEach((v) => { total += v; seated++; });
+    list.slice(min, max).forEach((v) => rest.push(v));
+  }
+  rest.sort((a, b) => b - a);
+  for (const v of rest) {
+    if (seated >= spec.total) break;
+    total += v;
+    seated++;
+  }
+  return total;
+}
+
+// One team's best-ball projection: everyone on the roster counts, each at
+// what they have already scored plus what is left of their own game times
+// their projection. A finished game (or a bye) is just its actual score.
+// Bench entries carry no game clock from MFL (mflNonstarterBench pins
+// secondsRemaining to 0), so theirs comes off the NFL scoreboard by team —
+// `nflClocks`, the same map ESPN/Sleeper use; a player whose team is not on
+// it (bye, unknown team) is treated as finished rather than invented.
+// Returns null when the roster cannot be read into positions (the sync's
+// fetchScoring has no player map), so the caller falls back cleanly.
+export function bestBallProjection(team, spec, projectPlayer, nflClocks) {
+  const starters = team.players || [];
+  const bench = team.bench || [];
+  const all = [...starters.map((p) => [p, p.secondsRemaining]), ...bench.map((p) => [p, nflClocks?.get(p.team)])];
+  if (all.length === 0 || all.every(([p]) => !p.position)) return null;
+  let minutes = 0;
+  const entries = all.map(([p, seconds]) => {
+    const left = seconds > 0 ? seconds : 0;
+    minutes += left / 60;
+    let value = p.points ?? 0;
+    if (left > 0) {
+      const projected = projectPlayer ? projectPlayer(p) : null;
+      value += (projected != null ? projected : WP_POINTS_PER_MINUTE * 60) * (left / 3600);
+    }
+    return { position: p.position, value };
+  });
+  return { projectedScore: bestBallLineupTotal(entries, spec), minutes: Math.round(minutes) };
+}
+
 // Attaches winProb to each team in a two-team matchup (a bye — one team, no
 // opponent — is left alone, since there's nothing to compare against). Reads
 // score/minutesRemaining that must already be on each team object.
@@ -1636,6 +1728,15 @@ function attachWinProbabilities(teams, matchups, projectPlayer) {
     if (m.teamIds.length !== 2) continue;
     const [a, b] = m.teamIds.map((id) => byId.get(id));
     if (!a || !b) continue;
+    // Best ball: both sides need a projection (a bye has no opponent and
+    // never reaches here). While anything is still to be played the
+    // projected best lineup replaces "score so far + starters' remainder";
+    // once nothing is, the provider's own scores are the answer.
+    if (a.bestBall && b.bestBall && a.bestBall.minutes + b.bestBall.minutes > 0) {
+      a.winProb = estimateWinProbability(a.bestBall.projectedScore, a.bestBall.minutes, b.bestBall.projectedScore, b.bestBall.minutes, 0, 0);
+      b.winProb = 100 - a.winProb;
+      continue;
+    }
     const remainingA = projectPlayer ? estimateRemainingPoints(a.players, projectPlayer) : undefined;
     const remainingB = projectPlayer ? estimateRemainingPoints(b.players, projectPlayer) : undefined;
     a.winProb = estimateWinProbability(a.score, a.minutesRemaining, b.score, b.minutesRemaining, remainingA, remainingB);
@@ -2167,8 +2268,8 @@ function mflNonstarterBench(f, playerMap, boxscoreStatIndex, mflRatesByPosition)
 // TYPE=playerScores&RULES=1 cost two extra MFL requests per league every
 // poll and, worse, RUN 10 proved playerScores itself unreliable for
 // nonstarters regardless of which week it was asked for.
-export async function fetchScoring(league, cookie, franchiseInfo, projectPlayer, playerMap, boxscoreStatIndex, mflRatesByPosition) {
-  const [{ nameById, ownerById }, liveData] = await Promise.all([
+export async function fetchScoring(league, cookie, franchiseInfo, projectPlayer, playerMap, boxscoreStatIndex, mflRatesByPosition, nflClocks) {
+  const [{ nameById, ownerById, lineupSpec }, liveData] = await Promise.all([
     franchiseInfo ? Promise.resolve(franchiseInfo) : fetchMflFranchiseNames(league, cookie),
     // DETAILS=1 is what makes players.player carry the WHOLE roster
     // (starters and bench both) rather than just the 9 starters — see
@@ -2217,7 +2318,15 @@ export async function fetchScoring(league, cookie, franchiseInfo, projectPlayer,
     };
   });
 
+  // Best ball only (tag 'BestBall'), and only where a lineup shape and a
+  // player map both reached us — otherwise every team keeps the starter-only
+  // estimate. Held on the team object just long enough for
+  // attachWinProbabilities, then dropped: it is intermediate state.
+  if (lineupSpec && Array.isArray(league.tags) && league.tags.includes('BestBall')) {
+    for (const t of teams) t.bestBall = bestBallProjection(t, lineupSpec, projectPlayer, nflClocks);
+  }
   attachWinProbabilities(teams, matchups, projectPlayer);
+  for (const t of teams) delete t.bestBall;
 
   const sortedTeams = teams
     .sort((a, b) => b.score - a.score)

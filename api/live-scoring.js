@@ -579,7 +579,7 @@ export default async function handler(req, res) {
         // See mflPlayerEntry's own comment in providers.mjs for the two
         // approaches that were tried and reverted before landing here.
         const scoring = await fetchScoring(
-          league, mflCookie, franchiseInfo, projectPlayer, mflPlayerMap, mflBoxscoreStatIndex, mflRatesByPosition
+          league, mflCookie, franchiseInfo, projectPlayer, mflPlayerMap, mflBoxscoreStatIndex, mflRatesByPosition, nflClocks
         );
         return { id: league.id, name: league.name, scoring, scoringError: null };
       })
