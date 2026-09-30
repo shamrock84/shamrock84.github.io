@@ -46,6 +46,7 @@ import {
   fetchMflWeekScores,
   fetchMflLeagueData,
   mflFranchiseNames,
+  mflFranchiseDivisions,
   fetchMflOwnerNames,
   setMflRequestInterval,
   fetchNflGameClocks,
@@ -1181,9 +1182,9 @@ async function main() {
   // own when handed nothing, so a league whose rosters failed can still get
   // standings, exactly as before.
   //
-  // Carries { nameById, ownerById } per league rather than a bare name map.
-  // nameById rides along for free off the exact same TYPE=league response
-  // already fetched below; ownerById costs one extra request per MFL league
+  // Carries { nameById, ownerById, divisionById } per league rather than a
+  // bare name map. nameById and divisionById ride along for free off the
+  // exact same TYPE=league response already fetched below; ownerById costs one extra request per MFL league
   // (fetchMflOwnerNames re-reads TYPE=league against the league's own
   // regional host, since MFL's generic api.myfantasyleague.com host doesn't
   // reliably recognize a privileged session for owner_name — see that
@@ -1240,6 +1241,7 @@ async function main() {
         mflFranchiseInfoById.set(league.id, {
           nameById: mflFranchiseNames(mflLeagueData),
           ownerById: await fetchMflOwnerNames(league, cookie, mflLeagueData),
+          divisionById: mflFranchiseDivisions(mflLeagueData),
         });
       }
       // A finished draft-only league keeps the roster it already has, at the

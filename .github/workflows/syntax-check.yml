@@ -489,6 +489,13 @@ jobs:
       - name: Test NFL standings
         run: node scripts/test-nfl-standings.mjs
 
+      # The Standings tab's League | Division toggle: each provider's division
+      # membership lands on its standings rows, a league with fewer than two
+      # divisions (or a partial answer) gets none, and the page's Division
+      # view groups, ranks and collapses without losing anybody.
+      - name: Test league standings divisions
+        run: node scripts/test-league-standings-divisions.mjs
+
       - name: Validate config/leagues.json
         run: |
           node --input-type=module -e '
