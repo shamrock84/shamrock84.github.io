@@ -12,7 +12,8 @@
 //     leaves a team out.
 //   * the page groups in division-id order (numeric-aware), keeps the
 //     league table's own order within a division, ranks 1..n per division.
-//   * no divisions means no toggle; League is the default; the choice is
+//   * no divisions means no toggle; Division is the default and listed
+//     first; the toggle stays visible on a collapsed card; the choice is
 //     one stored preference that every league card follows.
 //   * collapsing the card keeps only the manager's own division box.
 
@@ -167,8 +168,18 @@ const team = (id, divisionId, division, isMe = false) => ({
 	const league = { id: 'L1', name: 'L1', type: 'dynasty', standings: rows };
 	const card = ctx.renderStandingsCard(league);
 	const btn = (c, key) => findAll(c, (n) => n.dataset?.standingsView === key)[0];
-	assert.equal(btn(card, 'league').attrs['aria-pressed'], 'true', 'League is the default');
+	assert.equal(btn(card, 'division').attrs['aria-pressed'], 'true', 'Division is the default');
+	assert.equal(findAll(card, hasCls('league-standings-division')).length, 2);
+	const toggle = findAll(card, hasCls('league-standings-toggle'))[0];
+	assert.ok(toggle.classList.contains('card-collapse-visible'), 'toggle survives a collapsed card');
+	assert.deepEqual(findAll(toggle, (n) => n.dataset?.standingsView).map((b) => b.dataset.standingsView), ['division', 'league'], 'Division left of League');
+
+	// League, then back to Division, through the shared preference.
+	standingsCards = [card];
+	btn(card, 'league').listeners.click[0]();
+	assert.equal(store.get('myfflLeagueStandingsView'), 'league');
 	assert.equal(findAll(card, hasCls('league-standings-division')).length, 0);
+	assert.equal(findAll(ctx.renderStandingsCard(league), hasCls('league-standings-division')).length, 0, 'a stored League choice survives a rebuild');
 
 	const other = ctx.renderStandingsCard({ ...league, id: 'L2' });
 	standingsCards = [card, other];
