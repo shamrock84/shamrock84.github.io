@@ -7372,7 +7372,10 @@
 			let view = divisionGroups ? readLeagueStandingsView() : 'league';
 			let body = renderLeagueStandingsBody(league, rows, divisionGroups, showRecord, view);
 			if (divisionGroups) {
-				const bar = el('div', { class: 'subtabs-bar league-standings-toggle' });
+				// card-collapse-visible: the toggle stays usable on a collapsed
+				// card, where it switches between the manager's own row
+				// (League) and their own division box (Division).
+				const bar = el('div', { class: 'subtabs-bar league-standings-toggle card-collapse-visible' });
 				const buttonsEl = el('div', { class: 'tabs subtabs', role: 'group', 'aria-label': 'Standings grouping' });
 				const buttons = LEAGUE_STANDINGS_VIEWS.map(([key, label]) => {
 					const btn = el('button', { class: `tab-btn${key === view ? ' active' : ''}`, type: 'button', 'aria-pressed': String(key === view), text: label });
@@ -7408,16 +7411,17 @@
 
 		// The Standings card's League | Division toggle. One stored choice
 		// across every league (unlike a card's own collapse state): it is a
-		// way of reading standings, not a fact about one league. League is
-		// the default, so a manager who never touches it sees what was
-		// always there.
+		// way of reading standings, not a fact about one league. Division is
+		// the default and comes first, by the manager's choice: in a league
+		// that runs divisions, the division race is the one that matters
+		// first. Only an explicit League click is stored as anything else.
 		const LEAGUE_STANDINGS_VIEW_KEY = 'myfflLeagueStandingsView';
-		const LEAGUE_STANDINGS_VIEWS = [['league', 'League'], ['division', 'Division']];
+		const LEAGUE_STANDINGS_VIEWS = [['division', 'Division'], ['league', 'League']];
 		function readLeagueStandingsView() {
 			try {
-				return localStorage.getItem(LEAGUE_STANDINGS_VIEW_KEY) === 'division' ? 'division' : 'league';
+				return localStorage.getItem(LEAGUE_STANDINGS_VIEW_KEY) === 'league' ? 'league' : 'division';
 			} catch {
-				return 'league';
+				return 'division';
 			}
 		}
 		function saveLeagueStandingsView(view) {
