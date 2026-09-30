@@ -1200,7 +1200,7 @@ export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, inj
 // Omit it and this fetches its own, which is what keeps standings working for a
 // league whose roster pass failed and so never cached one.
 export async function fetchStandings(league, cookie, cachedFranchiseInfo) {
-  const [{ nameById, ownerById }, standingsData] = await Promise.all([
+  const [{ nameById, ownerById, divisionById = new Map() }, standingsData] = await Promise.all([
     cachedFranchiseInfo ? Promise.resolve(cachedFranchiseInfo) : fetchMflFranchiseNames(league, cookie),
     mflGet(`/export?TYPE=leagueStandings&L=${league.id}&JSON=1`, cookie, seasonOf(league)),
   ]);
@@ -1213,7 +1213,7 @@ export async function fetchStandings(league, cookie, cachedFranchiseInfo) {
   }
 
   // Rows arrive pre-sorted by MFL's own tiebreakers, so rank = array order.
-  return rows.map((r) => ({
+  return withDivisions(rows.map((r) => ({
     franchiseId: r.id,
     teamName: nameById.get(r.id) || r.id,
     // Almost always null — see mflOwnerName's own comment for why. Read the
@@ -1225,7 +1225,61 @@ export async function fetchStandings(league, cookie, cachedFranchiseInfo) {
     pointsFor: Number(r.pf ?? 0).toFixed(2),
     pointsAgainst: Number(r.pa ?? 0).toFixed(2),
     isMe: r.id === league.franchiseId,
-  }));
+    ...divisionFields(divisionById.get(r.id)),
+  })));
+}
+
+// ---- Standings tab: divisions -----------------------------------------------
+// The Standings card's Division view (renderLeagueStandingsBody in myffl.html)
+// groups a league's own standings rows by `divisionId`, labelled `division`.
+// Every provider's division membership rides on a response its standings
+// fetch already makes — MFL's TYPE=league (franchise `division` against
+// `divisions.division[]`), ESPN's team `divisionId` against mSettings'
+// `scheduleSettings.divisions`, Sleeper's roster `settings.division` against
+// the league's `metadata.division_N` names — so this costs no extra MFL or
+// ESPN request (Sleeper's league object is one extra, unmetered read).
+//
+// None of those fields had been read by this project before, so every one is
+// read defensively: a league whose response doesn't carry them simply ends up
+// with no division fields, and the page offers no Division toggle for it.
+// The next committed snapshot is the confirmation — a league known to run
+// divisions that shows none there means a field name here is wrong.
+
+// { divisionId, division } for one row, or nothing at all.
+function divisionFields(div) {
+  if (!div || div.id == null || div.id === '') return {};
+  return { divisionId: String(div.id), division: div.name || `Division ${div.id}` };
+}
+
+// Strips the division fields back off unless they describe a real split: every
+// row in one, and at least two distinct. A league with one division (ESPN and
+// Sleeper both default to that shape) or a partial answer would otherwise
+// offer a Division view that is either the League view again or misleading,
+// and the fields would be bytes every visitor downloads for nothing.
+export function withDivisions(rows) {
+  const ids = new Set(rows.map((r) => r.divisionId));
+  if (ids.has(undefined) || ids.size < 2) {
+    return rows.map(({ divisionId, division, ...rest }) => rest);
+  }
+  return rows;
+}
+
+// franchise id -> { id, name }, off an already-fetched TYPE=league response.
+// `divisions.division` is a lone object rather than an array when a league
+// has exactly one, the same MFL quirk every other list here handles.
+export function mflFranchiseDivisions(leagueData) {
+  const rawDivisions = leagueData?.league?.divisions?.division;
+  const divisionList = Array.isArray(rawDivisions) ? rawDivisions : rawDivisions ? [rawDivisions] : [];
+  const nameById = new Map(divisionList.map((d) => [String(d.id), d.name]));
+  const franchises = leagueData?.league?.franchises?.franchise ?? [];
+  const franchiseList = Array.isArray(franchises) ? franchises : [franchises];
+  const byFranchise = new Map();
+  for (const f of franchiseList) {
+    if (f?.division == null || f.division === '') continue;
+    const id = String(f.division);
+    byFranchise.set(f.id, { id, name: nameById.get(id) || null });
+  }
+  return byFranchise;
 }
 
 // ---- History tab: past-season final placement ------------------------------
@@ -1494,9 +1548,10 @@ export async function fetchMflOwnerNames(league, cookie, leagueData) {
 export async function fetchMflFranchiseNames(league, cookie) {
   const leagueData = await fetchMflLeagueData(league, cookie);
   const [nameById, ownerById] = [mflFranchiseNames(leagueData), await fetchMflOwnerNames(league, cookie, leagueData)];
-  // Rides on the same cached pair for free — it is read off the TYPE=league
-  // response already in hand. Only fetchScoring's best-ball path reads it.
-  return { nameById, ownerById, lineupSpec: bestBallLineupSpec(leagueData) };
+  // Both ride on the same cached pair for free — read off the TYPE=league
+  // response already in hand. Only fetchScoring's best-ball path reads
+  // lineupSpec; only fetchStandings reads divisionById.
+  return { nameById, ownerById, lineupSpec: bestBallLineupSpec(leagueData), divisionById: mflFranchiseDivisions(leagueData) };
 }
 
 // franchiseInfo ({ nameById, ownerById }) is optional — pass a cached one
@@ -2591,13 +2646,17 @@ export async function fetchEspnRosteredNames(league) {
 }
 
 export async function fetchEspnStandings(league) {
-  const data = await espnGet(league, 'view=mTeam');
+  // mSettings rides along on the same request for its division names only
+  // (see withDivisions' own comment above); mTeam alone carries each team's
+  // divisionId but not what the division is called.
+  const data = await espnGet(league, 'view=mTeam&view=mSettings');
   const teams = data.teams || [];
   if (teams.length === 0) {
     throw new Error('No standings data returned for this league');
   }
+  const divisionNames = new Map((data.settings?.scheduleSettings?.divisions || []).map((d) => [String(d.id), d.name]));
 
-  return teams
+  return withDivisions(teams
     .map((t) => ({
       franchiseId: String(t.id),
       teamName: espnTeamName(t),
@@ -2608,8 +2667,9 @@ export async function fetchEspnStandings(league) {
       pointsFor: Number(t.record?.overall?.pointsFor ?? 0).toFixed(2),
       pointsAgainst: Number(t.record?.overall?.pointsAgainst ?? 0).toFixed(2),
       isMe: String(t.id) === String(league.franchiseId),
+      ...divisionFields(t.divisionId == null ? null : { id: t.divisionId, name: divisionNames.get(String(t.divisionId)) }),
     }))
-    .sort((a, b) => b.wins - a.wins || Number(b.pointsFor) - Number(a.pointsFor));
+    .sort((a, b) => b.wins - a.wins || Number(b.pointsFor) - Number(a.pointsFor)));
 }
 
 // Sums remaining game-clock seconds across a matchup side's ACTIVE starters
@@ -3113,13 +3173,20 @@ export async function fetchSleeperLeagueRoster(league, playerMap, byeWeeks) {
 }
 
 export async function fetchSleeperStandings(league) {
-  const { names, ownerById, rosters } = await sleeperTeamNames(league);
+  // The league object is read for division names only, so a failure there
+  // costs the names, never the standings (see withDivisions' own comment).
+  const [{ names, ownerById, rosters }, leagueObj] = await Promise.all([
+    sleeperTeamNames(league),
+    sleeperGet(`/league/${league.id}`).catch(() => null),
+  ]);
   if (rosters.length === 0) {
     throw new Error('No standings data returned for this league');
   }
 
-  return rosters
+  return withDivisions(rosters
     .map((r) => {
+      // Sleeper numbers divisions from 1; 0 or absent means none.
+      const div = Number(r.settings?.division) || null;
       const pointsFor = Number(r.settings?.fpts ?? 0) + Number(r.settings?.fpts_decimal ?? 0) / 100;
       const pointsAgainst = Number(r.settings?.fpts_against ?? 0) + Number(r.settings?.fpts_against_decimal ?? 0) / 100;
       return {
@@ -3135,9 +3202,10 @@ export async function fetchSleeperStandings(league) {
         pointsFor: pointsFor.toFixed(2),
         pointsAgainst: pointsAgainst.toFixed(2),
         isMe: String(r.roster_id) === String(league.franchiseId),
+        ...divisionFields(div && { id: div, name: leagueObj?.metadata?.[`division_${div}`] }),
       };
     })
-    .sort((a, b) => b.wins - a.wins || Number(b.pointsFor) - Number(a.pointsFor));
+    .sort((a, b) => b.wins - a.wins || Number(b.pointsFor) - Number(a.pointsFor)));
 }
 
 // Sums remaining game-clock seconds across a roster's own starters (Sleeper

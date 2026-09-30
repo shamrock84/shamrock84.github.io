@@ -448,7 +448,8 @@
 		   padding would double it up; zeroed here rather than touching
 		   .subtabs-bar itself, which the page-level bar still uses as-is. */
 		.depth-chart-subtabs,
-		.nfl-standings-toggle {
+		.nfl-standings-toggle,
+		.league-standings-toggle {
 			padding: 0;
 			margin: 0 0 1rem;
 		}
@@ -2407,6 +2408,38 @@
 		   not change that. */
 		.card.card-collapsed[data-view="standings"] .standings tr:not(.me-row):not(.standings-head-row) {
 			display: none;
+		}
+		/* The Division view's version of the same thing (see
+		   renderLeagueStandingsBody): every division box but the manager's
+		   own goes, and the rule above then narrows that one box to its
+		   banner, column labels and .me-row. */
+		.card.card-collapsed[data-view="standings"] .league-standings-division:not(.me-division) {
+			display: none;
+		}
+		/* The Standings card's Division view: the NFL Standings card's
+		   division box (.nfl-standings-division), stacked rather than
+		   flex-wrapped, since a league card is a single grid cell. Its own
+		   classes rather than that one's — .nfl-standings-division carries a
+		   flex-basis that, in a column, would become a 260px minimum height. */
+		.league-standings-divisions {
+			display: flex;
+			flex-direction: column;
+			gap: 0.75rem;
+		}
+		.league-standings-division {
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			overflow: hidden;
+		}
+		.league-standings-division.roster-group {
+			margin-top: 0;
+		}
+		.league-standings-division .roster-group-label {
+			cursor: pointer;
+			user-select: none;
+		}
+		.league-standings-division .roster-group-chevron {
+			margin-right: 0.3rem;
 		}
 		.scoring-matchup-row {
 			display: flex;
@@ -7331,6 +7364,96 @@
 			// applied to a finished season).
 			const showRecord = league.type !== 'draftonly';
 
+			// Leagues that run divisions get a League | Division toggle, the
+			// same single-select pill row as the NFL tab's Standings card
+			// (renderNflStandingsCard). A league with none gets no toggle at
+			// all rather than a Division view that would only repeat this one.
+			const divisionGroups = buildLeagueStandingsDivisions(rows);
+			let view = divisionGroups ? readLeagueStandingsView() : 'league';
+			let body = renderLeagueStandingsBody(league, rows, divisionGroups, showRecord, view);
+			if (divisionGroups) {
+				const bar = el('div', { class: 'subtabs-bar league-standings-toggle' });
+				const buttonsEl = el('div', { class: 'tabs subtabs', role: 'group', 'aria-label': 'Standings grouping' });
+				const buttons = LEAGUE_STANDINGS_VIEWS.map(([key, label]) => {
+					const btn = el('button', { class: `tab-btn${key === view ? ' active' : ''}`, type: 'button', 'aria-pressed': String(key === view), text: label });
+					btn.dataset.standingsView = key;
+					btn.addEventListener('click', () => {
+						if (key === view) return;
+						saveLeagueStandingsView(key);
+						// One preference for every league, so every card
+						// with a toggle follows the click, not just this one.
+						document.querySelectorAll('.card[data-view="standings"]').forEach((c) => c.setStandingsView?.(key));
+					});
+					buttonsEl.appendChild(btn);
+					return btn;
+				});
+				card.setStandingsView = (next) => {
+					if (next === view) return;
+					view = next;
+					for (const b of buttons) {
+						const on = b.dataset.standingsView === view;
+						b.classList.toggle('active', on);
+						b.setAttribute('aria-pressed', String(on));
+					}
+					const nextBody = renderLeagueStandingsBody(league, rows, divisionGroups, showRecord, view);
+					body.replaceWith(nextBody);
+					body = nextBody;
+				};
+				bar.appendChild(buttonsEl);
+				card.appendChild(bar);
+			}
+			card.appendChild(body);
+			return card;
+		}
+
+		// The Standings card's League | Division toggle. One stored choice
+		// across every league (unlike a card's own collapse state): it is a
+		// way of reading standings, not a fact about one league. League is
+		// the default, so a manager who never touches it sees what was
+		// always there.
+		const LEAGUE_STANDINGS_VIEW_KEY = 'myfflLeagueStandingsView';
+		const LEAGUE_STANDINGS_VIEWS = [['league', 'League'], ['division', 'Division']];
+		function readLeagueStandingsView() {
+			try {
+				return localStorage.getItem(LEAGUE_STANDINGS_VIEW_KEY) === 'division' ? 'division' : 'league';
+			} catch {
+				return 'league';
+			}
+		}
+		function saveLeagueStandingsView(view) {
+			try {
+				localStorage.setItem(LEAGUE_STANDINGS_VIEW_KEY, view);
+			} catch {
+				// Private browsing or a full quota — the toggle still works
+				// for this page view, it just won't survive a reload.
+			}
+		}
+
+		// [{ id, label, rows }] in division-id order, or null when the rows
+		// don't describe a real split. The sync already strips the division
+		// fields off a league with fewer than two divisions or a partial
+		// answer (withDivisions in providers.mjs); the same test is repeated
+		// here so a hand-edited or older snapshot can't produce a Division
+		// view missing somebody.
+		//
+		// Within a division, rows keep the league table's own order rather
+		// than being re-ranked: that order is the provider's (MFL's own
+		// tiebreakers; wins then points for ESPN/Sleeper, see
+		// fetchEspnStandings), and a division is just a slice of it. Division
+		// tiebreakers a league applies on its own aren't modelled — the same
+		// stance the NFL card takes of trusting the source's order.
+		function buildLeagueStandingsDivisions(rows) {
+			if (!rows.length || rows.some((r) => r.divisionId == null)) return null;
+			const byId = new Map();
+			for (const r of rows) {
+				if (!byId.has(r.divisionId)) byId.set(r.divisionId, { id: r.divisionId, label: r.division || `Division ${r.divisionId}`, rows: [] });
+				byId.get(r.divisionId).rows.push(r);
+			}
+			if (byId.size < 2) return null;
+			return [...byId.values()].sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+		}
+
+		function buildLeagueStandingsTable(rows, showRecord, className = '') {
 			// card-collapse-visible so the table itself isn't blanket-hidden by
 			// the generic collapse rule (see that rule's own comment) — which
 			// rows inside it actually stay visible when collapsed is the
@@ -7339,13 +7462,11 @@
 			// "Team", "W-L"...) on screen alongside the isMe row (.me-row) —
 			// the header without a row of numbers under it would be
 			// meaningless, so both classes are exempted together.
-			const table = el('table', { class: 'standings card-collapse-visible' });
+			const table = el('table', { class: `standings card-collapse-visible${className ? ` ${className}` : ''}` });
 			const headRow = el('tr', { class: 'standings-head-row' });
 			const headers = showRecord ? ['#', 'Team', 'W-L', 'PF', 'PA'] : ['#', 'Team', 'PF', 'PA'];
 			headers.forEach((h) => headRow.appendChild(el('th', { class: h === 'W-L' ? 'standings-record' : '', text: h })));
-			table.appendChild(headRow);
-
-			rows.forEach((r, i) => {
+			const bodyRows = rows.map((r, i) => {
 				const row = el('tr', { class: r.isMe ? 'me-row' : '' });
 				row.appendChild(el('td', { text: String(i + 1) }));
 				row.appendChild(el('td', { text: teamNameWithOwner(r) }));
@@ -7354,10 +7475,48 @@
 				}
 				row.appendChild(el('td', { text: r.pointsFor }));
 				row.appendChild(el('td', { text: r.pointsAgainst }));
-				table.appendChild(row);
+				return row;
 			});
-			card.appendChild(table);
-			return card;
+			return { table, headRow, bodyRows, columns: headers.length };
+		}
+
+		// League view: the one table this card always had. Division view: one
+		// box per division, the NFL Standings card's box verbatim (banner row
+		// naming the division, then the column labels) stacked in a column
+		// since a league card is one grid cell wide. `#` is the rank within
+		// the division.
+		//
+		// Each box collapses on its own (makeGroupCollapsible, keyed per
+		// league and division). Collapsing the whole card still leaves the
+		// manager's own row on screen, as in the League view: the wrapper is
+		// card-collapse-visible, every box but the one holding .me-row is
+		// hidden (.league-standings-division:not(.me-division)), and the
+		// banner row is a standings-head-row so the division name stays
+		// beside it.
+		function renderLeagueStandingsBody(league, rows, divisionGroups, showRecord, view) {
+			if (view !== 'division' || !divisionGroups) {
+				const { table, headRow, bodyRows } = buildLeagueStandingsTable(rows, showRecord);
+				table.appendChild(headRow);
+				bodyRows.forEach((row) => table.appendChild(row));
+				return table;
+			}
+			const wrap = el('div', { class: 'league-standings-divisions card-collapse-visible' });
+			for (const group of divisionGroups) {
+				const hasMe = group.rows.some((r) => r.isMe);
+				const box = el('div', { class: `league-standings-division roster-group${hasMe ? ' me-division' : ''}` });
+				const { table, headRow, bodyRows, columns } = buildLeagueStandingsTable(group.rows, showRecord, 'depth-chart-table');
+				const tbody = el('tbody', {}, bodyRows);
+				const bannerCell = el('th', { colspan: String(columns), text: group.label });
+				const banner = el('tr', { class: 'standings-head-row' }, [bannerCell]);
+				headRow.classList.add('roster-group-content');
+				tbody.classList.add('roster-group-content');
+				table.appendChild(el('thead', {}, [banner, headRow]));
+				table.appendChild(tbody);
+				makeGroupCollapsible(box, bannerCell, `league-standings:${league.id}:${group.id}`);
+				box.appendChild(table);
+				wrap.appendChild(box);
+			}
+			return wrap;
 		}
 
 		function renderScoringCard(league) {
