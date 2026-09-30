@@ -14,7 +14,8 @@
 //     league table's own order within a division, ranks 1..n per division.
 //   * no divisions means no toggle; Division is the default and listed
 //     first; the toggle stays visible on a collapsed card; the choice is
-//     one stored preference that every league card follows.
+//     stored per league, so switching one card leaves every other card
+//     alone.
 //   * collapsing the card keeps only the manager's own division box.
 
 import assert from 'node:assert/strict';
@@ -125,7 +126,6 @@ function domNode(tag = 'div') {
 	return n;
 }
 const store = new Map();
-let standingsCards = [];
 const ctx = {
 	console,
 	localStorage: { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) },
@@ -134,7 +134,7 @@ const ctx = {
 		addEventListener() {}, getElementById: () => domNode(), createElement: (t) => domNode(t),
 		createTextNode: (t) => { const n = domNode('#text'); n.textContent = t; return n; },
 		querySelector: () => null,
-		querySelectorAll: (sel) => (sel === '.card[data-view="standings"]' ? standingsCards : []),
+		querySelectorAll: () => [],
 		visibilityState: 'visible', body: domNode(),
 	},
 	window: { addEventListener() {}, matchMedia: () => ({ matches: false }) },
@@ -174,21 +174,22 @@ const team = (id, divisionId, division, isMe = false) => ({
 	assert.ok(toggle.classList.contains('card-collapse-visible'), 'toggle survives a collapsed card');
 	assert.deepEqual(findAll(toggle, (n) => n.dataset?.standingsView).map((b) => b.dataset.standingsView), ['division', 'league'], 'Division left of League');
 
-	// League, then back to Division, through the shared preference.
-	standingsCards = [card];
-	btn(card, 'league').listeners.click[0]();
-	assert.equal(store.get('myfflLeagueStandingsView'), 'league');
-	assert.equal(findAll(card, hasCls('league-standings-division')).length, 0);
-	assert.equal(findAll(ctx.renderStandingsCard(league), hasCls('league-standings-division')).length, 0, 'a stored League choice survives a rebuild');
-
+	// Each card is independent: switching L1 to League leaves L2 alone,
+	// on screen and in storage, and each survives a rebuild on its own.
 	const other = ctx.renderStandingsCard({ ...league, id: 'L2' });
-	standingsCards = [card, other];
+	btn(card, 'league').listeners.click[0]();
+	assert.equal(store.get('myfflLeagueStandingsView:L1'), 'league');
+	assert.equal(store.get('myfflLeagueStandingsView:L2'), undefined, 'the other league stores nothing');
+	assert.equal(findAll(card, hasCls('league-standings-division')).length, 0);
+	assert.equal(btn(card, 'league').attrs['aria-pressed'], 'true');
+	assert.equal(btn(other, 'division').attrs['aria-pressed'], 'true', 'the other card does not follow the click');
+	assert.equal(findAll(other, hasCls('league-standings-division')).length, 2);
+	assert.equal(findAll(ctx.renderStandingsCard(league), hasCls('league-standings-division')).length, 0, 'a stored League choice survives a rebuild');
+	assert.equal(findAll(ctx.renderStandingsCard({ ...league, id: 'L2' }), hasCls('league-standings-division')).length, 2, 'and the other league still opens on Division');
+
 	btn(card, 'division').listeners.click[0]();
-	assert.equal(store.get('myfflLeagueStandingsView'), 'division');
-	for (const c of [card, other]) {
-		assert.equal(btn(c, 'division').attrs['aria-pressed'], 'true', 'every league card follows the one preference');
-		assert.equal(findAll(c, hasCls('league-standings-division')).length, 2);
-	}
+	assert.equal(store.get('myfflLeagueStandingsView:L1'), 'division');
+	assert.equal(findAll(card, hasCls('league-standings-division')).length, 2);
 	const boxes = findAll(card, hasCls('league-standings-division'));
 	assert.ok(text(findAll(boxes[0], (n) => n.tag === 'th' && n.attrs.colspan)[0]).includes('Two'), 'banner names the division');
 	assert.ok(boxes[0].classList.contains('me-division') && !boxes[1].classList.contains('me-division'));
@@ -205,7 +206,6 @@ const team = (id, divisionId, division, isMe = false) => ({
 	assert.equal(btn(flat, 'division'), undefined);
 	assert.equal(findAll(flat, hasCls('league-standings-division')).length, 0);
 	store.clear();
-	standingsCards = [];
 }
 
 assert.match(html, /\.card\.card-collapsed\[data-view="standings"\] \.league-standings-division:not\(\.me-division\)/, 'collapsed card keeps only the manager\'s own division box');

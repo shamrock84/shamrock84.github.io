@@ -7369,7 +7369,7 @@
 			// (renderNflStandingsCard). A league with none gets no toggle at
 			// all rather than a Division view that would only repeat this one.
 			const divisionGroups = buildLeagueStandingsDivisions(rows);
-			let view = divisionGroups ? readLeagueStandingsView() : 'league';
+			let view = divisionGroups ? readLeagueStandingsView(league.id) : 'league';
 			let body = renderLeagueStandingsBody(league, rows, divisionGroups, showRecord, view);
 			if (divisionGroups) {
 				// card-collapse-visible: the toggle stays usable on a collapsed
@@ -7382,16 +7382,13 @@
 					btn.dataset.standingsView = key;
 					btn.addEventListener('click', () => {
 						if (key === view) return;
-						saveLeagueStandingsView(key);
-						// One preference for every league, so every card
-						// with a toggle follows the click, not just this one.
-						document.querySelectorAll('.card[data-view="standings"]').forEach((c) => c.setStandingsView?.(key));
+						saveLeagueStandingsView(league.id, key);
+						setView(key);
 					});
 					buttonsEl.appendChild(btn);
 					return btn;
 				});
-				card.setStandingsView = (next) => {
-					if (next === view) return;
+				const setView = (next) => {
 					view = next;
 					for (const b of buttons) {
 						const on = b.dataset.standingsView === view;
@@ -7409,24 +7406,28 @@
 			return card;
 		}
 
-		// The Standings card's League | Division toggle. One stored choice
-		// across every league (unlike a card's own collapse state): it is a
-		// way of reading standings, not a fact about one league. Division is
-		// the default and comes first, by the manager's choice: in a league
-		// that runs divisions, the division race is the one that matters
-		// first. Only an explicit League click is stored as anything else.
+		// The Standings card's League | Division toggle. Stored per league,
+		// like a card's own collapse state: switching one card leaves every
+		// other card as it was (the manager's call — it briefly shipped as
+		// one shared choice every card followed). Division is the default
+		// and comes first, by the manager's choice: in a league that runs
+		// divisions, the division race is the one that matters first. Only
+		// an explicit League click is stored as anything else.
 		const LEAGUE_STANDINGS_VIEW_KEY = 'myfflLeagueStandingsView';
 		const LEAGUE_STANDINGS_VIEWS = [['division', 'Division'], ['league', 'League']];
-		function readLeagueStandingsView() {
+		function leagueStandingsViewKey(leagueId) {
+			return `${LEAGUE_STANDINGS_VIEW_KEY}:${leagueId}`;
+		}
+		function readLeagueStandingsView(leagueId) {
 			try {
-				return localStorage.getItem(LEAGUE_STANDINGS_VIEW_KEY) === 'league' ? 'league' : 'division';
+				return localStorage.getItem(leagueStandingsViewKey(leagueId)) === 'league' ? 'league' : 'division';
 			} catch {
 				return 'division';
 			}
 		}
-		function saveLeagueStandingsView(view) {
+		function saveLeagueStandingsView(leagueId, view) {
 			try {
-				localStorage.setItem(LEAGUE_STANDINGS_VIEW_KEY, view);
+				localStorage.setItem(leagueStandingsViewKey(leagueId), view);
 			} catch {
 				// Private browsing or a full quota — the toggle still works
 				// for this page view, it just won't survive a reload.
