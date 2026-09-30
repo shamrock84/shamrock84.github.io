@@ -270,6 +270,13 @@ jobs:
       - name: Test weekly score parsing
         run: node scripts/test-weekly-scores.mjs
 
+      # The Waivers tab: MFL/ESPN pending-claim and open-auction parsing, and
+      # api/waivers.js's login gate and per-league failure isolation. Every
+      # failure here is silent on screen — a failed read shown as "nothing
+      # pending" looks exactly like the truth.
+      - name: Test the Waivers tab
+        run: node scripts/test-waivers.mjs
+
       # The Sleepers sub-line's own join. type=SLEEPERS is served back as the
       # Draft list if the literal is ever mistyped (FantasyPros does not 4xx an
       # unrecognised type), so a break here ships a line that quietly means
