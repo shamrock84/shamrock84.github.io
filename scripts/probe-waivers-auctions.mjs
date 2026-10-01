@@ -57,6 +57,15 @@
 //     request and three alternatives, printing only HTTP status, response
 //     key names and match counts — never a name, since a claimed player's
 //     name is the claim.
+//
+// RUN 3 (2026-10-01):
+//   - The shipped league-scoped kona_player_info request (A), with or
+//     without scoringPeriodId (B), answered HTTP 400 on both leagues.
+//   - The season-wide /players?view=players_wl with an x-fantasy-filter of
+//     { filterIds: { value: [...] } } (C) answered 200 and matched every id
+//     (5/5, 3/3): a flat array of { id, fullName, defaultPositionId,
+//     proTeamId, ... }. Without the filter (D) it is only the first 50
+//     players. fetchEspnPlayerNames switched to C the same day.
 
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
