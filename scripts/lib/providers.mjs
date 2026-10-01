@@ -2504,14 +2504,20 @@ export function espnOwnerName(team, members) {
   return member.firstName || member.displayName || null;
 }
 
-// extraHeaders is for the one caller that needs ESPN's x-fantasy-filter
-// header (fetchEspnPlayerNames, below) — every other caller omits it.
-export async function espnGet(league, viewParams, extraHeaders = {}) {
+export async function espnGet(league, viewParams) {
+  return espnFetch(`${espnBase(seasonOf(league))}/${league.id}?${viewParams}`);
+}
+
+// The authenticated fetch behind espnGet, taking a whole URL so the one
+// caller that needs a NON-league endpoint (fetchEspnPlayerNames, which reads
+// the season-wide player list) shares the cookie and redirect handling.
+// extraHeaders is for that caller's x-fantasy-filter; everyone else omits it.
+async function espnFetch(startUrl, extraHeaders = {}) {
   if (!ESPN_S2 || !ESPN_SWID) {
     throw new Error('ESPN_S2 and ESPN_SWID environment variables are required for ESPN leagues.');
   }
   const cookie = `espn_s2=${ESPN_S2}; SWID=${ESPN_SWID}`;
-  let url = `${espnBase(seasonOf(league))}/${league.id}?${viewParams}`;
+  let url = startUrl;
 
   // fetch() drops the Cookie header on cross-origin redirects (WHATWG spec),
   // and ESPN's API is known to redirect fantasy.espn.com -> a different host
@@ -3161,20 +3167,25 @@ export async function fetchEspnPendingWaivers(league) {
 }
 
 // Names for a handful of ESPN player ids — a pending claim is usually on a
-// free agent, whom no roster read here ever saw. kona_player_info filtered
-// by id through ESPN's x-fantasy-filter header, the same pattern maintained
-// ESPN client libraries use for a player card. Returns id -> { name,
-// position, team }; a failure returns an empty map (the card falls back to
-// the raw id) rather than costing the claims themselves.
+// free agent, whom no roster read here ever saw. Read from the season-wide
+// player list (`/players?view=players_wl`), filtered to just these ids by
+// ESPN's x-fantasy-filter header. Settled by probe-waivers-auctions.yml
+// RUN 3: this matched every id in both leagues (5/5, 3/3), each entry flat
+// with fullName/defaultPositionId/proTeamId. The league-scoped
+// kona_player_info request this shipped with answered HTTP 400 in both, and
+// the same list without the filter is only its first 50 players. Returns
+// id -> { name, position, team }; a failure returns an empty map (the card
+// falls back to the raw id) rather than costing the claims themselves.
 export async function fetchEspnPlayerNames(league, ids) {
   const wanted = [...new Set(ids.map(Number).filter(Number.isFinite))];
   if (wanted.length === 0) return new Map();
   try {
-    const data = await espnGet(league, 'view=kona_player_info', {
-      'x-fantasy-filter': JSON.stringify({ players: { filterIds: { value: wanted }, limit: wanted.length } }),
-    });
+    const data = await espnFetch(
+      `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${seasonOf(league)}/players?view=players_wl`,
+      { 'x-fantasy-filter': JSON.stringify({ filterIds: { value: wanted } }) }
+    );
     const map = new Map();
-    for (const entry of asArray(data?.players)) {
+    for (const entry of asArray(data)) {
       const p = entry?.player || entry;
       if (p?.id == null) continue;
       map.set(String(p.id), {

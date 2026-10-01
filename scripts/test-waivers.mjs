@@ -12,7 +12,8 @@
 //   * an MFL error body throws rather than reading as "nothing pending";
 //   * an auction is open until an AUCTION_WON for that player, the high bid
 //     and bidder are the LATEST bid's, and a re-opened player counts again;
-//   * ESPN keeps only this team's still-pending WAIVER transactions;
+//   * ESPN keeps only this team's still-pending WAIVER transactions, and
+//     names come from the season-wide player list RUN 3 found working;
 //   * the endpoint refuses without a valid token, never offers Draft Only,
 //     reports Sleeper as unsupported rather than empty, and one league's
 //     failure never blanks the rest.
@@ -33,6 +34,7 @@ const {
   activeMflAuctions,
   parseEspnPendingWaivers,
   fetchMflPendingWaivers,
+  fetchEspnPlayerNames,
 } = await import('./lib/providers.mjs');
 
 let passed = 0;
@@ -151,6 +153,40 @@ await test('ESPN: only this team, only pending waivers', () => {
   assert.equal(claims[0].bid, 0);
 });
 
+// The request probe RUN 3 found working: the season-wide player list,
+// filtered by id in the x-fantasy-filter header. The league-scoped
+// kona_player_info this shipped with answered HTTP 400 on both leagues.
+await test('ESPN names: season-wide players_wl, filtered by id, flat entries', async () => {
+  const realFetch = globalThis.fetch;
+  let seen = null;
+  globalThis.fetch = async (url, opts) => {
+    seen = { url: String(url), headers: opts.headers };
+    return new Response(JSON.stringify([
+      { id: 4431611, fullName: 'Caleb Williams', defaultPositionId: 1, proTeamId: 3 },
+      { id: 99, fullName: 'Someone Else', defaultPositionId: 3, proTeamId: 0 },
+    ]));
+  };
+  try {
+    const names = await fetchEspnPlayerNames({ id: '1', season: '2026' }, ['4431611', '99', '4431611']);
+    assert.match(seen.url, /\/seasons\/2026\/players\?view=players_wl$/);
+    assert.doesNotMatch(seen.url, /leagues/);
+    assert.deepEqual(JSON.parse(seen.headers['x-fantasy-filter']), { filterIds: { value: [4431611, 99] } });
+    assert.deepEqual(names.get('4431611'), { name: 'Caleb Williams', position: 'QB', team: 'CHI' });
+    assert.equal(names.get('99').team, 'FA');
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+await test('ESPN names: a failed lookup is an empty map, never a thrown claim read', async () => {
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response('{"messages":["bad"]}', { status: 400 });
+  try {
+    assert.equal((await fetchEspnPlayerNames({ id: '1' }, ['5'])).size, 0);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
 // --- api/waivers.js ---
 const { default: handler, waiversKindFor } = await import('../api/waivers.js');
 const { createToken } = await import('../api/lib/auth.mjs');
@@ -195,7 +231,7 @@ await test('endpoint: every non-draftonly league answered; failures isolated; Sl
     if (u.includes('TYPE=transactions')) return new Response(JSON.stringify({ transactions: { transaction: [{ type: 'AUCTION_BID', franchise: '0002', transaction: '16778|9|', timestamp: '100' }] } }));
     if (u.includes('view=mStatus')) return new Response(JSON.stringify({ scoringPeriodId: 4 }));
     if (u.includes('view=mTransactions2')) return new Response(JSON.stringify({ transactions: [] }));
-    if (u.includes('view=kona_player_info')) return new Response(JSON.stringify({ players: [] }));
+    if (u.includes('/players?view=players_wl')) return new Response(JSON.stringify([]));
     throw new Error(`unexpected fetch ${u}`);
   };
   try {
