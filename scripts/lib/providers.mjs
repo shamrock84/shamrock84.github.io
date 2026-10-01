@@ -2504,7 +2504,9 @@ export function espnOwnerName(team, members) {
   return member.firstName || member.displayName || null;
 }
 
-export async function espnGet(league, viewParams) {
+// extraHeaders is for the one caller that needs ESPN's x-fantasy-filter
+// header (fetchEspnPlayerNames, below) — every other caller omits it.
+export async function espnGet(league, viewParams, extraHeaders = {}) {
   if (!ESPN_S2 || !ESPN_SWID) {
     throw new Error('ESPN_S2 and ESPN_SWID environment variables are required for ESPN leagues.');
   }
@@ -2517,7 +2519,7 @@ export async function espnGet(league, viewParams) {
   // so our auth cookie doesn't silently vanish mid-request.
   let res;
   for (let hop = 0; hop < 5; hop++) {
-    res = await fetch(url, { headers: { Cookie: cookie }, redirect: 'manual' });
+    res = await fetch(url, { headers: { ...extraHeaders, Cookie: cookie }, redirect: 'manual' });
     if (res.status >= 300 && res.status < 400) {
       const location = res.headers.get('location');
       if (!location) break;
@@ -2975,6 +2977,192 @@ export async function fetchEspnLineup(league) {
     .filter((e) => e.lineupSlotId !== ESPN_BENCH_SLOT_ID && e.lineupSlotId !== ESPN_IR_SLOT_ID)
     .map((e) => String(e.playerId));
   return { week: String(period), starterIds };
+}
+
+// --- Waivers & auctions (the Waivers tab, via api/waivers.js) ---
+//
+// Live-only, like the Scoring tab's detail drawer, and deliberately never
+// written into data/rosters.json: a pending waiver claim (who you're after,
+// what you bid, who you'd drop) is strategy about leagues other people play
+// in — the same category as a plan, which is why plans live in Upstash and
+// not the public repo. The snapshot is served openly; these must not be.
+//
+// NOTHING in this section had been confirmed against one of this project's
+// own leagues when it shipped — api.myfantasyleague.com is unreachable from
+// the sandbox it was written in. Every shape below is either public
+// community knowledge or read off another public MFL client, and every
+// parser is written to degrade to "couldn't read" rather than a confident
+// "nothing pending". probe-waivers-auctions.yml dumps the raw responses;
+// run it (ideally while a claim and an auction are actually live) and
+// record what it found here before trusting any of this further.
+
+// One `addsDrops`-style string -> { adds, bid, drops }. Forms seen in the
+// wild (another public MFL client's corpus, not our own leagues):
+//   "8851,|425000|"              blind bid: add, bid, no drop
+//   "14063,|425000|15777,16191," blind bid: add, bid, two drops
+//   "|17064,16191,"              drop only (two segments)
+//   "14063,|15777,"              rolling priority: add, drop (two segments)
+// Ids are comma-separated with a trailing comma; either side may be empty.
+// A two-segment string is read as add|drop, three as add|bid|drop.
+const splitMflIds = (s) => String(s || '').split(',').map((x) => x.trim()).filter((x) => x && !/^0+$/.test(x));
+export function parseMflAddsDrops(raw) {
+  if (typeof raw !== 'string' || !raw.trim()) return null;
+  const parts = raw.split('|');
+  if (parts.length >= 3) {
+    const bid = Number(parts[1]);
+    return { adds: splitMflIds(parts[0]), bid: Number.isFinite(bid) && parts[1] !== '' ? bid : null, drops: splitMflIds(parts[2]) };
+  }
+  if (parts.length === 2) return { adds: splitMflIds(parts[0]), bid: null, drops: splitMflIds(parts[1]) };
+  return { adds: splitMflIds(parts[0]), bid: null, drops: [] };
+}
+
+// TYPE=pendingWaivers names its record after the league's waiver SYSTEM —
+// `waiverRequest` for rolling priority, `blindBidWaiverRequest` for blind
+// bidding — so records are found by shape (anything carrying an adds/drops
+// string) rather than by enumerating names MFL might add to. Returns one
+// { round, bid, adds, drops, timestamp } per claim, in the order MFL lists
+// them (which is the order they'd be processed in).
+const MFL_CLAIM_STRING_KEYS = ['addsDrops', 'add_bid_drop', 'add_drop', 'addDrop', 'transaction'];
+export function parseMflPendingWaivers(data) {
+  const root = data?.pendingWaivers;
+  if (root == null) return [];
+  const claims = [];
+  const walk = (node) => {
+    if (Array.isArray(node)) { node.forEach(walk); return; }
+    if (!node || typeof node !== 'object') return;
+    const key = MFL_CLAIM_STRING_KEYS.find((k) => typeof node[k] === 'string');
+    if (key) {
+      const parsed = parseMflAddsDrops(node[key]);
+      if (parsed && (parsed.adds.length || parsed.drops.length)) {
+        const explicitBid = Number(node.amount ?? node.bid);
+        claims.push({
+          round: node.round != null && node.round !== '' ? String(node.round) : null,
+          bid: parsed.bid ?? (Number.isFinite(explicitBid) && (node.amount ?? node.bid) !== '' ? explicitBid : null),
+          adds: parsed.adds,
+          drops: parsed.drops,
+          timestamp: Number(node.timestamp) || null,
+        });
+      }
+      return;
+    }
+    Object.values(node).forEach(walk);
+  };
+  walk(root);
+  return claims;
+}
+
+// Owner access: read against the league's OWN regional host, never the
+// generic one — the same host-routing failure fetchMflOwnerNames documents,
+// where api.myfantasyleague.com does not reliably recognize a privileged
+// session. Throws (rather than returning []) on an MFL error body, so the
+// card can say "couldn't read" instead of "nothing pending".
+export async function fetchMflPendingWaivers(league, cookie, leagueData) {
+  const host = leagueData?.league?.baseURL || undefined;
+  const data = await mflGet(`/export?TYPE=pendingWaivers&L=${league.id}&JSON=1`, cookie, seasonOf(league), 1, host);
+  if (data?.error) throw new Error(`MFL: ${mflText(data.error) || 'error'}`);
+  return parseMflPendingWaivers(data);
+}
+
+// Folds MFL's auction transaction log into the auctions still open. MFL
+// records an auction as AUCTION_INIT (nomination), AUCTION_BID (each raise)
+// and AUCTION_WON (close); each carries `transaction: "playerId|amount|..."`
+// (the third segment is free text/drops, ignored here). An auction is open
+// if its latest INIT/BID has no later WON. Returns
+// { playerId, bid, franchiseId, startedAt, lastBidAt, bids } per open
+// auction, most recent bid first. Timestamps are unix seconds, as MFL sends.
+const MFL_AUCTION_TYPES = new Set(['AUCTION_INIT', 'AUCTION_BID', 'AUCTION_WON']);
+export function activeMflAuctions(transactionsData) {
+  const list = asArray(transactionsData?.transactions?.transaction)
+    .filter((t) => MFL_AUCTION_TYPES.has(t?.type) && typeof t.transaction === 'string')
+    .map((t) => ({ ...t, ts: Number(t.timestamp) || 0 }))
+    .sort((a, b) => a.ts - b.ts);
+  const open = new Map();
+  for (const t of list) {
+    const [playerId, amount] = t.transaction.split('|');
+    if (!playerId) continue;
+    if (t.type === 'AUCTION_WON') { open.delete(playerId); continue; }
+    const prev = open.get(playerId);
+    const bid = Number(amount);
+    open.set(playerId, {
+      playerId,
+      bid: Number.isFinite(bid) && amount !== '' ? bid : null,
+      franchiseId: t.franchise || null,
+      startedAt: t.type === 'AUCTION_INIT' || !prev ? t.ts || null : prev.startedAt,
+      lastBidAt: t.ts || null,
+      bids: (prev?.bids || 0) + 1,
+    });
+  }
+  return [...open.values()].sort((a, b) => (b.lastBidAt || 0) - (a.lastBidAt || 0));
+}
+
+// How far back the transaction log is read for auctions. An auction whose
+// nomination is older than this but that is still being bid on is still
+// found (any BID inside the window opens it); one with no activity at all
+// inside the window is treated as closed. Fetched unfiltered and filtered
+// here rather than trusting TRANS_TYPE with a comma list, which would read
+// as "no auctions" if MFL didn't accept it.
+export const MFL_AUCTION_LOOKBACK_DAYS = 30;
+export async function fetchMflActiveAuctions(league, cookie, leagueData) {
+  const host = leagueData?.league?.baseURL || undefined;
+  const data = await mflGet(`/export?TYPE=transactions&L=${league.id}&DAYS=${MFL_AUCTION_LOOKBACK_DAYS}&JSON=1`, cookie, seasonOf(league), 1, host);
+  if (data?.error) throw new Error(`MFL: ${mflText(data.error) || 'error'}`);
+  return activeMflAuctions(data);
+}
+
+// ESPN's transaction log (view=mTransactions2) carries the owner's own
+// pending claims as type WAIVER with status PENDING (or isPending) — visible
+// only to the team's own cookie, which is the ESPN_S2/SWID pair every ESPN
+// read here already sends. Community-documented shape, unconfirmed on our
+// leagues until the probe runs. Each item is { type: 'ADD'|'DROP', playerId }.
+export function parseEspnPendingWaivers(data, franchiseId) {
+  return asArray(data?.transactions)
+    .filter((t) => t?.type === 'WAIVER'
+      && (t.status === 'PENDING' || t.isPending === true)
+      && String(t.teamId) === String(franchiseId))
+    .sort((a, b) => (a.subOrder ?? 0) - (b.subOrder ?? 0) || (a.proposedDate ?? 0) - (b.proposedDate ?? 0))
+    .map((t) => ({
+      round: null,
+      bid: Number.isFinite(Number(t.bidAmount)) ? Number(t.bidAmount) : null,
+      adds: asArray(t.items).filter((i) => i?.type === 'ADD').map((i) => String(i.playerId)),
+      drops: asArray(t.items).filter((i) => i?.type === 'DROP').map((i) => String(i.playerId)),
+      timestamp: t.proposedDate ? Math.round(Number(t.proposedDate) / 1000) : null,
+    }));
+}
+
+export async function fetchEspnPendingWaivers(league) {
+  const status = await espnGet(league, 'view=mStatus');
+  const period = status?.scoringPeriodId || status?.status?.currentMatchupPeriod || 1;
+  const data = await espnGet(league, `view=mTransactions2&scoringPeriodId=${period}`);
+  return parseEspnPendingWaivers(data, league.franchiseId);
+}
+
+// Names for a handful of ESPN player ids — a pending claim is usually on a
+// free agent, whom no roster read here ever saw. kona_player_info filtered
+// by id through ESPN's x-fantasy-filter header, the same pattern maintained
+// ESPN client libraries use for a player card. Returns id -> { name,
+// position, team }; a failure returns an empty map (the card falls back to
+// the raw id) rather than costing the claims themselves.
+export async function fetchEspnPlayerNames(league, ids) {
+  const wanted = [...new Set(ids.map(Number).filter(Number.isFinite))];
+  if (wanted.length === 0) return new Map();
+  try {
+    const data = await espnGet(league, 'view=kona_player_info', {
+      'x-fantasy-filter': JSON.stringify({ players: { filterIds: { value: wanted }, limit: wanted.length } }),
+    });
+    const map = new Map();
+    for (const entry of asArray(data?.players)) {
+      const p = entry?.player || entry;
+      if (p?.id == null) continue;
+      map.set(String(p.id), {
+        name: p.fullName || String(p.id),
+        position: ESPN_POSITION_MAP[p.defaultPositionId] || '',
+        team: ESPN_PRO_TEAM_MAP[p.proTeamId] || 'FA',
+      });
+    }
+    return map;
+  } catch {
+    return new Map();
+  }
 }
 
 // --- Sleeper ---

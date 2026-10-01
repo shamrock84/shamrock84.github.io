@@ -1,0 +1,51 @@
+name: Probe Waivers & Auctions (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here, the
+# same rule the other manual workflows follow.
+#
+# The Waivers tab (api/waivers.js) shipped reading shapes nobody had confirmed
+# against this project's own leagues: MFL TYPE=pendingWaivers, MFL
+# TYPE=transactions' AUCTION_* rows, and ESPN view=mTransactions2. This dumps
+# their STRUCTURE — key names, record types, and every claim/auction string
+# with its digits masked — so the parsers can be checked without printing
+# anyone's actual claims into a public repo's Actions log. Most useful run
+# while a claim is actually filed and an auction actually open; a run with
+# neither can only prove the empty shape.
+#
+# Read-only: GETs only.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      # Blobless + sparse checkout: skips mfl/PSD and images/, which no
+      # workflow here reads. Same five directories everywhere on purpose;
+      # see sync-fantasy-rosters.yml for the reasoning and the numbers.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout: |
+            api
+            scripts
+            config
+            data
+            .github
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Dump pending-claim and auction shapes, masked
+        env:
+          MFL_USERNAME: ${{ secrets.MFL_USERNAME }}
+          MFL_PASSWORD: ${{ secrets.MFL_PASSWORD }}
+          ESPN_S2: ${{ secrets.ESPN_S2 }}
+          ESPN_SWID: ${{ secrets.ESPN_SWID }}
+        run: node scripts/probe-waivers-auctions.mjs

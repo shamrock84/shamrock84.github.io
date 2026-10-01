@@ -1806,6 +1806,27 @@
 			border-bottom: 1px solid var(--border);
 		}
 		table.standings tr:last-child td { border-bottom: none; }
+		/* Waivers tab (see renderWaiversCard). A league's name heads its own
+		   group of rows rather than repeating on each; the drop and the high
+		   bidder are sub-lines under the player, never extra columns. */
+		.waivers-league-row td {
+			font-weight: 700;
+			padding-top: 0.6rem;
+		}
+		.waivers-drop,
+		.waivers-bidder {
+			font-size: 0.78rem;
+			color: var(--muted);
+		}
+		.waivers-drop { color: var(--ir-text); }
+		.waivers-mine { color: var(--accent); font-weight: 700; }
+		.waivers-muted { color: var(--muted); }
+		.waivers-when { white-space: nowrap; color: var(--muted); }
+		.waivers-note {
+			margin-top: 0.5rem;
+			font-size: 0.85rem;
+		}
+		.waivers-refresh { color: var(--accent); }
 		/* A browser treats the hyphen in "10-4" as a break opportunity, so at
 		   the narrow end of the standings grid's column width (see the .grid
 		   comment above) the record wraps to "10-" / "4" instead of shrinking
@@ -3826,8 +3847,12 @@
 		// own now that NFL exists, so its 32 team cards render as one
 		// collapsible section inside the NFL view instead — see
 		// renderDepthChartCards.
-		const VIEW_LABELS = { rosters: 'Rosters', scoring: 'Scores', standings: 'Standings', analytics: 'Analytics', nfl: 'NFL', history: 'History', admin: 'Admin' };
-		const VIEW_ORDER = ['rosters', 'scoring', 'standings', 'analytics', 'nfl', 'history', 'admin'];
+		// waivers is login-gated like analytics/admin, and more than as a
+		// deterrent: a pending claim is private strategy the league's own site
+		// shows nobody else, so its data never touches the public snapshot at
+		// all — see renderWaiversCard.
+		const VIEW_LABELS = { rosters: 'Rosters', scoring: 'Scores', waivers: 'Waivers', standings: 'Standings', analytics: 'Analytics', nfl: 'NFL', history: 'History', admin: 'Admin' };
+		const VIEW_ORDER = ['rosters', 'scoring', 'waivers', 'standings', 'analytics', 'nfl', 'history', 'admin'];
 		// Per-league type — still what individual Rosters cards badge
 		// themselves with (a Salary Cap league's card says "Salary", not
 		// "Dynasty/Salary Cap"), just no longer what any sub-tab is named
@@ -4802,6 +4827,8 @@
 		// Planned contract lengths and salaries, stored server-side so they
 		// follow the manager between devices — see api/plans.js.
 		const PLANS_URL = 'https://shamrock84-github-io.vercel.app/api/plans';
+		// The Waivers tab's live read — see api/waivers.js.
+		const WAIVERS_URL = 'https://shamrock84-github-io.vercel.app/api/waivers';
 		let leagueConfig = null;
 		let leagueConfigError = null;
 		let authToken = localStorage.getItem(AUTH_TOKEN_KEY) || null;
@@ -4844,6 +4871,8 @@
 			adminDraft = null;
 			adminLinksDraft = null;
 			adminExpanded.clear();
+			// Pending claims are the most private thing the page holds.
+			waiversState = { status: 'idle', data: null, error: null, at: 0 };
 			renderGrid();
 		}
 
@@ -14317,6 +14346,7 @@
 			} else {
 				stopNflPolling();
 			}
+			if (currentView === 'waivers') loadWaivers();
 		}
 
 		function renderViewTabs(views) {
@@ -15736,6 +15766,188 @@
 		// Pure render from the already-loaded pageData — no network call.
 		// Reused by init() (after a fresh load) and by login/logout/lineup-save
 		// (which only need to re-render, not re-fetch).
+		// --- Waivers tab ---------------------------------------------------
+		//
+		// Two cards: Waivers (the manager's own pending claims in every
+		// Dynasty/Redraft league) and Auctions (every auction still open in
+		// every Salary Cap league, whoever holds the high bid). Draft Only
+		// leagues never open a wire and get neither.
+		//
+		// Live-only, read from api/waivers.js when the tab opens (and on the
+		// Refresh link), never from data/rosters.json. Deliberately not the
+		// snapshot: that file is public, and a pending claim is exactly the
+		// kind of strategy this project keeps out of the repo (see the plans
+		// note in CLAUDE.md). Not polled either — claims change when the
+		// manager changes them, and each read costs two MFL requests a league.
+		//
+		// Four states per league, never collapsed into each other: an error
+		// ("couldn't read"), unsupported (Sleeper publishes no pending
+		// claims), nothing pending, and real rows. A failed read presented as
+		// an empty list would be the worst answer this card could give — it
+		// looks exactly like the truth.
+		const WAIVERS_STALE_MS = 5 * 60 * 1000;
+		let waiversState = { status: 'idle', data: null, error: null, at: 0 };
+
+		function waiversKindFor(league) {
+			if (league.type === 'draftonly') return null;
+			return league.type === 'salarycap' ? 'auctions' : 'waivers';
+		}
+
+		async function loadWaivers(force = false) {
+			if (!isLoggedIn()) return;
+			if (waiversState.status === 'loading') return;
+			if (!force && waiversState.status === 'done' && Date.now() - waiversState.at < WAIVERS_STALE_MS) return;
+			waiversState = { ...waiversState, status: 'loading', error: null };
+			rerenderWaiversCards();
+			try {
+				const res = await fetch(WAIVERS_URL, { headers: { Authorization: `Bearer ${authToken}` }, cache: 'no-store' });
+				const body = await res.json().catch(() => ({}));
+				if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+				waiversState = { status: 'done', data: body, error: null, at: Date.now() };
+			} catch (err) {
+				// Keep the last good answer on screen under the error rather than
+				// blanking it — it's labelled with its own age.
+				waiversState = { ...waiversState, status: 'error', error: err.message || String(err) };
+			}
+			rerenderWaiversCards();
+		}
+
+		// Replaces the two cards in place — renderGrid is far too heavy to
+		// rerun for one fetch, and this keeps each card's collapse state.
+		function rerenderWaiversCards() {
+			if (!pageData) return;
+			for (const kind of ['waivers', 'auctions']) {
+				const old = document.querySelector(`.card[data-waivers-kind="${kind}"]`);
+				if (!old) continue;
+				const next = renderWaiversCard(kind, pageData.leagues);
+				if (next) {
+					next.classList.toggle('hidden', old.classList.contains('hidden'));
+					old.replaceWith(next);
+				}
+			}
+		}
+
+		function formatBid(n) {
+			return n == null ? '' : `$${Number(n).toLocaleString()}`;
+		}
+
+		function waiversPlayerCell(p) {
+			const td = el('td');
+			td.appendChild(document.createTextNode(p.name || `#${p.id}`));
+			if (p.position) td.appendChild(document.createTextNode(` ${p.position}`));
+			appendTeamSuffix(td, p.team);
+			return td;
+		}
+
+		function renderWaiversCard(kind, leagues) {
+			const mine = leagues.filter((l) => waiversKindFor(l) === kind);
+			if (mine.length === 0) return null;
+			const title = kind === 'waivers' ? 'Waivers' : 'Auctions';
+			const card = el('div', { class: 'card waivers-card', 'data-view': 'waivers', 'data-waivers-kind': kind });
+			const heading = el('h2', { class: 'card-heading', text: title });
+			card.appendChild(heading);
+			makeCollapsible(card, heading, `waivers-${kind}`);
+
+			const sub = el('div', { class: 'team card-collapse-visible' });
+			const { status, data, error, at } = waiversState;
+			sub.appendChild(document.createTextNode(
+				`Across ${leagueCount(mine.length)}${at ? ` · checked ${timeAgo(new Date(at).toISOString())}` : ''} · `
+			));
+			const refresh = el('a', { href: '#', class: 'waivers-refresh', text: status === 'loading' ? 'Checking…' : 'Refresh' });
+			refresh.addEventListener('click', (e) => { e.preventDefault(); loadWaivers(true); });
+			sub.appendChild(refresh);
+			card.appendChild(sub);
+
+			if (status === 'error') card.appendChild(el('div', { class: 'error-box', text: `Couldn’t check: ${error}` }));
+			if (!data) {
+				if (status !== 'error') card.appendChild(el('div', { class: 'loading-box', text: kind === 'waivers' ? 'Checking pending claims…' : 'Checking open auctions…' }));
+				return card;
+			}
+
+			const byId = new Map((data.leagues || []).map((r) => [r.id, r]));
+			const quiet = [];
+			const notes = [];
+			const table = el('table', { class: 'standings waivers-table' });
+			const head = el('tr');
+			if (kind === 'waivers') {
+				head.appendChild(el('th', { text: 'Add / Drop' }));
+				head.appendChild(el('th', { text: 'Bid' }));
+			} else {
+				head.appendChild(el('th', { text: 'Player / High Bidder' }));
+				head.appendChild(el('th', { text: 'Bid' }));
+				head.appendChild(el('th', { text: 'Last Bid' }));
+			}
+			table.appendChild(head);
+			const cols = kind === 'waivers' ? 2 : 3;
+			let rowCount = 0;
+
+			for (const league of mine) {
+				const name = leagueDisplayName(league);
+				const r = byId.get(league.id);
+				if (!r) { notes.push({ name, text: 'not checked', error: true }); continue; }
+				if (r.error) { notes.push({ name, text: `couldn’t read — ${r.error}`, error: true }); continue; }
+				if (r.unsupported) { notes.push({ name, text: r.unsupported }); continue; }
+				const items = kind === 'waivers' ? (r.claims || []) : (r.auctions || []);
+				if (items.length === 0) { quiet.push(name); continue; }
+
+				const groupRow = el('tr', { class: 'waivers-league-row' });
+				const groupCell = el('td', { colspan: String(cols) });
+				groupCell.appendChild(leagueNameNode(name, league.url));
+				groupRow.appendChild(groupCell);
+				table.appendChild(groupRow);
+
+				for (const item of items) {
+					const tr = el('tr');
+					if (kind === 'waivers') {
+						const td = el('td');
+						const adds = item.adds.length ? item.adds : [];
+						adds.forEach((p, i) => {
+							if (i) td.appendChild(document.createTextNode(', '));
+							td.appendChild(document.createTextNode(p.name || `#${p.id}`));
+							if (p.position) td.appendChild(document.createTextNode(` ${p.position}`));
+							appendTeamSuffix(td, p.team);
+						});
+						if (adds.length === 0) td.appendChild(el('span', { class: 'waivers-muted', text: 'Drop only' }));
+						if (item.drops.length) {
+							td.appendChild(el('div', {
+								class: 'waivers-drop',
+								text: `Drop ${item.drops.map((p) => p.name || `#${p.id}`).join(', ')}`,
+							}));
+						}
+						tr.appendChild(td);
+						tr.appendChild(el('td', { text: item.bid != null ? formatBid(item.bid) : (item.round ? `Rd ${item.round}` : '—') }));
+					} else {
+						const td = waiversPlayerCell(item.player);
+						td.appendChild(el('div', {
+							class: item.mine ? 'waivers-bidder waivers-mine' : 'waivers-bidder',
+							text: item.mine ? 'You' : (item.franchiseName || '—'),
+							title: `${item.bids} bid${item.bids === 1 ? '' : 's'} on record`,
+						}));
+						tr.appendChild(td);
+						tr.appendChild(el('td', { class: item.mine ? 'waivers-mine' : '', text: formatBid(item.bid) || '—' }));
+						tr.appendChild(el('td', {
+							class: 'waivers-when',
+							text: item.lastBidAt ? timeAgo(new Date(item.lastBidAt * 1000).toISOString()) : '—',
+						}));
+					}
+					table.appendChild(tr);
+					rowCount++;
+				}
+			}
+
+			if (rowCount > 0) card.appendChild(table);
+			for (const n of notes) {
+				card.appendChild(el('div', { class: n.error ? 'error-box waivers-note' : 'waivers-note waivers-muted', text: `${n.name}: ${n.text}` }));
+			}
+			if (quiet.length) {
+				card.appendChild(el('div', {
+					class: 'waivers-note waivers-muted',
+					text: `${kind === 'waivers' ? 'Nothing pending' : 'No open auctions'}: ${quiet.join(', ')}`,
+				}));
+			}
+			return card;
+		}
+
 		function renderGrid() {
 			const statusEl = document.getElementById('status');
 			const gridEl = document.getElementById('grid');
@@ -15903,6 +16115,18 @@
 			// above renderResultsCard.
 			if (isLoggedIn()) appendAdminCards(gridEl);
 
+			// Waivers: login-gated (see VIEW_LABELS' own comment). Built from
+			// whatever waiversState holds — often nothing yet, since the read
+			// only fires once the tab is opened (switchToView/below).
+			// Inserted ahead of the Admin cards rather than after, only so the
+			// DOM reads in tab order; visibility is per data-view either way.
+			if (isLoggedIn()) {
+				for (const kind of ['waivers', 'auctions']) {
+					const card = renderWaiversCard(kind, data.leagues);
+					if (card) gridEl.appendChild(card);
+				}
+			}
+
 			const presentViews = new Set([...gridEl.querySelectorAll('.card')].map((c) => c.dataset.view).filter(Boolean));
 			renderViewTabs(presentViews);
 			updateVisibility();
@@ -15912,6 +16136,7 @@
 			if (currentView === 'nfl') {
 				startNflPolling();
 			}
+			if (currentView === 'waivers') loadWaivers();
 		}
 
 		async function init() {
