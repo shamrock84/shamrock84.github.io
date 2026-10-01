@@ -512,4 +512,56 @@ await test('page: logout forgets the last read', () => {
   assert.match(logout, /waiversState = \{ status: 'idle', data: null/);
 });
 
+// Cap room beside each Auctions league name: the SAME numbers the Rosters
+// card's cap summary uses, pulled out of the page source so the two can't
+// drift. plannedSalary/effectiveSalary are stubbed to the logged-in shape.
+const rosterFnSrc = html.match(/function activeRosterPlayers\(league\) \{[\s\S]*?\n\t\t\}\n\t\tfunction capSummaryNumbers\(league, rosterPlayers\) \{[\s\S]*?\n\t\t\}/)[0];
+const capInfoSrc = html.match(/function capRoomInfo\(league\) \{[\s\S]*?\n\t\t\}/)[0];
+const capFns = new Function('plannedSalary', 'effectiveSalary', 'timeAgo', `${rosterFnSrc}\n${capInfoSrc}\nreturn { activeRosterPlayers, capSummaryNumbers, capRoomInfo };`);
+const makeCap = (plans = {}) => {
+  const planned = (l, p) => (plans[p.id] > 0 ? plans[p.id] : null);
+  const effective = (l, p) => (Number(p.salary) > 0 ? Number(p.salary) : planned(l, p) ?? 0);
+  return capFns(planned, effective, () => '2h ago');
+};
+await test('page: cap room = cap - (ROSTER salaries + adjustments); taxi/IR excluded', () => {
+  const { capRoomInfo } = makeCap();
+  const league = { salaryCap: 100, salaryAdjustments: 5.5, players: [
+    { id: 'a', salary: 40, status: 'ROSTER' }, { id: 'b', salary: 20 }, // no status = ROSTER
+    { id: 'c', salary: 30, status: 'INJURED_RESERVE' }, { id: 'd', salary: 9, status: 'TAXI_SQUAD' },
+  ] };
+  const info = capRoomInfo(league);
+  assert.equal(info.money, '$34.50');
+  assert.equal(info.negative, false);
+  assert.match(info.title, /as of the last sync/);
+});
+await test('page: cap room goes negative when over, and null with no cap', () => {
+  const { capRoomInfo } = makeCap();
+  const over = capRoomInfo({ salaryCap: 10, players: [{ id: 'a', salary: 12, status: 'ROSTER' }] });
+  assert.equal(over.money, '-$2.00');
+  assert.equal(over.negative, true);
+  assert.equal(capRoomInfo({ players: [] }), null);
+});
+await test('page: a planned salary stands in for an unpriced one and is flagged', () => {
+  const { capRoomInfo } = makeCap({ a: 7 });
+  const info = capRoomInfo({ salaryCap: 20, players: [{ id: 'a', status: 'ROSTER' }, { id: 'b', salary: 3, status: 'ROSTER' }] });
+  assert.equal(info.money, '$10.00');
+  assert.match(info.title, /1 locally-planned salary/);
+});
+await test('page: every committed salary-cap league yields a number matching an independent sum', () => {
+  const snap = JSON.parse(readFileSync(fileURLToPath(new URL('../data/rosters.json', import.meta.url)), 'utf8'));
+  const { capRoomInfo } = makeCap();
+  const caps = snap.leagues.filter((l) => l.salaryCap != null);
+  assert.ok(caps.length > 0);
+  for (const l of caps) {
+    const sum = (l.players || []).filter((p) => (p.status || 'ROSTER').toUpperCase() === 'ROSTER')
+      .reduce((a, p) => a + (Number(p.salary) > 0 ? Number(p.salary) : 0), 0);
+    const expected = l.salaryCap - (sum + (Number(l.salaryAdjustments) || 0));
+    assert.equal(capRoomInfo(l).money, `$${expected.toFixed(2)}`, l.id);
+  }
+});
+await test('page: the Auctions row renders cap room only for auctions', () => {
+  assert.match(html, /waivers-cap/);
+  assert.match(html, /kind === 'auctions'[^\n]*capRoomInfo|capRoomInfo\(league\)/);
+});
+
 console.log(`\n${passed} passed`);

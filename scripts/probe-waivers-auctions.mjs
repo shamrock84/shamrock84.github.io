@@ -419,3 +419,40 @@ for (const league of leagues.filter((l) => l.provider === 'espn' && l.type !== '
     console.log(`  FAILED ${String(err.message).replace(/[0-9a-f]{8}-[0-9a-f-]{27}/g, 'UUID').slice(0, 200)}`);
   }
 }
+
+// ---------------------------------------------------------------------------
+// BLIND-BID BALANCE (added for RUN 7). The Waivers card wants each BBID
+// league's remaining blind-bid dollars beside its name. Nothing here has
+// ever read that number, so before any parser: where does MFL put it?
+// Candidates, none confirmed — a `bbidAvailableBalance`-style field on the
+// franchise rows of TYPE=league, TYPE=blindBidSummary, and an `assets`/
+// `rosters`-adjacent field. This prints every key of OUR franchise's row in
+// TYPE=league whose name smells like money (value shown: a remaining budget
+// is on every owner's standings page, not strategy), plus the full key list
+// of the row, plus what TYPE=blindBidSummary answers (shape only, masked).
+// Leagues that bid are the ones whose pendingWaivers record is
+// blindBidWaiverRequest, which RUN 1 found to be OSD and Survivor.
+// ---------------------------------------------------------------------------
+console.log('\n##### BLIND-BID BALANCE #####');
+for (const league of mflTargets.filter((l) => l.type !== 'salarycap')) {
+  console.log(`=== ${league.name} (L=${league.id}) ===`);
+  try {
+    const leagueData = await fetchMflLeagueData(league, cookie);
+    const host = leagueData?.league?.baseURL;
+    const fr = [].concat(leagueData?.league?.franchises?.franchise ?? []);
+    const mine = fr.find((f) => f.id === league.franchiseId);
+    console.log(`  league-level keys: ${Object.keys(leagueData?.league || {}).filter((k) => /bbid|blind|waiver|faab|budget/i.test(k)).map((k) => `${k}=${leagueData.league[k]}`).join(', ') || '(none matching)'}`);
+    console.log(`  my franchise row keys: ${mine ? Object.keys(mine).join(',') : '(row not found)'}`);
+    console.log(`  money-ish fields: ${mine ? Object.entries(mine).filter(([k]) => /bbid|blind|waiver|faab|budget|balance|spent/i.test(k)).map(([k, v]) => `${k}=${v}`).join(', ') || '(none)' : ''}`);
+    for (const type of ['blindBidSummary', 'franchiseBlindBid']) {
+      try {
+        const r = await mflGet(`/export?TYPE=${type}&L=${league.id}&JSON=1`, cookie, seasonOf(league), 1, host);
+        print(`  ${type} (masked shape)`, shape(r));
+      } catch (err) {
+        console.log(`  ${type}: ${String(err.message).slice(0, 160)}`);
+      }
+    }
+  } catch (err) {
+    console.log(`  FAILED: ${err.message}`);
+  }
+}

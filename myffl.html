@@ -1827,6 +1827,17 @@
 			font-size: 0.85rem;
 		}
 		.waivers-refresh { color: var(--accent); }
+		/* Remaining salary cap beside a league's name on the Auctions card —
+		   a muted aside, not part of the bold name, red only when over the cap
+		   (the same --ir-text "needs a look" the Rosters card's own negative
+		   cap room uses). */
+		.waivers-cap {
+			margin-left: 0.5rem;
+			font-size: 0.78rem;
+			font-weight: 400;
+			color: var(--muted);
+		}
+		.waivers-cap-negative { color: var(--ir-text); font-weight: 700; }
 		/* A browser treats the hyphen in "10-4" as a break opportunity, so at
 		   the narrow end of the standings grid's column width (see the .grid
 		   comment above) the record wraps to "10-" / "4" instead of shrinking
@@ -5506,7 +5517,18 @@
 		// planned salary for anyone MFL hasn't priced yet — see
 		// effectiveSalary) + Salary Adjustments (drops, carry-overs, etc.,
 		// summed server-side from MFL's adjustment history).
-		function buildSalarySummary(league, rosterPlayers) {
+		// The cap math itself, split out of buildSalarySummary so the Waivers
+		// tab's Auctions card can show the SAME number beside a league's name
+		// instead of re-deriving it: Cap Room = Salary Cap - (Active Roster
+		// salaries + Salary Adjustments). Taxi and IR players are not in it —
+		// rosterPlayers is the Active Roster group only, which is what MFL's own
+		// roster page totals. Null when the league has no cap to measure
+		// against. plannedCount is how many of those salaries are the
+		// manager's own plan standing in for one MFL hasn't priced yet.
+		function activeRosterPlayers(league) {
+			return (league.players || []).filter((p) => (p.status || 'ROSTER').toUpperCase() === 'ROSTER');
+		}
+		function capSummaryNumbers(league, rosterPlayers) {
 			if (league.salaryCap == null) return null;
 			let plannedCount = 0;
 			const rosterSalaryTotal = rosterPlayers.reduce((sum, p) => {
@@ -5515,7 +5537,13 @@
 			}, 0);
 			const adjustments = Number(league.salaryAdjustments) || 0;
 			const total = rosterSalaryTotal + adjustments;
-			const capRoom = league.salaryCap - total;
+			return { adjustments, total, capRoom: league.salaryCap - total, plannedCount };
+		}
+
+		function buildSalarySummary(league, rosterPlayers) {
+			const nums = capSummaryNumbers(league, rosterPlayers);
+			if (!nums) return null;
+			const { plannedCount, adjustments, total, capRoom } = nums;
 			// Total/Cap Room mix in unofficial numbers whenever a planned salary
 			// stood in for a real one — flagged rather than left to look like a
 			// hard, all-official figure.
@@ -15938,6 +15966,28 @@
 			return '\u2014';
 		}
 
+		// A league's remaining salary cap, for the Auctions card: the Rosters
+		// card's own Cap Room Available (capSummaryNumbers), so the two can
+		// never disagree. It comes from the synced snapshot, not the live read
+		// this tab makes, so it trails a just-won auction until the next sync
+		// (every four hours) — the tooltip says as of when. Null for a league
+		// with no cap to measure against. `text` is the compact form the
+		// no-open-auctions line uses.
+		function capRoomInfo(league) {
+			const nums = capSummaryNumbers(league, activeRosterPlayers(league));
+			if (!nums) return null;
+			const money = `${nums.capRoom < 0 ? '-' : ''}$${Math.abs(nums.capRoom).toFixed(2)}`;
+			const asOf = league.updatedAt ? `as of the last sync, ${timeAgo(league.updatedAt)}` : 'as of the last sync';
+			const planned = nums.plannedCount > 0
+				? `. Includes ${nums.plannedCount} locally-planned ${nums.plannedCount === 1 ? 'salary' : 'salaries'}, not yet official`
+				: '';
+			return {
+				money,
+				negative: nums.capRoom < 0,
+				title: `Cap room: $${league.salaryCap} cap minus active-roster salaries and adjustments, ${asOf}. The same number as the Rosters card${planned}`,
+			};
+		}
+
 		function formatBid(n) {
 			return n == null ? '' : `$${Number(n).toLocaleString()}`;
 		}
@@ -16002,13 +16052,26 @@
 				if (r.error) { notes.push({ name, text: `couldn’t read — ${r.error}`, error: true }); continue; }
 				if (r.unsupported) { notes.push({ name, text: r.unsupported }); continue; }
 				const items = kind === 'waivers' ? (r.claims || []) : (r.auctions || []);
-				if (items.length === 0) { quiet.push(name); continue; }
+				if (items.length === 0) {
+					const cap = kind === 'auctions' ? capRoomInfo(league) : null;
+					quiet.push(cap ? `${name} (${cap.money} cap room)` : name);
+					continue;
+				}
 
 				const groupRow = el('tr', { class: 'waivers-league-row' });
 				const groupCell = el('td', { colspan: String(cols) });
 				// The Auctions card's league name goes to that league's MFL
 				// auctions page — the page this card is about — not its home page.
 				groupCell.appendChild(leagueNameNode(name, kind === 'auctions' ? auctionPageUrl(league, r) : league.url));
+				// Auctions only: what the manager has left to bid with.
+				const cap = kind === 'auctions' ? capRoomInfo(league) : null;
+				if (cap) {
+					groupCell.appendChild(el('span', {
+						class: `waivers-cap${cap.negative ? ' waivers-cap-negative' : ''}`,
+						text: `${cap.money} cap room`,
+						title: cap.title,
+					}));
+				}
 				groupRow.appendChild(groupCell);
 				table.appendChild(groupRow);
 
