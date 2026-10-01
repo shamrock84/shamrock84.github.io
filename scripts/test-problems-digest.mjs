@@ -46,7 +46,13 @@
 //     correct was itself a noise source, flashing an already-moot row on
 //     every single page load. League-level checks (sync error, roster
 //     limits, empty/short lineup) are unaffected — they have no per-starter
-//     game clock to wait on.
+//     game clock to wait on;
+//   - every lineup row, per-starter and empty/short alike, is held from
+//     Tuesday until the weekly rollover cutoff (Wednesday 7 PM Central), when
+//     the synced lineup is already next week's but the manager doesn't yet
+//     treat that week as open. The page's copy of the cutoff rule is pinned
+//     hour-by-hour against isPastWeeklyRolloverCutoff in providers.mjs, so
+//     moving one without the other fails here.
 //
 // As in test-injury-exposure.mjs there is no DOM here: the page's script
 // block is evaluated in a vm with the browser globals stubbed, so this runs
@@ -57,7 +63,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
-import { parseRosterLimits } from './lib/providers.mjs';
+import { parseRosterLimits, isPastWeeklyRolloverCutoff } from './lib/providers.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const html = fs.readFileSync(path.join(root, 'myffl.html'), 'utf8');
@@ -103,6 +109,16 @@ vm.runInContext(scriptSource, context);
 vm.runInContext('gameStatesAttempted = true;', context);
 
 const { computeLeagueProblems, computeProblemsDigest, parseLineupMinimums, rosterLimitProblems } = context;
+
+// The real cutoff check, kept for the agreement test below, then swapped on
+// the vm's global for one that always says "past the cutoff" — otherwise
+// every lineup assertion in this file would fail whenever the suite happens
+// to run between Tuesday and Wednesday 7 PM Central. computeLeagueProblems
+// reads it through its defaulted `pastCutoff` parameter, which resolves the
+// global binding at call time, so the swap reaches it. The held case is
+// tested by passing `pastCutoff: false` explicitly.
+const pastWeeklyRolloverCutoff = context.pastWeeklyRolloverCutoff;
+context.pastWeeklyRolloverCutoff = () => true;
 
 // DIGEST_ALERT_KINDS is a top-level `const` in the page's script block, which
 // doesn't land on the vm context's global the way a function declaration
@@ -623,6 +639,45 @@ const rosterLimits = (overrides = {}) => ({ size: 28, taxi: 4, ir: 0, position: 
 
 	assert.equal(computeProblemsDigest([clean, quiet], YEAR).length, 0, 'an all-clear digest is empty, which is what hides the strip');
 	assert.equal(computeProblemsDigest(undefined, YEAR).length, 0, 'no leagues at all is also just quiet');
+}
+
+// ---- The weekly rollover cutoff -------------------------------------------
+
+{
+	// Before the cutoff, the synced lineup is already next week's: every
+	// lineup row is held, whether it's per-starter or league-level.
+	const hurt = league({ starters: ['1'], startingLineup: null, players: [player('1', { injury: 'D', part: 'Ankle' })] });
+	assert.deepEqual(kinds(computeLeagueProblems(hurt, YEAR, {}, true, true)), ['injury'], 'past the cutoff: flagged');
+	assert.equal(computeLeagueProblems(hurt, YEAR, {}, true, false).length, 0, 'before the cutoff: held');
+
+	const empty = league({ starters: [], players: [player('1')] });
+	assert.deepEqual(kinds(computeLeagueProblems(empty, YEAR, {}, true, true)), ['empty']);
+	assert.equal(computeLeagueProblems(empty, YEAR, {}, true, false).length, 0, 'an empty lineup is held too');
+
+	// Rows that don't belong to a week aren't held.
+	const broken = league({ error: 'HTTP 429', starters: ['1'], startingLineup: null, players: [player('1', { injury: 'O' })] });
+	assert.deepEqual(kinds(computeLeagueProblems(broken, YEAR, {}, true, false)), ['sync'], 'a sync error still shows before the cutoff');
+}
+
+{
+	// The page's copy of the cutoff must agree with the sync's at every hour
+	// of a week, in both daylight and standard time — the page has no
+	// imports, so this is what keeps the two from drifting. :30 past each
+	// hour, plus :59 and :00 either side of each hour boundary.
+	const weeks = ['2026-09-29T00:00:00Z', '2027-01-05T00:00:00Z'];
+	let checked = 0;
+	for (const start of weeks) {
+		for (let h = 0; h < 7 * 24; h++) {
+			for (const offsetMin of [-1, 0, 30]) {
+				const at = new Date(Date.parse(start) + h * 3600e3 + offsetMin * 60e3);
+				assert.equal(pastWeeklyRolloverCutoff(at), isPastWeeklyRolloverCutoff(at), `myffl.html and providers.mjs disagree at ${at.toISOString()}`);
+				checked++;
+			}
+		}
+	}
+	assert.ok(checked > 1000);
+	assert.equal(pastWeeklyRolloverCutoff(new Date('2026-09-23T23:59:00Z')), false, 'Wednesday 6:59 PM CDT: held');
+	assert.equal(pastWeeklyRolloverCutoff(new Date('2026-09-24T00:00:00Z')), true, 'Wednesday 7:00 PM CDT: open');
 }
 
 console.log('test-problems-digest: all assertions passed');
