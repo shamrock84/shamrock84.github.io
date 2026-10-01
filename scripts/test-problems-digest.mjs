@@ -50,9 +50,11 @@
 //   - every lineup row, per-starter and empty/short alike, is held from
 //     Tuesday until the weekly rollover cutoff (Wednesday 7 PM Central), when
 //     the synced lineup is already next week's but the manager doesn't yet
-//     treat that week as open. The page's copy of the cutoff rule is pinned
-//     hour-by-hour against isPastWeeklyRolloverCutoff in providers.mjs, so
-//     moving one without the other fails here.
+//     treat that week as open. The cutoff setting lives only in
+//     providers.mjs (WEEKLY_ROLLOVER_CUTOFF) and reaches the page through
+//     the snapshot; the page's copy of the comparison logic is pinned
+//     hour-by-hour against isPastWeeklyRolloverCutoff for more than one
+//     setting, and a snapshot without the field holds nothing.
 //
 // As in test-injury-exposure.mjs there is no DOM here: the page's script
 // block is evaluated in a vm with the browser globals stubbed, so this runs
@@ -63,7 +65,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
-import { parseRosterLimits, isPastWeeklyRolloverCutoff } from './lib/providers.mjs';
+import { parseRosterLimits, isPastWeeklyRolloverCutoff, WEEKLY_ROLLOVER_CUTOFF } from './lib/providers.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const html = fs.readFileSync(path.join(root, 'myffl.html'), 'utf8');
@@ -660,24 +662,51 @@ const rosterLimits = (overrides = {}) => ({ size: 28, taxi: 4, ir: 0, position: 
 }
 
 {
-	// The page's copy of the cutoff must agree with the sync's at every hour
-	// of a week, in both daylight and standard time — the page has no
-	// imports, so this is what keeps the two from drifting. :30 past each
-	// hour, plus :59 and :00 either side of each hour boundary.
+	// The page's copy of the comparison must agree with the sync's at every
+	// hour of a week, in both daylight and standard time, for the real
+	// setting and for a moved one — the page has no imports, so this is what
+	// keeps the two from drifting. :30 past each hour, plus :59 and :00
+	// either side of each hour boundary.
 	const weeks = ['2026-09-29T00:00:00Z', '2027-01-05T00:00:00Z'];
+	const cutoffs = [WEEKLY_ROLLOVER_CUTOFF, { weekday: 'Tue', hourCT: 0 }, { weekday: 'Thu', hourCT: 21 }];
 	let checked = 0;
-	for (const start of weeks) {
-		for (let h = 0; h < 7 * 24; h++) {
-			for (const offsetMin of [-1, 0, 30]) {
-				const at = new Date(Date.parse(start) + h * 3600e3 + offsetMin * 60e3);
-				assert.equal(pastWeeklyRolloverCutoff(at), isPastWeeklyRolloverCutoff(at), `myffl.html and providers.mjs disagree at ${at.toISOString()}`);
-				checked++;
+	for (const cutoff of cutoffs) {
+		for (const start of weeks) {
+			for (let h = 0; h < 7 * 24; h++) {
+				for (const offsetMin of [-1, 0, 30]) {
+					const at = new Date(Date.parse(start) + h * 3600e3 + offsetMin * 60e3);
+					assert.equal(
+						pastWeeklyRolloverCutoff(at, { ...cutoff }),
+						isPastWeeklyRolloverCutoff(at, cutoff),
+						`myffl.html and providers.mjs disagree at ${at.toISOString()} for ${JSON.stringify(cutoff)}`,
+					);
+					checked++;
+				}
 			}
 		}
 	}
-	assert.ok(checked > 1000);
-	assert.equal(pastWeeklyRolloverCutoff(new Date('2026-09-23T23:59:00Z')), false, 'Wednesday 6:59 PM CDT: held');
-	assert.equal(pastWeeklyRolloverCutoff(new Date('2026-09-24T00:00:00Z')), true, 'Wednesday 7:00 PM CDT: open');
+	assert.ok(checked > 3000);
+
+	// The setting itself: Wednesday 7 PM Central.
+	assert.equal(pastWeeklyRolloverCutoff(new Date('2026-09-23T23:59:00Z'), WEEKLY_ROLLOVER_CUTOFF), false, 'Wednesday 6:59 PM CDT: held');
+	assert.equal(pastWeeklyRolloverCutoff(new Date('2026-09-24T00:00:00Z'), WEEKLY_ROLLOVER_CUTOFF), true, 'Wednesday 7:00 PM CDT: open');
+
+	// No setting in the snapshot (one written before the field existed, or
+	// none loaded yet) holds nothing, rather than hiding alerts.
+	const tuesday = new Date('2026-09-22T18:00:00Z');
+	assert.equal(pastWeeklyRolloverCutoff(tuesday, undefined), true, 'no cutoff in the snapshot: nothing held');
+	assert.equal(pastWeeklyRolloverCutoff(tuesday, { weekday: 'Wednesday', hourCT: 19 }), true, 'an unreadable cutoff: nothing held');
+	assert.equal(pastWeeklyRolloverCutoff(tuesday, { weekday: 'Wed', hourCT: '19' }), true, 'a non-integer hour: nothing held');
+
+	// The page's default reads the snapshot's field.
+	vm.runInContext("pageData = { weeklyRolloverCutoff: { weekday: 'Wed', hourCT: 19 } };", context);
+	assert.equal(pastWeeklyRolloverCutoff(tuesday), false, 'defaults to pageData.weeklyRolloverCutoff');
+	vm.runInContext('pageData = null;', context);
+	assert.equal(pastWeeklyRolloverCutoff(tuesday), true, 'no snapshot yet: nothing held');
+
+	// And the sync is what puts it there: the page has no other source.
+	const syncSource = fs.readFileSync(path.join(root, 'scripts', 'fetch-rosters.mjs'), 'utf8');
+	assert.match(syncSource, /weeklyRolloverCutoff: WEEKLY_ROLLOVER_CUTOFF,/, 'fetch-rosters.mjs no longer writes weeklyRolloverCutoff into the snapshot');
 }
 
 console.log('test-problems-digest: all assertions passed');

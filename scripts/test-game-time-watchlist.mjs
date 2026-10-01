@@ -253,9 +253,16 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 
 	ctx.pastWeeklyRolloverCutoff = () => false;
 	setGames(ctx, games);
+	vm.runInContext("pageData = { weeklyRolloverCutoff: { weekday: 'Wed', hourCT: 19 } };", ctx);
 	const held = ctx.renderGameTimeWatchlistCard([l], YEAR);
 	assert.ok(held.classList.contains('card-collapsed'));
 	assert.match(fullText(held), /Next week opens Wednesday at 7 PM Central/);
+
+	// The message names whatever time the snapshot carries, not a fixed one.
+	vm.runInContext("pageData = { weeklyRolloverCutoff: { weekday: 'Thu', hourCT: 12 } };", ctx);
+	assert.match(fullText(ctx.renderGameTimeWatchlistCard([l], YEAR)), /Next week opens Thursday at noon Central/);
+	vm.runInContext("pageData = { weeklyRolloverCutoff: { weekday: 'Wed', hourCT: 9 } };", ctx);
+	assert.match(fullText(ctx.renderGameTimeWatchlistCard([l], YEAR)), /Next week opens Wednesday at 9 AM Central/);
 	assert.doesNotMatch(fullText(held), /No injured players/);
 }
 
