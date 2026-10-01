@@ -77,6 +77,16 @@
 //   endsAt on regardless, which is what the card's "Over In" and "Ending"
 //   mean.
 //
+// RUN 6 (2026-10-01, ~22h after RUN 1): the manager reports ESPN claims showing
+//   as pending that are long resolved, and wants a claim priority/round instead
+//   of a dollar amount (neither ESPN league is FAAB). What RUN 6's re-run of the
+//   existing sections found: MFL's three Dynasty leagues now return NO pending
+//   claims (MFL drops them once processed), while ESPN's mTransactions2 still
+//   lists exactly the same WAIVER/PENDING/isPending claims (4 and 2) it listed
+//   22 hours earlier, though every other ESPN count had moved on. So
+//   status/isPending on that feed are not a reliable "still pending". The
+//   ESPN CLAIM DIAGNOSTICS section below (RUN 6) looks for what is.
+//
 // RUN 3 (2026-10-01):
 //   - The shipped league-scoped kona_player_info request (A), with or
 //     without scoringPeriodId (B), answered HTTP 400 on both leagues.
@@ -341,5 +351,55 @@ for (const league of mflTargets.filter((l) => l.type === 'salarycap')) {
     console.log(`  every lag, hours: ${lags.map((x) => x.toFixed(2)).join(' ')}`);
   } catch (err) {
     console.log(`${league.name}: FAILED ${err.message}`);
+  }
+}
+
+// --- RUN 6: ESPN claim diagnostics — statuses, ages and numbers only ---
+// Which ESPN data reflects the REAL pending list, and where does a claim's
+// priority live? A claimed player's name or id is the claim, so NONE is
+// printed: players are shown only as group letters (A, B, ...) assigned by
+// first appearance of the player id, which is enough to see whether a stale
+// PENDING record shares its player with an EXECUTED/FAILED one (a duplicate
+// left behind) without saying who the player is. Everything else is a status,
+// a flag, a number (priority/rating/bid amount) or an age in hours.
+console.log('=== ESPN CLAIM DIAGNOSTICS ===');
+const prim = (o, re) => Object.entries(o || {}).filter(([k, v]) => re.test(k) && typeof v !== 'object' && v != null).map(([k, v]) => `${k}=${v}`).join('; ');
+for (const league of leagues.filter((l) => l.provider === 'espn' && l.type !== 'draftonly')) {
+  console.log(`${league.name}:`);
+  try {
+    const st = await espnGet(league, 'view=mStatus');
+    const period = st?.scoringPeriodId || 1;
+    const letters = new Map();
+    const letter = (id) => {
+      if (id == null) return '-';
+      if (!letters.has(String(id))) letters.set(String(id), String.fromCharCode(65 + (letters.size % 26)));
+      return letters.get(String(id));
+    };
+    const describe = (t) => {
+      const adds = (t.items || []).filter((i) => i.type === 'ADD').map((i) => letter(i.playerId)).join('');
+      const drops = (t.items || []).filter((i) => i.type === 'DROP').map((i) => letter(i.playerId)).join('');
+      const ages = Object.entries(t).filter(([k, v]) => /date|process|execut|time/i.test(k) && typeof v === 'number' && v > 1e11)
+        .map(([k, v]) => `${k}Age=${((Date.now() - v) / 3.6e6).toFixed(1)}h`).join(' ');
+      return `${t.type}/${t.status} isPending=${t.isPending} spDelta=${(t.scoringPeriodId ?? period) - period} bid=${t.bidAmount} rating=${t.rating} execType=${t.executionType} add=${adds || '-'} drop=${drops || '-'} ${ages}`;
+    };
+    const tx = await espnGet(league, `view=mTransactions2&scoringPeriodId=${period}`);
+    const mine = (tx.transactions || []).filter((t) => t.type === 'WAIVER' && String(t.teamId) === String(league.franchiseId))
+      .sort((a, b) => (a.proposedDate || 0) - (b.proposedDate || 0));
+    console.log(`  current scoring period ${period}; mTransactions2 my WAIVER records, oldest first (${mine.length}):`);
+    for (const t of mine) console.log(`    ${describe(t)}`);
+
+    const pend = await espnGet(league, 'view=mPendingTransactions');
+    const list = pend?.pendingTransactions ?? pend?.transactions ?? [];
+    console.log(`  mPendingTransactions: top-level keys ${Object.keys(pend || {}).join(',')}; ${Array.isArray(list) ? list.length : typeof list} records`);
+    if (Array.isArray(list)) for (const t of list.filter((x) => !x.teamId || String(x.teamId) === String(league.franchiseId))) console.log(`    ${describe(t)}`);
+
+    const set = await espnGet(league, 'view=mSettings');
+    console.log(`  mSettings.acquisitionSettings: ${prim(set?.settings?.acquisitionSettings, /./) || '(none)'}`);
+    const team = await espnGet(league, 'view=mTeam');
+    const me = (team.teams || []).find((t) => String(t.id) === String(league.franchiseId));
+    console.log(`  my team, waiver/priority/budget fields: ${prim(me, /waiver|rank|priority|budget|acquisition/i) || '(none)'}`);
+    console.log(`  my team transactionCounter: ${prim(me?.transactionCounter, /./) || '(none)'}`);
+  } catch (err) {
+    console.log(`  FAILED ${String(err.message).replace(/[0-9a-f]{8}-[0-9a-f-]{27}/g, 'UUID').slice(0, 200)}`);
   }
 }
