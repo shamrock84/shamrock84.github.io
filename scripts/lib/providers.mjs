@@ -2987,41 +2987,62 @@ export async function fetchEspnLineup(league) {
 // in — the same category as a plan, which is why plans live in Upstash and
 // not the public repo. The snapshot is served openly; these must not be.
 //
-// NOTHING in this section had been confirmed against one of this project's
-// own leagues when it shipped — api.myfantasyleague.com is unreachable from
-// the sandbox it was written in. Every shape below is either public
-// community knowledge or read off another public MFL client, and every
-// parser is written to degrade to "couldn't read" rather than a confident
-// "nothing pending". probe-waivers-auctions.yml dumps the raw responses;
-// run it (ideally while a claim and an auction are actually live) and
-// record what it found here before trusting any of this further.
+// Nothing in this section had been confirmed against our own leagues when
+// it first shipped (api.myfantasyleague.com is unreachable from the sandbox
+// it was written in). probe-waivers-auctions.yml RUN 1 (2026-10-01, with real
+// claims filed and auctions open) then confirmed the MFL auction log, the
+// ESPN pending-claim shape, and that pendingWaivers needs the league's own
+// host — and caught the MFL claim string being underscore-separated, not the
+// pipe form first assumed (see parseMflAddsDrops). Every parser still
+// degrades to "couldn't read" rather than a confident "nothing pending".
 
-// One `addsDrops`-style string -> { adds, bid, drops }. Forms seen in the
-// wild (another public MFL client's corpus, not our own leagues):
-//   "8851,|425000|"              blind bid: add, bid, no drop
-//   "14063,|425000|15777,16191," blind bid: add, bid, two drops
-//   "|17064,16191,"              drop only (two segments)
-//   "14063,|15777,"              rolling priority: add, drop (two segments)
-// Ids are comma-separated with a trailing comma; either side may be empty.
-// A two-segment string is read as add|drop, three as add|bid|drop.
+// One `addsDrops` string -> an array of { adds, bid, drops }, one per pair
+// it carries. CONFIRMED on our own leagues by probe-waivers-auctions.yml
+// RUN 1 (2026-10-01), digits masked:
+//   "NNNNN_NNNNN,NNNN_NNNN"  rolling priority (waiverRequest, MNMx):
+//                            comma-separated add_drop pairs
+//   "NNNNN_NN_NNNNN"         blind bid (blindBidWaiverRequest, OSD and
+//                            Survivor): add_bid_drop
+// So segments are comma-separated and fields underscore-separated: two
+// fields are add_drop, three are add_bid_drop. A drop of all zeroes means
+// none. This shipped first reading a pipe form ("8851,|425000|15777,")
+// another public MFL client reported; none of our leagues sent that form.
+// It is still accepted, since nothing proves MFL never sends it.
+// Returns null for anything that doesn't yield plain numeric ids, so the
+// caller can say "couldn't read" rather than render a garbled id.
 const splitMflIds = (s) => String(s || '').split(',').map((x) => x.trim()).filter((x) => x && !/^0+$/.test(x));
+const numericOrNull = (s) => (s !== '' && s != null && Number.isFinite(Number(s)) ? Number(s) : null);
 export function parseMflAddsDrops(raw) {
   if (typeof raw !== 'string' || !raw.trim()) return null;
-  const parts = raw.split('|');
-  if (parts.length >= 3) {
-    const bid = Number(parts[1]);
-    return { adds: splitMflIds(parts[0]), bid: Number.isFinite(bid) && parts[1] !== '' ? bid : null, drops: splitMflIds(parts[2]) };
+  let claims;
+  if (raw.includes('|')) {
+    const parts = raw.split('|');
+    claims = [parts.length >= 3
+      ? { adds: splitMflIds(parts[0]), bid: numericOrNull(parts[1]), drops: splitMflIds(parts[2]) }
+      : { adds: splitMflIds(parts[0]), bid: null, drops: splitMflIds(parts[1]) }];
+  } else {
+    claims = raw.split(',').map((x) => x.trim()).filter(Boolean).map((seg) => {
+      const f = seg.split('_');
+      if (f.length === 3) return { adds: splitMflIds(f[0]), bid: numericOrNull(f[1]), drops: splitMflIds(f[2]) };
+      if (f.length === 2) return { adds: splitMflIds(f[0]), bid: null, drops: splitMflIds(f[1]) };
+      if (f.length === 1) return { adds: splitMflIds(f[0]), bid: null, drops: [] };
+      return null;
+    });
   }
-  if (parts.length === 2) return { adds: splitMflIds(parts[0]), bid: null, drops: splitMflIds(parts[1]) };
-  return { adds: splitMflIds(parts[0]), bid: null, drops: [] };
+  const ok = claims.length > 0 && claims.every((c) => c
+    && [...c.adds, ...c.drops].every((id) => /^\d+$/.test(id))
+    && (c.adds.length || c.drops.length));
+  return ok ? claims : null;
 }
 
 // TYPE=pendingWaivers names its record after the league's waiver SYSTEM —
 // `waiverRequest` for rolling priority, `blindBidWaiverRequest` for blind
-// bidding — so records are found by shape (anything carrying an adds/drops
-// string) rather than by enumerating names MFL might add to. Returns one
-// { round, bid, adds, drops, timestamp } per claim, in the order MFL lists
-// them (which is the order they'd be processed in).
+// bidding (both confirmed by RUN 1; a single claim comes back as an object,
+// several as an array) — so records are found by shape rather than by
+// name. Returns one { round, bid, adds, drops, timestamp } per add/drop
+// pair, in the order MFL lists them. A record whose string doesn't parse
+// THROWS: a claim we can't read must surface as "couldn't read", never be
+// dropped into a list that then looks shorter than it is.
 const MFL_CLAIM_STRING_KEYS = ['addsDrops', 'add_bid_drop', 'add_drop', 'addDrop', 'transaction'];
 export function parseMflPendingWaivers(data) {
   const root = data?.pendingWaivers;
@@ -3033,13 +3054,13 @@ export function parseMflPendingWaivers(data) {
     const key = MFL_CLAIM_STRING_KEYS.find((k) => typeof node[k] === 'string');
     if (key) {
       const parsed = parseMflAddsDrops(node[key]);
-      if (parsed && (parsed.adds.length || parsed.drops.length)) {
-        const explicitBid = Number(node.amount ?? node.bid);
+      if (!parsed) throw new Error('MFL sent a pending claim in a format this page doesn’t recognise');
+      for (const c of parsed) {
         claims.push({
           round: node.round != null && node.round !== '' ? String(node.round) : null,
-          bid: parsed.bid ?? (Number.isFinite(explicitBid) && (node.amount ?? node.bid) !== '' ? explicitBid : null),
-          adds: parsed.adds,
-          drops: parsed.drops,
+          bid: c.bid,
+          adds: c.adds,
+          drops: c.drops,
           timestamp: Number(node.timestamp) || null,
         });
       }
@@ -3065,8 +3086,9 @@ export async function fetchMflPendingWaivers(league, cookie, leagueData) {
 
 // Folds MFL's auction transaction log into the auctions still open. MFL
 // records an auction as AUCTION_INIT (nomination), AUCTION_BID (each raise)
-// and AUCTION_WON (close); each carries `transaction: "playerId|amount|..."`
-// (the third segment is free text/drops, ignored here). An auction is open
+// and AUCTION_WON (close); each carries `transaction: "playerId|amount|..."`,
+// confirmed on all four Salary Cap leagues by RUN 1 — the third segment is
+// empty or free text like "<team> forced bid increase", ignored here. An auction is open
 // if its latest INIT/BID has no later WON. Returns
 // { playerId, bid, franchiseId, startedAt, lastBidAt, bids } per open
 // auction, most recent bid first. Timestamps are unix seconds, as MFL sends.
@@ -3112,8 +3134,10 @@ export async function fetchMflActiveAuctions(league, cookie, leagueData) {
 // ESPN's transaction log (view=mTransactions2) carries the owner's own
 // pending claims as type WAIVER with status PENDING (or isPending) — visible
 // only to the team's own cookie, which is the ESPN_S2/SWID pair every ESPN
-// read here already sends. Community-documented shape, unconfirmed on our
-// leagues until the probe runs. Each item is { type: 'ADD'|'DROP', playerId }.
+// read here already sends. Shape confirmed on both ESPN leagues by RUN 1:
+// type WAIVER, status PENDING with isPending, numeric teamId and bidAmount,
+// items[] of { type: 'ADD'|'DROP', playerId }. There is NO subOrder field,
+// so claims order by proposedDate; ESPN's own processing order isn't known.
 export function parseEspnPendingWaivers(data, franchiseId) {
   return asArray(data?.transactions)
     .filter((t) => t?.type === 'WAIVER'
