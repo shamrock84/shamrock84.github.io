@@ -25,6 +25,7 @@ import {
   fetchMflPendingWaivers,
   fetchMflActiveAuctions,
   mflAuctionPageUrl,
+  mflBlindBidBalance,
   fetchEspnPendingWaivers,
   fetchEspnPlayerNames,
 } from '../scripts/lib/providers.mjs';
@@ -132,10 +133,22 @@ async function readLeague(league, getCookie, getPlayerMap) {
       })),
     };
   }
+  // A balance moves the moment a claim processes, so a BBID league re-reads
+  // TYPE=league instead of trusting the hour-old cached copy (which is fine
+  // for the host and names). The cached one decides whether the league bids.
+  let bbid = mflBlindBidBalance(leagueData, league.franchiseId);
+  if (bbid) {
+    try {
+      bbid = mflBlindBidBalance(await fetchMflLeagueData(league, cookie), league.franchiseId) || bbid;
+    } catch {
+      // Keep the cached figure; a slightly old balance beats none.
+    }
+  }
   const claims = await fetchMflPendingWaivers(league, cookie, leagueData);
   const players = await getPlayerMap(cookie);
   return {
     ...base,
+    bbid,
     claims: claims.map((c) => ({ ...c, adds: c.adds.map((id) => playerOf(players, id)), drops: c.drops.map((id) => playerOf(players, id)) })),
   };
 }
