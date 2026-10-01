@@ -58,6 +58,16 @@
 //     key names and match counts — never a name, since a claimed player's
 //     name is the claim.
 //
+// RUN 4 (2026-10-01): AUCTION TIMING. All four Salary Cap leagues are email
+//   auctions (auction_kind=email) with no timer setting at all (draftTimer=OFF;
+//   the draftLimitHours of 48/48/8 are DRAFT settings). Across 117 finished
+//   auctions the gap from last bid to close ran 15 minutes to 77 hours, and
+//   from NOMINATION to close never under exactly 24.0h in any league. The
+//   manager then stated the rule: "24 hours after the high bidder changed" —
+//   a bidder raising their own bid does not restart it, which is what the
+//   short gaps were. providers.mjs builds endsAt on it (AUCTION_END_HOURS).
+// RUN 5: RULE CHECK, below — that rule against every finished auction.
+//
 // RUN 3 (2026-10-01):
 //   - The shipped league-scoped kona_player_info request (A), with or
 //     without scoringPeriodId (B), answered HTTP 400 on both leagues.
@@ -72,6 +82,7 @@ import { fileURLToPath } from 'node:url';
 import {
   mflLogin, mflGet, seasonOf, fetchMflLeagueData, espnGet, setMflRequestInterval, loadPlayerMap,
   fetchMflPendingWaivers, fetchMflActiveAuctions, fetchEspnPendingWaivers, fetchEspnPlayerNames,
+  finishedMflAuctions, MFL_AUCTION_LOOKBACK_DAYS,
 } from './lib/providers.mjs';
 
 setMflRequestInterval(300);
@@ -298,5 +309,28 @@ for (const league of mflTargets.filter((l) => l.type === 'salarycap')) {
     }
   } catch (err) {
     console.log(`  FAILED ${err.message}`);
+  }
+}
+
+// --- RUN 5: does "24h after the high bidder changed" predict the close? ---
+// Per finished auction, wonAt minus the predicted endsAt, in hours. A rule
+// that holds shows every lag at or just above zero (MFL processes email
+// auctions on its own schedule, so a small positive lag is expected and a
+// NEGATIVE one is not: it would mean MFL closed an auction before its time).
+// Prints durations only — never a player, team or bid.
+console.log('=== RULE CHECK: wonAt - predicted end, hours ===');
+for (const league of mflTargets.filter((l) => l.type === 'salarycap')) {
+  try {
+    const host = (await fetchMflLeagueData(league, cookie))?.league?.baseURL;
+    const tx = await mflGet(`/export?TYPE=transactions&L=${league.id}&DAYS=${MFL_AUCTION_LOOKBACK_DAYS}&JSON=1`, cookie, seasonOf(league), 1, host);
+    const lags = finishedMflAuctions(tx).filter((a) => a.endsAt && a.wonAt).map((a) => (a.wonAt - a.endsAt) / 3600);
+    if (!lags.length) { console.log(`${league.name}: no finished auctions in the window`); continue; }
+    const sorted = lags.slice().sort((x, y) => x - y);
+    const within = (h) => lags.filter((x) => x >= -0.01 && x <= h).length;
+    console.log(`${league.name}: ${lags.length} finished; lag min ${sorted[0].toFixed(2)}h, median ${sorted[Math.floor(sorted.length / 2)].toFixed(2)}h, max ${sorted[sorted.length - 1].toFixed(2)}h; `
+      + `0..1h: ${within(1)}, 0..6h: ${within(6)}, negative: ${lags.filter((x) => x < -0.01).length}, over 24h late: ${lags.filter((x) => x > 24).length}`);
+    console.log(`  every lag, hours: ${lags.map((x) => x.toFixed(2)).join(' ')}`);
+  } catch (err) {
+    console.log(`${league.name}: FAILED ${err.message}`);
   }
 }

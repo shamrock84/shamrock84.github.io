@@ -12,6 +12,9 @@
 //   * an MFL error body throws rather than reading as "nothing pending";
 //   * an auction is open until an AUCTION_WON for that player, the high bid
 //     and bidder are the LATEST bid's, and a re-opened player counts again;
+//   * an auction ends 24h after the high bidder CHANGED — a different bidder
+//     restarts the clock, the same bidder raising does not — and the Auctions
+//     card's "Over In" is that, soonest-ending first;
 //   * ESPN keeps only this team's still-pending WAIVER transactions, and
 //     names come from the season-wide player list RUN 3 found working;
 //   * the endpoint refuses without a valid token, never offers Draft Only,
@@ -32,6 +35,8 @@ const {
   parseMflAddsDrops,
   parseMflPendingWaivers,
   activeMflAuctions,
+  finishedMflAuctions,
+  AUCTION_END_HOURS,
   parseEspnPendingWaivers,
   fetchMflPendingWaivers,
   fetchEspnPlayerNames,
@@ -119,7 +124,69 @@ await test('auctions: open until won; high bid is the latest', () => {
     },
   });
   assert.equal(open.length, 1);
-  assert.deepEqual(open[0], { playerId: '100', bid: 7, franchiseId: '0002', startedAt: 10, lastBidAt: 20, bids: 2 });
+  assert.deepEqual(open[0], {
+    playerId: '100', bid: 7, franchiseId: '0002', startedAt: 10, lastBidAt: 20,
+    highBidderSince: 20, endsAt: 20 + 24 * 3600, bids: 2,
+  });
+});
+
+// The league rule, as the manager states it: 24 hours after the high bidder
+// CHANGED. RUN 4 found closes as little as 15 minutes after the last bid,
+// which only makes sense if a bidder raising their own bid doesn't restart it.
+const H = 3600;
+await test('auction clock: starts at nomination', () => {
+  const [a] = activeMflAuctions({ transactions: { transaction: [
+    { type: 'AUCTION_INIT', franchise: '0001', transaction: '7|1|', timestamp: String(100 * H) },
+  ] } });
+  assert.equal(AUCTION_END_HOURS, 24);
+  assert.equal(a.endsAt, 100 * H + 24 * H);
+});
+await test('auction clock: a DIFFERENT bidder restarts it', () => {
+  const [a] = activeMflAuctions({ transactions: { transaction: [
+    { type: 'AUCTION_INIT', franchise: '0001', transaction: '7|1|', timestamp: String(100 * H) },
+    { type: 'AUCTION_BID', franchise: '0002', transaction: '7|3|', timestamp: String(110 * H) },
+  ] } });
+  assert.equal(a.franchiseId, '0002');
+  assert.equal(a.endsAt, 110 * H + 24 * H);
+});
+await test('auction clock: the SAME bidder raising does NOT restart it', () => {
+  const [a] = activeMflAuctions({ transactions: { transaction: [
+    { type: 'AUCTION_INIT', franchise: '0001', transaction: '7|1|', timestamp: String(100 * H) },
+    { type: 'AUCTION_BID', franchise: '0002', transaction: '7|3|', timestamp: String(110 * H) },
+    { type: 'AUCTION_BID', franchise: '0002', transaction: '7|9|', timestamp: String(120 * H) },
+  ] } });
+  assert.equal(a.bid, 9);
+  assert.equal(a.lastBidAt, 120 * H);
+  assert.equal(a.highBidderSince, 110 * H);
+  assert.equal(a.endsAt, 110 * H + 24 * H);
+});
+await test('auction clock: the original bidder coming back after losing it restarts it', () => {
+  const [a] = activeMflAuctions({ transactions: { transaction: [
+    { type: 'AUCTION_INIT', franchise: '0001', transaction: '7|1|', timestamp: String(100 * H) },
+    { type: 'AUCTION_BID', franchise: '0002', transaction: '7|3|', timestamp: String(105 * H) },
+    { type: 'AUCTION_BID', franchise: '0001', transaction: '7|4|', timestamp: String(110 * H) },
+  ] } });
+  assert.equal(a.endsAt, 110 * H + 24 * H);
+});
+await test('auctions: soonest-ending first', () => {
+  const open = activeMflAuctions({ transactions: { transaction: [
+    { type: 'AUCTION_INIT', franchise: '0001', transaction: '1|1|', timestamp: String(300 * H) },
+    { type: 'AUCTION_INIT', franchise: '0001', transaction: '2|1|', timestamp: String(100 * H) },
+    { type: 'AUCTION_INIT', franchise: '0001', transaction: '3|1|', timestamp: String(200 * H) },
+  ] } });
+  assert.deepEqual(open.map((a) => a.playerId), ['2', '3', '1']);
+});
+await test('auctions: a closed auction carries its won time beside the predicted end, and a re-nomination starts fresh', () => {
+  const log = { transactions: { transaction: [
+    { type: 'AUCTION_INIT', franchise: '0001', transaction: '7|1|', timestamp: String(100 * H) },
+    { type: 'AUCTION_BID', franchise: '0002', transaction: '7|3|', timestamp: String(110 * H) },
+    { type: 'AUCTION_WON', franchise: '0002', transaction: '7|3|', timestamp: String(134 * H) },
+    { type: 'AUCTION_INIT', franchise: '0003', transaction: '7|1|', timestamp: String(200 * H) },
+  ] } };
+  const [f] = finishedMflAuctions(log);
+  assert.equal(f.endsAt, 134 * H);
+  assert.equal(f.wonAt, 134 * H);
+  assert.equal(activeMflAuctions(log)[0].highBidderSince, 200 * H);
 });
 await test('auctions: a single transaction object (not an array) still reads', () => {
   const open = activeMflAuctions({ transactions: { transaction: { type: 'AUCTION_INIT', franchise: '0001', transaction: '9|3|hi', timestamp: '5' } } });
@@ -270,6 +337,24 @@ await test('page: Waivers sits between Scores and Standings', () => {
 });
 await test('page: the Waivers cards are built only when logged in', () => {
   assert.match(html, /if \(isLoggedIn\(\)\) \{\s*for \(const kind of \['waivers', 'auctions'\]\)/);
+});
+// The page's "Over in" wording, run from the page's own source.
+const timeLeftSrc = html.match(/function formatAuctionTimeLeft\(([^\n]*)\) \{\n([\s\S]*?)\n\t\t\}/);
+const formatLeft = new Function(timeLeftSrc[1], timeLeftSrc[2]);
+await test('page: the Auctions column is "Over In", not "Last Bid"', () => {
+  assert.match(html, /el\('th', \{ text: 'Over In' \}\)/);
+  assert.doesNotMatch(html, /text: 'Last Bid'/);
+});
+await test('page: time left is worded hours/minutes, days past a day, and never negative', () => {
+  const now = Date.UTC(2026, 9, 1, 12, 0, 0);
+  const left = (sec) => formatLeft((now + sec * 1000) / 1000, now);
+  assert.equal(left(5 * 3600 + 12 * 60 + 30), '5h 12m');
+  assert.equal(left(42 * 60 + 5), '42m');
+  assert.equal(left(26 * 3600), '1d 2h');
+  assert.equal(left(20), 'Ending');
+  assert.equal(left(-9 * 3600), 'Ending');
+  assert.equal(formatLeft(null, now), '\u2014');
+  assert.equal(formatLeft(undefined, now), '\u2014');
 });
 await test('page: logout forgets the last read', () => {
   const logout = html.match(/function doLogout\(\) \{[\s\S]*?\n\t\t\}/)[0];

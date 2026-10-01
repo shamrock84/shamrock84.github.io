@@ -3090,37 +3090,80 @@ export async function fetchMflPendingWaivers(league, cookie, leagueData) {
   return parseMflPendingWaivers(data);
 }
 
-// Folds MFL's auction transaction log into the auctions still open. MFL
-// records an auction as AUCTION_INIT (nomination), AUCTION_BID (each raise)
-// and AUCTION_WON (close); each carries `transaction: "playerId|amount|..."`,
-// confirmed on all four Salary Cap leagues by RUN 1 — the third segment is
-// empty or free text like "<team> forced bid increase", ignored here. An auction is open
-// if its latest INIT/BID has no later WON. Returns
-// { playerId, bid, franchiseId, startedAt, lastBidAt, bids } per open
-// auction, most recent bid first. Timestamps are unix seconds, as MFL sends.
+// Folds MFL's auction transaction log into auctions, open and finished.
+// MFL records an auction as AUCTION_INIT (nomination), AUCTION_BID (each
+// raise) and AUCTION_WON (close); each carries `transaction:
+// "playerId|amount|..."`, confirmed on all four Salary Cap leagues by
+// probe-waivers-auctions.yml RUN 1 — the third segment is empty or free text
+// like "<team> forced bid increase", ignored here. Timestamps are unix
+// seconds, as MFL sends.
+//
+// WHEN AN AUCTION ENDS. Not an MFL-wide rule: it is a per-league setting,
+// and the manager states that every one of their auction leagues currently
+// uses "24 hours after the high bidder changed". Note what that does NOT
+// say: a high bidder raising their OWN bid does not restart the clock. That
+// is exactly what RUN 4 saw and a "24h after the last bid" reading cannot
+// explain — across 117 finished auctions the gap from last bid to close
+// ran from 15 minutes to 77 hours, with a floor of exactly 24.0h from
+// NOMINATION in every league. So the clock starts at the nomination and
+// restarts only when a bid arrives from a franchise other than the current
+// high bidder. `highBidderSince` is that moment; `endsAt` is 24h after it.
+// Both are derived here from the log and never read from MFL, which exposes
+// no end time for an email auction (RUN 4: no timer setting at all).
+// AUCTION_END_HOURS is a constant, not a config field, because it is the
+// same everywhere today; if a league ever changes, that is the one place to
+// make it per-league. RUN 5 checks this rule against the finished auctions.
+export const AUCTION_END_HOURS = 24;
 const MFL_AUCTION_TYPES = new Set(['AUCTION_INIT', 'AUCTION_BID', 'AUCTION_WON']);
-export function activeMflAuctions(transactionsData) {
+function foldMflAuctions(transactionsData) {
   const list = asArray(transactionsData?.transactions?.transaction)
     .filter((t) => MFL_AUCTION_TYPES.has(t?.type) && typeof t.transaction === 'string')
     .map((t) => ({ ...t, ts: Number(t.timestamp) || 0 }))
     .sort((a, b) => a.ts - b.ts);
   const open = new Map();
+  const finished = [];
   for (const t of list) {
     const [playerId, amount] = t.transaction.split('|');
     if (!playerId) continue;
-    if (t.type === 'AUCTION_WON') { open.delete(playerId); continue; }
+    if (t.type === 'AUCTION_WON') {
+      const done = open.get(playerId);
+      if (done) finished.push({ ...done, wonAt: t.ts || null });
+      open.delete(playerId);
+      continue;
+    }
     const prev = open.get(playerId);
     const bid = Number(amount);
+    const franchiseId = t.franchise || null;
+    // A nomination, or any bid from someone other than the current high
+    // bidder, (re)starts the clock; the same franchise raising does not.
+    const bidderChanged = !prev || t.type === 'AUCTION_INIT' || prev.franchiseId !== franchiseId;
+    const highBidderSince = bidderChanged ? t.ts || null : prev.highBidderSince;
     open.set(playerId, {
       playerId,
       bid: Number.isFinite(bid) && amount !== '' ? bid : null,
-      franchiseId: t.franchise || null,
+      franchiseId,
       startedAt: t.type === 'AUCTION_INIT' || !prev ? t.ts || null : prev.startedAt,
       lastBidAt: t.ts || null,
+      highBidderSince,
+      endsAt: highBidderSince ? highBidderSince + AUCTION_END_HOURS * 3600 : null,
       bids: (prev?.bids || 0) + 1,
     });
   }
-  return [...open.values()].sort((a, b) => (b.lastBidAt || 0) - (a.lastBidAt || 0));
+  return { open, finished };
+}
+
+// The auctions still open: { playerId, bid, franchiseId, startedAt,
+// lastBidAt, highBidderSince, endsAt, bids }, soonest-ending first (the one
+// to act on), an unknown end last.
+export function activeMflAuctions(transactionsData) {
+  return [...foldMflAuctions(transactionsData).open.values()]
+    .sort((a, b) => (a.endsAt ?? Infinity) - (b.endsAt ?? Infinity));
+}
+
+// The auctions that have closed, each with its own wonAt beside the endsAt
+// the rule above predicts — what probe-waivers-auctions.yml RUN 5 compares.
+export function finishedMflAuctions(transactionsData) {
+  return foldMflAuctions(transactionsData).finished;
 }
 
 // How far back the transaction log is read for auctions. An auction whose
