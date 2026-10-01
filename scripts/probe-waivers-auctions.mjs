@@ -246,3 +246,57 @@ for (const league of leagues.filter((l) => l.provider === 'espn' && l.type !== '
     console.log(`${league.name}: FAILED ${err.message}`);
   }
 }
+
+// --- Auction timing (RUN 4) — settings and elapsed times only ---
+// The Waivers tab wants an "over in" countdown, which needs to know when an
+// auction ends. Nothing here knew. Two independent answers, both safe to
+// print because they are league settings and durations, never a player,
+// team or bid:
+//   1. every TYPE=league key naming an auction/bid/timer/hour, with its value;
+//   2. how long FINISHED auctions actually ran: seconds from an auction's
+//      last INIT/BID to its AUCTION_WON, per league (min / median / max),
+//      and from INIT to WON. A rule like "closes N hours after the last
+//      bid" shows up as a tight cluster in the first.
+console.log('=== AUCTION TIMING ===');
+const TIMING_KEY = /auction|bid|timer|hour|minute|nominat|clock|deadline|lock/i;
+const fmtH = (sec) => `${(sec / 3600).toFixed(2)}h`;
+const med = (a) => a.slice().sort((x, y) => x - y)[Math.floor(a.length / 2)];
+for (const league of mflTargets.filter((l) => l.type === 'salarycap')) {
+  console.log(`${league.name}:`);
+  try {
+    const leagueData = await fetchMflLeagueData(league, cookie);
+    const host = leagueData?.league?.baseURL;
+    const L = leagueData?.league || {};
+    const hits = Object.entries(L).filter(([k, v]) => TIMING_KEY.test(k) && typeof v !== 'object');
+    console.log(`  settings: ${hits.length ? hits.map(([k, v]) => `${k}=${v}`).join('; ') : '(no matching top-level keys)'}`);
+    console.log(`  all top-level keys: ${Object.keys(L).join(',')}`);
+    const tx = await mflGet(`/export?TYPE=transactions&L=${league.id}&DAYS=60&JSON=1`, cookie, seasonOf(league), 1, host);
+    const rows = [].concat(tx?.transactions?.transaction ?? [])
+      .filter((r) => String(r.type).startsWith('AUCTION') && typeof r.transaction === 'string')
+      .map((r) => ({ type: r.type, player: r.transaction.split('|')[0], ts: Number(r.timestamp) }))
+      .sort((a, b) => a.ts - b.ts);
+    const byPlayer = new Map();
+    for (const r of rows) {
+      const a = byPlayer.get(r.player) || { init: null, last: null };
+      if (r.type === 'AUCTION_WON') {
+        if (a.last != null) (a.done ||= []).push({ sinceLast: r.ts - a.last, sinceInit: a.init != null ? r.ts - a.init : null });
+        a.init = null; a.last = null;
+      } else {
+        if (r.type === 'AUCTION_INIT' || a.init == null) a.init = r.ts;
+        a.last = r.ts;
+      }
+      byPlayer.set(r.player, a);
+    }
+    const sinceLast = [].concat(...[...byPlayer.values()].map((a) => (a.done || []).map((d) => d.sinceLast)));
+    const sinceInit = [].concat(...[...byPlayer.values()].map((a) => (a.done || []).map((d) => d.sinceInit).filter((x) => x != null)));
+    if (sinceLast.length) {
+      console.log(`  finished auctions: ${sinceLast.length}; last bid -> won: min ${fmtH(Math.min(...sinceLast))}, median ${fmtH(med(sinceLast))}, max ${fmtH(Math.max(...sinceLast))}`);
+      console.log(`  nomination -> won: min ${fmtH(Math.min(...sinceInit))}, median ${fmtH(med(sinceInit))}, max ${fmtH(Math.max(...sinceInit))}`);
+      console.log(`  last bid -> won, every one, hours: ${sinceLast.map((x) => (x / 3600).toFixed(1)).join(' ')}`);
+    } else {
+      console.log('  no finished auctions in the window');
+    }
+  } catch (err) {
+    console.log(`  FAILED ${err.message}`);
+  }
+}
