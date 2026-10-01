@@ -15847,6 +15847,17 @@
 			return `${h}h ${m}m`;
 		}
 
+		// MFL's auctions page for an Auctions-card league. The endpoint sends
+		// the exact address (api/waivers.js, built on the league's own
+		// regional host, mflAuctionPageUrl in providers.mjs). Failing that, the
+		// league's home link with its path swapped for the auctions option —
+		// same pattern, O=43, which the manager confirmed holds for every MFL
+		// league. No link at all (null) for a league with neither.
+		function auctionPageUrl(league, result) {
+			if (result && result.url) return result.url;
+			return league.url ? league.url.replace(/\/home\/[^/?#]+$/, `/options?L=${league.id}&O=43`) : null;
+		}
+
 		function formatBid(n) {
 			return n == null ? '' : `$${Number(n).toLocaleString()}`;
 		}
@@ -15912,7 +15923,9 @@
 
 				const groupRow = el('tr', { class: 'waivers-league-row' });
 				const groupCell = el('td', { colspan: String(cols) });
-				groupCell.appendChild(leagueNameNode(name, league.url));
+				// The Auctions card's league name goes to that league's MFL
+				// auctions page — the page this card is about — not its home page.
+				groupCell.appendChild(leagueNameNode(name, kind === 'auctions' ? auctionPageUrl(league, r) : league.url));
 				groupRow.appendChild(groupCell);
 				table.appendChild(groupRow);
 

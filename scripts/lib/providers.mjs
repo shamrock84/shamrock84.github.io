@@ -3176,6 +3176,20 @@ export function finishedMflAuctions(transactionsData) {
   return foldMflAuctions(transactionsData).finished;
 }
 
+// MFL's own auctions page for a league: options?L=<id>&O=43, which the
+// manager confirmed is the same page for every MFL league (their Iron Bank
+// example is https://www46.myfantasyleague.com/2026/options?L=35217&O=43).
+// Sent to the league's OWN regional host (`baseURL`, "www46" there) when
+// TYPE=league supplied one, the same host every other privileged read here
+// goes to; otherwise the generic www host, which MFL redirects the way it
+// does the /home/<id> link leagueUrl() has always built. The Auctions card
+// links each league's name here, since this is the page that card is about.
+export const MFL_AUCTION_OPTION = 43;
+export function mflAuctionPageUrl(league, leagueData) {
+  const base = String(leagueData?.league?.baseURL || 'https://www.myfantasyleague.com').replace(/\/+$/, '');
+  return `${base}/${seasonOf(league)}/options?L=${league.id}&O=${MFL_AUCTION_OPTION}`;
+}
+
 // How far back the transaction log is read for auctions. An auction whose
 // nomination is older than this but that is still being bid on is still
 // found (any BID inside the window opens it); one with no activity at all

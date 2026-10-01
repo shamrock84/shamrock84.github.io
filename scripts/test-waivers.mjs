@@ -256,6 +256,7 @@ await test('ESPN names: a failed lookup is an empty map, never a thrown claim re
 
 // --- api/waivers.js ---
 const { default: handler, waiversKindFor } = await import('../api/waivers.js');
+const { YEAR, mflAuctionPageUrl } = await import('./lib/providers.mjs');
 const { createToken } = await import('../api/lib/auth.mjs');
 
 function mockRes() {
@@ -317,6 +318,8 @@ await test('endpoint: every non-draftonly league answered; failures isolated; Sl
         assert.equal(r.auctions[0].player.name, 'John Doe');
         assert.equal(r.auctions[0].franchiseName, 'Rival');
         assert.equal(r.auctions[0].mine, l.franchiseId === '0002');
+        // The league's own regional host, the MFL auctions page (O=43).
+        assert.equal(r.url, `https://www43.myfantasyleague.com/${YEAR}/options?L=${l.id}&O=43`);
       } else if ((l.provider || 'mfl') === 'mfl') {
         assert.equal(r.claims[0].adds[0].name, 'John Doe');
         assert.equal(r.claims[0].bid, 12);
@@ -355,6 +358,29 @@ await test('page: time left is worded hours/minutes, days past a day, and never 
   assert.equal(left(-9 * 3600), 'Ending');
   assert.equal(formatLeft(null, now), '\u2014');
   assert.equal(formatLeft(undefined, now), '\u2014');
+});
+await test('auction page URL: the manager\u2019s own Iron Bank example, on the league\u2019s regional host', () => {
+  assert.equal(
+    mflAuctionPageUrl({ id: '35217', season: '2026' }, { league: { baseURL: 'https://www46.myfantasyleague.com' } }),
+    'https://www46.myfantasyleague.com/2026/options?L=35217&O=43'
+  );
+  // A trailing slash on baseURL doesn't double up, and no baseURL falls back to the generic host.
+  assert.equal(
+    mflAuctionPageUrl({ id: '35217', season: '2026' }, { league: { baseURL: 'https://www46.myfantasyleague.com/' } }),
+    'https://www46.myfantasyleague.com/2026/options?L=35217&O=43'
+  );
+  assert.equal(mflAuctionPageUrl({ id: '35217', season: '2026' }, null), 'https://www.myfantasyleague.com/2026/options?L=35217&O=43');
+});
+const pageUrlSrc = html.match(/function auctionPageUrl\(([^\n]*)\) \{\n([\s\S]*?)\n\t\t\}/);
+const auctionPageUrl = new Function(pageUrlSrc[1], pageUrlSrc[2]);
+await test('page: the Auctions league link prefers the endpoint\u2019s address, else rebuilds it from the home link', () => {
+  const league = { id: '35217', url: 'https://www.myfantasyleague.com/2026/home/35217' };
+  assert.equal(auctionPageUrl(league, { url: 'https://www46.myfantasyleague.com/2026/options?L=35217&O=43' }), 'https://www46.myfantasyleague.com/2026/options?L=35217&O=43');
+  assert.equal(auctionPageUrl(league, undefined), 'https://www.myfantasyleague.com/2026/options?L=35217&O=43');
+  assert.equal(auctionPageUrl({ id: '1' }, null), null);
+});
+await test('page: only the Auctions card links to the auctions page; Waivers keeps the league home link', () => {
+  assert.match(html, /kind === 'auctions' \? auctionPageUrl\(league, r\) : league\.url/);
 });
 await test('page: logout forgets the last read', () => {
   const logout = html.match(/function doLogout\(\) \{[\s\S]*?\n\t\t\}/)[0];
