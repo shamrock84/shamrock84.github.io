@@ -572,6 +572,13 @@ await test('page: every committed salary-cap league yields a number matching an 
     assert.equal(capRoomInfo(l).money, `$${expected.toFixed(2)}`, l.id);
   }
 });
+await test('page: cap room and BBID dollars are both worded "$N remaining"', () => {
+  assert.match(html, /text: `\$\{cap\.money\} remaining`/);
+  assert.match(html, /text: `\$\{bb\.money\} remaining`/);
+  assert.match(html, /\(\$\{cap\.money\} remaining\)/);
+  assert.match(html, /\(\$\{bb\.money\} remaining\)/);
+  assert.doesNotMatch(html, /cap\.money\} cap room|bb\.money\} BBID left/);
+});
 await test('page: the Auctions row renders cap room only for auctions', () => {
   assert.match(html, /waivers-cap/);
   assert.match(html, /kind === 'auctions'[^\n]*capRoomInfo|capRoomInfo\(league\)/);

@@ -16070,7 +16070,7 @@
 				if (items.length === 0) {
 					const cap = kind === 'auctions' ? capRoomInfo(league) : null;
 					const bb = kind === 'waivers' ? bbidInfo(r) : null;
-					quiet.push(cap ? `${name} (${cap.money} cap room)` : bb ? `${name} (${bb.money} BBID left)` : name);
+					quiet.push(cap ? `${name} (${cap.money} remaining)` : bb ? `${name} (${bb.money} remaining)` : name);
 					continue;
 				}
 
@@ -16084,14 +16084,14 @@
 				if (cap) {
 					groupCell.appendChild(el('span', {
 						class: `waivers-cap${cap.negative ? ' waivers-cap-negative' : ''}`,
-						text: `${cap.money} cap room`,
+						text: `${cap.money} remaining`,
 						title: cap.title,
 					}));
 				}
 				// Waivers only, and only for a league that bids blind.
 				const bb = kind === 'waivers' ? bbidInfo(r) : null;
 				if (bb) {
-					groupCell.appendChild(el('span', { class: 'waivers-cap', text: `${bb.money} BBID left`, title: bb.title }));
+					groupCell.appendChild(el('span', { class: 'waivers-cap', text: `${bb.money} remaining`, title: bb.title }));
 				}
 				groupRow.appendChild(groupCell);
 				table.appendChild(groupRow);
