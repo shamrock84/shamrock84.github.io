@@ -2148,7 +2148,10 @@ export async function fetchNflGameClocks() {
 // named constants here rather than literals buried in the comparison logic. ROLLOVER_CUTOFF_WEEKDAY must be one of Intl's short
 // weekday spellings (Sun/Mon/Tue/Wed/Thu/Fri/Sat); ROLLOVER_CUTOFF_HOUR_CT
 // is 0-23. After editing either, re-run test-scoring-week-hold.mjs, which
-// pins today's Tue/Wed-7 PM values — it will need updating to match.
+// pins today's Tue/Wed-7 PM values — it will need updating to match. And
+// move myffl.html's copy (pastWeeklyRolloverCutoff, which holds the problems
+// digest's lineup rows until the same moment) with it:
+// test-problems-digest.mjs fails if the two disagree at any hour.
 const ROLLOVER_CUTOFF_WEEKDAY = 'Wed';
 const ROLLOVER_CUTOFF_HOUR_CT = 19;
 
