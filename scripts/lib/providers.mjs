@@ -2140,15 +2140,17 @@ export async function fetchNflGameClocks() {
 
 // The single place to move the weekly rollover cutoff below — a day and an
 // hour, both in Central Time, nothing else to touch. Currently Wednesday at
-// noon, the manager's own choice; they're watching how MFL itself actually
-// behaves week to week and may ask for this to move, which is the entire
-// reason these are named constants here rather than literals buried in the
-// comparison logic. ROLLOVER_CUTOFF_WEEKDAY must be one of Intl's short
+// 7 PM, the manager's own choice: it shipped at Wednesday noon, then moved
+// after they watched MFL roll from week 3 to week 4 (2026-09-30) and placed
+// the switch between 7 and 8 PM Central — observed by hand, not caught at
+// the exact minute, so the hour is the earliest edge of that window. They
+// may ask for this to move again, which is the entire reason these are
+// named constants here rather than literals buried in the comparison logic. ROLLOVER_CUTOFF_WEEKDAY must be one of Intl's short
 // weekday spellings (Sun/Mon/Tue/Wed/Thu/Fri/Sat); ROLLOVER_CUTOFF_HOUR_CT
 // is 0-23. After editing either, re-run test-scoring-week-hold.mjs, which
-// pins today's Tue/Wed-noon values — it will need updating to match.
+// pins today's Tue/Wed-7 PM values — it will need updating to match.
 const ROLLOVER_CUTOFF_WEEKDAY = 'Wed';
-const ROLLOVER_CUTOFF_HOUR_CT = 12;
+const ROLLOVER_CUTOFF_HOUR_CT = 19;
 
 // The `pastRolloverCutoff` signal fetchEspnScoring/fetchSleeperScoring use
 // to decide whether it's still safe to hold a provider's own "current" week
@@ -2849,7 +2851,7 @@ function espnTeamLiveStarters(teamSide, clockMap, currentPeriod) {
 //
 // `pastRolloverCutoff` is the caller's answer to "is it safe to show the
 // new period yet" — see isPastWeeklyRolloverCutoff's own comment for what
-// decides that (a fixed Wednesday-noon-Central-Time cutoff, not NFL game
+// decides that (a fixed Wednesday-7-PM-Central-Time cutoff, not NFL game
 // state) and why. Computed once per poll, not fetched, so this function
 // never needs to call it itself. Defaults to true (today's original
 // behavior — always trust currentPeriod blind) so a caller that hasn't been
@@ -3655,7 +3657,7 @@ export async function fetchSleeperWeekStats(season, week) {
 //
 // `pastRolloverCutoff` is the caller's answer to "is it safe to show the
 // new week yet" — see isPastWeeklyRolloverCutoff's own comment for the rule
-// (a fixed Wednesday-noon-Central-Time cutoff). Computed once per poll and
+// (a fixed Wednesday-7-PM-Central-Time cutoff). Computed once per poll and
 // shared across every ESPN/Sleeper league, never fetched here. Defaults to
 // true so a caller that hasn't been updated is unaffected.
 export async function fetchSleeperScoring(league, clockMap, playerMap, projectPlayer, weeklyStats, pastRolloverCutoff = true) {
