@@ -15832,9 +15832,10 @@
 		// changed), as unix seconds; this only subtracts and words it. Counted
 		// down to the minute from when the card was built, which is when the
 		// data was last read — Refresh is what re-reads it. An end already
-		// past reads "Ending" rather than a negative: MFL closes an email
-		// auction on its own schedule, so one can sit briefly past its time
-		// before the WON row appears, and that is not an error to show.
+		// past reads "Ending" rather than a negative: bidding has closed (the
+		// clock is real) but MFL does not resolve an email auction until
+		// someone visits its page, so the WON row can lag by hours. "Ending"
+		// is accurate for that whole stretch, not an error to show.
 		function formatAuctionTimeLeft(endsAtSec, nowMs = Date.now()) {
 			if (endsAtSec == null || !Number.isFinite(endsAtSec)) return '—';
 			const mins = Math.floor((endsAtSec * 1000 - nowMs) / 60000);
