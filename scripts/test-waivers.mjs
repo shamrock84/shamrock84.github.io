@@ -1,12 +1,12 @@
 // Unit tests for the Waivers tab: the provider parsers behind it
 // (scripts/lib/providers.mjs, "Waivers & auctions") and api/waivers.js.
 //
-// The shapes pinned here are NOT confirmed against this project's own
-// leagues yet — see that section's header and probe-waivers-auctions.yml.
-// What this pins is the posture, which holds whatever the probe finds:
+// The MFL and ESPN shapes pinned here were confirmed against our own leagues
+// by probe-waivers-auctions.yml RUN 1; see that probe's header. This pins:
 //
-//   * every addsDrops form seen in the wild parses (blind bid with and
-//     without drops, drop-only, rolling priority add|drop);
+//   * both addsDrops forms probe RUN 1 saw on our leagues parse (rolling
+//     add_drop pairs, blind-bid add_bid_drop), and anything else is
+//     refused rather than rendered as a garbled id;
 //   * pendingWaivers records are found by SHAPE, so a blind-bid league's
 //     `blindBidWaiverRequest` reads the same as a rolling `waiverRequest`;
 //   * an MFL error body throws rather than reading as "nothing pending";
@@ -42,38 +42,50 @@ const test = async (name, fn) => {
   console.log(`ok - ${name}`);
 };
 
-await test('addsDrops: blind bid add with no drop', () => {
-  assert.deepEqual(parseMflAddsDrops('8851,|425000|'), { adds: ['8851'], bid: 425000, drops: [] });
+// The two forms probe-waivers-auctions.yml RUN 1 actually saw on our leagues.
+await test('addsDrops: rolling priority, comma-separated add_drop pairs (MNMx)', () => {
+  assert.deepEqual(parseMflAddsDrops('16778_13593,9431_8812'), [
+    { adds: ['16778'], bid: null, drops: ['13593'] },
+    { adds: ['9431'], bid: null, drops: ['8812'] },
+  ]);
 });
-await test('addsDrops: blind bid add with two drops', () => {
-  assert.deepEqual(parseMflAddsDrops('14063,|425000|15777,16191,'), { adds: ['14063'], bid: 425000, drops: ['15777', '16191'] });
+await test('addsDrops: blind bid add_bid_drop (OSD, Survivor)', () => {
+  assert.deepEqual(parseMflAddsDrops('16778_12_13593'), [{ adds: ['16778'], bid: 12, drops: ['13593'] }]);
 });
-await test('addsDrops: drop only', () => {
-  assert.deepEqual(parseMflAddsDrops('|17064,16191,'), { adds: [], bid: null, drops: ['17064', '16191'] });
-});
-await test('addsDrops: rolling priority add|drop', () => {
-  assert.deepEqual(parseMflAddsDrops('14063,|15777,'), { adds: ['14063'], bid: null, drops: ['15777'] });
+await test('addsDrops: an all-zero drop means none', () => {
+  assert.deepEqual(parseMflAddsDrops('16778_12_0000'), [{ adds: ['16778'], bid: 12, drops: [] }]);
 });
 await test('addsDrops: a $0 bid survives as 0, not null', () => {
-  assert.equal(parseMflAddsDrops('8851,|0|').bid, 0);
+  assert.equal(parseMflAddsDrops('16778_0_13593')[0].bid, 0);
 });
-await test('addsDrops: empty or non-string is null', () => {
+// The pipe form another public client reported; never seen on ours, still accepted.
+await test('addsDrops: pipe form still parses', () => {
+  assert.deepEqual(parseMflAddsDrops('14063,|425000|15777,16191,'), [{ adds: ['14063'], bid: 425000, drops: ['15777', '16191'] }]);
+  assert.deepEqual(parseMflAddsDrops('|17064,'), [{ adds: [], bid: null, drops: ['17064'] }]);
+});
+await test('addsDrops: anything yielding non-numeric ids is null, never a garbled id', () => {
   assert.equal(parseMflAddsDrops(''), null);
   assert.equal(parseMflAddsDrops(undefined), null);
+  assert.equal(parseMflAddsDrops('16778-13593'), null);
+  assert.equal(parseMflAddsDrops('a_b_c_d'), null);
 });
 
 await test('pendingWaivers: blind-bid record found by shape, single object', () => {
   const claims = parseMflPendingWaivers({
-    pendingWaivers: { blindBidWaiverRequest: { timestamp: '1788478227', round: '1', addsDrops: '16778,|12|13593,', comments: '' } },
+    pendingWaivers: { blindBidWaiverRequest: { timestamp: '1788478227', round: '1', addsDrops: '16778_12_13593', comments: '' } },
   });
   assert.deepEqual(claims, [{ round: '1', bid: 12, adds: ['16778'], drops: ['13593'], timestamp: 1788478227 }]);
 });
-await test('pendingWaivers: rolling records in an array keep MFL order', () => {
+await test('pendingWaivers: rolling records in an array, each pair its own row, MFL order kept', () => {
   const claims = parseMflPendingWaivers({
-    pendingWaivers: { waiverRequest: [{ round: '1', addsDrops: '1,|2,' }, { round: '2', addsDrops: '3,|' }] },
+    pendingWaivers: { waiverRequest: [{ round: '1', addsDrops: '1_2,3_4' }, { round: '2', addsDrops: '5_0000' }] },
   });
-  assert.deepEqual(claims.map((c) => c.adds[0]), ['1', '3']);
-  assert.deepEqual(claims.map((c) => c.round), ['1', '2']);
+  assert.deepEqual(claims.map((c) => c.adds[0]), ['1', '3', '5']);
+  assert.deepEqual(claims.map((c) => c.round), ['1', '1', '2']);
+  assert.deepEqual(claims[2].drops, []);
+});
+await test('pendingWaivers: an unrecognised claim string throws rather than vanishing', () => {
+  assert.throws(() => parseMflPendingWaivers({ pendingWaivers: { waiverRequest: { addsDrops: 'garbage' } } }), /doesn.t recognise/);
 });
 await test('pendingWaivers: no claims reads as empty', () => {
   assert.deepEqual(parseMflPendingWaivers({ pendingWaivers: {} }), []);
@@ -178,7 +190,7 @@ await test('endpoint: every non-draftonly league answered; failures isolated; Sl
     if (u.includes('TYPE=league&')) return new Response(JSON.stringify({ league: { baseURL: 'https://www43.myfantasyleague.com', franchises: { franchise: [{ id: '0002', name: 'Rival' }] } } }));
     if (u.includes('TYPE=pendingWaivers')) {
       if (u.includes(`L=${firstMfl.id}&`)) return new Response('boom', { status: 500 });
-      return new Response(JSON.stringify({ pendingWaivers: { blindBidWaiverRequest: { round: '1', addsDrops: '16778,|12|' } } }));
+      return new Response(JSON.stringify({ pendingWaivers: { blindBidWaiverRequest: { round: '1', addsDrops: '16778_12_0000' } } }));
     }
     if (u.includes('TYPE=transactions')) return new Response(JSON.stringify({ transactions: { transaction: [{ type: 'AUCTION_BID', franchise: '0002', transaction: '16778|9|', timestamp: '100' }] } }));
     if (u.includes('view=mStatus')) return new Response(JSON.stringify({ scoringPeriodId: 4 }));

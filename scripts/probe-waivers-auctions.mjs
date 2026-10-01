@@ -23,10 +23,34 @@
 // as-is.
 //
 // Record findings here, run by run, as the other probe headers do.
+//
+// RUN 1 (2026-10-01, claims filed in every MFL Dynasty and both ESPN
+// leagues, auctions open in all four Salary Cap leagues):
+//   - MFL pendingWaivers: the league's own host answers; the generic host
+//     returns "API requires logged in user in league ID ..." for all three,
+//     so the host routing was necessary. Records are `waiverRequest` (MNMx,
+//     rolling, an array when several) and `blindBidWaiverRequest` (OSD and
+//     Survivor, one object), keys round/timestamp/comments/addsDrops.
+//     addsDrops is UNDERSCORE-separated, not the pipe form assumed at
+//     ship: "N_N,N_N" (rolling add_drop pairs) and "N_N_N" (add_bid_drop).
+//     The shipped parser would have rendered these as garbled ids; fixed
+//     in parseMflAddsDrops the same day.
+//   - MFL transactions: AUCTION_INIT/BID/WON present in all four Salary Cap
+//     leagues, `transaction` exactly "playerId|amount|" with an optional
+//     free-text third segment ("<team> forced bid increase"). As assumed.
+//   - ESPN mTransactions2: pending claims are type WAIVER, status PENDING,
+//     isPending true, numeric teamId and bidAmount, items[] of
+//     { type, playerId, ... }. As assumed, except no `subOrder` field.
+//   - Not covered by RUN 1: whether ESPN's kona_player_info name lookup
+//     answers, and the parsers end to end. The "end to end" section below
+//     was added for RUN 2 to check exactly that, still printing only counts.
 
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { mflLogin, mflGet, seasonOf, fetchMflLeagueData, espnGet, setMflRequestInterval } from './lib/providers.mjs';
+import {
+  mflLogin, mflGet, seasonOf, fetchMflLeagueData, espnGet, setMflRequestInterval, loadPlayerMap,
+  fetchMflPendingWaivers, fetchMflActiveAuctions, fetchEspnPendingWaivers, fetchEspnPlayerNames,
+} from './lib/providers.mjs';
 
 setMflRequestInterval(300);
 const CONFIG_PATH = fileURLToPath(new URL('../config/leagues.json', import.meta.url));
@@ -95,5 +119,42 @@ for (const league of leagues.filter((l) => l.provider === 'espn' && l.type !== '
     if (!pending.length && txs.length) print('mTransactions2: first transaction, masked (no pending found)', shape(txs[0]));
   } catch (err) {
     console.log(`FAILED: ${err.message}\n`);
+  }
+}
+
+// --- End to end: the exact functions api/waivers.js calls, counts only ---
+// Proves the parsers read the real responses and that names resolve, without
+// printing a single id, name or bid.
+console.log('=== END TO END (counts only) ===');
+const playerMap = cookie ? await loadPlayerMap(cookie).catch(() => new Map()) : new Map();
+console.log(`MFL player map size: ${playerMap.size}`);
+for (const league of mflTargets) {
+  try {
+    const leagueData = await fetchMflLeagueData(league, cookie);
+    if (league.type === 'salarycap') {
+      const open = await fetchMflActiveAuctions(league, cookie, leagueData);
+      const named = open.filter((a) => playerMap.has(a.playerId)).length;
+      const withBid = open.filter((a) => a.bid != null).length;
+      console.log(`${league.name}: ${open.length} open auctions, ${named} named, ${withBid} with a bid`);
+    } else {
+      const claims = await fetchMflPendingWaivers(league, cookie, leagueData);
+      const ids = claims.flatMap((c) => [...c.adds, ...c.drops]);
+      const named = ids.filter((id) => playerMap.has(id)).length;
+      const withBid = claims.filter((c) => c.bid != null).length;
+      console.log(`${league.name}: ${claims.length} claim rows, ${ids.length} player ids, ${named} named, ${withBid} with a bid`);
+    }
+  } catch (err) {
+    console.log(`${league.name}: FAILED ${err.message}`);
+  }
+}
+for (const league of leagues.filter((l) => l.provider === 'espn' && l.type !== 'draftonly')) {
+  try {
+    const claims = await fetchEspnPendingWaivers(league);
+    const ids = claims.flatMap((c) => [...c.adds, ...c.drops]);
+    const names = await fetchEspnPlayerNames(league, ids);
+    const named = ids.filter((id) => names.has(id)).length;
+    console.log(`${league.name}: ${claims.length} claims, ${ids.length} player ids, ${named} named`);
+  } catch (err) {
+    console.log(`${league.name}: FAILED ${err.message}`);
   }
 }
