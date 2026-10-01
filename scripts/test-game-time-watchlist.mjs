@@ -23,6 +23,10 @@
 //     WATCHLIST_CHECK_LEAD_MINUTES.
 //   * draftonly, mid-draft and trailing-season leagues contribute nothing,
 //     same gates as the Problems Digest.
+//   * nothing at all is listed from Tuesday until the weekly rollover
+//     cutoff (Wednesday 7 PM Central), same hold as the Problems Digest,
+//     and the card says the week isn't open yet rather than "no injured
+//     players".
 //   * the card is login-gated, shows a loading state until game states
 //     have been asked (never a false "nothing to check"), and collapses
 //     itself when empty.
@@ -98,6 +102,11 @@ function makeContext(seed = {}) {
 	vm.createContext(ctx);
 	vm.runInContext(scriptSource, ctx);
 	ctx.__store = store;
+	// Past the weekly rollover cutoff unless a test says otherwise, so the
+	// suite doesn't fail when it happens to run Tuesday or Wednesday daytime.
+	// computeGameTimeWatchlist's defaulted `pastCutoff` and the card's own
+	// call both resolve this global binding at call time.
+	ctx.pastWeeklyRolloverCutoff = () => true;
 	return ctx;
 }
 
@@ -231,6 +240,23 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 		league('5', p(), ['a'], { lineupWeek: null }),
 	];
 	assert.deepEqual(plain(ctx.computeGameTimeWatchlist(leagues, YEAR, games)), []);
+}
+
+// Held before the weekly rollover cutoff: nothing listed, and the card says
+// the week isn't open rather than claiming nobody is injured.
+{
+	const ctx = makeContext(LOGGED_IN);
+	const games = { PHI: game('LAR', true, EARLY) };
+	const l = league('1', [player('a', 'Saquon Barkley', 'PHI', 'D')], ['a']);
+	assert.equal(ctx.computeGameTimeWatchlist([l], YEAR, games, true).length, 1, 'past the cutoff: listed');
+	assert.deepEqual(plain(ctx.computeGameTimeWatchlist([l], YEAR, games, false)), [], 'before the cutoff: held');
+
+	ctx.pastWeeklyRolloverCutoff = () => false;
+	setGames(ctx, games);
+	const held = ctx.renderGameTimeWatchlistCard([l], YEAR);
+	assert.ok(held.classList.contains('card-collapsed'));
+	assert.match(fullText(held), /Next week opens Wednesday at 7 PM Central/);
+	assert.doesNotMatch(fullText(held), /No injured players/);
 }
 
 // The card: login-gated, loading until asked, collapsed when empty, rows when not.

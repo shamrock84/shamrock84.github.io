@@ -8911,6 +8911,11 @@
 		//   - the same league-state gates as computeLeagueProblems: mid-draft,
 		//     trailing season, no roster. draftonly and best-ball leagues fall
 		//     out on their own, since neither syncs a lineup.
+		//   - and the same weekly hold: nothing at all from Tuesday until
+		//     the rollover cutoff (pastWeeklyRolloverCutoff, `pastCutoff`),
+		//     when the roster and kickoffs on hand are already next week's
+		//     but the manager doesn't treat that week as open yet. The card
+		//     says so rather than reading "no injured players".
 		//
 		// Merged across leagues by normalizeName within one kickoff, the same
 		// join Now Playing and the exposure cards use — a Q running back you
@@ -8936,8 +8941,9 @@
 		// posted. At 45 every list was visible, with time still left to swap.
 		const WATCHLIST_CHECK_LEAD_MINUTES = 45;
 
-		function computeGameTimeWatchlist(leagues, year, games = liveGames) {
+		function computeGameTimeWatchlist(leagues, year, games = liveGames, pastCutoff = pastWeeklyRolloverCutoff()) {
 			const bySlot = new Map();
+			if (!pastCutoff) return [];
 			for (const league of leagues || []) {
 				if (league.type === 'draftonly') continue;
 				if (!Array.isArray(league.starters) || league.lineupWeek == null) continue;
@@ -9009,10 +9015,14 @@
 				return card;
 			}
 
-			const slots = computeGameTimeWatchlist(leagues, year);
+			const pastCutoff = pastWeeklyRolloverCutoff();
+			const slots = computeGameTimeWatchlist(leagues, year, liveGames, pastCutoff);
 			makeCollapsible(card, heading, 'watchlist', slots.length === 0);
 			if (slots.length === 0) {
-				card.appendChild(el('div', { class: 'team card-collapse-visible', text: 'No injured players in games yet to kick off.' }));
+				const text = pastCutoff
+					? 'No injured players in games yet to kick off.'
+					: 'Next week opens Wednesday at 7 PM Central.';
+				card.appendChild(el('div', { class: 'team card-collapse-visible', text }));
 				return card;
 			}
 
