@@ -3112,7 +3112,17 @@ export async function fetchMflPendingWaivers(league, cookie, leagueData) {
 // no end time for an email auction (RUN 4: no timer setting at all).
 // AUCTION_END_HOURS is a constant, not a config field, because it is the
 // same everywhere today; if a league ever changes, that is the one place to
-// make it per-league. RUN 5 checks this rule against the finished auctions.
+// make it per-league.
+//
+// RUN 5 CHECKED IT against 88 finished auctions: not one closed before its
+// predicted end (the clock is real, and no bid can be placed after it). The
+// close is nonetheless often LATER than predicted — median 0.4 to 2.4 hours
+// per league, but 28% over six hours and the worst 53 — and that lag is not
+// a pattern to model. The manager's explanation, which fits the scatter:
+// MFL does not resolve an expired email auction until someone visits the
+// page, so the AUCTION_WON row appears whenever somebody next looks. endsAt
+// is therefore the moment bidding closes, not the moment MFL records the
+// result, and a past-due auction legitimately reads "Ending" until then.
 export const AUCTION_END_HOURS = 24;
 const MFL_AUCTION_TYPES = new Set(['AUCTION_INIT', 'AUCTION_BID', 'AUCTION_WON']);
 function foldMflAuctions(transactionsData) {

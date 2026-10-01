@@ -66,7 +66,16 @@
 //   manager then stated the rule: "24 hours after the high bidder changed" —
 //   a bidder raising their own bid does not restart it, which is what the
 //   short gaps were. providers.mjs builds endsAt on it (AUCTION_END_HOURS).
-// RUN 5: RULE CHECK, below — that rule against every finished auction.
+// RUN 5 (2026-10-01): RULE CHECK, below — that rule against every finished
+//   auction. 88 finished across the four leagues, ZERO closed before the
+//   predicted end, so the 24h clock is right. Closes were often later:
+//   median lag 0.4h (Iron Bank), 2.4h (Wise Guys), 1.6h (Super Cap and Game
+//   On); 42% within an hour, 72% within six, 28% over six, four over 24h
+//   (worst 53h). NOT a pattern to chase further: per the manager, MFL does
+//   not resolve an expired email auction until someone visits the page, so
+//   the WON row lands whenever somebody next looks. Bidding is closed from
+//   endsAt on regardless, which is what the card's "Over In" and "Ending"
+//   mean.
 //
 // RUN 3 (2026-10-01):
 //   - The shipped league-scoped kona_player_info request (A), with or
