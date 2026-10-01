@@ -15827,6 +15827,25 @@
 			}
 		}
 
+		// "Over in" for an auction. The end time comes from the server
+		// (providers.mjs, AUCTION_END_HOURS: 24h after the high bidder last
+		// changed), as unix seconds; this only subtracts and words it. Counted
+		// down to the minute from when the card was built, which is when the
+		// data was last read — Refresh is what re-reads it. An end already
+		// past reads "Ending" rather than a negative: MFL closes an email
+		// auction on its own schedule, so one can sit briefly past its time
+		// before the WON row appears, and that is not an error to show.
+		function formatAuctionTimeLeft(endsAtSec, nowMs = Date.now()) {
+			if (endsAtSec == null || !Number.isFinite(endsAtSec)) return '—';
+			const mins = Math.floor((endsAtSec * 1000 - nowMs) / 60000);
+			if (mins <= 0) return 'Ending';
+			const h = Math.floor(mins / 60);
+			const m = mins % 60;
+			if (h === 0) return `${m}m`;
+			if (h >= 24) return `${Math.floor(h / 24)}d ${h % 24}h`;
+			return `${h}h ${m}m`;
+		}
+
 		function formatBid(n) {
 			return n == null ? '' : `$${Number(n).toLocaleString()}`;
 		}
@@ -15875,7 +15894,7 @@
 			} else {
 				head.appendChild(el('th', { text: 'Player / High Bidder' }));
 				head.appendChild(el('th', { text: 'Bid' }));
-				head.appendChild(el('th', { text: 'Last Bid' }));
+				head.appendChild(el('th', { text: 'Over In' }));
 			}
 			table.appendChild(head);
 			const cols = kind === 'waivers' ? 2 : 3;
@@ -15927,7 +15946,10 @@
 						tr.appendChild(el('td', { class: item.mine ? 'waivers-mine' : '', text: formatBid(item.bid) || '—' }));
 						tr.appendChild(el('td', {
 							class: 'waivers-when',
-							text: item.lastBidAt ? timeAgo(new Date(item.lastBidAt * 1000).toISOString()) : '—',
+							text: formatAuctionTimeLeft(item.endsAt),
+							// The exact moment, in the reader's own time zone — the
+							// server can't format it (Vercel runs in UTC).
+							title: item.endsAt ? `Ends ${new Date(item.endsAt * 1000).toLocaleString()}` : '',
 						}));
 					}
 					table.appendChild(tr);
