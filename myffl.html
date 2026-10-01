@@ -15988,6 +15988,21 @@
 			};
 		}
 
+		// Remaining blind-bid dollars for a Waivers league, off the live read
+		// (api/waivers.js -> mflBlindBidBalance). Null when the league doesn't
+		// bid or the balance couldn't be read, so nothing is shown rather than
+		// a confident $0. Whole dollars when it is one, else cents.
+		function bbidInfo(r) {
+			const b = r && r.bbid;
+			if (!b || !Number.isFinite(Number(b.balance))) return null;
+			const n = Number(b.balance);
+			const money = `$${Number.isInteger(n) ? n : n.toFixed(2)}`;
+			return {
+				money,
+				title: b.limit ? `Blind-bid dollars left of the ${`$${b.limit}`} season limit, read live from MFL` : 'Blind-bid dollars left, read live from MFL',
+			};
+		}
+
 		function formatBid(n) {
 			return n == null ? '' : `$${Number(n).toLocaleString()}`;
 		}
@@ -16054,7 +16069,8 @@
 				const items = kind === 'waivers' ? (r.claims || []) : (r.auctions || []);
 				if (items.length === 0) {
 					const cap = kind === 'auctions' ? capRoomInfo(league) : null;
-					quiet.push(cap ? `${name} (${cap.money} cap room)` : name);
+					const bb = kind === 'waivers' ? bbidInfo(r) : null;
+					quiet.push(cap ? `${name} (${cap.money} cap room)` : bb ? `${name} (${bb.money} BBID left)` : name);
 					continue;
 				}
 
@@ -16071,6 +16087,11 @@
 						text: `${cap.money} cap room`,
 						title: cap.title,
 					}));
+				}
+				// Waivers only, and only for a league that bids blind.
+				const bb = kind === 'waivers' ? bbidInfo(r) : null;
+				if (bb) {
+					groupCell.appendChild(el('span', { class: 'waivers-cap', text: `${bb.money} BBID left`, title: bb.title }));
 				}
 				groupRow.appendChild(groupCell);
 				table.appendChild(groupRow);

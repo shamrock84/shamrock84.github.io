@@ -103,6 +103,15 @@
 //   NOT yet seen: a populated mPendingTransactions, so its record shape is
 //   unverified; it is folded in defensively and the log alone is correct.
 //
+// RUN 7 (2026-10-01): BLIND-BID BALANCE, last section. Found: each franchise row
+//   of TYPE=league carries `bbidAvailableBalance` ("88.00" / "47.00" for OSD
+//   and Survivor), and the league carries `bbidSeasonLimit` ("100") and
+//   `currentWaiverType` ("BBID_FCFS"). It rides the TYPE=league read the
+//   endpoint already makes, so it costs nothing extra. TYPE=blindBidSummary
+//   and TYPE=franchiseBlindBid are not the way: both answer "Invalid request.
+//   This API request must go to api.myfantasyleague.com" from the league host
+//   (not retried against the generic host — no need once the field was found).
+//   Read by mflBlindBidBalance in providers.mjs.
 // RUN 3 (2026-10-01):
 //   - The shipped league-scoped kona_player_info request (A), with or
 //     without scoringPeriodId (B), answered HTTP 400 on both leagues.

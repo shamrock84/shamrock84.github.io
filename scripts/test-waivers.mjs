@@ -38,6 +38,7 @@ const {
   finishedMflAuctions,
   AUCTION_END_HOURS,
   parseEspnPendingWaivers,
+  mflBlindBidBalance,
   fetchEspnPendingWaivers,
   fetchMflPendingWaivers,
   fetchEspnPlayerNames,
@@ -396,13 +397,23 @@ await test('kind: salary cap is auctions, draft only is nothing, the rest waiver
 await test('endpoint: every non-draftonly league answered; failures isolated; Sleeper unsupported', async () => {
   const config = JSON.parse(readFileSync(fileURLToPath(new URL('../config/leagues.json', import.meta.url)), 'utf8'));
   const expected = config.leagues.filter((l) => l.type !== 'draftonly');
+  const leagueReads = new Map();
+  const expectedFranchise = new Map(config.leagues.map((l) => [l.id, l.franchiseId]));
   const firstMfl = expected.find((l) => (l.provider || 'mfl') === 'mfl' && l.type !== 'salarycap');
   const realFetch = globalThis.fetch;
   globalThis.fetch = async (url) => {
     const u = String(url);
     if (u.includes('/login')) return new Response('', { status: 200, headers: { 'set-cookie': 'MFL_USER_ID=abc; path=/' } });
     if (u.includes('TYPE=players')) return new Response(JSON.stringify({ players: { player: [{ id: '16778', name: 'Doe, John', position: 'WR', team: 'KCC' }] } }));
-    if (u.includes('TYPE=league&')) return new Response(JSON.stringify({ league: { baseURL: 'https://www43.myfantasyleague.com', franchises: { franchise: [{ id: '0002', name: 'Rival' }] } } }));
+    if (u.includes('TYPE=league&')) {
+      // A blind-bid league: the first read (cached) says 50 left, any later
+      // read of the same league says 40 — the endpoint must show the later.
+      const lid = /L=(\d+)/.exec(u)[1];
+      const n = (leagueReads.get(lid) || 0) + 1;
+      leagueReads.set(lid, n);
+      const mineRow = { id: expectedFranchise.get(lid) || '0001', name: 'Me', bbidAvailableBalance: n === 1 ? '50.00' : '40.00' };
+      return new Response(JSON.stringify({ league: { baseURL: 'https://www43.myfantasyleague.com', currentWaiverType: 'BBID_FCFS', bbidSeasonLimit: '100', franchises: { franchise: [{ id: '0002', name: 'Rival' }, mineRow] } } }));
+    }
     if (u.includes('TYPE=pendingWaivers')) {
       if (u.includes(`L=${firstMfl.id}&`)) return new Response('boom', { status: 500 });
       return new Response(JSON.stringify({ pendingWaivers: { blindBidWaiverRequest: { round: '1', addsDrops: '16778_12_0000' } } }));
@@ -437,6 +448,8 @@ await test('endpoint: every non-draftonly league answered; failures isolated; Sl
       } else if ((l.provider || 'mfl') === 'mfl') {
         assert.equal(r.claims[0].adds[0].name, 'John Doe');
         assert.equal(r.claims[0].bid, 12);
+        // Blind-bid balance comes from a FRESH TYPE=league read, not the cached one.
+        assert.deepEqual(r.bbid, { balance: 40, limit: 100 }, `${l.id} bbid`);
       } else {
         assert.deepEqual(r.claims, []);
       }
@@ -562,6 +575,27 @@ await test('page: every committed salary-cap league yields a number matching an 
 await test('page: the Auctions row renders cap room only for auctions', () => {
   assert.match(html, /waivers-cap/);
   assert.match(html, /kind === 'auctions'[^\n]*capRoomInfo|capRoomInfo\(league\)/);
+});
+
+await test('bbid: balance and season limit off the franchise row, null when not a bidding league or unreadable', () => {
+  const lg = (extra = {}, row = { id: '0001', bbidAvailableBalance: '88.00' }) => ({ league: { currentWaiverType: 'BBID_FCFS', bbidSeasonLimit: '100', franchises: { franchise: [{ id: '0002' }, row] }, ...extra } });
+  assert.deepEqual(mflBlindBidBalance(lg(), '0001'), { balance: 88, limit: 100 });
+  assert.deepEqual(mflBlindBidBalance(lg({ bbidSeasonLimit: '' }), '0001'), { balance: 88, limit: null });
+  assert.equal(mflBlindBidBalance(lg({ currentWaiverType: 'FCFS' }), '0001'), null, 'rolling waivers have no balance');
+  assert.equal(mflBlindBidBalance(lg(), '0009'), null, 'no row for this franchise');
+  assert.equal(mflBlindBidBalance(lg({}, { id: '0001' }), '0001'), null, 'a missing field is not $0');
+  assert.deepEqual(mflBlindBidBalance(lg({}, { id: '0001', bbidAvailableBalance: '0.00' }), '0001'), { balance: 0, limit: 100 }, 'a real $0 survives');
+  assert.equal(mflBlindBidBalance(null, '0001'), null);
+});
+const bbidSrc = html.match(/function bbidInfo\(([^\n]*)\) \{\n([\s\S]*?)\n\t\t\}/);
+const bbidInfo = new Function(bbidSrc[1], bbidSrc[2]);
+await test('page: BBID balance renders as whole dollars or cents, nothing when unknown, $0 kept', () => {
+  assert.equal(bbidInfo({ bbid: { balance: 88, limit: 100 } }).money, '$88');
+  assert.equal(bbidInfo({ bbid: { balance: 47.5, limit: null } }).money, '$47.50');
+  assert.equal(bbidInfo({ bbid: { balance: 0 } }).money, '$0');
+  assert.equal(bbidInfo({ bbid: null }), null);
+  assert.equal(bbidInfo(undefined), null);
+  assert.match(html, /kind === 'waivers' \? bbidInfo\(r\) : null/);
 });
 
 console.log(`\n${passed} passed`);

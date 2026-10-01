@@ -3199,6 +3199,23 @@ export function mflAuctionPageUrl(league, leagueData) {
   return `${base}/${seasonOf(league)}/options?L=${league.id}&O=${MFL_AUCTION_OPTION}`;
 }
 
+// A franchise's remaining blind-bid dollars, off a TYPE=league response.
+// Confirmed by probe-waivers-auctions.yml RUN 7: the franchise row carries
+// `bbidAvailableBalance` ("88.00") and the league carries `bbidSeasonLimit`
+// ("100") and `currentWaiverType` ("BBID_FCFS" for the two leagues that bid).
+// Null for a league that doesn't run blind bidding, or when the row or field
+// is missing — "couldn't tell" must not render as $0 left.
+export function mflBlindBidBalance(leagueData, franchiseId) {
+  const lg = leagueData?.league;
+  if (!/^BBID/i.test(String(lg?.currentWaiverType || ''))) return null;
+  const rows = [].concat(lg?.franchises?.franchise ?? []);
+  const mine = rows.find((f) => String(f.id) === String(franchiseId));
+  const balance = Number(mine?.bbidAvailableBalance);
+  if (mine?.bbidAvailableBalance == null || mine.bbidAvailableBalance === '' || !Number.isFinite(balance)) return null;
+  const limit = Number(lg.bbidSeasonLimit);
+  return { balance, limit: Number.isFinite(limit) && limit > 0 ? limit : null };
+}
+
 // How far back the transaction log is read for auctions. An auction whose
 // nomination is older than this but that is still being bid on is still
 // found (any BID inside the window opens it); one with no activity at all
