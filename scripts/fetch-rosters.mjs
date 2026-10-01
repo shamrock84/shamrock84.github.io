@@ -51,6 +51,7 @@ import {
   setMflRequestInterval,
   fetchNflGameClocks,
   isPastWeeklyRolloverCutoff,
+  WEEKLY_ROLLOVER_CUTOFF,
   currentNflWeek,
 } from './lib/providers.mjs';
 import {
@@ -1962,6 +1963,11 @@ async function main() {
     // verbatim — see loadLeagueConfig above and renderQuickLinks in
     // myffl.html, which appends these after every league link.
     quickLinks: QUICK_LINKS,
+    // The weekly rollover cutoff (Wednesday 7 PM Central today), copied
+    // from providers.mjs so the page holds its lineup alerts and Game-Time
+    // Watchlist to the same moment the sync and live scoring use, without
+    // a second copy of the setting — see WEEKLY_ROLLOVER_CUTOFF.
+    weeklyRolloverCutoff: WEEKLY_ROLLOVER_CUTOFF,
   };
 
   await writeFile(OUTPUT_PATH, serializeSnapshot(output));

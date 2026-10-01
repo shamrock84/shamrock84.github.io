@@ -2138,22 +2138,26 @@ export async function fetchNflGameClocks() {
   return gameClocksFromGames(await fetchNflGames());
 }
 
-// The single place to move the weekly rollover cutoff below — a day and an
-// hour, both in Central Time, nothing else to touch. Currently Wednesday at
-// 7 PM, the manager's own choice: it shipped at Wednesday noon, then moved
-// after they watched MFL roll from week 3 to week 4 (2026-09-30) and placed
-// the switch between 7 and 8 PM Central — observed by hand, not caught at
-// the exact minute, so the hour is the earliest edge of that window. They
-// may ask for this to move again, which is the entire reason these are
-// named constants here rather than literals buried in the comparison logic. ROLLOVER_CUTOFF_WEEKDAY must be one of Intl's short
-// weekday spellings (Sun/Mon/Tue/Wed/Thu/Fri/Sat); ROLLOVER_CUTOFF_HOUR_CT
-// is 0-23. After editing either, re-run test-scoring-week-hold.mjs, which
-// pins today's Tue/Wed-7 PM values — it will need updating to match. And
-// move myffl.html's copy (pastWeeklyRolloverCutoff, which holds the problems
-// digest's lineup rows until the same moment) with it:
-// test-problems-digest.mjs fails if the two disagree at any hour.
-const ROLLOVER_CUTOFF_WEEKDAY = 'Wed';
-const ROLLOVER_CUTOFF_HOUR_CT = 19;
+// The single place to move the weekly rollover cutoff — a day and an hour,
+// both in Central Time, nothing else to touch. Currently Wednesday at 7 PM,
+// the manager's own choice: it shipped at Wednesday noon, then moved after
+// they watched MFL roll from week 3 to week 4 (2026-09-30) and placed the
+// switch between 7 and 8 PM Central — observed by hand, not caught at the
+// exact minute, so the hour is the earliest edge of that window. They may
+// ask for this to move again.
+//
+// Everything reads it from here. The sync and api/live-scoring.js call
+// isPastWeeklyRolloverCutoff, which defaults to it; myffl.html can't import
+// this file, so fetch-rosters.mjs writes it into data/rosters.json as
+// `weeklyRolloverCutoff` and the page's pastWeeklyRolloverCutoff reads it
+// from there (which is why a change reaches the page at the next sync, not
+// at merge). The page's copy of the comparison logic is pinned against this
+// one by test-problems-digest.mjs.
+//
+// `weekday` must be one of Intl's short weekday spellings
+// (Sun/Mon/Tue/Wed/Thu/Fri/Sat); `hourCT` is 0-23. After editing either,
+// update the boundary times test-scoring-week-hold.mjs pins.
+export const WEEKLY_ROLLOVER_CUTOFF = { weekday: 'Wed', hourCT: 19 };
 
 // The `pastRolloverCutoff` signal fetchEspnScoring/fetchSleeperScoring use
 // to decide whether it's still safe to hold a provider's own "current" week
@@ -2163,7 +2167,7 @@ const ROLLOVER_CUTOFF_HOUR_CT = 19;
 // (nflWeekHasStarted, since removed); the manager's own week-to-week
 // observation is that MFL itself appears to roll over well before
 // Thursday's kickoff, so this now pins a fixed wall-clock cutoff instead,
-// configured by the two constants just above. MFL's own trigger has never
+// configured by WEEKLY_ROLLOVER_CUTOFF just above. MFL's own trigger has never
 // been probed and can't be inferred: its TYPE=liveScoring call takes no
 // week parameter at all, so whatever decides when IT switches is entirely
 // internal to MFL's servers (confirmed by reading MFL's own developer docs,
@@ -2192,7 +2196,7 @@ const ROLLOVER_CUTOFF_HOUR_CT = 19;
 // not just skip straight to checking Thursday's hour.
 const WEEK_ORDER_FROM_TUESDAY = ['Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun', 'Mon'];
 
-export function isPastWeeklyRolloverCutoff(now = new Date()) {
+export function isPastWeeklyRolloverCutoff(now = new Date(), cutoff = WEEKLY_ROLLOVER_CUTOFF) {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/Chicago',
     weekday: 'short',
@@ -2202,10 +2206,10 @@ export function isPastWeeklyRolloverCutoff(now = new Date()) {
   const weekday = parts.find((p) => p.type === 'weekday')?.value;
   const hour = Number(parts.find((p) => p.type === 'hour')?.value);
   const dayIndex = WEEK_ORDER_FROM_TUESDAY.indexOf(weekday);
-  const cutoffIndex = WEEK_ORDER_FROM_TUESDAY.indexOf(ROLLOVER_CUTOFF_WEEKDAY);
+  const cutoffIndex = WEEK_ORDER_FROM_TUESDAY.indexOf(cutoff.weekday);
   if (dayIndex < cutoffIndex) return false;
   if (dayIndex > cutoffIndex) return true;
-  return hour >= ROLLOVER_CUTOFF_HOUR_CT;
+  return hour >= cutoff.hourCT;
 }
 
 // Every currently-set starter on one franchise's liveScoring entry, for the

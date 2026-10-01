@@ -9021,7 +9021,7 @@
 			if (slots.length === 0) {
 				const text = pastCutoff
 					? 'No injured players in games yet to kick off.'
-					: 'Next week opens Wednesday at 7 PM Central.';
+					: `Next week opens ${watchlistCutoffLabel(pageData?.weeklyRolloverCutoff)}.`;
 				card.appendChild(el('div', { class: 'team card-collapse-visible', text }));
 				return card;
 			}
@@ -9520,22 +9520,28 @@
 			return problems;
 		}
 
-		// Has this week's rollover cutoff passed yet — Wednesday 7 PM Central?
-		// A deliberate second copy of isPastWeeklyRolloverCutoff in
-		// scripts/lib/providers.mjs (no build step, no imports), pinned to it
-		// hour-by-hour across a whole week, both DST states, by
-		// test-problems-digest.mjs — move the cutoff there and this has to
-		// move with it or that test fails. There it holds ESPN/Sleeper scoring
-		// on the finished week; here it holds the digest's lineup rows, since
-		// every provider's lineup read (MFL's too, via Sleeper's /state/nfl)
-		// has already advanced to the new week by Tuesday, and the manager
-		// treats the new week as open only once MFL itself rolls. Read off the
-		// reader's wall clock at render, not stamped by the sync: a snapshot
-		// written at 4 PM Wednesday is still on screen at 7.
-		const ROLLOVER_CUTOFF_WEEKDAY = 'Wed';
-		const ROLLOVER_CUTOFF_HOUR_CT = 19;
+		// Has this week's rollover cutoff passed yet? The setting itself
+		// (Wednesday 7 PM Central today) lives only in providers.mjs's
+		// WEEKLY_ROLLOVER_CUTOFF, which the sync writes into the snapshot as
+		// `weeklyRolloverCutoff` — so moving it is one edit there, reaching
+		// this page at the next sync. The comparison below is a deliberate
+		// second copy of isPastWeeklyRolloverCutoff (no build step, no
+		// imports), pinned to it hour-by-hour across a whole week, both DST
+		// states, by test-problems-digest.mjs. There it holds ESPN/Sleeper
+		// scoring on the finished week; here it holds the digest's lineup
+		// rows and the Game-Time Watchlist, since every provider's lineup read
+		// (MFL's too, via Sleeper's /state/nfl) has already advanced to the
+		// new week by Tuesday, and the manager treats the new week as open
+		// only once MFL itself rolls. Read off the reader's wall clock at
+		// render, not stamped as a yes/no by the sync: a snapshot written at
+		// 4 PM Wednesday is still on screen at 7.
+		//
+		// A snapshot without the field (written before it existed, or no
+		// snapshot yet) holds nothing: the alerts showing a day early is the
+		// old behaviour, and the safer way to be wrong than hiding them.
 		const WEEK_ORDER_FROM_TUESDAY = ['Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun', 'Mon'];
-		function pastWeeklyRolloverCutoff(now = new Date()) {
+		function pastWeeklyRolloverCutoff(now = new Date(), cutoff = pageData?.weeklyRolloverCutoff) {
+			if (!cutoff || !WEEK_ORDER_FROM_TUESDAY.includes(cutoff.weekday) || !Number.isInteger(cutoff.hourCT)) return true;
 			const parts = new Intl.DateTimeFormat('en-US', {
 				timeZone: 'America/Chicago',
 				weekday: 'short',
@@ -9545,10 +9551,22 @@
 			const weekday = parts.find((p) => p.type === 'weekday')?.value;
 			const hour = Number(parts.find((p) => p.type === 'hour')?.value);
 			const dayIndex = WEEK_ORDER_FROM_TUESDAY.indexOf(weekday);
-			const cutoffIndex = WEEK_ORDER_FROM_TUESDAY.indexOf(ROLLOVER_CUTOFF_WEEKDAY);
+			const cutoffIndex = WEEK_ORDER_FROM_TUESDAY.indexOf(cutoff.weekday);
 			if (dayIndex < cutoffIndex) return false;
 			if (dayIndex > cutoffIndex) return true;
-			return hour >= ROLLOVER_CUTOFF_HOUR_CT;
+			return hour >= cutoff.hourCT;
+		}
+
+		// "Wednesday at 7 PM Central" for the Game-Time Watchlist's held
+		// message, off the same snapshot field, so moving the cutoff doesn't
+		// leave the card naming the old time. Only reached while held, which
+		// requires a valid cutoff.
+		function watchlistCutoffLabel(cutoff) {
+			if (!cutoff) return 'later this week';
+			const days = { Sun: 'Sunday', Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday' };
+			const h = cutoff.hourCT;
+			const time = h === 0 ? 'midnight' : h === 12 ? 'noon' : `${h % 12} ${h < 12 ? 'AM' : 'PM'}`;
+			return `${days[cutoff.weekday]} at ${time} Central`;
 		}
 
 		// One league's problems, as { kind, player, label } rows — player is

@@ -7,7 +7,7 @@
 // test-espn-sleeper-live-time.mjs, left declined). The cutoff itself
 // (isPastWeeklyRolloverCutoff) shipped first gated on NFL game state,
 // then was changed the same day to a fixed Wednesday-noon-Central-Time
-// wall clock (configured by ROLLOVER_CUTOFF_WEEKDAY/ROLLOVER_CUTOFF_HOUR_CT)
+// wall clock (configured by WEEKLY_ROLLOVER_CUTOFF)
 // at the manager's request, once they noted MFL itself appears to roll
 // over well before Thursday's kickoff, then moved to Wednesday 7 PM once
 // they placed MFL's week 3 -> 4 switch between 7 and 8 PM Central — see
