@@ -85,7 +85,23 @@
 //   lists exactly the same WAIVER/PENDING/isPending claims (4 and 2) it listed
 //   22 hours earlier, though every other ESPN count had moved on. So
 //   status/isPending on that feed are not a reliable "still pending". The
-//   ESPN CLAIM DIAGNOSTICS section below (RUN 6) looks for what is.
+//   ESPN CLAIM DIAGNOSTICS section below (RUN 6) looks for what is. FOUND
+//   (same day, run 7): ESPN never updates a claim when it processes it. The
+//   original WAIVER/PENDING record (isPending true) stays untouched and a
+//   SEPARATE record (EXECUTED / FAILED_INVALIDPLAYERSOURCE /
+//   FAILED_PLAYERALREADYDROPPED, execType PROCESS, with a processDate) is
+//   written for the outcome with the SAME adds and drops. Every stale PENDING
+//   record in both leagues had exactly one such twin (League 2: four pending,
+//   one executed + three failed; League 1: two pending, one executed + one
+//   failed), proposed ~8h before the processDate and still PENDING 40+ hours
+//   later. mPendingTransactions returned 0 records in both, which matched the
+//   manager. Also: acquisitionType WAIVERS_TRADITIONAL with
+//   isUsingAcquisitionBudget false in both (so no FAAB; bidAmount and rating are
+//   0 on every claim and carry nothing), and the only priority number is the
+//   team's own waiverRank (10 and 6). parseEspnPendingWaivers drops a PENDING
+//   record that has a processed twin, and the card shows the waiver priority.
+//   NOT yet seen: a populated mPendingTransactions, so its record shape is
+//   unverified; it is folded in defensively and the log alone is correct.
 //
 // RUN 3 (2026-10-01):
 //   - The shipped league-scoped kona_player_info request (A), with or

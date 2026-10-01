@@ -38,6 +38,7 @@ const {
   finishedMflAuctions,
   AUCTION_END_HOURS,
   parseEspnPendingWaivers,
+  fetchEspnPendingWaivers,
   fetchMflPendingWaivers,
   fetchEspnPlayerNames,
 } = await import('./lib/providers.mjs');
@@ -205,19 +206,129 @@ await test('auctions: out-of-order log is sorted by timestamp before folding', (
   assert.equal(open.length, 0);
 });
 
-await test('ESPN: only this team, only pending waivers', () => {
+const T = 3600 * 1000;
+const claim = (extra) => ({ type: 'WAIVER', teamId: 5, bidAmount: 0, rating: 0, ...extra });
+const item = (add, drop) => [{ type: 'ADD', playerId: add }, ...(drop ? [{ type: 'DROP', playerId: drop }] : [])];
+
+await test('ESPN: only this team, only WAIVER claims still pending, oldest first', () => {
   const claims = parseEspnPendingWaivers({
     transactions: [
-      { type: 'WAIVER', status: 'PENDING', teamId: 5, bidAmount: 11, subOrder: 1, items: [{ type: 'ADD', playerId: 1 }, { type: 'DROP', playerId: 2 }] },
-      { type: 'WAIVER', status: 'PENDING', teamId: 5, bidAmount: 0, subOrder: 0, items: [{ type: 'ADD', playerId: 3 }] },
-      { type: 'WAIVER', status: 'PENDING', teamId: 6, items: [{ type: 'ADD', playerId: 4 }] },
-      { type: 'WAIVER', status: 'EXECUTED', teamId: 5, items: [{ type: 'ADD', playerId: 5 }] },
-      { type: 'FREEAGENT', status: 'PENDING', teamId: 5, items: [{ type: 'ADD', playerId: 6 }] },
+      claim({ status: 'PENDING', isPending: true, proposedDate: 20 * T, items: item(1, 2) }),
+      claim({ status: 'PENDING', isPending: true, proposedDate: 10 * T, items: item(3) }),
+      claim({ status: 'PENDING', teamId: 6, proposedDate: 5 * T, items: item(4) }),
+      claim({ status: 'EXECUTED', proposedDate: 5 * T, items: item(5) }),
+      { type: 'FREEAGENT', status: 'PENDING', teamId: 5, items: item(6) },
     ],
   }, '5');
   assert.deepEqual(claims.map((c) => c.adds), [['3'], ['1']]);
   assert.deepEqual(claims[1].drops, ['2']);
-  assert.equal(claims[0].bid, 0);
+});
+
+// RUN 6, League 1 and League 2, exactly as the probe saw them: ESPN leaves the
+// original PENDING record and writes a separate processed twin (same adds and
+// drops, later processDate). Reading status alone showed these as pending
+// for 40+ hours after they resolved.
+await test('ESPN: a PENDING record with a processed twin is resolved, not pending (RUN 6)', () => {
+  const log = { transactions: [
+    // League 2: four claims dropping the same player; one executed, three failed.
+    claim({ status: 'PENDING', isPending: true, proposedDate: 100 * T, items: item(30, 99) }),
+    claim({ status: 'PENDING', isPending: true, proposedDate: 100 * T + 1, items: item(40, 99) }),
+    claim({ status: 'PENDING', isPending: true, proposedDate: 101 * T, items: item(50, 99) }),
+    claim({ status: 'PENDING', isPending: true, proposedDate: 101 * T + 1, items: item(60, 99) }),
+    claim({ status: 'FAILED_INVALIDPLAYERSOURCE', proposedDate: 110 * T, processDate: 110 * T, items: item(30, 99) }),
+    claim({ status: 'EXECUTED', proposedDate: 110 * T, processDate: 110 * T, items: item(40, 99) }),
+    claim({ status: 'FAILED_PLAYERALREADYDROPPED', proposedDate: 110 * T, processDate: 110 * T, items: item(50, 99) }),
+    claim({ status: 'FAILED_PLAYERALREADYDROPPED', proposedDate: 110 * T, processDate: 110 * T, items: item(60, 99) }),
+  ] };
+  assert.deepEqual(parseEspnPendingWaivers(log, '5'), []);
+});
+await test('ESPN: the same claim filed again AFTER it processed is genuinely pending', () => {
+  const claims = parseEspnPendingWaivers({ transactions: [
+    claim({ status: 'FAILED_INVALIDPLAYERSOURCE', proposedDate: 100 * T, processDate: 100 * T, items: item(30, 99) }),
+    claim({ status: 'PENDING', isPending: true, proposedDate: 120 * T, items: item(30, 99) }),
+  ] }, '5');
+  assert.equal(claims.length, 1);
+  assert.deepEqual(claims[0].adds, ['30']);
+});
+await test('ESPN: a processed record for a DIFFERENT player or drop does not resolve a claim', () => {
+  const log = { transactions: [
+    claim({ status: 'EXECUTED', proposedDate: 110 * T, processDate: 110 * T, items: item(31, 99) }),
+    claim({ status: 'EXECUTED', proposedDate: 110 * T, processDate: 110 * T, items: item(30, 98) }),
+    claim({ status: 'PENDING', isPending: true, proposedDate: 100 * T, items: item(30, 99) }),
+  ] };
+  assert.equal(parseEspnPendingWaivers(log, '5').length, 1);
+});
+await test('ESPN: a processed record belonging to ANOTHER team never resolves mine', () => {
+  const log = { transactions: [
+    claim({ teamId: 6, status: 'EXECUTED', proposedDate: 110 * T, processDate: 110 * T, items: item(30, 99) }),
+    claim({ status: 'PENDING', isPending: true, proposedDate: 100 * T, items: item(30, 99) }),
+  ] };
+  assert.equal(parseEspnPendingWaivers(log, '5').length, 1);
+});
+
+// RUN 6: acquisitionType WAIVERS_TRADITIONAL, isUsingAcquisitionBudget false,
+// every bidAmount 0, waiverRank 10 / 6. A bid is for a league that bids.
+await test('ESPN: a non-FAAB league shows the team’s waiver priority, never a $0 bid', () => {
+  const log = { transactions: [claim({ status: 'PENDING', isPending: true, proposedDate: 100 * T, items: item(30, 99) })] };
+  const [c] = parseEspnPendingWaivers(log, '5', { faab: false, priority: 10 });
+  assert.equal(c.bid, null);
+  assert.equal(c.priority, 10);
+});
+await test('ESPN: a FAAB league shows the bid and no priority', () => {
+  const log = { transactions: [claim({ status: 'PENDING', isPending: true, bidAmount: 12, proposedDate: 100 * T, items: item(30, 99) })] };
+  const [c] = parseEspnPendingWaivers(log, '5', { faab: true, priority: 10 });
+  assert.equal(c.bid, 12);
+  assert.equal(c.priority, null);
+});
+await test('ESPN: settings unreadable (faab unknown) shows a bid only when it is above zero', () => {
+  const mk = (bid) => ({ transactions: [claim({ status: 'PENDING', isPending: true, bidAmount: bid, proposedDate: 1, items: item(30) })] });
+  assert.equal(parseEspnPendingWaivers(mk(0), '5', { faab: null, priority: 4 })[0].bid, null);
+  assert.equal(parseEspnPendingWaivers(mk(0), '5', { faab: null, priority: 4 })[0].priority, 4);
+  assert.equal(parseEspnPendingWaivers(mk(7), '5', { faab: null })[0].bid, 7);
+});
+await test('ESPN: no readable waiver rank leaves priority null, not 0 or NaN', () => {
+  const log = { transactions: [claim({ status: 'PENDING', isPending: true, proposedDate: 1, items: item(30) })] };
+  assert.equal(parseEspnPendingWaivers(log, '5', { faab: false })[0].priority, null);
+});
+
+await test('ESPN: fetch reads the four views, folds in mPendingTransactions deduped by id, and survives optional failures', async () => {
+  const realFetch = globalThis.fetch;
+  const seenViews = [];
+  const settingsFails = { v: false };
+  globalThis.fetch = async (url) => {
+    const u = String(url);
+    const view = (u.match(/view=(m\w+)/) || [])[1];
+    seenViews.push(view);
+    if (view === 'mStatus') return new Response(JSON.stringify({ scoringPeriodId: 4 }));
+    if (view === 'mTransactions2') return new Response(JSON.stringify({ transactions: [
+      claim({ id: 'old', status: 'PENDING', isPending: true, proposedDate: 100 * T, items: item(30, 99) }),
+      claim({ id: 'old-twin', status: 'EXECUTED', proposedDate: 110 * T, processDate: 110 * T, items: item(30, 99) }),
+      claim({ id: 'live', status: 'PENDING', isPending: true, proposedDate: 120 * T, items: item(40) }),
+    ] }));
+    if (view === 'mPendingTransactions') return new Response(JSON.stringify({ pendingTransactions: [
+      claim({ id: 'live', status: 'PENDING', isPending: true, proposedDate: 120 * T, items: item(40) }),
+    ] }));
+    if (view === 'mSettings') {
+      if (settingsFails.v) return new Response('nope', { status: 500 });
+      return new Response(JSON.stringify({ settings: { acquisitionSettings: { isUsingAcquisitionBudget: false } } }));
+    }
+    if (view === 'mTeam') return new Response(JSON.stringify({ teams: [{ id: 5, waiverRank: 6 }, { id: 6, waiverRank: 1 }] }));
+    throw new Error(`unexpected fetch ${u}`);
+  };
+  try {
+    const claims = await fetchEspnPendingWaivers({ id: '1', franchiseId: '5' });
+    assert.deepEqual(seenViews.sort(), ['mPendingTransactions', 'mSettings', 'mStatus', 'mTeam', 'mTransactions2']);
+    assert.equal(claims.length, 1, 'the stale one is gone, the live one is listed once');
+    assert.deepEqual(claims[0].adds, ['40']);
+    assert.equal(claims[0].priority, 6);
+    assert.equal(claims[0].bid, null);
+    // Settings and the pending view are optional: a failure never costs the claims.
+    settingsFails.v = true;
+    const again = await fetchEspnPendingWaivers({ id: '1', franchiseId: '5' });
+    assert.equal(again.length, 1);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
 });
 
 // The request probe RUN 3 found working: the season-wide player list,
@@ -299,6 +410,9 @@ await test('endpoint: every non-draftonly league answered; failures isolated; Sl
     if (u.includes('TYPE=transactions')) return new Response(JSON.stringify({ transactions: { transaction: [{ type: 'AUCTION_BID', franchise: '0002', transaction: '16778|9|', timestamp: '100' }] } }));
     if (u.includes('view=mStatus')) return new Response(JSON.stringify({ scoringPeriodId: 4 }));
     if (u.includes('view=mTransactions2')) return new Response(JSON.stringify({ transactions: [] }));
+    if (u.includes('view=mPendingTransactions')) return new Response(JSON.stringify({}));
+    if (u.includes('view=mSettings')) return new Response(JSON.stringify({ settings: { acquisitionSettings: { isUsingAcquisitionBudget: false } } }));
+    if (u.includes('view=mTeam')) return new Response(JSON.stringify({ teams: [] }));
     if (u.includes('/players?view=players_wl')) return new Response(JSON.stringify([]));
     throw new Error(`unexpected fetch ${u}`);
   };
@@ -381,6 +495,17 @@ await test('page: the Auctions league link prefers the endpoint\u2019s address, 
 });
 await test('page: only the Auctions card links to the auctions page; Waivers keeps the league home link', () => {
   assert.match(html, /kind === 'auctions' \? auctionPageUrl\(league, r\) : league\.url/);
+});
+const claimOrderSrc = html.match(/function formatClaimOrder\(([^\n]*)\) \{\n([\s\S]*?)\n\t\t\}/);
+const fmtBid = (n) => (n == null ? '' : `$${Number(n).toLocaleString()}`);
+const formatClaimOrder = (item) => new Function('formatBid', claimOrderSrc[1], claimOrderSrc[2])(fmtBid, item);
+await test('page: a claim\u2019s last column is a bid only where the league bids, else priority, else round', () => {
+  assert.equal(formatClaimOrder({ bid: 12 }), '$12');
+  assert.equal(formatClaimOrder({ bid: 0 }), '$0', 'a real $0 blind bid survives');
+  assert.equal(formatClaimOrder({ bid: null, priority: 10 }), 'Priority 10');
+  assert.equal(formatClaimOrder({ bid: null, round: '2' }), 'Round 2');
+  assert.equal(formatClaimOrder({ bid: null }), '\u2014');
+  assert.match(html, /el\('th', \{ text: 'Bid \/ Priority' \}\)/);
 });
 await test('page: logout forgets the last read', () => {
   const logout = html.match(/function doLogout\(\) \{[\s\S]*?\n\t\t\}/)[0];

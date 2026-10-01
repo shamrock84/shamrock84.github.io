@@ -3214,32 +3214,86 @@ export async function fetchMflActiveAuctions(league, cookie, leagueData) {
 }
 
 // ESPN's transaction log (view=mTransactions2) carries the owner's own
-// pending claims as type WAIVER with status PENDING (or isPending) — visible
-// only to the team's own cookie, which is the ESPN_S2/SWID pair every ESPN
-// read here already sends. Shape confirmed on both ESPN leagues by RUN 1:
-// type WAIVER, status PENDING with isPending, numeric teamId and bidAmount,
-// items[] of { type: 'ADD'|'DROP', playerId }. There is NO subOrder field,
-// so claims order by proposedDate; ESPN's own processing order isn't known.
-export function parseEspnPendingWaivers(data, franchiseId) {
-  return asArray(data?.transactions)
-    .filter((t) => t?.type === 'WAIVER'
-      && (t.status === 'PENDING' || t.isPending === true)
-      && String(t.teamId) === String(franchiseId))
-    .sort((a, b) => (a.subOrder ?? 0) - (b.subOrder ?? 0) || (a.proposedDate ?? 0) - (b.proposedDate ?? 0))
-    .map((t) => ({
-      round: null,
-      bid: Number.isFinite(Number(t.bidAmount)) ? Number(t.bidAmount) : null,
-      adds: asArray(t.items).filter((i) => i?.type === 'ADD').map((i) => String(i.playerId)),
-      drops: asArray(t.items).filter((i) => i?.type === 'DROP').map((i) => String(i.playerId)),
-      timestamp: t.proposedDate ? Math.round(Number(t.proposedDate) / 1000) : null,
-    }));
+// claims as type WAIVER, visible only to the team's own cookie, which is the
+// ESPN_S2/SWID pair every ESPN read here already sends. Shape confirmed on
+// both ESPN leagues by probe-waivers-auctions.yml RUN 1 and RUN 6: numeric
+// teamId and bidAmount, proposedDate (and processDate once processed) in
+// epoch milliseconds, items[] of { type: 'ADD'|'DROP', playerId }, and NO
+// subOrder (or any claim-order field: `rating` is 0 on every claim).
+//
+// A PENDING RECORD IS NOT A PENDING CLAIM. RUN 6 found that ESPN does not
+// update a claim when it processes it: the original WAIVER/PENDING record
+// (isPending: true) stays exactly as it was, and a SEPARATE record is written
+// for the outcome (EXECUTED, FAILED_INVALIDPLAYERSOURCE,
+// FAILED_PLAYERALREADYDROPPED, ...) with the same adds and drops and a later
+// processDate. Every stale PENDING record in both leagues had such a twin,
+// and ESPN's own pending list (mPendingTransactions) was empty. Reading
+// status alone therefore showed claims resolved for 40+ hours as pending.
+// A claim is resolved when ANY non-pending record of this team has the same
+// adds and drops and was processed at or after this one was proposed; a
+// claim filed again later, after that, has a later proposedDate and stays.
+//
+// FAAB. Neither ESPN league bids: acquisitionSettings reads
+// WAIVERS_TRADITIONAL with isUsingAcquisitionBudget false, and every
+// bidAmount is 0, so a "$0" was just an empty field. `faab` (true/false from
+// those settings, null when they couldn't be read) decides whether a bid
+// shows; without it a bid is shown only when it is above zero. In a
+// non-FAAB league the number that means something is the TEAM's waiver
+// priority (teams[].waiverRank), passed in as `priority`.
+const espnClaimKey = (t) => {
+  const ids = (type) => asArray(t.items).filter((i) => i?.type === type).map((i) => String(i.playerId)).sort().join(',');
+  return `${ids('ADD')}|${ids('DROP')}`;
+};
+export function parseEspnPendingWaivers(data, franchiseId, { faab = null, priority = null } = {}) {
+  const mine = asArray(data?.transactions)
+    .filter((t) => t?.type === 'WAIVER' && String(t.teamId) === String(franchiseId));
+  const unresolved = (t) => t.status === 'PENDING' || t.isPending === true;
+  const processed = mine.filter((t) => !unresolved(t));
+  const resolved = (t) => processed.some((q) => espnClaimKey(q) === espnClaimKey(t)
+    && Number(q.processDate ?? q.proposedDate ?? 0) >= Number(t.proposedDate ?? 0));
+  return mine
+    .filter((t) => unresolved(t) && !resolved(t))
+    .sort((a, b) => (a.proposedDate ?? 0) - (b.proposedDate ?? 0))
+    .map((t) => {
+      const bid = Number(t.bidAmount);
+      const showBid = faab === true || (faab === null && Number.isFinite(bid) && bid > 0);
+      return {
+        id: t.id ?? null,
+        round: null,
+        bid: showBid && Number.isFinite(bid) ? bid : null,
+        priority: faab === true ? null : (Number.isFinite(Number(priority)) && priority != null ? Number(priority) : null),
+        adds: asArray(t.items).filter((i) => i?.type === 'ADD').map((i) => String(i.playerId)),
+        drops: asArray(t.items).filter((i) => i?.type === 'DROP').map((i) => String(i.playerId)),
+        timestamp: t.proposedDate ? Math.round(Number(t.proposedDate) / 1000) : null,
+      };
+    });
 }
 
+// Four reads beside the status one, in parallel. mTransactions2 is the log
+// above. mPendingTransactions is ESPN's own pending list — RUN 6 only ever
+// saw it empty, so its populated shape is unverified: its records are folded
+// into the same parse (same shape assumed, deduped by id) and a failure just
+// drops it, since the log alone is now correct. mSettings says whether the
+// league is FAAB, and mTeam carries this team's waiverRank. Either of those
+// failing leaves its field unknown rather than costing the claims.
 export async function fetchEspnPendingWaivers(league) {
   const status = await espnGet(league, 'view=mStatus');
   const period = status?.scoringPeriodId || status?.status?.currentMatchupPeriod || 1;
-  const data = await espnGet(league, `view=mTransactions2&scoringPeriodId=${period}`);
-  return parseEspnPendingWaivers(data, league.franchiseId);
+  const [log, pending, settings, teams] = await Promise.all([
+    espnGet(league, `view=mTransactions2&scoringPeriodId=${period}`),
+    espnGet(league, 'view=mPendingTransactions').catch(() => null),
+    espnGet(league, 'view=mSettings').catch(() => null),
+    espnGet(league, 'view=mTeam').catch(() => null),
+  ]);
+  const seen = new Set();
+  const transactions = [...asArray(log?.transactions), ...asArray(pending?.pendingTransactions)]
+    .filter((t) => !t?.id || !seen.has(t.id) && seen.add(t.id));
+  const budget = settings?.settings?.acquisitionSettings?.isUsingAcquisitionBudget;
+  const me = asArray(teams?.teams).find((t) => String(t?.id) === String(league.franchiseId));
+  return parseEspnPendingWaivers({ transactions }, league.franchiseId, {
+    faab: typeof budget === 'boolean' ? budget : null,
+    priority: me?.waiverRank ?? null,
+  });
 }
 
 // Names for a handful of ESPN player ids — a pending claim is usually on a

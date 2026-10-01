@@ -15925,6 +15925,19 @@
 			return league.url ? league.url.replace(/\/home\/[^/?#]+$/, `/options?L=${league.id}&O=43`) : null;
 		}
 
+		// What a claim's last column says. A dollar bid only where the league
+		// really bids (MFL blind bidding, or a FAAB league — the server sends
+		// `bid: null` for a league that doesn't, rather than a $0 that is just
+		// an empty field). Otherwise the number that decides who gets the
+		// player: the team's waiver priority (ESPN, `priority`) or the round
+		// (MFL rolling, `round`).
+		function formatClaimOrder(item) {
+			if (item.bid != null) return formatBid(item.bid);
+			if (item.priority != null) return `Priority ${item.priority}`;
+			if (item.round) return `Round ${item.round}`;
+			return '\u2014';
+		}
+
 		function formatBid(n) {
 			return n == null ? '' : `$${Number(n).toLocaleString()}`;
 		}
@@ -15969,7 +15982,10 @@
 			const head = el('tr');
 			if (kind === 'waivers') {
 				head.appendChild(el('th', { text: 'Add / Drop' }));
-				head.appendChild(el('th', { text: 'Bid' }));
+				// Not just "Bid": only blind-bid leagues have one. A rolling
+				// league's claim shows its round and an ESPN league's shows the
+				// team's waiver priority — see formatClaimOrder.
+				head.appendChild(el('th', { text: 'Bid / Priority' }));
 			} else {
 				head.appendChild(el('th', { text: 'Player / High Bidder' }));
 				head.appendChild(el('th', { text: 'Bid' }));
@@ -16015,7 +16031,7 @@
 							}));
 						}
 						tr.appendChild(td);
-						tr.appendChild(el('td', { text: item.bid != null ? formatBid(item.bid) : (item.round ? `Rd ${item.round}` : '—') }));
+						tr.appendChild(el('td', { text: formatClaimOrder(item) }));
 					} else {
 						const td = waiversPlayerCell(item.player);
 						td.appendChild(el('div', {
