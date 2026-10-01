@@ -24,6 +24,7 @@ import {
   setMflRequestInterval,
   fetchMflPendingWaivers,
   fetchMflActiveAuctions,
+  mflAuctionPageUrl,
   fetchEspnPendingWaivers,
   fetchEspnPlayerNames,
 } from '../scripts/lib/providers.mjs';
@@ -122,6 +123,7 @@ async function readLeague(league, getCookie, getPlayerMap) {
     const nameById = mflFranchiseNames(leagueData);
     return {
       ...base,
+      url: mflAuctionPageUrl(league, leagueData),
       auctions: auctions.map((a) => ({
         ...a,
         player: playerOf(players, a.playerId),
