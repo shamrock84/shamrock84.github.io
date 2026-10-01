@@ -44,6 +44,19 @@
 //   - Not covered by RUN 1: whether ESPN's kona_player_info name lookup
 //     answers, and the parsers end to end. The "end to end" section below
 //     was added for RUN 2 to check exactly that, still printing only counts.
+//
+// RUN 2 (2026-10-01, after the parser fix):
+//   - MFL end to end: every claim and auction parsed, every player named
+//     (MNMx 3 claim rows / 6 ids / 6 named; OSD 1/2/2; Survivor 1/1/1, its
+//     drop being the all-zero "none"; Iron Bank, Wise Guys, Game On 5 open
+//     auctions each and Super Cap 1, all named and all with a bid).
+//   - ESPN: claims read (4 and 2) but 0 of 12 ids named —
+//     fetchEspnPlayerNames' kona_player_info lookup comes back empty, and it
+//     swallows its own error by design. The "ESPN name lookup" section
+//     below was added for RUN 3 to find out why: it tries the shipped
+//     request and three alternatives, printing only HTTP status, response
+//     key names and match counts — never a name, since a claimed player's
+//     name is the claim.
 
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -154,6 +167,72 @@ for (const league of leagues.filter((l) => l.provider === 'espn' && l.type !== '
     const names = await fetchEspnPlayerNames(league, ids);
     const named = ids.filter((id) => names.has(id)).length;
     console.log(`${league.name}: ${claims.length} claims, ${ids.length} player ids, ${named} named`);
+  } catch (err) {
+    console.log(`${league.name}: FAILED ${err.message}`);
+  }
+}
+
+// --- ESPN name lookup diagnostics (RUN 3) — status, keys and counts only ---
+console.log('=== ESPN NAME LOOKUP (counts only) ===');
+const espnCookie = `espn_s2=${process.env.ESPN_S2}; SWID=${process.env.ESPN_SWID}`;
+async function espnRaw(url, headers = {}) {
+  let res;
+  for (let hop = 0; hop < 5; hop++) {
+    res = await fetch(url, { headers: { ...headers, Cookie: espnCookie }, redirect: 'manual' });
+    if (res.status >= 300 && res.status < 400 && res.headers.get('location')) {
+      url = new URL(res.headers.get('location'), url).toString();
+      continue;
+    }
+    break;
+  }
+  const text = await res.text();
+  let body = null;
+  try { body = JSON.parse(text); } catch { /* not JSON */ }
+  return { status: res.status, body, bytes: text.length };
+}
+// Keys of the response, and of one entry, with no values at all.
+function keysOnly(body) {
+  if (Array.isArray(body)) {
+    const e = body[0];
+    return `array(${body.length}) entry keys: ${e && typeof e === 'object' ? Object.keys(e).join(',') : typeof e}`;
+  }
+  if (body && typeof body === 'object') {
+    const players = body.players;
+    const e = Array.isArray(players) ? players[0] : null;
+    return `object keys: ${Object.keys(body).join(',')}; players: ${Array.isArray(players) ? players.length : typeof players}`
+      + (e ? `; players[0] keys: ${Object.keys(e).join(',')}${e.player ? `; players[0].player keys: ${Object.keys(e.player).join(',')}` : ''}` : '');
+  }
+  return `not JSON`;
+}
+function matchCount(body, wanted) {
+  const list = Array.isArray(body) ? body : Array.isArray(body?.players) ? body.players : [];
+  const ids = new Set(list.map((e) => String((e?.player || e)?.id)));
+  return wanted.filter((id) => ids.has(id)).length;
+}
+for (const league of leagues.filter((l) => l.provider === 'espn' && l.type !== 'draftonly')) {
+  try {
+    const claims = await fetchEspnPendingWaivers(league);
+    const wanted = [...new Set(claims.flatMap((c) => [...c.adds, ...c.drops]))];
+    const nums = wanted.map(Number);
+    const season = seasonOf(league);
+    const leagueUrl = `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${season}/segments/0/leagues/${league.id}`;
+    const globalUrl = `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${season}/players`;
+    const filter = JSON.stringify({ players: { filterIds: { value: nums }, limit: nums.length } });
+    const candidates = [
+      ['A league kona_player_info + filter (shipped)', `${leagueUrl}?view=kona_player_info`, { 'x-fantasy-filter': filter }],
+      ['B league kona_player_info + filter + scoringPeriodId', `${leagueUrl}?view=kona_player_info&scoringPeriodId=4`, { 'x-fantasy-filter': filter }],
+      ['C global players_wl + filter', `${globalUrl}?view=players_wl`, { 'x-fantasy-filter': JSON.stringify({ filterIds: { value: nums } }) }],
+      ['D global players_wl, no filter', `${globalUrl}?scoringPeriodId=0&view=players_wl`, {}],
+    ];
+    console.log(`${league.name}: ${wanted.length} distinct ids wanted`);
+    for (const [label, url, headers] of candidates) {
+      try {
+        const r = await espnRaw(url, headers);
+        console.log(`  ${label}: HTTP ${r.status}, ${r.bytes} bytes, ${keysOnly(r.body)}, matched ${matchCount(r.body, wanted)}/${wanted.length}`);
+      } catch (err) {
+        console.log(`  ${label}: threw ${String(err.message).replace(/[0-9]/g, 'N').slice(0, 160)}`);
+      }
+    }
   } catch (err) {
     console.log(`${league.name}: FAILED ${err.message}`);
   }
