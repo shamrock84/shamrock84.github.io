@@ -9,7 +9,9 @@
 // then was changed the same day to a fixed Wednesday-noon-Central-Time
 // wall clock (configured by ROLLOVER_CUTOFF_WEEKDAY/ROLLOVER_CUTOFF_HOUR_CT)
 // at the manager's request, once they noted MFL itself appears to roll
-// over well before Thursday's kickoff — see that function's own comment.
+// over well before Thursday's kickoff, then moved to Wednesday 7 PM once
+// they placed MFL's week 3 -> 4 switch between 7 and 8 PM Central — see
+// that function's own comment.
 process.env.ESPN_S2 = 'test-s2';
 process.env.ESPN_SWID = 'test-swid';
 const { fetchEspnScoring, fetchSleeperScoring, isPastWeeklyRolloverCutoff } = await import('./lib/providers.mjs');
@@ -26,23 +28,24 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
 {
   // All times below were converted with Intl's own America/Chicago tz data
   // (not hand-computed) to keep the fixture honest about what UTC instant
-  // actually lands on which side of noon.
+  // actually lands on which side of 7 PM.
   assert.equal(isPastWeeklyRolloverCutoff(new Date('2026-09-22T16:59:00Z')), false, 'Tuesday 11:59 AM CDT — still held, all of Tuesday is held regardless of hour');
   assert.equal(isPastWeeklyRolloverCutoff(new Date('2026-09-23T04:00:00Z')), false, 'Tuesday 11:00 PM CDT — still Tuesday, still held');
-  assert.equal(isPastWeeklyRolloverCutoff(new Date('2026-09-23T16:59:00Z')), false, 'Wednesday 11:59 AM CDT — one minute short of the cutoff');
-  assert.equal(isPastWeeklyRolloverCutoff(new Date('2026-09-23T17:00:00Z')), true, 'Wednesday 12:00 PM CDT — exactly the cutoff, inclusive');
-  assert.equal(isPastWeeklyRolloverCutoff(new Date('2026-09-24T04:00:00Z')), true, 'Wednesday 11:00 PM CDT — still Wednesday, but well past noon');
+  assert.equal(isPastWeeklyRolloverCutoff(new Date('2026-09-23T17:00:00Z')), false, 'Wednesday 12:00 PM CDT — the old noon cutoff, now still held');
+  assert.equal(isPastWeeklyRolloverCutoff(new Date('2026-09-23T23:59:00Z')), false, 'Wednesday 6:59 PM CDT — one minute short of the cutoff');
+  assert.equal(isPastWeeklyRolloverCutoff(new Date('2026-09-24T00:00:00Z')), true, 'Wednesday 7:00 PM CDT — exactly the cutoff, inclusive (already Thursday in UTC)');
+  assert.equal(isPastWeeklyRolloverCutoff(new Date('2026-09-24T04:00:00Z')), true, 'Wednesday 11:00 PM CDT — still Wednesday, past 7 PM');
   assert.equal(isPastWeeklyRolloverCutoff(new Date('2026-09-24T18:00:00Z')), true, 'Thursday — open the rest of the week');
   assert.equal(isPastWeeklyRolloverCutoff(new Date('2026-09-27T18:00:00Z')), true, 'Sunday');
   assert.equal(isPastWeeklyRolloverCutoff(new Date('2026-09-28T18:00:00Z')), true, 'Monday');
 
-  // Same Wednesday-noon boundary in January, when Central Time is on
+  // Same Wednesday 7 PM boundary in January, when Central Time is on
   // Standard Time (CST, UTC-6) rather than Daylight Time (CDT, UTC-5) — the
   // whole point of reading a real IANA timezone instead of a fixed offset
   // is that this boundary shifts by an hour in UTC and the function must
   // still land it on the right side without its own DST table.
-  assert.equal(isPastWeeklyRolloverCutoff(new Date('2026-01-07T17:59:00Z')), false, 'Wednesday 11:59 AM CST — one minute short, DST off');
-  assert.equal(isPastWeeklyRolloverCutoff(new Date('2026-01-07T18:00:00Z')), true, 'Wednesday 12:00 PM CST — exactly the cutoff, DST off');
+  assert.equal(isPastWeeklyRolloverCutoff(new Date('2026-01-08T00:59:00Z')), false, 'Wednesday 6:59 PM CST — one minute short, DST off');
+  assert.equal(isPastWeeklyRolloverCutoff(new Date('2026-01-08T01:00:00Z')), true, 'Wednesday 7:00 PM CST — exactly the cutoff, DST off');
 }
 
 // --- fetchEspnScoring: pastRolloverCutoff=false holds the previous period ---

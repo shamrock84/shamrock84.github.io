@@ -1371,7 +1371,7 @@ async function main() {
   // else in this file.
   let nflClocks = new Map();
   // Pure wall-clock math (isPastWeeklyRolloverCutoff), not fetched — see that
-  // function's own comment for the Wednesday-noon-Central-Time rule.
+  // function's own comment for the Wednesday-7-PM-Central-Time rule.
   const pastRolloverCutoff = isPastWeeklyRolloverCutoff();
   if (LEAGUES.some((l) => l.franchiseId && (l.provider === 'espn' || l.provider === 'sleeper'))) {
     try {
