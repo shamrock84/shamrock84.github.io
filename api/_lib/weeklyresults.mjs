@@ -113,7 +113,7 @@ export function recordLabel({ wins, losses, ties }) {
 
 const pts = (n) => n.toFixed(2);
 
-// entries: [{ name, team, result: {result, points}|null, median?: {result, points}|null,
+// entries: [{ name, result: {result, points}|null, median?: {result, points}|null,
 //             record: {wins,losses,ties}|null, error?: string }]
 // A weekly-median league has two decisions for the week, each counted in the
 // overall record and shown as "W+L". Returns { overall: {wins, losses, ties}, lines: [string] }.
@@ -121,7 +121,7 @@ export function summarize(entries) {
   const overall = { wins: 0, losses: 0, ties: 0 };
   const lines = [];
   for (const e of entries) {
-    const label = e.team ? `${e.name} – ${e.team}` : e.name;
+    const label = e.name;
     if (e.error) {
       lines.push(`⚠ ${label}: couldn't read (${e.error})`);
       continue;
