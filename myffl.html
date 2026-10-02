@@ -3799,7 +3799,7 @@
 			<img src="images/ffl_black.gif" alt="FFL" class="site-logo">
 		</h1>
 		<div class="updated-row">
-			<button type="button" id="season-record" class="season-record hidden" aria-label="Season record across all leagues"></button>
+			<button type="button" id="season-record" class="season-record hidden" aria-label="Overall record across all leagues"></button>
 				<span id="season-record-sep" class="season-record-sep hidden" aria-hidden="true">&middot;</span>
 				<span id="updated">Loading&hellip;</span>
 			<button type="button" id="sync-btn" aria-label="Sync now" title="Sync now">
@@ -7889,22 +7889,20 @@
 				if (sep) sep.classList.add('hidden');
 				return;
 			}
-			const text = formatRecord(rec.wins, rec.losses, rec.ties);
-			btn.className = 'season-record';
-			btn.innerHTML = '';
-			btn.appendChild(el('span', { class: 'season-record-label', text: 'Season ' }));
-			btn.appendChild(el('span', {
-				class: rec.wins === rec.losses ? 'roster-record' : `roster-record ${rec.wins > rec.losses ? 'roster-record-up' : 'roster-record-down'}`,
-				text,
-			}));
-			if (sep) sep.classList.remove('hidden');
 			const games = rec.wins + rec.losses + rec.ties;
 			const pct = games ? `${(((rec.wins + rec.ties / 2) / games) * 100).toFixed(1)}%` : '—';
+			btn.className = 'season-record';
+			btn.innerHTML = '';
+			btn.appendChild(el('span', { class: 'season-record-label', text: 'Overall ' }));
+			btn.appendChild(el('span', {
+				class: rec.wins === rec.losses ? 'roster-record' : `roster-record ${rec.wins > rec.losses ? 'roster-record-up' : 'roster-record-down'}`,
+				text: `${formatRecord(rec.wins, rec.losses, rec.ties)} (${pct})`,
+			}));
+			if (sep) sep.classList.remove('hidden');
 			btn.onclick = () => {
 				const rows = rec.rows.map((r) => ({ left: r.name, right: formatRecord(r.wins, r.losses, r.ties) }));
-				rows.push({ left: 'Win %', right: pct });
 				if (rec.counted < rec.eligible) rows.push({ left: 'Leagues counted', right: `${rec.counted} of ${rec.eligible}` });
-				seasonRecordPopover.toggle(btn, 'Season record', rows);
+				seasonRecordPopover.toggle(btn, 'Overall record', rows);
 			};
 		}
 
