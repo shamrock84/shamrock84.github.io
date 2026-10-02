@@ -8552,7 +8552,13 @@
 						// of isPlayerGameToday — see this function's own comment
 						// on why.
 						if (isSunday ? !isPlayerLive(p) : !isPlayerGameToday(p)) continue;
-						const key = normalizeName(p.name) || p.name;
+						// Role is part of the key: a player started in one league
+						// and benched in another is TWO rows (one under Starters
+						// naming only the leagues that start him, one under Bench
+						// naming the rest), never one row that lists a benched
+						// league beside a started one and shows a combined score
+						// count. Same-role leagues still merge as before.
+						const key = (normalizeName(p.name) || p.name) + (starter ? '|s' : '|b');
 						if (!byPlayer.has(key)) {
 							byPlayer.set(key, { name: p.name, position: p.position, team: p.team, url: null, entries: [] });
 						}
@@ -8563,7 +8569,7 @@
 						// sync time) simply never gets one, same fallback
 						// playerNameNode already has for every other card.
 						if (!row.url) {
-							const rosterUrl = rosterByName.get(key);
+							const rosterUrl = rosterByName.get(normalizeName(p.name) || p.name);
 							if (rosterUrl) row.url = rosterUrl;
 						}
 						row.entries.push({
@@ -8613,11 +8619,8 @@
 				// identically must not flag a "differ" link over float noise.
 				// Fewer than two scored entries can't disagree by definition.
 				const scoresDiffer = new Set(scored.map((e) => e.score.toFixed(2))).size > 1;
-				// A row started in ANY of the manager's leagues counts as a
-				// starter — the more actionable fact when the same player is
-				// started in one league and benched in another. Only a
-				// player benched everywhere he's held falls to the Bench
-				// sub-group.
+				// Every entry in a row shares one role (the byPlayer key
+				// includes it), so this is just that role.
 				const starter = r.entries.some((e) => e.starter);
 				return { ...r, score: best ? best.score : null, stats: best ? best.stats : null, scoresDiffer, starter };
 			});
