@@ -9,7 +9,7 @@
 // enforces a cooldown so the page can't be used to hammer the workflow (and
 // in turn MFL/ESPN's APIs) by spamming the button or the endpoint directly.
 
-import { applyCors } from './lib/cors.mjs';
+import { applyCors } from './_lib/cors.mjs';
 
 const OWNER = 'shamrock84';
 const REPO = 'shamrock84.github.io';

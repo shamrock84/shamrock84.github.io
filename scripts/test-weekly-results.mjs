@@ -1,4 +1,4 @@
-// Unit test for the weekly results push (api/lib/weeklyresults.mjs and the
+// Unit test for the weekly results push (api/_lib/weeklyresults.mjs and the
 // guards in api/weekly-results.js). The failure that matters is a summary that
 // reads complete and isn't, so this pins: the finished week comes off the
 // calendar and only on Tuesday/Wednesday; a bye or an unscored week is "no
@@ -15,7 +15,7 @@ import {
   summarize,
   buildMessages,
   PUSHOVER_BODY_LIMIT,
-} from '../api/lib/weeklyresults.mjs';
+} from '../api/_lib/weeklyresults.mjs';
 import { nflKickoffUtc } from '../scripts/lib/fantasypros.mjs';
 import handler from '../api/weekly-results.js';
 

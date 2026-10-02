@@ -1,10 +1,10 @@
 // Public login endpoint for the lineup-editing feature. A single shared
 // password (SITE_PASSWORD) gates write access; on success it hands back a
-// signed, stateless token (api/lib/auth.mjs) the client stores and sends
+// signed, stateless token (api/_lib/auth.mjs) the client stores and sends
 // as a Bearer token on writes (submit-lineup.js).
 
-import { createToken } from './lib/auth.mjs';
-import { applyCors } from './lib/cors.mjs';
+import { createToken } from './_lib/auth.mjs';
+import { applyCors } from './_lib/cors.mjs';
 
 export default async function handler(req, res) {
   if (applyCors(req, res, { methods: 'POST, OPTIONS', headers: 'Content-Type' })) return;

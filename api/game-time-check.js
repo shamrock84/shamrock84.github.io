@@ -4,7 +4,7 @@
 // useless for a 45-minute window). For each kickoff inside that window it
 // checks the manager's starters against the gameday inactive feeds and sends
 // the answer to his phone through Pushover, instead of him setting an alarm
-// to go look. All the decisions live in api/lib/gametime.mjs; this file only
+// to go look. All the decisions live in api/_lib/gametime.mjs; this file only
 // fetches, stores and sends.
 //
 // Cheap when there's nothing to do, which is almost always: the scoreboard is
@@ -31,7 +31,7 @@
 
 import { mflLogin, fetchMflInjuries, fetchNflGames } from '../scripts/lib/providers.mjs';
 import { resolveStore } from './plans.js';
-import { storeGet, storeSet } from './lib/store.mjs';
+import { storeGet, storeSet } from './_lib/store.mjs';
 import {
   WATCH_LEAD_MINUTES,
   slotsInWindow,
@@ -40,7 +40,7 @@ import {
   parseEspnSummary,
   watchedForSlot,
   planMessage,
-} from './lib/gametime.mjs';
+} from './_lib/gametime.mjs';
 
 export const config = { maxDuration: 30 };
 

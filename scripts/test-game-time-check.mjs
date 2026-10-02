@@ -1,4 +1,4 @@
-// Unit test for the game-time injury checker: api/lib/gametime.mjs (the
+// Unit test for the game-time injury checker: api/_lib/gametime.mjs (the
 // decisions) and api/game-time-check.js (auth, test mode, dry run), driven
 // offline with fixtures shaped like what probe-inactives.mjs RUN 1 captured.
 //
@@ -26,7 +26,7 @@ import {
   classify,
   watchedForSlot,
   planMessage,
-} from '../api/lib/gametime.mjs';
+} from '../api/_lib/gametime.mjs';
 
 const NOW = new Date('2026-10-04T16:20:00Z'); // 12:20 PM ET
 const EARLY = '2026-10-04T17:00:00Z'; // 40 minutes out

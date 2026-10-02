@@ -17,8 +17,8 @@
 // submit-lineup alike. A malformed write would break all three at once, with
 // the only symptom being data quietly going stale.
 
-import { verifyToken } from './lib/auth.mjs';
-import { applyCors } from './lib/cors.mjs';
+import { verifyToken } from './_lib/auth.mjs';
+import { applyCors } from './_lib/cors.mjs';
 
 const OWNER = 'shamrock84';
 const REPO = 'shamrock84.github.io';
