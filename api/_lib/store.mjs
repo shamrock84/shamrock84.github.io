@@ -3,7 +3,7 @@
 // library — see resolveStore in api/plans.js for the credential naming.
 
 export async function storeGet(store, key) {
-  const res = await fetch(`${store.url}/get/${encodeURIComponent(key)}`, { headers: { Authorization: `Bearer ${store.token}` } });
+  const res = await fetch(`${store.url}/get/${encodeURIComponent(key)}`, { headers: { Authorization: `Bearer ${store.token}` }, signal: AbortSignal.timeout(8000) });
   if (!res.ok) throw new Error(`Store read failed (${res.status})`);
   const { result } = await res.json();
   return result ? JSON.parse(result) : null;
@@ -15,6 +15,7 @@ export async function storeSet(store, key, value, ttlSeconds) {
   const res = await fetch(store.url, {
     method: 'POST',
     headers: { Authorization: `Bearer ${store.token}`, 'Content-Type': 'application/json' },
+    signal: AbortSignal.timeout(8000),
     body: JSON.stringify(['SET', key, JSON.stringify(value), 'EX', String(ttlSeconds)]),
   });
   if (!res.ok) throw new Error(`Store write failed (${res.status})`);
