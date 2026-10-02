@@ -1873,7 +1873,8 @@
 		/* The collapsed-card league summary; hidden while the card is open,
 		   since the table below says the same thing in full. */
 		.card:not(.card-collapsed) .power-collapsed-summary,
-		.card:not(.card-collapsed) .needs-collapsed-summary {
+		.card:not(.card-collapsed) .needs-collapsed-summary,
+		.card:not(.card-collapsed) .bye-collapsed-summary {
 			display: none;
 		}
 		/* Just the live count today — kept as its own flex row (rather than
@@ -10957,6 +10958,21 @@
 				card.dataset.searchEmpty = 'true';
 				return card;
 			}
+
+			// Shown only while the card is collapsed (CSS, same rule as the
+			// Power/Team Needs summaries): the one row the open card would
+			// land on — the current or next upcoming bye week, or the last
+			// listed once every week has passed — with its Teams and Players
+			// lines. Static, never search-filtered: it is a glance, not a list.
+			const upcomingIdx = initialByePage(rows, currentWeek, 1);
+			const upcoming = rows[upcomingIdx];
+			const collapsedRow = el('div', { class: 'card-collapse-visible bye-collapsed-summary' });
+			collapsedRow.appendChild(el('div', { text: `Week ${upcoming.week}` }));
+			const upTeams = byeCountLine('Teams', upcoming.teams, 'bye-teams');
+			if (upTeams) collapsedRow.appendChild(upTeams);
+			const upPlayers = byePlayersLine(upcoming.players);
+			if (upPlayers) collapsedRow.appendChild(upPlayers);
+			card.appendChild(collapsedRow);
 
 			const table = el('table', { class: 'standings' });
 			card.appendChild(table);
