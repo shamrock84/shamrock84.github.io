@@ -7814,7 +7814,14 @@
 		// league silent here without a separate check — its h2h fields are
 		// always zero (see showRecord in renderStandingsCard), so it never
 		// clears this gate either.
+		//
+		// Also omitted once the league's NFL season is over (see
+		// recordIsStale): from the day after the Super Bowl until a provider
+		// opens the new season, the standings are last season's finished
+		// table, and showing it as "the record" is the same noise the 0-0
+		// rule exists to avoid.
 		function currentRecord(league, franchiseId) {
+			if (recordIsStale(league)) return null;
 			const r = (league.standings || []).find((row) => row.franchiseId === franchiseId);
 			if (!r || (r.wins === 0 && r.losses === 0)) return null;
 			return `${r.wins}-${r.losses}`;
@@ -7846,7 +7853,18 @@
 		// would be summed into this year's total), and a league with no isMe row
 		// (standings unread). A 0-0 league that WAS read still counts as read,
 		// so `counted` can honestly say how many leagues the total covers.
-		function computeSeasonRecord(leagues, year) {
+		// A league whose NFL season has ended (the day after its Super Bowl):
+		// its standings are the finished table. Keyed to the league's own
+		// `season`, not the snapshot's calendar year, so records stay up
+		// through the playoffs in January and the Super Bowl itself. A missing
+		// season means nothing (NaN comparisons are false), so a snapshot
+		// older than the `season` field keeps showing records.
+		function recordIsStale(league, now = new Date()) {
+			const season = Number(league.season);
+			return season > 0 && now.getTime() >= nflSeasonEndsAt(season);
+		}
+
+		function computeSeasonRecord(leagues, now = new Date()) {
 			const rows = [];
 			let eligible = 0;
 			let wins = 0;
@@ -7855,7 +7873,7 @@
 			for (const lg of leagues || []) {
 				if (lg.type === 'draftonly') continue;
 				eligible++;
-				if (Number(lg.season) < Number(year)) continue;
+				if (recordIsStale(lg, now)) continue;
 				const me = (lg.standings || []).find((r) => r.isMe);
 				if (!me) continue;
 				const w = Number(me.wins) || 0;
@@ -7877,8 +7895,10 @@
 			const btn = document.getElementById('season-record');
 			const sep = document.getElementById('season-record-sep');
 			if (!btn) return;
-			const rec = computeSeasonRecord(data && data.leagues, data && data.year);
-			if (!rec.counted) {
+			const rec = computeSeasonRecord(data && data.leagues);
+			// No games yet is the offseason / season-opener state: "Overall 0-0
+			// (—)" is noise, so the whole thing goes away until a game is played.
+			if (!rec.counted || rec.wins + rec.losses + rec.ties === 0) {
 				btn.classList.add('hidden');
 				if (sep) sep.classList.add('hidden');
 				return;
@@ -14670,14 +14690,20 @@
 		//
 		// Season runs from the Thursday after the first Monday in September
 		// (Labor Day) through the second Sunday in February (the Super Bowl).
+		function nthWeekdayUtc(year, month, weekday, n) {
+			const firstDow = new Date(Date.UTC(year, month, 1)).getUTCDay();
+			return Date.UTC(year, month, 1 + ((weekday - firstDow + 7) % 7) + (n - 1) * 7);
+		}
+		// The instant the NFL season that began in `year` is over: the day
+		// after the Super Bowl (second Sunday of February the next calendar
+		// year). The same boundary nflInSeason() ends on.
+		function nflSeasonEndsAt(year) {
+			return nthWeekdayUtc(year + 1, 1, 0, 2) + 24 * 60 * 60 * 1000;
+		}
 		function nflInSeason(now = new Date()) {
-			const nth = (year, month, weekday, n) => {
-				const firstDow = new Date(Date.UTC(year, month, 1)).getUTCDay();
-				return Date.UTC(year, month, 1 + ((weekday - firstDow + 7) % 7) + (n - 1) * 7);
-			};
 			const year = now.getUTCFullYear();
 			const day = 24 * 60 * 60 * 1000;
-			return now.getTime() >= nth(year, 8, 1, 1) + 3 * day || now.getTime() < nth(year, 1, 0, 2) + day;
+			return now.getTime() >= nthWeekdayUtc(year, 8, 1, 1) + 3 * day || now.getTime() < nthWeekdayUtc(year, 1, 0, 2) + day;
 		}
 
 		// Cut-planning's own blackout window — narrower than nflInSeason()'s,
