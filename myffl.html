@@ -1859,6 +1859,11 @@
 		.power-rank-card {
 			grid-column: 1 / -1;
 		}
+		/* The collapsed-card league summary; hidden while the card is open,
+		   since the table below says the same thing in full. */
+		.card:not(.card-collapsed) .power-collapsed-summary {
+			display: none;
+		}
 		/* Just the live count today — kept as its own flex row (rather than
 		   folded into the heading) since it used to share this line with a
 		   Score sort toggle, and a future subtitle addition has the same
@@ -7240,6 +7245,9 @@
 				const ecr = ecrRanks ? ecrRanks.byFranchise.get(key) || null : null;
 				rows.push({
 					label: leagueDisplayName(league),
+					// The short toolbar label, for the Power Rankings card's
+					// collapsed summary line.
+					nickname: quickLinkLabelForLeague(league),
 					url: league.url,
 					// Identical across bases (both rank the same franchises),
 					// so whichever answered is the league's size; null when
@@ -11109,6 +11117,17 @@
 			makeCollapsible(card, heading, 'power');
 			// Word for word what the other four cards say, same reasoning.
 			card.appendChild(el('div', { class: 'team card-collapse-visible', text: `Across ${leagueCount(rows.length)}` }));
+
+			// Shown only while the card is collapsed (CSS): every ranked league
+			// by its toolbar nickname, best Avg first, Avg in parens. Reads
+			// `rows` in the card's own default order, never sortedRows(), so a
+			// column click can't reshuffle it. A league with no Avg yet is left
+			// out rather than printed as TBD.
+			const summary = rows
+				.filter((r) => r.avg != null)
+				.map((r) => `${r.nickname} (${r.avg.toFixed(1)})`)
+				.join(', ');
+			if (summary) card.appendChild(el('div', { class: 'team card-collapse-visible power-collapsed-summary', text: summary }));
 
 			// Conditional, and deliberately so: the five Analytics cards carry
 			// one identical subtitle and nothing else, because a standing
