@@ -43,8 +43,9 @@ const context = {
 };
 vm.createContext(context);
 vm.runInContext(scriptSource, context);
-const { computeSeasonRecord, formatRecord, currentRecord, recordIsStale } = context;
+const { computeSeasonRecord, formatRecord, recordIsStale } = context;
 
+const D = (iso) => new Date(`${iso}T12:00:00Z`);
 const lg = (name, type, season, me, extra = {}) => ({
 	id: name, name, type, season,
 	standings: me ? [{ franchiseId: '1', isMe: false, wins: 9, losses: 9, ties: 0 }, { franchiseId: '2', isMe: true, ...me }] : [],
@@ -57,16 +58,16 @@ const lg = (name, type, season, me, extra = {}) => ({
 		lg('A', 'dynasty', '2026', { wins: 3, losses: 0, ties: 0 }),
 		lg('B', 'redraft', '2026', { wins: 1, losses: 2, ties: 1 }),
 		lg('C', 'draftonly', '2026', { wins: 5, losses: 5, ties: 0 }),
-	], 2026);
+	], D('2026-10-02'));
 	assert.deepEqual([r.wins, r.losses, r.ties, r.counted, r.eligible], [4, 2, 1, 2, 2]);
 }
 
-// A league on last season is eligible but not counted.
+// A league whose season has ended is eligible but not counted.
 {
 	const r = computeSeasonRecord([
 		lg('A', 'dynasty', '2025', { wins: 10, losses: 3, ties: 0 }),
 		lg('B', 'dynasty', '2026', { wins: 1, losses: 1, ties: 0 }),
-	], 2026);
+	], D('2026-10-02'));
 	assert.deepEqual([r.wins, r.losses, r.counted, r.eligible], [1, 1, 1, 2]);
 }
 
@@ -75,38 +76,35 @@ const lg = (name, type, season, me, extra = {}) => ({
 	const r = computeSeasonRecord([
 		lg('A', 'dynasty', '2026', null),
 		lg('B', 'dynasty', '2026', { wins: 0, losses: 0, ties: 0 }),
-	], 2026);
+	], D('2026-10-02'));
 	assert.deepEqual([r.wins, r.losses, r.counted, r.eligible], [0, 0, 1, 2]);
 }
 
 // Missing season data doesn't exclude (NaN < year is false), and no leagues is safe.
-assert.equal(computeSeasonRecord([lg('A', 'dynasty', undefined, { wins: 1, losses: 0, ties: 0 })], 2026).counted, 1);
-assert.equal(computeSeasonRecord(undefined, 2026).counted, 0);
+assert.equal(computeSeasonRecord([lg('A', 'dynasty', undefined, { wins: 1, losses: 0, ties: 0 })], D('2026-10-02')).counted, 1);
+assert.equal(computeSeasonRecord(undefined, D('2026-10-02')).counted, 0);
 
 // Ties print only when present.
 assert.equal(formatRecord(16, 17, 0), '16-17');
 assert.equal(formatRecord(16, 17, 1), '16-17-1');
 
-// Offseason: a league on last season shows no record anywhere (currentRecord
-// feeds the Rosters card, quick links and Scoring pills); a rolled-over 0-0
-// league shows none either; an in-season league still does.
+// Offseason. The 2026 season ends the day after Super Bowl LXI (Sunday
+// 2027-02-14), so records stay up through the playoffs and that Sunday, then
+// go away. A rolled-over 0-0 league shows none either.
 {
-	const stale = lg('A', 'dynasty', '2026', { wins: 10, losses: 3, ties: 0 });
-	const fresh = lg('B', 'dynasty', '2027', { wins: 0, losses: 0, ties: 0 });
-	const live = lg('C', 'dynasty', '2026', { wins: 2, losses: 1, ties: 0 });
-	context.pageData = undefined;
-	assert.equal(currentRecord(stale, '2'), '10-3', 'no snapshot year: nothing is stale');
-	vm.runInContext("pageData = { year: '2027' };", context);
-	assert.equal(currentRecord(stale, '2'), null);
-	assert.equal(currentRecord(fresh, '2'), null);
-	vm.runInContext("pageData = { year: '2026' };", context);
-	assert.equal(currentRecord(live, '2'), '2-1');
-	assert.equal(recordIsStale(lg('D', 'redraft', undefined, null), 2027), false);
-	// Header: every league stale or 0-0 means nothing to total.
-	const off = computeSeasonRecord([stale, fresh], 2027);
+	const l26 = lg('A', 'dynasty', '2026', { wins: 10, losses: 3, ties: 0 });
+	const l27 = lg('B', 'dynasty', '2027', { wins: 0, losses: 0, ties: 0 });
+	assert.equal(recordIsStale(l26, D('2026-12-31')), false);
+	assert.equal(recordIsStale(l26, D('2027-01-01')), false, 'New Year is not the end');
+	assert.equal(recordIsStale(l26, D('2027-02-14')), false, 'Super Bowl Sunday still shows');
+	assert.equal(recordIsStale(l26, D('2027-02-15')), true, 'the day after, gone');
+	assert.equal(recordIsStale(l27, D('2027-03-01')), false, 'rolled over: not stale, hidden by 0-0');
+	assert.equal(recordIsStale(lg('D', 'redraft', undefined, null), D('2030-01-01')), false);
+	const off = computeSeasonRecord([l26, l27], D('2027-03-01'));
 	assert.equal(off.counted, 1);
-	assert.equal(off.wins + off.losses + off.ties, 0);
-	vm.runInContext("pageData = null;", context);
+	assert.equal(off.wins + off.losses + off.ties, 0, 'only the 0-0 league remains: header hides');
+	const jan = computeSeasonRecord([l26], D('2027-01-15'));
+	assert.deepEqual([jan.wins, jan.losses, jan.counted], [10, 3, 1]);
 }
 
 // renderSeasonRecord returns quietly when its element is missing, so a lost
