@@ -466,7 +466,10 @@ await test('page: Waivers sits between Scores and Standings', () => {
   assert.match(order, /'scoring', 'waivers', 'standings'/);
 });
 await test('page: the Waivers cards are built only when logged in', () => {
-  assert.match(html, /if \(isLoggedIn\(\)\) \{\s*for \(const kind of \['waivers', 'auctions'\]\)/);
+  // The loop must sit inside the login-gated block. Other cards (Team Needs
+  // leads the tab) may come first, but only lines at the block's own depth,
+  // so the match can never run past the block's closing brace.
+  assert.match(html, /\n\t\t\tif \(isLoggedIn\(\)\) \{\n(?:\t\t\t\t[^\n]*\n|\n)*?\t\t\t\tfor \(const kind of \['waivers', 'auctions'\]\)/);
 });
 // The page's "Over in" wording, run from the page's own source.
 const timeLeftSrc = html.match(/function formatAuctionTimeLeft\(([^\n]*)\) \{\n([\s\S]*?)\n\t\t\}/);
