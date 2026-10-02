@@ -1854,6 +1854,11 @@
 		.now-playing-card {
 			grid-column: 1 / -1;
 		}
+		/* Power Rankings spans the Standings grid for the same reason, and
+		   sits ahead of every league's standings card in DOM order. */
+		.power-rank-card {
+			grid-column: 1 / -1;
+		}
 		/* Just the live count today — kept as its own flex row (rather than
 		   folded into the heading) since it used to share this line with a
 		   Score sort toggle, and a future subtitle addition has the same
@@ -11096,7 +11101,9 @@
 			// updateVisibility's own type filter — a card with no type on it
 			// is the established way to opt out of that filter (see History/
 			// Admin cards).
-			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': '' });
+			// Lives on the Standings tab now, full grid width and first in DOM
+			// order (see renderGrid and refreshPowerRankCard).
+			const card = el('div', { class: 'card power-rank-card', 'data-view': 'standings', 'data-league-type': '' });
 			const heading = el('h2', { class: 'card-heading', text: 'Power Rankings' });
 			card.appendChild(heading);
 			makeCollapsible(card, heading, 'power');
@@ -14022,6 +14029,7 @@
 				afterChange: () => {
 					if (currentView === 'analytics') refreshMergedAnalyticsCards();
 					if (currentView === 'waivers') refreshTeamNeedsCard();
+					if (currentView === 'standings') refreshPowerRankCard();
 					updateVisibility();
 				},
 			});
@@ -15772,7 +15780,6 @@
 		// — see the SUBTAB_GROUP comment for the ranking-list hazard that's
 		// specific to it.
 		const MERGED_ANALYTICS_CARD_RENDERERS = {
-			'merged-power-rank-card': (types, data) => renderPowerRankCard(types, data.leagues, data.year),
 			'merged-bye-weeks-card': (types, data) => renderByeWeeksCard(types, data.leagues),
 			'merged-player-exposure-card': (types, data) => renderAnalyticsCard(types, data.leagues),
 			'merged-injury-exposure-card': (types, data) => renderInjuryExposureCard(types, data.leagues),
@@ -15797,11 +15804,9 @@
 			'merged-injury-exposure-card',
 			'merged-loss-exposure-card',
 			'merged-bye-weeks-card',
-			'merged-power-rank-card',
 			'merged-player-exposure-card',
 		];
 		const MERGED_ANALYTICS_ORDER_OFFSEASON = [
-			'merged-power-rank-card',
 			'merged-player-exposure-card',
 			'merged-bye-weeks-card',
 			'merged-injury-exposure-card',
@@ -15856,6 +15861,21 @@
 				cursor.insertAdjacentElement('afterend', card);
 				cursor = card;
 			}
+		}
+
+		// Power Rankings lives at the top of the Standings tab, spanning
+		// whichever sub-tabs are checked there; rebuilt in place after its
+		// anchor on a pill toggle, same pattern as Team Needs below.
+		function refreshPowerRankCard() {
+			if (!pageData) return;
+			const anchor = document.getElementById('power-rank-anchor');
+			if (!anchor) return;
+			document.getElementById('merged-power-rank-card')?.remove();
+			const selectedGroups = selectedLeagueTypesByView.standings || new Set();
+			const card = renderPowerRankCard(unionTypesForGroups(selectedGroups), pageData.leagues, pageData.year);
+			if (!card) return;
+			card.id = 'merged-power-rank-card';
+			anchor.insertAdjacentElement('afterend', card);
 		}
 
 		// Team Needs now lives on the Waivers tab and, like the merged
@@ -16220,6 +16240,21 @@
 			if (watchlist) gridEl.appendChild(watchlist);
 			const nowPlaying = renderNowPlayingCard(data.leagues);
 			if (nowPlaying) gridEl.appendChild(nowPlaying);
+			// Power Rankings: top of the Standings tab, ahead of every league's
+			// standings card in DOM order. Login-gated like the rest of the
+			// roster-derived analytics. The standings view's default selection
+			// is seeded here so the card has one on the very first render.
+			if (isLoggedIn()) {
+				const powerAnchor = el('div', { class: 'hidden', 'data-view': 'standings', 'data-league-type': '' });
+				powerAnchor.id = 'power-rank-anchor';
+				gridEl.appendChild(powerAnchor);
+				const standingsGroups = selectedTypesForView('standings', analyticsPresentGroups(data.leagues));
+				const powerCard = renderPowerRankCard(unionTypesForGroups(standingsGroups), data.leagues, data.year);
+				if (powerCard) {
+					powerCard.id = 'merged-power-rank-card';
+					gridEl.appendChild(powerCard);
+				}
+			}
 			for (const league of data.leagues) {
 				gridEl.appendChild(renderCard(league));
 				if (league.standings !== undefined || league.standingsError) {
