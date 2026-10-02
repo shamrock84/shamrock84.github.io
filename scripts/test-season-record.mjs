@@ -87,4 +87,9 @@ assert.equal(computeSeasonRecord(undefined, 2026).counted, 0);
 assert.equal(formatRecord(16, 17, 0), '16-17');
 assert.equal(formatRecord(16, 17, 1), '16-17-1');
 
+// renderSeasonRecord returns quietly when its element is missing, so a lost
+// markup edit would otherwise pass everything above.
+assert.match(html, /<button[^>]*id="season-record"/);
+assert.match(html, /id="season-record-sep"/);
+
 console.log('test-season-record: ok');
