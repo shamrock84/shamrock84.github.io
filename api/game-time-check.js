@@ -31,6 +31,7 @@
 
 import { mflLogin, fetchMflInjuries, fetchNflGames } from '../scripts/lib/providers.mjs';
 import { resolveStore } from './plans.js';
+import { storeGet, storeSet } from './lib/store.mjs';
 import {
   WATCH_LEAD_MINUTES,
   slotsInWindow,
@@ -67,24 +68,6 @@ async function mflInjuries() {
     cache.mflCookieAt = Date.now();
   }
   return fetchMflInjuries(cache.mflCookie);
-}
-
-async function storeGet(store, key) {
-  const res = await fetch(`${store.url}/get/${encodeURIComponent(key)}`, { headers: { Authorization: `Bearer ${store.token}` } });
-  if (!res.ok) throw new Error(`Store read failed (${res.status})`);
-  const { result } = await res.json();
-  return result ? JSON.parse(result) : null;
-}
-
-async function storeSet(store, key, value) {
-  // Upstash's REST API takes a raw command as a JSON array, which is the
-  // simplest way to attach the expiry.
-  const res = await fetch(store.url, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${store.token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(['SET', key, JSON.stringify(value), 'EX', String(SENT_TTL_SECONDS)]),
-  });
-  if (!res.ok) throw new Error(`Store write failed (${res.status})`);
 }
 
 async function pushover({ title, body, priority }) {
@@ -176,7 +159,7 @@ export default async function handler(req, res) {
       if (message && feedErrors.length) message.body += `\n(Some feeds failed: ${feedErrors.join('; ')})`;
       if (message && !dryRun) {
         await pushover(message);
-        await storeSet(store, storeKey, next);
+        await storeSet(store, storeKey, next, SENT_TTL_SECONDS);
       }
       results.push({
         kickoff,

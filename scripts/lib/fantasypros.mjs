@@ -291,6 +291,14 @@ function nthWeekdayUtc(year, month, weekday, n) {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+// The Thursday after Labor Day for a season, as a UTC midnight timestamp —
+// the same kickoff nflSeasonPhase uses, exported so api/weekly-results.js can
+// count NFL weeks off the calendar rather than trusting each provider's own
+// (disagreeing) idea of when the week turns over.
+export function nflKickoffUtc(year) {
+  return nthWeekdayUtc(year, 8, 1, 1) + 3 * DAY_MS;
+}
+
 // { inSeason, season } — season being the NFL season year, which is the
 // calendar year everywhere except between New Year and the Super Bowl, when
 // the season still running is the previous year's.

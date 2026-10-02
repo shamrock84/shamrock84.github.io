@@ -473,6 +473,15 @@ jobs:
       - name: Test the game-time injury checker
         run: node scripts/test-game-time-check.mjs
 
+      # The weekly results push is a summary the manager reads as complete, so
+      # its failure that matters is a quiet omission. Pins that the finished
+      # week comes off the calendar and only on Tuesday/Wednesday, that a bye
+      # or unscored week is "no game" rather than a loss, that an unreadable
+      # league is listed but never counted, and that long reports split under
+      # Pushover's message cap.
+      - name: Test the weekly results push
+        run: node scripts/test-weekly-results.mjs
+
       # The W-L(-T) suffix appended to a team's name on Rosters and Scoring
       # (currentRecord/appendRecord). Every failure mode here is silent — a
       # wrong franchiseId join renders a plausible record for the wrong
