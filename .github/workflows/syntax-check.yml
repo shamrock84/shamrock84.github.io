@@ -194,6 +194,11 @@ jobs:
       - name: Test the problems digest
         run: node scripts/test-problems-digest.mjs
 
+      # The header's all-leagues season record. Its mistakes are silent: a
+      # draft-only or last-season league folded in just shifts a number.
+      - name: Test the season record
+        run: node scripts/test-season-record.mjs
+
       # The power ranks: projection joins, slot parsing, the greedy lineup
       # valuation, and the page's standings join. Every failure here renders
       # as a plausible column of small numbers — nothing on screen says a

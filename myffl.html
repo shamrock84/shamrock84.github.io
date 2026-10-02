@@ -298,6 +298,16 @@
 			justify-content: center;
 			gap: 0.3rem;
 		}
+		/* The all-leagues record, beside "Last synced". No breakdown of its
+		   own: the quick-links toolbar already lists every league's record.
+		   Its color reuses .roster-record's up/down/even classes (set in
+		   renderSeasonRecord), so the green/red/plain meaning is the same one
+		   the Rosters card already teaches. */
+		.season-record {
+			font-size: 0.85rem;
+		}
+		.season-record-label { font-weight: 400; color: var(--muted); }
+		.season-record-sep { color: var(--muted); font-size: 0.85rem; }
 		#updated {
 			color: var(--muted);
 			font-size: 0.85rem;
@@ -3784,7 +3794,9 @@
 			<img src="images/ffl_black.gif" alt="FFL" class="site-logo">
 		</h1>
 		<div class="updated-row">
-			<span id="updated">Loading&hellip;</span>
+			<span id="season-record" class="season-record hidden"></span>
+				<span id="season-record-sep" class="season-record-sep hidden" aria-hidden="true">&middot;</span>
+				<span id="updated">Loading&hellip;</span>
 			<button type="button" id="sync-btn" aria-label="Sync now" title="Sync now">
 				<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 					<polyline points="23 4 23 10 17 10"></polyline>
@@ -7824,6 +7836,67 @@
 			const r = (league.standings || []).find((row) => row.franchiseId === franchiseId);
 			const cls = r.wins === r.losses ? 'roster-record' : `roster-record ${r.wins > r.losses ? 'roster-record-up' : 'roster-record-down'}`;
 			return { text: record, cls };
+		}
+
+		// Sum of the manager's own record across every league that plays
+		// head-to-head games this season — the number the header shows. Three
+		// exclusions, each a "couldn't tell / doesn't apply" rather than a zero:
+		// draftonly leagues (no matchups to have a record in), a league whose
+		// season trails the snapshot's (its standings are last year's, which
+		// would be summed into this year's total), and a league with no isMe row
+		// (standings unread). A 0-0 league that WAS read still counts as read,
+		// so `counted` can honestly say how many leagues the total covers.
+		function computeSeasonRecord(leagues, year) {
+			const rows = [];
+			let eligible = 0;
+			let wins = 0;
+			let losses = 0;
+			let ties = 0;
+			for (const lg of leagues || []) {
+				if (lg.type === 'draftonly') continue;
+				eligible++;
+				if (Number(lg.season) < Number(year)) continue;
+				const me = (lg.standings || []).find((r) => r.isMe);
+				if (!me) continue;
+				const w = Number(me.wins) || 0;
+				const l = Number(me.losses) || 0;
+				const t = Number(me.ties) || 0;
+				wins += w;
+				losses += l;
+				ties += t;
+				rows.push({ name: leagueDisplayName(lg), wins: w, losses: l, ties: t });
+			}
+			return { wins, losses, ties, counted: rows.length, eligible, rows };
+		}
+
+		function formatRecord(w, l, t) {
+			return t ? `${w}-${l}-${t}` : `${w}-${l}`;
+		}
+
+		function renderSeasonRecord(data) {
+			const btn = document.getElementById('season-record');
+			const sep = document.getElementById('season-record-sep');
+			if (!btn) return;
+			const rec = computeSeasonRecord(data && data.leagues, data && data.year);
+			if (!rec.counted) {
+				btn.classList.add('hidden');
+				if (sep) sep.classList.add('hidden');
+				return;
+			}
+			const games = rec.wins + rec.losses + rec.ties;
+			const pct = games ? `${(((rec.wins + rec.ties / 2) / games) * 100).toFixed(1)}%` : '—';
+			btn.className = 'season-record';
+			btn.innerHTML = '';
+			btn.appendChild(el('span', { class: 'season-record-label', text: 'Overall ' }));
+			btn.appendChild(el('span', {
+				class: rec.wins === rec.losses ? 'roster-record' : `roster-record ${rec.wins > rec.losses ? 'roster-record-up' : 'roster-record-down'}`,
+				text: `${formatRecord(rec.wins, rec.losses, rec.ties)} (${pct})`,
+			}));
+			if (sep) sep.classList.remove('hidden');
+			// The one thing the toolbar can't say: that the total leaves a
+			// league out (unread standings, or still on last season).
+			if (rec.counted < rec.eligible) btn.title = `${rec.counted} of ${rec.eligible} leagues counted`;
+			else btn.removeAttribute('title');
 		}
 
 		function scoringMetaLine(t) {
@@ -16457,6 +16530,7 @@
 					currentView = 'scoring';
 					localStorage.setItem(VIEW_STORAGE_KEY, currentView);
 				}
+				renderSeasonRecord(data);
 				renderGrid();
 				// After the render, not before it: the roster is already on
 				// screen from the local copy, and this only pulls in plans made
