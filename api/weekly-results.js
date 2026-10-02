@@ -60,9 +60,17 @@ const CONFIG_PATH = fileURLToPath(new URL('../config/leagues.json', import.meta.
 const SNAPSHOT_URL = 'https://melbostads.com/data/rosters.json';
 const APP_URL = 'https://melbostads.com/myffl.html';
 const SENT_TTL_SECONDS = 14 * 24 * 60 * 60;
-// Same pacing as live-scoring.js, for the same reason: a burst of MFL requests
-// is what draws the 429s.
-setMflRequestInterval(300);
+// A burst of MFL requests is what draws the 429s. This runs unattended on a
+// schedule, not behind a user-facing tab like live-scoring.js (300ms), so it
+// can afford to be slower: the read has ~25s of headroom under maxDuration.
+setMflRequestInterval(600);
+// Leagues that still fail after the first pass are retried this many times,
+// waiting RETRY_WAIT_MS x round between passes, but only while the read has
+// used less than RETRY_DEADLINE_MS of the function's 60s.
+const RETRY_ROUNDS = 2;
+const RETRY_WAIT_MS = 5000;
+const RETRY_DEADLINE_MS = 35000;
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function authorized(req) {
   const secret = process.env.GAMETIME_CHECK_SECRET;
@@ -107,7 +115,10 @@ async function readLeague(league, week, cookie, snapshotLeague) {
     } else {
       const data = await mflGet(`/export?TYPE=weeklyResults&L=${league.id}&W=${week}&JSON=1`, cookie, seasonOf(league));
       matchups = mflWeekMatchups(data);
-      standings = await fetchStandings(league, cookie);
+      // Only the manager's own row is read, so the franchise-name map fetchStandings
+      // would otherwise pull (a whole extra TYPE=league request) is skipped by
+      // handing it an empty one.
+      standings = await fetchStandings(league, cookie, { nameById: new Map(), ownerById: new Map() });
     }
     entry.result = myResult(matchups, league.franchiseId);
     if (league.weeklyMedianGame) entry.median = medianResult(matchups, league.franchiseId);
@@ -183,6 +194,18 @@ export default async function handler(req, res) {
       }
       return readLeague(league, week, cookie, snap);
     }));
+    // A 429 is MFL saying "not now", not an answer: retry just the leagues that
+    // failed, after a pause, before reporting them as unreadable.
+    for (let round = 1; round <= RETRY_ROUNDS; round++) {
+      const failed = entries.map((e, i) => (e.error ? i : -1)).filter((i) => i >= 0);
+      if (failed.length === 0 || Date.now() - startedAt > RETRY_DEADLINE_MS) break;
+      await sleep(RETRY_WAIT_MS * round);
+      await Promise.all(failed.map(async (i) => {
+        const league = leagues[i];
+        if (!cookie && (!league.provider || league.provider === 'mfl')) return;
+        entries[i] = await readLeague(league, week, cookie, snapshotById.get(String(league.id)));
+      }));
+    }
     const readMs = Date.now() - startedAt;
 
     const messages = buildMessages(week, entries);

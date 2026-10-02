@@ -84,7 +84,8 @@ assert.equal(lines[0], 'W MNMx · 132.44 · 3-1');
 assert.equal(lines[1], 'L Dynasty B · 98.05 · 1-3-1');
 assert.equal(lines[2], '– Bye League: no game · 2-2');
 assert.match(lines[3], /^⚠ Broken: couldn't read \(429\)$/);
-assert.equal(buildMessages(4, entries)[0].title, 'Week 4: 1-1-1 overall');
+assert.equal(buildMessages(4, entries)[0].title, 'Week 4: 1-1-1 overall (1 unread)', 'an unreadable league is flagged in the headline');
+assert.equal(buildMessages(4, entries.filter((e) => !e.error))[0].title, 'Week 4: 1-1-1 overall');
 
 // Splitting: every body under the cap, every line preserved once, in order.
 const many = Array.from({ length: 40 }, (_, i) => ({ name: `League number ${i}`, result: { result: 'W', points: 100 + i }, record: { wins: i, losses: 0, ties: 0 } }));
