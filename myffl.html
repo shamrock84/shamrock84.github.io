@@ -298,18 +298,13 @@
 			justify-content: center;
 			gap: 0.3rem;
 		}
-		/* The all-leagues season record, beside "Last synced". A button only so
-		   it can open the per-league breakdown; stripped back to read as text.
+		/* The all-leagues record, beside "Last synced". No breakdown of its
+		   own: the quick-links toolbar already lists every league's record.
 		   Its color reuses .roster-record's up/down/even classes (set in
 		   renderSeasonRecord), so the green/red/plain meaning is the same one
 		   the Rosters card already teaches. */
 		.season-record {
-			background: none;
-			border: 0;
-			padding: 0;
-			font: inherit;
 			font-size: 0.85rem;
-			cursor: pointer;
 		}
 		.season-record-label { font-weight: 400; color: var(--muted); }
 		.season-record-sep { color: var(--muted); font-size: 0.85rem; }
@@ -3799,7 +3794,7 @@
 			<img src="images/ffl_black.gif" alt="FFL" class="site-logo">
 		</h1>
 		<div class="updated-row">
-			<button type="button" id="season-record" class="season-record hidden" aria-label="Overall record across all leagues"></button>
+			<span id="season-record" class="season-record hidden"></span>
 				<span id="season-record-sep" class="season-record-sep hidden" aria-hidden="true">&middot;</span>
 				<span id="updated">Loading&hellip;</span>
 			<button type="button" id="sync-btn" aria-label="Sync now" title="Sync now">
@@ -7878,7 +7873,6 @@
 			return t ? `${w}-${l}-${t}` : `${w}-${l}`;
 		}
 
-		const seasonRecordPopover = makePopover('seasonRecord');
 		function renderSeasonRecord(data) {
 			const btn = document.getElementById('season-record');
 			const sep = document.getElementById('season-record-sep');
@@ -7899,11 +7893,10 @@
 				text: `${formatRecord(rec.wins, rec.losses, rec.ties)} (${pct})`,
 			}));
 			if (sep) sep.classList.remove('hidden');
-			btn.onclick = () => {
-				const rows = rec.rows.map((r) => ({ left: r.name, right: formatRecord(r.wins, r.losses, r.ties) }));
-				if (rec.counted < rec.eligible) rows.push({ left: 'Leagues counted', right: `${rec.counted} of ${rec.eligible}` });
-				seasonRecordPopover.toggle(btn, 'Overall record', rows);
-			};
+			// The one thing the toolbar can't say: that the total leaves a
+			// league out (unread standings, or still on last season).
+			if (rec.counted < rec.eligible) btn.title = `${rec.counted} of ${rec.eligible} leagues counted`;
+			else btn.removeAttribute('title');
 		}
 
 		function scoringMetaLine(t) {

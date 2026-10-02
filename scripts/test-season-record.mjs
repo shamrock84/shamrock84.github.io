@@ -89,7 +89,7 @@ assert.equal(formatRecord(16, 17, 1), '16-17-1');
 
 // renderSeasonRecord returns quietly when its element is missing, so a lost
 // markup edit would otherwise pass everything above.
-assert.match(html, /<button[^>]*id="season-record"/);
+assert.match(html, /<[a-z]+[^>]*id="season-record"/);
 assert.match(html, /id="season-record-sep"/);
 
 console.log('test-season-record: ok');
