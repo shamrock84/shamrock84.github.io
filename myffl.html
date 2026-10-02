@@ -15786,35 +15786,22 @@
 			'merged-loss-exposure-card': (types, data) => renderLossExposureCard(types, data.leagues),
 		};
 
-		// Display order flips with the NFL calendar (nflInSeason()). In
-		// season, the weekly action cards lead — a rostered player's injury
-		// status or bye this week is what you act on before the week locks,
-		// ahead of the longer-horizon roster-construction cards. Off-season
-		// nothing on that weekly list means anything yet (no games, no
-		// byes, no in-week injury news), so the roster-construction cards
-		// lead instead and the weekly ones sink to the bottom. Both
+		// One fixed display order, in season and out: Bye Weeks, Player
+		// Exposure, Injury Exposure, Loss Exposure. (It used to flip on
+		// nflInSeason(); the manager asked for a single order.) Both
 		// appendMergedAnalyticsCards and refreshMergedAnalyticsCards call
-		// mergedAnalyticsCards() for this so the two can't disagree about
-		// order, or about order changing mid-session at a rollover. Loss
-		// Exposure stays immediately after Injury Exposure in both orders
-		// — they split one designation vocabulary (INJURY_SETTLED) into
-		// two cards, so reading one without the other beside it misses
-		// half the picture.
-		const MERGED_ANALYTICS_ORDER_IN_SEASON = [
-			'merged-injury-exposure-card',
-			'merged-loss-exposure-card',
+		// mergedAnalyticsCards() so the two can't disagree. Loss Exposure
+		// stays immediately after Injury Exposure — they split one
+		// designation vocabulary (INJURY_SETTLED) into two cards, so reading
+		// one without the other beside it misses half the picture.
+		const MERGED_ANALYTICS_ORDER = [
 			'merged-bye-weeks-card',
 			'merged-player-exposure-card',
-		];
-		const MERGED_ANALYTICS_ORDER_OFFSEASON = [
-			'merged-player-exposure-card',
-			'merged-bye-weeks-card',
 			'merged-injury-exposure-card',
 			'merged-loss-exposure-card',
 		];
 		function mergedAnalyticsCards() {
-			const order = nflInSeason() ? MERGED_ANALYTICS_ORDER_IN_SEASON : MERGED_ANALYTICS_ORDER_OFFSEASON;
-			return order.map((id) => ({ id, render: MERGED_ANALYTICS_CARD_RENDERERS[id] }));
+			return MERGED_ANALYTICS_ORDER.map((id) => ({ id, render: MERGED_ANALYTICS_CARD_RENDERERS[id] }));
 		}
 
 		// Builds and appends every merged card right after
