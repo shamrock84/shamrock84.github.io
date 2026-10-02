@@ -12,6 +12,7 @@ import {
   espnWeekMatchups,
   sleeperWeekMatchups,
   myResult,
+  medianResult,
   summarize,
   buildMessages,
   PUSHOVER_BODY_LIMIT,
@@ -92,6 +93,31 @@ assert.ok(msgs.length > 1);
 assert.ok(msgs.every((m) => m.body.length <= PUSHOVER_BODY_LIMIT));
 assert.equal(msgs.map((m) => m.body).join('\n').split('\n').length, 40);
 assert.equal(msgs[1].title, `Week 7: 40-0 overall (2/${msgs.length})`);
+
+// Weekly-median league: second decision vs the average of ALL teams' scores.
+const med = sleeperWeekMatchups([
+  { roster_id: 1, matchup_id: 1, points: 200 },
+  { roster_id: 2, matchup_id: 1, points: 180 },
+  { roster_id: 3, matchup_id: 2, points: 100 },
+  { roster_id: 4, matchup_id: 2, points: 120 },
+]); // average 150
+assert.equal(medianResult(med, 1).result, 'W');
+assert.equal(medianResult(med, 2).result, 'W');
+assert.equal(medianResult(med, 3).result, 'L');
+assert.equal(medianResult(med, 4).result, 'L');
+assert.equal(medianResult(med, 9), null, 'not in the week');
+assert.equal(medianResult(sleeperWeekMatchups([{ roster_id: 1, matchup_id: 1, points: 0 }, { roster_id: 2, matchup_id: 1, points: 0 }]), 1), null, 'unscored week');
+assert.equal(medianResult(sleeperWeekMatchups([{ roster_id: 1, matchup_id: 1, points: 100 }, { roster_id: 2, matchup_id: 1, points: 100 }]), 1).result, 'T', 'exactly the average');
+{
+  // Both decisions count in the overall record and show as W+L; a bye still gets the median game.
+  const { overall, lines } = summarize([
+    { name: 'SFB', team: 'Gold', result: { result: 'W', points: 228.82 }, median: { result: 'L', points: 228.82 }, record: { wins: 3, losses: 3, ties: 0 } },
+    { name: 'Bye', team: 'B', result: null, median: { result: 'W', points: 150 }, record: { wins: 1, losses: 0, ties: 0 } },
+  ]);
+  assert.deepEqual(overall, { wins: 2, losses: 1, ties: 0 });
+  assert.equal(lines[0], 'W+L SFB – Gold · 228.82 · 3-3');
+  assert.equal(lines[1], 'W Bye – B · 150.00 · 1-0');
+}
 
 // Handler guards.
 function call(query, headers = {}) {

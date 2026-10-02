@@ -49,6 +49,7 @@ import {
   espnWeekMatchups,
   sleeperWeekMatchups,
   myResult,
+  medianResult,
   buildMessages,
 } from './_lib/weeklyresults.mjs';
 
@@ -108,6 +109,7 @@ async function readLeague(league, week, cookie, snapshotLeague) {
       standings = await fetchStandings(league, cookie);
     }
     entry.result = myResult(matchups, league.franchiseId);
+    if (league.weeklyMedianGame) entry.median = medianResult(matchups, league.franchiseId);
     const me = standings.find((r) => r.isMe);
     if (me) entry.record = { wins: Number(me.wins) || 0, losses: Number(me.losses) || 0, ties: Number(me.ties) || 0 };
   } catch (e) {

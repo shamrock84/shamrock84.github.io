@@ -94,14 +94,29 @@ export function myResult(matchups, franchiseId) {
   return null;
 }
 
+// The second game of a "weekly median" league (config weeklyMedianGame): the
+// manager's score against the average of every team's score that week, taken
+// over all the matchups so a bye's score still counts toward the average.
+// Same null rule as myResult — a week where nobody has scored isn't a tie.
+export function medianResult(matchups, franchiseId) {
+  const all = matchups.flatMap((m) => m.teams);
+  const me = all.find((t) => t.franchiseId === String(franchiseId));
+  if (!me || all.every((t) => t.points === 0)) return null;
+  const avg = all.reduce((sum, t) => sum + t.points, 0) / all.length;
+  const result = me.points > avg ? 'W' : me.points < avg ? 'L' : 'T';
+  return { result, points: me.points, avg };
+}
+
 export function recordLabel({ wins, losses, ties }) {
   return ties ? `${wins}-${losses}-${ties}` : `${wins}-${losses}`;
 }
 
 const pts = (n) => n.toFixed(2);
 
-// entries: [{ name, team, result: {result, points}|null, record: {wins,losses,ties}|null, error?: string }]
-// Returns { overall: {wins, losses, ties}, lines: [string] }.
+// entries: [{ name, team, result: {result, points}|null, median?: {result, points}|null,
+//             record: {wins,losses,ties}|null, error?: string }]
+// A weekly-median league has two decisions for the week, each counted in the
+// overall record and shown as "W+L". Returns { overall: {wins, losses, ties}, lines: [string] }.
 export function summarize(entries) {
   const overall = { wins: 0, losses: 0, ties: 0 };
   const lines = [];
@@ -112,14 +127,17 @@ export function summarize(entries) {
       continue;
     }
     const rec = e.record ? ` · ${recordLabel(e.record)}` : '';
-    if (!e.result) {
+    const games = [e.result, e.median].filter(Boolean);
+    if (games.length === 0) {
       lines.push(`– ${label}: no game${rec}`);
       continue;
     }
-    if (e.result.result === 'W') overall.wins++;
-    else if (e.result.result === 'L') overall.losses++;
-    else overall.ties++;
-    lines.push(`${e.result.result} ${label} · ${pts(e.result.points)}${rec}`);
+    for (const g of games) {
+      if (g.result === 'W') overall.wins++;
+      else if (g.result === 'L') overall.losses++;
+      else overall.ties++;
+    }
+    lines.push(`${games.map((g) => g.result).join('+')} ${label} · ${pts(games[0].points)}${rec}`);
   }
   return { overall, lines };
 }
