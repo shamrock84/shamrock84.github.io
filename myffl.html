@@ -7814,7 +7814,13 @@
 		// league silent here without a separate check — its h2h fields are
 		// always zero (see showRecord in renderStandingsCard), so it never
 		// clears this gate either.
+		//
+		// Also omitted once the league's season trails the snapshot's year
+		// (see recordIsStale): from New Year until a provider opens the new
+		// season, the standings are last season's finished table, and showing
+		// it as "the record" is the same noise the 0-0 rule exists to avoid.
 		function currentRecord(league, franchiseId) {
+			if (recordIsStale(league, pageData && pageData.year)) return null;
 			const r = (league.standings || []).find((row) => row.franchiseId === franchiseId);
 			if (!r || (r.wins === 0 && r.losses === 0)) return null;
 			return `${r.wins}-${r.losses}`;
@@ -7846,6 +7852,13 @@
 		// would be summed into this year's total), and a league with no isMe row
 		// (standings unread). A 0-0 league that WAS read still counts as read,
 		// so `counted` can honestly say how many leagues the total covers.
+		// A league still on last season: its standings are the finished table.
+		// Both halves must be present to mean anything (NaN < year is false),
+		// so a snapshot older than the `season` field keeps showing records.
+		function recordIsStale(league, year) {
+			return Number(league.season) < Number(year);
+		}
+
 		function computeSeasonRecord(leagues, year) {
 			const rows = [];
 			let eligible = 0;
@@ -7855,7 +7868,7 @@
 			for (const lg of leagues || []) {
 				if (lg.type === 'draftonly') continue;
 				eligible++;
-				if (Number(lg.season) < Number(year)) continue;
+				if (recordIsStale(lg, year)) continue;
 				const me = (lg.standings || []).find((r) => r.isMe);
 				if (!me) continue;
 				const w = Number(me.wins) || 0;
@@ -7878,7 +7891,9 @@
 			const sep = document.getElementById('season-record-sep');
 			if (!btn) return;
 			const rec = computeSeasonRecord(data && data.leagues, data && data.year);
-			if (!rec.counted) {
+			// No games yet is the offseason / season-opener state: "Overall 0-0
+			// (—)" is noise, so the whole thing goes away until a game is played.
+			if (!rec.counted || rec.wins + rec.losses + rec.ties === 0) {
 				btn.classList.add('hidden');
 				if (sep) sep.classList.add('hidden');
 				return;

@@ -43,7 +43,7 @@ const context = {
 };
 vm.createContext(context);
 vm.runInContext(scriptSource, context);
-const { computeSeasonRecord, formatRecord } = context;
+const { computeSeasonRecord, formatRecord, currentRecord, recordIsStale } = context;
 
 const lg = (name, type, season, me, extra = {}) => ({
 	id: name, name, type, season,
@@ -86,6 +86,28 @@ assert.equal(computeSeasonRecord(undefined, 2026).counted, 0);
 // Ties print only when present.
 assert.equal(formatRecord(16, 17, 0), '16-17');
 assert.equal(formatRecord(16, 17, 1), '16-17-1');
+
+// Offseason: a league on last season shows no record anywhere (currentRecord
+// feeds the Rosters card, quick links and Scoring pills); a rolled-over 0-0
+// league shows none either; an in-season league still does.
+{
+	const stale = lg('A', 'dynasty', '2026', { wins: 10, losses: 3, ties: 0 });
+	const fresh = lg('B', 'dynasty', '2027', { wins: 0, losses: 0, ties: 0 });
+	const live = lg('C', 'dynasty', '2026', { wins: 2, losses: 1, ties: 0 });
+	context.pageData = undefined;
+	assert.equal(currentRecord(stale, '2'), '10-3', 'no snapshot year: nothing is stale');
+	vm.runInContext("pageData = { year: '2027' };", context);
+	assert.equal(currentRecord(stale, '2'), null);
+	assert.equal(currentRecord(fresh, '2'), null);
+	vm.runInContext("pageData = { year: '2026' };", context);
+	assert.equal(currentRecord(live, '2'), '2-1');
+	assert.equal(recordIsStale(lg('D', 'redraft', undefined, null), 2027), false);
+	// Header: every league stale or 0-0 means nothing to total.
+	const off = computeSeasonRecord([stale, fresh], 2027);
+	assert.equal(off.counted, 1);
+	assert.equal(off.wins + off.losses + off.ties, 0);
+	vm.runInContext("pageData = null;", context);
+}
 
 // renderSeasonRecord returns quietly when its element is missing, so a lost
 // markup edit would otherwise pass everything above.
