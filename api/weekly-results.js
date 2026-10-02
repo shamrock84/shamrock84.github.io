@@ -81,7 +81,7 @@ async function pushover({ title, body }) {
     url: APP_URL,
     url_title: 'Open MyFFL',
   });
-  const res = await fetch('https://api.pushover.net/1/messages.json', { method: 'POST', body: form });
+  const res = await fetch('https://api.pushover.net/1/messages.json', { method: 'POST', body: form, signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error(`Pushover rejected the message (${res.status}): ${await res.text()}`);
 }
 
@@ -134,6 +134,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    const startedAt = Date.now();
     const dryRun = !!req.query?.dryRun;
     const now = new Date();
     const { season } = nflSeasonPhase(now);
@@ -157,7 +158,7 @@ export default async function handler(req, res) {
     const leagues = JSON.parse(await readFile(CONFIG_PATH, 'utf8')).leagues.filter((l) => l.franchiseId && l.type !== 'draftonly');
     // Fallback names only: a failed snapshot read costs the synced league name,
     // never the report.
-    const snapshot = await fetch(`${SNAPSHOT_URL}?t=${Date.now()}`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    const snapshot = await fetch(`${SNAPSHOT_URL}?t=${Date.now()}`, { signal: AbortSignal.timeout(8000) }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
     const snapshotById = new Map((snapshot?.leagues || []).map((l) => [String(l.id), l]));
 
     let cookie = null;
@@ -171,22 +172,25 @@ export default async function handler(req, res) {
       }
     }
 
-    const entries = [];
-    for (const league of leagues) {
+    // All leagues at once, in config order. MFL's own requests are still
+    // spaced by the shared pacing gate (setMflRequestInterval above), so the
+    // burst it prevents can't happen; what this removes is ESPN, Sleeper and
+    // each MFL league waiting in line behind one another's round trips.
+    const entries = await Promise.all(leagues.map((league) => {
       const snap = snapshotById.get(String(league.id));
       if (!cookie && (!league.provider || league.provider === 'mfl')) {
-        entries.push({ name: displayName(league, snap), error: `MFL login failed: ${mflError}` });
-        continue;
+        return { name: displayName(league, snap), error: `MFL login failed: ${mflError}` };
       }
-      entries.push(await readLeague(league, week, cookie, snap));
-    }
+      return readLeague(league, week, cookie, snap);
+    }));
+    const readMs = Date.now() - startedAt;
 
     const messages = buildMessages(week, entries);
     if (!dryRun) {
       for (const m of messages) await pushover(m);
       await storeSet(store, storeKey, { at: now.toISOString(), messages: messages.length }, SENT_TTL_SECONDS);
     }
-    res.status(200).json({ ok: true, dryRun, week, sent: !dryRun, messages });
+    res.status(200).json({ ok: true, dryRun, week, sent: !dryRun, readMs, totalMs: Date.now() - startedAt, messages });
   } catch (err) {
     // A 500 is what makes cron-job.org's own failure email fire.
     res.status(500).json({ error: err.message });
