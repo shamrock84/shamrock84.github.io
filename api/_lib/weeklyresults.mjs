@@ -146,7 +146,8 @@ export function summarize(entries) {
 // lines. The first carries the headline in its title; later ones are numbered.
 export function buildMessages(week, entries) {
   const { overall, lines } = summarize(entries);
-  const headline = `Week ${week}: ${recordLabel(overall)} overall`;
+  const unread = entries.filter((e) => e.error).length;
+  const headline = `Week ${week}: ${recordLabel(overall)} overall${unread ? ` (${unread} unread)` : ''}`;
   const chunks = [];
   let current = '';
   for (const line of lines) {
