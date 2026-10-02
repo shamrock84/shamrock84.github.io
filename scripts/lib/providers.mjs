@@ -3383,6 +3383,13 @@ export async function currentNflWeek() {
   return resolveNflWeek(state);
 }
 
+// One week's raw matchup rows for a Sleeper league, for a caller that needs a
+// SPECIFIC week rather than whatever /state/nfl calls current (api/weekly-
+// results.js asks for the week that just finished).
+export async function fetchSleeperWeekMatchups(league, week) {
+  return sleeperGet(`/league/${league.id}/matchups/${week}`);
+}
+
 // Sleeper's full player database (~12k players) — fetch once and share
 // across every Sleeper league in a sync, same role as loadPlayerMap (MFL).
 export async function loadSleeperPlayerMap() {
