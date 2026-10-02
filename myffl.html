@@ -1856,12 +1856,14 @@
 		}
 		/* Power Rankings spans the Standings grid for the same reason, and
 		   sits ahead of every league's standings card in DOM order. */
-		.power-rank-card {
+		.power-rank-card,
+		.needs-card {
 			grid-column: 1 / -1;
 		}
 		/* The collapsed-card league summary; hidden while the card is open,
 		   since the table below says the same thing in full. */
-		.card:not(.card-collapsed) .power-collapsed-summary {
+		.card:not(.card-collapsed) .power-collapsed-summary,
+		.card:not(.card-collapsed) .needs-collapsed-summary {
 			display: none;
 		}
 		/* Just the live count today — kept as its own flex row (rather than
@@ -11369,7 +11371,7 @@
 
 			// See renderPowerRankCard's identical comment: no data-league-type
 			// on purpose, so updateVisibility never hides this merged card.
-			const card = el('div', { class: 'card', 'data-view': 'waivers', 'data-league-type': '' });
+			const card = el('div', { class: 'card needs-card', 'data-view': 'waivers', 'data-league-type': '' });
 			const heading = el('h2', { class: 'card-heading', text: 'Team Needs' });
 			card.appendChild(heading);
 			makeCollapsible(card, heading, 'needs');
@@ -11394,6 +11396,32 @@
 			};
 			const { sortedRows, sortableHeader } = makeTableSort(rows, SORTS, () => renderBody());
 
+			// Which positions count as a need for one row (the bolded cells and the
+			// collapsed summary line). Pulled out of renderBody so the two can't disagree.
+			function needPositionsFor(r) {
+				const detail = detailOf(r);
+				const byPos = detail ? detail.byPosition : null;
+				const ranked = byPos ? POWER_POSITIONS.filter((pos) => byPos[pos] != null) : [];
+				const needThreshold = r.size != null ? r.size / 2 : null;
+				let needPositions = needThreshold != null
+					? ranked.filter((pos) => byPos[pos].overall > needThreshold)
+					: [];
+				if (needPositions.length === 0 && ranked.length > 0) {
+					const values = ranked.map((pos) => byPos[pos].overall);
+					const worstValue = Math.max(...values);
+					// Only when there is an actual worst to point at — a
+					// team tied at the same rank everywhere (all 1s in a
+					// two-team league, say) has no position that is
+					// relatively weaker than the others, and flagging
+					// all four just because they share the max would
+					// call an evenly-strong roster needy everywhere.
+					if (worstValue > Math.min(...values)) {
+						needPositions = ranked.filter((pos) => byPos[pos].overall === worstValue);
+					}
+				}
+				return needPositions;
+			}
+
 			function renderBody() {
 				table.innerHTML = '';
 				const headRow = el('tr');
@@ -11411,6 +11439,8 @@
 
 					const detail = detailOf(r);
 					const byPos = detail ? detail.byPosition : null;
+					// needPositionsFor (above renderBody) decides which positions are
+					// flagged, shared with the collapsed-card summary line. The rules:
 					// A "need" is primarily any position ranked below the
 					// league's own average — worse than half the field, e.g.
 					// rank 6+ of 10, 7+ of 12, 8+ of 14 — not just whichever
@@ -11431,24 +11461,7 @@
 					// position(s): ties share the flag rather than picking one
 					// arbitrarily, the same rule the average-based flag
 					// already follows.
-					const ranked = byPos ? POWER_POSITIONS.filter((pos) => byPos[pos] != null) : [];
-					const needThreshold = r.size != null ? r.size / 2 : null;
-					let needPositions = needThreshold != null
-						? ranked.filter((pos) => byPos[pos].overall > needThreshold)
-						: [];
-					if (needPositions.length === 0 && ranked.length > 0) {
-						const values = ranked.map((pos) => byPos[pos].overall);
-						const worstValue = Math.max(...values);
-						// Only when there is an actual worst to point at — a
-						// team tied at the same rank everywhere (all 1s in a
-						// two-team league, say) has no position that is
-						// relatively weaker than the others, and flagging
-						// all four just because they share the max would
-						// call an evenly-strong roster needy everywhere.
-						if (worstValue > Math.min(...values)) {
-							needPositions = ranked.filter((pos) => byPos[pos].overall === worstValue);
-						}
-					}
+					const needPositions = needPositionsFor(r);
 					// Under the league name, not in a flagged cell itself — a
 					// sub-line there would grow that one cell taller than its
 					// neighbors and throw off every column's alignment. This
@@ -11501,6 +11514,15 @@
 					table.appendChild(row);
 				}
 			}
+			// Shown only while collapsed (CSS): each league by toolbar nickname with
+			// its flagged need positions in parens, in the card's default order.
+			// A league with nothing flagged is left out.
+			const needsSummary = rows
+				.map((r) => ({ r, needs: needPositionsFor(r) }))
+				.filter((x) => x.needs.length > 0)
+				.map((x) => `${x.r.nickname} (${x.needs.join(', ')})`)
+				.join(', ');
+			if (needsSummary) card.appendChild(el('div', { class: 'team card-collapse-visible needs-collapsed-summary', text: needsSummary }));
 			renderBody();
 			card.appendChild(table);
 			return card;
@@ -16351,15 +16373,26 @@
 			// Inserted ahead of the Admin cards rather than after, only so the
 			// DOM reads in tab order; visibility is per data-view either way.
 			if (isLoggedIn()) {
+				// Team Needs leads the Waivers tab, full width, ahead of the live
+				// claims/auctions cards (DOM order is what puts it first).
+				const needsAnchor = el('div', { class: 'hidden', 'data-view': 'waivers', 'data-league-type': '' });
+				needsAnchor.id = 'team-needs-anchor';
+				gridEl.appendChild(needsAnchor);
+				const waiverGroups = selectedTypesForView('waivers', analyticsPresentGroups(data.leagues));
+				const needsCard = renderTeamNeedsCard(unionTypesForGroups(waiverGroups), data.leagues, data.year);
+				if (needsCard) {
+					needsCard.id = 'merged-team-needs-card';
+					gridEl.appendChild(needsCard);
+				}
+
 				for (const kind of ['waivers', 'auctions']) {
 					const card = renderWaiversCard(kind, data.leagues);
 					if (card) gridEl.appendChild(card);
 				}
 
-				// Top Available and Team Needs live here (moved from
-				// Analytics), after the live claims/auctions, since both are
-				// about who to pick up. Team Needs spans whichever pills are
-				// checked and is rebuilt by refreshTeamNeedsCard.
+				// Top Available lives here too (moved from Analytics), after the
+				// live claims/auctions. Team Needs, above, spans whichever pills
+				// are checked and is rebuilt by refreshTeamNeedsCard.
 				// Top Available is the one Analytics card still built one per
 				// group rather than spanning the live sub-tab selection — see
 				// TOP_AVAILABLE_GROUP for why it alone keeps a ranking-list
@@ -16384,16 +16417,6 @@
 				}
 
 				appendTopAvailableCards();
-
-				const needsAnchor = el('div', { class: 'hidden', 'data-view': 'waivers', 'data-league-type': '' });
-				needsAnchor.id = 'team-needs-anchor';
-				gridEl.appendChild(needsAnchor);
-				const waiverGroups = selectedTypesForView('waivers', analyticsPresentGroups(data.leagues));
-				const needsCard = renderTeamNeedsCard(unionTypesForGroups(waiverGroups), data.leagues, data.year);
-				if (needsCard) {
-					needsCard.id = 'merged-team-needs-card';
-					gridEl.appendChild(needsCard);
-				}
 			}
 
 			const presentViews = new Set([...gridEl.querySelectorAll('.card')].map((c) => c.dataset.view).filter(Boolean));
