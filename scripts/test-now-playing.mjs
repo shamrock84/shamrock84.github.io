@@ -372,18 +372,21 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 	assert.equal(rows.length, 0, "a bench player whose game isn't today doesn't appear either");
 }
 
-// A player started in one league and benched in another is classified a
-// starter overall — the more actionable of the two facts wins the row's
-// placement (see computeNowPlaying's own comment on this).
+// A player started in one league and benched in another is TWO rows: a
+// starter row naming only the starting league, and a bench row naming only
+// the benched one (no combined "(2)" row crediting both).
 {
 	const ctx = makeContext();
 	setLiveGames(ctx, { BUF: { state: 'in' } });
 	const rows = ctx.computeNowPlaying([
-		league('L62', '0001', [{ name: 'Split Guy', position: 'QB', team: 'BUF', points: 20 }]),
-		league('L63', '0002', [], [], 'dynasty', undefined, undefined, [{ name: 'Split Guy', position: 'QB', team: 'BUF', points: 20 }]),
+		league('L62', '0001', [{ name: 'Split Guy', position: 'QB', team: 'BUF', points: 20 }], [], 'dynasty', 'Started'),
+		league('L63', '0002', [], [], 'dynasty', 'Benched', undefined, [{ name: 'Split Guy', position: 'QB', team: 'BUF', points: 20 }]),
 	], SUNDAY_NOW);
-	assert.equal(rows.length, 1, 'the two leagues merge into one row, same as any other cross-league merge');
-	assert.equal(rows[0].starter, true, 'started in even one league outranks benched in another');
+	assert.equal(rows.length, 2, 'split role yields a starter row and a bench row');
+	const s = rows.find((r) => r.starter);
+	const b = rows.find((r) => !r.starter);
+	assert.equal(s.entries.map((e) => e.nickname).join(','), 'Started');
+	assert.equal(b.entries.map((e) => e.nickname).join(','), 'Benched');
 }
 
 // --- renderNowPlayingCard: Starters and Bench render as separate,
