@@ -11340,7 +11340,7 @@
 
 			// See renderPowerRankCard's identical comment: no data-league-type
 			// on purpose, so updateVisibility never hides this merged card.
-			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': '' });
+			const card = el('div', { class: 'card', 'data-view': 'waivers', 'data-league-type': '' });
 			const heading = el('h2', { class: 'card-heading', text: 'Team Needs' });
 			card.appendChild(heading);
 			makeCollapsible(card, heading, 'needs');
@@ -11491,7 +11491,7 @@
 			// matches on any one of them — since the pills themselves are
 			// split via SUBTAB_GROUP and no longer share this card's grouping.
 			const pillGroups = [...new Set(types.map((t) => SUBTAB_GROUP[t] || t))];
-			const card = el('div', { class: 'card', 'data-view': 'analytics', 'data-league-type': pillGroups.join(',') });
+			const card = el('div', { class: 'card', 'data-view': 'waivers', 'data-league-type': pillGroups.join(',') });
 			const heading = el('h2', { class: 'card-heading', text: 'Top Available' });
 			card.appendChild(heading);
 			makeCollapsible(card, heading, `available:${groupKey}`);
@@ -13696,7 +13696,7 @@
 			// more than one pill actually puts same-titled cards on screen
 			// together; with just one group checked (the common case) it
 			// stays hidden, same as an ordinary visit always looked.
-			const showAnalyticsGroupLabel = currentView === 'analytics' && selectedTypes && selectedTypes.size > 1;
+			const showAnalyticsGroupLabel = (currentView === 'analytics' || currentView === 'waivers') && selectedTypes && selectedTypes.size > 1;
 			document.querySelectorAll('.card').forEach((card) => {
 				// The Depth Charts wrapper card (renderDepthChartCards) nests 32
 				// team cards inside itself rather than sitting beside them as a
@@ -13984,7 +13984,7 @@
 			// skips Draft Only outright, so a Draft Only-only selection could
 			// leave zero analytics cards carrying that type — see
 			// analyticsPresentGroups' own comment.
-			const present = currentView === 'analytics'
+			const present = (currentView === 'analytics' || currentView === 'waivers')
 				? analyticsPresentGroups(pageData ? pageData.leagues : [])
 				: (() => {
 					const typesInView = new Set(
@@ -14018,6 +14018,7 @@
 				// visibility — see refreshMergedAnalyticsCards.
 				afterChange: () => {
 					if (currentView === 'analytics') refreshMergedAnalyticsCards();
+					if (currentView === 'waivers') refreshTeamNeedsCard();
 					updateVisibility();
 				},
 			});
@@ -14063,7 +14064,7 @@
 		// elsewhere the second thing would silently match nothing, so it
 		// stays unmentioned rather than promising a filter that tab doesn't
 		// offer.
-		const SEARCHABLE_VIEWS = new Set(['rosters', 'analytics']);
+		const SEARCHABLE_VIEWS = new Set(['rosters', 'analytics', 'waivers']);
 		const DEFAULT_SEARCH_PLACEHOLDER = 'Filter by player name…';
 		const ROSTERS_SEARCH_PLACEHOLDER = 'Filter by player, league or team name…';
 		const NFL_SEARCH_PLACEHOLDER = 'Filter by player or NFL team…';
@@ -14072,6 +14073,7 @@
 			rosters: ROSTERS_SEARCH_PLACEHOLDER,
 			nfl: NFL_SEARCH_PLACEHOLDER,
 			analytics: ANALYTICS_SEARCH_PLACEHOLDER,
+			waivers: ANALYTICS_SEARCH_PLACEHOLDER,
 		};
 
 		// Search only ever does anything on the Depth Charts card now that
@@ -15768,7 +15770,6 @@
 		// specific to it.
 		const MERGED_ANALYTICS_CARD_RENDERERS = {
 			'merged-power-rank-card': (types, data) => renderPowerRankCard(types, data.leagues, data.year),
-			'merged-team-needs-card': (types, data) => renderTeamNeedsCard(types, data.leagues, data.year),
 			'merged-bye-weeks-card': (types, data) => renderByeWeeksCard(types, data.leagues),
 			'merged-player-exposure-card': (types, data) => renderAnalyticsCard(types, data.leagues),
 			'merged-injury-exposure-card': (types, data) => renderInjuryExposureCard(types, data.leagues),
@@ -15794,11 +15795,9 @@
 			'merged-loss-exposure-card',
 			'merged-bye-weeks-card',
 			'merged-power-rank-card',
-			'merged-team-needs-card',
 			'merged-player-exposure-card',
 		];
 		const MERGED_ANALYTICS_ORDER_OFFSEASON = [
-			'merged-team-needs-card',
 			'merged-power-rank-card',
 			'merged-player-exposure-card',
 			'merged-bye-weeks-card',
@@ -15854,6 +15853,23 @@
 				cursor.insertAdjacentElement('afterend', card);
 				cursor = card;
 			}
+		}
+
+		// Team Needs now lives on the Waivers tab and, like the merged
+		// Analytics cards it used to sit among, is built from the union of
+		// whichever sub-tabs are checked — so a pill toggle rebuilds it in
+		// place after its anchor (an unrendered card leaves nothing else to
+		// say where it belongs).
+		function refreshTeamNeedsCard() {
+			if (!pageData) return;
+			const anchor = document.getElementById('team-needs-anchor');
+			if (!anchor) return;
+			document.getElementById('merged-team-needs-card')?.remove();
+			const selectedGroups = selectedLeagueTypesByView.waivers || new Set();
+			const card = renderTeamNeedsCard(unionTypesForGroups(selectedGroups), pageData.leagues, pageData.year);
+			if (!card) return;
+			card.id = 'merged-team-needs-card';
+			anchor.insertAdjacentElement('afterend', card);
 		}
 
 		// Safe to call more than once (e.g. after a manual sync completes) —
@@ -16238,39 +16254,7 @@
 			if (isLoggedIn()) {
 				const presentGroups = analyticsPresentGroups(data.leagues);
 
-				// Top Available is the one Analytics card still built one per
-				// group rather than spanning the live sub-tab selection — see
-				// TOP_AVAILABLE_GROUP for why it alone keeps a ranking-list
-				// merge the sub-tab split below doesn't apply to, and the
-				// SUBTAB_GROUP comment for the hazard that still rules out
-				// merging Redraft in too. Shown or hidden by the pills rather
-				// than recomputed by them, same as before the split — see
-				// renderTopAvailableCard's own comment on how one card now
-				// answers to two pills at once. Draft Only never gets one at
-				// all: those leagues run a single draft and never open a
-				// waiver wire, so there is no "free agent" for the card to
-				// mean anything by.
-				function appendTopAvailableCards() {
-					const topAvailableGroups = presentGroupsFor(TOP_AVAILABLE_GROUP, TOP_AVAILABLE_ORDER, data.leagues);
-					for (const groupKey of topAvailableGroups) {
-						if (groupKey === 'draftonly') continue;
-						const types = typesInGroupMap(TOP_AVAILABLE_GROUP, groupKey);
-						const availableCard = renderTopAvailableCard(groupKey, types, data.leagues, data.rankingPools, data.year);
-						if (availableCard) gridEl.appendChild(availableCard);
-						appendGroupLabel(availableCard, groupKey, TOP_AVAILABLE_LABEL_OVERRIDES);
-					}
-				}
-
-				// In season, Top Available (the freshest wire pickups) leads
-				// the whole tab, ahead of even the weekly action cards below
-				// — see MERGED_ANALYTICS_ORDER_IN_SEASON's own comment for
-				// why those in turn lead the roster-construction cards.
-				// Off-season there's no wire worth checking ahead of
-				// anything else, so it falls back to trailing the merged
-				// block, its position before this ordering existed.
-				if (nflInSeason()) appendTopAvailableCards();
-
-				// Power Rankings, Team Needs, Bye Weeks and the three exposure
+				// Power Rankings, Bye Weeks and the three exposure
 				// cards, one apiece spanning the union of whichever sub-tabs
 				// are currently checked — see mergedAnalyticsCards() and
 				// refreshMergedAnalyticsCards. mergedAnalyticsAnchor is the
@@ -16288,7 +16272,6 @@
 				const selectedGroups = selectedTypesForView('analytics', presentGroups);
 				appendMergedAnalyticsCards(gridEl, selectedGroups, data);
 
-				if (!nflInSeason()) appendTopAvailableCards();
 			}
 
 			// History: ungated, like NFL above — see the History tab comment
@@ -16327,6 +16310,45 @@
 				for (const kind of ['waivers', 'auctions']) {
 					const card = renderWaiversCard(kind, data.leagues);
 					if (card) gridEl.appendChild(card);
+				}
+
+				// Top Available and Team Needs live here (moved from
+				// Analytics), after the live claims/auctions, since both are
+				// about who to pick up. Team Needs spans whichever pills are
+				// checked and is rebuilt by refreshTeamNeedsCard.
+				// Top Available is the one Analytics card still built one per
+				// group rather than spanning the live sub-tab selection — see
+				// TOP_AVAILABLE_GROUP for why it alone keeps a ranking-list
+				// merge the sub-tab split below doesn't apply to, and the
+				// SUBTAB_GROUP comment for the hazard that still rules out
+				// merging Redraft in too. Shown or hidden by the pills rather
+				// than recomputed by them, same as before the split — see
+				// renderTopAvailableCard's own comment on how one card now
+				// answers to two pills at once. Draft Only never gets one at
+				// all: those leagues run a single draft and never open a
+				// waiver wire, so there is no "free agent" for the card to
+				// mean anything by.
+				function appendTopAvailableCards() {
+					const topAvailableGroups = presentGroupsFor(TOP_AVAILABLE_GROUP, TOP_AVAILABLE_ORDER, data.leagues);
+					for (const groupKey of topAvailableGroups) {
+						if (groupKey === 'draftonly') continue;
+						const types = typesInGroupMap(TOP_AVAILABLE_GROUP, groupKey);
+						const availableCard = renderTopAvailableCard(groupKey, types, data.leagues, data.rankingPools, data.year);
+						if (availableCard) gridEl.appendChild(availableCard);
+						appendGroupLabel(availableCard, groupKey, TOP_AVAILABLE_LABEL_OVERRIDES);
+					}
+				}
+
+				appendTopAvailableCards();
+
+				const needsAnchor = el('div', { class: 'hidden', 'data-view': 'waivers', 'data-league-type': '' });
+				needsAnchor.id = 'team-needs-anchor';
+				gridEl.appendChild(needsAnchor);
+				const waiverGroups = selectedTypesForView('waivers', analyticsPresentGroups(data.leagues));
+				const needsCard = renderTeamNeedsCard(unionTypesForGroups(waiverGroups), data.leagues, data.year);
+				if (needsCard) {
+					needsCard.id = 'merged-team-needs-card';
+					gridEl.appendChild(needsCard);
 				}
 			}
 
