@@ -11,7 +11,7 @@
 // file for why no provider's own "current week" is trusted. The season record
 // is a fresh standings read, not the 4-hourly snapshot, so a sync that ran
 // before Monday night ended can't leave it a game behind. The snapshot is read
-// only for display names. Run it after MFL has processed the week (mid-morning
+// only for a display-name fallback. Run it after MFL has processed the week (mid-morning
 // Eastern is safe); a standings read that hasn't caught up would be a game
 // short, and nothing here can tell.
 //
@@ -49,6 +49,7 @@ import {
   espnWeekMatchups,
   sleeperWeekMatchups,
   myResult,
+  medianResult,
   buildMessages,
 } from './_lib/weeklyresults.mjs';
 
@@ -84,14 +85,15 @@ async function pushover({ title, body }) {
   if (!res.ok) throw new Error(`Pushover rejected the message (${res.status}): ${await res.text()}`);
 }
 
-// Same fallback order as leagueDisplayName in myffl.html: a manual override,
-// then the live synced league name, then the config's own.
+// The short Toolbar Label (`nickname`) keeps a line of the report narrow; a
+// league without one falls back in the same order as leagueDisplayName in
+// myffl.html: a manual override, the live synced league name, the config's own.
 function displayName(league, snapshotLeague) {
-  return league.displayName || snapshotLeague?.displayName || snapshotLeague?.leagueName || league.name;
+  return league.nickname || league.displayName || snapshotLeague?.displayName || snapshotLeague?.leagueName || league.name;
 }
 
 async function readLeague(league, week, cookie, snapshotLeague) {
-  const entry = { name: displayName(league, snapshotLeague), team: snapshotLeague?.teamName || null, result: null, record: null };
+  const entry = { name: displayName(league, snapshotLeague), result: null, record: null };
   try {
     let matchups;
     let standings;
@@ -108,6 +110,7 @@ async function readLeague(league, week, cookie, snapshotLeague) {
       standings = await fetchStandings(league, cookie);
     }
     entry.result = myResult(matchups, league.franchiseId);
+    if (league.weeklyMedianGame) entry.median = medianResult(matchups, league.franchiseId);
     const me = standings.find((r) => r.isMe);
     if (me) entry.record = { wins: Number(me.wins) || 0, losses: Number(me.losses) || 0, ties: Number(me.ties) || 0 };
   } catch (e) {
@@ -152,7 +155,7 @@ export default async function handler(req, res) {
     }
 
     const leagues = JSON.parse(await readFile(CONFIG_PATH, 'utf8')).leagues.filter((l) => l.franchiseId && l.type !== 'draftonly');
-    // Names only: a failed snapshot read costs the synced league/team names,
+    // Fallback names only: a failed snapshot read costs the synced league name,
     // never the report.
     const snapshot = await fetch(`${SNAPSHOT_URL}?t=${Date.now()}`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
     const snapshotById = new Map((snapshot?.leagues || []).map((l) => [String(l.id), l]));
@@ -172,7 +175,7 @@ export default async function handler(req, res) {
     for (const league of leagues) {
       const snap = snapshotById.get(String(league.id));
       if (!cookie && (!league.provider || league.provider === 'mfl')) {
-        entries.push({ name: displayName(league, snap), team: snap?.teamName || null, error: `MFL login failed: ${mflError}` });
+        entries.push({ name: displayName(league, snap), error: `MFL login failed: ${mflError}` });
         continue;
       }
       entries.push(await readLeague(league, week, cookie, snap));

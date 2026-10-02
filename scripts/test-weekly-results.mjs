@@ -12,6 +12,7 @@ import {
   espnWeekMatchups,
   sleeperWeekMatchups,
   myResult,
+  medianResult,
   summarize,
   buildMessages,
   PUSHOVER_BODY_LIMIT,
@@ -71,27 +72,52 @@ assert.equal(myResult(sleeperWeekMatchups([{ roster_id: 1, matchup_id: 1, points
 
 // Summary: unreadable and no-game leagues stay out of the overall record.
 const entries = [
-  { name: 'MNMx', team: 'Rumble Fish', result: { result: 'W', points: 132.44 }, record: { wins: 3, losses: 1, ties: 0 } },
-  { name: 'Dynasty B', team: 'Foo', result: { result: 'L', points: 98.05 }, record: { wins: 1, losses: 3, ties: 1 } },
-  { name: 'Bye League', team: 'Baz', result: null, record: { wins: 2, losses: 2, ties: 0 } },
-  { name: 'Broken', team: 'Bar', error: '429' },
-  { name: 'Tied', team: 'T', result: { result: 'T', points: 100 }, record: { wins: 0, losses: 0, ties: 1 } },
+  { name: 'MNMx', result: { result: 'W', points: 132.44 }, record: { wins: 3, losses: 1, ties: 0 } },
+  { name: 'Dynasty B', result: { result: 'L', points: 98.05 }, record: { wins: 1, losses: 3, ties: 1 } },
+  { name: 'Bye League', result: null, record: { wins: 2, losses: 2, ties: 0 } },
+  { name: 'Broken', error: '429' },
+  { name: 'Tied', result: { result: 'T', points: 100 }, record: { wins: 0, losses: 0, ties: 1 } },
 ];
 const { overall, lines } = summarize(entries);
 assert.deepEqual(overall, { wins: 1, losses: 1, ties: 1 });
-assert.equal(lines[0], 'W MNMx – Rumble Fish · 132.44 · 3-1');
-assert.equal(lines[1], 'L Dynasty B – Foo · 98.05 · 1-3-1');
-assert.equal(lines[2], '– Bye League – Baz: no game · 2-2');
-assert.match(lines[3], /^⚠ Broken – Bar: couldn't read \(429\)$/);
+assert.equal(lines[0], 'W MNMx · 132.44 · 3-1');
+assert.equal(lines[1], 'L Dynasty B · 98.05 · 1-3-1');
+assert.equal(lines[2], '– Bye League: no game · 2-2');
+assert.match(lines[3], /^⚠ Broken: couldn't read \(429\)$/);
 assert.equal(buildMessages(4, entries)[0].title, 'Week 4: 1-1-1 overall');
 
 // Splitting: every body under the cap, every line preserved once, in order.
-const many = Array.from({ length: 40 }, (_, i) => ({ name: `League number ${i}`, team: 'A Fairly Long Team Name', result: { result: 'W', points: 100 + i }, record: { wins: i, losses: 0, ties: 0 } }));
+const many = Array.from({ length: 40 }, (_, i) => ({ name: `League number ${i}`, result: { result: 'W', points: 100 + i }, record: { wins: i, losses: 0, ties: 0 } }));
 const msgs = buildMessages(7, many);
 assert.ok(msgs.length > 1);
 assert.ok(msgs.every((m) => m.body.length <= PUSHOVER_BODY_LIMIT));
 assert.equal(msgs.map((m) => m.body).join('\n').split('\n').length, 40);
 assert.equal(msgs[1].title, `Week 7: 40-0 overall (2/${msgs.length})`);
+
+// Weekly-median league: second decision vs the average of ALL teams' scores.
+const med = sleeperWeekMatchups([
+  { roster_id: 1, matchup_id: 1, points: 200 },
+  { roster_id: 2, matchup_id: 1, points: 180 },
+  { roster_id: 3, matchup_id: 2, points: 100 },
+  { roster_id: 4, matchup_id: 2, points: 120 },
+]); // average 150
+assert.equal(medianResult(med, 1).result, 'W');
+assert.equal(medianResult(med, 2).result, 'W');
+assert.equal(medianResult(med, 3).result, 'L');
+assert.equal(medianResult(med, 4).result, 'L');
+assert.equal(medianResult(med, 9), null, 'not in the week');
+assert.equal(medianResult(sleeperWeekMatchups([{ roster_id: 1, matchup_id: 1, points: 0 }, { roster_id: 2, matchup_id: 1, points: 0 }]), 1), null, 'unscored week');
+assert.equal(medianResult(sleeperWeekMatchups([{ roster_id: 1, matchup_id: 1, points: 100 }, { roster_id: 2, matchup_id: 1, points: 100 }]), 1).result, 'T', 'exactly the average');
+{
+  // Both decisions count in the overall record and show as W+L; a bye still gets the median game.
+  const { overall, lines } = summarize([
+    { name: 'SFB', result: { result: 'W', points: 228.82 }, median: { result: 'L', points: 228.82 }, record: { wins: 3, losses: 3, ties: 0 } },
+    { name: 'Bye', result: null, median: { result: 'W', points: 150 }, record: { wins: 1, losses: 0, ties: 0 } },
+  ]);
+  assert.deepEqual(overall, { wins: 2, losses: 1, ties: 0 });
+  assert.equal(lines[0], 'W+L SFB · 228.82 · 3-3');
+  assert.equal(lines[1], 'W Bye · 150.00 · 1-0');
+}
 
 // Handler guards.
 function call(query, headers = {}) {
