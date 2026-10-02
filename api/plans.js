@@ -31,8 +31,8 @@
 // The site password gates a single account, so there is one plan document,
 // not one per user. PLANS_KEY is that document.
 
-import { verifyToken } from './lib/auth.mjs';
-import { applyCors } from './lib/cors.mjs';
+import { verifyToken } from './_lib/auth.mjs';
+import { applyCors } from './_lib/cors.mjs';
 
 const PLANS_KEY = 'myffl:plans';
 

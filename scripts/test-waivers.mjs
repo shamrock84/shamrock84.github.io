@@ -369,7 +369,7 @@ await test('ESPN names: a failed lookup is an empty map, never a thrown claim re
 // --- api/waivers.js ---
 const { default: handler, waiversKindFor } = await import('../api/waivers.js');
 const { YEAR, mflAuctionPageUrl } = await import('./lib/providers.mjs');
-const { createToken } = await import('../api/lib/auth.mjs');
+const { createToken } = await import('../api/_lib/auth.mjs');
 
 function mockRes() {
   return {

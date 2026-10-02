@@ -29,8 +29,8 @@ import {
   fetchEspnPendingWaivers,
   fetchEspnPlayerNames,
 } from '../scripts/lib/providers.mjs';
-import { verifyToken } from './lib/auth.mjs';
-import { applyCors } from './lib/cors.mjs';
+import { verifyToken } from './_lib/auth.mjs';
+import { applyCors } from './_lib/cors.mjs';
 
 const CONFIG_PATH = fileURLToPath(new URL('../config/leagues.json', import.meta.url));
 

@@ -7,7 +7,7 @@
 // no matchups.
 //
 // Every provider is asked for the finished week BY NUMBER, with the number
-// taken off the calendar (api/lib/weeklyresults.mjs finishedWeek) — see that
+// taken off the calendar (api/_lib/weeklyresults.mjs finishedWeek) — see that
 // file for why no provider's own "current week" is trusted. The season record
 // is a fresh standings read, not the 4-hourly snapshot, so a sync that ran
 // before Monday night ended can't leave it a game behind. The snapshot is read
@@ -42,7 +42,7 @@ import {
 } from '../scripts/lib/providers.mjs';
 import { nflSeasonPhase, nflKickoffUtc } from '../scripts/lib/fantasypros.mjs';
 import { resolveStore } from './plans.js';
-import { storeGet, storeSet } from './lib/store.mjs';
+import { storeGet, storeSet } from './_lib/store.mjs';
 import {
   finishedWeek,
   mflWeekMatchups,
@@ -50,7 +50,7 @@ import {
   sleeperWeekMatchups,
   myResult,
   buildMessages,
-} from './lib/weeklyresults.mjs';
+} from './_lib/weeklyresults.mjs';
 
 // ~15 MFL leagues x 3 requests paced 300ms apart, plus ESPN and Sleeper.
 export const config = { maxDuration: 60 };

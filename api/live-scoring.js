@@ -29,7 +29,7 @@ import {
   nflBoxscorePlayerLines,
   fetchMflSkillPositionRates,
 } from '../scripts/lib/providers.mjs';
-import { applyCors } from './lib/cors.mjs';
+import { applyCors } from './_lib/cors.mjs';
 // scripts/lib/fantasypros.mjs is a new import boundary for api/ — see
 // vercel.json's ignoreCommand, which now watches this file too. Without
 // that, a commit touching only fantasypros.mjs would silently skip the
