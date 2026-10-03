@@ -9358,7 +9358,7 @@
 					// '' means "never chosen": it reads as the suggestion, and
 					// choosing it again after picking someone returns to it.
 					const suggested = watchlistSuggestedBackup(en.league, p);
-					select.appendChild(el('option', { value: '', text: suggested ? `Suggested: ${optionLabel(suggested)}` : 'No suggestion' }));
+					select.appendChild(el('option', { value: '', text: suggested ? `Suggest: ${optionLabel(suggested)}` : 'No suggestion' }));
 					select.appendChild(el('option', { value: WATCHLIST_NO_BACKUP, text: 'None' }));
 					for (const c of candidates) select.appendChild(el('option', { value: String(c.id), text: optionLabel(c) }));
 					const saved = getBackupPlan(en.league.id, en.playerId);

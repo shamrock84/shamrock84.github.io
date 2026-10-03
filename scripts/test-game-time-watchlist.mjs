@@ -379,7 +379,7 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	assert.equal(sel.children.length, 2 + 5, 'suggestion + None + five candidates');
 	assert.equal(sel.value, '', 'untouched, the select sits on the suggestion');
 	assert.ok(!sel.classList.contains('watchlist-backup-unset'), 'a suggestion settles it: purple chip, not gold');
-	assert.match(fullText(card), /Suggested: Abe Runner \(RB, DAL\)/);
+	assert.match(fullText(card), /Suggest: Abe Runner \(RB, DAL\)/);
 	assert.match(fullText(card), /Zack Runner \(RB, DAL\) — Q/);
 	assert.equal(ctx.getBackupPlan('L', 'a'), '', 'a suggestion is shown, not saved');
 
