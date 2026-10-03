@@ -45,6 +45,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
+import { resolveBackup } from '../api/_lib/gametime.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const html = fs.readFileSync(path.join(root, 'myffl.html'), 'utf8');
@@ -415,6 +416,34 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	assert.equal(selects(ctx.renderGameTimeWatchlistCard([benched], YEAR)).length, 0);
 	const two = [league('1', [player('a', 'Saquon Barkley', 'PHI', 'Q')], ['a']), league('2', [player('9', 'Saquon Barkley', 'PHI', 'Q')], ['9'])];
 	assert.equal(selects(ctx.renderGameTimeWatchlistCard(two, YEAR)).length, 2);
+}
+
+// The push notification (api/_lib/gametime.mjs resolveBackup) duplicates the
+// page's backup rules. Same fixture through both, every saved-pick state: a
+// drift would tell the phone one name and the card another.
+{
+	const ctx = makeContext(LOGGED_IN);
+	const ecr = (rank) => ({ ecr: { rank } });
+	const l = league('P', [
+		player('a', 'Saquon Barkley', 'PHI', 'Q'),
+		player('r1', 'Yan Runner', 'DAL', null, ecr(30)),
+		player('r2', 'Abe Runner', 'DAL', null, ecr(12)),
+		player('r3', 'Hurt Runner', 'DAL', 'Q', ecr(1)),
+		player('r4', 'Unranked Runner', 'DAL', null),
+		player('w', 'Zed Receiver', 'DAL', null, { position: 'WR', ...ecr(2) }),
+		player('t', 'Taxi Guy', 'DAL', null, { status: 'TAXI_SQUAD', ...ecr(1) }),
+		player('s', 'Other Starter', 'DAL', null, ecr(1)),
+	], ['a', 's']);
+	const thin = league('T', [player('a', 'Saquon Barkley', 'PHI', 'Q'), player('x', 'Hurt Runner', 'DAL', 'Q', ecr(1)), player('w', 'Zed Receiver', 'DAL', null, { position: 'WR', ...ecr(2) })], ['a']);
+	for (const lg of [l, thin]) {
+		for (const saved of [undefined, 'r1', 'r4', 'none', 'gone', 'w', 't', 's']) {
+			ctx.__lg = lg; ctx.__saved = saved || '';
+			const page = vm.runInContext("(() => { localStorage.setItem('myfflBackupPlans', JSON.stringify(__saved ? { [__lg.id]: { a: __saved } } : {})); return watchlistBackupFor(__lg, 'a', __lg.players[0]); })()", ctx);
+			const server = resolveBackup(lg, lg.players[0], saved);
+			assert.equal(server.player ? String(server.player.id) : null, page.player ? String(page.player.id) : null, `${lg.id} saved=${saved}: page and push name the same backup`);
+			assert.equal(server.source, page.source, `${lg.id} saved=${saved}: same source`);
+		}
+	}
 }
 
 console.log('Game-Time Watchlist tests passed');

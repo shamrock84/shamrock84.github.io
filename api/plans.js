@@ -74,7 +74,7 @@ const MAX_TASK_CATEGORY_LENGTH = 40;
 
 // Exported for the unit test in scripts/test-plans.mjs. Vercel only ever
 // invokes the default export, so extra named exports cost nothing at runtime.
-export { validatePlans, mergePlans, emptyDocument, resolveStore, validateTasks, mergeTasks };
+export { validatePlans, mergePlans, emptyDocument, resolveStore, validateTasks, mergeTasks, PLANS_KEY };
 
 // The Upstash integration has injected its REST credentials under two
 // different prefixes over time, and which one a project gets depends on when
