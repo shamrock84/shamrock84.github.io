@@ -2045,14 +2045,30 @@
 			color: var(--muted);
 			margin-top: 0.15rem;
 		}
+		/* The same chip as .years-select/.salary-select/.cut-select on the
+		   Rosters tab — a planning dropdown should look like one control
+		   wherever it appears — kept as its own rule like those three so the
+		   Watchlist's can diverge on its own. text-align is left rather than
+		   right: this one holds a name, not a one-character value. */
 		.watchlist-backup-select {
 			font: inherit;
+			font-size: 0.82rem;
+			color: var(--accent);
+			background: var(--chip-bg);
+			border: 1px solid var(--border);
+			border-radius: 4px;
+			padding: 0.05rem 0.15rem;
 			max-width: 100%;
 		}
-		/* A chosen replacement goes purple, the "mine, notable" colour, so a
-		   starter with no backup picked yet is the one that looks unfinished. */
-		.watchlist-backup-set {
-			color: var(--accent);
+		/* No backup applies (nothing chosen and nothing to suggest): the same
+		   gold .years-select-unset uses for an outstanding task, so the gold
+		   left on this card is exactly the starters still without a
+		   replacement. A chosen or suggested backup — and a deliberate
+		   "None" — is settled and stays the purple chip above. */
+		.watchlist-backup-select.watchlist-backup-unset {
+			color: var(--gold-chip-text);
+			background: var(--gold-chip-bg);
+			border-color: color-mix(in srgb, var(--gold-chip-text) 35%, var(--border));
 		}
 		/* Starters/Bench sub-groups, same .roster-group/.group-label pair
 		   Now Playing's own position groups use (see renderGameTimeWatchlistCard's
@@ -9350,7 +9366,7 @@
 					// A saved pick that no longer applies (left the roster)
 					// shows as '' — the suggestion — never as a stale name.
 					select.value = applies.source === 'chosen' || saved === WATCHLIST_NO_BACKUP ? saved : '';
-					const sync = () => select.classList.toggle('watchlist-backup-set', select.value !== WATCHLIST_NO_BACKUP && (select.value !== '' || !!suggested));
+					const sync = () => select.classList.toggle('watchlist-backup-unset', select.value === '' && !suggested);
 					sync();
 					select.addEventListener('change', () => {
 						setBackupPlan(en.league.id, en.playerId, select.value);

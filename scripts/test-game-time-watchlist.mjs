@@ -370,6 +370,7 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	// No healthy same-position player: no suggestion, never a doubtful one.
 	const thin = league('T', [player('a', 'Saquon Barkley', 'PHI', 'Q'), player('x', 'Zack Runner', 'DAL', 'Q', ecr(2)), player('w', 'Zed Receiver', 'DAL', null, { position: 'WR', ...ecr(1) })], ['a']);
 	assert.equal(ctx.watchlistSuggestedBackup(thin, thin.players[0]), null);
+	assert.ok(findAll(ctx.renderGameTimeWatchlistCard([thin], YEAR), hasClass('watchlist-backup-unset')).length === 1, 'no backup applies: gold, like an unplanned contract length');
 
 	const selects = (card) => findAll(card, hasClass('watchlist-backup-select'));
 	const card = ctx.renderGameTimeWatchlistCard([l], YEAR);
@@ -377,7 +378,7 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	const sel = selects(card)[0];
 	assert.equal(sel.children.length, 2 + 5, 'suggestion + None + five candidates');
 	assert.equal(sel.value, '', 'untouched, the select sits on the suggestion');
-	assert.ok(sel.classList.contains('watchlist-backup-set'));
+	assert.ok(!sel.classList.contains('watchlist-backup-unset'), 'a suggestion settles it: purple chip, not gold');
 	assert.match(fullText(card), /Suggested: Abe Runner \(RB, DAL\)/);
 	assert.match(fullText(card), /Zack Runner \(RB, DAL\) — Q/);
 	assert.equal(ctx.getBackupPlan('L', 'a'), '', 'a suggestion is shown, not saved');
@@ -401,7 +402,7 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	assert.equal(ctx.watchlistBackupFor(l, 'a', l.players[0]).player, null);
 	const none = selects(ctx.renderGameTimeWatchlistCard([l], YEAR))[0];
 	assert.equal(none.value, 'none');
-	assert.ok(!none.classList.contains('watchlist-backup-set'));
+	assert.ok(!none.classList.contains('watchlist-backup-unset'), 'a deliberate None is settled too');
 
 	// Choosing the suggestion row again returns to automatic.
 	sel.value = '';
