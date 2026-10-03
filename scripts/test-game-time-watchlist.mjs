@@ -29,9 +29,13 @@
 //     players".
 //   * each league a player STARTS in gets a replacement picker, listing
 //     that league's non-starting Active Roster players (same position
-//     first, healthy before designated); a benched copy gets none. The
-//     pick is stored per league + starter id (backupPlans, which syncs),
-//     and a saved pick who left the roster falls back to unset.
+//     first, healthy before designated, best ECR first); a benched copy
+//     gets none. Until chosen, the picker defaults to the best healthy
+//     same-position bench player by ECR (never a designated or
+//     off-position one); "None" switches that off. A choice is stored per
+//     league + starter id (backupPlans, which syncs) — a suggestion never
+//     is — and a saved pick who left the roster falls back to the
+//     suggestion.
 //   * the card is login-gated, shows a loading state until game states
 //     have been asked (never a false "nothing to check"), and collapses
 //     itself when empty.
@@ -342,44 +346,68 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	assert.equal(ctx.__store.get(`myfflGroupCollapsed:desktop:watchlist:${EARLY}:bench`), '0', 'expanding away from the default is what actually gets persisted');
 }
 
-// Backup picker: candidates, persistence, and the stale-pick fallback.
+// Backup picker: candidates, the ECR-driven default, persistence, and fallbacks.
 {
 	const ctx = makeContext(LOGGED_IN);
 	setGames(ctx, { PHI: game('LAR', true, EARLY) });
+	const ecr = (rank) => ({ ecr: { rank } });
 	const l = league('L', [
 		player('a', 'Saquon Barkley', 'PHI', 'Q'),
-		player('w1', 'Zed Receiver', 'DAL', null, { position: 'WR' }),
-		player('r2', 'Zack Runner', 'DAL', 'Q'),
-		player('r1', 'Yan Runner', 'DAL', null),
-		player('t', 'Taxi Guy', 'DAL', null, { status: 'TAXI_SQUAD' }),
-		player('s', 'Other Starter', 'DAL', null),
+		player('w1', 'Zed Receiver', 'DAL', null, { position: 'WR', ...ecr(1) }),
+		player('r2', 'Zack Runner', 'DAL', 'Q', ecr(2)),
+		player('r1', 'Yan Runner', 'DAL', null, ecr(30)),
+		player('r3', 'Abe Runner', 'DAL', null, ecr(12)),
+		player('r4', 'Unranked Runner', 'DAL', null),
+		player('t', 'Taxi Guy', 'DAL', null, { status: 'TAXI_SQUAD', ...ecr(1) }),
+		player('s', 'Other Starter', 'DAL', null, ecr(1)),
 	], ['a', 's']);
 
 	const names = ctx.watchlistBackupCandidates(l, l.players[0]).map((c) => c.name);
-	assert.deepEqual(plain(names), ['Yan Runner', 'Zack Runner', 'Zed Receiver'], 'same position first, healthy first, no starters/taxi/the starter himself');
+	assert.deepEqual(plain(names), ['Abe Runner', 'Yan Runner', 'Unranked Runner', 'Zack Runner', 'Zed Receiver'],
+		'same position first, healthy first, best ECR first (unranked last); no starters/taxi/the starter himself');
+	assert.equal(ctx.watchlistSuggestedBackup(l, l.players[0]).name, 'Abe Runner', 'best-ranked healthy same-position player');
+
+	// No healthy same-position player: no suggestion, never a doubtful one.
+	const thin = league('T', [player('a', 'Saquon Barkley', 'PHI', 'Q'), player('x', 'Zack Runner', 'DAL', 'Q', ecr(2)), player('w', 'Zed Receiver', 'DAL', null, { position: 'WR', ...ecr(1) })], ['a']);
+	assert.equal(ctx.watchlistSuggestedBackup(thin, thin.players[0]), null);
 
 	const selects = (card) => findAll(card, hasClass('watchlist-backup-select'));
 	const card = ctx.renderGameTimeWatchlistCard([l], YEAR);
 	assert.equal(selects(card).length, 1);
 	const sel = selects(card)[0];
-	assert.equal(sel.children.length, 4, '— plus three candidates');
+	assert.equal(sel.children.length, 2 + 5, 'suggestion + None + five candidates');
+	assert.equal(sel.value, '', 'untouched, the select sits on the suggestion');
+	assert.ok(sel.classList.contains('watchlist-backup-set'));
+	assert.match(fullText(card), /Suggested: Abe Runner \(RB, DAL\)/);
 	assert.match(fullText(card), /Zack Runner \(RB, DAL\) — Q/);
+	assert.equal(ctx.getBackupPlan('L', 'a'), '', 'a suggestion is shown, not saved');
 
+	// Choosing overrides the suggestion and survives a rebuild.
 	sel.value = 'r1';
 	sel.listeners.change[0]();
 	assert.equal(ctx.getBackupPlan('L', 'a'), 'r1');
 	assert.deepEqual(plain(JSON.parse(ctx.__store.get('myfflPlanPending')).backupPlans), { L: { a: 'r1' } });
-	const again = selects(ctx.renderGameTimeWatchlistCard([l], YEAR))[0];
-	assert.equal(again.value, 'r1', 'the pick survives a rebuild');
-	assert.ok(again.classList.contains('watchlist-backup-set'));
+	assert.equal(ctx.watchlistBackupFor(l, 'a', l.players[0]).source, 'chosen');
+	assert.equal(selects(ctx.renderGameTimeWatchlistCard([l], YEAR))[0].value, 'r1', 'the pick survives a rebuild');
 
-	// The pick left the roster: shown as unset, not as a stale name.
+	// The pick left the roster: back to the suggestion, not a stale name.
 	const gone = league('L', l.players.filter((p) => p.id !== 'r1'), ['a', 's']);
 	assert.equal(selects(ctx.renderGameTimeWatchlistCard([gone], YEAR))[0].value, '');
+	assert.equal(ctx.watchlistBackupFor(gone, 'a', gone.players[0]).player.name, 'Abe Runner');
 
+	// "None" switches the default off and is not mistaken for a player.
+	sel.value = 'none';
+	sel.listeners.change[0]();
+	assert.equal(ctx.watchlistBackupFor(l, 'a', l.players[0]).player, null);
+	const none = selects(ctx.renderGameTimeWatchlistCard([l], YEAR))[0];
+	assert.equal(none.value, 'none');
+	assert.ok(!none.classList.contains('watchlist-backup-set'));
+
+	// Choosing the suggestion row again returns to automatic.
 	sel.value = '';
 	sel.listeners.change[0]();
-	assert.equal(ctx.getBackupPlan('L', 'a'), '', 'clearing removes it');
+	assert.equal(ctx.getBackupPlan('L', 'a'), '');
+	assert.equal(ctx.watchlistBackupFor(l, 'a', l.players[0]).source, 'suggested');
 
 	// A benched player has no picker; two leagues starting him get one each.
 	const benched = league('B', [player('b', 'Bench Guy', 'PHI', 'Q')], []);

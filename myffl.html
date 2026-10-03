@@ -9178,17 +9178,55 @@
 		// player can't be started this week. Same-position players lead
 		// (the usual swap), then the rest so a flex-eligible or
 		// position-changing pick is still reachable; within each, healthy
-		// before designated, then by name. A designated bench player stays
-		// listed, not dropped — the manager may well know he's the best
-		// option, and the label carries his designation either way.
+		// before designated, then best ECR (p.ecr.rank, the same field the
+		// ECR column reads; unranked last), then name. A designated bench
+		// player stays listed, not dropped — the manager may well know he's
+		// the best option, and the label carries his designation either way.
 		function watchlistBackupCandidates(league, starter) {
 			const starting = new Set((league.starters || []).map(String));
 			const samePos = (p) => (p.position && starter && p.position === starter.position ? 0 : 1);
+			const ecrRank = (p) => (p.ecr && Number.isFinite(p.ecr.rank) ? p.ecr.rank : Infinity);
 			return (league.players || [])
 				.filter((p) => (p.status || 'ROSTER').toUpperCase() === 'ROSTER' && !starting.has(String(p.id)))
 				.sort((a, b) => samePos(a) - samePos(b)
 					|| (a.injuryStatus ? 1 : 0) - (b.injuryStatus ? 1 : 0)
+					|| (ecrRank(a) === ecrRank(b) ? 0 : ecrRank(a) < ecrRank(b) ? -1 : 1)
 					|| a.name.localeCompare(b.name));
+		}
+
+		// What the picker shows until the manager chooses: the best-ranked
+		// HEALTHY bench player at the starter's own position. Deliberately
+		// narrower than the candidate list — a different position or a
+		// designated player is a judgement call the manager makes, never a
+		// default, so with no healthy same-position player there is no
+		// suggestion rather than a doubtful one. A designation, even a
+		// Questionable one, disqualifies: the suggestion exists for the
+		// moment the starter is ruled out, when a second coin flip is the
+		// last thing wanted.
+		function watchlistSuggestedBackup(league, starter) {
+			const first = watchlistBackupCandidates(league, starter)[0];
+			if (!first || first.injuryStatus) return null;
+			if (!starter || !first.position || first.position !== starter.position) return null;
+			return first;
+		}
+
+		// Stored in backupPlans for "deliberately no backup", as distinct from
+		// '' (never chosen, so the suggestion shows). Without it a manager who
+		// wants none could not turn the default off. No player id is the word.
+		const WATCHLIST_NO_BACKUP = 'none';
+
+		// The backup that applies to a starter: the manager's saved pick if it
+		// is still a candidate, else the suggestion. A saved pick who has left
+		// the roster falls back to the suggestion rather than showing a stale
+		// name as current. Returns {player, source} — source is 'chosen',
+		// 'suggested' or 'none' — so the picker and tests agree.
+		function watchlistBackupFor(league, playerId, starter) {
+			const saved = getBackupPlan(league.id, playerId);
+			if (saved === WATCHLIST_NO_BACKUP) return { player: null, source: 'none' };
+			const chosen = saved && watchlistBackupCandidates(league, starter).find((c) => String(c.id) === saved);
+			if (chosen) return { player: chosen, source: 'chosen' };
+			const suggested = watchlistSuggestedBackup(league, starter);
+			return suggested ? { player: suggested, source: 'suggested' } : { player: null, source: 'none' };
 		}
 
 		// "Sun 1:00 PM" for a slot heading and "11:40 AM" for when to look,
@@ -9296,19 +9334,23 @@
 					const line = el('div', { class: 'watchlist-backup' });
 					line.appendChild(document.createTextNode(startEntries.length > 1 ? `${en.nickname} backup: ` : 'Backup: '));
 					const select = el('select', { class: 'watchlist-backup-select', title: 'Who to start if he is ruled out — a personal note, not sent anywhere' });
-					select.appendChild(el('option', { value: '', text: '—' }));
 					const candidates = watchlistBackupCandidates(en.league, p);
-					for (const c of candidates) {
+					const optionLabel = (c) => {
 						const tag = [c.position, c.team].filter(Boolean).join(', ');
-						const label = `${c.name}${tag ? ` (${tag})` : ''}${c.injuryStatus ? ` — ${c.injuryStatus}` : ''}`;
-						select.appendChild(el('option', { value: String(c.id), text: label }));
-					}
-					// A saved pick who has since left the roster (or started)
-					// matches no option, so the select falls back to "—"
-					// rather than showing a stale name as current.
+						return `${c.name}${tag ? ` (${tag})` : ''}${c.injuryStatus ? ` — ${c.injuryStatus}` : ''}`;
+					};
+					// '' means "never chosen": it reads as the suggestion, and
+					// choosing it again after picking someone returns to it.
+					const suggested = watchlistSuggestedBackup(en.league, p);
+					select.appendChild(el('option', { value: '', text: suggested ? `Suggested: ${optionLabel(suggested)}` : 'No suggestion' }));
+					select.appendChild(el('option', { value: WATCHLIST_NO_BACKUP, text: 'None' }));
+					for (const c of candidates) select.appendChild(el('option', { value: String(c.id), text: optionLabel(c) }));
 					const saved = getBackupPlan(en.league.id, en.playerId);
-					select.value = candidates.some((c) => String(c.id) === saved) ? saved : '';
-					const sync = () => select.classList.toggle('watchlist-backup-set', select.value !== '');
+					const applies = watchlistBackupFor(en.league, en.playerId, p);
+					// A saved pick that no longer applies (left the roster)
+					// shows as '' — the suggestion — never as a stale name.
+					select.value = applies.source === 'chosen' || saved === WATCHLIST_NO_BACKUP ? saved : '';
+					const sync = () => select.classList.toggle('watchlist-backup-set', select.value !== WATCHLIST_NO_BACKUP && (select.value !== '' || !!suggested));
 					sync();
 					select.addEventListener('change', () => {
 						setBackupPlan(en.league.id, en.playerId, select.value);
