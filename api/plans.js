@@ -48,7 +48,9 @@ const MAX_BODY_BYTES = 256 * 1024;
 // (a string, same shape as every other plan kind — see setResultOverride in
 // myffl.html). Presence of an entry IS its confirmation; there is no
 // separate confirmed flag to validate here.
-const PLAN_KINDS = ['contractPlans', 'salaryPlans', 'cutPlans', 'resultOverrides'];
+// backupPlans is the Game-Time Watchlist's pick of who replaces an injured
+// starter: leagueId -> starter's player id -> replacement's player id.
+const PLAN_KINDS = ['contractPlans', 'salaryPlans', 'cutPlans', 'backupPlans', 'resultOverrides'];
 
 // The Planning tab's task list. Id-keyed rather than leagueId -> playerId ->
 // value — a task isn't scoped to a league or a player — so it doesn't fit
@@ -93,7 +95,7 @@ function resolveStore(env) {
 }
 
 function emptyDocument() {
-  return { contractPlans: {}, salaryPlans: {}, cutPlans: {}, resultOverrides: {}, tasks: {}, updatedAt: null };
+  return { contractPlans: {}, salaryPlans: {}, cutPlans: {}, backupPlans: {}, resultOverrides: {}, tasks: {}, updatedAt: null };
 }
 
 // Returns an array of human-readable problems — empty means valid.

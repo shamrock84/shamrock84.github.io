@@ -248,6 +248,21 @@ test('a planned cut clears the same way a contract length does', async () => {
 	assert.deepEqual(store.read().cutPlans, {}, 'and the clear reaches the store');
 });
 
+test('a watchlist backup pick reaches the store and clears the same way', async () => {
+	const store = newStore({});
+	const disk = newDisk({ [SYNCED_KEY]: '1' });
+
+	const page = loadPage(disk, store.serve);
+	await page.g.syncPlans();
+	page.g.setBackupPlan('L1', 'p2', 'p7');
+	await flush(page);
+	assert.deepEqual(store.read().backupPlans, { L1: { p2: 'p7' } }, 'the pick reaches the store');
+
+	page.g.setBackupPlan('L1', 'p2', '');
+	await flush(page);
+	assert.deepEqual(store.read().backupPlans, {}, 'and clearing it reaches the store');
+});
+
 test('a device the store has never met introduces itself with a merge', async () => {
 	// The wipe protection: this device has plans of its own and has never
 	// synced, so taking the store wholesale would lose them, and replacing the
@@ -344,7 +359,7 @@ test('an edit made with the store down is pushed on the next load', async () => 
 	offline.g.setContractPlan('L1', 'p1', '');
 	await flush(offline);
 	assert.deepEqual(offline.contracts(), {}, 'the page still works offline');
-	assert.deepEqual(offline.pending(), { contractPlans: { L1: { p1: '' } }, salaryPlans: {}, cutPlans: {}, resultOverrides: {} });
+	assert.deepEqual(offline.pending(), { contractPlans: { L1: { p1: '' } }, salaryPlans: {}, cutPlans: {}, backupPlans: {}, resultOverrides: {} });
 
 	const back = loadPage(disk, store.serve);
 	await back.g.syncPlans();
@@ -386,7 +401,7 @@ test('an edit made while a push is in flight stays pending', async () => {
 
 	assert.deepEqual(
 		page.pending(),
-		{ contractPlans: { L1: { p1: '2', p2: '3' } }, salaryPlans: {}, cutPlans: {}, resultOverrides: {} },
+		{ contractPlans: { L1: { p1: '2', p2: '3' } }, salaryPlans: {}, cutPlans: {}, backupPlans: {}, resultOverrides: {} },
 		'the second edit is not cleared by an answer that predates it'
 	);
 });
