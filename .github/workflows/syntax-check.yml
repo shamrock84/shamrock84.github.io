@@ -123,6 +123,12 @@ jobs:
             exit 1
           fi
 
+      # The Tasks-card add script: what it sends must be new ids only, valid
+      # for api/plans.js, and skipped when the exact text already exists, so
+      # a merge can only ever add.
+      - name: Test the Tasks-card add script
+        run: node scripts/test-add-tasks.mjs
+
       # The dependency-free half of the comment stripper deploy-pages.yml
       # runs on myffl.html before publishing: cut comments out, keep every
       # other byte, keep line breaks where ASI needs them. The acorn half is
