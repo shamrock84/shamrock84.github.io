@@ -11,7 +11,8 @@
 
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { validate, validateQuickLinks, mergeLeague, mergeLink, serialize } from '../api/save-leagues.js';
+import { execFileSync } from 'node:child_process';
+import { validate, validateQuickLinks, mergeLeague, mergeLink, serialize, isStaleBase } from '../api/save-leagues.js';
 
 let failures = 0;
 function check(name, pass, detail = '') {
@@ -315,6 +316,36 @@ check('defaults quickLinks to an empty array when omitted',
   JSON.parse(serialize(undefined, [mergeLeague(base())])).quickLinks.length === 0);
 check('serializes a quick link one per line', serialize(undefined, [], [mergeLink({ url: 'https://example.com', nickname: 'Example' })])
   .includes('{ "url": "https://example.com", "nickname": "Example" }'));
+
+// --- Stale-base check: a save made from an out-of-date copy is refused ---
+// The page sends the git blob sha of the config bytes it loaded; the server
+// compares it with the file's current sha. Absent or malformed means "not
+// told" and must never block a save (older cached pages send nothing).
+const SHA_A = 'a'.repeat(40);
+const SHA_B = 'b'.repeat(40);
+check('stale base: a different sha is stale', isStaleBase(SHA_A, SHA_B) === true);
+check('stale base: the same sha is current', isStaleBase(SHA_A, SHA_A) === false);
+check('stale base: no sha sent is never stale', isStaleBase(undefined, SHA_B) === false && isStaleBase(null, SHA_B) === false);
+check('stale base: a malformed sha is never stale', isStaleBase('abc', SHA_B) === false && isStaleBase(42, SHA_B) === false);
+
+// --- The page's gitBlobSha must be git's own object id ---
+// Lifted from myffl.html and run as-is, then checked against git's id for an
+// empty file and against `git hash-object` on the real config. If these ever
+// disagree, every Admin save would be refused as stale.
+{
+  const pageSource = await readFile(fileURLToPath(new URL('../myffl.html', import.meta.url)), 'utf8');
+  const fnSource = pageSource.match(/async function gitBlobSha\(bytes\) \{[\s\S]*?\n\t\t\}/)?.[0];
+  check('gitBlobSha: found in myffl.html', Boolean(fnSource));
+  if (fnSource) {
+    const gitBlobSha = new Function(`${fnSource}; return gitBlobSha;`)();
+    check('gitBlobSha: empty file is git\'s well-known empty-blob id',
+      (await gitBlobSha(new Uint8Array())) === 'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391');
+    const configPath = fileURLToPath(new URL('../config/leagues.json', import.meta.url));
+    const bytes = new Uint8Array(await readFile(configPath));
+    const expected = execFileSync('git', ['hash-object', configPath], { encoding: 'utf8' }).trim();
+    check('gitBlobSha: matches git hash-object on config/leagues.json', (await gitBlobSha(bytes)) === expected);
+  }
+}
 
 console.log(failures === 0 ? '\nAll save-leagues checks passed.' : `\n${failures} check(s) failed.`);
 process.exit(failures === 0 ? 0 : 1);

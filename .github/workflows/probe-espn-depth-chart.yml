@@ -38,7 +38,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Probe ESPN's public depth-chart endpoints
         run: node scripts/probe-espn-depth-chart.mjs

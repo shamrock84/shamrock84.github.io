@@ -27,6 +27,7 @@
 // MFL_USERNAME/MFL_PASSWORD, ESPN_S2/ESPN_SWID, and the Upstash variables —
 // all already set for the other endpoints.
 
+import { cronAuthorized } from './_lib/auth.mjs';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import {
@@ -73,10 +74,7 @@ const RETRY_DEADLINE_MS = 35000;
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function authorized(req) {
-  const secret = process.env.GAMETIME_CHECK_SECRET;
-  if (!secret) return false;
-  const bearer = (req.headers?.authorization || '').replace(/^Bearer\s+/i, '');
-  return req.query?.key === secret || bearer === secret;
+  return cronAuthorized(req, process.env.GAMETIME_CHECK_SECRET);
 }
 
 async function pushover({ title, body }) {

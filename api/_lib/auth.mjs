@@ -5,7 +5,7 @@
 // itself is only ever typed once, not re-sent per submission. No database —
 // the token carries its own expiry and signature, verified fresh each time.
 
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 
 const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
@@ -38,4 +38,33 @@ export function verifyToken(token, secret) {
   } catch {
     return false;
   }
+}
+
+// The shared-secret check for the endpoints cron-job.org calls
+// (game-time-check.js, weekly-results.js), which have no login session.
+// Constant-time: both sides are hashed first, so the comparison never
+// short-circuits on the first wrong character and timingSafeEqual gets the
+// equal-length inputs it requires.
+//
+// The Bearer header is the supported way to send it. `?key=` still works but
+// is deprecated: a secret in a URL lands in Vercel's request logs and in the
+// scheduler's run history. Every use logs a warning, so the logs show when
+// nothing sends it any more and the query path can be removed.
+export function secretMatches(given, secret) {
+  if (typeof given !== 'string' || !given || !secret) return false;
+  const a = createHash('sha256').update(given, 'utf8').digest();
+  const b = createHash('sha256').update(secret, 'utf8').digest();
+  return timingSafeEqual(a, b);
+}
+
+export function cronAuthorized(req, secret) {
+  if (!secret) return false;
+  const header = req.headers?.authorization || '';
+  const bearer = /^Bearer\s+/i.test(header) ? header.replace(/^Bearer\s+/i, '') : '';
+  if (secretMatches(bearer, secret)) return true;
+  if (secretMatches(req.query?.key, secret)) {
+    console.warn('cron auth: secret sent as ?key= (deprecated — send it as an Authorization: Bearer header instead)');
+    return true;
+  }
+  return false;
 }

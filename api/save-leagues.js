@@ -109,7 +109,7 @@ function isValidMoneyField(v) {
 
 // Exported for the unit test in scripts/test-save-leagues.mjs. Vercel only ever
 // invokes the default export, so extra named exports cost nothing at runtime.
-export { validate, validateQuickLinks, mergeLeague, mergeLink, serialize };
+export { validate, validateQuickLinks, mergeLeague, mergeLink, serialize, isStaleBase };
 
 // Returns an array of human-readable problems — empty means valid. Phrased for
 // someone reading them in a browser, not a stack trace.
@@ -475,6 +475,13 @@ async function githubGet(token) {
   };
 }
 
+// True when the page told us which version it loaded and that is no longer
+// the current one. A missing or malformed baseSha is "not told", never stale.
+function isStaleBase(baseSha, currentSha) {
+  if (typeof baseSha !== 'string' || !/^[0-9a-f]{40}$/.test(baseSha)) return false;
+  return baseSha !== currentSha;
+}
+
 export default async function handler(req, res) {
   if (applyCors(req, res, { methods: 'POST, OPTIONS', headers: 'Content-Type, Authorization' })) return;
   if (req.method !== 'POST') {
@@ -502,7 +509,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { leagues, quickLinks } = req.body || {};
+  const { leagues, quickLinks, baseSha } = req.body || {};
   const errors = [...validate(leagues), ...validateQuickLinks(quickLinks)];
   if (errors.length) {
     res.status(400).json({ error: 'Nothing was saved — please fix these first:', details: errors });
@@ -514,6 +521,21 @@ export default async function handler(req, res) {
     // check, and _readme is taken from the file rather than the browser so the
     // schema notes can never be edited or dropped from the Admin tab.
     const { sha, parsed } = await githubGet(token);
+    // That re-read only protects the instant between this GET and the PUT
+    // below. The window that matters is the one since the browser LOADED the
+    // config: a save made from a stale copy — another device, or a reload
+    // while Pages is still publishing the previous save — would otherwise
+    // overwrite the newer file wholesale and silently undo it. So the page
+    // sends the git blob sha of the exact bytes it loaded (gitBlobSha in
+    // myffl.html), and a mismatch is refused.
+    // Absent (an older cached page, or a browser without crypto.subtle) it
+    // falls back to the old behaviour rather than blocking the save.
+    if (isStaleBase(baseSha, sha)) {
+      res.status(409).json({
+        error: 'The league config changed since this page loaded it (another save, possibly still publishing). Nothing was saved — reload in a few minutes and make your change again.',
+      });
+      return;
+    }
     const content = serialize(parsed._readme, leagues.map(mergeLeague), (quickLinks || []).map(mergeLink));
 
     const putRes = await fetch(
@@ -547,7 +569,9 @@ export default async function handler(req, res) {
     }
 
     const saved = await putRes.json();
-    res.status(200).json({ ok: true, count: leagues.length, commit: saved.commit?.sha || null });
+    // The new file's blob sha, so the page can keep saving from this session
+    // without a reload tripping the stale-base check above.
+    res.status(200).json({ ok: true, count: leagues.length, commit: saved.commit?.sha || null, sha: saved.content?.sha || null });
   } catch (err) {
     res.status(502).json({ error: `Failed to save: ${err.message}` });
   }

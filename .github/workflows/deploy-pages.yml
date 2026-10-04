@@ -1,0 +1,151 @@
+name: Deploy Pages
+
+# Publishes the site to GitHub Pages with comments stripped from myffl.html.
+#
+# Why this exists: myffl.html is roughly half comments by design (the comment
+# at the code is the authority — see CLAUDE.md), and the old branch-based
+# Pages build shipped every byte of them to every visitor: ~250KB gzipped,
+# ~75KB without. scripts/strip-page-comments.mjs cuts the comments out of the
+# checked-out copy here, then the site is built by the SAME Jekyll action the
+# branch-based build used (actions/jekyll-build-pages), so everything else
+# about what gets published is unchanged. The repository's file is never
+# modified.
+#
+# Requires: Settings → Pages → Build and deployment → Source = "GitHub
+# Actions". Until that is switched, the deploy job fails here and the old
+# branch build keeps publishing as before.
+#
+# This workflow never refuses to publish. Holding back a deploy would also
+# hold back roster data, which is worse than a heavier page, so:
+#   - if stripping fails, or a test that passes on the original page fails on
+#     the stripped one, the ORIGINAL page is published and the `report` job
+#     fails afterwards so the run shows red (and GitHub emails about it);
+#   - a test that fails on the original page too is a problem in main, not in
+#     stripping, and is only warned about — same as the branch build, which
+#     published whatever was on main.
+#
+# Triggers. Pushes made by a workflow's GITHUB_TOKEN don't start other
+# workflows, so the bot commits from the sync and both backfills would never
+# reach `push` — `workflow_run` covers them. Human merges and Admin-tab saves
+# (a PAT) arrive as `push`.
+
+on:
+  push:
+    branches: [main]
+  workflow_run:
+    workflows:
+      - Sync Fantasy Rosters
+      - Backfill League History
+      - Backfill Weekly/Season High Scores
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deploy at a time, never cancelled mid-flight: each run checks out the
+# tip of main, so a queued run always publishes the latest state anyway.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      fallback: ${{ steps.strip.outputs.fallback }}
+    steps:
+      # A FULL checkout, unlike every other workflow here (CLAUDE.md's
+      # blobless/sparse rule): this one publishes the whole site, images and
+      # mfl/ included, so it needs every file.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Run the tests against the original page
+        run: |
+          : > "$RUNNER_TEMP/original-failures"
+          for f in scripts/test-*.mjs; do
+            [ "$f" = scripts/test-set-lineup.mjs ] && continue
+            node "$f" > /dev/null 2>&1 || echo "$f" >> "$RUNNER_TEMP/original-failures"
+          done
+          if [ -s "$RUNNER_TEMP/original-failures" ]; then
+            echo "::warning::Tests failing on main itself (publishing anyway, as the branch build did): $(tr '\n' ' ' < "$RUNNER_TEMP/original-failures")"
+          fi
+
+      # acorn is the parser that locates comments (see the script's header).
+      # Pinned, installed only here, never a dependency of the repository.
+      - name: Strip comments from myffl.html
+        id: strip
+        run: |
+          cp myffl.html "$RUNNER_TEMP/myffl.original.html"
+          fallback=0
+          if npm install --no-save --no-package-lock acorn@8.15.0 \
+             && node scripts/strip-page-comments.mjs myffl.html myffl.html; then
+            : > "$RUNNER_TEMP/stripped-failures"
+            for f in scripts/test-*.mjs; do
+              [ "$f" = scripts/test-set-lineup.mjs ] && continue
+              node "$f" > /dev/null 2>&1 || echo "$f" >> "$RUNNER_TEMP/stripped-failures"
+            done
+            # Only a test that broke BECAUSE of stripping counts against it.
+            broken=$(comm -13 <(sort "$RUNNER_TEMP/original-failures") <(sort "$RUNNER_TEMP/stripped-failures"))
+            if [ -n "$broken" ]; then
+              echo "::error::Stripping broke these tests, publishing the original page instead: $broken"
+              fallback=1
+            fi
+          else
+            echo "::error::Stripping failed, publishing the original page instead."
+            fallback=1
+          fi
+          if [ "$fallback" = 1 ]; then
+            cp "$RUNNER_TEMP/myffl.original.html" myffl.html
+          fi
+          rm -rf node_modules
+          echo "fallback=$fallback" >> "$GITHUB_OUTPUT"
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      # The same build the branch-based Pages source ran, so `_lib` paths,
+      # dotfiles and the rest are excluded exactly as before.
+      - name: Build with Jekyll
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./
+          destination: ./_site
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # Runs after a successful deploy and fails it visibly when the page went
+  # out unstripped, so a broken stripper can't hide behind a green run.
+  report:
+    needs: [build, deploy]
+    if: needs.build.outputs.fallback == '1'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report the unstripped publish
+        run: |
+          echo "::error::The site was published WITHOUT comment stripping — see the build job's log for why."
+          exit 1

@@ -11,12 +11,15 @@
 //     cooldown back when the GitHub dispatch fails, and falls back to the old
 //     per-instance check without a store.
 //
+//   - the cron endpoints' shared-secret check (cronAuthorized) is
+//     constant-time, prefers the Bearer header, and warns on ?key=.
+//
 // Both run against an in-memory fake of Upstash's /pipeline REST endpoint and
 // of GitHub's dispatch endpoint, by stubbing globalThis.fetch. No network.
 
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
-import { createToken } from '../api/_lib/auth.mjs';
+import { createToken, cronAuthorized, secretMatches } from '../api/_lib/auth.mjs';
 
 const STORE_URL = 'https://fake-upstash.test';
 const originalFetch = globalThis.fetch;
@@ -298,6 +301,30 @@ const sync = (handler) => call(handler, { token: createToken(process.env.SESSION
 
 	assert.equal((await sync(handler)).statusCode, 200, 'a logged-in caller still gets through straight after');
 	assert.equal(githubCalls, 1);
+}
+
+{
+	// The cron endpoints' shared secret (game-time-check.js, weekly-results.js):
+	// the Bearer header is the supported path; ?key= still works for now but
+	// warns, so Vercel's logs show when the scheduler has stopped sending it.
+	const secret = 's3cret';
+	const warnings = [];
+	const originalWarn = console.warn;
+	console.warn = (msg) => warnings.push(msg);
+	try {
+		assert.equal(cronAuthorized({ headers: { authorization: `Bearer ${secret}` } }, secret), true, 'Bearer header accepted');
+		assert.equal(cronAuthorized({ headers: { authorization: `bearer ${secret}` } }, secret), true, 'scheme is case-insensitive');
+		assert.equal(warnings.length, 0, 'the header path does not warn');
+		assert.equal(cronAuthorized({ headers: {}, query: { key: secret } }, secret), true, '?key= still accepted during the transition');
+		assert.equal(warnings.length, 1, 'but every ?key= use is logged as deprecated');
+		assert.equal(cronAuthorized({ headers: { authorization: 'Bearer nope' }, query: { key: 'nope' } }, secret), false, 'wrong secret refused either way');
+		assert.equal(cronAuthorized({ headers: { authorization: secret } }, secret), false, 'a bare secret without the Bearer scheme is refused');
+		assert.equal(cronAuthorized({ headers: {}, query: {} }, secret), false, 'nothing sent is refused');
+		assert.equal(cronAuthorized({ headers: { authorization: 'Bearer ' }, query: { key: '' } }, ''), false, 'an unset secret never authorizes, even against empty input');
+		assert.equal(secretMatches('s3cret-but-longer', secret), false, 'different lengths compare safely (hashed first)');
+	} finally {
+		console.warn = originalWarn;
+	}
 }
 
 globalThis.fetch = originalFetch;
