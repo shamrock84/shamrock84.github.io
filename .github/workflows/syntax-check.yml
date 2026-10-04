@@ -21,6 +21,7 @@ on:
       - 'config/leagues.json'
       - 'package.json'
       - 'myffl.html'
+      - 'CLAUDE.md'
       - '.github/workflows/syntax-check.yml'
   push:
     branches: [main]
@@ -30,6 +31,7 @@ on:
       - 'config/leagues.json'
       - 'package.json'
       - 'myffl.html'
+      - 'CLAUDE.md'
       - '.github/workflows/syntax-check.yml'
 
 permissions:
@@ -104,6 +106,29 @@ jobs:
             fi
           done
           exit $fail
+
+      # CLAUDE.md is loaded in full at the start of every Claude Code session,
+      # so its length is a cost paid on every task. It is meant to be an index
+      # of rules pointing at the code comments that explain them, and twice it
+      # drifted past 90KB by accumulating those explanations instead. This is
+      # the backstop for that: compress an existing entry rather than raise
+      # the number.
+      - name: Check CLAUDE.md stays an index
+        run: |
+          limit=45000
+          size=$(wc -c < CLAUDE.md)
+          echo "CLAUDE.md is $size bytes (limit $limit)"
+          if [ "$size" -gt "$limit" ]; then
+            echo "CLAUDE.md is over $limit bytes. Move reasoning into the code comment it describes and keep the entry to the rule, a pointer, and how it fails."
+            exit 1
+          fi
+
+      # The abuse limits on the two public endpoints worth abusing: failed
+      # logins per IP and globally, and the sync trigger's cooldown, both held
+      # in the Upstash store so they bind across cold starts and instances.
+      # Runs against an in-memory fake of the store; no network, no secrets.
+      - name: Test the login and sync-trigger rate limits
+        run: node scripts/test-api-rate-limits.mjs
 
       # Pure functions, no network and no secrets — the guardrails on the one
       # write path that commits straight to main without a pull request.
