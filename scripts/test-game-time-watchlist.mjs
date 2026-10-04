@@ -373,6 +373,7 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	const thin = league('T', [player('a', 'Saquon Barkley', 'PHI', 'Q'), player('x', 'Zack Runner', 'DAL', 'Q', ecr(2)), player('w', 'Zed Receiver', 'DAL', null, { position: 'WR', ...ecr(1) })], ['a']);
 	assert.equal(ctx.watchlistSuggestedBackup(thin, thin.players[0]), null);
 	assert.ok(findAll(ctx.renderGameTimeWatchlistCard([thin], YEAR), hasClass('watchlist-backup-unset')).length === 1, 'no backup applies: gold, like an unplanned contract length');
+	assert.deepEqual(findAll(ctx.renderGameTimeWatchlistCard([thin], YEAR), hasClass('watchlist-backup-select'))[0].children.slice(0, 2).map((o) => o._text), ['Pick backup', 'None'], 'with nothing to suggest, the placeholder stays first');
 
 	const selects = (card) => findAll(card, hasClass('watchlist-backup-select'));
 	// The picker lives in the right-hand column with the opponent, not under the name.
@@ -388,6 +389,7 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	assert.equal(sel.children.length, 2 + 4, 'suggestion + None + the other four candidates: the suggested player is not listed twice');
 	assert.equal(sel.children.map((o) => o._text || '').filter((t) => t.startsWith('A. Runner')).length, 1, 'the suggested player appears exactly once');
 	assert.equal(sel.value, '', 'untouched, the select sits on the suggestion');
+	assert.deepEqual(sel.children.slice(0, 3).map((o) => o._text), ['None', 'A. Runner*', 'Y. Runner'], 'None, then the suggestion, then everyone else');
 	assert.ok(!sel.classList.contains('watchlist-backup-unset'), 'a suggestion settles it: purple chip, not gold');
 	assert.match(fullText(card), /A\. Runner\*(?! \()/, 'first initial, asterisk on the suggestion, no prefix and no position');
 	assert.doesNotMatch(fullText(card), /Suggest:/);
