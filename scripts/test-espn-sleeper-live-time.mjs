@@ -356,4 +356,33 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
   assert.deepEqual(away.bench, [], 'roster 2 carries no `players` field at all — bench degrades to empty, not a crash');
 }
 
+// --- fetchNflGames: the TV network for the NFL tab's game rows ---
+// `broadcasts[].names[]` is the primary read, `geoBroadcasts[].media.shortName`
+// the fallback; a game with neither gets null, which the page renders as no label.
+{
+  const comp = (a, h, extra) => ({
+    date: '2026-09-13T17:00:00Z',
+    status: { type: { state: 'pre', shortDetail: 'Sun 1:00 PM ET' }, period: 0, clock: 0 },
+    competitors: [
+      { team: { abbreviation: a }, homeAway: 'away', score: '0' },
+      { team: { abbreviation: h }, homeAway: 'home', score: '0' },
+    ],
+    ...extra,
+  });
+  stubFetch(() => okJson({
+    events: [
+      { competitions: [comp('TB', 'CIN', { broadcasts: [{ market: 'national', names: ['CBS'] }] })] },
+      { competitions: [comp('LV', 'DEN', { broadcasts: [{ names: ['ESPN'] }, { names: ['ABC', 'ESPN'] }] })] },
+      { competitions: [comp('WSH', 'JAX', { geoBroadcasts: [{ media: { shortName: 'FOX' } }] })] },
+      { competitions: [comp('NYG', 'DAL', {})] },
+    ],
+  }));
+  const games = await fetchNflGames();
+  assert.equal(games.get('CIN').broadcast, 'CBS');
+  assert.equal(games.get('TB').broadcast, 'CBS', 'both sides of a game carry the same network');
+  assert.equal(games.get('DEN').broadcast, 'ESPN/ABC', 'duplicates collapse, multiple networks join with a slash');
+  assert.equal(games.get('JAX').broadcast, 'FOX', 'falls back to geoBroadcasts');
+  assert.equal(games.get('DAL').broadcast, null, 'no broadcast data degrades to null, not undefined or a throw');
+}
+
 console.log('test-espn-sleeper-live-time.mjs OK');
