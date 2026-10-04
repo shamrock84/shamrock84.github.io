@@ -387,10 +387,11 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	assert.equal(sel.children.length, 2 + 5, 'suggestion + None + five candidates');
 	assert.equal(sel.value, '', 'untouched, the select sits on the suggestion');
 	assert.ok(!sel.classList.contains('watchlist-backup-unset'), 'a suggestion settles it: purple chip, not gold');
-	assert.match(fullText(card), /A\. Runner\* \(RB\)/, 'first initial, asterisk on the suggestion, no prefix');
+	assert.match(fullText(card), /A\. Runner\*(?! \()/, 'first initial, asterisk on the suggestion, no prefix and no position');
 	assert.doesNotMatch(fullText(card), /Suggest:/);
 	assert.match(fullText(card), /\* suggested: best-ranked healthy bench player/, 'the asterisk is explained once, in a footnote');
-	assert.match(fullText(card), /Z\. Runner \(RB, Q\)/, 'a designation rides inside the parentheses');
+	assert.match(fullText(card), /Z\. Runner \(Q\)/, 'only a designation rides in the parentheses');
+	assert.doesNotMatch(fullText(card), /\((RB|WR|TE|QB)[,)]/, 'positions are not shown in the picker');
 	assert.equal(ctx.getBackupPlan('L', 'a'), '', 'a suggestion is shown, not saved');
 
 	// Choosing overrides the suggestion and survives a rebuild.

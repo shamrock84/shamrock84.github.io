@@ -9383,16 +9383,14 @@
 					if (startEntries.length > 1) line.appendChild(el('span', { class: 'watchlist-backup-league', text: en.nickname }));
 					const select = el('select', { class: 'watchlist-backup-select', title: 'Who to start if he is ruled out — a personal note, not sent anywhere. * marks the suggestion.' });
 					const candidates = watchlistBackupCandidates(en.league, p);
-					// "M. Pittman* (WR)": first initial only, and an asterisk
-					// instead of a "Suggest:" prefix, because this select shares
-					// a row with the name and the opponent. The team is left off
-					// (these are all players on your own roster); the position
-					// stays, since an off-position pick is possible, and a
-					// designation rides in the same parentheses.
-					const optionLabel = (c, star) => {
-						const bits = [c.position, c.injuryStatus].filter(Boolean).join(', ');
-						return `${abbreviatePlayerName(c.name, c.position)}${star ? '*' : ''}${bits ? ` (${bits})` : ''}`;
-					};
+					// "M. Pittman*": first initial only, and an asterisk instead
+					// of a "Suggest:" prefix, because this select shares a row
+					// with the name and the opponent. No position and no team —
+					// the injured starter's own position is not shown either, and
+					// these are all players on your own roster — so the only thing
+					// in parentheses is a designation, when he has one. Same-
+					// position players still sort first (watchlistBackupCandidates).
+					const optionLabel = (c, star) => `${abbreviatePlayerName(c.name, c.position)}${star ? '*' : ''}${c.injuryStatus ? ` (${c.injuryStatus})` : ''}`;
 					// '' means "never chosen": it reads as the suggestion, and
 					// choosing it again after picking someone returns to it.
 					const suggested = watchlistSuggestedBackup(en.league, p);
