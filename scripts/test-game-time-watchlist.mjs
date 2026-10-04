@@ -374,14 +374,19 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	assert.ok(findAll(ctx.renderGameTimeWatchlistCard([thin], YEAR), hasClass('watchlist-backup-unset')).length === 1, 'no backup applies: gold, like an unplanned contract length');
 
 	const selects = (card) => findAll(card, hasClass('watchlist-backup-select'));
+	// The picker lives in the right-hand column with the opponent, not under the name.
+	const sideOf = (card) => findAll(card, hasClass('watchlist-side'))[0];
 	const card = ctx.renderGameTimeWatchlistCard([l], YEAR);
 	assert.equal(selects(card).length, 1);
+	assert.ok(findAll(sideOf(card), hasClass('watchlist-backup-select')).length === 1 && /vs LAR/.test(fullText(sideOf(card))), 'picker shares the right-hand column with the opponent');
 	const sel = selects(card)[0];
 	assert.equal(sel.children.length, 2 + 5, 'suggestion + None + five candidates');
 	assert.equal(sel.value, '', 'untouched, the select sits on the suggestion');
 	assert.ok(!sel.classList.contains('watchlist-backup-unset'), 'a suggestion settles it: purple chip, not gold');
-	assert.match(fullText(card), /Suggest: Abe Runner \(RB, DAL\)/);
-	assert.match(fullText(card), /Zack Runner \(RB, DAL\) — Q/);
+	assert.match(fullText(card), /A\. Runner\* \(RB\)/, 'first initial, asterisk on the suggestion, no prefix');
+	assert.doesNotMatch(fullText(card), /Suggest:/);
+	assert.match(fullText(card), /\* suggested: best-ranked healthy bench player/, 'the asterisk is explained once, in a footnote');
+	assert.match(fullText(card), /Z\. Runner \(RB, Q\)/, 'a designation rides inside the parentheses');
 	assert.equal(ctx.getBackupPlan('L', 'a'), '', 'a suggestion is shown, not saved');
 
 	// Choosing overrides the suggestion and survives a rebuild.

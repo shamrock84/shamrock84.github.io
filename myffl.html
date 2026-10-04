@@ -2022,9 +2022,22 @@
 			overflow-wrap: break-word;
 		}
 		.watchlist-opponent {
-			flex-shrink: 0;
 			color: var(--muted);
 			font-size: 0.8em;
+		}
+		/* Right-hand column: the backup picker(s) stacked above the opponent. */
+		.watchlist-side {
+			display: flex;
+			flex-direction: column;
+			align-items: flex-end;
+			gap: 0.15rem;
+			flex-shrink: 0;
+			max-width: 55%;
+		}
+		.watchlist-footnote {
+			padding: 0.3rem 0.5rem 0;
+			font-size: 0.75em;
+			color: var(--muted);
 		}
 		.watchlist-leagues {
 			font-size: 0.8em;
@@ -2041,9 +2054,12 @@
 			text-decoration: underline dotted;
 		}
 		.watchlist-backup {
+			display: flex;
+			align-items: center;
+			gap: 0.3rem;
+			max-width: 100%;
 			font-size: 0.8em;
 			color: var(--muted);
-			margin-top: 0.15rem;
 		}
 		/* The same chip as .years-select/.salary-select/.cut-select on the
 		   Rosters tab — a planning dropdown should look like one control
@@ -2058,7 +2074,9 @@
 			border: 1px solid var(--border);
 			border-radius: 4px;
 			padding: 0.05rem 0.15rem;
-			max-width: 100%;
+			/* A cap, not just 100%: a wide chip squeezes the name column at
+			   phone width and strands the (Q) badge on its own line. */
+			max-width: 9.5rem;
 		}
 		/* No backup applies (nothing chosen and nothing to suggest): the same
 		   gold .years-select-unset uses for an outstanding task, so the gold
@@ -9308,6 +9326,7 @@
 			if (rest) summary.appendChild(document.createTextNode(rest));
 			card.appendChild(summary);
 
+			let suggestionShown = false;
 			const slotsWrap = el('div', { class: 'watchlist-slots' });
 			// One row builder shared by both sub-groups below, same idiom as
 			// Now Playing's own appendRow — a starter and a benched player
@@ -9346,21 +9365,33 @@
 				// plan (getBackupPlan), read here rather than closed over
 				// so it survives the rebuild this card gets on every poll.
 				const startEntries = r.entries.filter((en) => en.starter);
+				// The pickers ride in the right-hand column, stacked above the
+				// opponent, so they cost no height on the name side. A league
+				// label only appears beside one when the player starts in
+				// several, since a lone picker needs no "which league".
+				const sideCol = el('div', { class: 'watchlist-side' });
 				startEntries.forEach((en) => {
 					const line = el('div', { class: 'watchlist-backup' });
-					line.appendChild(document.createTextNode(startEntries.length > 1 ? `${en.nickname} backup: ` : 'Backup: '));
-					const select = el('select', { class: 'watchlist-backup-select', title: 'Who to start if he is ruled out — a personal note, not sent anywhere' });
+					if (startEntries.length > 1) line.appendChild(el('span', { class: 'watchlist-backup-league', text: en.nickname }));
+					const select = el('select', { class: 'watchlist-backup-select', title: 'Who to start if he is ruled out — a personal note, not sent anywhere. * marks the suggestion.' });
 					const candidates = watchlistBackupCandidates(en.league, p);
-					const optionLabel = (c) => {
-						const tag = [c.position, c.team].filter(Boolean).join(', ');
-						return `${c.name}${tag ? ` (${tag})` : ''}${c.injuryStatus ? ` — ${c.injuryStatus}` : ''}`;
+					// "M. Pittman* (WR)": first initial only, and an asterisk
+					// instead of a "Suggest:" prefix, because this select shares
+					// a row with the name and the opponent. The team is left off
+					// (these are all players on your own roster); the position
+					// stays, since an off-position pick is possible, and a
+					// designation rides in the same parentheses.
+					const optionLabel = (c, star) => {
+						const bits = [c.position, c.injuryStatus].filter(Boolean).join(', ');
+						return `${abbreviatePlayerName(c.name, c.position)}${star ? '*' : ''}${bits ? ` (${bits})` : ''}`;
 					};
 					// '' means "never chosen": it reads as the suggestion, and
 					// choosing it again after picking someone returns to it.
 					const suggested = watchlistSuggestedBackup(en.league, p);
-					select.appendChild(el('option', { value: '', text: suggested ? `Suggest: ${optionLabel(suggested)}` : 'No suggestion' }));
+					select.appendChild(el('option', { value: '', text: suggested ? optionLabel(suggested, true) : 'Pick backup' }));
 					select.appendChild(el('option', { value: WATCHLIST_NO_BACKUP, text: 'None' }));
-					for (const c of candidates) select.appendChild(el('option', { value: String(c.id), text: optionLabel(c) }));
+					for (const c of candidates) select.appendChild(el('option', { value: String(c.id), text: optionLabel(c, !!suggested && c.id === suggested.id) }));
+					if (suggested) suggestionShown = true;
 					const saved = getBackupPlan(en.league.id, en.playerId);
 					const applies = watchlistBackupFor(en.league, en.playerId, p);
 					// A saved pick that no longer applies (left the roster)
@@ -9374,11 +9405,12 @@
 					});
 					select.addEventListener('click', (e) => e.stopPropagation());
 					line.appendChild(select);
-					nameLine.appendChild(line);
+					sideCol.appendChild(line);
 				});
 				row.appendChild(nameLine);
 				const side = r.game.opponent ? `${r.game.isHome ? 'vs' : '@'} ${r.game.opponent}` : '';
-				row.appendChild(el('span', { class: 'watchlist-opponent', text: side }));
+				sideCol.appendChild(el('span', { class: 'watchlist-opponent', text: side }));
+				row.appendChild(sideCol);
 				container.appendChild(row);
 			}
 			for (const slot of slots) {
@@ -9413,6 +9445,9 @@
 				slotsWrap.appendChild(slotEl);
 			}
 			card.appendChild(slotsWrap);
+			if (suggestionShown) {
+				card.appendChild(el('div', { class: 'watchlist-footnote', text: '* suggested: best-ranked healthy bench player at his position' }));
+			}
 			return card;
 		}
 
