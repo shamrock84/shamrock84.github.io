@@ -46,10 +46,12 @@ export function verifyToken(token, secret) {
 // short-circuits on the first wrong character and timingSafeEqual gets the
 // equal-length inputs it requires.
 //
-// The Bearer header is the supported way to send it. `?key=` still works but
-// is deprecated: a secret in a URL lands in Vercel's request logs and in the
-// scheduler's run history. Every use logs a warning, so the logs show when
-// nothing sends it any more and the query path can be removed.
+// Header only: `Authorization: Bearer <secret>`. `?key=` used to work and is
+// now refused — a secret in a URL lands in Vercel's request logs and in the
+// scheduler's run history. A request that still carries `?key=` logs a
+// warning (never the value) whether or not its header is valid, because a
+// header-authorized request would otherwise hide a leftover key in a
+// scheduler's URL indefinitely.
 export function secretMatches(given, secret) {
   if (typeof given !== 'string' || !given || !secret) return false;
   const a = createHash('sha256').update(given, 'utf8').digest();
@@ -58,13 +60,11 @@ export function secretMatches(given, secret) {
 }
 
 export function cronAuthorized(req, secret) {
+  if (req.query?.key !== undefined) {
+    console.warn('cron auth: ?key= in the URL is ignored and should be removed — send the secret as an Authorization: Bearer header');
+  }
   if (!secret) return false;
   const header = req.headers?.authorization || '';
   const bearer = /^Bearer\s+/i.test(header) ? header.replace(/^Bearer\s+/i, '') : '';
-  if (secretMatches(bearer, secret)) return true;
-  if (secretMatches(req.query?.key, secret)) {
-    console.warn('cron auth: secret sent as ?key= (deprecated — send it as an Authorization: Bearer header instead)');
-    return true;
-  }
-  return false;
+  return secretMatches(bearer, secret);
 }

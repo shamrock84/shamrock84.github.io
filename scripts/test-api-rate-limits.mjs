@@ -12,7 +12,7 @@
 //     per-instance check without a store.
 //
 //   - the cron endpoints' shared-secret check (cronAuthorized) is
-//     constant-time, prefers the Bearer header, and warns on ?key=.
+//     constant-time, header-only, and warns on any ?key= in the URL.
 //
 // Both run against an in-memory fake of Upstash's /pipeline REST endpoint and
 // of GitHub's dispatch endpoint, by stubbing globalThis.fetch. No network.
@@ -305,8 +305,9 @@ const sync = (handler) => call(handler, { token: createToken(process.env.SESSION
 
 {
 	// The cron endpoints' shared secret (game-time-check.js, weekly-results.js):
-	// the Bearer header is the supported path; ?key= still works for now but
-	// warns, so Vercel's logs show when the scheduler has stopped sending it.
+	// header only. ?key= is refused, and its mere presence warns (without the
+	// value) even when the header is valid, so a leftover key in a
+	// scheduler's URL shows up in the logs instead of hiding behind the header.
 	const secret = 's3cret';
 	const warnings = [];
 	const originalWarn = console.warn;
@@ -314,13 +315,17 @@ const sync = (handler) => call(handler, { token: createToken(process.env.SESSION
 	try {
 		assert.equal(cronAuthorized({ headers: { authorization: `Bearer ${secret}` } }, secret), true, 'Bearer header accepted');
 		assert.equal(cronAuthorized({ headers: { authorization: `bearer ${secret}` } }, secret), true, 'scheme is case-insensitive');
-		assert.equal(warnings.length, 0, 'the header path does not warn');
-		assert.equal(cronAuthorized({ headers: {}, query: { key: secret } }, secret), true, '?key= still accepted during the transition');
-		assert.equal(warnings.length, 1, 'but every ?key= use is logged as deprecated');
-		assert.equal(cronAuthorized({ headers: { authorization: 'Bearer nope' }, query: { key: 'nope' } }, secret), false, 'wrong secret refused either way');
+		assert.equal(warnings.length, 0, 'a clean header-only request does not warn');
+		assert.equal(cronAuthorized({ headers: {}, query: { key: secret } }, secret), false, 'the secret in ?key= is refused');
+		assert.equal(warnings.length, 1, 'and warns');
+		assert.equal(cronAuthorized({ headers: { authorization: `Bearer ${secret}` }, query: { key: secret } }, secret), true,
+			'a valid header still authorizes when a leftover ?key= is present');
+		assert.equal(warnings.length, 2, 'but the leftover ?key= is still logged');
+		assert.ok(warnings.every((w) => !w.includes(secret)), 'the warning never contains the secret');
+		assert.equal(cronAuthorized({ headers: { authorization: 'Bearer nope' } }, secret), false, 'wrong secret refused');
 		assert.equal(cronAuthorized({ headers: { authorization: secret } }, secret), false, 'a bare secret without the Bearer scheme is refused');
 		assert.equal(cronAuthorized({ headers: {}, query: {} }, secret), false, 'nothing sent is refused');
-		assert.equal(cronAuthorized({ headers: { authorization: 'Bearer ' }, query: { key: '' } }, ''), false, 'an unset secret never authorizes, even against empty input');
+		assert.equal(cronAuthorized({ headers: { authorization: 'Bearer ' } }, ''), false, 'an unset secret never authorizes, even against empty input');
 		assert.equal(secretMatches('s3cret-but-longer', secret), false, 'different lengths compare safely (hashed first)');
 	} finally {
 		console.warn = originalWarn;
