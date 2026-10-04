@@ -16,7 +16,8 @@
 // every five minutes only notifies on a change. A Pushover failure leaves the
 // record unwritten, so the next poll retries the same message.
 //
-// Protected by GAMETIME_CHECK_SECRET, passed as ?key= or a Bearer token —
+// Protected by GAMETIME_CHECK_SECRET, sent as an Authorization: Bearer header
+// (?key= still works but is deprecated — see cronAuthorized in _lib/auth.mjs) —
 // otherwise anyone could make the manager's phone buzz. Two extra modes:
 //   ?test=1    send a one-line test notification (checks the Pushover keys)
 //   ?dryRun=1  run the whole check for the current window, return what it
@@ -29,6 +30,7 @@
 //   MFL_USERNAME/MFL_PASSWORD and the Upstash variables, already set for the
 //     other endpoints.
 
+import { cronAuthorized } from './_lib/auth.mjs';
 import { mflLogin, fetchMflInjuries, fetchNflGames } from '../scripts/lib/providers.mjs';
 import { resolveStore, PLANS_KEY } from './plans.js';
 import { storeGet, storeSet } from './_lib/store.mjs';
@@ -96,10 +98,7 @@ function whenLabel(kickoff) {
 }
 
 function authorized(req) {
-  const secret = process.env.GAMETIME_CHECK_SECRET;
-  if (!secret) return false;
-  const bearer = (req.headers?.authorization || '').replace(/^Bearer\s+/i, '');
-  return req.query?.key === secret || bearer === secret;
+  return cronAuthorized(req, process.env.GAMETIME_CHECK_SECRET);
 }
 
 export default async function handler(req, res) {

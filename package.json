@@ -1,5 +1,8 @@
 {
   "name": "myffl",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "engines": {
+    "node": "24.x"
+  }
 }

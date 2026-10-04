@@ -63,7 +63,7 @@ jobs:
           # engine. node --check honours package.json's "type": "module" here,
           # so the ESM files under api/ that use a plain .js extension parse
           # correctly rather than being treated as CommonJS.
-          node-version: '20'
+          node-version: '24'
 
       - name: Parse every JS/MJS file under api/ and scripts/
         run: |
@@ -123,9 +123,18 @@ jobs:
             exit 1
           fi
 
-      # The abuse limits on the two public endpoints worth abusing: failed
-      # logins per IP and globally, and the sync trigger's cooldown, both held
-      # in the Upstash store so they bind across cold starts and instances.
+      # The dependency-free half of the comment stripper deploy-pages.yml
+      # runs on myffl.html before publishing: cut comments out, keep every
+      # other byte, keep line breaks where ASI needs them. The acorn half is
+      # checked end to end by that workflow re-running this suite on the
+      # stripped page.
+      - name: Test the deploy-time comment stripper
+        run: node scripts/test-strip-page-comments.mjs
+
+      # The abuse limits and auth on the endpoints worth abusing: failed
+      # logins per IP and globally, the sync trigger's login gate and
+      # cooldown (both limits held in the Upstash store so they bind across
+      # cold starts and instances), and the cron endpoints' shared secret.
       # Runs against an in-memory fake of the store; no network, no secrets.
       - name: Test the login and sync-trigger rate limits
         run: node scripts/test-api-rate-limits.mjs

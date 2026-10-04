@@ -40,7 +40,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Probe slot semantics across sample teams
         run: node scripts/probe-espn-depth-chart-slot.mjs

@@ -4954,6 +4954,11 @@
 		const WAIVERS_URL = 'https://shamrock84-github-io.vercel.app/api/waivers';
 		let leagueConfig = null;
 		let leagueConfigError = null;
+		// The git blob sha of the exact config bytes this page loaded, sent with
+		// every Admin save so api/save-leagues.js can refuse one made from a
+		// stale copy (see isStaleBase there). Null means "unknown", which the
+		// server treats as no check at all rather than as a mismatch.
+		let leagueConfigSha = null;
 		let authToken = localStorage.getItem(AUTH_TOKEN_KEY) || null;
 
 		function isLoggedIn() {
@@ -15263,12 +15268,32 @@
 				// CDN will happily serve the pre-save copy otherwise.
 				const res = await fetch(`${LEAGUES_CONFIG_URL}?t=${Date.now()}`, { cache: 'no-store' });
 				if (!res.ok) throw new Error(`HTTP ${res.status}`);
-				leagueConfig = await res.json();
+				// Hashed from the raw bytes, not a re-serialization, so it matches
+				// the sha GitHub holds for the file Pages served.
+				const bytes = new Uint8Array(await res.arrayBuffer());
+				leagueConfig = JSON.parse(new TextDecoder().decode(bytes));
+				leagueConfigSha = await gitBlobSha(bytes).catch(() => null);
 				leagueConfigError = null;
 			} catch (err) {
 				leagueConfig = null;
+				leagueConfigSha = null;
 				leagueConfigError = err.message;
 			}
+		}
+
+		// git's object id for a file: SHA-1 over "blob <length>\0" + the bytes.
+		// It is the same value GitHub's contents API reports as a file's `sha`,
+		// which is what lets the page and api/save-leagues.js agree on "which
+		// version of the config was this" without any extra request.
+		// crypto.subtle needs a secure context; without one this rejects and the
+		// caller falls back to null (no check).
+		async function gitBlobSha(bytes) {
+			const header = new TextEncoder().encode(`blob ${bytes.length}\0`);
+			const buf = new Uint8Array(header.length + bytes.length);
+			buf.set(header);
+			buf.set(bytes, header.length);
+			const digest = await crypto.subtle.digest('SHA-1', buf);
+			return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
 		}
 
 		// Save/Discard/Reload — appended to both Admin cards (Leagues and
@@ -15333,7 +15358,7 @@
 					const res = await fetch(SAVE_LEAGUES_URL, {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
-						body: JSON.stringify({ leagues: adminDraft, quickLinks: adminLinksDraft }),
+						body: JSON.stringify({ leagues: adminDraft, quickLinks: adminLinksDraft, baseSha: leagueConfigSha }),
 					});
 					const body = await res.json().catch(() => ({}));
 					if (res.status === 401) {
@@ -15351,6 +15376,9 @@
 					}
 					leagueConfig.leagues = JSON.parse(JSON.stringify(adminDraft));
 					leagueConfig.quickLinks = JSON.parse(JSON.stringify(adminLinksDraft));
+					// What this session now has is the version just committed, so the
+					// next save from here is checked against that, not the old one.
+					leagueConfigSha = body.sha || null;
 					adminDraft = null;
 					adminLinksDraft = null;
 					adminExpanded.clear();
@@ -15376,7 +15404,7 @@
 								&& savedLeagues.every((l, i) => sameLeagueConfig(l, served[i]));
 							statusEl.textContent = live
 								? `Saved ${body.count} leagues — confirmed live.`
-								: `Saved ${body.count} leagues. The site is still serving the previous copy; it usually catches up within a minute. Your change is committed either way.`;
+								: `Saved ${body.count} leagues. The site is still serving the previous copy; it usually catches up within a few minutes. Your change is committed either way.`;
 						} catch {
 							statusEl.textContent = `Saved ${body.count} leagues.`;
 						}
@@ -16842,13 +16870,12 @@
 				updatedEl.textContent = 'Sync started — checking for fresh data…';
 				if (syncPollTimer) clearInterval(syncPollTimer);
 				let attempts = 0;
-				// The GitHub Action itself typically finishes in under a minute, but
-				// GitHub Pages then needs its own ~30-90s to rebuild before the new
-				// data/rosters.json is actually live — end-to-end this regularly
-				// runs close to 2 minutes. 24 attempts * 10s = 4 min gives that
-				// comfortable headroom instead of giving up while Pages is still
-				// mid-deploy.
-				const maxAttempts = 24;
+				// The sync itself runs 1-2 minutes, and then deploy-pages.yml has to
+				// publish the result (checkout, tests, comment stripping, Jekyll,
+				// deploy — a few minutes more) before the new data/rosters.json is
+				// live. 48 attempts * 10s = 8 min gives that headroom instead of
+				// giving up while the deploy is still running.
+				const maxAttempts = 48;
 				syncPollTimer = setInterval(async () => {
 					attempts++;
 					try {

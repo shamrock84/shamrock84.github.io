@@ -10,13 +10,13 @@ Guidance for Claude Code (claude.ai/code) in this repository.
 
 A personal static site (`melbostads.com`) whose only real application is **`myffl.html`**, a fantasy football dashboard over 18 leagues on MyFantasyLeague (MFL), ESPN and Sleeper. Every other page is a stub, an iframe around a Google Sheet, or a redirect. `myffl_v1.html` is the retired predecessor.
 
-There is **no build step, no test framework, no linter and no dependencies**. `package.json` only sets `"type": "module"`. Tests are plain `node scripts/test-*.mjs` files run by `syntax-check.yml`.
+There is **no build step, no test framework, no linter and no dependencies**. `package.json` sets `"type": "module"` and pins `engines.node` to `24.x`, which Vercel obeys over its project setting; every workflow uses Node 24 to match. Tests are plain `node scripts/test-*.mjs` files run by `syntax-check.yml`.
 
 ## Two deployment targets, one repository
 
 | Path | Deploys to | Serving |
 | --- | --- | --- |
-| `*.html`, `data/`, images | GitHub Pages | `melbostads.com` (`CNAME`) |
+| `*.html`, `data/`, images | GitHub Pages, via `deploy-pages.yml` | `melbostads.com` (`CNAME`) |
 | `api/*.js` | Vercel | `shamrock84-github-io.vercel.app` |
 
 `myffl.html` calls Vercel by absolute URL (constants near the top of its script), so every request is cross-origin; `api/_lib/cors.mjs` holds the allowlist.
@@ -24,7 +24,8 @@ There is **no build step, no test framework, no linter and no dependencies**. `p
 - **Secrets live in two independent places.** GitHub Actions secrets power the sync; Vercel env vars power `api/`. Adding a credential means deciding which half needs it. Upstash credentials are Vercel-only.
 - **`.vercelignore` is a storage quota, not tidiness.** Vercel stores the whole upload per deployment, and the repo is ~172MB, almost all `mfl/` and `images/`; unignored it filled the free 10GB once. `ignoreCommand` skips the build, not the upload. Anything `api/` reads by path must stay (`config/leagues.json`, `scripts/lib/`), and the `!scripts/lib/` negation must stay. Verify with `git ls-files -i -c --exclude-from=.vercelignore`. Known and accepted: the Vercel copy of `myffl.html` can't fetch `data/`.
 - **Shared `api/` helpers live in `api/_lib/`; the underscore is load-bearing.** Vercel makes every other file under `api/` a function, and Hobby caps a deployment at 12. Nine endpoints today — count before adding one.
-- **`vercel.json`'s `ignoreCommand` skips deploys** unless the commit touched `api/`, `scripts/lib/providers.mjs`, `scripts/lib/fantasypros.mjs` or `config/leagues.json`. **If `api/` starts importing a new module, add it there**, or Vercel silently skips deploys that need to ship.
+- **`vercel.json`'s `ignoreCommand` skips deploys** unless something changed since the last *successful* deployment (`$VERCEL_GIT_PREVIOUS_SHA`, not `HEAD^`, which missed multi-commit pushes) in `api/`, `scripts/lib/providers.mjs`, `scripts/lib/fantasypros.mjs`, `config/leagues.json`, `package.json` or `vercel.json`. Any uncertainty (no previous sha, sha outside the clone) builds. **If `api/` starts importing a new module, add it there**, or Vercel silently skips deploys that need to ship.
+- **Pages is published by `deploy-pages.yml`, which strips comments from `myffl.html` at deploy** (`scripts/strip-page-comments.mjs`; ~250KB → ~75KB gzipped). Comments are cut out, never re-printed, so the shipped page is the source minus comments, proven token-for-token. The workflow re-runs the test suite on the stripped copy, so **no test may assert on `myffl.html`'s comments**. It **never blocks a publish**: a strip failure or a stripping-only test regression publishes the original page and fails the `report` job. Bot pushes don't trigger `push`, so it also chains off the sync and both backfills via `workflow_run` — a new workflow that commits to `main` must be added there.
 
 ## Two data paths, deliberately separate
 
@@ -36,7 +37,7 @@ Both import fetch logic from **`scripts/lib/providers.mjs`**; `fetch-rosters.mjs
 
 ## `config/leagues.json` is the control plane
 
-Adding, removing or reclassifying a league is a config edit, usually made in the **Admin tab** (visible when logged in), which saves through `api/save-leagues.js`. Prefer pointing the user there over hand-editing. That endpoint **commits straight to `main`**, bypassing PRs and CI, so its validation is the only guardrail; extend `test-save-leagues.mjs` with any schema change.
+Adding, removing or reclassifying a league is a config edit, usually made in the **Admin tab** (visible when logged in), which saves through `api/save-leagues.js`. Prefer pointing the user there over hand-editing. That endpoint **commits straight to `main`**, bypassing PRs and CI, so its validation is the only guardrail; extend `test-save-leagues.mjs` with any schema change. **A save from a stale copy is refused**: the page sends the git blob sha of the bytes it loaded (`gitBlobSha`) and the server 409s on a mismatch (`isStaleBase`); a missing sha is never stale.
 
 The file's `_readme` array is the authoritative schema — read it before touching anything league-shaped, and update it with the schema. Array order is display order everywhere.
 
@@ -60,7 +61,7 @@ The file's `_readme` array is the authoritative schema — read it before touchi
 - **The availability pass runs last, once a day, and must not be folded into the roster fetch** (`availabilityIsFresh`/`fetchMflRosteredNames`). Widening the roster read cost enough rate limit to 429 the fetches behind it.
 - **A finished `draftonly` league's roster is frozen** (`draftonlyRosterIsSettled`, `test-draftonly-freeze.mjs`). Only the roster block freezes; standings and scoring are fetched every sync, and the test reads the source to keep them ungated. A season rollover or `type` edit unfreezes; errored entries never freeze; `REFRESH_DRAFTONLY_ROSTERS` forces a read and stays separate from `REFRESH_AVAILABILITY`. A draft-only roster growing after its draft almost always means `draftInProgress` is still true — slow drafts run for days.
 - **A league mid-draft is skipped and its `available` cleared** (`draftStatusFromResults`, `test-draft-status.mjs`). Zero picks means "couldn't tell"; every draft unit must be finished. **`TYPE=league`'s draft fields are settings, not state — don't try them again.** Sleeper answers from the league object; ESPN is exempt and unverified.
-- **Every workflow that checks out uses `filter: blob:none` plus the same cone-mode sparse checkout** (`api scripts config data .github`). Reasoning and numbers are in `sync-fantasy-rosters.yml`. A shallow clone does not avoid downloading the ~121MB tip tree; copy the block into any new workflow.
+- **Every workflow that checks out uses `filter: blob:none` plus the same cone-mode sparse checkout** (except `deploy-pages.yml`, which publishes every file) (`api scripts config data .github`). Reasoning and numbers are in `sync-fantasy-rosters.yml`. A shallow clone does not avoid downloading the ~121MB tip tree; copy the block into any new workflow.
 - **Every `scripts/test-*.mjs` must be a step in `syntax-check.yml`**, enforced by its registration check. `test-set-lineup.mjs` is the one exception (it writes to MFL).
 - **Manual workflows (`probe-*.yml`, `test-set-lineup.yml`, `test-login-endpoint.yml`) are `workflow_dispatch`-only — never add a `schedule`.** They exist because providers are unreachable from a sandbox; a new provider field starts with a probe, not with code assuming it exists.
 
@@ -137,7 +138,7 @@ The file's `_readme` array is the authoritative schema — read it before touchi
 - **Best-ball leagues** (tag `BestBall`) project the best legal lineup over starters and bench (`bestBallProjection`, `bestBallLineupSpec`, `test-best-ball-win-prob.mjs`), live path only; a flex slot falls back.
 - **The Game-Time Watchlist reads the snapshot's lineup, never the live poll's** (`computeGameTimeWatchlist`, `test-game-time-watchlist.mjs`, `myffl.html#watchlist`). Waits for the rollover cutoff. A designation is the practice report, not the inactive list — read `probe-inactives.mjs` RUN 1 first; a missing ESPN "Active" flag doesn't mean inactive. Backup picks (`watchlistBackupFor`, synced `backupPlans`) default to the best-ECR healthy same-position bench player, shown but not saved; `'none'` means deliberately none.
 - **`api/game-time-check.js` never says "playing" without evidence** (`api/_lib/gametime.mjs`, `test-game-time-check.mjs`): inactive if any feed says out; playing only on ESPN Active or a posted list without him. It records what it sent per kickoff and notifies only on change, but the first look at a slot always sends, so silence means broken. `resolveBackup` duplicates `watchlistBackupFor` (pinned against it). Bodies are capped at Pushover's 1024 characters.
-- **`api/weekly-results.js` takes the finished week from the calendar** (`finishedWeek`, `test-weekly-results.mjs`) and asks each provider for it by number. Tue/Wed only unless `?week=`. An unreadable league is listed, never dropped; a bye is "no game", not a tie. `weeklyMedianGame` adds `medianResult`. Records come from a fresh standings read that MFL may not have processed yet, so keep its cron mid-morning Eastern. Both cron endpoints are driven by cron-job.org with `GAMETIME_CHECK_SECRET`.
+- **`api/weekly-results.js` takes the finished week from the calendar** (`finishedWeek`, `test-weekly-results.mjs`) and asks each provider for it by number. Tue/Wed only unless `?week=`. An unreadable league is listed, never dropped; a bye is "no game", not a tie. `weeklyMedianGame` adds `medianResult`. Records come from a fresh standings read that MFL may not have processed yet, so keep its cron mid-morning Eastern. Both cron endpoints are driven by cron-job.org with `GAMETIME_CHECK_SECRET`, checked by `cronAuthorized` (constant-time). Send it as `Authorization: Bearer`; `?key=` still works but is deprecated and logs a warning on every use.
 - **The Scoring tab excludes `draftonly` leagues**, including server-side in `hasLiveScoring`.
 - **ESPN's and Sleeper's "current week" are trusted blind** — they advance before kickoff. Holding them back was considered and declined; see `fetchEspnScoring`'s comment before revisiting.
 - **The NFL tab is ungated real NFL data** (`test-nfl-tab.mjs`, `VIEW_LABELS`).
@@ -192,7 +193,7 @@ The manager files work for Claude in the Tasks card (`renderTasksCard`).
 
 ## Front-end conventions
 
-`myffl.html` is one ~17,000-line file of vanilla JS, CSS and markup with no framework or bundler; keep it that way, since that is what lets Pages serve it directly. Cards are built by `render*Card` functions; tabs and sub-tab pills are derived at render time from the cards present (`data-league-type`), which is why logging out removes the Analytics and Admin tabs for free.
+`myffl.html` is one ~17,000-line file of vanilla JS, CSS and markup with no framework or bundler; keep it that way. The only deploy-time step is comment stripping, which changes nothing else, so the source is what runs. Cards are built by `render*Card` functions; tabs and sub-tab pills are derived at render time from the cards present (`data-league-type`), which is why logging out removes the Analytics and Admin tabs for free.
 
 - Shared: `appendAnalyticsTable` (paginated tables), `makeTableSort`, `makePopover`, `.popover` CSS. Content stays at the call site.
 - Not shared: two features sharing a visual form get separate classes (`.results-*` vs `.finances-*`).
