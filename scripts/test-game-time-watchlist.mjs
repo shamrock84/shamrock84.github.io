@@ -379,6 +379,10 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	const card = ctx.renderGameTimeWatchlistCard([l], YEAR);
 	assert.equal(selects(card).length, 1);
 	assert.ok(findAll(sideOf(card), hasClass('watchlist-backup-select')).length === 1 && /vs LAR/.test(fullText(sideOf(card))), 'picker shares the right-hand column with the opponent');
+	// Right-hand column order: opponent, then the "Replace w/:" label, then the picker.
+	const sideKids = sideOf(card).children.map((c) => (hasClass('watchlist-opponent')(c) ? 'opp' : hasClass('watchlist-replace-label')(c) ? 'label' : hasClass('watchlist-backup')(c) ? 'picker' : '?'));
+	assert.deepEqual(sideKids, ['opp', 'label', 'picker'], 'opponent, "Replace w/:" on its own line, then the picker');
+	assert.match(fullText(findAll(card, hasClass('watchlist-replace-label'))[0]), /^Replace w\/:$/);
 	const sel = selects(card)[0];
 	assert.equal(sel.children.length, 2 + 5, 'suggestion + None + five candidates');
 	assert.equal(sel.value, '', 'untouched, the select sits on the suggestion');
@@ -419,6 +423,7 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	// A benched player has no picker; two leagues starting him get one each.
 	const benched = league('B', [player('b', 'Bench Guy', 'PHI', 'Q')], []);
 	assert.equal(selects(ctx.renderGameTimeWatchlistCard([benched], YEAR)).length, 0);
+	assert.equal(findAll(ctx.renderGameTimeWatchlistCard([benched], YEAR), hasClass('watchlist-replace-label')).length, 0, 'a benched player has nothing to replace, so no label either');
 	const two = [league('1', [player('a', 'Saquon Barkley', 'PHI', 'Q')], ['a']), league('2', [player('9', 'Saquon Barkley', 'PHI', 'Q')], ['9'])];
 	assert.equal(selects(ctx.renderGameTimeWatchlistCard(two, YEAR)).length, 2);
 }

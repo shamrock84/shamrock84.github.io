@@ -2034,6 +2034,10 @@
 			flex-shrink: 0;
 			max-width: 55%;
 		}
+		.watchlist-replace-label {
+			color: var(--muted);
+			font-size: 0.8em;
+		}
 		.watchlist-footnote {
 			padding: 0.3rem 0.5rem 0;
 			font-size: 0.75em;
@@ -9365,11 +9369,15 @@
 				// plan (getBackupPlan), read here rather than closed over
 				// so it survives the rebuild this card gets on every poll.
 				const startEntries = r.entries.filter((en) => en.starter);
-				// The pickers ride in the right-hand column, stacked above the
-				// opponent, so they cost no height on the name side. A league
-				// label only appears beside one when the player starts in
-				// several, since a lone picker needs no "which league".
+				// The right-hand column mirrors the name side's three lines:
+				// opponent, a "Replace w/:" label on its own line, then the
+				// picker. The label is stated once; a league label only appears
+				// beside a picker when the player starts in several, since a
+				// lone picker needs no "which league".
 				const sideCol = el('div', { class: 'watchlist-side' });
+				const side = r.game.opponent ? `${r.game.isHome ? 'vs' : '@'} ${r.game.opponent}` : '';
+				sideCol.appendChild(el('span', { class: 'watchlist-opponent', text: side }));
+				if (startEntries.length > 0) sideCol.appendChild(el('span', { class: 'watchlist-replace-label', text: 'Replace w/:' }));
 				startEntries.forEach((en) => {
 					const line = el('div', { class: 'watchlist-backup' });
 					if (startEntries.length > 1) line.appendChild(el('span', { class: 'watchlist-backup-league', text: en.nickname }));
@@ -9408,8 +9416,6 @@
 					sideCol.appendChild(line);
 				});
 				row.appendChild(nameLine);
-				const side = r.game.opponent ? `${r.game.isHome ? 'vs' : '@'} ${r.game.opponent}` : '';
-				sideCol.appendChild(el('span', { class: 'watchlist-opponent', text: side }));
 				row.appendChild(sideCol);
 				container.appendChild(row);
 			}
