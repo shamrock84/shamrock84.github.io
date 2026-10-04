@@ -298,7 +298,8 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	assert.ok(!full.classList.contains('card-collapsed'));
 	assert.equal(findAll(full, hasClass('watchlist-slot')).length, 1);
 	const text = fullText(full);
-	assert.match(text, /Saquon Barkley/);
+	assert.match(text, /S\. Barkley/, 'the starter is named by first initial, like the picker and the matchup drawer');
+	assert.doesNotMatch(text, /Saquon/, 'the first name is gone from the row');
 	assert.match(text, /\(Q\)/);
 	assert.match(text, /vs LAR/);
 	assert.equal(findAll(full, hasClass('watchlist-league-link')).length, 1);
@@ -384,13 +385,15 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	assert.deepEqual(sideKids, ['opp', 'label', 'picker'], 'opponent, "Replace w/:" on its own line, then the picker');
 	assert.match(fullText(findAll(card, hasClass('watchlist-replace-label'))[0]), /^Replace w\/:$/);
 	const sel = selects(card)[0];
-	assert.equal(sel.children.length, 2 + 5, 'suggestion + None + five candidates');
+	assert.equal(sel.children.length, 2 + 4, 'suggestion + None + the other four candidates: the suggested player is not listed twice');
+	assert.equal(sel.children.map((o) => o._text || '').filter((t) => t.startsWith('A. Runner')).length, 1, 'the suggested player appears exactly once');
 	assert.equal(sel.value, '', 'untouched, the select sits on the suggestion');
 	assert.ok(!sel.classList.contains('watchlist-backup-unset'), 'a suggestion settles it: purple chip, not gold');
-	assert.match(fullText(card), /A\. Runner\* \(RB\)/, 'first initial, asterisk on the suggestion, no prefix');
+	assert.match(fullText(card), /A\. Runner\*(?! \()/, 'first initial, asterisk on the suggestion, no prefix and no position');
 	assert.doesNotMatch(fullText(card), /Suggest:/);
 	assert.match(fullText(card), /\* suggested: best-ranked healthy bench player/, 'the asterisk is explained once, in a footnote');
-	assert.match(fullText(card), /Z\. Runner \(RB, Q\)/, 'a designation rides inside the parentheses');
+	assert.match(fullText(card), /Z\. Runner \(Q\)/, 'only a designation rides in the parentheses');
+	assert.doesNotMatch(fullText(card), /\((RB|WR|TE|QB)[,)]/, 'positions are not shown in the picker');
 	assert.equal(ctx.getBackupPlan('L', 'a'), '', 'a suggestion is shown, not saved');
 
 	// Choosing overrides the suggestion and survives a rebuild.
@@ -400,6 +403,12 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	assert.deepEqual(plain(JSON.parse(ctx.__store.get('myfflPlanPending')).backupPlans), { L: { a: 'r1' } });
 	assert.equal(ctx.watchlistBackupFor(l, 'a', l.players[0]).source, 'chosen');
 	assert.equal(selects(ctx.renderGameTimeWatchlistCard([l], YEAR))[0].value, 'r1', 'the pick survives a rebuild');
+
+	// A pick saved earlier for the player who is now the suggestion has no option of
+	// his own any more; it reads as the suggestion rather than as a blank select.
+	ctx.setBackupPlan('L', 'a', 'r3');
+	assert.equal(selects(ctx.renderGameTimeWatchlistCard([l], YEAR))[0].value, '', 'a pinned suggestion shows as the suggestion');
+	ctx.setBackupPlan('L', 'a', '');
 
 	// The pick left the roster: back to the suggestion, not a stale name.
 	const gone = league('L', l.players.filter((p) => p.id !== 'r1'), ['a', 's']);
