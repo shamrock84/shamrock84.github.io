@@ -9398,8 +9398,14 @@
 					// '' means "never chosen": it reads as the suggestion, and
 					// choosing it again after picking someone returns to it.
 					const suggested = watchlistSuggestedBackup(en.league, p);
-					select.appendChild(el('option', { value: '', text: suggested ? optionLabel(suggested, true) : 'Pick backup' }));
-					select.appendChild(el('option', { value: WATCHLIST_NO_BACKUP, text: 'None' }));
+					// Order: None, then the suggestion, then everyone else — the
+					// suggestion reads most naturally as the first real name. With
+					// nothing to suggest, the "Pick backup" placeholder (also value
+					// '') stays first, since it is what the select shows until a
+					// choice is made.
+					const noneOption = el('option', { value: WATCHLIST_NO_BACKUP, text: 'None' });
+					const autoOption = el('option', { value: '', text: suggested ? optionLabel(suggested, true) : 'Pick backup' });
+					if (suggested) { select.appendChild(noneOption); select.appendChild(autoOption); } else { select.appendChild(autoOption); select.appendChild(noneOption); }
 					// The suggested player is the first option already (value '',
 					// "follow the suggestion"), so he is left out of this list —
 					// listing him again showed the same name twice. The cost is
