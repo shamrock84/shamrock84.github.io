@@ -12,6 +12,12 @@
 //   * a same-named player on another team never lends his status;
 //   * MFL's padded team codes (LVR) still find their game and posted list.
 //
+// An OUT line names who goes in, per league (resolveBackup — the same rules
+// as the Watchlist card, pinned against the page's own functions in
+// test-game-time-watchlist.mjs). A backup whose game has already started is
+// flagged, never silently dropped, and a league with no backup says so
+// rather than leaving a gap.
+//
 // And the notification rules: the first look at a slot always sends, even
 // when everyone is playing (silence must mean "broken"); later polls send
 // only on a change; a still-pending player near kickoff gets one final call.
@@ -26,6 +32,7 @@ import {
   classify,
   watchedForSlot,
   planMessage,
+  resolveBackup,
 } from '../api/_lib/gametime.mjs';
 
 const NOW = new Date('2026-10-04T16:20:00Z'); // 12:20 PM ET
@@ -166,7 +173,7 @@ assert.equal(classify({ ...get('Saquon Barkley'), designation: 'IR' }, feeds()).
   const p2 = planMessage(out, p1.next, 30, 'Sun 1:00 PM');
   assert.ok(p2.message, 'a change sends');
   assert.equal(p2.message.priority, 1, 'an inactive starter is high priority');
-  assert.match(p2.message.body, /❌ Saquon Barkley PHI \(Q\): OUT — swap him — ruled out \(MFL\)\. MNMx, NMLTLM/);
+  assert.match(p2.message.body, /❌ Saquon Barkley PHI \(Q\): OUT — swap him — ruled out \(MFL\)\. MNMx → no backup picked; NMLTLM → no backup picked/);
   assert.ok(!/Brock Bowers/.test(p2.message.body), 'an update lists only what changed');
 
   const f1 = planMessage(out, p2.next, 9, 'Sun 1:00 PM');
@@ -230,6 +237,42 @@ assert.equal(classify({ ...get('Saquon Barkley'), designation: 'IR' }, feeds()).
   assert.equal(slot.kickoff, EARLY);
   assert.deepEqual(plain(slot.watched.find((p) => p.name === 'Saquon Barkley').state), 'inactive');
   assert.match(slot.message.title, /lineup change needed/);
+}
+
+// --- Backups on an OUT line ---
+{
+  const bench = (id, name, position, extra = {}) => ({ id, name, position, team: 'DAL', status: 'ROSTER', injuryStatus: null, ...extra });
+  const league = {
+    id: '100', nickname: 'MNMx', type: 'dynasty', season: '2026', lineupWeek: 5,
+    players: [
+      { id: 's1', name: 'Saquon Barkley', position: 'RB', team: 'PHI', status: 'ROSTER', injuryStatus: 'Q' },
+      bench('b1', 'Abe Runner', 'RB', { ecr: { rank: 12 } }),
+      bench('b2', 'Yan Runner', 'RB', { ecr: { rank: 30 } }),
+      bench('b3', 'Hurt Runner', 'RB', { injuryStatus: 'Q', ecr: { rank: 1 } }),
+      bench('b4', 'Zed Receiver', 'WR', { ecr: { rank: 2 } }),
+    ],
+    starters: ['s1'],
+  };
+  const sk = { id: 's1', position: 'RB' };
+  assert.equal(resolveBackup(league, sk, undefined).player.name, 'Abe Runner', 'best-ECR healthy same-position bench player');
+  assert.equal(resolveBackup(league, sk, 'b2').player.name, 'Yan Runner', 'a saved pick wins');
+  assert.equal(resolveBackup(league, sk, 'b2').source, 'chosen');
+  assert.equal(resolveBackup(league, sk, 'none').player, null, "'none' is a deliberate no-backup");
+  assert.equal(resolveBackup(league, sk, 'gone').player.name, 'Abe Runner', 'a saved pick off the roster falls back to the suggestion');
+  const thin = { ...league, players: league.players.filter((p) => p.id === 's1' || p.id === 'b3' || p.id === 'b4') };
+  assert.equal(resolveBackup(thin, sk, undefined).player, null, 'no healthy same-position player: no suggestion');
+
+  const games = gamesMap([{ id: '1', home: 'PHI', away: 'LAR', kickoff: EARLY }, { id: '5', home: 'DAL', away: 'NYG', kickoff: '2026-10-04T13:00:00Z', state: 'in' }]);
+  const plans = { backupPlans: { 100: { s1: 'b2' } } };
+  const snap = { year: '2026', leagues: [league] };
+  const row = [...startersForSlot(snap, games, EARLY, plans).values()][0];
+  assert.deepEqual(plain(row.backups), [{ league: 'MNMx', backup: { name: 'Yan Runner', position: 'RB', team: 'DAL', locked: true } }]);
+  const out = { ...row, state: 'inactive', why: 'ruled out (MFL)' };
+  const msg = planMessage([out], null, 40, 'Sun 1:00 PM').message.body;
+  assert.match(msg, /MNMx → Yan Runner \(RB DAL\) — game already started/);
+  assert.doesNotMatch(planMessage([{ ...out, state: 'pending', why: 'x' }], null, 40, 'Sun 1:00 PM').message.body, /→/, 'only an OUT line names a backup');
+  const noPlans = [...startersForSlot(snap, games, EARLY).values()][0];
+  assert.equal(noPlans.backups[0].backup.name, 'Abe Runner', 'no plans store: the suggestion still shows');
 }
 
 console.log('Game-time check tests passed');

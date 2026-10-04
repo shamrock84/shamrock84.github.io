@@ -27,6 +27,15 @@
 //     cutoff (Wednesday 7 PM Central), same hold as the Problems Digest,
 //     and the card says the week isn't open yet rather than "no injured
 //     players".
+//   * each league a player STARTS in gets a replacement picker, listing
+//     that league's non-starting Active Roster players (same position
+//     first, healthy before designated, best ECR first); a benched copy
+//     gets none. Until chosen, the picker defaults to the best healthy
+//     same-position bench player by ECR (never a designated or
+//     off-position one); "None" switches that off. A choice is stored per
+//     league + starter id (backupPlans, which syncs) — a suggestion never
+//     is — and a saved pick who left the roster falls back to the
+//     suggestion.
 //   * the card is login-gated, shows a loading state until game states
 //     have been asked (never a false "nothing to check"), and collapses
 //     itself when empty.
@@ -36,6 +45,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
+import { resolveBackup } from '../api/_lib/gametime.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const html = fs.readFileSync(path.join(root, 'myffl.html'), 'utf8');
@@ -324,8 +334,9 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	// kickoff — toggling Bench must not touch Starters.
 	const subGroups = findAll(full, (n) => hasClass('roster-group')(n) && !hasClass('watchlist-slot')(n));
 	assert.equal(subGroups.length, 2, 'Starters and Bench are two independent collapsible groups');
-	const benchGroup = subGroups.find((g) => fullText(g).includes('Bench Guy'));
-	const starterGroup = subGroups.find((g) => fullText(g).includes('Saquon Barkley'));
+	// By label: a starter's backup picker lists the bench player's name too.
+	const benchGroup = subGroups.find((g) => fullText(g).startsWith('Bench ('));
+	const starterGroup = subGroups.find((g) => fullText(g).startsWith('Starters ('));
 	assert.ok(hasClass('roster-group-collapsed')(benchGroup), 'Bench starts collapsed by default, untouched');
 	assert.ok(!hasClass('roster-group-collapsed')(starterGroup), 'Starters starts expanded, same as ever');
 
@@ -334,6 +345,105 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	assert.ok(!hasClass('roster-group-collapsed')(benchGroup), 'clicking Bench expands it');
 	assert.ok(!hasClass('roster-group-collapsed')(starterGroup), 'Starters is unaffected by expanding Bench');
 	assert.equal(ctx.__store.get(`myfflGroupCollapsed:desktop:watchlist:${EARLY}:bench`), '0', 'expanding away from the default is what actually gets persisted');
+}
+
+// Backup picker: candidates, the ECR-driven default, persistence, and fallbacks.
+{
+	const ctx = makeContext(LOGGED_IN);
+	setGames(ctx, { PHI: game('LAR', true, EARLY) });
+	const ecr = (rank) => ({ ecr: { rank } });
+	const l = league('L', [
+		player('a', 'Saquon Barkley', 'PHI', 'Q'),
+		player('w1', 'Zed Receiver', 'DAL', null, { position: 'WR', ...ecr(1) }),
+		player('r2', 'Zack Runner', 'DAL', 'Q', ecr(2)),
+		player('r1', 'Yan Runner', 'DAL', null, ecr(30)),
+		player('r3', 'Abe Runner', 'DAL', null, ecr(12)),
+		player('r4', 'Unranked Runner', 'DAL', null),
+		player('t', 'Taxi Guy', 'DAL', null, { status: 'TAXI_SQUAD', ...ecr(1) }),
+		player('s', 'Other Starter', 'DAL', null, ecr(1)),
+	], ['a', 's']);
+
+	const names = ctx.watchlistBackupCandidates(l, l.players[0]).map((c) => c.name);
+	assert.deepEqual(plain(names), ['Abe Runner', 'Yan Runner', 'Unranked Runner', 'Zack Runner', 'Zed Receiver'],
+		'same position first, healthy first, best ECR first (unranked last); no starters/taxi/the starter himself');
+	assert.equal(ctx.watchlistSuggestedBackup(l, l.players[0]).name, 'Abe Runner', 'best-ranked healthy same-position player');
+
+	// No healthy same-position player: no suggestion, never a doubtful one.
+	const thin = league('T', [player('a', 'Saquon Barkley', 'PHI', 'Q'), player('x', 'Zack Runner', 'DAL', 'Q', ecr(2)), player('w', 'Zed Receiver', 'DAL', null, { position: 'WR', ...ecr(1) })], ['a']);
+	assert.equal(ctx.watchlistSuggestedBackup(thin, thin.players[0]), null);
+	assert.ok(findAll(ctx.renderGameTimeWatchlistCard([thin], YEAR), hasClass('watchlist-backup-unset')).length === 1, 'no backup applies: gold, like an unplanned contract length');
+
+	const selects = (card) => findAll(card, hasClass('watchlist-backup-select'));
+	const card = ctx.renderGameTimeWatchlistCard([l], YEAR);
+	assert.equal(selects(card).length, 1);
+	const sel = selects(card)[0];
+	assert.equal(sel.children.length, 2 + 5, 'suggestion + None + five candidates');
+	assert.equal(sel.value, '', 'untouched, the select sits on the suggestion');
+	assert.ok(!sel.classList.contains('watchlist-backup-unset'), 'a suggestion settles it: purple chip, not gold');
+	assert.match(fullText(card), /Suggest: Abe Runner \(RB, DAL\)/);
+	assert.match(fullText(card), /Zack Runner \(RB, DAL\) — Q/);
+	assert.equal(ctx.getBackupPlan('L', 'a'), '', 'a suggestion is shown, not saved');
+
+	// Choosing overrides the suggestion and survives a rebuild.
+	sel.value = 'r1';
+	sel.listeners.change[0]();
+	assert.equal(ctx.getBackupPlan('L', 'a'), 'r1');
+	assert.deepEqual(plain(JSON.parse(ctx.__store.get('myfflPlanPending')).backupPlans), { L: { a: 'r1' } });
+	assert.equal(ctx.watchlistBackupFor(l, 'a', l.players[0]).source, 'chosen');
+	assert.equal(selects(ctx.renderGameTimeWatchlistCard([l], YEAR))[0].value, 'r1', 'the pick survives a rebuild');
+
+	// The pick left the roster: back to the suggestion, not a stale name.
+	const gone = league('L', l.players.filter((p) => p.id !== 'r1'), ['a', 's']);
+	assert.equal(selects(ctx.renderGameTimeWatchlistCard([gone], YEAR))[0].value, '');
+	assert.equal(ctx.watchlistBackupFor(gone, 'a', gone.players[0]).player.name, 'Abe Runner');
+
+	// "None" switches the default off and is not mistaken for a player.
+	sel.value = 'none';
+	sel.listeners.change[0]();
+	assert.equal(ctx.watchlistBackupFor(l, 'a', l.players[0]).player, null);
+	const none = selects(ctx.renderGameTimeWatchlistCard([l], YEAR))[0];
+	assert.equal(none.value, 'none');
+	assert.ok(!none.classList.contains('watchlist-backup-unset'), 'a deliberate None is settled too');
+
+	// Choosing the suggestion row again returns to automatic.
+	sel.value = '';
+	sel.listeners.change[0]();
+	assert.equal(ctx.getBackupPlan('L', 'a'), '');
+	assert.equal(ctx.watchlistBackupFor(l, 'a', l.players[0]).source, 'suggested');
+
+	// A benched player has no picker; two leagues starting him get one each.
+	const benched = league('B', [player('b', 'Bench Guy', 'PHI', 'Q')], []);
+	assert.equal(selects(ctx.renderGameTimeWatchlistCard([benched], YEAR)).length, 0);
+	const two = [league('1', [player('a', 'Saquon Barkley', 'PHI', 'Q')], ['a']), league('2', [player('9', 'Saquon Barkley', 'PHI', 'Q')], ['9'])];
+	assert.equal(selects(ctx.renderGameTimeWatchlistCard(two, YEAR)).length, 2);
+}
+
+// The push notification (api/_lib/gametime.mjs resolveBackup) duplicates the
+// page's backup rules. Same fixture through both, every saved-pick state: a
+// drift would tell the phone one name and the card another.
+{
+	const ctx = makeContext(LOGGED_IN);
+	const ecr = (rank) => ({ ecr: { rank } });
+	const l = league('P', [
+		player('a', 'Saquon Barkley', 'PHI', 'Q'),
+		player('r1', 'Yan Runner', 'DAL', null, ecr(30)),
+		player('r2', 'Abe Runner', 'DAL', null, ecr(12)),
+		player('r3', 'Hurt Runner', 'DAL', 'Q', ecr(1)),
+		player('r4', 'Unranked Runner', 'DAL', null),
+		player('w', 'Zed Receiver', 'DAL', null, { position: 'WR', ...ecr(2) }),
+		player('t', 'Taxi Guy', 'DAL', null, { status: 'TAXI_SQUAD', ...ecr(1) }),
+		player('s', 'Other Starter', 'DAL', null, ecr(1)),
+	], ['a', 's']);
+	const thin = league('T', [player('a', 'Saquon Barkley', 'PHI', 'Q'), player('x', 'Hurt Runner', 'DAL', 'Q', ecr(1)), player('w', 'Zed Receiver', 'DAL', null, { position: 'WR', ...ecr(2) })], ['a']);
+	for (const lg of [l, thin]) {
+		for (const saved of [undefined, 'r1', 'r4', 'none', 'gone', 'w', 't', 's']) {
+			ctx.__lg = lg; ctx.__saved = saved || '';
+			const page = vm.runInContext("(() => { localStorage.setItem('myfflBackupPlans', JSON.stringify(__saved ? { [__lg.id]: { a: __saved } } : {})); return watchlistBackupFor(__lg, 'a', __lg.players[0]); })()", ctx);
+			const server = resolveBackup(lg, lg.players[0], saved);
+			assert.equal(server.player ? String(server.player.id) : null, page.player ? String(page.player.id) : null, `${lg.id} saved=${saved}: page and push name the same backup`);
+			assert.equal(server.source, page.source, `${lg.id} saved=${saved}: same source`);
+		}
+	}
 }
 
 console.log('Game-Time Watchlist tests passed');

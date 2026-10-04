@@ -69,10 +69,51 @@ export function slotsInWindow(games, now) {
   return slots;
 }
 
+// The replacement the Game-Time Watchlist card shows for a starter, worked
+// out here too because the push has to say it on a phone with no page open.
+// DUPLICATED from watchlistBackupFor/watchlistBackupCandidates/
+// watchlistSuggestedBackup in myffl.html (no build step, no shared import),
+// and pinned against the page's own functions by test-game-time-check.mjs
+// over one fixture, so a drift fails there rather than quietly telling the
+// phone one name and the page another.
+//
+// `saved` is the manager's own pick from the plans store (backupPlans[league]
+// [starter id]): a bench player's id, 'none' for "deliberately no backup", or
+// absent for "never chosen". Never chosen reads as the suggestion — the
+// best-ECR HEALTHY bench player at the starter's own position, and nobody
+// otherwise, since a designated or off-position default is a judgement the
+// manager makes, not one made for him in a push. A saved pick no longer on the
+// roster falls back to the suggestion, exactly as the card does.
+export const NO_BACKUP = 'none';
+
+function backupCandidates(league, starter) {
+  const starting = new Set((league.starters || []).map(String));
+  const samePos = (p) => (p.position && starter.position && p.position === starter.position ? 0 : 1);
+  const ecr = (p) => (p.ecr && Number.isFinite(p.ecr.rank) ? p.ecr.rank : Infinity);
+  return (league.players || [])
+    .filter((p) => (p.status || 'ROSTER').toUpperCase() === 'ROSTER' && !starting.has(String(p.id)))
+    .sort((a, b) => samePos(a) - samePos(b)
+      || (a.injuryStatus ? 1 : 0) - (b.injuryStatus ? 1 : 0)
+      || (ecr(a) === ecr(b) ? 0 : ecr(a) < ecr(b) ? -1 : 1)
+      || String(a.name).localeCompare(String(b.name)));
+}
+
+export function resolveBackup(league, starter, saved) {
+  if (saved === NO_BACKUP) return { player: null, source: 'none' };
+  const candidates = backupCandidates(league, starter);
+  const chosen = saved && candidates.find((c) => String(c.id) === String(saved));
+  if (chosen) return { player: chosen, source: 'chosen' };
+  const first = candidates[0];
+  if (first && !first.injuryStatus && first.position && first.position === starter.position) {
+    return { player: first, source: 'suggested' };
+  }
+  return { player: null, source: 'none' };
+}
+
 // Starters in games at `kickoff`, from the snapshot. One entry per player
 // (normalized name + scoreboard team), carrying every league that starts him
 // and any MFL id seen, so MFL's by-id injury map can be joined exactly.
-export function startersForSlot(snapshot, games, kickoff) {
+export function startersForSlot(snapshot, games, kickoff, plans = null) {
   const out = new Map();
   const year = Number(snapshot?.year);
   for (const league of snapshot?.leagues || []) {
@@ -88,12 +129,21 @@ export function startersForSlot(snapshot, games, kickoff) {
       if (!game || game.kickoff !== kickoff) continue;
       const k = `${key(p.name)}|${game.team}`;
       if (!out.has(k)) {
-        out.set(k, { key: k, name: p.name, team: game.team, designation: null, mflIds: new Set(), leagues: [] });
+        out.set(k, { key: k, name: p.name, team: game.team, designation: null, mflIds: new Set(), leagues: [], backups: [] });
       }
       const row = out.get(k);
       if (p.injuryStatus && !row.designation) row.designation = p.injuryStatus;
       if (!league.provider || league.provider === 'mfl') row.mflIds.add(String(p.id));
       row.leagues.push(leagueLabel(league));
+      // Per league, because the bench behind him is each league's own. A
+      // backup whose game has already kicked off is flagged rather than
+      // dropped: he is still the pick, but the lineup slot is locked.
+      const { player: b } = resolveBackup(league, p, plans?.backupPlans?.[league.id]?.[p.id]);
+      const bGame = b?.team ? games.get(b.team) : null;
+      row.backups.push({
+        league: leagueLabel(league),
+        backup: b ? { name: b.name, position: b.position || null, team: b.team || null, locked: !!bGame && bGame.state !== 'pre' } : null,
+      });
     }
   }
   return out;
@@ -188,6 +238,12 @@ export function watchedForSlot(starters, feeds) {
 //   * After that, a message only when someone's state changes.
 //   * Inside FINAL_CALL_MINUTES, one last message if anyone is still pending.
 // Returns { message: {title, body, priority} | null, next: newSentState }.
+function backupText(b) {
+  if (!b) return 'no backup picked';
+  const tag = [b.position, b.team].filter(Boolean).join(' ');
+  return `${b.name}${tag ? ` (${tag})` : ''}${b.locked ? ' — game already started' : ''}`;
+}
+
 export function planMessage(watched, sent, minutesToKickoff, whenLabel) {
   const prev = sent?.players || {};
   const next = { players: { ...prev }, finalCall: !!sent?.finalCall };
@@ -208,7 +264,13 @@ export function planMessage(watched, sent, minutesToKickoff, whenLabel) {
     const icon = p.state === 'inactive' ? '❌' : p.state === 'active' ? '✅' : '⏳';
     const verb = p.state === 'inactive' ? 'OUT — swap him' : p.state === 'active' ? 'playing' : 'not known yet';
     const tag = p.designation ? ` (${p.designation})` : '';
-    return `${icon} ${p.name} ${p.team}${tag}: ${verb} — ${p.why}. ${p.leagues.join(', ')}`;
+    // An OUT starter is the one the manager has to act on, so only that line
+    // names who goes in — per league, since each has its own bench. The rest
+    // keep the plain league list. Older callers without `backups` do too.
+    const where = p.state === 'inactive' && p.backups?.length
+      ? p.backups.map(({ league, backup }) => `${league} → ${backupText(backup)}`).join('; ')
+      : p.leagues.join(', ');
+    return `${icon} ${p.name} ${p.team}${tag}: ${verb} — ${p.why}. ${where}`;
   };
   const anyOut = rows.some((p) => p.state === 'inactive');
   let title;

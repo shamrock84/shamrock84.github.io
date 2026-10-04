@@ -30,7 +30,7 @@
 //     other endpoints.
 
 import { mflLogin, fetchMflInjuries, fetchNflGames } from '../scripts/lib/providers.mjs';
-import { resolveStore } from './plans.js';
+import { resolveStore, PLANS_KEY } from './plans.js';
 import { storeGet, storeSet } from './_lib/store.mjs';
 import {
   WATCH_LEAD_MINUTES,
@@ -75,7 +75,10 @@ async function pushover({ title, body, priority }) {
     token: process.env.PUSHOVER_APP_TOKEN,
     user: process.env.PUSHOVER_USER_KEY,
     title,
-    message: body,
+    // Pushover refuses a message over 1024 characters, and a refusal here
+    // leaves the slot unrecorded so every later poll retries the same too-long
+    // body forever. Truncated rather than risked.
+    message: body.length > 1024 ? `${body.slice(0, 1021)}...` : body,
     priority: String(priority ?? 0),
     url: WATCHLIST_URL,
     url_title: 'Open the Game-Time Watchlist',
@@ -138,6 +141,10 @@ export default async function handler(req, res) {
     const feedErrors = [];
     const espnInjuries = await getJson(`${ESPN_SITE}/injuries`).then(parseEspnInjuries).catch((e) => { feedErrors.push(`ESPN injuries: ${e.message}`); return null; });
     const mfl = await mflInjuries().catch((e) => { feedErrors.push(`MFL: ${e.message}`); return null; });
+    // The manager's replacement picks (backupPlans), so an OUT line can say who
+    // goes in. Optional like every feed: unreadable plans cost the picks, and
+    // the message falls back to the suggestion rather than failing the check.
+    const plans = store ? await storeGet(store, PLANS_KEY).catch((e) => { feedErrors.push(`Plans: ${e.message}`); return null; }) : null;
 
     const results = [];
     for (const [kickoff, eventIds] of slots) {
@@ -151,7 +158,7 @@ export default async function handler(req, res) {
           feedErrors.push(`ESPN summary ${id}: ${e.message}`);
         }
       }
-      const watched = watchedForSlot(startersForSlot(snapshot, games, kickoff), { espnInjuries, summary, mfl });
+      const watched = watchedForSlot(startersForSlot(snapshot, games, kickoff, plans), { espnInjuries, summary, mfl });
       const storeKey = `gametime:sent:${kickoff}`;
       const sent = store ? await storeGet(store, storeKey) : null;
       const minutes = (new Date(kickoff).getTime() - now.getTime()) / 60000;
@@ -164,7 +171,7 @@ export default async function handler(req, res) {
       results.push({
         kickoff,
         minutesToKickoff: Math.round(minutes),
-        watched: watched.map(({ name, team, designation, state, why, leagues }) => ({ name, team, designation, state, why, leagues })),
+        watched: watched.map(({ name, team, designation, state, why, leagues, backups }) => ({ name, team, designation, state, why, leagues, backups })),
         message,
       });
     }

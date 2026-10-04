@@ -2040,6 +2040,36 @@
 			cursor: pointer;
 			text-decoration: underline dotted;
 		}
+		.watchlist-backup {
+			font-size: 0.8em;
+			color: var(--muted);
+			margin-top: 0.15rem;
+		}
+		/* The same chip as .years-select/.salary-select/.cut-select on the
+		   Rosters tab — a planning dropdown should look like one control
+		   wherever it appears — kept as its own rule like those three so the
+		   Watchlist's can diverge on its own. text-align is left rather than
+		   right: this one holds a name, not a one-character value. */
+		.watchlist-backup-select {
+			font: inherit;
+			font-size: 0.82rem;
+			color: var(--accent);
+			background: var(--chip-bg);
+			border: 1px solid var(--border);
+			border-radius: 4px;
+			padding: 0.05rem 0.15rem;
+			max-width: 100%;
+		}
+		/* No backup applies (nothing chosen and nothing to suggest): the same
+		   gold .years-select-unset uses for an outstanding task, so the gold
+		   left on this card is exactly the starters still without a
+		   replacement. A chosen or suggested backup — and a deliberate
+		   "None" — is settled and stays the purple chip above. */
+		.watchlist-backup-select.watchlist-backup-unset {
+			color: var(--gold-chip-text);
+			background: var(--gold-chip-bg);
+			border-color: color-mix(in srgb, var(--gold-chip-text) 35%, var(--border));
+		}
 		/* Starters/Bench sub-groups, same .roster-group/.group-label pair
 		   Now Playing's own position groups use (see renderGameTimeWatchlistCard's
 		   own comment). Unlike a plain card, .watchlist-slot carries no padding
@@ -4293,6 +4323,40 @@
 			schedulePlanPush();
 		}
 
+		// The replacement the manager has picked for a starter, for the
+		// Game-Time Watchlist: leagueId -> starter's player id -> bench
+		// player's id. Strategy about a lineup, so it syncs through
+		// api/plans.js with the others rather than staying device-local —
+		// the pre-game alert lands on a phone, the picking is likely done
+		// on a laptop. Its own key and functions for the same reason the
+		// plans above are separate: a different domain, no shared rules for
+		// what counts as "unset". Ids are per provider and per league, which
+		// is why it is keyed by league and never joined across them.
+		const BACKUP_PLAN_STORAGE_KEY = 'myfflBackupPlans';
+		function loadBackupPlans() {
+			try {
+				return JSON.parse(localStorage.getItem(BACKUP_PLAN_STORAGE_KEY) || '{}');
+			} catch {
+				return {};
+			}
+		}
+		function getBackupPlan(leagueId, playerId) {
+			return readPlanMapCached(BACKUP_PLAN_STORAGE_KEY)[leagueId]?.[playerId] || '';
+		}
+		function setBackupPlan(leagueId, playerId, backupId) {
+			const plans = loadBackupPlans();
+			if (!backupId) {
+				delete plans[leagueId]?.[playerId];
+				if (plans[leagueId] && Object.keys(plans[leagueId]).length === 0) delete plans[leagueId];
+			} else {
+				plans[leagueId] = plans[leagueId] || {};
+				plans[leagueId][playerId] = String(backupId);
+			}
+			localStorage.setItem(BACKUP_PLAN_STORAGE_KEY, JSON.stringify(plans));
+			recordPlanEdit('backupPlans', leagueId, playerId, backupId ? String(backupId) : '');
+			schedulePlanPush();
+		}
+
 		// A manager's own correction to a guessed Results-tab finish (see
 		// computeMflSeasonPlacements's 'guessed: true' — a regular-season-order
 		// fallback used when no bracket data settled a year's exact placement).
@@ -4474,13 +4538,14 @@
 		let planPushGeneration = 0;
 
 		function localPlansDocument() {
-			return { contractPlans: loadContractPlans(), salaryPlans: loadSalaryPlans(), cutPlans: loadCutPlans(), resultOverrides: loadResultOverrides(), tasks: loadTasks() };
+			return { contractPlans: loadContractPlans(), salaryPlans: loadSalaryPlans(), cutPlans: loadCutPlans(), backupPlans: loadBackupPlans(), resultOverrides: loadResultOverrides(), tasks: loadTasks() };
 		}
 
 		function writePlansLocal(doc) {
 			localStorage.setItem(CONTRACT_PLAN_STORAGE_KEY, JSON.stringify(doc.contractPlans || {}));
 			localStorage.setItem(SALARY_PLAN_STORAGE_KEY, JSON.stringify(doc.salaryPlans || {}));
 			localStorage.setItem(CUT_PLAN_STORAGE_KEY, JSON.stringify(doc.cutPlans || {}));
+			localStorage.setItem(BACKUP_PLAN_STORAGE_KEY, JSON.stringify(doc.backupPlans || {}));
 			localStorage.setItem(RESULT_OVERRIDE_STORAGE_KEY, JSON.stringify(doc.resultOverrides || {}));
 			writeTasksLocal(doc.tasks);
 		}
@@ -4505,10 +4570,10 @@
 		// tasks does not fit this leagueId -> playerId -> string shape (it
 		// isn't league- or player-scoped) and is handled by its own pending
 		// log, TASKS_PENDING_KEY, just below.
-		const PLAN_KINDS = ['contractPlans', 'salaryPlans', 'cutPlans', 'resultOverrides'];
+		const PLAN_KINDS = ['contractPlans', 'salaryPlans', 'cutPlans', 'backupPlans', 'resultOverrides'];
 
 		function emptyPlanEdits() {
-			return { contractPlans: {}, salaryPlans: {}, cutPlans: {}, resultOverrides: {} };
+			return { contractPlans: {}, salaryPlans: {}, cutPlans: {}, backupPlans: {}, resultOverrides: {} };
 		}
 
 		function loadPendingPlanEdits() {
@@ -9112,7 +9177,7 @@
 						row.player = p;
 					}
 					if (starter) row.starter = true;
-					row.entries.push({ league, nickname: quickLinkLabelForLeague(league), starter });
+					row.entries.push({ league, nickname: quickLinkLabelForLeague(league), starter, playerId: p.id });
 				}
 			}
 			return [...bySlot.entries()]
@@ -9121,6 +9186,63 @@
 					rows: [...rows.values()].sort((a, b) => injurySeverityRank(b.status) - injurySeverityRank(a.status) || a.player.name.localeCompare(b.player.name)),
 				}))
 				.sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
+		}
+
+		// Who can be picked as an injured starter's replacement: everyone on
+		// that league's Active Roster who isn't already starting — the same
+		// ROSTER-only rule the watchlist itself applies, since a taxi or IR
+		// player can't be started this week. Same-position players lead
+		// (the usual swap), then the rest so a flex-eligible or
+		// position-changing pick is still reachable; within each, healthy
+		// before designated, then best ECR (p.ecr.rank, the same field the
+		// ECR column reads; unranked last), then name. A designated bench
+		// player stays listed, not dropped — the manager may well know he's
+		// the best option, and the label carries his designation either way.
+		function watchlistBackupCandidates(league, starter) {
+			const starting = new Set((league.starters || []).map(String));
+			const samePos = (p) => (p.position && starter && p.position === starter.position ? 0 : 1);
+			const ecrRank = (p) => (p.ecr && Number.isFinite(p.ecr.rank) ? p.ecr.rank : Infinity);
+			return (league.players || [])
+				.filter((p) => (p.status || 'ROSTER').toUpperCase() === 'ROSTER' && !starting.has(String(p.id)))
+				.sort((a, b) => samePos(a) - samePos(b)
+					|| (a.injuryStatus ? 1 : 0) - (b.injuryStatus ? 1 : 0)
+					|| (ecrRank(a) === ecrRank(b) ? 0 : ecrRank(a) < ecrRank(b) ? -1 : 1)
+					|| a.name.localeCompare(b.name));
+		}
+
+		// What the picker shows until the manager chooses: the best-ranked
+		// HEALTHY bench player at the starter's own position. Deliberately
+		// narrower than the candidate list — a different position or a
+		// designated player is a judgement call the manager makes, never a
+		// default, so with no healthy same-position player there is no
+		// suggestion rather than a doubtful one. A designation, even a
+		// Questionable one, disqualifies: the suggestion exists for the
+		// moment the starter is ruled out, when a second coin flip is the
+		// last thing wanted.
+		function watchlistSuggestedBackup(league, starter) {
+			const first = watchlistBackupCandidates(league, starter)[0];
+			if (!first || first.injuryStatus) return null;
+			if (!starter || !first.position || first.position !== starter.position) return null;
+			return first;
+		}
+
+		// Stored in backupPlans for "deliberately no backup", as distinct from
+		// '' (never chosen, so the suggestion shows). Without it a manager who
+		// wants none could not turn the default off. No player id is the word.
+		const WATCHLIST_NO_BACKUP = 'none';
+
+		// The backup that applies to a starter: the manager's saved pick if it
+		// is still a candidate, else the suggestion. A saved pick who has left
+		// the roster falls back to the suggestion rather than showing a stale
+		// name as current. Returns {player, source} — source is 'chosen',
+		// 'suggested' or 'none' — so the picker and tests agree.
+		function watchlistBackupFor(league, playerId, starter) {
+			const saved = getBackupPlan(league.id, playerId);
+			if (saved === WATCHLIST_NO_BACKUP) return { player: null, source: 'none' };
+			const chosen = saved && watchlistBackupCandidates(league, starter).find((c) => String(c.id) === saved);
+			if (chosen) return { player: chosen, source: 'chosen' };
+			const suggested = watchlistSuggestedBackup(league, starter);
+			return suggested ? { player: suggested, source: 'suggested' } : { player: null, source: 'none' };
 		}
 
 		// "Sun 1:00 PM" for a slot heading and "11:40 AM" for when to look,
@@ -9217,6 +9339,43 @@
 					leaguesLine.appendChild(btn);
 				});
 				nameLine.appendChild(leaguesLine);
+				// A replacement picker per league this player STARTS in
+				// (a benched copy has nothing to replace). Per league, not
+				// per row: the row is merged across leagues by name, but the
+				// bench behind him is each league's own. The pick is a
+				// plan (getBackupPlan), read here rather than closed over
+				// so it survives the rebuild this card gets on every poll.
+				const startEntries = r.entries.filter((en) => en.starter);
+				startEntries.forEach((en) => {
+					const line = el('div', { class: 'watchlist-backup' });
+					line.appendChild(document.createTextNode(startEntries.length > 1 ? `${en.nickname} backup: ` : 'Backup: '));
+					const select = el('select', { class: 'watchlist-backup-select', title: 'Who to start if he is ruled out — a personal note, not sent anywhere' });
+					const candidates = watchlistBackupCandidates(en.league, p);
+					const optionLabel = (c) => {
+						const tag = [c.position, c.team].filter(Boolean).join(', ');
+						return `${c.name}${tag ? ` (${tag})` : ''}${c.injuryStatus ? ` — ${c.injuryStatus}` : ''}`;
+					};
+					// '' means "never chosen": it reads as the suggestion, and
+					// choosing it again after picking someone returns to it.
+					const suggested = watchlistSuggestedBackup(en.league, p);
+					select.appendChild(el('option', { value: '', text: suggested ? `Suggest: ${optionLabel(suggested)}` : 'No suggestion' }));
+					select.appendChild(el('option', { value: WATCHLIST_NO_BACKUP, text: 'None' }));
+					for (const c of candidates) select.appendChild(el('option', { value: String(c.id), text: optionLabel(c) }));
+					const saved = getBackupPlan(en.league.id, en.playerId);
+					const applies = watchlistBackupFor(en.league, en.playerId, p);
+					// A saved pick that no longer applies (left the roster)
+					// shows as '' — the suggestion — never as a stale name.
+					select.value = applies.source === 'chosen' || saved === WATCHLIST_NO_BACKUP ? saved : '';
+					const sync = () => select.classList.toggle('watchlist-backup-unset', select.value === '' && !suggested);
+					sync();
+					select.addEventListener('change', () => {
+						setBackupPlan(en.league.id, en.playerId, select.value);
+						sync();
+					});
+					select.addEventListener('click', (e) => e.stopPropagation());
+					line.appendChild(select);
+					nameLine.appendChild(line);
+				});
 				row.appendChild(nameLine);
 				const side = r.game.opponent ? `${r.game.isHome ? 'vs' : '@'} ${r.game.opponent}` : '';
 				row.appendChild(el('span', { class: 'watchlist-opponent', text: side }));
