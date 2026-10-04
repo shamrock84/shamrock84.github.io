@@ -2,26 +2,27 @@
 // off a fresh run of the Sync Fantasy Rosters GitHub Action on demand, instead
 // of waiting for the next scheduled run (every 4 hours).
 //
-// This is a public, unauthenticated endpoint (same as live-scoring.js), so
-// it does two things live-scoring doesn't need to: it holds a write-scoped
-// GitHub token (GITHUB_DISPATCH_TOKEN — a fine-grained PAT limited to just
-// this repo's Actions: write permission, never MFL/ESPN credentials) and
-// enforces a cooldown so the page can't be used to hammer the workflow (and
-// in turn MFL/ESPN's APIs) by spamming the button or the endpoint directly.
+// Login-gated: it requires the same Bearer token as every other write
+// (api/login.js), and the page only shows the button when logged in. It
+// used to be public, which let anyone with curl dispatch syncs — each one a
+// full pass over MFL's rate limit, on the manager's account. It holds a
+// write-scoped GitHub token (GITHUB_DISPATCH_TOKEN — a fine-grained PAT
+// limited to this repo's Actions: write permission, never MFL/ESPN
+// credentials).
 //
-// The cooldown lives in the plans Upstash store, not in this module. A
-// module-level timestamp was all it used to be, and that never held: it
-// resets on every cold start, and two concurrent instances each keep their
-// own. And its length is set by how long a sync RUNS, not by how fast a
-// person clicks — a run takes 60-120s and the workflow queues dispatches
-// rather than dropping them, so the old 2-minute gap let anyone with curl
-// keep the sync (and MFL's rate limit, on the manager's account) busy around
-// the clock. COOLDOWN_MS is comfortably longer than a run, so the most this
-// endpoint can add is one sync per window on top of the 4-hourly schedule.
+// It also enforces a cooldown, held in the plans Upstash store rather than
+// in this module: a module-level timestamp resets on every cold start, and
+// two concurrent instances each keep their own. Its length is set by how
+// long a sync RUNS, not how fast a person clicks — a run takes 60-120s and
+// the workflow queues dispatches rather than dropping them, so a gap shorter
+// than a run lets syncs go back to back. With the login gate the cooldown
+// guards against an accidental double-click or a stuck retry, not an
+// attacker, which is why COOLDOWN_MS can sit closer to a run's length.
 //
 // With no store configured, or the store unreachable, it falls back to the
 // old module-level check, so the button keeps working through an outage.
 
+import { verifyToken } from './_lib/auth.mjs';
 import { applyCors } from './_lib/cors.mjs';
 import { storeClaim, storeRelease } from './_lib/store.mjs';
 import { resolveStore } from './plans.js';
@@ -31,7 +32,7 @@ const REPO = 'shamrock84.github.io';
 const WORKFLOW = 'sync-fantasy-rosters.yml';
 const REF = 'main';
 
-const COOLDOWN_MS = 10 * 60 * 1000; // 10 min
+const COOLDOWN_MS = 5 * 60 * 1000; // 5 min
 const COOLDOWN_KEY = 'sync:cooldown';
 
 // Fallback only — see the header. Resets on cold start.
@@ -68,9 +69,23 @@ async function takeCooldown() {
 }
 
 export default async function handler(req, res) {
-  if (applyCors(req, res, { methods: 'POST, OPTIONS' })) return;
+  if (applyCors(req, res, { methods: 'POST, OPTIONS', headers: 'Authorization' })) return;
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
+    return;
+  }
+
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (!sessionSecret) {
+    res.status(500).json({ error: 'SESSION_SECRET is not configured on this deployment.' });
+    return;
+  }
+  // Checked before the cooldown, so an unauthenticated request can't spend it
+  // and lock the manager out of their own button.
+  const authHeader = req.headers.authorization || '';
+  const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (!verifyToken(bearer, sessionSecret)) {
+    res.status(401).json({ error: 'Log in to sync.' });
     return;
   }
 

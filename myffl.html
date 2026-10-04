@@ -3850,7 +3850,7 @@
 			<span id="season-record" class="season-record hidden"></span>
 				<span id="season-record-sep" class="season-record-sep hidden" aria-hidden="true">&middot;</span>
 				<span id="updated">Loading&hellip;</span>
-			<button type="button" id="sync-btn" aria-label="Sync now" title="Sync now">
+			<button type="button" id="sync-btn" class="hidden" aria-label="Sync now" title="Sync now">
 				<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 					<polyline points="23 4 23 10 17 10"></polyline>
 					<polyline points="1 20 1 14 7 14"></polyline>
@@ -16553,6 +16553,7 @@
 		}
 
 		function renderGrid() {
+			refreshSyncButton();
 			const statusEl = document.getElementById('status');
 			const gridEl = document.getElementById('grid');
 			const data = pageData;
@@ -16822,8 +16823,20 @@
 			updatedEl.textContent = 'Requesting sync…';
 
 			try {
-				const res = await fetch(TRIGGER_SYNC_URL, { method: 'POST' });
+				const res = await fetch(TRIGGER_SYNC_URL, {
+					method: 'POST',
+					headers: { Authorization: `Bearer ${authToken}` },
+				});
 				const body = await res.json().catch(() => ({}));
+				if (res.status === 401) {
+					// An expired token: same handling as every other login-gated
+					// write. doLogout re-renders, which hides this button again.
+					syncBtn.disabled = false;
+					syncBtn.classList.remove('spinning');
+					updatedEl.textContent = pageData?.generatedAt ? `Last synced ${timeAgo(pageData.generatedAt)}` : '';
+					doLogout();
+					return;
+				}
 				if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
 
 				updatedEl.textContent = 'Sync started — checking for fresh data…';
@@ -16875,6 +16888,17 @@
 			}
 		}
 		document.getElementById('sync-btn').addEventListener('click', triggerManualSync);
+
+		// The sync button is login-gated: api/trigger-sync.js refuses a request
+		// without a valid token, so showing it to a logged-out viewer would only
+		// offer a button that can't work. Hidden in the markup so it never
+		// flashes before this runs; renderGrid calls this on every render, which
+		// covers login and logout (both re-render), and this call covers a page
+		// whose data never loads, when renderGrid returns before getting here.
+		function refreshSyncButton() {
+			document.getElementById('sync-btn').classList.toggle('hidden', !isLoggedIn());
+		}
+		refreshSyncButton();
 
 		const searchInput = document.getElementById('search');
 		const searchClearBtn = document.getElementById('search-clear');

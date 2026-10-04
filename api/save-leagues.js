@@ -8,8 +8,9 @@
 // Needs GITHUB_CONTENTS_TOKEN (a fine-grained PAT scoped to this repo with
 // Contents: Read and write) as a Vercel project environment variable. That is
 // deliberately NOT the same token as trigger-sync.js's GITHUB_DISPATCH_TOKEN:
-// trigger-sync is a public unauthenticated endpoint, and it should stay unable
-// to rewrite repository files no matter what.
+// trigger-sync only needs to start a workflow, so it should stay unable to
+// rewrite repository files no matter what (least privilege, even now that
+// it is login-gated too).
 //
 // Everything here is validated server-side before a single byte is committed.
 // This path skips pull requests entirely, so the syntax-check workflow never
