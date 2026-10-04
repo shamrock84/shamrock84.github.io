@@ -12325,7 +12325,7 @@
 				if (!game.id) continue;
 				let entry = byId.get(game.id);
 				if (!entry) {
-					entry = { id: game.id, state: game.state, detail: game.detail, kickoff: game.kickoff, home: null, away: null };
+					entry = { id: game.id, state: game.state, detail: game.detail, kickoff: game.kickoff, broadcast: game.broadcast || null, home: null, away: null };
 					byId.set(game.id, entry);
 				}
 				const side = { team: game.team || abbr, score: game.score ?? null };
@@ -12590,7 +12590,7 @@
 			teams.appendChild(el('span', { class: 'nfl-game-team', text: game.home.team }));
 			if (showScore) teams.appendChild(el('span', { class: 'nfl-game-score', text: String(game.home.score) }));
 			row.appendChild(teams);
-			row.appendChild(el('div', { class: 'nfl-game-status', text: formatGameWhen(game) }));
+			row.appendChild(el('div', { class: 'nfl-game-status', text: [formatGameWhen(game), game.broadcast].filter(Boolean).join(' · ') }));
 
 			// Still the only place for kicking/team-defense stats (see
 			// nflBoxscorePlayerLines' own comment) — its own small line

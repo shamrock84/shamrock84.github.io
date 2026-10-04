@@ -1897,6 +1897,22 @@ export async function fetchNflGames() {
     }
     const kickoff = competition?.date || event.date || null;
     const detail = status?.type?.shortDetail || null;
+    // TV network(s), e.g. "NBC" or "ESPN/ABC". UNPROBED against a live
+    // response (ESPN's host is unreachable from the dev sandbox): the shape
+    // read is ESPN's documented `competitions[0].broadcasts[].names[]`, with
+    // `geoBroadcasts[].media.shortName` as a fallback. Both are read
+    // defensively, so a miss yields null and the page omits the label.
+    const networks = [];
+    for (const b of competition?.broadcasts || []) {
+      for (const n of b?.names || []) networks.push(n);
+    }
+    if (!networks.length) {
+      for (const g of competition?.geoBroadcasts || []) {
+        const n = g?.media?.shortName;
+        if (n) networks.push(n);
+      }
+    }
+    const broadcast = [...new Set(networks.filter(Boolean))].join('/') || null;
     for (const c of competitors) {
       const abbr = c.team?.abbreviation;
       if (!abbr) continue;
@@ -1930,6 +1946,8 @@ export async function fetchNflGames() {
         // The scoreboard's own running score, a string ("0" pregame) cast
         // to a number here so a consumer never has to. Additive.
         score: c.score != null ? Number(c.score) : null,
+        // TV network label for the NFL tab's game rows. Additive.
+        broadcast,
       };
       for (const key of nflTeamKeys(abbr)) games.set(key, entry);
     }
