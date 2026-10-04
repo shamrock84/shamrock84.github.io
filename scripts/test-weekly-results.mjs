@@ -132,7 +132,8 @@ assert.equal((await call({})).code, 500);
 process.env.GAMETIME_CHECK_SECRET = 's';
 process.env.PUSHOVER_APP_TOKEN = 't';
 process.env.PUSHOVER_USER_KEY = 'u';
-assert.equal((await call({ key: 'wrong' })).code, 401);
-assert.equal((await call({ key: 's', week: '99' })).body.sent, false);
+assert.equal((await call({}, { authorization: 'Bearer wrong' })).code, 401);
+assert.equal((await call({ key: 's' })).code, 401, 'the secret in ?key= is refused');
+assert.equal((await call({ week: '99' }, { authorization: 'Bearer s' })).body.sent, false);
 
 console.log('weekly results: ok');

@@ -17,7 +17,7 @@
 // record unwritten, so the next poll retries the same message.
 //
 // Protected by GAMETIME_CHECK_SECRET, sent as an Authorization: Bearer header
-// (?key= still works but is deprecated — see cronAuthorized in _lib/auth.mjs) —
+// (never ?key=, which is refused — see cronAuthorized in _lib/auth.mjs) —
 // otherwise anyone could make the manager's phone buzz. Two extra modes:
 //   ?test=1    send a one-line test notification (checks the Pushover keys)
 //   ?dryRun=1  run the whole check for the current window, return what it

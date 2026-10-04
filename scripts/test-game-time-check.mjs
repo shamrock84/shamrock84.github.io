@@ -211,11 +211,13 @@ assert.equal(classify({ ...get('Saquon Barkley'), designation: 'IR' }, feeds()).
     return out;
   };
 
+  const auth = { authorization: 'Bearer s3cret' };
   assert.equal((await run({})).status, 401, 'no key, no check');
-  assert.equal((await run({ key: 'wrong' })).status, 401);
+  assert.equal((await run({}, { authorization: 'Bearer wrong' })).status, 401);
+  assert.equal((await run({ key: 's3cret' })).status, 401, 'the secret in ?key= is refused');
 
   calls.length = 0;
-  const test = await run({ key: 's3cret', test: '1' });
+  const test = await run({ test: '1' }, auth);
   assert.equal(test.status, 200);
   const push = calls.find((c) => c.url.includes('pushover'));
   assert.ok(push, 'test mode sends one notification');
