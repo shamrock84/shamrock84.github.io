@@ -4,15 +4,19 @@
 //     plans Upstash store, refuses a locked-out request before comparing the
 //     password (and without counting it), clears the IP's counter on success,
 //     and fails open when the store is missing or down.
-//   - api/trigger-sync.js holds its cooldown in the same store, so it binds
-//     across cold starts and concurrent instances — which a module-level
-//     timestamp never did — hands the cooldown back when the GitHub dispatch
-//     fails, and falls back to the old per-instance check without a store.
+//   - api/trigger-sync.js refuses a request without a valid login token
+//     (before the cooldown, so a stranger can't spend it), holds its cooldown
+//     in the same store so it binds across cold starts and concurrent
+//     instances — which a module-level timestamp never did — hands the
+//     cooldown back when the GitHub dispatch fails, and falls back to the old
+//     per-instance check without a store.
 //
 // Both run against an in-memory fake of Upstash's /pipeline REST endpoint and
 // of GitHub's dispatch endpoint, by stubbing globalThis.fetch. No network.
 
 import assert from 'node:assert/strict';
+import { createHmac } from 'node:crypto';
+import { createToken } from '../api/_lib/auth.mjs';
 
 const STORE_URL = 'https://fake-upstash.test';
 const originalFetch = globalThis.fetch;
@@ -91,9 +95,11 @@ let importCount = 0;
 // fallback timestamp) starts clean — the same thing a cold start does.
 const freshHandler = async (path) => (await import(`${path}?fresh=${importCount++}`)).default;
 
-async function call(handler, { body = {}, ip = '1.1.1.1' } = {}) {
+async function call(handler, { body = {}, ip = '1.1.1.1', token = null } = {}) {
 	const res = fakeRes();
-	await handler({ method: 'POST', headers: { origin: 'https://melbostads.com', 'x-real-ip': ip }, body }, res);
+	const headers = { origin: 'https://melbostads.com', 'x-real-ip': ip };
+	if (token) headers.authorization = `Bearer ${token}`;
+	await handler({ method: 'POST', headers, body }, res);
 	return res;
 }
 
@@ -113,6 +119,9 @@ process.env.SESSION_SECRET = 'secret';
 process.env.GITHUB_DISPATCH_TOKEN = 'gh';
 
 const { LOGIN_IP_MAX_FAILURES, LOGIN_GLOBAL_MAX_FAILURES } = await import('../api/login.js');
+const { COOLDOWN_MS } = await import('../api/trigger-sync.js');
+// A logged-in caller, for every trigger-sync case below except the auth ones.
+const sync = (handler) => call(handler, { token: createToken(process.env.SESSION_SECRET) });
 
 // ---------------------------------------------------------------- login ----
 
@@ -209,20 +218,21 @@ const { LOGIN_IP_MAX_FAILURES, LOGIN_GLOBAL_MAX_FAILURES } = await import('../ap
 	const instanceA = await freshHandler('../api/trigger-sync.js');
 	const instanceB = await freshHandler('../api/trigger-sync.js');
 
-	assert.equal((await call(instanceA)).statusCode, 200, 'the first request dispatches');
+	assert.equal((await sync(instanceA)).statusCode, 200, 'the first request dispatches');
 	assert.equal(githubCalls, 1);
 
-	const fromB = await call(instanceB);
+	const fromB = await sync(instanceB);
 	assert.equal(fromB.statusCode, 429,
 		'a second instance (or a cold start) sees the same cooldown — the hole the module-level timestamp left');
 	assert.equal(githubCalls, 1, 'and does not dispatch');
-	assert.ok(fromB.body.retryAfterSeconds > 0 && fromB.body.retryAfterSeconds <= 600, 'it says how long to wait');
+	assert.ok(fromB.body.retryAfterSeconds > 0 && fromB.body.retryAfterSeconds <= COOLDOWN_MS / 1000, 'it says how long to wait');
 	assert.match(fromB.body.error, /try again in \d+ min/, 'in words the page shows as-is');
 
-	store.advance(9 * 60 * 1000);
-	assert.equal((await call(instanceB)).statusCode, 429, 'still inside the window at 9 minutes — longer than a sync run');
+	assert.ok(COOLDOWN_MS >= 3 * 60 * 1000, 'the cooldown stays longer than a sync run (60-120s), or dispatches queue back to back');
+	store.advance(COOLDOWN_MS - 60 * 1000);
+	assert.equal((await sync(instanceB)).statusCode, 429, 'still inside the window a minute before it ends');
 	store.advance(60 * 1000 + 1);
-	assert.equal((await call(instanceB)).statusCode, 200, 'and open again once it passes');
+	assert.equal((await sync(instanceB)).statusCode, 200, 'and open again once it passes');
 	assert.equal(githubCalls, 2);
 }
 
@@ -233,9 +243,9 @@ const { LOGIN_IP_MAX_FAILURES, LOGIN_GLOBAL_MAX_FAILURES } = await import('../ap
 	githubCalls = 0;
 	githubOk = false;
 	const handler = await freshHandler('../api/trigger-sync.js');
-	assert.equal((await call(handler)).statusCode, 502, 'GitHub refusing is reported');
+	assert.equal((await sync(handler)).statusCode, 502, 'GitHub refusing is reported');
 	githubOk = true;
-	assert.equal((await call(handler)).statusCode, 200, 'and did not spend the cooldown');
+	assert.equal((await sync(handler)).statusCode, 200, 'and did not spend the cooldown');
 	assert.equal(githubCalls, 2);
 }
 
@@ -246,7 +256,7 @@ const { LOGIN_IP_MAX_FAILURES, LOGIN_GLOBAL_MAX_FAILURES } = await import('../ap
 	githubCalls = 0;
 	githubOk = true;
 	const handlers = await Promise.all([0, 1, 2, 3, 4].map(() => freshHandler('../api/trigger-sync.js')));
-	const results = await Promise.all(handlers.map((h) => call(h)));
+	const results = await Promise.all(handlers.map((h) => sync(h)));
 	assert.equal(results.filter((r) => r.statusCode === 200).length, 1, 'one of five simultaneous requests dispatches');
 	assert.equal(githubCalls, 1);
 }
@@ -258,10 +268,36 @@ const { LOGIN_IP_MAX_FAILURES, LOGIN_GLOBAL_MAX_FAILURES } = await import('../ap
 		setup();
 		githubCalls = 0;
 		const handler = await freshHandler('../api/trigger-sync.js');
-		assert.equal((await call(handler)).statusCode, 200, 'the button still works without the shared store');
-		assert.equal((await call(handler)).statusCode, 429, 'and this instance still enforces its own cooldown');
+		assert.equal((await sync(handler)).statusCode, 200, 'the button still works without the shared store');
+		assert.equal((await sync(handler)).statusCode, 429, 'and this instance still enforces its own cooldown');
 		assert.equal(githubCalls, 1);
 	}
+}
+
+
+{
+	// Login gate: no token, a forged token or an expired one is refused, and
+	// a refused request does not spend the cooldown — otherwise anyone could
+	// lock the manager out of their own button by calling it first.
+	store = makeFakeStore();
+	withStoreEnv();
+	githubCalls = 0;
+	githubOk = true;
+	const handler = await freshHandler('../api/trigger-sync.js');
+
+	const anon = await call(handler);
+	assert.equal(anon.statusCode, 401, 'no token is refused');
+	assert.equal((await call(handler, { token: 'not.a-token' })).statusCode, 401, 'a forged token is refused');
+	const expiredPayload = Buffer.from(JSON.stringify({ exp: Date.now() - 1000 })).toString('base64url');
+	const expiredSig = createHmac('sha256', process.env.SESSION_SECRET).update(expiredPayload).digest('base64url');
+	assert.equal((await call(handler, { token: `${expiredPayload}.${expiredSig}` })).statusCode, 401, 'an expired token is refused');
+	assert.equal(githubCalls, 0, 'none of them dispatched');
+	assert.equal(store.data.has('sync:cooldown'), false, 'and none of them spent the cooldown');
+	assert.match(anon.headers['Access-Control-Allow-Headers'] || '', /Authorization/,
+		'the preflight allows the Authorization header, or the browser never sends the token');
+
+	assert.equal((await sync(handler)).statusCode, 200, 'a logged-in caller still gets through straight after');
+	assert.equal(githubCalls, 1);
 }
 
 globalThis.fetch = originalFetch;

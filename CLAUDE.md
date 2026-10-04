@@ -32,7 +32,7 @@ There is **no build step, no test framework, no linter and no dependencies**. `p
 
 **Fast path — live, never written down.** `api/live-scoring.js`, polled while the Scoring tab is open; it writes nothing and keeps a module-level cache that resets on cold start.
 
-Both import fetch logic from **`scripts/lib/providers.mjs`**; `fetch-rosters.mjs` is orchestration only. `api/trigger-sync.js` lets the page's "Last synced" link dispatch the sync, behind a **10-minute cooldown held in the Upstash store** — longer than a sync run, because the workflow queues dispatches and a shorter gap lets anyone keep MFL busy around the clock.
+Both import fetch logic from **`scripts/lib/providers.mjs`**; `fetch-rosters.mjs` is orchestration only. `api/trigger-sync.js` lets the page's sync button dispatch the sync. **It is login-gated** (Bearer token checked before the cooldown, button hidden when logged out) and has a **5-minute cooldown held in the Upstash store**. Keep the cooldown longer than a sync run (60–120s): the workflow queues dispatches, so a shorter gap lets syncs run back to back.
 
 ## `config/leagues.json` is the control plane
 
@@ -154,7 +154,7 @@ The file's `_readme` array is the authoritative schema — read it before touchi
 - **Auth is stateless.** `api/login.js` checks `SITE_PASSWORD` and returns an HMAC-signed 30-day token (`api/_lib/auth.mjs`) used as a Bearer token. MFL credentials never reach the browser. **Failed logins are rate-limited per IP and globally in the Upstash store, and the check fails open if the store is down** (`test-api-rate-limits.mjs`) — don't make it fail closed.
 - **Plans sync through `api/plans.js` (Upstash over REST with plain `fetch`, not the `redis://` marketplace store).** View, sub-tab and token stay device-local.
 - **A merge is a union and can't express a deletion.** A device merges once (`myfflPlanSynced`) and plain-GETs afterwards; `myfflPlanPending` carries `''` tombstones. Two-device behaviour is only visible in `test-plan-sync.mjs`.
-- **The login gate on Analytics, Admin, the ECR column and lineup checkboxes is intended — keep it, and gate any new card reading roster, ranking, finance or lineup data.** It deters a league mate opening the URL, nothing more: the same data is public in `config/leagues.json` and `data/rosters.json`. Don't file that as a bug, and don't put anything genuinely sensitive behind the gate alone. History is deliberately ungated.
+- **The login gate on Analytics, Admin, the ECR column, lineup checkboxes and the sync button is intended — keep it, and gate any new card reading roster, ranking, finance or lineup data.** It deters a league mate opening the URL, nothing more: the same data is public in `config/leagues.json` and `data/rosters.json`. Don't file that as a bug, and don't put anything genuinely sensitive behind the gate alone. History is deliberately ungated.
 - **Plans are the exception**: strategy about other people's leagues goes to Upstash, never the repo. That is the whole privacy model.
 
 ## Where the reasoning lives
