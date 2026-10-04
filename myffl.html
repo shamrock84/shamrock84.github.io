@@ -5437,16 +5437,18 @@
 		// FantasyPros doesn't rank, or the name match didn't resolve, keeps a
 		// perfectly readable plain name — as does every roster synced before this
 		// shipped, until the next sync fills the field in.
-		function playerNameNode(p) {
+		// `label` lets a cramped caller (the Game-Time Watchlist) show an
+		// abbreviated name while the link's tooltip still carries the full one.
+		function playerNameNode(p, label = p.name) {
 			const url = p.ecr?.url;
-			if (!url) return document.createTextNode(p.name);
+			if (!url) return document.createTextNode(label);
 			return el('a', {
 				href: url,
 				target: '_blank',
 				rel: 'noopener',
 				class: 'player-link',
 				title: `${p.name} on FantasyPros`,
-				text: p.name,
+				text: label,
 			});
 		}
 
@@ -9341,7 +9343,9 @@
 				const row = el('div', { class: 'watchlist-row' });
 				const nameLine = el('div', { class: 'watchlist-name' });
 				const first = el('div');
-				first.appendChild(playerNameNode(p));
+				// First initial only, like the picker beside it and the matchup
+				// drawer: this row shares its width with the picker and opponent.
+				first.appendChild(playerNameNode(p, abbreviatePlayerName(p.name, p.position)));
 				if (p.team) appendTeamSuffix(first, p.team);
 				first.appendChild(document.createTextNode(' '));
 				first.appendChild(el('span', { class: 'injury-badge', text: `(${r.status})` }));
