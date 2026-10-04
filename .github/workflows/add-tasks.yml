@@ -1,0 +1,52 @@
+name: Add Tasks Card Items (manual)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here.
+# Runs scripts/add-tasks.mjs, which WRITES to api/plans.js's shared store
+# using mode:'merge' with brand-new ids only, so it can add tasks but never
+# change or delete an existing one (see that script's header). Same
+# SITE_PASSWORD repo secret fetch-tasks.yml uses.
+#
+# `tasks` is newline-separated task text, one task per line. Passed through as
+# env vars rather than shell arguments so a task's own quotes can't break the
+# run step. A task whose exact text already exists is skipped, so a re-run
+# files no duplicates.
+on:
+  workflow_dispatch:
+    inputs:
+      tasks:
+        description: 'Task text to add, one per line'
+        required: true
+      category:
+        description: 'Tasks-card category'
+        required: false
+        default: 'Site Enhancement'
+
+jobs:
+  add:
+    runs-on: ubuntu-latest
+    steps:
+      # Blobless + sparse checkout: skips mfl/PSD and images/, which no
+      # workflow here reads. Same five directories everywhere on purpose;
+      # see sync-fantasy-rosters.yml for the reasoning and the numbers.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout: |
+            api
+            scripts
+            config
+            data
+            .github
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Add tasks
+        env:
+          SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
+          TASK_TEXTS: ${{ github.event.inputs.tasks }}
+          TASK_CATEGORY: ${{ github.event.inputs.category }}
+        run: node scripts/add-tasks.mjs

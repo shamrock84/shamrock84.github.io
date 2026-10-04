@@ -189,6 +189,7 @@ The manager files work for Claude in the Tasks card (`renderTasksCard`).
 
 - **Fetch it with `scripts/fetch-tasks.mjs`** (needs `SITE_PASSWORD`), or dispatch `fetch-tasks.yml` when the sandbox can't reach Vercel — don't ask the user to paste it.
 - **Only act on `Bugs` and `Site Enhancement`.** Other categories are the manager's own.
+- **File new tasks with `scripts/add-tasks.mjs` / `add-tasks.yml`** (default category `Site Enhancement`). It posts `mode: 'merge'` with brand-new ids only, so it can add but never alter a task, and skips any exact text already present.
 - **Once merged, mark done with `scripts/mark-tasks-done.mjs` / `mark-tasks-done.yml`**, matched by exact `text`. It must POST `mode: 'replace'` after re-fetching the whole document, because `merge` lets the stored copy win.
 
 ## Front-end conventions
