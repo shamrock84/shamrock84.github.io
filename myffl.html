@@ -9400,13 +9400,24 @@
 					const suggested = watchlistSuggestedBackup(en.league, p);
 					select.appendChild(el('option', { value: '', text: suggested ? optionLabel(suggested, true) : 'Pick backup' }));
 					select.appendChild(el('option', { value: WATCHLIST_NO_BACKUP, text: 'None' }));
-					for (const c of candidates) select.appendChild(el('option', { value: String(c.id), text: optionLabel(c, !!suggested && c.id === suggested.id) }));
+					// The suggested player is the first option already (value '',
+					// "follow the suggestion"), so he is left out of this list —
+					// listing him again showed the same name twice. The cost is
+					// that he can't be pinned as an explicit pick that survives a
+					// change in the rankings; the default follows them instead.
+					for (const c of candidates) {
+						if (suggested && c.id === suggested.id) continue;
+						select.appendChild(el('option', { value: String(c.id), text: optionLabel(c, false) }));
+					}
 					if (suggested) suggestionShown = true;
 					const saved = getBackupPlan(en.league.id, en.playerId);
 					const applies = watchlistBackupFor(en.league, en.playerId, p);
 					// A saved pick that no longer applies (left the roster)
-					// shows as '' — the suggestion — never as a stale name.
-					select.value = applies.source === 'chosen' || saved === WATCHLIST_NO_BACKUP ? saved : '';
+					// shows as '' — the suggestion — never as a stale name. So
+					// does a pick saved earlier for the player now suggested,
+					// who has no option of his own any more.
+					const pinnedSuggestion = !!suggested && saved === String(suggested.id);
+					select.value = (applies.source === 'chosen' && !pinnedSuggestion) || saved === WATCHLIST_NO_BACKUP ? saved : '';
 					const sync = () => select.classList.toggle('watchlist-backup-unset', select.value === '' && !suggested);
 					sync();
 					select.addEventListener('change', () => {
