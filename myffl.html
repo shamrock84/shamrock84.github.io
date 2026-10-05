@@ -7872,7 +7872,8 @@
 		// A bye (no opponent that week) carries minutesRemaining but never
 		// winProb, since there's nothing to compare against. "0 min left"
 		// still renders — a finished game is exactly as informative as one
-		// still in progress.
+		// still in progress. In a best-ball league it counts the bench too
+		// (fetchScoring), since any rostered player can still score.
 		// ESPN's redraft-league team names are commissioner in-jokes, so the
 		// Standings and Scoring cards also show the real manager behind the
 		// team — "Team Name (Owner)". Shared by both since neither is

@@ -1749,6 +1749,10 @@ export function bestBallLineupTotal(entries, spec) {
 // it (bye, unknown team) is treated as finished rather than invented.
 // Returns null when the roster cannot be read into positions (the sync's
 // fetchScoring has no player map), so the caller falls back cleanly.
+// `minutes` is the roster's unplayed player-minutes and doubles as the
+// card's "min left" (fetchScoring): only players whose position the lineup
+// can seat count, since a kicker in a league that starts none (or a player
+// the map couldn't place) can never change the score.
 export function bestBallProjection(team, spec, projectPlayer, nflClocks) {
   const starters = team.players || [];
   const bench = team.bench || [];
@@ -1757,7 +1761,7 @@ export function bestBallProjection(team, spec, projectPlayer, nflClocks) {
   let minutes = 0;
   const entries = all.map(([p, seconds]) => {
     const left = seconds > 0 ? seconds : 0;
-    minutes += left / 60;
+    if (spec.positions[p.position]) minutes += left / 60;
     let value = p.points ?? 0;
     if (left > 0) {
       const projected = projectPlayer ? projectPlayer(p) : null;
@@ -2403,12 +2407,19 @@ export async function fetchScoring(league, cookie, franchiseInfo, projectPlayer,
   // Best ball only (tag 'BestBall'), and only where a lineup shape and a
   // player map both reached us — otherwise every team keeps the starter-only
   // estimate. Held on the team object just long enough for
-  // attachWinProbabilities, then dropped: it is intermediate state.
+  // attachWinProbabilities, then dropped: it is intermediate state. Its
+  // minutes replace minutesRemaining afterwards — every rostered player can
+  // still score, so "min left" counts the bench too, and the Week line's
+  // (W)/(L) waits for the bench as well. Set after win probability so that
+  // estimate reads exactly what it did before.
   if (lineupSpec && Array.isArray(league.tags) && league.tags.includes('BestBall')) {
     for (const t of teams) t.bestBall = bestBallProjection(t, lineupSpec, projectPlayer, nflClocks);
   }
   attachWinProbabilities(teams, matchups, projectPlayer);
-  for (const t of teams) delete t.bestBall;
+  for (const t of teams) {
+    if (t.bestBall) t.minutesRemaining = t.bestBall.minutes;
+    delete t.bestBall;
+  }
 
   const sortedTeams = teams
     .sort((a, b) => b.score - a.score)

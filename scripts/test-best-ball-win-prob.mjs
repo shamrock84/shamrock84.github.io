@@ -75,11 +75,12 @@ const playerMap = new Map([
 	['O', { name: 'Opp', position: 'RB', team: 'MIA' }],
 ]);
 const info = (lineupSpec) => ({ nameById: new Map([['0001', 'Me'], ['0002', 'Them']]), ownerById: new Map(), lineupSpec });
-const winProbFor = async (tags, lineupSpec) => {
+const scoringFor = async (tags, lineupSpec) => {
 	const r = await fetchScoring({ id: '1', franchiseId: '0001', tags }, 'c', info(lineupSpec), projectPlayer, playerMap, undefined, undefined, clocks);
 	assert.ok(r.teams.every((t) => !('bestBall' in t)), 'intermediate state is never returned');
-	return r.teams.find((t) => t.franchiseId === '0001').winProb;
+	return r.teams.find((t) => t.franchiseId === '0001');
 };
+const winProbFor = async (tags, lineupSpec) => (await scoringFor(tags, lineupSpec)).winProb;
 const plain = await winProbFor([], oneSlot);
 const bestBall = await winProbFor(['BestBall'], oneSlot);
 const noSpec = await winProbFor(['BestBall'], null);
@@ -88,5 +89,12 @@ assert.equal(plain, 0, 'starter-only estimate: no minutes left on either side, 8
 assert.equal(noSpec, plain, 'BestBall without a lineup spec falls back');
 // Best ball: my unplayed bench RB projects to 25 > their final 15, so I am the favorite.
 assert.ok(bestBall > 50, `bench RB yet to play makes best-ball favorite (got ${bestBall})`);
+
+// --- min left counts the bench in best ball ---
+assert.equal((await scoringFor([], oneSlot)).minutesRemaining, 0, 'starter-only: MFL\'s own starters clock');
+assert.equal((await scoringFor(['BestBall'], null)).minutesRemaining, 0, 'no lineup spec: unchanged');
+assert.equal((await scoringFor(['BestBall'], oneSlot)).minutesRemaining, 60, 'best ball: the unplayed bench RB\'s game counts');
+// A position the lineup can't seat never counts toward min left.
+assert.equal(bestBallProjection({ players: [], bench: [{ id: 'K', position: 'PK', team: 'DAL', points: null }] }, oneSlot, projectPlayer, clocks).minutes, 0);
 
 console.log('test-best-ball-win-prob: all assertions passed');
