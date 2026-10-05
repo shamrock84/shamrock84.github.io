@@ -16098,6 +16098,23 @@
 				styleWrap.appendChild(el('span', { class: 'admin-field-label', text: 'Style' }));
 				styleWrap.appendChild(adminSelect(ADMIN_QUICKLINK_STYLES, link.style, (v) => { link.style = v || undefined; }));
 				row.appendChild(styleWrap);
+				// Array order is toolbar order. Same arrows as the Leagues list
+				// and Tasks; the splice acts on the draft, so nothing is saved
+				// until the card's Save, like any other edit here.
+				const moveLink = (to) => {
+					adminLinksDraft.splice(to, 0, adminLinksDraft.splice(i, 1)[0]);
+					refreshQuickLinksCard();
+				};
+				const moves = el('div', { class: 'admin-move' });
+				const up = el('button', { type: 'button', class: 'admin-icon-btn', title: 'Move up', text: '↑' });
+				const down = el('button', { type: 'button', class: 'admin-icon-btn', title: 'Move down', text: '↓' });
+				up.disabled = i === 0;
+				down.disabled = i === adminLinksDraft.length - 1;
+				up.addEventListener('click', () => moveLink(i - 1));
+				down.addEventListener('click', () => moveLink(i + 1));
+				moves.appendChild(up);
+				moves.appendChild(down);
+				row.appendChild(moves);
 				const removeLinkBtn = el('button', { type: 'button', class: 'admin-icon-btn admin-remove-btn', title: 'Remove this link', text: '✕' });
 				removeLinkBtn.addEventListener('click', () => {
 					adminLinksDraft.splice(i, 1);
