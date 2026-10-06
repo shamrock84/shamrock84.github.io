@@ -12,7 +12,7 @@
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
-import { validate, validateQuickLinks, mergeLeague, mergeLink, serialize, isStaleBase } from '../api/save-leagues.js';
+import { validate, validateQuickLinks, mergeLeague, mergeLink, serialize, isStaleBase, withLeagueLinksEntry } from '../api/save-leagues.js';
 
 let failures = 0;
 function check(name, pass, detail = '') {
@@ -177,6 +177,12 @@ check('an empty quickLinks list is valid', validateQuickLinks([]).length === 0);
 check('a valid quick link is valid',
   validateQuickLinks([{ url: 'https://example.com', nickname: 'Example' }]).length === 0,
   JSON.stringify(validateQuickLinks([{ url: 'https://example.com', nickname: 'Example' }])));
+check('the League Links block validates with no url or nickname', validateQuickLinks([{ type: 'leagues' }]).length === 0);
+check('a second League Links block is refused', validateQuickLinks([{ type: 'leagues' }, { type: 'leagues' }]).length === 1);
+check('the live config carries the League Links block once', (real.quickLinks || []).filter((l) => l.type === 'leagues').length === 1);
+check('mergeLink keeps only the type of the League Links block', JSON.stringify(mergeLink({ type: 'leagues', url: 'x', style: 'gold' })) === '{"type":"leagues"}');
+check('a missing League Links block is restored at the front', JSON.stringify(withLeagueLinksEntry([{ url: 'https://a.com', nickname: 'A' }])[0]) === '{"type":"leagues"}');
+check('an existing League Links position is kept', withLeagueLinksEntry([{ url: 'https://a.com', nickname: 'A' }, { type: 'leagues' }])[1].type === 'leagues');
 check('rejects a quickLinks that is not a list', validateQuickLinks('nope').length === 1);
 check('rejects a non-object quick link entry', validateQuickLinks([null]).length > 0);
 check('rejects a quick link missing a nickname',
