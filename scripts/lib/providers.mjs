@@ -2787,10 +2787,13 @@ const ESPN_STAT_LABELS = {
   4: 'Passing Touchdowns',
   19: 'Passing 2-Point Conversions',
   20: 'Interceptions Thrown',
-  24: 'Rushing Attempts',
-  25: 'Rushing Yards',
-  26: 'Rushing Touchdowns',
-  27: 'Rushing 2-Point Conversions',
+  // Rushing ids are 23-26. They were once written as 24-27 (off by one), which
+  // showed a 65-yard game as "65 Rushing Attempts" and a TD as "1 Rushing
+  // Yards" (week 4, 2026 screenshot). 24 = yards is confirmed by that data.
+  23: 'Rushing Attempts',
+  24: 'Rushing Yards',
+  25: 'Rushing Touchdowns',
+  26: 'Rushing 2-Point Conversions',
   42: 'Receiving Yards', // CONFIRMED live
   43: 'Receiving Touchdowns', // CONFIRMED live
   44: 'Receiving 2-Point Conversions',
