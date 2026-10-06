@@ -3,6 +3,13 @@
 // shape actually runs through. Fixtures below are shaped exactly like the
 // real responses probe-espn-depth-chart-slot.mjs captured (Kansas City's
 // QB and WR groups), not invented shapes.
+//
+// Why CI runs it:
+// The Depth Charts tab's ESPN parsing: rank vs. slot semantics (order
+// comes from rank, WR's slot is a role tag, never a depth group), the
+// roster-id join, and graceful handling of a missing/unresolvable
+// entry. Pinned against fixtures shaped exactly like the real
+// responses probe-espn-depth-chart-slot.mjs captured.
 
 import assert from 'node:assert/strict';
 import { extractDepthChartEntries, buildRosterIndex } from './lib/espn-depth-chart.mjs';

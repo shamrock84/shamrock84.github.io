@@ -6,6 +6,10 @@
 // failure mode is silent. A league scored against the wrong list still shows a
 // full ECR column of plausible-looking numbers; nothing errors, nothing is
 // blank, the ranks are just quietly for a different game.
+//
+// Why CI runs it:
+// Which FantasyPros list the ECR column is drawn from. Silent when wrong:
+// the column still fills with plausible ranks, just for a different game.
 
 import { receptionPointsToFormat } from './lib/providers.mjs';
 import { rankingSpecForLeague } from './lib/fantasypros.mjs';

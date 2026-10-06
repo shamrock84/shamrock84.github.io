@@ -2,6 +2,11 @@
 // new (so the store's merge, where the stored copy wins collisions, can only
 // add), valid by api/plans.js's own validateTasks, skipped when the exact
 // text already exists, and ordered as given. No network.
+//
+// Why CI runs it:
+// The Tasks-card add script: what it sends must be new ids only, valid
+// for api/plans.js, and skipped when the exact text already exists, so
+// a merge can only ever add.
 
 import assert from 'node:assert/strict';
 import { planNewTasks } from './add-tasks.mjs';

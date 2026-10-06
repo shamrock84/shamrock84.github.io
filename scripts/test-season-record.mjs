@@ -7,6 +7,10 @@
 // would fold last year's record into this year's total, and a league whose
 // standings weren't read must not be counted as read (the tooltip's
 // "N of M leagues counted" depends on it). A 0-0 league that WAS read counts.
+//
+// Why CI runs it:
+// The header's all-leagues season record. Its mistakes are silent: a
+// draft-only or last-season league folded in just shifts a number.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
