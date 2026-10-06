@@ -90,3 +90,30 @@ for (const url of CANDIDATES) {
   const ref = json.items?.[0]?.$ref;
   if (ref) await get(ref.replace(/^http:/, 'https:'));
 }
+
+// ---- Focused detail: the two shapes that answered with 200 in RUN 1 ----
+// (fitt: one request, all 32 teams, positional category arrays; core: named
+// `predictives`/`efficiencies`, paged at 25 with `team.$ref`.)
+console.log('\n\n##### DETAIL #####');
+const FITT = `https://site.api.espn.com/apis/fitt/v3/sports/football/nfl/powerindex?region=us&lang=en&season=${season}`;
+const fitt = await (await fetch(FITT)).json();
+console.log('\n-- fitt top-level categories (labels/names/displayNames):');
+console.log(JSON.stringify(fitt.categories.map((c) => ({ name: c.name, displayName: c.displayName, names: c.names, labels: c.labels })), null, 1));
+console.log('\n-- fitt glossary:');
+console.log(JSON.stringify(fitt.glossary));
+console.log('\n-- fitt teams[0] (team trimmed to id/abbr/group; categories in full):');
+const t0 = fitt.teams[0];
+console.log(JSON.stringify({ team: { id: t0.team.id, abbreviation: t0.team.abbreviation, displayName: t0.team.displayName, group: t0.team.group, ranks: t0.team.ranks }, categories: t0.categories }, null, 1));
+console.log('\n-- fitt order check: abbreviations in response order (first 12):', fitt.teams.slice(0, 12).map((t) => t.team.abbreviation).join(' '));
+
+const CORE = `https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/${season}/powerindex`;
+for (const q of ['', '?limit=50']) {
+  const core = await (await fetch(CORE + q)).json();
+  console.log(`\n-- core ${CORE}${q}: count=${core.count} items=${core.items.length} pageSize=${core.pageSize} pageCount=${core.pageCount}`);
+  if (q === '') {
+    const it = core.items[0];
+    console.log('team ref:', it.team.$ref, ' lastUpdated:', it.lastUpdated, ' runDateTimeKey:', it.runDateTimeKey);
+    console.log('predictives:', JSON.stringify(it.predictives.map((p) => `${p.name}=${p.value} (${p.displayValue})`)));
+    console.log('efficiencies:', JSON.stringify(it.efficiencies.map((p) => `${p.name}=${p.value} (${p.displayValue})`)));
+  }
+}
