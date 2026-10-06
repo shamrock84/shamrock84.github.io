@@ -11,6 +11,11 @@ name: Probe ESPN FPI (manual, read-only, no secrets needed)
 # Read-only: a couple dozen GETs.
 on:
   workflow_dispatch: {}
+  # TEMPORARY (remove before merge): a dispatch-only workflow isn't registered
+  # until it is on the default branch, so run it off this branch's push.
+  push:
+    branches: [claude/nfl-power-rankings-fpi]
+    paths: [scripts/probe-espn-fpi.mjs, .github/workflows/probe-espn-fpi.yml]
 
 jobs:
   probe:
