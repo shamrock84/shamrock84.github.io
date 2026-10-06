@@ -10167,12 +10167,14 @@
 			currentView = 'rosters';
 			localStorage.setItem(VIEW_STORAGE_KEY, currentView);
 			const group = subtabType(league);
-			// Replaces Rosters' whole selection rather than adding to it —
-			// this is "take me to this league", not "also show its group",
-			// so whatever else was checked stops competing for the screen
-			// with the card the reader actually asked to jump to.
+			// Keeps Rosters' existing selection and only adds the league's
+			// group when it isn't already checked, so a jump never disturbs
+			// the pills the reader set up. With no stored selection yet
+			// (Rosters never opened) the group alone is the selection.
 			if (group) {
-				selectedLeagueTypesByView.rosters = new Set([group]);
+				const existing = selectedLeagueTypesByView.rosters;
+				if (existing) existing.add(group);
+				else selectedLeagueTypesByView.rosters = new Set([group]);
 				saveSelectedLeagueTypes();
 			}
 			renderGrid();
