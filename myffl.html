@@ -2175,6 +2175,20 @@
 		.nfl-power-fpi {
 			font-weight: 600;
 		}
+		/* Off/Def/ST are the three columns a phone can spare, and the cells
+		   give up some side padding: together the rest fits the card instead
+		   of scrolling inside it. The selector matches the specificity of the
+		   Depth Charts tbody rule it overrides and comes after it. */
+		@media (max-width: 600px) {
+			.nfl-power-eff {
+				display: none;
+			}
+			table.standings.nfl-power-table th,
+			table.standings.nfl-power-table tbody td {
+				padding-left: 0.3rem;
+				padding-right: 0.3rem;
+			}
+		}
 		.nfl-standings-seed {
 			margin-left: 0.3rem;
 			font-size: 0.7rem;
@@ -13077,15 +13091,17 @@
 				['Team', ''],
 				['W-L', 'Record'],
 				['FPI', 'Football Power Index: expected point margin vs. an average team'],
-				['Off', 'Offensive efficiency, 0-100'],
-				['Def', 'Defensive efficiency, 0-100'],
-				['ST', 'Special teams efficiency, 0-100'],
+				['Off', 'Offensive efficiency, 0-100', true],
+				['Def', 'Defensive efficiency, 0-100', true],
+				['ST', 'Special teams efficiency, 0-100', true],
 				['Proj W-L', "ESPN's projected final record"],
 				['Playoffs', "Chance to make the playoffs"],
 			];
 			const table = el('table', { class: 'standings depth-chart-table nfl-standings-table nfl-power-table' });
 			const head = el('tr');
-			for (const [label, tip] of columns) head.appendChild(el('th', { text: label, ...(tip ? { title: tip } : {}) }));
+			for (const [label, tip, phoneHidden] of columns) {
+				head.appendChild(el('th', { text: label, ...(tip ? { title: tip } : {}), ...(phoneHidden ? { class: 'nfl-power-eff' } : {}) }));
+			}
 			table.appendChild(el('thead', {}, [head]));
 			const tbody = el('tbody');
 			const oneDecimal = (v) => (v == null ? '\u2014' : v.toFixed(1));
@@ -13097,9 +13113,10 @@
 				row.appendChild(nameCell);
 				row.appendChild(el('td', { class: 'standings-record', text: formatNflRecord(t) }));
 				row.appendChild(el('td', { class: 'nfl-power-fpi', text: formatNflPowerFpi(t.fpi) }));
-				row.appendChild(el('td', { text: oneDecimal(t.off) }));
-				row.appendChild(el('td', { text: oneDecimal(t.def) }));
-				row.appendChild(el('td', { text: oneDecimal(t.st) }));
+				// Off/Def/ST carry .nfl-power-eff, which a phone hides.
+				row.appendChild(el('td', { class: 'nfl-power-eff', text: oneDecimal(t.off) }));
+				row.appendChild(el('td', { class: 'nfl-power-eff', text: oneDecimal(t.def) }));
+				row.appendChild(el('td', { class: 'nfl-power-eff', text: oneDecimal(t.st) }));
 				row.appendChild(el('td', { text: formatNflPowerProjection(t) }));
 				row.appendChild(el('td', { text: t.playoffs == null ? '\u2014' : `${t.playoffs.toFixed(1)}%` }));
 				tbody.appendChild(row);

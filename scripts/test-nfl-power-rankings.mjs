@@ -16,6 +16,8 @@
 //     upstream (extract returns {}).
 //   * the page ranks by ESPN's rank, unranked last, then response order,
 //     and renders every missing number as a dash.
+//   * Off/Def/ST are tagged `nfl-power-eff`, which a phone-width media query
+//     hides (the page is the only place that rule lives).
 //   * no `nflPowerRankings` on the snapshot means no card at all, and the
 //     card sits right after Standings in renderGrid and is excluded from
 //     rerenderNflCards' removal query (a poll must not delete it).
@@ -168,6 +170,10 @@ const text = (n) => (n._text || '') + (n.children || []).map(text).join('');
 	assert.deepEqual(cells(rows[0]), ['1SF', '4-0', '+6.9', '88.1', '54.5', '77.0', '13.3-3.7', '98.6%']);
 	assert.deepEqual(cells(rows[1]), ['2KC', '2-1-1', '0.0', '60.0', '61.2', '50.0', '9.0-8.0', '0.0%'], 'FPI 0.0 and 0% are real values, not dashes');
 	assert.deepEqual(cells(rows[2]), ['3DAL', '0-3', '-2.0', '\u2014', '\u2014', '\u2014', '\u2014', '\u2014'], 'missing numbers are dashes');
+	// Off/Def/ST carry the class the phone media query hides; no other column does.
+	const hiddenIdx = (row) => row.children.map((c, i) => (c.cls.split(/\s+/).includes('nfl-power-eff') ? i : -1)).filter((i) => i >= 0);
+	assert.deepEqual(hiddenIdx(rows[0]), [3, 4, 5], 'Off, Def and ST cells are tagged for the phone to hide');
+	assert.deepEqual(hiddenIdx(findAll(card, (n) => n.tag === 'tr')[0]), [3, 4, 5], 'and so are their headers');
 	assert.deepEqual(cells(rows[3]), ['4NYJ', '\u2014', '-3.4', '\u2014', '\u2014', '\u2014', '\u2014', '\u2014'], 'an unranked team is numbered by position, record is a dash');
 }
 
