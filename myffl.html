@@ -2686,8 +2686,10 @@
 		}
 		.scoring-detail-name.right { text-align: right; }
 		/* Team names above the two columns, so it is obvious which side is
-		   which. Two equal tracks mirror the row's 1fr name tracks; long names
-		   clamp to two lines (full text in the title) rather than widen the card. */
+		   which. Two equal tracks mirror the row's 1fr name tracks. Exactly one
+		   line: the height is capped at one line of text, so a long name wraps
+		   as usual and everything after the first line break (the last space
+		   that fits) is clipped. Full name in the title. */
 		.scoring-detail-heads {
 			display: grid;
 			grid-template-columns: 1fr 1fr;
@@ -2699,10 +2701,8 @@
 		}
 		.scoring-detail-head {
 			min-width: 0;
-			overflow-wrap: anywhere;
-			display: -webkit-box;
-			-webkit-line-clamp: 2;
-			-webkit-box-orient: vertical;
+			line-height: 1.3;
+			height: 1.3em;
 			overflow: hidden;
 		}
 		.scoring-detail-head.right { text-align: right; }
@@ -8660,7 +8660,7 @@
 					// Names the two sides; left/right match the pill's top/bottom.
 					const heads = el('div', { class: 'scoring-detail-heads' });
 					['left', 'right'].forEach((side, i) => {
-						const full = group[i] ? teamNameWithOwner(group[i]) : '';
+						const full = group[i]?.teamName || '';
 						heads.appendChild(el('div', { class: `scoring-detail-head ${side}`, title: full, text: full }));
 					});
 					body.appendChild(heads);
