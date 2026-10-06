@@ -93,6 +93,21 @@ const SCORING_PAYOUT_FIELDS = [
 // to fall back to).
 const LINK_KEY_ORDER = ['url', 'nickname', 'style'];
 
+// The one permanent, non-editable quickLinks entry: `{ "type": "leagues" }`
+// marks where the league links sit in the toolbar as a single solid block, so
+// ordinary links can be placed before or after it. It carries no url,
+// nickname or style. Exactly one is kept: validateQuickLinks refuses a
+// second, and withLeagueLinksEntry puts a missing one back at the front (the
+// position every config had before the entry existed).
+const LEAGUE_LINKS_TYPE = 'leagues';
+function isLeagueLinksEntry(link) {
+  return !!link && typeof link === 'object' && link.type === LEAGUE_LINKS_TYPE;
+}
+function withLeagueLinksEntry(links) {
+  const list = Array.isArray(links) ? links : [];
+  return list.some(isLeagueLinksEntry) ? list : [{ type: LEAGUE_LINKS_TYPE }, ...list];
+}
+
 function isNonEmptyString(v) {
   return typeof v === 'string' && v.trim() !== '';
 }
@@ -109,7 +124,7 @@ function isValidMoneyField(v) {
 
 // Exported for the unit test in scripts/test-save-leagues.mjs. Vercel only ever
 // invokes the default export, so extra named exports cost nothing at runtime.
-export { validate, validateQuickLinks, mergeLeague, mergeLink, serialize, isStaleBase };
+export { validate, validateQuickLinks, mergeLeague, mergeLink, serialize, isStaleBase, withLeagueLinksEntry };
 
 // Returns an array of human-readable problems — empty means valid. Phrased for
 // someone reading them in a browser, not a stack trace.
@@ -295,10 +310,16 @@ function validateQuickLinks(links) {
   const errors = [];
   if (!Array.isArray(links)) return ['Quick links: expected a list.'];
 
+  let leagueBlocks = 0;
   links.forEach((link, i) => {
     const where = `Quick link ${i + 1}`;
     if (!link || typeof link !== 'object' || Array.isArray(link)) {
       errors.push(`${where}: not a valid entry.`);
+      return;
+    }
+    if (isLeagueLinksEntry(link)) {
+      leagueBlocks++;
+      if (leagueBlocks > 1) errors.push(`${where}: the League Links block can appear only once.`);
       return;
     }
     if (!isNonEmptyString(link.nickname)) errors.push(`${where}: nickname is required.`);
@@ -392,6 +413,10 @@ function mergeLeague(league) {
 // predates it knowing about that field.
 function mergeLink(link) {
   const out = Object.create(null);
+  if (isLeagueLinksEntry(link)) {
+    out.type = LEAGUE_LINKS_TYPE;
+    return out;
+  }
   out.url = String(link.url).trim();
   out.nickname = String(link.nickname).trim();
   if (link.style != null && link.style !== '') out.style = link.style;
@@ -536,7 +561,7 @@ export default async function handler(req, res) {
       });
       return;
     }
-    const content = serialize(parsed._readme, leagues.map(mergeLeague), (quickLinks || []).map(mergeLink));
+    const content = serialize(parsed._readme, leagues.map(mergeLeague), withLeagueLinksEntry(quickLinks).map(mergeLink));
 
     const putRes = await fetch(
       `https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`,
