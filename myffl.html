@@ -3569,12 +3569,12 @@
 			flex: 0 0 auto;
 		}
 		/* The permanent League Links block: one tinted, locked-looking bar in
-		   place of the three fields, vertically centred on its arrows. */
-		.admin-link-row-fixed {
-			align-items: center;
+		   place of the three fields, under the same "Link" caption. */
+		.admin-link-fixed-wrap {
+			flex: 1;
+			min-width: 0;
 		}
 		.admin-link-fixed {
-			flex: 1;
 			display: flex;
 			align-items: baseline;
 			gap: 0.6rem;
@@ -16126,11 +16126,13 @@
 				// The League Links block is permanent: no link, nickname, style or
 				// remove button, only a position among the other links.
 				if (isLeagueBlock) {
-					row.classList.add('admin-link-row-fixed');
+					const fixedWrap = el('div', { class: 'admin-field admin-link-fixed-wrap' });
+					fixedWrap.appendChild(el('span', { class: 'admin-field-label', text: 'Link' }));
 					const fixed = el('div', { class: 'admin-link-fixed' });
 					fixed.appendChild(el('span', { class: 'admin-link-fixed-title', text: '🔒 League Links' }));
 					fixed.appendChild(el('span', { class: 'admin-link-fixed-note', text: 'Every league, always together as one block — move it to put links before or after' }));
-					row.appendChild(fixed);
+					fixedWrap.appendChild(fixed);
+					row.appendChild(fixedWrap);
 				} else {
 					const urlWrap = el('label', { class: 'admin-field admin-field-link' });
 					urlWrap.appendChild(el('span', { class: 'admin-field-label', text: 'Link' }));
