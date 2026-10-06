@@ -2685,6 +2685,27 @@
 			justify-content: center;
 		}
 		.scoring-detail-name.right { text-align: right; }
+		/* Team names above the two columns, so it is obvious which side is
+		   which. Two equal tracks mirror the row's 1fr name tracks. Exactly one
+		   line: the height is capped at one line of text, so a long name wraps
+		   as usual and everything after the first line break (the last space
+		   that fits) is clipped. Full name in the title. */
+		.scoring-detail-heads {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 0.5rem;
+			padding: 0.2rem 0.4rem 0.3rem;
+			font-size: 0.72rem;
+			font-weight: 600;
+			border-bottom: 1px solid var(--border);
+		}
+		.scoring-detail-head {
+			min-width: 0;
+			line-height: 1.3;
+			height: 1.3em;
+			overflow: hidden;
+		}
+		.scoring-detail-head.right { text-align: right; }
 		/* The player's own NFL game, under their name — same muted sub-line
 		   shape as .scoring-matchup-meta above it and .injury-detail
 		   elsewhere, since this is routine scheduling context rather than
@@ -8636,6 +8657,13 @@
 						text: 'No starter detail yet — waiting on the next live update.',
 					}));
 				} else {
+					// Names the two sides; left/right match the pill's top/bottom.
+					const heads = el('div', { class: 'scoring-detail-heads' });
+					['left', 'right'].forEach((side, i) => {
+						const full = group[i]?.teamName || '';
+						heads.appendChild(el('div', { class: `scoring-detail-head ${side}`, title: full, text: full }));
+					});
+					body.appendChild(heads);
 					rows.forEach((r) => {
 						const row = el('div', { class: 'scoring-detail-row' });
 						appendDetailSide(row, r.left, 'left', urlByName);
