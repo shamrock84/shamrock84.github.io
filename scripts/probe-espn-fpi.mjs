@@ -12,7 +12,30 @@
 // follows the first ref one level. Candidates are guesses from the commonly
 // reverse-engineered ESPN surface; a 404 on one is information, not failure.
 //
-// RUN 1: (fill in after the first dispatch)
+// RUN 1 (2026-10-06, week 4 of the 2026 season): FPI exists, in two shapes.
+//   * USE THIS ONE — site.web.api.espn.com/apis/fitt/v3/sports/football/nfl/
+//     powerindex?region=us&lang=en&season=YYYY (site.api.espn.com answers
+//     the same, with or without params; `seasontype` is accepted and
+//     ignored). HTTP 200, all 32 teams in one response (`limit` defaults to
+//     1000), already sorted by FPI descending. Top-level `categories[]`
+//     (fpi / projections / efficiencies) carry `names[]` + `labels[]`; each
+//     team's `categories[].values[]` line up with them POSITIONALLY. Read
+//     by name: fpi, fpirank, numwins/numlosses/numties, projectedw/l,
+//     probmakeplayoffs, offefficiency/defefficiency/stefficiency (0-100).
+//     `team` carries abbreviation, displayName and `group` (division, with
+//     a conference `parent`).
+//   * sports.core.api.espn.com/v2/.../seasons/YYYY/powerindex also answers,
+//     with named `predictives[]`/`efficiencies[]` but `team` as a `$ref` URL
+//     and pages of 25 (`?limit=50` returns all 32). Not used.
+//   * Traps: a rank of 0 with display "-" is "unknown", not a rank
+//     (accomplishmentrank, gamecontrolrank, rankchange7days came back that
+//     way). `rankchange7days` was 0 for the sampled team and its sign
+//     convention is unknown, so the card doesn't use it. Floats arrive
+//     unrounded (78.60000000000001).
+//   * 404 on: /apis/v2/.../powerindex, /apis/site/v2/.../powerindex, core
+//     .../types/2/powerindex, and the per-team powerindex/ranks routes.
+//     /powerindex/leaders is 200 but empty.
+//   * `lastUpdated` is ESPN's own model run time ("2026-10-06T06:00Z").
 
 const season = process.env.SEASON || String(new Date().getFullYear());
 const HEAD_CHARS = Number(process.env.HEAD_CHARS || 1800);

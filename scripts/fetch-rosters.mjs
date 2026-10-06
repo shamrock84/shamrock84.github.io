@@ -72,6 +72,7 @@ import {
 } from './lib/fantasypros.mjs';
 import { fetchAllDepthCharts, DEPTH_CHART_POSITIONS } from './lib/espn-depth-chart.mjs';
 import { fetchNflStandings } from './lib/espn-standings.mjs';
+import { fetchNflPowerRankings } from './lib/espn-fpi.mjs';
 import {
   computeMflSeasonPlacements,
   computeMflSeasonPlacementsByPoints,
@@ -1855,6 +1856,17 @@ async function main() {
     console.error(`Failed to fetch NFL standings: ${err.message}`);
   }
 
+  // NFL power rankings (ESPN's FPI) for the NFL tab's Power Rankings card —
+  // same public ESPN host family and same never-fail posture, one request.
+  // See scripts/lib/espn-fpi.mjs.
+  let nflPowerRankings = null;
+  try {
+    nflPowerRankings = await fetchNflPowerRankings({ season: process.env.MFL_YEAR || String(targetSeason) });
+    console.log(`NFL power rankings — ${Object.keys(nflPowerRankings.teams).length} team(s)`);
+  } catch (err) {
+    console.error(`Failed to fetch NFL power rankings: ${err.message}`);
+  }
+
   // Degrade the same way everything else here does: a league that couldn't be
   // read keeps the availability it last had, and a run with no rankings at all
   // keeps the previous pools rather than emptying the two cards that need
@@ -1924,6 +1936,9 @@ async function main() {
   if (!nflStandings && previous?.nflStandings) {
     nflStandings = previous.nflStandings;
   }
+  if (!nflPowerRankings && previous?.nflPowerRankings) {
+    nflPowerRankings = previous.nflPowerRankings;
+  }
   // Carried alongside depthCharts specifically when THIS run had no key to
   // fetch fresh per-position pools with — matches whichever pools actually
   // ended up in rankingPools (either fresh above, or carried forward too).
@@ -1958,6 +1973,8 @@ async function main() {
     depthChartEcrType,
     // NFL-wide too — the NFL tab's Standings card. ~3KB.
     nflStandings,
+    // And the Power Rankings card beside it. ~5KB.
+    nflPowerRankings,
     leagues,
     // Extra header-toolbar links, carried through from config/leagues.json
     // verbatim — see loadLeagueConfig above and renderQuickLinks in
