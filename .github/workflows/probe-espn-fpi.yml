@@ -4,7 +4,7 @@ name: Probe ESPN FPI (manual, read-only, no secrets needed)
 # same rule the other manual workflows follow.
 #
 # Asks ESPN's public endpoints whether they serve the NFL Football Power
-# Index (FPI) and in what shape, ahead of the NFL tab's Power Rankings card.
+# Index (FPI) and in what shape, ahead of the NFL tab's Power Index card.
 # ESPN is unreachable from the sandbox this repo is normally edited from.
 # See scripts/probe-espn-fpi.mjs's header.
 #

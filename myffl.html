@@ -2149,7 +2149,7 @@
 			min-width: 1.6em;
 			color: var(--muted);
 		}
-		/* Power Rankings is one table, not a row of boxes: the box scrolls
+		/* Power Index is one table, not a row of boxes: the box scrolls
 		   sideways inside itself on a phone, never the page. */
 		.nfl-power-note {
 			margin: 0 0 0.5rem;
@@ -12804,7 +12804,7 @@
 		// isn't (the very first renderGrid() call, before
 		// renderDepthChartCards has run yet) — keeps the order stable
 		// either way.
-		// The Standings and Power Rankings cards (renderNflStandingsCard,
+		// The Standings and Power Index cards (renderNflStandingsCard,
 		// renderNflPowerCard) are built once by renderGrid and left standing
 		// exactly like the Depth Charts wrapper, and sit between Matchups and
 		// that wrapper — so a poll's fresh cards go ahead of whichever of the
@@ -13027,7 +13027,7 @@
 			return card;
 		}
 
-		// NFL Power Rankings: one card off the snapshot's `nflPowerRankings`
+		// NFL Power Index: one card off the snapshot's `nflPowerRankings`
 		// (scripts/lib/espn-fpi.mjs), right after Standings. ESPN's Football
 		// Power Index — the model behind espn.com/nfl/fpi, a team-strength
 		// number on an expected-point-margin scale — because ESPN serves no
@@ -13066,7 +13066,7 @@
 			if (rows.length === 0) return null;
 			const card = el('div', { class: 'card nfl-card', 'data-view': 'nfl' });
 			card.dataset.nflPower = 'true';
-			const headingEl = el('h2', { class: 'card-heading', text: 'Power Rankings' });
+			const headingEl = el('h2', { class: 'card-heading', text: 'Power Index' });
 			card.appendChild(headingEl);
 			makeCollapsible(card, headingEl, 'nfl-power');
 			card.appendChild(el('p', {
@@ -13123,7 +13123,7 @@
 			// (renderNflCards never rebuilds it, so nothing replaced what
 			// this line removed), leaving the "no teams match" empty state
 			// permanently on screen after the first poll landed.
-			// The Standings and Power Rankings cards are excluded for the
+			// The Standings and Power Index cards are excluded for the
 			// same reason as the wrapper: they read the snapshot, not this
 			// poll, and nothing here would rebuild them.
 			gridEl.querySelectorAll(':scope > .card[data-view="nfl"]:not([data-depth-charts-wrap]):not([data-nfl-standings]):not([data-nfl-power])').forEach((c) => c.remove());

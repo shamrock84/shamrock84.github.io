@@ -1856,7 +1856,7 @@ async function main() {
     console.error(`Failed to fetch NFL standings: ${err.message}`);
   }
 
-  // NFL power rankings (ESPN's FPI) for the NFL tab's Power Rankings card —
+  // NFL power rankings (ESPN's FPI) for the NFL tab's Power Index card —
   // same public ESPN host family and same never-fail posture, one request.
   // See scripts/lib/espn-fpi.mjs.
   let nflPowerRankings = null;
@@ -1973,7 +1973,7 @@ async function main() {
     depthChartEcrType,
     // NFL-wide too — the NFL tab's Standings card. ~3KB.
     nflStandings,
-    // And the Power Rankings card beside it. ~5KB.
+    // And the Power Index card beside it. ~5KB.
     nflPowerRankings,
     leagues,
     // Extra header-toolbar links, carried through from config/leagues.json

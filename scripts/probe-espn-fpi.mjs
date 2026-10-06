@@ -1,6 +1,6 @@
 // Asks ESPN's PUBLIC endpoints whether they serve the NFL Football Power
 // Index (FPI) — the model behind espn.com/nfl/fpi — and in what shape, so the
-// NFL tab's Power Rankings card can be written against a real response
+// NFL tab's Power Index card can be written against a real response
 // instead of a guessed one. site.api.espn.com and friends are unreachable
 // from the sandbox this repo is edited from (the egress proxy 403s them),
 // same reason every other probe here exists. No key, no cookies, read-only

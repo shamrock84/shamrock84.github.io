@@ -1,4 +1,4 @@
-// Unit test for the NFL tab's Power Rankings card: extractPowerRankings
+// Unit test for the NFL tab's Power Index card: extractPowerRankings
 // (scripts/lib/espn-fpi.mjs) and the page's ordering/render
 // (buildNflPowerRows, renderNflPowerCard in myffl.html).
 //
@@ -177,12 +177,12 @@ assert.equal(ctx.renderNflPowerCard({ teams: {} }), null, 'an empty set renders 
 assert.match(
 	scriptSource,
 	/const nflStandingsCard = renderNflStandingsCard\(data\.nflStandings\);\s*if \(nflStandingsCard\) gridEl\.appendChild\(nflStandingsCard\);\s*const nflPowerCard = renderNflPowerCard\(data\.nflPowerRankings\);\s*if \(nflPowerCard\) gridEl\.appendChild\(nflPowerCard\);\s*renderDepthChartCards/,
-	'the Power Rankings card sits right after Standings, ahead of Depth Charts',
+	'the Power Index card sits right after Standings, ahead of Depth Charts',
 );
 assert.match(
 	scriptSource,
 	/querySelectorAll\(':scope > \.card\[data-view="nfl"\]:not\(\[data-depth-charts-wrap\]\):not\(\[data-nfl-standings\]\):not\(\[data-nfl-power\]\)'\)/,
-	'rerenderNflCards must not remove the Power Rankings card on a poll',
+	'rerenderNflCards must not remove the Power Index card on a poll',
 );
 
 console.log('test-nfl-power-rankings: all assertions passed');

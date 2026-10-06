@@ -1,4 +1,4 @@
-// NFL Power Rankings for the NFL tab, taken from ESPN's Football Power Index
+// NFL Power Index for the NFL tab, taken from ESPN's Football Power Index
 // (FPI) — the model behind espn.com/nfl/fpi. ESPN publishes no structured
 // "power rankings" feed (its weekly ones are editorial articles), and FPI is
 // the closest team-strength number it does serve. Read from ESPN's PUBLIC
