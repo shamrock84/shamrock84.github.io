@@ -3568,6 +3568,29 @@
 		.admin-link-row .admin-field-style {
 			flex: 0 0 auto;
 		}
+		/* The permanent League Links block: one tinted, locked-looking bar in
+		   place of the three fields, vertically centred on its arrows. */
+		.admin-link-row-fixed {
+			align-items: center;
+		}
+		.admin-link-fixed {
+			flex: 1;
+			display: flex;
+			align-items: baseline;
+			gap: 0.6rem;
+			padding: 0.5rem 0.75rem;
+			border: 1px dashed var(--accent);
+			border-radius: 6px;
+			background: var(--chip-bg);
+		}
+		.admin-link-fixed-title {
+			font-weight: 700;
+			color: var(--accent);
+		}
+		.admin-link-fixed-note {
+			font-size: 0.8rem;
+			color: var(--muted);
+		}
 		.admin-add-btn, .admin-revert-btn {
 			font: inherit;
 			font-size: 0.85rem;
@@ -16103,9 +16126,10 @@
 				// The League Links block is permanent: no link, nickname, style or
 				// remove button, only a position among the other links.
 				if (isLeagueBlock) {
-					const fixed = el('div', { class: 'admin-field admin-field-link' });
-					fixed.appendChild(el('span', { class: 'admin-field-label', text: 'League Links' }));
-					fixed.appendChild(el('span', { text: 'Every league link, as one block (not editable)' }));
+					row.classList.add('admin-link-row-fixed');
+					const fixed = el('div', { class: 'admin-link-fixed' });
+					fixed.appendChild(el('span', { class: 'admin-link-fixed-title', text: '🔒 League Links' }));
+					fixed.appendChild(el('span', { class: 'admin-link-fixed-note', text: 'Every league, always together as one block — move it to put links before or after' }));
 					row.appendChild(fixed);
 				} else {
 					const urlWrap = el('label', { class: 'admin-field admin-field-link' });
@@ -16146,7 +16170,10 @@
 					adminLinksDraft.splice(i, 1);
 					refreshQuickLinksCard();
 				});
-				if (!isLeagueBlock) row.appendChild(removeLinkBtn);
+				// Hidden, not omitted, on the locked block so its arrows line up
+				// with every other row's.
+				if (isLeagueBlock) removeLinkBtn.style.visibility = 'hidden';
+				row.appendChild(removeLinkBtn);
 				linksList.appendChild(row);
 			});
 			card.appendChild(linksList);
@@ -16164,7 +16191,7 @@
 
 			const legend = el('div', { class: 'admin-legend' });
 			const legendList = el('ul');
-			legendList.appendChild(el('li', { text: 'Extra links shown in the header toolbar; the League Links block is fixed, so move it to put links before or after the leagues' }));
+			legendList.appendChild(el('li', { text: 'Extra links shown in the header toolbar; the League Links block is fixed, but it can be moved to put links before or after the leagues' }));
 			legend.appendChild(legendList);
 			card.appendChild(legend);
 
