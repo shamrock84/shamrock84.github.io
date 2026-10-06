@@ -3612,6 +3612,16 @@
 			font-size: 0.8rem;
 			color: var(--muted);
 		}
+		.admin-link-fixed-title {
+			white-space: nowrap;
+		}
+		/* On a phone the explanation wraps the bar into a tall block, so only
+		   the lock and title stay. */
+		@media (max-width: 600px) {
+			.admin-link-fixed-note {
+				display: none;
+			}
+		}
 		.admin-add-btn, .admin-revert-btn {
 			font: inherit;
 			font-size: 0.85rem;
