@@ -227,7 +227,7 @@ assert.equal(ctx.renderNflStandingsCard(undefined), null, 'no nflStandings on th
 
 assert.match(
 	scriptSource,
-	/querySelectorAll\(':scope > \.card\[data-view="nfl"\]:not\(\[data-depth-charts-wrap\]\):not\(\[data-nfl-standings\]\)'\)/,
+	/querySelectorAll\(':scope > \.card\[data-view="nfl"\]:not\(\[data-depth-charts-wrap\]\):not\(\[data-nfl-standings\]\):not\(\[data-nfl-power\]\)'\)/,
 	'rerenderNflCards must not remove the Standings card on a poll',
 );
 

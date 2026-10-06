@@ -1,0 +1,39 @@
+name: Probe ESPN FPI (manual, read-only, no secrets needed)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here, the
+# same rule the other manual workflows follow.
+#
+# Asks ESPN's public endpoints whether they serve the NFL Football Power
+# Index (FPI) and in what shape, ahead of the NFL tab's Power Index card.
+# ESPN is unreachable from the sandbox this repo is normally edited from.
+# See scripts/probe-espn-fpi.mjs's header.
+#
+# Read-only: a couple dozen GETs.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      # Blobless + sparse checkout: skips mfl/PSD and images/, which no
+      # workflow here reads. Same five directories everywhere on purpose;
+      # see sync-fantasy-rosters.yml for the reasoning and the numbers.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout: |
+            api
+            scripts
+            config
+            data
+            .github
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Probe ESPN's public power index (FPI) endpoints
+        run: node scripts/probe-espn-fpi.mjs

@@ -147,6 +147,7 @@ The file's `_readme` array is the authoritative schema — read it before touchi
   - The Stats drawer is player-only (`appendNflBoxscoreToggle`, `nflBoxscorePlayerLines`), fetched only when open; `fillNflBoxscoreBody` keeps pre-kickoff / not-answered / empty apart. `BOXSCORE_EXCLUDED_LABELS` drops by label, and stats are positional.
   - The Standings card reads snapshot `nflStandings` (`fetchNflStandings`, `test-nfl-standings.mjs`), is excluded from `rerenderNflCards` like Depth Charts, and ranks conferences by `seed` first.
   - Rostered players' rows are purple and login-gated via `nflBoxscoreOwnership`, which returns an empty `Map` logged out.
+  - The Power Index card follows Standings and is ESPN's FPI, not the editorial rankings (ESPN serves none structured) and not the fantasy power ranks (`fetchNflPowerRankings`, `renderNflPowerCard`, `test-nfl-power-rankings.mjs`, `probe-espn-fpi.mjs` RUN 1). Values are positional and joined to the response's `names` by name; a rank of `0` is ESPN's "unknown", and `rankchange7days` is deliberately unread (sign unverified). Like Standings it is excluded from `rerenderNflCards`.
 - **Sorting is one `makeTableSort`**: natural → reverse → default, ties keep the default order, `missingLast` holds in both directions, never persisted.
 - **Popovers are one `makePopover`** with separate instances. **Position before showing**, or the first click fires its own scroll-dismiss.
 

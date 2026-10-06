@@ -2149,6 +2149,46 @@
 			min-width: 1.6em;
 			color: var(--muted);
 		}
+		/* Power Index is one table, not a row of boxes: the box scrolls
+		   sideways inside itself on a phone, never the page. */
+		.nfl-power-note {
+			margin: 0 0 0.5rem;
+			font-size: 0.8rem;
+			color: var(--muted);
+		}
+		.nfl-power-box {
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			overflow-x: auto;
+		}
+		/* Capped so eight short columns don't stretch across a wide desktop
+		   card, and the headers follow their numbers' right alignment. */
+		.nfl-power-box {
+			max-width: 48rem;
+		}
+		.nfl-power-table {
+			width: 100%;
+		}
+		.nfl-power-table th:not(:first-child) {
+			text-align: right;
+		}
+		.nfl-power-fpi {
+			font-weight: 600;
+		}
+		/* Off/Def/ST are the three columns a phone can spare, and the cells
+		   give up some side padding: together the rest fits the card instead
+		   of scrolling inside it. The selector matches the specificity of the
+		   Depth Charts tbody rule it overrides and comes after it. */
+		@media (max-width: 600px) {
+			.nfl-power-eff {
+				display: none;
+			}
+			table.standings.nfl-power-table th,
+			table.standings.nfl-power-table tbody td {
+				padding-left: 0.3rem;
+				padding-right: 0.3rem;
+			}
+		}
 		.nfl-standings-seed {
 			margin-left: 0.3rem;
 			font-size: 0.7rem;
@@ -12778,12 +12818,13 @@
 		// isn't (the very first renderGrid() call, before
 		// renderDepthChartCards has run yet) — keeps the order stable
 		// either way.
-		// The Standings card (renderNflStandingsCard) is built once by
-		// renderGrid and left standing exactly like the Depth Charts wrapper,
-		// and sits between Matchups and that wrapper — so a poll's fresh
-		// cards go ahead of whichever of the two comes first in the DOM.
+		// The Standings and Power Index cards (renderNflStandingsCard,
+		// renderNflPowerCard) are built once by renderGrid and left standing
+		// exactly like the Depth Charts wrapper, and sit between Matchups and
+		// that wrapper — so a poll's fresh cards go ahead of whichever of the
+		// three comes first in the DOM.
 		function appendNflCard(gridEl, card) {
-			const anchor = gridEl.querySelector(':scope > [data-nfl-standings], :scope > [data-depth-charts-wrap]');
+			const anchor = gridEl.querySelector(':scope > [data-nfl-standings], :scope > [data-nfl-power], :scope > [data-depth-charts-wrap]');
 			if (anchor) gridEl.insertBefore(card, anchor);
 			else gridEl.appendChild(card);
 		}
@@ -13000,6 +13041,91 @@
 			return card;
 		}
 
+		// NFL Power Index: one card off the snapshot's `nflPowerRankings`
+		// (scripts/lib/espn-fpi.mjs), right after Standings. ESPN's Football
+		// Power Index — the model behind espn.com/nfl/fpi, a team-strength
+		// number on an expected-point-margin scale — because ESPN serves no
+		// structured version of its editorial weekly power rankings. As fresh
+		// as the last sync; FPI itself only reruns about daily. Ungated like
+		// the rest of this tab: real NFL data. Not the fantasy Power
+		// Rankings card on the Standings tab, which ranks a league's
+		// franchises.
+		//
+		// Ranked by ESPN's own `rank` (FPI order), a team ESPN left unranked
+		// last, then ESPN's response order. Every missing number renders as a
+		// dash, never a 0. Off/Def/ST are ESPN's 0-100 efficiency ratings,
+		// higher better. One card-wide table, one level of collapse (the
+		// card's heading), and the card is built once by renderGrid and left
+		// standing like Standings (see rerenderNflCards' exclusion).
+		function compareNflPower(a, b) {
+			if (a.rank != null && b.rank != null && a.rank !== b.rank) return a.rank - b.rank;
+			if (a.rank != null && b.rank == null) return -1;
+			if (a.rank == null && b.rank != null) return 1;
+			return (a.order ?? 0) - (b.order ?? 0);
+		}
+		function buildNflPowerRows(power) {
+			return Object.entries(power?.teams || {}).map(([abbr, team]) => ({ abbr, ...team })).sort(compareNflPower);
+		}
+		function formatNflPowerFpi(v) {
+			if (v == null) return '\u2014';
+			return `${v > 0 ? '+' : ''}${v.toFixed(1)}`;
+		}
+		function formatNflPowerProjection(t) {
+			if (t.projW == null || t.projL == null) return '\u2014';
+			return `${t.projW.toFixed(1)}-${t.projL.toFixed(1)}`;
+		}
+		function renderNflPowerCard(power) {
+			if (!power?.teams) return null;
+			const rows = buildNflPowerRows(power);
+			if (rows.length === 0) return null;
+			const card = el('div', { class: 'card nfl-card', 'data-view': 'nfl' });
+			card.dataset.nflPower = 'true';
+			const headingEl = el('h2', { class: 'card-heading', text: 'Power Index' });
+			card.appendChild(headingEl);
+			makeCollapsible(card, headingEl, 'nfl-power');
+			card.appendChild(el('p', {
+				class: 'nfl-power-note',
+				text: "ESPN's Football Power Index: each team's expected point margin against an average team on a neutral field.",
+			}));
+			const columns = [
+				['Team', ''],
+				['W-L', 'Record'],
+				['FPI', 'Football Power Index: expected point margin vs. an average team'],
+				['Off', 'Offensive efficiency, 0-100', true],
+				['Def', 'Defensive efficiency, 0-100', true],
+				['ST', 'Special teams efficiency, 0-100', true],
+				['Proj W-L', "ESPN's projected final record"],
+				['Playoffs', "Chance to make the playoffs"],
+			];
+			const table = el('table', { class: 'standings depth-chart-table nfl-standings-table nfl-power-table' });
+			const head = el('tr');
+			for (const [label, tip, phoneHidden] of columns) {
+				head.appendChild(el('th', { text: label, ...(tip ? { title: tip } : {}), ...(phoneHidden ? { class: 'nfl-power-eff' } : {}) }));
+			}
+			table.appendChild(el('thead', {}, [head]));
+			const tbody = el('tbody');
+			const oneDecimal = (v) => (v == null ? '\u2014' : v.toFixed(1));
+			rows.forEach((t, i) => {
+				const row = el('tr');
+				const nameCell = el('td', { title: t.name || t.abbr });
+				nameCell.appendChild(el('span', { class: 'nfl-standings-rank', text: String(t.rank ?? i + 1) }));
+				nameCell.appendChild(el('span', { text: t.abbr }));
+				row.appendChild(nameCell);
+				row.appendChild(el('td', { class: 'standings-record', text: formatNflRecord(t) }));
+				row.appendChild(el('td', { class: 'nfl-power-fpi', text: formatNflPowerFpi(t.fpi) }));
+				// Off/Def/ST carry .nfl-power-eff, which a phone hides.
+				row.appendChild(el('td', { class: 'nfl-power-eff', text: oneDecimal(t.off) }));
+				row.appendChild(el('td', { class: 'nfl-power-eff', text: oneDecimal(t.def) }));
+				row.appendChild(el('td', { class: 'nfl-power-eff', text: oneDecimal(t.st) }));
+				row.appendChild(el('td', { text: formatNflPowerProjection(t) }));
+				row.appendChild(el('td', { text: t.playoffs == null ? '\u2014' : `${t.playoffs.toFixed(1)}%` }));
+				tbody.appendChild(row);
+			});
+			table.appendChild(tbody);
+			card.appendChild(el('div', { class: 'nfl-power-box' }, [table]));
+			return card;
+		}
+
 		function rerenderNflCards() {
 			const gridEl = document.getElementById('grid');
 			// :scope > restricts this to gridEl's own DIRECT children —
@@ -13014,10 +13140,10 @@
 			// (renderNflCards never rebuilds it, so nothing replaced what
 			// this line removed), leaving the "no teams match" empty state
 			// permanently on screen after the first poll landed.
-			// The Standings card is excluded for the same reason as the
-			// wrapper: it reads the snapshot, not this poll, and nothing
-			// here would rebuild it.
-			gridEl.querySelectorAll(':scope > .card[data-view="nfl"]:not([data-depth-charts-wrap]):not([data-nfl-standings])').forEach((c) => c.remove());
+			// The Standings and Power Index cards are excluded for the
+			// same reason as the wrapper: they read the snapshot, not this
+			// poll, and nothing here would rebuild them.
+			gridEl.querySelectorAll(':scope > .card[data-view="nfl"]:not([data-depth-charts-wrap]):not([data-nfl-standings]):not([data-nfl-power])').forEach((c) => c.remove());
 			renderNflCards(gridEl);
 			updateVisibility();
 		}
@@ -16780,6 +16906,8 @@
 			renderNflCards(gridEl);
 			const nflStandingsCard = renderNflStandingsCard(data.nflStandings);
 			if (nflStandingsCard) gridEl.appendChild(nflStandingsCard);
+			const nflPowerCard = renderNflPowerCard(data.nflPowerRankings);
+			if (nflPowerCard) gridEl.appendChild(nflPowerCard);
 			renderDepthChartCards(gridEl, data);
 
 			// Logged-out visitors never get any analytics card, so 'analytics'
