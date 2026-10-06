@@ -1,6 +1,12 @@
 // Unit test for the weekly/season high-score derivation —
 // scripts/lib/history.mjs's computeSeasonScoringRecords, and
 // fetch-rosters.mjs's yearsNeedingScoringBackfill.
+//
+// Why CI runs it:
+// The weekly/season high-score derivation: the max/sum over a season's
+// fetched weeks, and which years still need it backfilled. Silent when
+// wrong: a mis-derived high score renders as a perfectly plausible
+// week and point total.
 
 import assert from 'node:assert/strict';
 import { computeSeasonScoringRecords } from './lib/history.mjs';

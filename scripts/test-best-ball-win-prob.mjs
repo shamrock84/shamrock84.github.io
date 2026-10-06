@@ -3,6 +3,11 @@
 // respects each position's min and max and the league total; a bench player
 // yet to play can displace a starter; a league without the BestBall tag (or
 // without a readable lineup) keeps the starter-only estimate.
+//
+// Why CI runs it:
+// Best-ball win probability: the projected score is the best legal lineup
+// over the whole roster, so an unplayed bench player can displace a
+// starter. Non-BestBall leagues keep the starter-only estimate.
 
 import assert from 'node:assert/strict';
 import { bestBallLineupSpec, bestBallLineupTotal, bestBallProjection, fetchScoring } from './lib/providers.mjs';

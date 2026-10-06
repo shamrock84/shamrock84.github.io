@@ -3,6 +3,11 @@
 // stops a second device from wiping the first device's plans.
 //
 // Run: node scripts/test-plans.mjs
+//
+// Why CI runs it:
+// The merge/replace rules the planning values round-trip through. Getting
+// these wrong loses a plan silently — a wipe in one direction, a plan that
+// refuses to clear in the other.
 
 import { validatePlans, mergePlans, emptyDocument, resolveStore, validateTasks, mergeTasks } from '../api/plans.js';
 

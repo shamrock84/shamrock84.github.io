@@ -7,6 +7,11 @@
 // order behind it — a plain re-sort by score or name would scramble that
 // order for no reason, and Array#sort's stability is what this test would
 // catch a regression in.
+//
+// Why CI runs it:
+// renderScoringCard's matchup ordering: the pill holding the logged-in
+// manager's own team always renders first, with every other pill
+// keeping its original relative order behind it.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

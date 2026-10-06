@@ -7,6 +7,12 @@
 // attachRankings does entirely, leaving no `ecr` and so no FantasyPros link
 // on the roster card. This pins the fallback that reuses the per-position
 // pools fetch-rosters.mjs already fetches for the Depth Charts tab.
+//
+// Why CI runs it:
+// The per-position fallback for a rostered player the ALL-list ECR
+// join misses entirely (FantasyPros' combined list under-covers any
+// single position) — silent when wrong in the same way: no crash, just
+// a real, linkable player left with no FantasyPros link.
 
 import assert from 'node:assert/strict';
 import { applyPositionEcrFallback } from './fetch-rosters.mjs';

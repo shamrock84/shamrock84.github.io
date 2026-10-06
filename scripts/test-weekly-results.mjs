@@ -4,6 +4,14 @@
 // calendar and only on Tuesday/Wednesday; a bye or an unscored week is "no
 // game", never a loss or a tie; an unreadable league is listed, never silently
 // dropped or counted; and long reports split under Pushover's 1024-char cap.
+//
+// Why CI runs it:
+// The weekly results push is a summary the manager reads as complete, so
+// its failure that matters is a quiet omission. Pins that the finished
+// week comes off the calendar and only on Tuesday/Wednesday, that a bye
+// or unscored week is "no game" rather than a loss, that an unreadable
+// league is listed but never counted, and that long reports split under
+// Pushover's message cap.
 
 import assert from 'node:assert/strict';
 import {
