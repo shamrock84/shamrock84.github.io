@@ -5734,30 +5734,45 @@
 		// The cap math itself, split out of buildSalarySummary so the Waivers
 		// tab's Auctions card can show the SAME number beside a league's name
 		// instead of re-deriving it: Cap Room = Salary Cap - (Active Roster
-		// salaries + Salary Adjustments). Taxi and IR players are not in it —
-		// rosterPlayers is the Active Roster group only, which is what MFL's own
-		// roster page totals. Null when the league has no cap to measure
-		// against. plannedCount is how many of those salaries are the
-		// manager's own plan standing in for one MFL hasn't priced yet.
+		// salaries + Salary Adjustments + the IR charge below). Taxi players are
+		// not in it; rosterPlayers is the Active Roster group only. Null when
+		// the league has no cap to measure against. plannedCount is how many of
+		// those salaries are the manager's own plan standing in for one MFL
+		// hasn't priced yet.
+		//
+		// IR is charged at a share of salary, as MFL does: 50% in every league
+		// here (a $25.00 IR player added $12.50 to MFL's total, which is how the
+		// page's earlier IR-excluded number was caught being wrong). The share
+		// is config's irSalaryPercent, echoed by the sync; unset means the
+		// default and a real 0 means IR is free, hence ?? and never ||. Taxi is
+		// uncharged: the same MFL page showed no taxi cost. The default lives
+		// inside the function because test-waivers lifts its source out alone.
 		function activeRosterPlayers(league) {
 			return (league.players || []).filter((p) => (p.status || 'ROSTER').toUpperCase() === 'ROSTER');
 		}
 		function capSummaryNumbers(league, rosterPlayers) {
 			if (league.salaryCap == null) return null;
+			const DEFAULT_IR_SALARY_PERCENT = 50;
 			let plannedCount = 0;
 			const rosterSalaryTotal = rosterPlayers.reduce((sum, p) => {
 				if (!(Number(p.salary) > 0) && plannedSalary(league, p) != null) plannedCount++;
 				return sum + effectiveSalary(league, p);
 			}, 0);
+			const configuredPercent = Number(league.irSalaryPercent ?? DEFAULT_IR_SALARY_PERCENT);
+			const irPercent = Number.isFinite(configuredPercent) ? configuredPercent : DEFAULT_IR_SALARY_PERCENT;
+			const irSalaryTotal = (league.players || [])
+				.filter((p) => String(p.status || '').toUpperCase() === 'INJURED_RESERVE')
+				.reduce((sum, p) => sum + effectiveSalary(league, p), 0);
+			const irCharge = irSalaryTotal * irPercent / 100;
 			const adjustments = Number(league.salaryAdjustments) || 0;
-			const total = rosterSalaryTotal + adjustments;
-			return { adjustments, total, capRoom: league.salaryCap - total, plannedCount };
+			const total = rosterSalaryTotal + irCharge + adjustments;
+			return { adjustments, irCharge, irPercent, total, capRoom: league.salaryCap - total, plannedCount };
 		}
 
 		function buildSalarySummary(league, rosterPlayers) {
 			const nums = capSummaryNumbers(league, rosterPlayers);
 			if (!nums) return null;
-			const { plannedCount, adjustments, total, capRoom } = nums;
+			const { plannedCount, adjustments, irCharge, irPercent, total, capRoom } = nums;
 			// Total/Cap Room mix in unofficial numbers whenever a planned salary
 			// stood in for a real one — flagged rather than left to look like a
 			// hard, all-official figure.
@@ -5775,6 +5790,9 @@
 				table.appendChild(tr);
 			};
 			row('Salary Adjustments', adjustments);
+			// Only when it changes the total, so a league with nobody on IR (or
+			// IR set to free) looks exactly as it did before the charge existed.
+			if (irCharge > 0) row(`IR Salary (${Number(irPercent.toFixed(2))}%)`, irCharge);
 			row('Total', total, `salary-total${plannedNote ? ' salary-has-plan' : ''}`, plannedNote);
 			row('Salary Cap', league.salaryCap);
 			row('Cap Room Available', capRoom, `salary-cap-room${capRoom < 0 ? ' salary-negative' : ''}${plannedNote ? ' salary-has-plan' : ''}`, plannedNote);
@@ -15357,6 +15375,8 @@
 			// made on this tab changes nothing on the Rosters card until the
 			// next sync has run — exactly what this notice exists to say.
 			if (norm(cfg.cutdownRosterSize) !== norm(live.cutdownRosterSize)) out.push('Cutdown roster size');
+			// Echoed for the same reason: the cap math reads the synced copy.
+			if (norm(cfg.irSalaryPercent) !== norm(live.irSalaryPercent)) out.push('IR salary percent');
 			if (cfg.season && norm(cfg.season) !== norm(live.season)) out.push('Season');
 			return out;
 		}
@@ -15868,6 +15888,8 @@
 				if (league.startYear) bits.push(`History from ${league.startYear}`);
 				if (league.lineupPilot) bits.push('Lineup editor');
 				if (league.cutdownRosterSize) bits.push(`Cut to ${league.cutdownRosterSize}`);
+				// Deviations only: 50 is the default, so it earns no chip.
+				if (league.irSalaryPercent != null && league.irSalaryPercent !== '' && Number(league.irSalaryPercent) !== 50) bits.push(`IR counts ${league.irSalaryPercent}%`);
 				// No 'Rules link' entry: the 📝 icon beside the league name in the
 				// head says the same thing, in the same card, and is a link.
 				//
@@ -16010,6 +16032,13 @@
 					// shouldn't vanish because you looked at the Type dropdown.
 					if (league.type === 'dynasty') {
 						field('Cutdown roster size', adminText(league.cutdownRosterSize, 'e.g. 23', (v) => { league.cutdownRosterSize = v || undefined; }));
+					}
+					// Salary Cap only: the share of an IR player's salary MFL counts
+					// against the cap (capSummaryNumbers). Blank means 50, the rate in
+					// every league so far; 0 means IR is free. Hidden rather than
+					// cleared off-type, like Cutdown roster size above.
+					if (league.type === 'salarycap') {
+						field('IR salary counted (%)', adminText(league.irSalaryPercent, '50 (default)', (v) => { league.irSalaryPercent = v === '' ? undefined : v; }));
 					}
 					const lineupWrap = el('label', { class: 'admin-field admin-field-check' });
 					const lineupBox = el('input', { type: 'checkbox' });
@@ -16653,7 +16682,7 @@
 			return {
 				money,
 				negative: nums.capRoom < 0,
-				title: `Cap room: $${league.salaryCap} cap minus active-roster salaries and adjustments, ${asOf}. The same number as the Rosters card${planned}`,
+				title: `Cap room: $${league.salaryCap} cap minus active-roster salaries, adjustments and the IR charge (${nums.irPercent}% of IR salaries), ${asOf}. The same number as the Rosters card${planned}`,
 			};
 		}
 

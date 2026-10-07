@@ -1210,6 +1210,7 @@ async function main() {
         rulesUrl: league.rulesUrl || null,
         commishContact: league.commishContact || null,
         cutdownRosterSize: league.cutdownRosterSize || null,
+        irSalaryPercent: league.irSalaryPercent ?? null,
         dues: league.dues ?? null,
         payout1: league.payout1 ?? null,
         payout2: league.payout2 ?? null,
@@ -1280,6 +1281,7 @@ async function main() {
       result.rulesUrl = league.rulesUrl || null;
       result.commishContact = league.commishContact || null;
       result.cutdownRosterSize = league.cutdownRosterSize || null;
+      result.irSalaryPercent = league.irSalaryPercent ?? null;
       // ?? rather than || — a real, deliberate $0 dues or payout must survive,
       // not collapse into null the way an empty string legitimately would for
       // the string fields above. See leagueFinancesSummary's own missing-vs-
@@ -1314,6 +1316,7 @@ async function main() {
         rulesUrl: league.rulesUrl || null,
         commishContact: league.commishContact || null,
         cutdownRosterSize: league.cutdownRosterSize || null,
+        irSalaryPercent: league.irSalaryPercent ?? null,
         dues: league.dues ?? null,
         payout1: league.payout1 ?? null,
         payout2: league.payout2 ?? null,

@@ -45,6 +45,7 @@ The file's `_readme` array is the authoritative schema — read it before touchi
 - `serialize` keeps one league per line so an Admin commit is a one-line diff.
 - **`type: 'bestball'` was renamed `'draftonly'`.** Best Ball is a scoring system several salary-cap leagues use, and lives in `tags`. Nothing in code records this rename.
 - `type: 'salarycap'` also drives the Salary/Yrs columns, the cap summary, and fetching cap adjustments.
+- **Cap room charges IR at `irSalaryPercent` (default 50), not zero** (`capSummaryNumbers`, `test-waivers.mjs`). MFL counts that share of an IR player's salary; leaving IR out overstated cap room by exactly it. Unset means 50, a real `0` means free (read with `??`, never `||`); taxi is uncharged. Echoed by the sync, so an edit shows after the next sync.
 - Providers: `mfl` (default), `espn`, `sleeper`. Selection is a three-way ternary at each stage of `fetch-rosters.mjs`, so a fourth provider touches every stage.
 
 ## Invariants worth preserving
