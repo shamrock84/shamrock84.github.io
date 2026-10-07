@@ -5792,7 +5792,7 @@
 			row('Salary Adjustments', adjustments);
 			// Only when it changes the total, so a league with nobody on IR (or
 			// IR set to free) looks exactly as it did before the charge existed.
-			if (irCharge > 0) row(`IR Salary (${Number(irPercent.toFixed(2))}%)`, irCharge);
+			if (irCharge > 0) row(`IR Relief (${Number(irPercent.toFixed(2))}%)`, irCharge);
 			row('Total', total, `salary-total${plannedNote ? ' salary-has-plan' : ''}`, plannedNote);
 			row('Salary Cap', league.salaryCap);
 			row('Cap Room Available', capRoom, `salary-cap-room${capRoom < 0 ? ' salary-negative' : ''}${plannedNote ? ' salary-has-plan' : ''}`, plannedNote);
