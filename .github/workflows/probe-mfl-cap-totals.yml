@@ -1,0 +1,48 @@
+name: Probe MFL Cap Totals (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here, the
+# same rule the other manual workflows follow.
+#
+# Asks whether MFL's API serves a franchise's cap Total / Cap Room, or the rule
+# for how much of an IR player's salary counts, so myffl.html could read them
+# instead of computing them — see scripts/probe-mfl-cap-totals.mjs. Salary-cap
+# leagues only; league_id narrows it to one.
+#
+# Read-only: a few GETs per salary-cap league.
+on:
+  workflow_dispatch:
+    inputs:
+      league_id:
+        description: Only probe this MFL league id (blank = every salary-cap league)
+        required: false
+        default: ''
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      # Blobless + sparse checkout: skips mfl/PSD and images/, which no
+      # workflow here reads. Same five directories everywhere on purpose;
+      # see sync-fantasy-rosters.yml for the reasoning and the numbers.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout: |
+            api
+            scripts
+            config
+            data
+            .github
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Look for cap totals and the IR rule in MFL responses
+        env:
+          MFL_USERNAME: ${{ secrets.MFL_USERNAME }}
+          MFL_PASSWORD: ${{ secrets.MFL_PASSWORD }}
+          PROBE_LEAGUE_ID: ${{ inputs.league_id }}
+        run: node scripts/probe-mfl-cap-totals.mjs
