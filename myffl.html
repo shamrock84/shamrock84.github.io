@@ -2161,16 +2161,17 @@
 			border-radius: 8px;
 			overflow-x: auto;
 		}
-		/* Capped so eight short columns don't stretch across a wide desktop
-		   card, and the headers follow their numbers' right alignment. */
-		.nfl-power-box {
-			max-width: 48rem;
-		}
 		.nfl-power-table {
 			width: 100%;
 		}
-		.nfl-power-table th:not(:first-child) {
-			text-align: right;
+		/* The table fills the card, so on a wide screen the columns spread
+		   out; every column but Team is centered, header and cells alike, so
+		   a number stays under its header however far apart they sit. The
+		   selector outranks `table.standings td:not(:first-child)`, which
+		   right-aligns. */
+		table.standings.nfl-power-table th:not(:first-child),
+		table.standings.nfl-power-table td:not(:first-child) {
+			text-align: center;
 		}
 		.nfl-power-fpi {
 			font-weight: 600;
