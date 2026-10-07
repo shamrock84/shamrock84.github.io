@@ -16730,9 +16730,31 @@
 			return n == null ? '' : `$${Number(n).toLocaleString()}`;
 		}
 
-		function waiversPlayerCell(p) {
+		// The FantasyPros profile for a player named by a live waivers read,
+		// which carries only an id/name/position/team. A drop (or an auction
+		// player already rostered) resolves off this league's own roster; a
+		// free-agent add isn't on any roster, so it falls back to the ranking
+		// pool this league's ECR column was drawn from. Joined by normalized
+		// name like appendDetailSide; null when neither knows him, in which
+		// case the name stays plain text.
+		function waiversPlayerUrl(league, p) {
+			if (!p || !p.name) return null;
+			const key = normalizeName(p.name) || p.name;
+			const fromRoster = rosterUrlByName(league).get(key);
+			if (fromRoster) return fromRoster;
+			const pool = rankingPoolFor(league, pageData && pageData.rankingPools);
+			const hit = pool && pool.players.find((q) => normalizeName(q.name) === key && (!p.position || !q.position || q.position === p.position));
+			return hit ? poolPlayerUrl(hit.url) : null;
+		}
+
+		function waiversNameNode(league, p) {
+			const label = p.name || `#${p.id}`;
+			return playerNameNode({ name: label, ecr: { url: waiversPlayerUrl(league, p) } }, label);
+		}
+
+		function waiversPlayerCell(league, p) {
 			const td = el('td');
-			td.appendChild(document.createTextNode(p.name || `#${p.id}`));
+			td.appendChild(waiversNameNode(league, p));
 			if (p.position) td.appendChild(document.createTextNode(` ${p.position}`));
 			appendTeamSuffix(td, p.team);
 			return td;
@@ -16826,21 +16848,24 @@
 						const adds = item.adds.length ? item.adds : [];
 						adds.forEach((p, i) => {
 							if (i) td.appendChild(document.createTextNode(', '));
-							td.appendChild(document.createTextNode(p.name || `#${p.id}`));
+							td.appendChild(waiversNameNode(league, p));
 							if (p.position) td.appendChild(document.createTextNode(` ${p.position}`));
 							appendTeamSuffix(td, p.team);
 						});
 						if (adds.length === 0) td.appendChild(el('span', { class: 'waivers-muted', text: 'Drop only' }));
 						if (item.drops.length) {
-							td.appendChild(el('div', {
-								class: 'waivers-drop',
-								text: `Drop ${item.drops.map((p) => p.name || `#${p.id}`).join(', ')}`,
-							}));
+							const dropLine = el('div', { class: 'waivers-drop' });
+							dropLine.appendChild(document.createTextNode('Drop '));
+							item.drops.forEach((p, i) => {
+								if (i) dropLine.appendChild(document.createTextNode(', '));
+								dropLine.appendChild(waiversNameNode(league, p));
+							});
+							td.appendChild(dropLine);
 						}
 						tr.appendChild(td);
 						tr.appendChild(el('td', { text: formatClaimOrder(item) }));
 					} else {
-						const td = waiversPlayerCell(item.player);
+						const td = waiversPlayerCell(league, item.player);
 						td.appendChild(el('div', {
 							class: item.mine ? 'waivers-bidder waivers-mine' : 'waivers-bidder',
 							text: item.mine ? 'You' : (item.franchiseName || '—'),
