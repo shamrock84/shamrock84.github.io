@@ -1,0 +1,54 @@
+name: Notify via Pushover (manual)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here.
+# Lets a scheduled Claude Routine (the Tasks Card Sweep) hand its final
+# report to Pushover. A Routine's own push notification is dismissed on the
+# first tap and leaves no way back to the session; a Pushover message stays
+# in the app and can carry the PR or session link. The Routine's sandbox
+# reaches neither Pushover nor Vercel, and the credentials live in Vercel
+# only, so it dispatches this workflow instead (the fetch-tasks.yml pattern).
+# Needs PUSHOVER_APP_TOKEN and PUSHOVER_USER_KEY as GitHub Actions secrets
+# (same values as the Vercel env vars api/game-time-check.js reads) — the run
+# fails with a clear message if either is missing. No checkout: nothing here
+# reads the repo.
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: 'Notification title'
+        required: true
+      message:
+        description: 'Notification body (Pushover caps it at 1024 characters)'
+        required: true
+      url:
+        description: 'Optional link (PR or session) shown as a tap target'
+        required: false
+        default: ''
+      url_title:
+        description: 'Label for the link'
+        required: false
+        default: 'Open'
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Pushover message
+        env:
+          PUSHOVER_APP_TOKEN: ${{ secrets.PUSHOVER_APP_TOKEN }}
+          PUSHOVER_USER_KEY: ${{ secrets.PUSHOVER_USER_KEY }}
+          TITLE: ${{ github.event.inputs.title }}
+          MESSAGE: ${{ github.event.inputs.message }}
+          LINK: ${{ github.event.inputs.url }}
+          LINK_TITLE: ${{ github.event.inputs.url_title }}
+        run: |
+          if [ -z "$PUSHOVER_APP_TOKEN" ] || [ -z "$PUSHOVER_USER_KEY" ]; then
+            echo "PUSHOVER_APP_TOKEN and PUSHOVER_USER_KEY must both be set as repo secrets." >&2
+            exit 1
+          fi
+          args=(--form-string "token=$PUSHOVER_APP_TOKEN" --form-string "user=$PUSHOVER_USER_KEY"
+                --form-string "title=${TITLE:0:250}" --form-string "message=${MESSAGE:0:1000}")
+          if [ -n "$LINK" ]; then
+            args+=(--form-string "url=$LINK" --form-string "url_title=${LINK_TITLE:0:100}")
+          fi
+          curl -sS --fail-with-body "${args[@]}" https://api.pushover.net/1/messages.json
