@@ -539,16 +539,34 @@ const makeCap = (plans = {}) => {
   const effective = (l, p) => (Number(p.salary) > 0 ? Number(p.salary) : planned(l, p) ?? 0);
   return capFns(planned, effective, () => '2h ago');
 };
-await test('page: cap room = cap - (ROSTER salaries + adjustments); taxi/IR excluded', () => {
+await test('page: cap room = cap - (ROSTER salaries + adjustments + 50% of IR); taxi excluded', () => {
   const { capRoomInfo } = makeCap();
   const league = { salaryCap: 100, salaryAdjustments: 5.5, players: [
     { id: 'a', salary: 40, status: 'ROSTER' }, { id: 'b', salary: 20 }, // no status = ROSTER
     { id: 'c', salary: 30, status: 'INJURED_RESERVE' }, { id: 'd', salary: 9, status: 'TAXI_SQUAD' },
   ] };
   const info = capRoomInfo(league);
-  assert.equal(info.money, '$34.50');
+  // 100 - (40 + 20 + 5.5 + 30 * 50%) = 19.50
+  assert.equal(info.money, '$19.50');
   assert.equal(info.negative, false);
   assert.match(info.title, /as of the last sync/);
+});
+await test('page: irSalaryPercent overrides the 50% default; a real 0 is free, not unset', () => {
+  const { capRoomInfo } = makeCap();
+  const players = [{ id: 'a', salary: 40, status: 'ROSTER' }, { id: 'c', salary: 30, status: 'INJURED_RESERVE' }];
+  assert.equal(capRoomInfo({ salaryCap: 100, players }).money, '$45.00', 'unset -> 50%');
+  assert.equal(capRoomInfo({ salaryCap: 100, players, irSalaryPercent: null }).money, '$45.00', 'null (sync echo of unset) -> 50%');
+  assert.equal(capRoomInfo({ salaryCap: 100, players, irSalaryPercent: 0 }).money, '$60.00', '0 -> IR free');
+  assert.equal(capRoomInfo({ salaryCap: 100, players, irSalaryPercent: 100 }).money, '$30.00');
+  assert.equal(capRoomInfo({ salaryCap: 100, players, irSalaryPercent: 25 }).money, '$52.50');
+});
+await test('page: the screenshot case — $25.00 on IR adds exactly $12.50 to the total', () => {
+  const { capSummaryNumbers } = makeCap();
+  const n = capSummaryNumbers({ salaryCap: 500, salaryAdjustments: 11.38, players: [
+    { id: 'a', salary: 421.69, status: 'ROSTER' }, { id: 'r', salary: 25, status: 'INJURED_RESERVE' }, { id: 't', salary: 5.78, status: 'TAXI_SQUAD' },
+  ] }, [{ id: 'a', salary: 421.69 }]);
+  assert.equal(n.total.toFixed(2), '445.57');
+  assert.equal(n.capRoom.toFixed(2), '54.43');
 });
 await test('page: cap room goes negative when over, and null with no cap', () => {
   const { capRoomInfo } = makeCap();
@@ -571,7 +589,10 @@ await test('page: every committed salary-cap league yields a number matching an 
   for (const l of caps) {
     const sum = (l.players || []).filter((p) => (p.status || 'ROSTER').toUpperCase() === 'ROSTER')
       .reduce((a, p) => a + (Number(p.salary) > 0 ? Number(p.salary) : 0), 0);
-    const expected = l.salaryCap - (sum + (Number(l.salaryAdjustments) || 0));
+    const ir = (l.players || []).filter((p) => String(p.status || '').toUpperCase() === 'INJURED_RESERVE')
+      .reduce((a, p) => a + (Number(p.salary) > 0 ? Number(p.salary) : 0), 0);
+    const pct = l.irSalaryPercent ?? 50;
+    const expected = l.salaryCap - (sum + ir * pct / 100 + (Number(l.salaryAdjustments) || 0));
     assert.equal(capRoomInfo(l).money, `$${expected.toFixed(2)}`, l.id);
   }
 });

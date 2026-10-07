@@ -52,7 +52,7 @@ const SCORING_FORMATS = new Set(['PPR', 'HALF', 'STD']);
 const KEY_ORDER = [
   'id', 'franchiseId', 'name', 'displayName', 'type', 'provider',
   'tags', 'lineupPilot', 'rankingType', 'scoring', 'season', 'startYear', 'rulesUrl', 'commishContact',
-  'cutdownRosterSize',
+  'cutdownRosterSize', 'irSalaryPercent',
   'nickname', 'style',
   'dues', 'payout1', 'payout2', 'payout3', 'payoutDivisionWinner', 'payoutWeeklyHigh', 'payoutSeasonHigh',
 ];
@@ -263,6 +263,17 @@ function validate(leagues) {
         errors.push(`${label}: cutdown roster size must be a whole number of players, or left blank.`);
       }
     }
+    // Salary-cap leagues only (what share of an IR player's salary counts
+    // against the cap — see capSummaryNumbers in myffl.html), checked on shape
+    // rather than type like cutdownRosterSize above. 0 is a real answer (IR is
+    // free) and must pass; 50 vs 0.5 is the mistake the bounds can't catch, so
+    // the Admin tab's label says percent.
+    if (league.irSalaryPercent != null && league.irSalaryPercent !== '') {
+      const pct = typeof league.irSalaryPercent === 'string' ? Number(league.irSalaryPercent.trim()) : league.irSalaryPercent;
+      if (typeof pct !== 'number' || !Number.isFinite(pct) || pct < 0 || pct > 100) {
+        errors.push(`${label}: IR salary percent must be a number from 0 to 100, or left blank.`);
+      }
+    }
     // Free text shown everywhere a league is named on the page in place of
     // the live-synced name — see leagueDisplayName in myffl.html. No format
     // to enforce beyond "it's text", same as name/nickname.
@@ -389,6 +400,10 @@ function mergeLeague(league) {
   // unknown-key passthrough would have turned those into strings the first
   // time anyone pressed Save.
   putNumber('cutdownRosterSize', league.cutdownRosterSize);
+  // A real number, and 0 survives (putMoney only drops blank/null): IR that
+  // costs nothing is a legitimate setting, distinct from blank, which means
+  // the page's default.
+  putMoney('irSalaryPercent', league.irSalaryPercent);
   put('nickname', league.nickname == null ? '' : String(league.nickname).trim());
   put('style', league.style);
   putMoney('dues', league.dues);

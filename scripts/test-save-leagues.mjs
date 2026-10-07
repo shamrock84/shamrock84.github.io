@@ -113,6 +113,20 @@ check('allows a cutdown roster size typed as text by the Admin tab',
   validate(withField('cutdownRosterSize', '23')).length === 0,
   JSON.stringify(validate(withField('cutdownRosterSize', '23'))));
 check('allows a blank cutdown roster size', validate(withField('cutdownRosterSize', '')).length === 0);
+// irSalaryPercent: share of an IR salary counted against the cap. Validated
+// on shape, not type. 0 is a real answer (IR is free) and must survive both
+// validation and mergeLeague, which drops blanks.
+check('allows a normal IR salary percent', validate(withField('irSalaryPercent', 50)).length === 0);
+check('allows an IR salary percent typed as text', validate(withField('irSalaryPercent', '50')).length === 0);
+check('allows an IR salary percent of 0', validate(withField('irSalaryPercent', 0)).length === 0);
+check('allows a fractional IR salary percent', validate(withField('irSalaryPercent', '37.5')).length === 0);
+check('allows a blank IR salary percent', validate(withField('irSalaryPercent', '')).length === 0);
+check('rejects a negative IR salary percent', validate(withField('irSalaryPercent', -1)).length > 0);
+check('rejects an IR salary percent over 100', validate(withField('irSalaryPercent', 101)).length > 0);
+check('rejects a non-numeric IR salary percent', validate(withField('irSalaryPercent', 'half')).length > 0);
+check('stores an IR salary percent as a number', mergeLeague({ ...base(), irSalaryPercent: '50' }).irSalaryPercent === 50);
+check('keeps an IR salary percent of 0', mergeLeague({ ...base(), irSalaryPercent: '0' }).irSalaryPercent === 0);
+check('drops a blank IR salary percent', !('irSalaryPercent' in mergeLeague({ ...base(), irSalaryPercent: '' })));
 // Not a type error, matching commishContact's own case just below: the tab
 // hides the field off-type, it doesn't reject the value.
 check('allows a cutdown roster size on a non-dynasty league',
