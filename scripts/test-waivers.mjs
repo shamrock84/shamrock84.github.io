@@ -560,6 +560,22 @@ await test('page: irSalaryPercent overrides the 50% default; a real 0 is free, n
   assert.equal(capRoomInfo({ salaryCap: 100, players, irSalaryPercent: 100 }).money, '$30.00');
   assert.equal(capRoomInfo({ salaryCap: 100, players, irSalaryPercent: 25 }).money, '$52.50');
 });
+await test('page: IR share layers config override > MFL setting > 50, and a bad layer falls through', () => {
+  const { capRoomInfo, capSummaryNumbers } = makeCap();
+  const players = [{ id: 'a', salary: 40, status: 'ROSTER' }, { id: 'c', salary: 30, status: 'INJURED_RESERVE' }];
+  const room = (extra) => capRoomInfo({ salaryCap: 100, players, ...extra }).money;
+  assert.equal(room({ irSalaryPercentMfl: 0 }), '$60.00', 'MFL says 0 -> free');
+  assert.equal(room({ irSalaryPercentMfl: 100 }), '$30.00', 'MFL says 100');
+  assert.equal(room({ irSalaryPercentMfl: 100, irSalaryPercent: 0 }), '$60.00', 'override beats MFL, even a 0');
+  assert.equal(room({ irSalaryPercentMfl: 0, irSalaryPercent: 100 }), '$30.00', 'override beats MFL the other way');
+  assert.equal(room({ irSalaryPercentMfl: null, irSalaryPercent: null }), '$45.00', 'neither -> 50');
+  assert.equal(room({ irSalaryPercent: 'abc', irSalaryPercentMfl: 100 }), '$30.00', 'unparseable override falls through to MFL');
+  assert.equal(room({ irSalaryPercentMfl: 250 }), '$45.00', 'out-of-range MFL value falls through to 50');
+  const src = (extra) => capSummaryNumbers({ salaryCap: 100, players, ...extra }, [players[0]]).irPercentSource;
+  assert.equal(src({}), 'default');
+  assert.equal(src({ irSalaryPercentMfl: 50 }), 'mfl');
+  assert.equal(src({ irSalaryPercentMfl: 50, irSalaryPercent: 25 }), 'config');
+});
 await test('page: the screenshot case — $25.00 on IR adds exactly $12.50 to the total', () => {
   const { capSummaryNumbers } = makeCap();
   const n = capSummaryNumbers({ salaryCap: 500, salaryAdjustments: 11.38, players: [

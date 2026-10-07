@@ -5743,10 +5743,12 @@
 		// IR is charged at a share of salary, as MFL does: 50% in every league
 		// here (a $25.00 IR player added $12.50 to MFL's total, which is how the
 		// page's earlier IR-excluded number was caught being wrong). The share
-		// is config's irSalaryPercent, echoed by the sync; unset means the
-		// default and a real 0 means IR is free, hence ?? and never ||. Taxi is
-		// uncharged: the same MFL page showed no taxi cost. The default lives
-		// inside the function because test-waivers lifts its source out alone.
+		// is, in order: config's irSalaryPercent (a manual override, echoed by
+		// the sync), else MFL's own includeIRWithSalary setting (the sync's
+		// irSalaryPercentMfl), else 50. A real 0 means IR is free at either
+		// layer, hence ?? and never ||. Taxi is uncharged: the same MFL page
+		// showed no taxi cost. The default lives inside the function because
+		// test-waivers lifts its source out alone.
 		function activeRosterPlayers(league) {
 			return (league.players || []).filter((p) => (p.status || 'ROSTER').toUpperCase() === 'ROSTER');
 		}
@@ -5758,21 +5760,33 @@
 				if (!(Number(p.salary) > 0) && plannedSalary(league, p) != null) plannedCount++;
 				return sum + effectiveSalary(league, p);
 			}, 0);
-			const configuredPercent = Number(league.irSalaryPercent ?? DEFAULT_IR_SALARY_PERCENT);
-			const irPercent = Number.isFinite(configuredPercent) ? configuredPercent : DEFAULT_IR_SALARY_PERCENT;
+			// A layer that is absent or unparseable falls through to the next, so
+			// a bad override can't zero the charge.
+			const layers = [['config', league.irSalaryPercent], ['mfl', league.irSalaryPercentMfl]];
+			let irPercent = DEFAULT_IR_SALARY_PERCENT;
+			let irPercentSource = 'default';
+			for (const [source, raw] of layers) {
+				if (raw == null || String(raw).trim() === '') continue;
+				const pct = Number(raw);
+				if (Number.isFinite(pct) && pct >= 0 && pct <= 100) {
+					irPercent = pct;
+					irPercentSource = source;
+					break;
+				}
+			}
 			const irSalaryTotal = (league.players || [])
 				.filter((p) => String(p.status || '').toUpperCase() === 'INJURED_RESERVE')
 				.reduce((sum, p) => sum + effectiveSalary(league, p), 0);
 			const irCharge = irSalaryTotal * irPercent / 100;
 			const adjustments = Number(league.salaryAdjustments) || 0;
 			const total = rosterSalaryTotal + irCharge + adjustments;
-			return { adjustments, irCharge, irPercent, total, capRoom: league.salaryCap - total, plannedCount };
+			return { adjustments, irCharge, irPercent, irPercentSource, total, capRoom: league.salaryCap - total, plannedCount };
 		}
 
 		function buildSalarySummary(league, rosterPlayers) {
 			const nums = capSummaryNumbers(league, rosterPlayers);
 			if (!nums) return null;
-			const { plannedCount, adjustments, irCharge, irPercent, total, capRoom } = nums;
+			const { plannedCount, adjustments, irCharge, irPercent, irPercentSource, total, capRoom } = nums;
 			// Total/Cap Room mix in unofficial numbers whenever a planned salary
 			// stood in for a real one — flagged rather than left to look like a
 			// hard, all-official figure.
@@ -5792,7 +5806,11 @@
 			row('Salary Adjustments', adjustments);
 			// Only when it changes the total, so a league with nobody on IR (or
 			// IR set to free) looks exactly as it did before the charge existed.
-			if (irCharge > 0) row(`IR Relief (${Number(irPercent.toFixed(2))}%)`, irCharge);
+			if (irCharge > 0) {
+				const sourceNote = irPercentSource === 'config' ? 'set on the Admin tab'
+					: irPercentSource === 'mfl' ? "from MFL's league settings" : 'default, MFL has not reported it';
+				row(`IR Relief (${Number(irPercent.toFixed(2))}%)`, irCharge, '', `${irPercent}% of IR salaries counts against the cap (${sourceNote})`);
+			}
 			row('Total', total, `salary-total${plannedNote ? ' salary-has-plan' : ''}`, plannedNote);
 			row('Salary Cap', league.salaryCap);
 			row('Cap Room Available', capRoom, `salary-cap-room${capRoom < 0 ? ' salary-negative' : ''}${plannedNote ? ' salary-has-plan' : ''}`, plannedNote);
@@ -15888,8 +15906,11 @@
 				if (league.startYear) bits.push(`History from ${league.startYear}`);
 				if (league.lineupPilot) bits.push('Lineup editor');
 				if (league.cutdownRosterSize) bits.push(`Cut to ${league.cutdownRosterSize}`);
-				// Deviations only: 50 is the default, so it earns no chip.
-				if (league.irSalaryPercent != null && league.irSalaryPercent !== '' && Number(league.irSalaryPercent) !== 50) bits.push(`IR counts ${league.irSalaryPercent}%`);
+				// Deviations only: 50 is the default and what MFL reports in every
+				// league so far, so it earns no chip. The override wins over MFL's
+				// own setting, as in capSummaryNumbers.
+				const irShown = [league.irSalaryPercent, live?.irSalaryPercentMfl].find((v) => v != null && String(v).trim() !== '');
+				if (irShown !== undefined && Number(irShown) !== 50) bits.push(`IR counts ${irShown}%`);
 				// No 'Rules link' entry: the 📝 icon beside the league name in the
 				// head says the same thing, in the same card, and is a link.
 				//
@@ -16034,11 +16055,15 @@
 						field('Cutdown roster size', adminText(league.cutdownRosterSize, 'e.g. 23', (v) => { league.cutdownRosterSize = v || undefined; }));
 					}
 					// Salary Cap only: the share of an IR player's salary MFL counts
-					// against the cap (capSummaryNumbers). Blank means 50, the rate in
-					// every league so far; 0 means IR is free. Hidden rather than
-					// cleared off-type, like Cutdown roster size above.
+					// against the cap (capSummaryNumbers). Blank means "use what MFL
+					// reports" (its includeIRWithSalary, shown as the placeholder once
+					// a sync has read it), else 50; any number here overrides MFL, and
+					// 0 means IR is free. Hidden rather than cleared off-type, like
+					// Cutdown roster size above.
 					if (league.type === 'salarycap') {
-						field('IR salary counted (%)', adminText(league.irSalaryPercent, '50 (default)', (v) => { league.irSalaryPercent = v === '' ? undefined : v; }));
+						const mflPercent = live?.irSalaryPercentMfl;
+						const placeholder = mflPercent != null ? `${mflPercent} (from MFL)` : '50 (default)';
+						field('IR salary counted (%)', adminText(league.irSalaryPercent, placeholder, (v) => { league.irSalaryPercent = v === '' ? undefined : v; }));
 					}
 					const lineupWrap = el('label', { class: 'admin-field admin-field-check' });
 					const lineupBox = el('input', { type: 'checkbox' });
