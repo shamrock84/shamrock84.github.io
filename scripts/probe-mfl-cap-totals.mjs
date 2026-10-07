@@ -27,8 +27,25 @@
 // itself. No matches, and nothing salary-shaped in the league export, means
 // the page has to compute it and irSalaryPercent stays.
 //
-// RUN 1: not yet run. Dispatch probe-mfl-cap-totals.yml and record the verdict
-// here, the way the other probes do.
+// RUN 1 (2026-10-07, all four salary-cap leagues: Iron Bank, Wise Guys, Super
+// Cap, Game On) RESULTS (confirmed):
+//   - MFL serves NO franchise cap Total or Cap Room. No response contained any
+//     number equal to a computed total or cap room, in any league; the only
+//     hits were raw player salaries and salary-adjustment amounts. The guessed
+//     exports (salaryCap, capSpace, franchiseSalaries) answer "must go to
+//     api.myfantasyleague.com" on a league's own host, and `salaries` and
+//     `assets` carry per-player contract data only. So the page computes the
+//     total itself (capSummaryNumbers), as it always had to.
+//   - MFL DOES serve the IR rule. TYPE=league carries `includeIRWithSalary`
+//     in every one of the four leagues, "50" in all of them — the share of an
+//     IR player's salary counted against the cap, matching the $12.50 on
+//     SuperCap's $25.00 IR player. It is a league-level key, so no franchise
+//     id or commissioner session is needed to read it.
+//   - Taxi is uncharged, consistent with the manager's own confirmation: no
+//     taxi-salary key exists anywhere in the league export. `taxiSquad` and
+//     `injuredReserve` are SLOT LIMITS (Super Cap: "50"/"50", Game On:
+//     "0"/"15"), not percentages — don't confuse them with includeIRWithSalary
+//     when reading the dump.
 //
 // Read-only: a few GETs per salary-cap league.
 import { readFile } from 'node:fs/promises';

@@ -648,6 +648,21 @@ async function fetchMflPriorYearPoints(league, cookie, playerIds) {
   return map;
 }
 
+// The share of an IR player's salary MFL counts against the cap, read off the
+// league's own settings: TYPE=league carries it as `includeIRWithSalary`, a
+// percentage string ("50" in all four salary-cap leagues — probe-mfl-cap-totals
+// RUN 1). It is a league-level key, so no franchise or commissioner session is
+// needed. Null when absent or not a 0-100 number, which the page reads as
+// "unknown, use the default"; a real "0" must come back as 0 (IR is free), so
+// emptiness is tested before the number is, never with ||. Not to be confused
+// with `injuredReserve`/`taxiSquad`, which are slot limits.
+export function mflIrSalaryPercent(leagueData) {
+  const raw = leagueData?.league?.includeIRWithSalary;
+  if (raw == null || String(raw).trim() === '') return null;
+  const pct = Number(raw);
+  return Number.isFinite(pct) && pct >= 0 && pct <= 100 ? pct : null;
+}
+
 // Auction/salary-cap leagues only. TYPE=salaryAdjustments returns the whole
 // league's adjustment history (drops, carry-overs, etc.) regardless of the
 // FRANCHISE param, so this fetches once and sums the entries that belong to
@@ -1144,9 +1159,13 @@ export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, inj
   // field that always agreed with the type, so the type alone drives it now.
   let salaryCap = null;
   let salaryAdjustments = null;
+  let irSalaryPercentMfl = null;
   if (league.type === 'salarycap') {
     const capAmount = leagueData?.league?.salaryCapAmount;
     salaryCap = capAmount ? Number(capAmount) : null;
+    // Echoed beside the config's own irSalaryPercent override, which wins on
+    // the page — see capSummaryNumbers in myffl.html.
+    irSalaryPercentMfl = mflIrSalaryPercent(leagueData);
     try {
       salaryAdjustments = await fetchSalaryAdjustments(league, cookie);
     } catch (err) {
@@ -1184,6 +1203,7 @@ export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, inj
     players,
     salaryCap,
     salaryAdjustments,
+    irSalaryPercentMfl,
     startingLineup,
     lineupSlots,
     rosterLimits,
