@@ -9478,7 +9478,9 @@
 			// it for. `starter` is already folded to "started in ANY league".
 			const allRows = slots.flatMap((s) => s.rows);
 			const starterCount = allRows.filter((r) => r.starter).length;
-			const benchCount = allRows.length - starterCount;
+			// A row merged across leagues can be both: he starts in one and
+			// sits in another, and is counted under, and listed in, each.
+			const benchCount = allRows.filter((r) => r.entries.some((en) => !en.starter)).length;
 			// The starter count is IR red ("needs a look"): a starter is the
 			// one whose swap decision is on the clock, so it's the part of
 			// this line the eye should land on first.
@@ -9498,8 +9500,13 @@
 			// Now Playing's own appendRow — a starter and a benched player
 			// render identically, the only difference is which bucket sorts
 			// them in.
-			function appendRow(container, r) {
+			// `asStarter` picks which of the row's leagues this appearance
+			// speaks for: a player merged across leagues who starts in one
+			// and sits in another shows under Starters naming only the
+			// first, and under Bench naming only the second.
+			function appendRow(container, r, asStarter) {
 				const p = r.player;
+				const shownEntries = r.entries.filter((en) => en.starter === asStarter);
 				const row = el('div', { class: 'watchlist-row' });
 				const nameLine = el('div', { class: 'watchlist-name' });
 				const first = el('div');
@@ -9516,7 +9523,7 @@
 				// where the lineup editor is — the swap is the action this
 				// row exists to prompt.
 				const leaguesLine = el('div', { class: 'watchlist-leagues' });
-				r.entries.forEach((en, i) => {
+				shownEntries.forEach((en, i) => {
 					if (i > 0) leaguesLine.appendChild(document.createTextNode(', '));
 					const btn = el('button', { type: 'button', class: 'watchlist-league-link', title: 'Go to this lineup', text: en.nickname });
 					btn.addEventListener('click', (e) => {
@@ -9532,7 +9539,7 @@
 				// bench behind him is each league's own. The pick is a
 				// plan (getBackupPlan), read here rather than closed over
 				// so it survives the rebuild this card gets on every poll.
-				const startEntries = r.entries.filter((en) => en.starter);
+				const startEntries = shownEntries.filter((en) => en.starter);
 				// The right-hand column mirrors the name side's three lines:
 				// opponent, a "Replace w/:" label on its own line, then the
 				// picker. The label is stated once; a league label only appears
@@ -9615,15 +9622,15 @@
 				// open and Bench tucked away. A sub-group with nothing in it
 				// is omitted rather than shown empty.
 				const starters = slot.rows.filter((r) => r.starter);
-				const bench = slot.rows.filter((r) => !r.starter);
-				[['Starters', starters, 'starters', false], ['Bench', bench, 'bench', true]].forEach(([label, subRows, subKey, defaultCollapsed]) => {
+				const bench = slot.rows.filter((r) => r.entries.some((en) => !en.starter));
+				[['Starters', starters, 'starters', false, true], ['Bench', bench, 'bench', true, false]].forEach(([label, subRows, subKey, defaultCollapsed, asStarter]) => {
 					if (subRows.length === 0) return;
 					const subWrap = el('div', { class: 'roster-group' });
 					const subLabel = el('div', { class: 'group-label', text: `${label} (${subRows.length})` });
 					const subContent = el('div', { class: 'roster-group-content' });
 					makeGroupCollapsible(subWrap, subLabel, `watchlist:${slot.kickoff}:${subKey}`, defaultCollapsed);
 					subWrap.appendChild(subLabel);
-					subRows.forEach((r) => appendRow(subContent, r));
+					subRows.forEach((r) => appendRow(subContent, r, asStarter));
 					subWrap.appendChild(subContent);
 					slotEl.appendChild(subWrap);
 				});
