@@ -2243,6 +2243,14 @@
 			font-weight: 700;
 			color: var(--accent);
 		}
+		.favorites-section-label {
+			margin-top: 0.4rem;
+			color: var(--muted);
+			font-size: 0.8rem;
+			font-weight: 600;
+			letter-spacing: 0.04em;
+			text-transform: uppercase;
+		}
 		.favorites-summary {
 			display: flex;
 			align-items: center;
@@ -16583,6 +16591,9 @@
 			card.appendChild(heading);
 			makeCollapsible(card, heading, 'admin-favorites');
 
+			// A section label, since the card will hold other kinds of favorites
+			// later. Visible when collapsed, like the summary it introduces.
+			card.appendChild(el('div', { class: 'favorites-section-label card-collapse-visible', text: 'NFL Teams' }));
 			// Visible even when the card is collapsed, so the picks stay readable.
 			const summary = el('div', { class: 'favorites-summary card-collapse-visible' });
 			const chips = el('div', { class: 'favorites-chips' });
