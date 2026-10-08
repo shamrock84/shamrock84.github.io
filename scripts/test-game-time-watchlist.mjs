@@ -348,6 +348,25 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	assert.equal(ctx.__store.get(`myfflGroupCollapsed:desktop:watchlist:${EARLY}:bench`), '0', 'expanding away from the default is what actually gets persisted');
 }
 
+// A player who starts in one league and sits in another appears in BOTH
+// sub-groups, each naming only its own league: the benched league must not
+// be listed under Starters (it read as a starter there).
+{
+	const ctx = makeContext(LOGGED_IN);
+	setGames(ctx, { PHI: game('LAR', true, EARLY) });
+	const a = league('1', [player('k1', 'Kyle Monangai', 'PHI', 'Q')], ['k1']);
+	const b = league('2', [player('k2', 'Kyle Monangai', 'PHI', 'Q')], []);
+	const full = ctx.renderGameTimeWatchlistCard([a, b], YEAR);
+	const groups = findAll(full, (n) => hasClass('roster-group')(n) && !hasClass('watchlist-slot')(n));
+	const starterGroup = groups.find((g) => fullText(g).startsWith('Starters ('));
+	const benchGroup = groups.find((g) => fullText(g).startsWith('Bench ('));
+	const leagueLinks = (g) => findAll(g, hasClass('watchlist-league-link')).map(fullText);
+	assert.deepEqual(leagueLinks(starterGroup), ['L1'], 'Starters names only the league he starts in');
+	assert.deepEqual(leagueLinks(benchGroup), ['L2'], 'Bench names only the league he sits in');
+	assert.equal(findAll(starterGroup, hasClass('watchlist-backup-select')).length, 1, 'one replacement picker, for the starting league');
+	assert.equal(findAll(benchGroup, hasClass('watchlist-backup-select')).length, 0, 'a benched copy has nothing to replace');
+}
+
 // Backup picker: candidates, the ECR-driven default, persistence, and fallbacks.
 {
 	const ctx = makeContext(LOGGED_IN);
