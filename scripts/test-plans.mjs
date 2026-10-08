@@ -9,7 +9,7 @@
 // these wrong loses a plan silently — a wipe in one direction, a plan that
 // refuses to clear in the other.
 
-import { validatePlans, mergePlans, emptyDocument, resolveStore, validateTasks, mergeTasks } from '../api/plans.js';
+import { validatePlans, mergePlans, emptyDocument, resolveStore, validateTasks, mergeTasks, validateFavorites, mergeFavorites } from '../api/plans.js';
 
 let failures = 0;
 function check(name, cond, detail) {
@@ -110,7 +110,7 @@ eq('an empty incoming document never erases a stored task',
   { t1: { text: 'a', category: '', done: false, order: 1, createdAt: 1, completedAt: null } });
 
 console.log('emptyDocument');
-eq('carries every plan kind plus tasks', emptyDocument(), { contractPlans: {}, salaryPlans: {}, cutPlans: {}, backupPlans: {}, resultOverrides: {}, tasks: {}, updatedAt: null });
+eq('carries every plan kind plus tasks', emptyDocument(), { contractPlans: {}, salaryPlans: {}, cutPlans: {}, backupPlans: {}, resultOverrides: {}, tasks: {}, favorites: { nflTeams: [] }, updatedAt: null });
 
 console.log('mergePlans');
 // The case this endpoint exists for: a phone that has never synced posts an
@@ -144,7 +144,7 @@ eq('all four PLAN_KINDS merge independently',
     { contractPlans: { 30641: { 1: '1' } }, salaryPlans: { 30641: { 9: '50' } }, cutPlans: { 30641: { 2: '1' } }, backupPlans: { 30641: { 3: '4' } }, resultOverrides: { 30641: { 2024: '3' } } },
     { salaryPlans: { 30641: { 8: '25' } } },
   ),
-  { contractPlans: { 30641: { 1: '1' } }, salaryPlans: { 30641: { 8: '25', 9: '50' } }, cutPlans: { 30641: { 2: '1' } }, backupPlans: { 30641: { 3: '4' } }, resultOverrides: { 30641: { 2024: '3' } }, tasks: {}, updatedAt: null });
+  { contractPlans: { 30641: { 1: '1' } }, salaryPlans: { 30641: { 8: '25', 9: '50' } }, cutPlans: { 30641: { 2: '1' } }, backupPlans: { 30641: { 3: '4' } }, resultOverrides: { 30641: { 2024: '3' } }, tasks: {}, favorites: { nflTeams: [] }, updatedAt: null });
 const mergedTasks = mergePlans(
   { tasks: { t1: { text: 'a', category: '', done: false, createdAt: 1, completedAt: null } } },
   { tasks: { t2: { text: 'b', category: '', done: false, createdAt: 2, completedAt: null } } },
@@ -185,6 +185,19 @@ check('returns null when nothing is set', resolveStore({}) === null);
 check('a half-configured pair counts as absent', resolveStore({ KV_REST_API_URL: 'https://a' }) === null);
 check('falls through a half KV_* pair to a complete UPSTASH_* one',
   resolveStore({ KV_REST_API_URL: 'https://a', UPSTASH_REDIS_REST_URL: 'https://b', UPSTASH_REDIS_REST_TOKEN: 'u' })?.token === 'u');
+
+console.log('favorites');
+eq('absent favorites are valid', validateFavorites(undefined), []);
+eq('accepts a list of team codes', validateFavorites({ nflTeams: ['KC', 'WSH'] }), []);
+check('rejects a non-array', validateFavorites({ nflTeams: 'KC' }).length === 1);
+check('rejects a non-string entry', validateFavorites({ nflTeams: [7] }).length === 1);
+check('rejects an overlong code', validateFavorites({ nflTeams: ['KANSAS'] }).length === 1);
+check('rejects more than 32 teams', validateFavorites({ nflTeams: Array.from({ length: 33 }, (_, i) => `T${i}`) }).length === 1);
+check('validatePlans runs the favorites check', validatePlans({ favorites: [] }).length === 1);
+eq('merge unions, deduped and sorted', mergeFavorites({ nflTeams: ['KC'] }, { nflTeams: ['DAL', 'KC'] }), { nflTeams: ['DAL', 'KC'] });
+eq('replace mode (empty stored) takes the incoming list, so an un-favorite sticks',
+  mergePlans(emptyDocument(), { favorites: { nflTeams: ['DAL'] } }).favorites, { nflTeams: ['DAL'] });
+eq('an emptied list survives replace', mergePlans(emptyDocument(), { favorites: { nflTeams: [] } }).favorites, { nflTeams: [] });
 
 console.log(failures === 0 ? '\nAll plan tests passed.' : `\n${failures} test(s) failed.`);
 process.exit(failures === 0 ? 0 : 1);

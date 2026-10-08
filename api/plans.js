@@ -72,9 +72,17 @@ const MAX_TASKS = 300;
 const MAX_TASK_TEXT_LENGTH = 2000;
 const MAX_TASK_CATEGORY_LENGTH = 40;
 
+// Favorites: the manager's picks that tint the page (today only NFL teams,
+// highlighted and kept visible on the NFL tab's collapsed cards). One whole
+// value rather than an id-keyed map, so it fits neither PLAN_KINDS nor tasks
+// and gets its own validate/merge. Team codes are the page's depth-chart
+// abbreviations; shape-only here, like everything else in this file.
+const MAX_FAVORITE_NFL_TEAMS = 32;
+const MAX_TEAM_CODE_LENGTH = 4;
+
 // Exported for the unit test in scripts/test-plans.mjs. Vercel only ever
 // invokes the default export, so extra named exports cost nothing at runtime.
-export { validatePlans, mergePlans, emptyDocument, resolveStore, validateTasks, mergeTasks, PLANS_KEY };
+export { validatePlans, mergePlans, emptyDocument, resolveStore, validateTasks, mergeTasks, validateFavorites, mergeFavorites, PLANS_KEY };
 
 // The Upstash integration has injected its REST credentials under two
 // different prefixes over time, and which one a project gets depends on when
@@ -95,7 +103,7 @@ function resolveStore(env) {
 }
 
 function emptyDocument() {
-  return { contractPlans: {}, salaryPlans: {}, cutPlans: {}, backupPlans: {}, resultOverrides: {}, tasks: {}, updatedAt: null };
+  return { contractPlans: {}, salaryPlans: {}, cutPlans: {}, backupPlans: {}, resultOverrides: {}, tasks: {}, favorites: { nflTeams: [] }, updatedAt: null };
 }
 
 // Returns an array of human-readable problems — empty means valid.
@@ -144,7 +152,32 @@ function validatePlans(plans) {
     }
   }
   errors.push(...validateTasks(plans.tasks));
+  errors.push(...validateFavorites(plans.favorites));
   return errors;
+}
+
+function validateFavorites(favorites) {
+  if (favorites === undefined) return [];
+  if (favorites === null || typeof favorites !== 'object' || Array.isArray(favorites)) {
+    return ['favorites must be an object'];
+  }
+  const teams = favorites.nflTeams;
+  if (teams === undefined) return [];
+  if (!Array.isArray(teams)) return ['favorites.nflTeams must be an array'];
+  if (teams.length > MAX_FAVORITE_NFL_TEAMS) return [`favorites.nflTeams has more than ${MAX_FAVORITE_NFL_TEAMS} entries`];
+  if (teams.some((t) => typeof t !== 'string' || t.length === 0 || t.length > MAX_TEAM_CODE_LENGTH)) {
+    return [`favorites.nflTeams entries must be team codes up to ${MAX_TEAM_CODE_LENGTH} characters`];
+  }
+  return [];
+}
+
+// A union, like every other merge here: the merge mode only runs for a device
+// the store has never heard from, and a union can't destroy another device's
+// picks. An un-favorite travels in replace mode, which merges against an
+// empty document, so the incoming list simply is the result.
+function mergeFavorites(stored, incoming) {
+  const teams = new Set([...((incoming && incoming.nflTeams) || []), ...((stored && stored.nflTeams) || [])]);
+  return { nflTeams: [...teams].filter((t) => typeof t === 'string' && t).sort() };
 }
 
 // Shape-only, same posture as validatePlans above: what makes a good task
@@ -263,6 +296,7 @@ function mergePlans(stored, incoming) {
     out[kind] = merged;
   }
   out.tasks = mergeTasks((stored && stored.tasks) || {}, (incoming && incoming.tasks) || {});
+  out.favorites = mergeFavorites(stored && stored.favorites, incoming && incoming.favorites);
   return out;
 }
 

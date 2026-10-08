@@ -583,7 +583,8 @@
 		   .depth-chart-positions), which is what actually handles narrower
 		   viewports — this floor is about giving that inner wrap somewhere to
 		   start from at two-or-more-per-row rather than one. */
-		.depth-chart-teams {
+		.depth-chart-teams,
+		.depth-chart-fav-teams {
 			display: flex;
 			flex-wrap: wrap;
 			gap: 1rem;
@@ -1872,6 +1873,7 @@
 		}
 		/* The collapsed-card league summary; hidden while the card is open,
 		   since the table below says the same thing in full. */
+		.card:not(.card-collapsed) .nfl-fav-collapsed,
 		.card:not(.card-collapsed) .power-collapsed-summary,
 		.card:not(.card-collapsed) .needs-collapsed-summary,
 		.card:not(.card-collapsed) .bye-collapsed-summary {
@@ -2235,6 +2237,22 @@
 			border-radius: 8px;
 			padding: 0.55rem 0.65rem;
 			font-size: 0.85rem;
+		}
+		/* A favorite NFL team (Admin tab's Favorites card). */
+		.nfl-fav {
+			font-weight: 700;
+			color: var(--accent);
+		}
+		.favorites-group {
+			margin-top: 0.5rem;
+		}
+		.favorites-group .tabs {
+			justify-content: flex-start;
+		}
+		.favorites-group-label {
+			color: var(--muted);
+			font-size: 0.85em;
+			margin-bottom: 0.2rem;
 		}
 		.nfl-game-teams {
 			display: flex;
@@ -4617,6 +4635,52 @@
 			schedulePlanPush();
 		}
 
+		// --- Favorites -------------------------------------------------------
+		// The manager's favorite NFL teams, picked on the Admin tab's Favorites
+		// card. They ride the plans document (api/plans.js, Upstash) rather than
+		// the repo or bare localStorage: picks follow the manager between
+		// devices, and the repo is public. Logged out they are invisible, the
+		// same gate plans get — favoriteNflTeams() returns an empty set.
+		//
+		// Unlike a plan, a favorites list is one whole value, so there is no
+		// per-key pending log: FAVORITES_PENDING_KEY is a flag meaning "this
+		// device's list has not reached the store yet", and while it is set the
+		// local list beats whatever the store answers (adoptRemotePlans).
+		const FAVORITES_STORAGE_KEY = 'myfflFavorites';
+		const FAVORITES_PENDING_KEY = 'myfflFavoritesPending';
+		// Other spellings of a team that the scoreboard, MFL or Sleeper may
+		// send, folded to the depth-chart/standings abbreviation the Favorites
+		// card stores. Deliberately no 'LA' (Rams or Chargers), as in
+		// NFL_TEAM_ALIASES in providers.mjs.
+		const NFL_FAVORITE_ALIASES = { WAS: 'WSH', JAC: 'JAX', ARZ: 'ARI', GBP: 'GB', KCC: 'KC', LVR: 'LV', NEP: 'NE', NOS: 'NO', SFO: 'SF', TBB: 'TB' };
+		function favoriteTeamKey(abbr) {
+			const a = String(abbr || '').toUpperCase();
+			return NFL_FAVORITE_ALIASES[a] || a;
+		}
+		function loadFavorites() {
+			try {
+				const parsed = JSON.parse(localStorage.getItem(FAVORITES_STORAGE_KEY) || '{}');
+				return { nflTeams: Array.isArray(parsed.nflTeams) ? parsed.nflTeams.filter((t) => typeof t === 'string' && t) : [] };
+			} catch {
+				return { nflTeams: [] };
+			}
+		}
+		function writeFavoritesLocal(favorites) {
+			localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify({ nflTeams: (favorites && favorites.nflTeams) || [] }));
+		}
+		// Read once per render and passed down; an empty set is "no favorites",
+		// which every consumer treats as "change nothing".
+		function favoriteNflTeams() {
+			if (!isLoggedIn()) return new Set();
+			return new Set(loadFavorites().nflTeams.map(favoriteTeamKey));
+		}
+		function setFavoriteNflTeams(teams) {
+			const nflTeams = [...new Set(teams.map(favoriteTeamKey))].sort();
+			writeFavoritesLocal({ nflTeams });
+			localStorage.setItem(FAVORITES_PENDING_KEY, '1');
+			schedulePlanPush();
+		}
+
 		// --- Plan sync -------------------------------------------------------
 		//
 		// localStorage is per browser per device, so an iPad and a phone kept
@@ -4655,7 +4719,7 @@
 		let planPushGeneration = 0;
 
 		function localPlansDocument() {
-			return { contractPlans: loadContractPlans(), salaryPlans: loadSalaryPlans(), cutPlans: loadCutPlans(), backupPlans: loadBackupPlans(), resultOverrides: loadResultOverrides(), tasks: loadTasks() };
+			return { contractPlans: loadContractPlans(), salaryPlans: loadSalaryPlans(), cutPlans: loadCutPlans(), backupPlans: loadBackupPlans(), resultOverrides: loadResultOverrides(), tasks: loadTasks(), favorites: loadFavorites() };
 		}
 
 		function writePlansLocal(doc) {
@@ -4785,7 +4849,10 @@
 			const applied = applyPendingPlanEdits(remote, pending);
 			applied.tasks = applyPendingTaskEdits(remote && remote.tasks, pendingTasks);
 			writePlansLocal(applied);
-			return hasPendingPlanEdits(pending) || hasPendingTaskEdits(pendingTasks);
+			// An unpushed local list beats the store's; otherwise the store's wins.
+			const favoritesPending = !!localStorage.getItem(FAVORITES_PENDING_KEY);
+			if (!favoritesPending) writeFavoritesLocal(remote && remote.favorites);
+			return hasPendingPlanEdits(pending) || hasPendingTaskEdits(pendingTasks) || favoritesPending;
 		}
 
 		// The read half. GET rather than a merge POST because a merge is a union
@@ -4868,8 +4935,10 @@
 			// leaving an entry behind costs nothing; dropping one loses a change.
 			const pushed = localStorage.getItem(PLAN_PENDING_KEY);
 			const pushedTasks = localStorage.getItem(TASKS_PENDING_KEY);
+			const pushedFavorites = localStorage.getItem(FAVORITES_PENDING_KEY);
 			postPlans(mode).then((stored) => {
 				planPushGeneration++;
+				if (localStorage.getItem(FAVORITES_PENDING_KEY) === pushedFavorites) localStorage.removeItem(FAVORITES_PENDING_KEY);
 				if (localStorage.getItem(PLAN_PENDING_KEY) === pushed) clearPendingPlanEdits();
 				if (localStorage.getItem(TASKS_PENDING_KEY) === pushedTasks) clearPendingTaskEdits();
 				markPlanSyncDone();
@@ -12319,7 +12388,7 @@
 		// data-league-type for the sub-tab strip. Returns null when every
 		// position on this team got filtered down to nothing, rather than an
 		// empty card with a name and no tables.
-		function renderDepthChartTeamCard(abbr, team, ecrPools, ownership) {
+		function renderDepthChartTeamCard(abbr, team, ecrPools, ownership, favs = new Set(), collapseKey = `depthchart:${abbr}`) {
 			const positions = computeDepthChartTeamRows(team, ecrPools, ownership);
 			if (Object.keys(positions).length === 0) return null;
 
@@ -12341,9 +12410,11 @@
 			// rather than read off the heading node, since the abbreviation
 			// isn't otherwise printed anywhere on the card.
 			card.dataset.teamName = `${teamLabel} ${abbr}`.toLowerCase();
-			const heading = el('h2', { class: 'card-heading', text: teamLabel });
+			const isFav = favs.has(favoriteTeamKey(abbr));
+			if (isFav) card.classList.add('nfl-fav-team');
+			const heading = el('h2', { class: isFav ? 'card-heading nfl-fav' : 'card-heading', text: isFav ? `★ ${teamLabel}` : teamLabel });
 			card.appendChild(heading);
-			makeCollapsible(card, heading, `depthchart:${abbr}`);
+			makeCollapsible(card, heading, collapseKey);
 
 			const positionsWrap = el('div', { class: 'depth-chart-positions' });
 			for (const position of Object.keys(DEPTH_CHART_POSITION_LABELS)) {
@@ -12404,8 +12475,9 @@
 			const ecrPools = buildDepthChartEcrPools(data.rankingPools, data.depthChartEcrType);
 			const ownership = buildDepthChartOwnership(data.leagues);
 			const teamsWrap = el('div', { class: 'depth-chart-teams' });
+			const favs = favoriteNflTeams();
 			for (const [abbr, team] of Object.entries(data.depthCharts.teams)) {
-				const card = renderDepthChartTeamCard(abbr, team, ecrPools, ownership);
+				const card = renderDepthChartTeamCard(abbr, team, ecrPools, ownership, favs);
 				if (card) teamsWrap.appendChild(card);
 			}
 			if (teamsWrap.children.length === 0) return;
@@ -12449,6 +12521,20 @@
 			}
 
 			wrap.appendChild(teamsWrap);
+			// Collapsed view: copies of just the favorite teams' cards, outside
+			// teamsWrap so the division pills (which default to one division)
+			// can't hide them, and keyed separately so collapsing a copy
+			// doesn't half-update its twin. No data-league-type, which is what
+			// exempts them from those pills in updateVisibility.
+			const favSummary = el('div', { class: 'depth-chart-fav-teams nfl-fav-collapsed card-collapse-visible' });
+			for (const [abbr, team] of Object.entries(data.depthCharts.teams)) {
+				if (!favs.has(favoriteTeamKey(abbr))) continue;
+				const copy = renderDepthChartTeamCard(abbr, team, ecrPools, ownership, favs, `depthchart-fav:${abbr}`);
+				if (!copy) continue;
+				delete copy.dataset.leagueType;
+				favSummary.appendChild(copy);
+			}
+			if (favSummary.children.length > 0) wrap.appendChild(favSummary);
 			// Shown by updateVisibility exactly when every team card is
 			// filtered out (an unchecked-everything pill state, or a search
 			// matching no team) — otherwise an all-filtered Depth Charts card
@@ -12742,7 +12828,11 @@
 			pill.appendChild(body);
 		}
 
-		function renderNflGameRow(game) {
+		// `compact` is the collapsed-card favorites summary: just teams, score
+		// and status, with no ESPN link or stat drawer — that drawer's open
+		// state is keyed by game id, and a second copy of it in the same card
+		// would fight the real row's.
+		function renderNflGameRow(game, favs = new Set(), compact = false) {
 			const showScore = game.state !== 'pre' && game.away.score != null && game.home.score != null;
 			// Plain/gold/purple reads the same "hasn't played / live /
 			// finished" state as the score and status text below, just at a
@@ -12753,13 +12843,15 @@
 			const stateClass = game.state === 'in' ? ' nfl-game-live' : game.state === 'post' ? ' nfl-game-final' : '';
 			const row = el('div', { class: `nfl-game-row${stateClass}` });
 			const teams = el('div', { class: 'nfl-game-teams' });
-			teams.appendChild(el('span', { class: 'nfl-game-team', text: game.away.team }));
+			const teamClass = (abbr) => `nfl-game-team${favs.has(favoriteTeamKey(abbr)) ? ' nfl-fav' : ''}`;
+			teams.appendChild(el('span', { class: teamClass(game.away.team), text: game.away.team }));
 			if (showScore) teams.appendChild(el('span', { class: 'nfl-game-score', text: String(game.away.score) }));
 			teams.appendChild(el('span', { class: 'nfl-game-at', text: '@' }));
-			teams.appendChild(el('span', { class: 'nfl-game-team', text: game.home.team }));
+			teams.appendChild(el('span', { class: teamClass(game.home.team), text: game.home.team }));
 			if (showScore) teams.appendChild(el('span', { class: 'nfl-game-score', text: String(game.home.score) }));
 			row.appendChild(teams);
 			row.appendChild(el('div', { class: 'nfl-game-status', text: [formatGameWhen(game), game.broadcast].filter(Boolean).join(' · ') }));
+			if (compact) return row;
 
 			// Still the only place for kicking/team-defense stats (see
 			// nflBoxscorePlayerLines' own comment) — its own small line
@@ -12795,6 +12887,7 @@
 		// expanded: "no games scheduled this week" is itself informative
 		// there, not a stale leftover.
 		function renderNflScoreCard(id, heading, games, emptyText, subtitle, autoCollapseEmpty = false) {
+			const favs = favoriteNflTeams();
 			const card = el('div', { class: 'card nfl-card', 'data-view': 'nfl' });
 			const headingEl = el('h2', { class: 'card-heading', text: `${heading} (${games.length})` });
 			card.appendChild(headingEl);
@@ -12804,9 +12897,17 @@
 			if (games.length === 0) {
 				body.appendChild(el('div', { class: 'team card-collapse-visible', text: emptyText }));
 			} else {
-				for (const game of games) body.appendChild(renderNflGameRow(game));
+				for (const game of games) body.appendChild(renderNflGameRow(game, favs));
 			}
 			card.appendChild(body);
+			// What stays visible while the card is collapsed: only the games
+			// involving a favorite team (shown by CSS only when collapsed).
+			const favGames = favs.size === 0 ? [] : games.filter((g) => favs.has(favoriteTeamKey(g.away.team)) || favs.has(favoriteTeamKey(g.home.team)));
+			if (favGames.length > 0) {
+				const summary = el('div', { class: 'nfl-scoreboard nfl-fav-collapsed card-collapse-visible' });
+				for (const game of favGames) summary.appendChild(renderNflGameRow(game, favs, true));
+				card.appendChild(summary);
+			}
 			return card;
 		}
 
@@ -13002,7 +13103,7 @@
 		// column-label row and body are the `roster-group-content` it hides.
 		// Keyed per view as well as per box, so collapsing AFC East leaves
 		// the Conference view's AFC box alone.
-		function renderNflStandingsBox(label, teams, showDiv, ranked, view) {
+		function renderNflStandingsBox(label, teams, showDiv, ranked, view, favs = new Set()) {
 			const box = el('div', { class: 'nfl-standings-division roster-group' });
 			const table = el('table', { class: 'standings depth-chart-table nfl-standings-table' });
 			const columns = ['Team', 'W-L', ...(showDiv ? ['Div'] : []), 'PF', 'PA', 'Strk'];
@@ -13017,7 +13118,7 @@
 				const row = el('tr');
 				const nameCell = el('td', { title: t.name || t.abbr });
 				if (ranked) nameCell.appendChild(el('span', { class: 'nfl-standings-rank', text: String(i + 1) }));
-				nameCell.appendChild(el('span', { text: t.abbr }));
+				nameCell.appendChild(el('span', favs.has(favoriteTeamKey(t.abbr)) ? { class: 'nfl-fav', text: t.abbr } : { text: t.abbr }));
 				if (!ranked && t.seed != null) {
 					nameCell.appendChild(el('span', { class: 'nfl-standings-seed', title: `Conference seed ${t.seed}`, text: String(t.seed) }));
 				}
@@ -13034,6 +13135,7 @@
 			return box;
 		}
 		function renderNflStandingsBody(standings, view) {
+			const favs = favoriteNflTeams();
 			const groups = buildNflStandingsGroups(standings, view);
 			// Division record only earns a column when ESPN actually sent one
 			// for somebody. probe-nfl-standings.mjs RUN 1 found it on all 32
@@ -13041,7 +13143,7 @@
 			const showDiv = groups.some(([, teams]) => teams.some((t) => t.div));
 			const body = el('div', { class: `nfl-standings nfl-standings-by-${view}` });
 			for (const [label, teams] of groups) {
-				if (teams.length > 0) body.appendChild(renderNflStandingsBox(label, teams, showDiv, view === 'conference', view));
+				if (teams.length > 0) body.appendChild(renderNflStandingsBox(label, teams, showDiv, view === 'conference', view, favs));
 			}
 			return body;
 		}
@@ -13082,6 +13184,18 @@
 			bar.appendChild(buttonsEl);
 			card.appendChild(bar);
 			card.appendChild(body);
+			// Collapsed view: just the favorite teams, in the division order
+			// ESPN's own standings use, whichever grouping is open.
+			const favs = favoriteNflTeams();
+			if (favs.size > 0) {
+				const favTeams = [...buildNflStandingsByDivision(standings).values()].flat().filter((t) => favs.has(favoriteTeamKey(t.abbr)));
+				if (favTeams.length > 0) {
+					const showDiv = favTeams.some((t) => t.div);
+					const summary = el('div', { class: 'nfl-standings nfl-fav-collapsed card-collapse-visible' });
+					summary.appendChild(renderNflStandingsBox('Favorites', favTeams, showDiv, false, 'favorites', favs));
+					card.appendChild(summary);
+				}
+			}
 			return card;
 		}
 
@@ -13118,19 +13232,7 @@
 			if (t.projW == null || t.projL == null) return '\u2014';
 			return `${t.projW.toFixed(1)}-${t.projL.toFixed(1)}`;
 		}
-		function renderNflPowerCard(power) {
-			if (!power?.teams) return null;
-			const rows = buildNflPowerRows(power);
-			if (rows.length === 0) return null;
-			const card = el('div', { class: 'card nfl-card', 'data-view': 'nfl' });
-			card.dataset.nflPower = 'true';
-			const headingEl = el('h2', { class: 'card-heading', text: 'Power Index' });
-			card.appendChild(headingEl);
-			makeCollapsible(card, headingEl, 'nfl-power');
-			card.appendChild(el('p', {
-				class: 'nfl-power-note',
-				text: "ESPN's Football Power Index: each team's expected point margin against an average team on a neutral field.",
-			}));
+		function buildNflPowerTable(rows, favs) {
 			const columns = [
 				['Team', ''],
 				['W-L', 'Record'],
@@ -13149,11 +13251,11 @@
 			table.appendChild(el('thead', {}, [head]));
 			const tbody = el('tbody');
 			const oneDecimal = (v) => (v == null ? '\u2014' : v.toFixed(1));
-			rows.forEach((t, i) => {
+			rows.forEach((t) => {
 				const row = el('tr');
 				const nameCell = el('td', { title: t.name || t.abbr });
-				nameCell.appendChild(el('span', { class: 'nfl-standings-rank', text: String(t.rank ?? i + 1) }));
-				nameCell.appendChild(el('span', { text: t.abbr }));
+				nameCell.appendChild(el('span', { class: 'nfl-standings-rank', text: String(t.pos) }));
+				nameCell.appendChild(el('span', favs.has(favoriteTeamKey(t.abbr)) ? { class: 'nfl-fav', text: t.abbr } : { text: t.abbr }));
 				row.appendChild(nameCell);
 				row.appendChild(el('td', { class: 'standings-record', text: formatNflRecord(t) }));
 				row.appendChild(el('td', { class: 'nfl-power-fpi', text: formatNflPowerFpi(t.fpi) }));
@@ -13166,7 +13268,32 @@
 				tbody.appendChild(row);
 			});
 			table.appendChild(tbody);
-			card.appendChild(el('div', { class: 'nfl-power-box' }, [table]));
+			return table;
+		}
+		function renderNflPowerCard(power) {
+			if (!power?.teams) return null;
+			const rows = buildNflPowerRows(power);
+			if (rows.length === 0) return null;
+			const card = el('div', { class: 'card nfl-card', 'data-view': 'nfl' });
+			card.dataset.nflPower = 'true';
+			const headingEl = el('h2', { class: 'card-heading', text: 'Power Index' });
+			card.appendChild(headingEl);
+			makeCollapsible(card, headingEl, 'nfl-power');
+			card.appendChild(el('p', {
+				class: 'nfl-power-note',
+				text: "ESPN's Football Power Index: each team's expected point margin against an average team on a neutral field.",
+			}));
+			const favs = favoriteNflTeams();
+			// Overall position is stamped before any filtering, so the
+			// favorites-only summary keeps a team's real rank.
+			rows.forEach((t, i) => { t.pos = t.rank ?? i + 1; });
+			card.appendChild(el('div', { class: 'nfl-power-box' }, [buildNflPowerTable(rows, favs)]));
+			if (favs.size > 0) {
+				const favRows = rows.filter((t) => favs.has(favoriteTeamKey(t.abbr)));
+				if (favRows.length > 0) {
+					card.appendChild(el('div', { class: 'nfl-power-box nfl-fav-collapsed card-collapse-visible' }, [buildNflPowerTable(favRows, favs)]));
+				}
+			}
 			return card;
 		}
 
@@ -16428,9 +16555,52 @@
 			return card;
 		}
 
-		// All three Admin cards are always appended together, in this order —
+		// Favorites: pick the NFL teams the NFL tab highlights and keeps in view
+		// on its collapsed cards. A toggle saves at once through the plans
+		// document (setFavoriteNflTeams) — no Save button, like the Tasks card —
+		// and the button state is repainted in place; renderGrid then rebuilds
+		// the NFL cards, which are built once and read favorites at build time.
+		function renderFavoritesCard() {
+			const card = el('div', { class: 'card admin-favorites-card', 'data-view': 'admin', 'data-league-type': '' });
+			const selected = new Set(loadFavorites().nflTeams.map(favoriteTeamKey));
+			const headingText = el('span');
+			const heading = el('h2', { class: 'card-heading' }, [headingText]);
+			const paintCount = () => { headingText.textContent = `Favorites (${selected.size})`; };
+			paintCount();
+			card.appendChild(heading);
+			makeCollapsible(card, heading, 'admin-favorites');
+			card.appendChild(el('div', { class: 'team card-collapse-visible', text: 'NFL teams: highlighted on the NFL tab, and the only ones shown there while its cards are collapsed.' }));
+			const buttons = new Map();
+			for (const division of DEPTH_CHART_DIVISION_ORDER) {
+				const group = el('div', { class: 'favorites-group' });
+				group.appendChild(el('div', { class: 'favorites-group-label', text: SUBTAB_LABEL_OVERRIDES[division] || division }));
+				const row = el('div', { class: 'tabs subtabs', role: 'group', 'aria-label': `${division} favorites` });
+				for (const abbr of Object.keys(DEPTH_CHART_DIVISIONS).filter((a) => DEPTH_CHART_DIVISIONS[a] === division)) {
+					const on = selected.has(abbr);
+					const btn = el('button', { class: `tab-btn${on ? ' active' : ''}`, type: 'button', 'aria-pressed': String(on), text: abbr });
+					btn.addEventListener('click', () => {
+						if (selected.has(abbr)) selected.delete(abbr); else selected.add(abbr);
+						const now = selected.has(abbr);
+						btn.classList.toggle('active', now);
+						btn.setAttribute('aria-pressed', String(now));
+						paintCount();
+						setFavoriteNflTeams([...selected]);
+						// The NFL cards read favorites when built, so rebuild them —
+						// but only the grid, never this card's own buttons mid-click.
+						if (pageData) renderGrid();
+					});
+					buttons.set(abbr, btn);
+					row.appendChild(btn);
+				}
+				group.appendChild(row);
+				card.appendChild(group);
+			}
+			return card;
+		}
+
+		// All Admin cards are always appended together, in this order —
 		// Tasks first (the former Plans tab's only card), then Quick Links,
-		// then Leagues. renderAdminCard is still called before
+		// then Favorites, then Leagues. renderAdminCard is still called before
 		// renderQuickLinksCard, in spite of Quick Links now rendering first on
 		// screen — renderAdminCard is what kicks off loadLeagueConfig on a
 		// cold load (see its own body), and renderQuickLinksCard only ever
@@ -16441,6 +16611,7 @@
 			const adminCard = renderAdminCard();
 			const linksCard = renderQuickLinksCard();
 			if (linksCard) gridEl.appendChild(linksCard);
+			gridEl.appendChild(renderFavoritesCard());
 			gridEl.appendChild(adminCard);
 		}
 
