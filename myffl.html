@@ -2243,16 +2243,28 @@
 			font-weight: 700;
 			color: var(--accent);
 		}
-		.favorites-group {
-			margin-top: 0.5rem;
+		.favorites-summary {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 0.5rem;
+			margin-top: 0.25rem;
 		}
-		.favorites-group .tabs {
-			justify-content: flex-start;
+		.favorites-chips {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 0.35rem;
 		}
-		.favorites-group-label {
-			color: var(--muted);
+		.favorites-chip {
+			padding: 0.1rem 0.5rem;
+			border: 1px solid var(--border);
+			border-radius: 999px;
 			font-size: 0.85em;
-			margin-bottom: 0.2rem;
+		}
+		.favorites-picker {
+			flex-wrap: wrap;
+			justify-content: flex-start;
+			margin-top: 0.5rem;
 		}
 		.nfl-game-teams {
 			display: flex;
@@ -16556,45 +16568,52 @@
 		}
 
 		// Favorites: pick the NFL teams the NFL tab highlights and keeps in view
-		// on its collapsed cards. A toggle saves at once through the plans
+		// on its collapsed cards. At rest the card is one line of the chosen
+		// teams plus an Edit button; Edit opens a single compact grid of all 32
+		// (division order, no labels). A toggle saves at once through the plans
 		// document (setFavoriteNflTeams) — no Save button, like the Tasks card —
-		// and the button state is repainted in place; renderGrid then rebuilds
-		// the NFL cards, which are built once and read favorites at build time.
+		// and renderGrid then rebuilds the NFL cards, which read favorites when
+		// built. That rebuild recreates this card too, so whether the picker is
+		// open lives in a variable, not in the DOM.
+		let favoritesPickerOpen = false;
 		function renderFavoritesCard() {
 			const card = el('div', { class: 'card admin-favorites-card', 'data-view': 'admin', 'data-league-type': '' });
 			const selected = new Set(loadFavorites().nflTeams.map(favoriteTeamKey));
-			const headingText = el('span');
-			const heading = el('h2', { class: 'card-heading' }, [headingText]);
-			const paintCount = () => { headingText.textContent = `Favorites (${selected.size})`; };
-			paintCount();
+			const heading = el('h2', { class: 'card-heading', text: `Favorites (${selected.size})` });
 			card.appendChild(heading);
 			makeCollapsible(card, heading, 'admin-favorites');
-			card.appendChild(el('div', { class: 'team card-collapse-visible', text: 'NFL teams: highlighted on the NFL tab, and the only ones shown there while its cards are collapsed.' }));
-			const buttons = new Map();
+
+			// Visible even when the card is collapsed, so the picks stay readable.
+			const summary = el('div', { class: 'favorites-summary card-collapse-visible' });
+			const chips = el('div', { class: 'favorites-chips' });
+			if (selected.size === 0) chips.appendChild(el('span', { class: 'team', text: 'No favorite NFL teams selected.' }));
+			for (const abbr of [...selected].sort()) chips.appendChild(el('span', { class: 'favorites-chip nfl-fav', text: abbr }));
+			summary.appendChild(chips);
+			const editBtn = el('button', { type: 'button', class: 'admin-add-btn', 'aria-expanded': String(favoritesPickerOpen), text: favoritesPickerOpen ? 'Done' : 'Edit' });
+			summary.appendChild(editBtn);
+			card.appendChild(summary);
+
+			const picker = el('div', { class: `tabs subtabs favorites-picker${favoritesPickerOpen ? '' : ' hidden'}`, role: 'group', 'aria-label': 'Favorite NFL teams' });
 			for (const division of DEPTH_CHART_DIVISION_ORDER) {
-				const group = el('div', { class: 'favorites-group' });
-				group.appendChild(el('div', { class: 'favorites-group-label', text: SUBTAB_LABEL_OVERRIDES[division] || division }));
-				const row = el('div', { class: 'tabs subtabs', role: 'group', 'aria-label': `${division} favorites` });
 				for (const abbr of Object.keys(DEPTH_CHART_DIVISIONS).filter((a) => DEPTH_CHART_DIVISIONS[a] === division)) {
 					const on = selected.has(abbr);
-					const btn = el('button', { class: `tab-btn${on ? ' active' : ''}`, type: 'button', 'aria-pressed': String(on), text: abbr });
+					const btn = el('button', { class: `tab-btn${on ? ' active' : ''}`, type: 'button', 'aria-pressed': String(on), title: SUBTAB_LABEL_OVERRIDES[division] || division, text: abbr });
 					btn.addEventListener('click', () => {
 						if (selected.has(abbr)) selected.delete(abbr); else selected.add(abbr);
-						const now = selected.has(abbr);
-						btn.classList.toggle('active', now);
-						btn.setAttribute('aria-pressed', String(now));
-						paintCount();
 						setFavoriteNflTeams([...selected]);
-						// The NFL cards read favorites when built, so rebuild them —
-						// but only the grid, never this card's own buttons mid-click.
 						if (pageData) renderGrid();
+						else { btn.classList.toggle('active'); }
 					});
-					buttons.set(abbr, btn);
-					row.appendChild(btn);
+					picker.appendChild(btn);
 				}
-				group.appendChild(row);
-				card.appendChild(group);
 			}
+			card.appendChild(picker);
+			editBtn.addEventListener('click', () => {
+				favoritesPickerOpen = !favoritesPickerOpen;
+				picker.classList.toggle('hidden', !favoritesPickerOpen);
+				editBtn.textContent = favoritesPickerOpen ? 'Done' : 'Edit';
+				editBtn.setAttribute('aria-expanded', String(favoritesPickerOpen));
+			});
 			return card;
 		}
 
