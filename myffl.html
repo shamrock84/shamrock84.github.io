@@ -6789,7 +6789,9 @@
 		// card auto-collapsing itself when there's nothing worth looking at
 		// (see renderNflScoreCard's 'nfl-now-playing' call and
 		// renderNowPlayingCard).
-		function makeCollapsible(card, heading, key, forceCollapsed = false) {
+		// `onCollapse`, when given, runs each time a click collapses the card
+		// (never on expand, never for the initial render state).
+		function makeCollapsible(card, heading, key, forceCollapsed = false, onCollapse = null) {
 			const collapsed = forceCollapsed || isCardCollapsed(key);
 			card.classList.toggle('card-collapsed', collapsed);
 			const toggle = el('button', {
@@ -12911,7 +12913,11 @@
 			const card = el('div', { class: 'card nfl-card', 'data-view': 'nfl' });
 			const headingEl = el('h2', { class: 'card-heading', text: `${heading} (${games.length})` });
 			card.appendChild(headingEl);
-			makeCollapsible(card, headingEl, id, autoCollapseEmpty && games.length === 0);
+			// Collapsing the card also closes every Show detail drawer in it
+			// (clicking each open toggle, which clears its stored open key), so
+			// re-expanding shows a tidy list rather than stale open drawers.
+			const closeDrawers = () => card.querySelectorAll('.nfl-boxscore-toggle[aria-expanded="true"]').forEach((t) => t.click());
+			makeCollapsible(card, headingEl, id, autoCollapseEmpty && games.length === 0, closeDrawers);
 			if (subtitle) card.appendChild(el('div', { class: 'team card-collapse-visible', text: subtitle }));
 			const body = el('div', { class: 'nfl-scoreboard' });
 			if (games.length === 0) {
