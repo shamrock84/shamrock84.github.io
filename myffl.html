@@ -2283,6 +2283,16 @@
 		}
 		.nfl-game-team {
 			font-weight: 700;
+			white-space: nowrap;
+		}
+		/* Desktop only: the favorite star adds ~1ch per side, which wrapped
+		   "★ KC" when many matchups squeezed the cards to their minimum.
+		   Phones keep 135px so two still fit a 360px screen. */
+		@media (min-width: 40rem) {
+			.nfl-game-row {
+				flex-basis: 165px;
+				min-width: 150px;
+			}
 		}
 		.nfl-game-score {
 			color: var(--muted);
