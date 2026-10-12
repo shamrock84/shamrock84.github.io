@@ -7,8 +7,9 @@
 //   * a trailing matchup with a player still to play is listed with the
 //     smallest score that strictly beats the gap (a tie is not a win).
 //   * a lead is listed only while the opponent has someone left.
-//   * decided matchups drop: trailing with nobody left, leading with the
-//     opponent done, draft-only leagues, byes (no game in the map).
+//   * draft-only leagues and byes (no game in the map) drop; a matchup
+//     with one side finished but not 0/100 stays in play and names the
+//     other side's players needing NEGATIVE points to flip it.
 //   * best-ball leagues (tag BestBall) count bench players as remaining
 //     on both sides; other leagues do not.
 //   * a lead the opponent cannot touch is "already won" and an
@@ -167,16 +168,22 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	assert.equal(e[0].oppNeeded, 10.01);
 	assert.equal(e[0].needed, null);
 	const leadClinched = lg('2', '120.00', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], [pl('c', 'Opp Guy', 'KC', 5)]);
-	assert.equal(ctx.computeMondayNightMania([leadClinched], games).live.length, 0);
+	// Opponent done but I still have a player: stays in play (not 100%),
+	// the risk being only my own player scoring negative.
+	assert.equal(ctx.computeMondayNightMania([leadClinched], games).live[0].myRisk, 10.01);
 }
 
 {
 	const ctx = makeContext();
-	// Trailing with nobody left, bye players, and draft-only all drop
-	// (winProb 30 here: not decided by the estimate, nothing left to add).
+	// Draft-only drops; trailing with nobody left but the opponent still to
+	// play stays in play (winProb 30, not 0), through the opponent going
+	// negative. Bye players are not remaining.
 	const lost = lg('1', '90.00', '110.00', [pl('b', 'Done Guy', 'KC', 20), pl('d', 'Bye Guy', 'BYE', 0)], [pl('c', 'Opp Guy', 'NYJ', 5)]);
 	const draft = lg('2', '90.00', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], [], { type: 'draftonly' });
-	assert.equal(ctx.computeMondayNightMania([lost, draft], games).live.length, 0);
+	const r = ctx.computeMondayNightMania([lost, draft], games);
+	assert.equal(r.live.length, 1);
+	assert.equal(r.live[0].oppMustLose, 20.01);
+	assert.equal(r.live[0].myLeft.length, 0);
 }
 
 {
@@ -285,6 +292,33 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	assert.deepEqual(plain(r.won.map((l) => l.id)), ['w']);
 	assert.deepEqual(plain(r.lost.map((l) => l.id)), ['l']);
 	assert.deepEqual(plain(r.live.map((e) => e.league.id)), ['m']);
+}
+
+{
+	const ctx = makeContext(LOGGED_IN);
+	setState(ctx, games);
+	// 1% and nobody left for me: alive only through the opponent's
+	// remaining player scoring negative points, and said so.
+	const down = lg('1', '90.00', '100.00', [pl('b', 'Done Guy', 'KC', 20)], [pl('c', 'Opp Guy', 'NYJ', 5)]);
+	down.scoring.teams[0].winProb = 1;
+	const r = ctx.computeMondayNightMania([down], games);
+	assert.equal(r.lost.length, 0);
+	assert.equal(r.live.length, 1);
+	assert.equal(r.live[0].needed, null);
+	assert.equal(r.live[0].oppMustLose, 10.01);
+	assert.match(fullText(ctx.renderMondayNightManiaCard([down], MONDAY)), /Down 10\.00 — nobody left to play; need the opponent's remaining player to score −10\.01 or worse/);
+	// 99% with the opponent done: lost only if my own player goes negative.
+	const up = lg('2', '100.00', '90.00', [pl('a', 'Tyreek Hill', 'MIA', null)], [pl('c', 'Opp Guy', 'KC', 5)]);
+	up.scoring.teams[0].winProb = 99;
+	const r2 = ctx.computeMondayNightMania([up], games);
+	assert.equal(r2.won.length, 0);
+	assert.equal(r2.live[0].myRisk, 10.01);
+	assert.match(fullText(ctx.renderMondayNightManiaCard([up], MONDAY)), /Up 10\.00 — opponent is done; lost only if your remaining player score −10\.01 or worse/);
+	// A tie with nobody left on either side is neither in play nor decided.
+	const dead = lg('3', '100.00', '100.00', [pl('b', 'Done Guy', 'KC', 20)], [pl('c', 'Opp Guy', 'KC', 5)]);
+	dead.scoring.teams[0].winProb = 50;
+	const r3 = ctx.computeMondayNightMania([dead], games);
+	assert.equal(r3.live.length + r3.won.length + r3.lost.length, 0);
 }
 
 console.log('test-monday-night-mania: ok');

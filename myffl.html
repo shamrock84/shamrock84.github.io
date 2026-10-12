@@ -9832,8 +9832,12 @@
 		// nothing is left to play. A matchup with no winProb (the provider or
 		// the estimate did not answer) falls back to the same conclusion
 		// drawn from the scores and who has yet to play. Otherwise a matchup
-		// stays in play unless I trail with no one left to add points, or the
-		// game is a tie nobody can move (only a tiebreaker).
+		// stays in play unless no one is left on either side (a tie there is
+		// only a tiebreaker). With one side finished, the other side's
+		// remaining players decide it by scoring NEGATIVE points: trailing
+		// with no one left, I need the opponent's players to go below zero by
+		// more than the gap; leading with the opponent done, only my own
+		// players going that far below zero costs me.
 		//
 		// Best-ball leagues (tag 'BestBall') also count the bench: the
 		// platform re-picks the best lineup from the whole roster, so a bench
@@ -9894,10 +9898,13 @@
 				const winProb = mine.winProb == null ? null : Number(mine.winProb);
 				if (winProb === 100 || (winProb == null && margin > 0 && oppLeft.length === 0)) { won.push(league); continue; }
 				if (winProb === 0 || (winProb == null && margin < 0 && myLeft.length === 0)) { lost.push(league); continue; }
-				// Nothing for me to add and nothing to be overtaken by: a tie
-				// (tiebreaker) or a trailing team the estimate still rounds up.
-				if (margin <= 0 && myLeft.length === 0) continue;
-				if (margin > 0 && oppLeft.length === 0) continue;
+				// Nobody left on either side: nothing can move, so a tie here is
+				// only a tiebreaker. Anything else short of 0/100 stays in play
+				// even when one side has no one left — then the only way the
+				// result flips is the OTHER side's remaining players scoring
+				// negative points (a turnover-heavy defense, a fumbling QB),
+				// which is real and is shown as such.
+				if (myLeft.length === 0 && oppLeft.length === 0) continue;
 				out.push({
 					league,
 					mine,
@@ -9907,8 +9914,14 @@
 					oppLeft,
 					// Points I must add to win (null while leading), or the points
 					// the opponent must add to pass me (null otherwise).
-					needed: margin <= 0 ? mondayPointsToPass(-margin) : null,
-					oppNeeded: margin > 0 ? mondayPointsToPass(margin) : null,
+					needed: margin <= 0 && myLeft.length > 0 ? mondayPointsToPass(-margin) : null,
+					oppNeeded: margin > 0 && oppLeft.length > 0 ? mondayPointsToPass(margin) : null,
+					// Trailing (or tied) with no one left to play: the opponent's
+					// remaining players must combine for this many points BELOW zero.
+					oppMustLose: margin <= 0 && myLeft.length === 0 ? mondayPointsToPass(-margin) : null,
+					// Leading with the opponent done: my remaining players must
+					// combine for this many points below zero to cost me the lead.
+					myRisk: margin > 0 && oppLeft.length === 0 ? mondayPointsToPass(margin) : null,
 				});
 			}
 			// Likeliest first; a team with no win probability sinks.
@@ -9978,8 +9991,13 @@
 					summary.appendChild(el('span', { class: 'monday-trailing', text: e.margin === 0 ? 'Tied' : `Down ${(-e.margin).toFixed(2)}` }));
 					const combined = e.myLeft.length > 1 ? ' combined' : '';
 					summary.appendChild(document.createTextNode(` — need ${e.needed.toFixed(2)}${combined} to win`));
-				} else {
+				} else if (e.oppMustLose != null) {
+					summary.appendChild(el('span', { class: 'monday-trailing', text: e.margin === 0 ? 'Tied' : `Down ${(-e.margin).toFixed(2)}` }));
+					summary.appendChild(document.createTextNode(` — nobody left to play; need the opponent's remaining player${e.oppLeft.length === 1 ? '' : 's'} to score −${e.oppMustLose.toFixed(2)} or worse${e.oppLeft.length > 1 ? ' combined' : ''}`));
+				} else if (e.oppNeeded != null) {
 					summary.appendChild(document.createTextNode(`Up ${e.margin.toFixed(2)} — safe unless the opponent adds ${e.oppNeeded.toFixed(2)}`));
+				} else {
+					summary.appendChild(document.createTextNode(`Up ${e.margin.toFixed(2)} — opponent is done; lost only if your remaining player${e.myLeft.length === 1 ? '' : 's'} score −${e.myRisk.toFixed(2)} or worse${e.myLeft.length > 1 ? ' combined' : ''}`));
 				}
 				const meta = scoringMetaLine(e.mine);
 				if (meta) summary.appendChild(el('div', { class: 'scoring-matchup-meta', text: meta }));
@@ -9994,7 +10012,8 @@
 					if (game) name.appendChild(el('div', { class: 'scoring-matchup-meta', text: game }));
 					row.appendChild(name);
 					const scored = p.points == null ? '' : `${Number(p.points).toFixed(2)} so far · `;
-					const need = e.needed != null ? `${e.needed.toFixed(2)}${e.myLeft.length > 1 ? ' alone' : ''}` : 'no help needed';
+					const need = e.needed != null ? `${e.needed.toFixed(2)}${e.myLeft.length > 1 ? ' alone' : ''}`
+						: e.myRisk != null ? `stay above −${e.myRisk.toFixed(2)}` : 'no help needed';
 					const cell = el('div', { class: 'monday-need' });
 					cell.appendChild(el('div', { text: need }));
 					if (scored) cell.appendChild(el('div', { class: 'scoring-matchup-meta', text: scored.replace(/ · $/, '') }));
@@ -10003,7 +10022,7 @@
 				}
 				if (e.oppLeft.length > 0) {
 					const opp = el('div', { class: 'monday-opponent' });
-					opp.appendChild(document.createTextNode('Opponent still has: '));
+					opp.appendChild(document.createTextNode(e.oppMustLose != null ? 'Opponent still to play: ' : 'Opponent still has: '));
 					e.oppLeft.forEach((p, i) => {
 						if (i > 0) opp.appendChild(document.createTextNode(', '));
 						opp.appendChild(document.createTextNode(`${abbreviatePlayerName(p.name, p.position) || `#${p.id || '?'}`}${p.bench ? ' (bench)' : ''}`));
