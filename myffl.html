@@ -9997,7 +9997,7 @@
 				} else if (e.oppNeeded != null) {
 					summary.appendChild(document.createTextNode(`Up ${e.margin.toFixed(2)} — safe unless the opponent adds ${e.oppNeeded.toFixed(2)}`));
 				} else {
-					summary.appendChild(document.createTextNode(`Up ${e.margin.toFixed(2)} — opponent is done; lost only if your remaining player${e.myLeft.length === 1 ? '' : 's'} score −${e.myRisk.toFixed(2)} or worse${e.myLeft.length > 1 ? ' combined' : ''}`));
+					summary.appendChild(document.createTextNode(`Up ${e.margin.toFixed(2)} — opponent is done; lost only if your remaining player${e.myLeft.length === 1 ? ' scores' : 's score'} −${e.myRisk.toFixed(2)} or worse${e.myLeft.length > 1 ? ' combined' : ''}`));
 				}
 				const meta = scoringMetaLine(e.mine);
 				if (meta) summary.appendChild(el('div', { class: 'scoring-matchup-meta', text: meta }));
