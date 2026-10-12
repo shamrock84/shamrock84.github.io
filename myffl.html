@@ -12866,10 +12866,11 @@
 			const row = el('div', { class: `nfl-game-row${stateClass}` });
 			const teams = el('div', { class: 'nfl-game-teams' });
 			const teamClass = (abbr) => `nfl-game-team${favs.has(favoriteTeamKey(abbr)) ? ' nfl-fav' : ''}`;
-			teams.appendChild(el('span', { class: teamClass(game.away.team), text: game.away.team }));
+			const teamText = (abbr) => (favs.has(favoriteTeamKey(abbr)) ? `★ ${abbr}` : abbr);
+			teams.appendChild(el('span', { class: teamClass(game.away.team), text: teamText(game.away.team) }));
 			if (showScore) teams.appendChild(el('span', { class: 'nfl-game-score', text: String(game.away.score) }));
 			teams.appendChild(el('span', { class: 'nfl-game-at', text: '@' }));
-			teams.appendChild(el('span', { class: teamClass(game.home.team), text: game.home.team }));
+			teams.appendChild(el('span', { class: teamClass(game.home.team), text: teamText(game.home.team) }));
 			if (showScore) teams.appendChild(el('span', { class: 'nfl-game-score', text: String(game.home.score) }));
 			row.appendChild(teams);
 			row.appendChild(el('div', { class: 'nfl-game-status', text: [formatGameWhen(game), game.broadcast].filter(Boolean).join(' · ') }));
@@ -13144,7 +13145,7 @@
 				const row = el('tr');
 				const nameCell = el('td', { title: t.name || t.abbr });
 				if (ranked) nameCell.appendChild(el('span', { class: 'nfl-standings-rank', text: String(i + 1) }));
-				nameCell.appendChild(el('span', favs.has(favoriteTeamKey(t.abbr)) ? { class: 'nfl-fav', text: t.abbr } : { text: t.abbr }));
+				nameCell.appendChild(el('span', favs.has(favoriteTeamKey(t.abbr)) ? { class: 'nfl-fav', text: `★ ${t.abbr}` } : { text: t.abbr }));
 				if (!ranked && t.seed != null) {
 					nameCell.appendChild(el('span', { class: 'nfl-standings-seed', title: `Conference seed ${t.seed}`, text: String(t.seed) }));
 				}
@@ -13281,7 +13282,7 @@
 				const row = el('tr');
 				const nameCell = el('td', { title: t.name || t.abbr });
 				nameCell.appendChild(el('span', { class: 'nfl-standings-rank', text: String(t.pos) }));
-				nameCell.appendChild(el('span', favs.has(favoriteTeamKey(t.abbr)) ? { class: 'nfl-fav', text: t.abbr } : { text: t.abbr }));
+				nameCell.appendChild(el('span', favs.has(favoriteTeamKey(t.abbr)) ? { class: 'nfl-fav', text: `★ ${t.abbr}` } : { text: t.abbr }));
 				row.appendChild(nameCell);
 				row.appendChild(el('td', { class: 'standings-record', text: formatNflRecord(t) }));
 				row.appendChild(el('td', { class: 'nfl-power-fpi', text: formatNflPowerFpi(t.fpi) }));
