@@ -1976,7 +1976,7 @@
 		.watchlist-card {
 			grid-column: 1 / -1;
 		}
-		/* Monday Night Winner — one bordered box per league matchup that is
+		/* Monday Night Mania — one bordered box per league matchup that is
 		   still undecided, full width like the cards above it. Its own
 		   classes rather than .watchlist-*, per the convention for two
 		   features that share a shape. */
@@ -2028,6 +2028,10 @@
 			flex-shrink: 0;
 			font-variant-numeric: tabular-nums;
 			font-weight: 700;
+		}
+		.monday-decided {
+			margin-top: 0.75rem;
+			font-size: 0.85rem;
 		}
 		.monday-opponent {
 			padding: 0.3rem 0.5rem;
@@ -9803,7 +9807,7 @@
 			return card;
 		}
 
-		// --- Scoring tab: the Monday Night Winner card ---
+		// --- Scoring tab: the Monday Night Mania card ---
 		//
 		// Shown only on a Monday during the NFL season (mondayCardIsActive),
 		// the one day a matchup is routinely left hanging on a last game or
@@ -9823,15 +9827,32 @@
 		//
 		// A matchup drops off once it cannot change hands: trailing with no
 		// one left to play is lost, leading with the opponent done is won, and
-		// a tie I cannot add to is only a tiebreaker. Best-ball leagues are
-		// treated like any other here (their bench is not counted), so a
-		// bench call-up does not appear.
+		// a tie I cannot add to is only a tiebreaker.
+		//
+		// Best-ball leagues (tag 'BestBall') also count the bench: the
+		// platform re-picks the best lineup from the whole roster, so a bench
+		// player yet to play can still displace a starter, and one who has
+		// played can no longer be ignored. For those leagues the remaining
+		// players on both sides include bench players (flagged `bench`, shown
+		// as such). The target is still the gap in the provider's own score;
+		// a bench player only helps if he outscores the starter he displaces,
+		// which the row says rather than pretending to model.
+		//
+		// Decided matchups are not just dropped: a lead the opponent can no
+		// longer touch is "already won" and a deficit I can no longer close is
+		// "already lost", listed by nickname in the summary at the bottom.
 		function mondayCardIsActive(now = new Date()) {
 			return now.getDay() === 1 && nflInSeason(now);
 		}
 
-		function mondayRemainingPlayers(team, games) {
-			return (team.players || []).filter((p) => {
+		function mondayIsBestBall(league) {
+			return Array.isArray(league.tags) && league.tags.includes('BestBall');
+		}
+
+		// Starters, then (best ball only) bench players tagged `bench: true`.
+		function mondayRemainingPlayers(team, games, includeBench) {
+			const pool = [...(team.players || []), ...(includeBench ? (team.bench || []).map((p) => ({ ...p, bench: true })) : [])];
+			return pool.filter((p) => {
 				const state = p.team ? games[p.team]?.state : null;
 				return state === 'pre' || state === 'in';
 			});
@@ -9842,8 +9863,12 @@
 			return (Math.floor(gap * 100 + 1e-6) + 1) / 100;
 		}
 
-		function computeMondayNightWinner(leagues, games = liveGames) {
+		// { live, won, lost }: live matchups still in play (likeliest first),
+		// and the leagues already decided either way.
+		function computeMondayNightMania(leagues, games = liveGames) {
 			const out = [];
+			const won = [];
+			const lost = [];
 			for (const league of leagues || []) {
 				if (league.type === 'draftonly') continue;
 				const teams = league.scoring?.teams || [];
@@ -9856,11 +9881,14 @@
 				const myScore = Number(mine.score);
 				const oppScore = Number(opp.score);
 				if (!Number.isFinite(myScore) || !Number.isFinite(oppScore)) continue;
-				const myLeft = mondayRemainingPlayers(mine, games);
-				const oppLeft = mondayRemainingPlayers(opp, games);
+				const bestBall = mondayIsBestBall(league);
+				const myLeft = mondayRemainingPlayers(mine, games, bestBall);
+				const oppLeft = mondayRemainingPlayers(opp, games, bestBall);
 				const margin = Math.round((myScore - oppScore) * 100) / 100;
+				if (margin < 0 && myLeft.length === 0) { lost.push(league); continue; }
+				if (margin > 0 && oppLeft.length === 0) { won.push(league); continue; }
+				// A tie neither side can still move is a tiebreaker, not a result.
 				if (margin <= 0 && myLeft.length === 0) continue;
-				if (margin > 0 && oppLeft.length === 0) continue;
 				out.push({
 					league,
 					mine,
@@ -9876,13 +9904,13 @@
 			}
 			// Likeliest first; a team with no win probability sinks.
 			out.sort((a, b) => (b.mine.winProb ?? -1) - (a.mine.winProb ?? -1));
-			return out;
+			return { live: out, won, lost };
 		}
 
-		function renderMondayNightWinnerCard(leagues, now = new Date()) {
+		function renderMondayNightManiaCard(leagues, now = new Date()) {
 			if (!isLoggedIn() || !mondayCardIsActive(now)) return null;
 			const card = el('div', { class: 'card monday-card', id: 'monday-night', 'data-view': 'scoring', 'data-league-type': '' });
-			const heading = el('h2', { class: 'card-heading', text: 'Monday Night Winner' });
+			const heading = el('h2', { class: 'card-heading', text: 'Monday Night Mania' });
 			card.appendChild(heading);
 
 			if (!liveScoringAttempted) {
@@ -9891,10 +9919,31 @@
 				return card;
 			}
 
-			const entries = computeMondayNightWinner(leagues, liveGames);
+			const { live: entries, won, lost } = computeMondayNightMania(leagues, liveGames);
 			makeCollapsible(card, heading, 'monday-night', entries.length === 0);
+			// Last element of the card, visible even collapsed (an empty card
+			// collapses itself, and this is then the only thing worth reading).
+			const appendDecided = () => {
+				const names = (list) => list.map(quickLinkLabelForLeague).join(', ');
+				if (won.length === 0 && lost.length === 0) return;
+				const box = el('div', { class: 'monday-decided card-collapse-visible' });
+				if (won.length > 0) {
+					const line = el('div');
+					line.appendChild(el('strong', { text: 'Already won: ' }));
+					line.appendChild(document.createTextNode(names(won)));
+					box.appendChild(line);
+				}
+				if (lost.length > 0) {
+					const line = el('div');
+					line.appendChild(el('strong', { class: 'monday-trailing', text: 'Already lost: ' }));
+					line.appendChild(document.createTextNode(names(lost)));
+					box.appendChild(line);
+				}
+				card.appendChild(box);
+			};
 			if (entries.length === 0) {
 				card.appendChild(el('div', { class: 'team card-collapse-visible', text: 'No matchups left to decide.' }));
+				appendDecided();
 				return card;
 			}
 			card.appendChild(el('div', {
@@ -9931,6 +9980,7 @@
 					const row = el('div', { class: 'monday-row' });
 					const name = el('div', { class: 'monday-row-name' });
 					name.appendChild(playerLine(p));
+					if (p.bench) name.appendChild(el('div', { class: 'scoring-matchup-meta', text: 'Bench — counts only if he outscores a starter' }));
 					const game = playerGameLine(p.team);
 					if (game) name.appendChild(el('div', { class: 'scoring-matchup-meta', text: game }));
 					row.appendChild(name);
@@ -9947,13 +9997,14 @@
 					opp.appendChild(document.createTextNode('Opponent still has: '));
 					e.oppLeft.forEach((p, i) => {
 						if (i > 0) opp.appendChild(document.createTextNode(', '));
-						opp.appendChild(document.createTextNode(abbreviatePlayerName(p.name, p.position) || `#${p.id || '?'}`));
+						opp.appendChild(document.createTextNode(`${abbreviatePlayerName(p.name, p.position) || `#${p.id || '?'}`}${p.bench ? ' (bench)' : ''}`));
 					});
 					box.appendChild(opp);
 				}
 				wrap.appendChild(box);
 			}
 			card.appendChild(wrap);
+			appendDecided();
 			return card;
 		}
 
@@ -15170,7 +15221,7 @@
 			// own comment for why DOM order is what actually puts it there.
 			const watchlist = renderGameTimeWatchlistCard(pageData.leagues, pageData.year);
 			if (watchlist) gridEl.appendChild(watchlist);
-			const mondayNight = renderMondayNightWinnerCard(pageData.leagues);
+			const mondayNight = renderMondayNightManiaCard(pageData.leagues);
 			if (mondayNight) gridEl.appendChild(mondayNight);
 			const nowPlaying = renderNowPlayingCard(pageData.leagues);
 			if (nowPlaying) gridEl.appendChild(nowPlaying);
@@ -17388,7 +17439,7 @@
 			// actually puts it first among data-view="scoring" cards.
 			const watchlist = renderGameTimeWatchlistCard(data.leagues, data.year);
 			if (watchlist) gridEl.appendChild(watchlist);
-			const mondayNight = renderMondayNightWinnerCard(data.leagues);
+			const mondayNight = renderMondayNightManiaCard(data.leagues);
 			if (mondayNight) gridEl.appendChild(mondayNight);
 			const nowPlaying = renderNowPlayingCard(data.leagues);
 			if (nowPlaying) gridEl.appendChild(nowPlaying);

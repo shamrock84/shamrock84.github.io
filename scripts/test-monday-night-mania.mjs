@@ -1,5 +1,5 @@
-// Unit test for the Scoring tab's Monday Night Winner card in myffl.html
-// (computeMondayNightWinner / renderMondayNightWinnerCard).
+// Unit test for the Scoring tab's Monday Night Mania card in myffl.html
+// (computeMondayNightMania / renderMondayNightManiaCard).
 //
 // Pinned here:
 //   * the card exists only on a Monday inside the NFL season, and only
@@ -9,6 +9,11 @@
 //   * a lead is listed only while the opponent has someone left.
 //   * decided matchups drop: trailing with nobody left, leading with the
 //     opponent done, draft-only leagues, byes (no game in the map).
+//   * best-ball leagues (tag BestBall) count bench players as remaining
+//     on both sides; other leagues do not.
+//   * a lead the opponent cannot touch is "already won" and an
+//     unclosable deficit "already lost", listed by nickname at the bottom
+//     of the card (also when nothing is left in play).
 //   * "remaining" means the game is pre or in progress.
 
 import assert from 'node:assert/strict';
@@ -136,7 +141,7 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	const ctx = makeContext();
 	// Trailing 98.40 to 110.00: need 11.61, one player left.
 	const l = lg('1', '98.40', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null), pl('b', 'Done Guy', 'KC', 20)], [pl('c', 'Opp Guy', 'NYJ', 5)]);
-	const e = ctx.computeMondayNightWinner([l], games);
+	const e = ctx.computeMondayNightMania([l], games).live;
 	assert.equal(e.length, 1);
 	assert.equal(e[0].needed, 11.61);
 	assert.equal(e[0].myLeft.length, 1);
@@ -148,21 +153,21 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	const ctx = makeContext();
 	// A tie needs one hundredth; a float-noise gap still rounds correctly.
 	const tied = lg('1', '100.00', '100.00', [pl('a', 'Tyreek Hill', 'MIA', null)], []);
-	assert.equal(ctx.computeMondayNightWinner([tied], games)[0].needed, 0.01);
+	assert.equal(ctx.computeMondayNightMania([tied], games).live[0].needed, 0.01);
 	const noisy = lg('1', '99.9', '100.0', [pl('a', 'Tyreek Hill', 'MIA', null)], []);
-	assert.equal(ctx.computeMondayNightWinner([noisy], games)[0].needed, 0.11);
+	assert.equal(ctx.computeMondayNightMania([noisy], games).live[0].needed, 0.11);
 }
 
 {
 	const ctx = makeContext();
 	// Leading: listed only while the opponent has a player left.
 	const leadOppLeft = lg('1', '120.00', '110.00', [pl('b', 'Done Guy', 'KC', 20)], [pl('c', 'Opp Guy', 'NYJ', 5)]);
-	const e = ctx.computeMondayNightWinner([leadOppLeft], games);
+	const e = ctx.computeMondayNightMania([leadOppLeft], games).live;
 	assert.equal(e.length, 1);
 	assert.equal(e[0].oppNeeded, 10.01);
 	assert.equal(e[0].needed, null);
 	const leadClinched = lg('2', '120.00', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], [pl('c', 'Opp Guy', 'KC', 5)]);
-	assert.equal(ctx.computeMondayNightWinner([leadClinched], games).length, 0);
+	assert.equal(ctx.computeMondayNightMania([leadClinched], games).live.length, 0);
 }
 
 {
@@ -170,7 +175,7 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	// Trailing with nobody left, bye players, and draft-only all drop.
 	const lost = lg('1', '90.00', '110.00', [pl('b', 'Done Guy', 'KC', 20), pl('d', 'Bye Guy', 'BYE', 0)], [pl('c', 'Opp Guy', 'NYJ', 5)]);
 	const draft = lg('2', '90.00', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], [], { type: 'draftonly' });
-	assert.equal(ctx.computeMondayNightWinner([lost, draft], games).length, 0);
+	assert.equal(ctx.computeMondayNightMania([lost, draft], games).live.length, 0);
 }
 
 {
@@ -179,37 +184,76 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	const a = lg('1', '98.40', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], []);
 	const b = lg('2', '105.00', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], []);
 	b.scoring.teams[0].winProb = 60;
-	assert.deepEqual(plain(ctx.computeMondayNightWinner([a, b], games).map((x) => x.league.id)), ['2', '1']);
+	assert.deepEqual(plain(ctx.computeMondayNightMania([a, b], games).live.map((x) => x.league.id)), ['2', '1']);
 }
 
 {
 	const ctx = makeContext(LOGGED_IN);
 	setState(ctx, games);
 	const l = lg('1', '98.40', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null), pl('e', 'Jaylen Waddle', 'NYJ', 3)], [pl('c', 'Opp Guy', 'NYJ', 5)]);
-	const card = ctx.renderMondayNightWinnerCard([l], MONDAY);
+	const card = ctx.renderMondayNightManiaCard([l], MONDAY);
 	assert.ok(card, 'renders on a Monday in season');
 	const text = fullText(card);
-	assert.match(text, /Monday Night Winner/);
+	assert.match(text, /Monday Night Mania/);
 	assert.match(text, /Down 11\.60/);
 	assert.match(text, /need 11\.61 combined/);
 	assert.match(text, /11\.61 alone/);
 	assert.match(text, /Opponent still has: /);
-	assert.equal(ctx.renderMondayNightWinnerCard([l], TUESDAY), null);
-	assert.equal(ctx.renderMondayNightWinnerCard([l], JULY_MONDAY), null);
+	assert.equal(ctx.renderMondayNightManiaCard([l], TUESDAY), null);
+	assert.equal(ctx.renderMondayNightManiaCard([l], JULY_MONDAY), null);
 }
 
 {
 	// Logged out: absent. Not yet polled: loading, never "nothing left".
 	const out = makeContext();
 	setState(out, games);
-	assert.equal(out.renderMondayNightWinnerCard([], MONDAY), null);
+	assert.equal(out.renderMondayNightManiaCard([], MONDAY), null);
 	const ctx = makeContext(LOGGED_IN);
 	setState(ctx, games, false);
-	assert.match(fullText(ctx.renderMondayNightWinnerCard([], MONDAY)), /Loading live scores/);
+	assert.match(fullText(ctx.renderMondayNightManiaCard([], MONDAY)), /Loading live scores/);
 	setState(ctx, games, true);
-	const empty = ctx.renderMondayNightWinnerCard([], MONDAY);
+	const empty = ctx.renderMondayNightManiaCard([], MONDAY);
 	assert.match(fullText(empty), /No matchups left to decide/);
 	assert.ok(empty.cls.includes('card-collapsed'));
 }
 
-console.log('test-monday-night-winner: ok');
+{
+	const ctx = makeContext();
+	// Best ball: a bench player yet to play keeps a trailing team alive and
+	// is flagged; a normal league ignores the same bench player.
+	const mk = (extra) => lg('1', '90.00', '110.00', [pl('b', 'Done Guy', 'KC', 20)], [pl('c', 'Opp Guy', 'KC', 5)], extra);
+	const bb = mk({ tags: ['BestBall'] });
+	bb.scoring.teams[0].bench = [pl('z', 'Bench Guy', 'MIA', null)];
+	bb.scoring.teams[1].bench = [pl('y', 'Opp Bench', 'NYJ', null)];
+	const r = ctx.computeMondayNightMania([bb], games);
+	assert.equal(r.live.length, 1);
+	assert.equal(r.live[0].myLeft[0].bench, true);
+	assert.equal(r.live[0].oppLeft[0].bench, true);
+	const plainLeague = mk({});
+	plainLeague.scoring.teams[0].bench = bb.scoring.teams[0].bench;
+	const r2 = ctx.computeMondayNightMania([plainLeague], games);
+	assert.equal(r2.live.length, 0);
+	assert.equal(r2.lost.length, 1);
+}
+
+{
+	const ctx = makeContext(LOGGED_IN);
+	setState(ctx, games);
+	const won = lg('1', '120.00', '110.00', [], [pl('c', 'Opp Guy', 'KC', 5)]);
+	const lost = lg('2', '90.00', '110.00', [pl('b', 'Done Guy', 'KC', 20)], []);
+	const tiedDone = lg('3', '100.00', '100.00', [pl('b', 'Done Guy', 'KC', 20)], []);
+	const r = ctx.computeMondayNightMania([won, lost, tiedDone], games);
+	assert.deepEqual(plain(r.won.map((l) => l.id)), ['1']);
+	assert.deepEqual(plain(r.lost.map((l) => l.id)), ['2']);
+	assert.equal(r.live.length, 0);
+	const text = fullText(ctx.renderMondayNightManiaCard([won, lost, tiedDone], MONDAY));
+	assert.match(text, /Already won: L1/);
+	assert.match(text, /Already lost: L2/);
+	assert.doesNotMatch(text, /L3/);
+	// With live matchups too, the summary still closes the card.
+	const live = lg('4', '98.40', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], []);
+	const card = ctx.renderMondayNightManiaCard([live, won, lost], MONDAY);
+	assert.match(fullText(card), /need 11\.61 to win[\s\S]*Already won: L1[\s\S]*Already lost: L2/);
+}
+
+console.log('test-monday-night-mania: ok');
