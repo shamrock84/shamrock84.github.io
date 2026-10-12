@@ -1976,6 +1976,65 @@
 		.watchlist-card {
 			grid-column: 1 / -1;
 		}
+		/* Monday Night Winner — one bordered box per league matchup that is
+		   still undecided, full width like the cards above it. Its own
+		   classes rather than .watchlist-*, per the convention for two
+		   features that share a shape. */
+		.monday-card {
+			grid-column: 1 / -1;
+		}
+		.monday-matchups {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 1rem;
+			margin-top: 0.5rem;
+		}
+		.monday-matchup {
+			flex: 1 1 260px;
+			min-width: 0;
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			overflow: hidden;
+		}
+		.monday-matchup-head {
+			font-size: 0.78rem;
+			font-weight: 700;
+			color: var(--accent);
+			background: var(--chip-bg);
+			padding: 0.35rem 0.5rem;
+		}
+		.monday-summary {
+			padding: 0.3rem 0.5rem;
+			font-size: 0.85rem;
+		}
+		.monday-trailing {
+			color: var(--ir-text);
+			font-weight: 700;
+		}
+		.monday-row {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			gap: 0.5rem;
+			padding: 0.3rem 0.5rem;
+			font-size: 0.85rem;
+			border-top: 1px solid var(--border);
+		}
+		.monday-row-name {
+			min-width: 0;
+			overflow-wrap: break-word;
+		}
+		.monday-need {
+			flex-shrink: 0;
+			font-variant-numeric: tabular-nums;
+			font-weight: 700;
+		}
+		.monday-opponent {
+			padding: 0.3rem 0.5rem;
+			font-size: 0.8em;
+			color: var(--muted);
+			border-top: 1px solid var(--border);
+		}
 		.watchlist-starter-count {
 			color: var(--ir-text);
 		}
@@ -9744,6 +9803,160 @@
 			return card;
 		}
 
+		// --- Scoring tab: the Monday Night Winner card ---
+		//
+		// Shown only on a Monday during the NFL season (mondayCardIsActive),
+		// the one day a matchup is routinely left hanging on a last game or
+		// two. For each of my head-to-head matchups still undecided, it says
+		// what the players who have yet to play must produce for me to win.
+		//
+		// The arithmetic is deliberately plain. Live players carry no
+		// projection on this page (projections are applied server-side to the
+		// win probability and never ship per player), so this states the
+		// target, not a forecast: the points I trail by, and the first
+		// hundredth past it, since scores display to two decimals and a tie
+		// is not a win. It assumes the opponent's remaining players add
+		// nothing — their names are listed under the matchup because every
+		// point they score raises the target by the same amount. A player
+		// "remains" while his game is pre or in progress; a team absent from
+		// the scoreboard (a bye) or final has nothing left to give.
+		//
+		// A matchup drops off once it cannot change hands: trailing with no
+		// one left to play is lost, leading with the opponent done is won, and
+		// a tie I cannot add to is only a tiebreaker. Best-ball leagues are
+		// treated like any other here (their bench is not counted), so a
+		// bench call-up does not appear.
+		function mondayCardIsActive(now = new Date()) {
+			return now.getDay() === 1 && nflInSeason(now);
+		}
+
+		function mondayRemainingPlayers(team, games) {
+			return (team.players || []).filter((p) => {
+				const state = p.team ? games[p.team]?.state : null;
+				return state === 'pre' || state === 'in';
+			});
+		}
+
+		// Smallest score, in hundredths, that strictly beats `gap` points.
+		function mondayPointsToPass(gap) {
+			return (Math.floor(gap * 100 + 1e-6) + 1) / 100;
+		}
+
+		function computeMondayNightWinner(leagues, games = liveGames) {
+			const out = [];
+			for (const league of leagues || []) {
+				if (league.type === 'draftonly') continue;
+				const teams = league.scoring?.teams || [];
+				const mine = teams.find((t) => t.isMe);
+				if (!mine) continue;
+				const matchup = (league.scoring?.matchups || []).find((m) => m.teamIds.length === 2 && m.teamIds.includes(mine.franchiseId));
+				if (!matchup) continue;
+				const opp = teams.find((t) => t.franchiseId === matchup.teamIds.find((id) => id !== mine.franchiseId));
+				if (!opp) continue;
+				const myScore = Number(mine.score);
+				const oppScore = Number(opp.score);
+				if (!Number.isFinite(myScore) || !Number.isFinite(oppScore)) continue;
+				const myLeft = mondayRemainingPlayers(mine, games);
+				const oppLeft = mondayRemainingPlayers(opp, games);
+				const margin = Math.round((myScore - oppScore) * 100) / 100;
+				if (margin <= 0 && myLeft.length === 0) continue;
+				if (margin > 0 && oppLeft.length === 0) continue;
+				out.push({
+					league,
+					mine,
+					opp,
+					margin,
+					myLeft,
+					oppLeft,
+					// Points I must add to win (null while leading), or the points
+					// the opponent must add to pass me (null otherwise).
+					needed: margin <= 0 ? mondayPointsToPass(-margin) : null,
+					oppNeeded: margin > 0 ? mondayPointsToPass(margin) : null,
+				});
+			}
+			// Likeliest first; a team with no win probability sinks.
+			out.sort((a, b) => (b.mine.winProb ?? -1) - (a.mine.winProb ?? -1));
+			return out;
+		}
+
+		function renderMondayNightWinnerCard(leagues, now = new Date()) {
+			if (!isLoggedIn() || !mondayCardIsActive(now)) return null;
+			const card = el('div', { class: 'card monday-card', id: 'monday-night', 'data-view': 'scoring', 'data-league-type': '' });
+			const heading = el('h2', { class: 'card-heading', text: 'Monday Night Winner' });
+			card.appendChild(heading);
+
+			if (!liveScoringAttempted) {
+				makeCollapsible(card, heading, 'monday-night');
+				card.appendChild(el('div', { class: 'loading-box', text: 'Loading live scores…' }));
+				return card;
+			}
+
+			const entries = computeMondayNightWinner(leagues, liveGames);
+			makeCollapsible(card, heading, 'monday-night', entries.length === 0);
+			if (entries.length === 0) {
+				card.appendChild(el('div', { class: 'team card-collapse-visible', text: 'No matchups left to decide.' }));
+				return card;
+			}
+			card.appendChild(el('div', {
+				class: 'team card-collapse-visible',
+				text: `${entries.length} matchup${entries.length === 1 ? '' : 's'} still in play · targets assume the opponent adds nothing more`,
+			}));
+
+			const playerLine = (p) => {
+				const line = el('div');
+				line.appendChild(document.createTextNode(abbreviatePlayerName(p.name, p.position) || `#${p.id || '?'}`));
+				if (p.team) appendTeamSuffix(line, p.team);
+				return line;
+			};
+			const wrap = el('div', { class: 'monday-matchups' });
+			for (const e of entries) {
+				const box = el('div', { class: 'monday-matchup' });
+				const head = el('div', { class: 'monday-matchup-head' });
+				head.appendChild(document.createTextNode(`${quickLinkLabelForLeague(e.league)} vs ${e.opp.teamName}`));
+				box.appendChild(head);
+
+				const summary = el('div', { class: 'monday-summary' });
+				if (e.needed != null) {
+					summary.appendChild(el('span', { class: 'monday-trailing', text: e.margin === 0 ? 'Tied' : `Down ${(-e.margin).toFixed(2)}` }));
+					const combined = e.myLeft.length > 1 ? ' combined' : '';
+					summary.appendChild(document.createTextNode(` — need ${e.needed.toFixed(2)}${combined} to win`));
+				} else {
+					summary.appendChild(document.createTextNode(`Up ${e.margin.toFixed(2)} — safe unless the opponent adds ${e.oppNeeded.toFixed(2)}`));
+				}
+				const meta = scoringMetaLine(e.mine);
+				if (meta) summary.appendChild(el('div', { class: 'scoring-matchup-meta', text: meta }));
+				box.appendChild(summary);
+
+				for (const p of e.myLeft) {
+					const row = el('div', { class: 'monday-row' });
+					const name = el('div', { class: 'monday-row-name' });
+					name.appendChild(playerLine(p));
+					const game = playerGameLine(p.team);
+					if (game) name.appendChild(el('div', { class: 'scoring-matchup-meta', text: game }));
+					row.appendChild(name);
+					const scored = p.points == null ? '' : `${Number(p.points).toFixed(2)} so far · `;
+					const need = e.needed != null ? `${e.needed.toFixed(2)}${e.myLeft.length > 1 ? ' alone' : ''}` : 'no help needed';
+					const cell = el('div', { class: 'monday-need' });
+					cell.appendChild(el('div', { text: need }));
+					if (scored) cell.appendChild(el('div', { class: 'scoring-matchup-meta', text: scored.replace(/ · $/, '') }));
+					row.appendChild(cell);
+					box.appendChild(row);
+				}
+				if (e.oppLeft.length > 0) {
+					const opp = el('div', { class: 'monday-opponent' });
+					opp.appendChild(document.createTextNode('Opponent still has: '));
+					e.oppLeft.forEach((p, i) => {
+						if (i > 0) opp.appendChild(document.createTextNode(', '));
+						opp.appendChild(document.createTextNode(abbreviatePlayerName(p.name, p.position) || `#${p.id || '?'}`));
+					});
+					box.appendChild(opp);
+				}
+				wrap.appendChild(box);
+			}
+			card.appendChild(wrap);
+			return card;
+		}
+
 		// Exposure: how many of your leagues (within this one group — exposure
 		// across leagues you actively manage and exposure across draft-and-leave
 		// leagues aren't the same question) roster a given player, as a share of
@@ -14957,6 +15170,8 @@
 			// own comment for why DOM order is what actually puts it there.
 			const watchlist = renderGameTimeWatchlistCard(pageData.leagues, pageData.year);
 			if (watchlist) gridEl.appendChild(watchlist);
+			const mondayNight = renderMondayNightWinnerCard(pageData.leagues);
+			if (mondayNight) gridEl.appendChild(mondayNight);
 			const nowPlaying = renderNowPlayingCard(pageData.leagues);
 			if (nowPlaying) gridEl.appendChild(nowPlaying);
 			for (const league of pageData.leagues) {
@@ -17173,6 +17388,8 @@
 			// actually puts it first among data-view="scoring" cards.
 			const watchlist = renderGameTimeWatchlistCard(data.leagues, data.year);
 			if (watchlist) gridEl.appendChild(watchlist);
+			const mondayNight = renderMondayNightWinnerCard(data.leagues);
+			if (mondayNight) gridEl.appendChild(mondayNight);
 			const nowPlaying = renderNowPlayingCard(data.leagues);
 			if (nowPlaying) gridEl.appendChild(nowPlaying);
 			// Power Rankings: top of the Standings tab, ahead of every league's
