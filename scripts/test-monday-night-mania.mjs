@@ -15,6 +15,9 @@
 //   * a lead the opponent cannot touch is "already won" and an
 //     unclosable deficit "already lost", listed by nickname at the bottom
 //     of the card (also when nothing is left in play).
+//   * a player carrying Out (or any settled designation, or a league IR
+//     slot) in ANY of my leagues is not playing and is not listed, for me
+//     and for an opponent who has him; Doubtful/Questionable stay, badged.
 //   * "remaining" means the game is pre or in progress.
 
 import assert from 'node:assert/strict';
@@ -323,6 +326,43 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	dead.scoring.teams[0].winProb = 50;
 	const r3 = ctx.computeMondayNightMania([dead], games);
 	assert.equal(r3.live.length + r3.won.length + r3.lost.length, 0);
+}
+
+{
+	const ctx = makeContext(LOGGED_IN);
+	setState(ctx, games);
+	// A starter who is Out (or IR) is not playing, so he is not "remaining":
+	// with him gone I have nobody left and the card says the opponent must
+	// go negative. Doubtful and Questionable stay, badged. Opponent players
+	// cannot be checked (their roster is not ours) and stay listed.
+	const rp = (name, status, extra = {}) => ({ id: name, name, team: 'MIA', position: 'WR', status: 'ROSTER', injuryStatus: status, ...extra });
+	const out = lg('1', '90.00', '100.00', [pl('a', 'DJ Moore', 'MIA', null), pl('k', 'Done Guy', 'KC', 20)], [pl('c', 'Opp Guy', 'NYJ', 5)]);
+	out.players = [rp('DJ Moore', 'O')];
+	const r = ctx.computeMondayNightMania([out], games);
+	assert.equal(r.live.length, 1);
+	assert.equal(r.live[0].myLeft.length, 0);
+	assert.equal(r.live[0].oppMustLose, 10.01);
+	const ir = lg('2', '90.00', '100.00', [pl('a', 'DJ Moore', 'MIA', null)], [pl('c', 'Opp Guy', 'NYJ', 5)]);
+	ir.players = [rp('DJ Moore', null, { status: 'INJURED_RESERVE' })];
+	assert.equal(ctx.computeMondayNightMania([ir], games).live[0].myLeft.length, 0);
+	const q = lg('3', '90.00', '100.00', [pl('a', 'DJ Moore', 'MIA', null)], [pl('c', 'Opp Guy', 'NYJ', 5)]);
+	q.players = [rp('DJ Moore', 'Q')];
+	const e = ctx.computeMondayNightMania([q], games).live[0];
+	assert.equal(e.myLeft.length, 1);
+	assert.equal(e.myLeft[0].injury, 'Q');
+	assert.match(fullText(ctx.renderMondayNightManiaCard([q], MONDAY)), /D\. Moore.*\(Q\)|DJ Moore.*\(Q\)|\(Q\)/);
+	// One league's Out designation counts for the same man everywhere (his
+	// other leagues' feeds may say nothing), and for an opponent who has him.
+	const elsewhere = lg('5', '90.00', '100.00', [pl('a', 'D.J. Moore', 'MIA', null)], [pl('c', 'Opp Guy', 'NYJ', 5), pl('m', 'DJ Moore', 'MIA', null)]);
+	elsewhere.players = [];
+	const other = lg('6', '1.00', '1.00', [], []);
+	other.players = [rp('DJ Moore', 'O')];
+	const rr = ctx.computeMondayNightMania([elsewhere, other], games).live.find((x) => x.league.id === '5');
+	assert.equal(rr.myLeft.length, 0);
+	assert.deepEqual(plain(rr.oppLeft.map((x) => x.name)), ['Opp Guy']);
+	const d = lg('4', '90.00', '100.00', [pl('a', 'DJ Moore', 'MIA', null)], [pl('c', 'Opp Guy', 'NYJ', 5)]);
+	d.players = [rp('DJ Moore', 'D')];
+	assert.equal(ctx.computeMondayNightMania([d], games).live[0].myLeft.length, 1);
 }
 
 console.log('test-monday-night-mania: ok');

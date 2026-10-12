@@ -9859,13 +9859,54 @@
 			return Array.isArray(league.tags) && league.tags.includes('BestBall');
 		}
 
+		// Designations that mean he is not playing: Out, plus every settled one
+		// (IR, PUP, NFI, suspension...). Doubtful and below are real doubts but
+		// not a decision, so those players stay listed with their badge.
+		// Read off the designation the sync already carries (the practice
+		// report, not the game-day inactive list — probe-inactives.mjs), with
+		// a league IR slot standing in when the feed has none (injuryDesignation).
+		function mondayIsOutDesignation(status) {
+			return status === 'O' || INJURY_SETTLED.includes(status);
+		}
+
+		// Every roster I hold, by normalized name -> his worst designation.
+		// The live player carries no injury field, so this is the same name
+		// join rosterUrlByName makes, but across ALL leagues rather than the
+		// matchup's own: each provider publishes its own injury feed on its
+		// own clock, so one league can say Out while another still says
+		// nothing for the same man (DJ Moore: Out on ESPN, blank on three MFL
+		// leagues) — the worst wins, same arbitration as the Watchlist. It
+		// also lets an opponent's player be recognised when I roster him
+		// elsewhere; an opponent's player I do not roster is unknowable and
+		// stays listed.
+		function mondayDesignationsByName(leagues) {
+			const map = new Map();
+			for (const league of leagues || []) {
+				for (const rp of league.players || []) {
+					const status = injuryDesignation(rp);
+					if (!status) continue;
+					const key = normalizeName(rp.name) || rp.name;
+					const have = map.get(key);
+					if (!have || injurySeverityRank(status) > injurySeverityRank(have)) map.set(key, status);
+				}
+			}
+			return map;
+		}
+
 		// Starters, then (best ball only) bench players tagged `bench: true`.
-		function mondayRemainingPlayers(team, games, includeBench) {
+		// With `designations`, players he is Out for are dropped and anyone
+		// else carrying a designation gets it as `injury` for the badge.
+		function mondayRemainingPlayers(team, games, includeBench, designations = null) {
 			const pool = [...(team.players || []), ...(includeBench ? (team.bench || []).map((p) => ({ ...p, bench: true })) : [])];
-			return pool.filter((p) => {
+			const out = [];
+			for (const p of pool) {
 				const state = p.team ? games[p.team]?.state : null;
-				return state === 'pre' || state === 'in';
-			});
+				if (state !== 'pre' && state !== 'in') continue;
+				const status = designations ? designations.get(normalizeName(p.name) || p.name) : null;
+				if (status && mondayIsOutDesignation(status)) continue;
+				out.push(status ? { ...p, injury: status } : p);
+			}
+			return out;
 		}
 
 		// Smallest score, in hundredths, that strictly beats `gap` points.
@@ -9879,6 +9920,7 @@
 			const out = [];
 			const won = [];
 			const lost = [];
+			const designations = mondayDesignationsByName(leagues);
 			for (const league of leagues || []) {
 				if (league.type === 'draftonly') continue;
 				const teams = league.scoring?.teams || [];
@@ -9892,8 +9934,8 @@
 				const oppScore = Number(opp.score);
 				if (!Number.isFinite(myScore) || !Number.isFinite(oppScore)) continue;
 				const bestBall = mondayIsBestBall(league);
-				const myLeft = mondayRemainingPlayers(mine, games, bestBall);
-				const oppLeft = mondayRemainingPlayers(opp, games, bestBall);
+				const myLeft = mondayRemainingPlayers(mine, games, bestBall, designations);
+				const oppLeft = mondayRemainingPlayers(opp, games, bestBall, designations);
 				const margin = Math.round((myScore - oppScore) * 100) / 100;
 				const winProb = mine.winProb == null ? null : Number(mine.winProb);
 				if (winProb === 100 || (winProb == null && margin > 0 && oppLeft.length === 0)) { won.push(league); continue; }
@@ -9977,6 +10019,10 @@
 				const line = el('div');
 				line.appendChild(document.createTextNode(abbreviatePlayerName(p.name, p.position) || `#${p.id || '?'}`));
 				if (p.team) appendTeamSuffix(line, p.team);
+				if (p.injury) {
+					line.appendChild(document.createTextNode(' '));
+					line.appendChild(el('span', { class: 'injury-badge', text: `(${p.injury})` }));
+				}
 				return line;
 			};
 			const wrap = el('div', { class: 'monday-matchups' });
