@@ -111,7 +111,7 @@ const games = [game('1', 'KC', 'DEN'), game('2', 'WAS', 'DAL'), game('3', 'BUF',
 	assert.ok(hasClass(summary[0], 'card-collapse-visible'));
 	assert.equal(find(summary[0], 'nfl-game-row').length, 2, 'KC and WAS (alias of WSH) games only');
 	const marked = find(card, 'nfl-fav').map((n) => n.textContent).sort();
-	assert.deepEqual(marked, ['KC', 'KC', 'WAS', 'WAS'], 'name marked in the full list and in the summary');
+	assert.deepEqual(marked, ['★ KC', '★ KC', '★ WAS', '★ WAS'], 'name marked in the full list and in the summary');
 	assert.equal(find(summary[0], 'nfl-boxscore-link').length, 0, 'compact rows carry no stat drawer');
 }
 
