@@ -204,13 +204,13 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	const text = fullText(card);
 	assert.match(text, /Monday Night Mania/);
 	assert.match(text, /Down 11\.60/);
-	assert.match(text, /Down 11\.60 — score above 11\.60 combined to win/);
+	assert.match(text, /Down 11\.60 — score 11\.61 combined to win/);
 	assert.doesNotMatch(text, /alone|stay above/);
 	assert.match(text, /3\.00 so far/);
 	assert.match(text, /Opponent still has: O\. Guy \(5\.00 so far\)/);
 	// "combined" only with several players on the side that must score.
 	const one = lg('2', '98.40', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], [pl('c', 'Opp Guy', 'NYJ', 5)]);
-	assert.match(fullText(ctx.renderMondayNightManiaCard([one], MONDAY)), /Down 11\.60 — score above 11\.60 to win/);
+	assert.match(fullText(ctx.renderMondayNightManiaCard([one], MONDAY)), /Down 11\.60 — score 11\.61 to win/);
 	assert.equal(ctx.renderMondayNightManiaCard([l], TUESDAY), null);
 	assert.equal(ctx.renderMondayNightManiaCard([l], JULY_MONDAY), null);
 }
@@ -268,7 +268,7 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	// With live matchups too, the summary still closes the card.
 	const live = lg('4', '98.40', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], []);
 	const card = ctx.renderMondayNightManiaCard([live, won, lost], MONDAY);
-	assert.match(fullText(card), /score above 11\.60 to win[\s\S]*Already won: L1[\s\S]*Already lost: L2/);
+	assert.match(fullText(card), /score 11\.61 to win[\s\S]*Already won: L1[\s\S]*Already lost: L2/);
 }
 
 {
@@ -317,7 +317,7 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	const r2 = ctx.computeMondayNightMania([up], games);
 	assert.equal(r2.won.length, 0);
 	assert.equal(r2.live[0].myRisk, 10.01);
-	assert.match(fullText(ctx.renderMondayNightManiaCard([up], MONDAY)), /Up 10\.00 — opponent is done; score above −10\.00 to win/);
+	assert.match(fullText(ctx.renderMondayNightManiaCard([up], MONDAY)), /Up 10\.00 — opponent is done; score −9\.99 or better to win/);
 	// A tie with nobody left on either side is neither in play nor decided.
 	const dead = lg('3', '100.00', '100.00', [pl('b', 'Done Guy', 'KC', 20)], [pl('c', 'Opp Guy', 'KC', 5)]);
 	dead.scoring.teams[0].winProb = 50;

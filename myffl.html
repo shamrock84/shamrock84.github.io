@@ -9987,22 +9987,26 @@
 				box.appendChild(head);
 
 				const summary = el('div', { class: 'monday-summary' });
-				// "Above" the gap, not "the gap plus a hundredth": a score equal to
-				// the gap only ties. The gap is the same figure whichever side
-				// has to move it.
+				// Targets are the smallest score, to the hundredth, that wins: the
+				// gap plus 0.01 (a score equal to the gap only ties). `needed`,
+				// `oppNeeded` and `oppMustLose` already carry that figure.
 				const gap = Math.abs(e.margin).toFixed(2);
 				const multi = (list) => (list.length > 1 ? ' combined' : '');
 				const downLabel = () => el('span', { class: 'monday-trailing', text: e.margin === 0 ? 'Tied' : `Down ${gap}` });
 				if (e.needed != null) {
 					summary.appendChild(downLabel());
-					summary.appendChild(document.createTextNode(` — score above ${gap}${multi(e.myLeft)} to win`));
+					summary.appendChild(document.createTextNode(` — score ${e.needed.toFixed(2)}${multi(e.myLeft)} to win`));
 				} else if (e.oppMustLose != null) {
 					summary.appendChild(downLabel());
 					summary.appendChild(document.createTextNode(` — you are done; opponent must score −${e.oppMustLose.toFixed(2)} or lower${multi(e.oppLeft)} for you to win`));
 				} else if (e.oppNeeded != null) {
-					summary.appendChild(document.createTextNode(`Up ${gap} — opponent must score above ${gap}${multi(e.oppLeft)} to win`));
+					summary.appendChild(document.createTextNode(`Up ${gap} — opponent must score ${e.oppNeeded.toFixed(2)}${multi(e.oppLeft)} to win`));
 				} else {
-					summary.appendChild(document.createTextNode(`Up ${gap} — opponent is done; score above −${gap}${multi(e.myLeft)} to win`));
+					// Lowest total that still holds the lead: myRisk is the first
+					// negative that loses it, so the floor is two hundredths above.
+					const floor = (Math.round(e.myRisk * 100) - 2) / 100;
+					const floorText = floor === 0 ? '0.00' : `−${floor.toFixed(2)} or better`;
+					summary.appendChild(document.createTextNode(`Up ${gap} — opponent is done; score ${floorText}${multi(e.myLeft)} to win`));
 				}
 				const meta = scoringMetaLine(e.mine);
 				if (meta) summary.appendChild(el('div', { class: 'scoring-matchup-meta', text: meta }));
