@@ -9825,9 +9825,15 @@
 		// "remains" while his game is pre or in progress; a team absent from
 		// the scoreboard (a bye) or final has nothing left to give.
 		//
-		// A matchup drops off once it cannot change hands: trailing with no
-		// one left to play is lost, leading with the opponent done is won, and
-		// a tie I cannot add to is only a tiebreaker.
+		// Decided is read off the win probability the Scoring cards already
+		// show (winProb): 100 is already won, 0 already lost. The estimate is
+		// clamped to 1-99 while anyone on either side still has game time left
+		// (estimateWinProbability), so those two values only occur once
+		// nothing is left to play. A matchup with no winProb (the provider or
+		// the estimate did not answer) falls back to the same conclusion
+		// drawn from the scores and who has yet to play. Otherwise a matchup
+		// stays in play unless I trail with no one left to add points, or the
+		// game is a tie nobody can move (only a tiebreaker).
 		//
 		// Best-ball leagues (tag 'BestBall') also count the bench: the
 		// platform re-picks the best lineup from the whole roster, so a bench
@@ -9885,10 +9891,13 @@
 				const myLeft = mondayRemainingPlayers(mine, games, bestBall);
 				const oppLeft = mondayRemainingPlayers(opp, games, bestBall);
 				const margin = Math.round((myScore - oppScore) * 100) / 100;
-				if (margin < 0 && myLeft.length === 0) { lost.push(league); continue; }
-				if (margin > 0 && oppLeft.length === 0) { won.push(league); continue; }
-				// A tie neither side can still move is a tiebreaker, not a result.
+				const winProb = mine.winProb == null ? null : Number(mine.winProb);
+				if (winProb === 100 || (winProb == null && margin > 0 && oppLeft.length === 0)) { won.push(league); continue; }
+				if (winProb === 0 || (winProb == null && margin < 0 && myLeft.length === 0)) { lost.push(league); continue; }
+				// Nothing for me to add and nothing to be overtaken by: a tie
+				// (tiebreaker) or a trailing team the estimate still rounds up.
 				if (margin <= 0 && myLeft.length === 0) continue;
+				if (margin > 0 && oppLeft.length === 0) continue;
 				out.push({
 					league,
 					mine,

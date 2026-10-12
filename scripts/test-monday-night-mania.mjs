@@ -172,7 +172,8 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 
 {
 	const ctx = makeContext();
-	// Trailing with nobody left, bye players, and draft-only all drop.
+	// Trailing with nobody left, bye players, and draft-only all drop
+	// (winProb 30 here: not decided by the estimate, nothing left to add).
 	const lost = lg('1', '90.00', '110.00', [pl('b', 'Done Guy', 'KC', 20), pl('d', 'Bye Guy', 'BYE', 0)], [pl('c', 'Opp Guy', 'NYJ', 5)]);
 	const draft = lg('2', '90.00', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], [], { type: 'draftonly' });
 	assert.equal(ctx.computeMondayNightMania([lost, draft], games).live.length, 0);
@@ -231,6 +232,7 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	assert.equal(r.live[0].oppLeft[0].bench, true);
 	const plainLeague = mk({});
 	plainLeague.scoring.teams[0].bench = bb.scoring.teams[0].bench;
+	plainLeague.scoring.teams[0].winProb = 0;
 	const r2 = ctx.computeMondayNightMania([plainLeague], games);
 	assert.equal(r2.live.length, 0);
 	assert.equal(r2.lost.length, 1);
@@ -242,6 +244,8 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	const won = lg('1', '120.00', '110.00', [], [pl('c', 'Opp Guy', 'KC', 5)]);
 	const lost = lg('2', '90.00', '110.00', [pl('b', 'Done Guy', 'KC', 20)], []);
 	const tiedDone = lg('3', '100.00', '100.00', [pl('b', 'Done Guy', 'KC', 20)], []);
+	won.scoring.teams[0].winProb = 100;
+	lost.scoring.teams[0].winProb = 0;
 	const r = ctx.computeMondayNightMania([won, lost, tiedDone], games);
 	assert.deepEqual(plain(r.won.map((l) => l.id)), ['1']);
 	assert.deepEqual(plain(r.lost.map((l) => l.id)), ['2']);
@@ -254,6 +258,33 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	const live = lg('4', '98.40', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], []);
 	const card = ctx.renderMondayNightManiaCard([live, won, lost], MONDAY);
 	assert.match(fullText(card), /need 11\.61 to win[\s\S]*Already won: L1[\s\S]*Already lost: L2/);
+}
+
+{
+	// With no winProb the scores and unplayed players decide.
+	const ctx = makeContext();
+	const wonNoWp = lg('w', '120.00', '110.00', [], [pl('c', 'Opp Guy', 'KC', 5)]);
+	const lostNoWp = lg('l', '90.00', '110.00', [pl('b', 'Done Guy', 'KC', 20)], []);
+	wonNoWp.scoring.teams[0].winProb = null;
+	lostNoWp.scoring.teams[0].winProb = null;
+	const r = ctx.computeMondayNightMania([wonNoWp, lostNoWp], games);
+	assert.deepEqual(plain(r.won.map((l) => l.id)), ['w']);
+	assert.deepEqual(plain(r.lost.map((l) => l.id)), ['l']);
+}
+
+{
+	const ctx = makeContext();
+	// The decided call follows winProb: 100 won, 0 lost, even if players
+	// look unplayed; anything between stays in play.
+	const set = (id, wp, mineLeft = []) => {
+		const l = lg(id, '100.00', '90.00', mineLeft, [pl('c', 'Opp Guy', 'NYJ', 5)]);
+		l.scoring.teams[0].winProb = wp;
+		return l;
+	};
+	const r = ctx.computeMondayNightMania([set('w', 100), set('l', 0, [pl('a', 'Tyreek Hill', 'MIA', null)]), set('m', 63)], games);
+	assert.deepEqual(plain(r.won.map((l) => l.id)), ['w']);
+	assert.deepEqual(plain(r.lost.map((l) => l.id)), ['l']);
+	assert.deepEqual(plain(r.live.map((e) => e.league.id)), ['m']);
 }
 
 console.log('test-monday-night-mania: ok');
