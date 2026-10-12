@@ -9987,17 +9987,22 @@
 				box.appendChild(head);
 
 				const summary = el('div', { class: 'monday-summary' });
+				// "Above" the gap, not "the gap plus a hundredth": a score equal to
+				// the gap only ties. The gap is the same figure whichever side
+				// has to move it.
+				const gap = Math.abs(e.margin).toFixed(2);
+				const multi = (list) => (list.length > 1 ? ' combined' : '');
+				const downLabel = () => el('span', { class: 'monday-trailing', text: e.margin === 0 ? 'Tied' : `Down ${gap}` });
 				if (e.needed != null) {
-					summary.appendChild(el('span', { class: 'monday-trailing', text: e.margin === 0 ? 'Tied' : `Down ${(-e.margin).toFixed(2)}` }));
-					const combined = e.myLeft.length > 1 ? ' combined' : '';
-					summary.appendChild(document.createTextNode(` — need ${e.needed.toFixed(2)}${combined} to win`));
+					summary.appendChild(downLabel());
+					summary.appendChild(document.createTextNode(` — score above ${gap}${multi(e.myLeft)} to win`));
 				} else if (e.oppMustLose != null) {
-					summary.appendChild(el('span', { class: 'monday-trailing', text: e.margin === 0 ? 'Tied' : `Down ${(-e.margin).toFixed(2)}` }));
-					summary.appendChild(document.createTextNode(` — nobody left to play; need the opponent's remaining player${e.oppLeft.length === 1 ? '' : 's'} to score −${e.oppMustLose.toFixed(2)} or worse${e.oppLeft.length > 1 ? ' combined' : ''}`));
+					summary.appendChild(downLabel());
+					summary.appendChild(document.createTextNode(` — you are done; opponent must score −${e.oppMustLose.toFixed(2)} or lower${multi(e.oppLeft)} for you to win`));
 				} else if (e.oppNeeded != null) {
-					summary.appendChild(document.createTextNode(`Up ${e.margin.toFixed(2)} — safe unless the opponent adds ${e.oppNeeded.toFixed(2)}`));
+					summary.appendChild(document.createTextNode(`Up ${gap} — opponent must score above ${gap}${multi(e.oppLeft)} to win`));
 				} else {
-					summary.appendChild(document.createTextNode(`Up ${e.margin.toFixed(2)} — opponent is done; lost only if your remaining player${e.myLeft.length === 1 ? ' scores' : 's score'} −${e.myRisk.toFixed(2)} or worse${e.myLeft.length > 1 ? ' combined' : ''}`));
+					summary.appendChild(document.createTextNode(`Up ${gap} — opponent is done; score above −${gap}${multi(e.myLeft)} to win`));
 				}
 				const meta = scoringMetaLine(e.mine);
 				if (meta) summary.appendChild(el('div', { class: 'scoring-matchup-meta', text: meta }));
@@ -10011,13 +10016,7 @@
 					const game = playerGameLine(p.team);
 					if (game) name.appendChild(el('div', { class: 'scoring-matchup-meta', text: game }));
 					row.appendChild(name);
-					const scored = p.points == null ? '' : `${Number(p.points).toFixed(2)} so far · `;
-					const need = e.needed != null ? `${e.needed.toFixed(2)}${e.myLeft.length > 1 ? ' alone' : ''}`
-						: e.myRisk != null ? `stay above −${e.myRisk.toFixed(2)}` : 'no help needed';
-					const cell = el('div', { class: 'monday-need' });
-					cell.appendChild(el('div', { text: need }));
-					if (scored) cell.appendChild(el('div', { class: 'scoring-matchup-meta', text: scored.replace(/ · $/, '') }));
-					row.appendChild(cell);
+					row.appendChild(el('div', { class: 'monday-need', text: p.points == null ? '–' : `${Number(p.points).toFixed(2)} so far` }));
 					box.appendChild(row);
 				}
 				if (e.oppLeft.length > 0) {
@@ -10025,7 +10024,8 @@
 					opp.appendChild(document.createTextNode(e.oppMustLose != null ? 'Opponent still to play: ' : 'Opponent still has: '));
 					e.oppLeft.forEach((p, i) => {
 						if (i > 0) opp.appendChild(document.createTextNode(', '));
-						opp.appendChild(document.createTextNode(`${abbreviatePlayerName(p.name, p.position) || `#${p.id || '?'}`}${p.bench ? ' (bench)' : ''}`));
+						const so = p.points == null ? '' : ` (${Number(p.points).toFixed(2)} so far)`;
+						opp.appendChild(document.createTextNode(`${abbreviatePlayerName(p.name, p.position) || `#${p.id || '?'}`}${p.bench ? ' (bench)' : ''}${so}`));
 					});
 					box.appendChild(opp);
 				}

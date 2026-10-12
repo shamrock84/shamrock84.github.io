@@ -204,9 +204,13 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	const text = fullText(card);
 	assert.match(text, /Monday Night Mania/);
 	assert.match(text, /Down 11\.60/);
-	assert.match(text, /need 11\.61 combined/);
-	assert.match(text, /11\.61 alone/);
-	assert.match(text, /Opponent still has: /);
+	assert.match(text, /Down 11\.60 — score above 11\.60 combined to win/);
+	assert.doesNotMatch(text, /alone|stay above/);
+	assert.match(text, /3\.00 so far/);
+	assert.match(text, /Opponent still has: O\. Guy \(5\.00 so far\)/);
+	// "combined" only with several players on the side that must score.
+	const one = lg('2', '98.40', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], [pl('c', 'Opp Guy', 'NYJ', 5)]);
+	assert.match(fullText(ctx.renderMondayNightManiaCard([one], MONDAY)), /Down 11\.60 — score above 11\.60 to win/);
 	assert.equal(ctx.renderMondayNightManiaCard([l], TUESDAY), null);
 	assert.equal(ctx.renderMondayNightManiaCard([l], JULY_MONDAY), null);
 }
@@ -264,7 +268,7 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	// With live matchups too, the summary still closes the card.
 	const live = lg('4', '98.40', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], []);
 	const card = ctx.renderMondayNightManiaCard([live, won, lost], MONDAY);
-	assert.match(fullText(card), /need 11\.61 to win[\s\S]*Already won: L1[\s\S]*Already lost: L2/);
+	assert.match(fullText(card), /score above 11\.60 to win[\s\S]*Already won: L1[\s\S]*Already lost: L2/);
 }
 
 {
@@ -306,14 +310,14 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	assert.equal(r.live.length, 1);
 	assert.equal(r.live[0].needed, null);
 	assert.equal(r.live[0].oppMustLose, 10.01);
-	assert.match(fullText(ctx.renderMondayNightManiaCard([down], MONDAY)), /Down 10\.00 — nobody left to play; need the opponent's remaining player to score −10\.01 or worse/);
+	assert.match(fullText(ctx.renderMondayNightManiaCard([down], MONDAY)), /Down 10\.00 — you are done; opponent must score −10\.01 or lower for you to win/);
 	// 99% with the opponent done: lost only if my own player goes negative.
 	const up = lg('2', '100.00', '90.00', [pl('a', 'Tyreek Hill', 'MIA', null)], [pl('c', 'Opp Guy', 'KC', 5)]);
 	up.scoring.teams[0].winProb = 99;
 	const r2 = ctx.computeMondayNightMania([up], games);
 	assert.equal(r2.won.length, 0);
 	assert.equal(r2.live[0].myRisk, 10.01);
-	assert.match(fullText(ctx.renderMondayNightManiaCard([up], MONDAY)), /Up 10\.00 — opponent is done; lost only if your remaining player scores −10\.01 or worse/);
+	assert.match(fullText(ctx.renderMondayNightManiaCard([up], MONDAY)), /Up 10\.00 — opponent is done; score above −10\.00 to win/);
 	// A tie with nobody left on either side is neither in play nor decided.
 	const dead = lg('3', '100.00', '100.00', [pl('b', 'Done Guy', 'KC', 20)], [pl('c', 'Opp Guy', 'KC', 5)]);
 	dead.scoring.teams[0].winProb = 50;
