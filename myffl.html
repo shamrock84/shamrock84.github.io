@@ -13215,14 +13215,28 @@
 			body.hidden = !open;
 			if (open) fillNflBoxscoreBody(body, game);
 
-			toggle.addEventListener('click', () => {
-				const next = body.hidden;
-				setNflBoxscoreOpen(key, next);
+			// A game can have two copies of this drawer in one card: the real
+			// row and the collapsed-card favorites summary's compact row. Only
+			// one is ever visible, but both read the one stored key, so a
+			// toggle on either re-applies itself to its twins (found by game
+			// id) or the hidden copy would come back stale on expand/collapse.
+			const apply = (next) => {
 				if (next) fillNflBoxscoreBody(body, game);
 				pill.classList.toggle('nfl-boxscore-open', next);
 				body.hidden = !next;
 				toggle.setAttribute('aria-expanded', String(next));
 				label.textContent = next ? 'Hide detail' : 'Show detail';
+			};
+			toggle._applyOpen = apply;
+			toggle.dataset.gameId = String(key);
+
+			toggle.addEventListener('click', () => {
+				const next = body.hidden;
+				setNflBoxscoreOpen(key, next);
+				apply(next);
+				document.querySelectorAll('.nfl-boxscore-toggle').forEach((t) => {
+					if (t !== toggle && t.dataset.gameId === String(key) && t._applyOpen) t._applyOpen(next);
+				});
 				// Opening a drawer that wasn't already open means the LAST
 				// poll never asked api/live-scoring.js for this game's
 				// boxscore (see nflBoxscoreOpenGameIds) — kick an immediate
@@ -13238,10 +13252,10 @@
 			pill.appendChild(body);
 		}
 
-		// `compact` is the collapsed-card favorites summary: just teams, score
-		// and status, with no ESPN link or stat drawer — that drawer's open
-		// state is keyed by game id, and a second copy of it in the same card
-		// would fight the real row's.
+		// `compact` is the collapsed-card favorites summary. It carries the same
+		// ESPN link and stat drawer as the real row; the two drawers for one
+		// game share an open key and are kept in step by
+		// appendNflBoxscoreToggle.
 		function renderNflGameRow(game, favs = new Set(), compact = false) {
 			const showScore = game.state !== 'pre' && game.away.score != null && game.home.score != null;
 			// Plain/gold/purple reads the same "hasn't played / live /
@@ -13262,8 +13276,6 @@
 			if (showScore) teams.appendChild(el('span', { class: 'nfl-game-score', text: String(game.home.score) }));
 			row.appendChild(teams);
 			row.appendChild(el('div', { class: 'nfl-game-status', text: [formatGameWhen(game), game.broadcast].filter(Boolean).join(' · ') }));
-			if (compact) return row;
-
 			// Still the only place for kicking/team-defense stats (see
 			// nflBoxscorePlayerLines' own comment) — its own small line
 			// above the toggle rather than sharing a row with it, so the
@@ -13305,7 +13317,10 @@
 			// Collapsing the card also closes every Show detail drawer in it
 			// (clicking each open toggle, which clears its stored open key), so
 			// re-expanding shows a tidy list rather than stale open drawers.
-			const closeDrawers = () => card.querySelectorAll('.nfl-boxscore-toggle[aria-expanded="true"]').forEach((t) => t.click());
+			const closeDrawers = () => card.querySelectorAll('.nfl-boxscore-toggle[aria-expanded="true"]').forEach((t) => {
+				// A click on one copy closes its twin too, so re-check.
+				if (t.getAttribute('aria-expanded') === 'true') t.click();
+			});
 			makeCollapsible(card, headingEl, id, autoCollapseEmpty && games.length === 0, closeDrawers);
 			if (subtitle) card.appendChild(el('div', { class: 'team card-collapse-visible', text: subtitle }));
 			const body = el('div', { class: 'nfl-scoreboard' });
