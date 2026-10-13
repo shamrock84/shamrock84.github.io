@@ -396,4 +396,16 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	assert.match(t2, /League 2[\s\S]*Me[\s\S]*Nobody left to play[\s\S]*Them[\s\S]*O\. Guy/);
 }
 
+{
+	// "Up X" carries its own green class, like "Down X" carries the red one.
+	const ctx = makeContext(LOGGED_IN);
+	setState(ctx, games);
+	const up = lg('1', '120.00', '110.00', [pl('b', 'Done Guy', 'KC', 20)], [pl('c', 'Opp Guy', 'NYJ', 5)]);
+	const down = lg('2', '90.00', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], []);
+	const card = ctx.renderMondayNightManiaCard([up, down], MONDAY);
+	const cls = (c) => findAll(card, (n) => n.cls.split(/\s+/).includes(c)).map(fullText);
+	assert.deepEqual(plain(cls('monday-leading')), ['Up 10.00']);
+	assert.deepEqual(plain(cls('monday-trailing')), ['Down 20.00']);
+}
+
 console.log('test-monday-night-mania: ok');

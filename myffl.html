@@ -2011,6 +2011,10 @@
 			color: var(--ir-text);
 			font-weight: 700;
 		}
+		.monday-leading {
+			color: var(--gain-text);
+			font-weight: 700;
+		}
 		.monday-row {
 			display: flex;
 			justify-content: space-between;
@@ -10098,6 +10102,7 @@
 				const gap = Math.abs(e.margin).toFixed(2);
 				const multi = (list) => (list.length > 1 ? ' combined' : '');
 				const downLabel = () => el('span', { class: 'monday-trailing', text: e.margin === 0 ? 'Tied' : `Down ${gap}` });
+				const upLabel = () => el('span', { class: 'monday-leading', text: `Up ${gap}` });
 				if (e.needed != null) {
 					summary.appendChild(downLabel());
 					summary.appendChild(document.createTextNode(` — score ${e.needed.toFixed(2)}${multi(e.myLeft)} to win`));
@@ -10105,13 +10110,15 @@
 					summary.appendChild(downLabel());
 					summary.appendChild(document.createTextNode(` — you are done; opponent must score −${e.oppMustLose.toFixed(2)} or lower${multi(e.oppLeft)} for you to win`));
 				} else if (e.oppNeeded != null) {
-					summary.appendChild(document.createTextNode(`Up ${gap} — opponent must score ${e.oppNeeded.toFixed(2)}${multi(e.oppLeft)} to win`));
+					summary.appendChild(upLabel());
+					summary.appendChild(document.createTextNode(` — opponent must score ${e.oppNeeded.toFixed(2)}${multi(e.oppLeft)} to win`));
 				} else {
 					// Lowest total that still holds the lead: myRisk is the first
 					// negative that loses it, so the floor is two hundredths above.
 					const floor = (Math.round(e.myRisk * 100) - 2) / 100;
 					const floorText = floor === 0 ? '0.00' : `−${floor.toFixed(2)} or better`;
-					summary.appendChild(document.createTextNode(`Up ${gap} — opponent is done; score ${floorText}${multi(e.myLeft)} to win`));
+					summary.appendChild(upLabel());
+					summary.appendChild(document.createTextNode(` — opponent is done; score ${floorText}${multi(e.myLeft)} to win`));
 				}
 				const meta = scoringMetaLine(e.mine);
 				if (meta) summary.appendChild(el('div', { class: 'scoring-matchup-meta', text: meta }));
