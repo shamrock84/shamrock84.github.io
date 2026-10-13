@@ -9932,19 +9932,11 @@
 
 		// Best ball has no bench to sit on: every rostered player competes for
 		// the lineup and the best legal one counts. A player outside the
-		// current lineup gets in by outscoring the weakest starter at his own
-		// position, so this is how many points he still needs to pass that
-		// starter's score today (smallest winning margin, to the hundredth).
-		// null when no starter shares his position (a flex-only difference is
-		// not modelled), and `ahead` when he already out-points that starter.
-		function mondayOutscoreTarget(player, team) {
-			const rivals = (team.players || []).filter((s) => s.position === player.position && s.points != null);
-			if (!player.position || rivals.length === 0) return null;
-			const weakest = Math.min(...rivals.map((s) => Number(s.points)));
-			const have = player.points == null ? 0 : Number(player.points);
-			if (have > weakest) return { ahead: true, by: Math.round((have - weakest) * 100) / 100 };
-			return { ahead: false, by: mondayPointsToPass(weakest - have) };
-		}
+		// current lineup helps only by outscoring the starter he would replace,
+		// and then only by the difference — so what he must beat that starter
+		// BY is the team's own target (the same figure as the summary line),
+		// not the starter's score. Only the side that has to gain gets a
+		// number; the other side's players just say they must outscore one.
 
 		// Smallest score, in hundredths, that strictly beats `gap` points.
 		function mondayPointsToPass(gap) {
@@ -10065,7 +10057,7 @@
 			// One team's block inside a matchup: the team's name, then a row per
 			// player still to play (or a plain note when it has none). Mine and
 			// the opponent's share it so the two sides read the same.
-			const appendTeamSection = (box, team, players) => {
+			const appendTeamSection = (box, team, players, target) => {
 				const section = el('div', { class: `monday-team${team.isMe ? ' monday-team-mine' : ''}` });
 				section.appendChild(el('div', { class: 'monday-team-label', text: team.teamName }));
 				if (players.length === 0) {
@@ -10076,10 +10068,7 @@
 					const name = el('div', { class: 'monday-row-name' });
 					name.appendChild(playerLine(p));
 					if (p.bench) {
-						const target = mondayOutscoreTarget(p, team);
-						const text = !target ? 'Outscore a starter'
-							: target.ahead ? `Already ahead of a starter by ${target.by.toFixed(2)}`
-							: `Outscore starter by ${target.by.toFixed(2)}`;
+						const text = target != null ? `Outscore starter by ${target.toFixed(2)}` : 'Outscore a starter';
 						name.appendChild(el('div', { class: 'scoring-matchup-meta', text }));
 					}
 					const game = playerGameLine(p.team);
@@ -10124,8 +10113,8 @@
 				if (meta) summary.appendChild(el('div', { class: 'scoring-matchup-meta', text: meta }));
 				box.appendChild(summary);
 
-				appendTeamSection(box, e.mine, e.myLeft);
-				appendTeamSection(box, e.opp, e.oppLeft);
+				appendTeamSection(box, e.mine, e.myLeft, e.needed);
+				appendTeamSection(box, e.opp, e.oppLeft, e.oppNeeded);
 				wrap.appendChild(box);
 			}
 			card.appendChild(wrap);
