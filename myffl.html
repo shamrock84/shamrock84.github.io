@@ -2033,11 +2033,21 @@
 			margin-top: 0.75rem;
 			font-size: 0.85rem;
 		}
-		.monday-opponent {
-			padding: 0.3rem 0.5rem;
-			font-size: 0.8em;
+		/* A team's block inside a matchup: its name as a quiet sub-heading,
+		   then its player rows (.monday-row carries the top border). */
+		.monday-team-label {
+			font-size: 0.75rem;
+			font-weight: 700;
+			letter-spacing: 0.02em;
+			text-transform: uppercase;
 			color: var(--muted);
+			padding: 0.3rem 0.5rem 0.15rem;
 			border-top: 1px solid var(--border);
+		}
+		.monday-empty {
+			color: var(--muted);
+			font-size: 0.8em;
+			border-top: none;
 		}
 		.watchlist-starter-count {
 			color: var(--ir-text);
@@ -9909,6 +9919,22 @@
 			return out;
 		}
 
+		// Best ball has no bench to sit on: every rostered player competes for
+		// the lineup and the best legal one counts. A player outside the
+		// current lineup gets in by outscoring the weakest starter at his own
+		// position, so this is how many points he still needs to pass that
+		// starter's score today (smallest winning margin, to the hundredth).
+		// null when no starter shares his position (a flex-only difference is
+		// not modelled), and `ahead` when he already out-points that starter.
+		function mondayOutscoreTarget(player, team) {
+			const rivals = (team.players || []).filter((s) => s.position === player.position && s.points != null);
+			if (!player.position || rivals.length === 0) return null;
+			const weakest = Math.min(...rivals.map((s) => Number(s.points)));
+			const have = player.points == null ? 0 : Number(player.points);
+			if (have > weakest) return { ahead: true, by: Math.round((have - weakest) * 100) / 100 };
+			return { ahead: false, by: mondayPointsToPass(weakest - have) };
+		}
+
 		// Smallest score, in hundredths, that strictly beats `gap` points.
 		function mondayPointsToPass(gap) {
 			return (Math.floor(gap * 100 + 1e-6) + 1) / 100;
@@ -10025,12 +10051,38 @@
 				}
 				return line;
 			};
+			// One team's block inside a matchup: the team's name, then a row per
+			// player still to play (or a plain note when it has none). Mine and
+			// the opponent's share it so the two sides read the same.
+			const appendTeamSection = (box, team, players) => {
+				const section = el('div', { class: 'monday-team' });
+				section.appendChild(el('div', { class: 'monday-team-label', text: team.teamName }));
+				if (players.length === 0) {
+					section.appendChild(el('div', { class: 'monday-row monday-empty', text: 'Nobody left to play' }));
+				}
+				for (const p of players) {
+					const row = el('div', { class: 'monday-row' });
+					const name = el('div', { class: 'monday-row-name' });
+					name.appendChild(playerLine(p));
+					if (p.bench) {
+						const target = mondayOutscoreTarget(p, team);
+						const text = !target ? 'Outscore a starter'
+							: target.ahead ? `Already ahead of a starter by ${target.by.toFixed(2)}`
+							: `Outscore starter by ${target.by.toFixed(2)}`;
+						name.appendChild(el('div', { class: 'scoring-matchup-meta', text }));
+					}
+					const game = playerGameLine(p.team);
+					if (game) name.appendChild(el('div', { class: 'scoring-matchup-meta', text: game }));
+					row.appendChild(name);
+					row.appendChild(el('div', { class: 'monday-need', text: p.points == null ? '–' : `${Number(p.points).toFixed(2)} so far` }));
+					section.appendChild(row);
+				}
+				box.appendChild(section);
+			};
 			const wrap = el('div', { class: 'monday-matchups' });
 			for (const e of entries) {
 				const box = el('div', { class: 'monday-matchup' });
-				const head = el('div', { class: 'monday-matchup-head' });
-				head.appendChild(document.createTextNode(`${quickLinkLabelForLeague(e.league)} vs ${e.opp.teamName}`));
-				box.appendChild(head);
+				box.appendChild(el('div', { class: 'monday-matchup-head', text: leagueDisplayName(e.league) }));
 
 				const summary = el('div', { class: 'monday-summary' });
 				// Targets are the smallest score, to the hundredth, that wins: the
@@ -10058,27 +10110,8 @@
 				if (meta) summary.appendChild(el('div', { class: 'scoring-matchup-meta', text: meta }));
 				box.appendChild(summary);
 
-				for (const p of e.myLeft) {
-					const row = el('div', { class: 'monday-row' });
-					const name = el('div', { class: 'monday-row-name' });
-					name.appendChild(playerLine(p));
-					if (p.bench) name.appendChild(el('div', { class: 'scoring-matchup-meta', text: 'Bench — counts only if he outscores a starter' }));
-					const game = playerGameLine(p.team);
-					if (game) name.appendChild(el('div', { class: 'scoring-matchup-meta', text: game }));
-					row.appendChild(name);
-					row.appendChild(el('div', { class: 'monday-need', text: p.points == null ? '–' : `${Number(p.points).toFixed(2)} so far` }));
-					box.appendChild(row);
-				}
-				if (e.oppLeft.length > 0) {
-					const opp = el('div', { class: 'monday-opponent' });
-					opp.appendChild(document.createTextNode(e.oppMustLose != null ? 'Opponent still to play: ' : 'Opponent still has: '));
-					e.oppLeft.forEach((p, i) => {
-						if (i > 0) opp.appendChild(document.createTextNode(', '));
-						const so = p.points == null ? '' : ` (${Number(p.points).toFixed(2)} so far)`;
-						opp.appendChild(document.createTextNode(`${abbreviatePlayerName(p.name, p.position) || `#${p.id || '?'}`}${p.bench ? ' (bench)' : ''}${so}`));
-					});
-					box.appendChild(opp);
-				}
+				appendTeamSection(box, e.mine, e.myLeft);
+				appendTeamSection(box, e.opp, e.oppLeft);
 				wrap.appendChild(box);
 			}
 			card.appendChild(wrap);

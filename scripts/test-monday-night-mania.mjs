@@ -210,7 +210,9 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	assert.match(text, /Down 11\.60 — score 11\.61 combined to win/);
 	assert.doesNotMatch(text, /alone|stay above/);
 	assert.match(text, /3\.00 so far/);
-	assert.match(text, /Opponent still has: O\. Guy \(5\.00 so far\)/);
+	assert.match(text, /Them/);
+	assert.match(text, /O\. Guy[\s\S]*5\.00 so far/);
+	assert.match(text, /League 1/);
 	// "combined" only with several players on the side that must score.
 	const one = lg('2', '98.40', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], [pl('c', 'Opp Guy', 'NYJ', 5)]);
 	assert.match(fullText(ctx.renderMondayNightManiaCard([one], MONDAY)), /Down 11\.60 — score 11\.61 to win/);
@@ -363,6 +365,35 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	const d = lg('4', '90.00', '100.00', [pl('a', 'DJ Moore', 'MIA', null)], [pl('c', 'Opp Guy', 'NYJ', 5)]);
 	d.players = [rp('DJ Moore', 'D')];
 	assert.equal(ctx.computeMondayNightMania([d], games).live[0].myLeft.length, 1);
+}
+
+{
+	const ctx = makeContext(LOGGED_IN);
+	setState(ctx, games);
+	// Best ball: no "bench" wording. A player outside the lineup says how
+	// far he must outscore the weakest starter at his position (that
+	// starter's score minus his own, plus a hundredth); nobody at his
+	// position means a generic line; ahead says so. Opponent rows too.
+	const mine = [pl('s1', 'Starter One', 'KC', 8), pl('s2', 'Starter Two', 'KC', 12)];
+	const bbLeague = lg('1', '90.00', '100.00', mine, [pl('c', 'Opp Guy', 'NYJ', 5)], { tags: ['BestBall'] });
+	bbLeague.scoring.teams[0].bench = [
+		pl('b1', 'Bench One', 'MIA', 3),
+		{ ...pl('b2', 'Bench Rb', 'MIA', null), position: 'RB' },
+		pl('b3', 'Bench Ahead', 'MIA', 9.5),
+	];
+	bbLeague.scoring.teams[1].players = [pl('o1', 'Opp Start', 'KC', 6)];
+	bbLeague.scoring.teams[1].bench = [pl('ob', 'Opp Bench', 'NYJ', 1)];
+	const text = fullText(ctx.renderMondayNightManiaCard([bbLeague], MONDAY));
+	assert.doesNotMatch(text, /Bench —|counts only/);
+	assert.match(text, /Outscore starter by 5\.01/);
+	assert.match(text, /Outscore a starter/);
+	assert.match(text, /Already ahead of a starter by 1\.50/);
+	assert.match(text, /Outscore starter by 5\.01[\s\S]*Them[\s\S]*Outscore starter by 5\.01/);
+	// Team sections: mine first, then the opponent, a side with nobody
+	// left says so, and the header is the league name.
+	const empty = lg('2', '120.00', '110.00', [], [pl('c', 'Opp Guy', 'NYJ', 5)]);
+	const t2 = fullText(ctx.renderMondayNightManiaCard([empty], MONDAY));
+	assert.match(t2, /League 2[\s\S]*Me[\s\S]*Nobody left to play[\s\S]*Them[\s\S]*O\. Guy/);
 }
 
 console.log('test-monday-night-mania: ok');
