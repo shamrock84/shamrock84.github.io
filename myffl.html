@@ -2033,16 +2033,23 @@
 			margin-top: 0.75rem;
 			font-size: 0.85rem;
 		}
-		/* A team's block inside a matchup: its name as a quiet sub-heading,
-		   then its player rows (.monday-row carries the top border). */
+		/* A team's block inside a matchup: its name as a highlighted bar with
+		   a stripe (purple for mine, grey for the opponent's), and its player
+		   rows indented beneath so each group reads as belonging to it. */
 		.monday-team-label {
-			font-size: 0.75rem;
+			font-size: 0.85rem;
 			font-weight: 700;
-			letter-spacing: 0.02em;
-			text-transform: uppercase;
-			color: var(--muted);
-			padding: 0.3rem 0.5rem 0.15rem;
+			padding: 0.3rem 0.5rem;
 			border-top: 1px solid var(--border);
+			border-left: 4px solid var(--muted);
+			background: var(--chip-bg);
+		}
+		.monday-team-mine .monday-team-label {
+			border-left-color: var(--accent);
+			color: var(--accent);
+		}
+		.monday-team .monday-row {
+			padding-left: 1.25rem;
 		}
 		.monday-empty {
 			color: var(--muted);
@@ -10055,7 +10062,7 @@
 			// player still to play (or a plain note when it has none). Mine and
 			// the opponent's share it so the two sides read the same.
 			const appendTeamSection = (box, team, players) => {
-				const section = el('div', { class: 'monday-team' });
+				const section = el('div', { class: `monday-team${team.isMe ? ' monday-team-mine' : ''}` });
 				section.appendChild(el('div', { class: 'monday-team-label', text: team.teamName }));
 				if (players.length === 0) {
 					section.appendChild(el('div', { class: 'monday-row monday-empty', text: 'Nobody left to play' }));
