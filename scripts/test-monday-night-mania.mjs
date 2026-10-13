@@ -370,25 +370,24 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 {
 	const ctx = makeContext(LOGGED_IN);
 	setState(ctx, games);
-	// Best ball: no "bench" wording. A player outside the lineup says how
-	// far he must outscore the weakest starter at his position (that
-	// starter's score minus his own, plus a hundredth); nobody at his
-	// position means a generic line; ahead says so. Opponent rows too.
-	const mine = [pl('s1', 'Starter One', 'KC', 8), pl('s2', 'Starter Two', 'KC', 12)];
-	const bbLeague = lg('1', '90.00', '100.00', mine, [pl('c', 'Opp Guy', 'NYJ', 5)], { tags: ['BestBall'] });
-	bbLeague.scoring.teams[0].bench = [
-		pl('b1', 'Bench One', 'MIA', 3),
-		{ ...pl('b2', 'Bench Rb', 'MIA', null), position: 'RB' },
-		pl('b3', 'Bench Ahead', 'MIA', 9.5),
-	];
-	bbLeague.scoring.teams[1].players = [pl('o1', 'Opp Start', 'KC', 6)];
+	// Best ball: no "bench" wording. A player outside the lineup helps only
+	// by outscoring the starter he replaces, by the difference, so the
+	// number is the side's own target (here: down 10.00, so 10.01) — never
+	// a starter's score. The other side gets the plain line.
+	const bbLeague = lg('1', '90.00', '100.00', [pl('s1', 'Starter One', 'KC', 8)], [pl('c', 'Opp Guy', 'NYJ', 5)], { tags: ['BestBall'] });
+	bbLeague.scoring.teams[0].bench = [pl('b1', 'Bench One', 'MIA', 3)];
 	bbLeague.scoring.teams[1].bench = [pl('ob', 'Opp Bench', 'NYJ', 1)];
 	const text = fullText(ctx.renderMondayNightManiaCard([bbLeague], MONDAY));
-	assert.doesNotMatch(text, /Bench —|counts only/);
-	assert.match(text, /Outscore starter by 5\.01/);
-	assert.match(text, /Outscore a starter/);
-	assert.match(text, /Already ahead of a starter by 1\.50/);
-	assert.match(text, /Outscore starter by 5\.01[\s\S]*Them[\s\S]*Outscore starter by 5\.01/);
+	assert.doesNotMatch(text, /Bench —|counts only|Already ahead/);
+	assert.match(text, /B\. One[\s\S]*Outscore starter by 10\.01/);
+	assert.match(text, /O\. Bench[\s\S]*Outscore a starter(?! by)/);
+	// Leading: the opponent's bench player needs margin + 0.01; mine is plain.
+	const lead = lg('3', '100.00', '90.00', [pl('s1', 'Starter One', 'KC', 8)], [pl('c', 'Opp Guy', 'NYJ', 5)], { tags: ['BestBall'] });
+	lead.scoring.teams[0].bench = [pl('b1', 'Bench One', 'MIA', 3)];
+	lead.scoring.teams[1].bench = [pl('ob', 'Opp Bench', 'NYJ', 1)];
+	const t3 = fullText(ctx.renderMondayNightManiaCard([lead], MONDAY));
+	assert.match(t3, /B\. One[\s\S]*Outscore a starter(?! by)/);
+	assert.match(t3, /O\. Bench[\s\S]*Outscore starter by 10\.01/);
 	// Team sections: mine first, then the opponent, a side with nobody
 	// left says so, and the header is the league name.
 	const empty = lg('2', '120.00', '110.00', [], [pl('c', 'Opp Guy', 'NYJ', 5)]);
