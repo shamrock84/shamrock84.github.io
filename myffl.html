@@ -2281,9 +2281,13 @@
 		   second time — see .depth-chart-team-card for the one place that is
 		   deliberate). The next unplayed game is tinted; byes are muted. */
 		.nfl-schedule-teams {
-			display: flex;
-			flex-wrap: wrap;
+			display: grid;
 			gap: 1rem;
+			/* At most four boxes across: each column is at least a quarter of
+			   the row (less the three gaps) and at least 320px, the width the
+			   longest kickoff ("Sun, 10/18, 12:00 PM") needs. Wider than four
+			   would clip that column; narrower rows drop to fewer columns. */
+			grid-template-columns: repeat(auto-fill, minmax(max(320px, calc((100% - 3rem) / 4)), 1fr));
 		}
 		/* Schedules' own search box: the Depth Charts one is a single shared
 		   node (see relocateSearchControls), so this card builds its own,
@@ -2326,11 +2330,11 @@
 			color: var(--text);
 		}
 		.nfl-schedule-team {
-			flex: 1 1 230px;
 			min-width: 0;
 			border: 1px solid var(--border);
 			border-radius: 8px;
-			overflow: hidden;
+			/* A box scrolls sideways before it would ever clip a column. */
+			overflow-x: auto;
 		}
 		.nfl-schedule-title {
 			display: flex;
