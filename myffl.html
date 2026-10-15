@@ -457,6 +457,25 @@
 		   content via .card's own padding, so the shared rule's horizontal
 		   padding would double it up; zeroed here rather than touching
 		   .subtabs-bar itself, which the page-level bar still uses as-is. */
+		/* "All Positions" switch: off shows only the fantasy positions; the
+		   other positions are always rendered and hidden here, so flipping
+		   it never rebuilds the 32 cards. */
+		.depth-chart-teams:not(.show-all-positions) .depth-chart-extra,
+		.depth-chart-fav-teams:not(.show-all-positions) .depth-chart-extra {
+			display: none;
+		}
+		.depth-chart-all-toggle {
+			display: flex;
+			align-items: center;
+			gap: 0.5rem;
+			margin: 0 0 1rem;
+			cursor: pointer;
+		}
+		.depth-chart-group-label {
+			flex: 1 1 100%;
+			margin: 0.25rem 0 0;
+			font-weight: 600;
+		}
 		.depth-chart-subtabs,
 		.nfl-standings-toggle,
 		.league-standings-toggle {
@@ -12940,6 +12959,33 @@
 			return wrap;
 		}
 
+		// Non-fantasy positions (offensive line, defense, special teams) — the
+		// sync's team.other = {OFF|DEF|ST: {POS: [{name, rank, injuryStatus}]}}.
+		// No ECR or Own In: FantasyPros ranks none of these and no league here
+		// rosters them. Hidden until the "All Positions" switch is on.
+		const DEPTH_CHART_OTHER_GROUPS = [['OFF', 'Offense'], ['DEF', 'Defense'], ['ST', 'Special Teams']];
+		function buildDepthChartOtherTable(position, rows) {
+			const wrap = el('div', { class: 'depth-chart-position depth-chart-extra' });
+			const table = el('table', { class: 'standings depth-chart-table' });
+			table.appendChild(el('thead', {}, [
+				el('tr', {}, [el('th', { text: position })]),
+				el('tr', {}, [el('th', { text: 'Player' })]),
+			]));
+			const tbody = el('tbody');
+			for (const row of rows) {
+				const tr = el('tr', { class: 'player-row', 'data-name': row.name.toLowerCase() });
+				const nameCell = el('td', { class: 'player-name' });
+				nameCell.appendChild(playerNameNode(row));
+				const injuryBadge = buildInjuryBadge(row);
+				if (injuryBadge) nameCell.appendChild(injuryBadge);
+				tr.appendChild(nameCell);
+				tbody.appendChild(tr);
+			}
+			table.appendChild(tbody);
+			wrap.appendChild(table);
+			return wrap;
+		}
+
 		// One team card — QB/RB/WR/TE mini-tables side by side (CSS handles
 		// the wrap down to one column on a phone), division as the
 		// data-league-type for the sub-tab strip. Returns null when every
@@ -12947,7 +12993,8 @@
 		// empty card with a name and no tables.
 		function renderDepthChartTeamCard(abbr, team, ecrPools, ownership, favs = new Set(), collapseKey = `depthchart:${abbr}`) {
 			const positions = computeDepthChartTeamRows(team, ecrPools, ownership);
-			if (Object.keys(positions).length === 0) return null;
+			const otherGroups = team.other || {};
+			if (Object.keys(positions).length === 0 && Object.keys(otherGroups).length === 0) return null;
 
 			const division = DEPTH_CHART_DIVISIONS[abbr] || null;
 			// depth-chart-team-card is the flex-basis sizing hook for nesting
@@ -12977,6 +13024,14 @@
 			for (const position of Object.keys(DEPTH_CHART_POSITION_LABELS)) {
 				const rows = positions[position];
 				if (rows) positionsWrap.appendChild(buildDepthChartPositionTable(position, rows));
+			}
+			for (const [group, label] of DEPTH_CHART_OTHER_GROUPS) {
+				const byPos = otherGroups[group];
+				if (!byPos) continue;
+				positionsWrap.appendChild(el('div', { class: 'depth-chart-group-label depth-chart-extra', text: label }));
+				for (const [pos, rows] of Object.entries(byPos)) {
+					if (Array.isArray(rows) && rows.length) positionsWrap.appendChild(buildDepthChartOtherTable(pos, rows));
+				}
 			}
 			card.appendChild(positionsWrap);
 			return card;
@@ -13063,6 +13118,21 @@
 			wrap.appendChild(heading);
 			makeCollapsible(wrap, heading, 'nfl-depth-charts');
 
+			// "All Positions" switch. Off (default): QB/RB/WR/TE only. On: also
+			// offensive line, defense and special teams. Remembered per device.
+			let showAll = false;
+			let favSummaryToggle = () => {};
+			try { showAll = localStorage.getItem('myfflDepthAllPositions') === '1'; } catch (e) { /* storage blocked */ }
+			teamsWrap.classList.toggle('show-all-positions', showAll);
+			const allBox = el('input', { type: 'checkbox' });
+			allBox.checked = showAll;
+			allBox.addEventListener('change', () => {
+				teamsWrap.classList.toggle('show-all-positions', allBox.checked);
+				favSummaryToggle(allBox.checked);
+				try { localStorage.setItem('myfflDepthAllPositions', allBox.checked ? '1' : '0'); } catch (e) { /* storage blocked */ }
+			});
+			wrap.appendChild(el('label', { class: 'depth-chart-all-toggle' }, [allBox, el('span', { text: 'All Positions' })]));
+
 			// Same present-groups computation renderSubTabs uses for every
 			// other view's sub-tab strip, scoped to just this card's own team
 			// cards rather than the whole document — see
@@ -13094,6 +13164,8 @@
 				delete copy.dataset.leagueType;
 				favSummary.appendChild(copy);
 			}
+			favSummary.classList.toggle('show-all-positions', showAll);
+			favSummaryToggle = (on) => favSummary.classList.toggle('show-all-positions', on);
 			if (favSummary.children.length > 0) wrap.appendChild(favSummary);
 			// Shown by updateVisibility exactly when every team card is
 			// filtered out (an unchecked-everything pill state, or a search
