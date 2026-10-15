@@ -1,0 +1,39 @@
+name: Probe NFL Schedules (manual, read-only, no secrets needed)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here, the
+# same rule the other manual workflows follow.
+#
+# Confirms the shape scripts/lib/espn-schedules.mjs parses from ESPN's public
+# scoreboard (one request per regular-season week), which is unreachable from
+# the sandbox this repo is normally edited from. See
+# scripts/probe-nfl-schedules.mjs's header.
+#
+# Read-only: three GETs.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      # Blobless + sparse checkout: skips mfl/PSD and images/, which no
+      # workflow here reads. Same five directories everywhere on purpose;
+      # see sync-fantasy-rosters.yml for the reasoning and the numbers.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout: |
+            api
+            scripts
+            config
+            data
+            .github
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Probe ESPN public scoreboard (schedule weeks)
+        run: node scripts/probe-nfl-schedules.mjs

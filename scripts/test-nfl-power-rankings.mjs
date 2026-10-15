@@ -182,12 +182,12 @@ assert.equal(ctx.renderNflPowerCard({ teams: {} }), null, 'an empty set renders 
 
 assert.match(
 	scriptSource,
-	/const nflStandingsCard = renderNflStandingsCard\(data\.nflStandings\);\s*if \(nflStandingsCard\) gridEl\.appendChild\(nflStandingsCard\);\s*const nflPowerCard = renderNflPowerCard\(data\.nflPowerRankings\);\s*if \(nflPowerCard\) gridEl\.appendChild\(nflPowerCard\);\s*renderDepthChartCards/,
+	/const nflStandingsCard = renderNflStandingsCard\(data\.nflStandings\);\s*if \(nflStandingsCard\) gridEl\.appendChild\(nflStandingsCard\);\s*const nflPowerCard = renderNflPowerCard\(data\.nflPowerRankings\);\s*if \(nflPowerCard\) gridEl\.appendChild\(nflPowerCard\);[\s\S]*?renderDepthChartCards/,
 	'the Power Index card sits right after Standings, ahead of Depth Charts',
 );
 assert.match(
 	scriptSource,
-	/querySelectorAll\(':scope > \.card\[data-view="nfl"\]:not\(\[data-depth-charts-wrap\]\):not\(\[data-nfl-standings\]\):not\(\[data-nfl-power\]\)'\)/,
+	/querySelectorAll\(':scope > \.card\[data-view="nfl"\]:not\(\[data-depth-charts-wrap\]\):not\(\[data-nfl-standings\]\):not\(\[data-nfl-power\]\):not\(\[data-nfl-schedules\]\)'\)/,
 	'rerenderNflCards must not remove the Power Index card on a poll',
 );
 
