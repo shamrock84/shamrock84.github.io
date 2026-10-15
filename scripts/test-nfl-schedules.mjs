@@ -38,7 +38,11 @@ const event = (away, home, { done = false, as = '0', hs = '0', date = '2026-09-1
 {
 	const games = extractWeekGames({ events: [event('KC', 'BUF', { done: true, as: '24', hs: '17' }), event('DAL', 'NYG'), { competitions: [] }] });
 	assert.equal(games.length, 2, 'an event with no competitors is skipped');
-	assert.deepEqual(games[0], { away: 'KC', home: 'BUF', at: '2026-09-13T17:00Z', final: true, awayScore: 24, homeScore: 17 });
+	assert.deepEqual(games[0], { away: 'KC', home: 'BUF', at: '2026-09-13T17:00Z', final: true, tbd: false, awayScore: 24, homeScore: 17 });
+	const tbd = event('DAL', 'NYG');
+	tbd.status.type.detail = '1/10 - TBD';
+	assert.equal(extractWeekGames({ events: [tbd] })[0].tbd, true, 'a TBD detail marks the kickoff time unset');
+	assert.equal(buildTeamSchedules([{ week: 18, games: extractWeekGames({ events: [tbd] }) }]).DAL[0].tbd, true);
 	assert.equal(games[1].final, false);
 	assert.equal(games[1].awayScore, null, 'a pregame 0 is not a score');
 	assert.deepEqual(extractWeekGames({}), []);
