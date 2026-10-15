@@ -2445,6 +2445,29 @@
 			font-weight: 700;
 			color: var(--accent);
 		}
+		/* A favorite team's whole card or box (Depth Charts, Schedules): a
+		   thicker accent border and a faint accent wash, purple because that
+		   is this page's "notable" and gold is already taxi squad and the
+		   live-game cue. The star in the heading stays as the non-color cue.
+		   The border grows inward (box-shadow, not border-width) so the grid
+		   doesn't shift by a pixel against its neighbours. */
+		.nfl-fav-team {
+			border-color: var(--accent);
+			box-shadow: inset 0 0 0 1px var(--accent);
+			background: color-mix(in srgb, var(--accent) 7%, var(--card-bg));
+		}
+		/* Table rows (Standings, Power Index) and game rows keep their order
+		   and their own fill/border (a game row's border already says live or
+		   final), so they get an inset left bar instead. */
+		tr.nfl-fav-row > td:first-child {
+			box-shadow: inset 4px 0 0 var(--accent);
+		}
+		tr.nfl-fav-row > td {
+			background: color-mix(in srgb, var(--accent) 7%, transparent);
+		}
+		.nfl-game-row.nfl-fav-game {
+			box-shadow: inset 4px 0 0 var(--accent);
+		}
 		.favorites-section-label {
 			margin-top: 0.4rem;
 			color: var(--muted);
@@ -13004,7 +13027,10 @@
 			const ownership = buildDepthChartOwnership(data.leagues);
 			const teamsWrap = el('div', { class: 'depth-chart-teams' });
 			const favs = favoriteNflTeams();
-			for (const [abbr, team] of Object.entries(data.depthCharts.teams)) {
+			// Favorites first (stable, so the rest keep the snapshot's order).
+			const teamEntries = Object.entries(data.depthCharts.teams)
+				.sort(([a], [b]) => Number(favs.has(favoriteTeamKey(b))) - Number(favs.has(favoriteTeamKey(a))));
+			for (const [abbr, team] of teamEntries) {
 				const card = renderDepthChartTeamCard(abbr, team, ecrPools, ownership, favs);
 				if (card) teamsWrap.appendChild(card);
 			}
@@ -13369,7 +13395,8 @@
 			// colors specifically. 'pre' gets neither modifier: the plain
 			// default already means "nothing to flag" everywhere else here.
 			const stateClass = game.state === 'in' ? ' nfl-game-live' : game.state === 'post' ? ' nfl-game-final' : '';
-			const row = el('div', { class: `nfl-game-row${stateClass}` });
+			const isFavGame = favs.has(favoriteTeamKey(game.away.team)) || favs.has(favoriteTeamKey(game.home.team));
+			const row = el('div', { class: `nfl-game-row${stateClass}${isFavGame ? ' nfl-fav-game' : ''}` });
 			const teams = el('div', { class: 'nfl-game-teams' });
 			const teamClass = (abbr) => `nfl-game-team${favs.has(favoriteTeamKey(abbr)) ? ' nfl-fav' : ''}`;
 			const teamText = (abbr) => (favs.has(favoriteTeamKey(abbr)) ? `★ ${abbr}` : abbr);
@@ -13648,7 +13675,7 @@
 			makeGroupCollapsible(box, bannerCell, `nfl-standings:${view}:${label}`);
 			const tbody = el('tbody', { class: 'roster-group-content' });
 			teams.forEach((t, i) => {
-				const row = el('tr');
+				const row = el('tr', favs.has(favoriteTeamKey(t.abbr)) ? { class: 'nfl-fav-row' } : {});
 				const nameCell = el('td', { title: t.name || t.abbr });
 				if (ranked) nameCell.appendChild(el('span', { class: 'nfl-standings-rank', text: String(i + 1) }));
 				nameCell.appendChild(el('span', favs.has(favoriteTeamKey(t.abbr)) ? { class: 'nfl-fav', text: `★ ${t.abbr}` } : { text: t.abbr }));
@@ -13785,7 +13812,7 @@
 			const tbody = el('tbody');
 			const oneDecimal = (v) => (v == null ? '\u2014' : v.toFixed(1));
 			rows.forEach((t) => {
-				const row = el('tr');
+				const row = el('tr', favs.has(favoriteTeamKey(t.abbr)) ? { class: 'nfl-fav-row' } : {});
 				const nameCell = el('td', { title: t.name || t.abbr });
 				nameCell.appendChild(el('span', { class: 'nfl-standings-rank', text: String(t.pos) }));
 				nameCell.appendChild(el('span', favs.has(favoriteTeamKey(t.abbr)) ? { class: 'nfl-fav', text: `★ ${t.abbr}` } : { text: t.abbr }));
