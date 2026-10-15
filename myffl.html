@@ -2283,11 +2283,12 @@
 		.nfl-schedule-teams {
 			display: grid;
 			gap: 1rem;
-			/* At most four boxes across: each column is at least a quarter of
-			   the row (less the three gaps) and at least 320px, the width the
-			   longest kickoff ("Sun, 10/18, 12:00 PM") needs. Wider than four
-			   would clip that column; narrower rows drop to fewer columns. */
-			grid-template-columns: repeat(auto-fill, minmax(max(320px, calc((100% - 3rem) / 4)), 1fr));
+			/* At most four boxes across (a division is four teams): each column
+			   is at least a quarter of the row (less the three gaps) and at
+			   least 250px, a little over the narrowest the table can get with
+			   the cell sizing below (~245px with the longest kickoff, "Mon,
+			   11/16, 7:15 PM"). Narrower rows drop to fewer columns. */
+			grid-template-columns: repeat(auto-fill, minmax(max(250px, calc((100% - 3rem) / 4)), 1fr));
 		}
 		/* Schedules' own search box: the Depth Charts one is a single shared
 		   node (see relocateSearchControls), so this card builds its own,
@@ -2341,16 +2342,36 @@
 			justify-content: space-between;
 			gap: 0.5rem;
 			padding: 0.35rem 0.6rem;
+			font-size: 0.95rem;
 			font-weight: 600;
 			background: var(--chip-bg);
 			color: var(--accent);
 		}
+		.nfl-schedule-title > span:first-child {
+			min-width: 0;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
 		.nfl-schedule-title .nfl-schedule-record {
+			white-space: nowrap;
 			font-weight: 400;
 			font-variant-numeric: tabular-nums;
 		}
 		.nfl-schedule-table {
 			width: 100%;
+		}
+		/* Smaller cells than the shared table.standings default so four boxes
+		   fit across an iPad in landscape. The selector matches the
+		   specificity of the Depth Charts tbody rule it overrides. */
+		table.standings.nfl-schedule-table tbody td {
+			font-size: 0.8rem;
+			padding-left: 0.35rem;
+			padding-right: 0.35rem;
+		}
+		table.standings.nfl-schedule-table th {
+			padding-left: 0.35rem;
+			padding-right: 0.35rem;
 		}
 		.nfl-schedule-table th,
 		.nfl-schedule-table td {
@@ -13842,7 +13863,7 @@
 			if (DEPTH_CHART_DIVISIONS[abbr]) box.dataset.division = DEPTH_CHART_DIVISIONS[abbr];
 			const record = nflScheduleRecord(games);
 			box.appendChild(el('div', { class: 'nfl-schedule-title' }, [
-				el('span', isFav ? { class: 'nfl-fav', text: `★ ${name}` } : { text: name }),
+				el('span', isFav ? { class: 'nfl-fav', text: `★ ${name}`, title: name } : { text: name, title: name }),
 				el('span', { class: 'nfl-schedule-record', text: record }),
 			]));
 			const table = el('table', { class: 'standings depth-chart-table nfl-standings-table nfl-schedule-table' });
