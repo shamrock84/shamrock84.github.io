@@ -50,6 +50,20 @@ export const DEPTH_CHART_POSITIONS = ['qb', 'rb', 'wr', 'te'];
 // the personnel-package name and standard football terminology; low risk to
 // have swapped X and Z, very safe on S given `slot` itself is presumably
 // named after "slot receiver".
+// Every other position ESPN's chart carries, grouped for the page's "All
+// Positions" toggle. Keys are ESPN's lowercase `positions` keys. NOT yet
+// confirmed by a probe (the sandbox can't reach ESPN): a key outside this map
+// is skipped and logged by fetchAllDepthCharts, so the first sync's log shows
+// exactly what to add. Stored as team.other = {OFF|DEF|ST: {POS: [...]}}.
+export const OTHER_POSITION_GROUPS = {
+  OFF: ['lt', 'lg', 'c', 'rg', 'rt'],
+  DEF: ['lde', 'rde', 'ldt', 'rdt', 'nt', 'dt', 'de', 'wlb', 'mlb', 'slb', 'lilb', 'rilb', 'lolb', 'rolb', 'ilb', 'olb', 'lb', 'lcb', 'rcb', 'nb', 'ss', 'fs', 'cb', 's'],
+  ST: ['pk', 'p', 'h', 'ko', 'ls', 'pr', 'kr'],
+};
+const OTHER_GROUP_BY_KEY = new Map(
+  Object.entries(OTHER_POSITION_GROUPS).flatMap(([group, keys]) => keys.map((k) => [k, group]))
+);
+
 const WR_ROLE_BY_SLOT = { 1: 'X', 2: 'Z', 8: 'S' };
 
 const ATHLETE_ID_FROM_REF = /\/athletes\/(\d+)\?/;
@@ -150,6 +164,15 @@ export function extractDepthChartEntries(depthChartData, posKey, rosterById) {
   return entries.sort((a, b) => a.rank - b.rank);
 }
 
+// Position keys present on any chart, for the "All Positions" pass.
+export function collectPositionKeys(depthChartData) {
+  const keys = new Set();
+  for (const chart of depthChartData?.items || []) {
+    for (const k of Object.keys(chart?.positions || {})) keys.add(k);
+  }
+  return keys;
+}
+
 // One team's depth chart across DEPTH_CHART_POSITIONS, {QB: [...], RB:
 // [...], ...} with a position omitted entirely rather than an empty array
 // when the chart carries nothing for it — the page treats "no key" and
@@ -167,6 +190,22 @@ async function fetchTeamDepthChart(team, season) {
     const entries = extractDepthChartEntries(depthChart, posKey, rosterById);
     if (entries.length > 0) positions[posKey.toUpperCase()] = entries;
   }
+  // Everything else, grouped. The same position can sit on several charts
+  // (base vs nickel), so keep each player once at their best rank.
+  const other = {};
+  const unknown = [];
+  for (const posKey of collectPositionKeys(depthChart)) {
+    if (DEPTH_CHART_POSITIONS.includes(posKey)) continue;
+    const group = OTHER_GROUP_BY_KEY.get(posKey);
+    if (!group) { unknown.push(posKey); continue; }
+    const seen = new Set();
+    const entries = extractDepthChartEntries(depthChart, posKey, rosterById)
+      .filter((e) => !seen.has(e.id) && seen.add(e.id))
+      .map(({ id, name, rank, injuryStatus }) => ({ id, name, rank, injuryStatus }));
+    if (entries.length > 0) (other[group] ||= {})[posKey.toUpperCase()] = entries;
+  }
+  if (Object.keys(other).length > 0) positions.other = other;
+  if (unknown.length > 0) console.warn(`Depth chart ${team.abbr}: unmapped position key(s) ${unknown.join(', ')}`);
   return positions;
 }
 
