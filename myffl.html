@@ -12973,6 +12973,7 @@
 		// No ECR or Own In: FantasyPros ranks none of these and no league here
 		// rosters them. Hidden until the "All Positions" switch is on.
 		const DEPTH_CHART_OTHER_GROUPS = [['OFF', 'Offense'], ['DEF', 'Defense'], ['ST', 'Special Teams']];
+		const DEPTH_CHART_OFFENSE_EXTRA_ORDER = ['FB', 'LT', 'LG', 'C', 'RG', 'RT'];
 		function buildDepthChartOtherTable(position, rows) {
 			const wrap = el('div', { class: 'depth-chart-position depth-chart-extra' });
 			const table = el('table', { class: 'standings depth-chart-table' });
@@ -13030,6 +13031,11 @@
 			makeCollapsible(card, heading, collapseKey);
 
 			const positionsWrap = el('div', { class: 'depth-chart-positions' });
+			// Offense label is always shown (QB/RB/WR/TE fall under it); the
+			// other labels, and FB / the line, only appear with "All Positions".
+			if (Object.keys(positions).length > 0) {
+				positionsWrap.appendChild(el('div', { class: 'depth-chart-group-label', text: 'Offense' }));
+			}
 			for (const position of Object.keys(DEPTH_CHART_POSITION_LABELS)) {
 				const rows = positions[position];
 				if (rows) positionsWrap.appendChild(buildDepthChartPositionTable(position, rows));
@@ -13037,8 +13043,14 @@
 			for (const [group, label] of DEPTH_CHART_OTHER_GROUPS) {
 				const byPos = otherGroups[group];
 				if (!byPos) continue;
-				positionsWrap.appendChild(el('div', { class: 'depth-chart-group-label depth-chart-extra', text: label }));
-				for (const [pos, rows] of Object.entries(byPos)) {
+				if (group !== 'OFF') {
+					positionsWrap.appendChild(el('div', { class: 'depth-chart-group-label depth-chart-extra', text: label }));
+				}
+				// FB right after TE, then the line; anything else in synced order.
+				const order = group === 'OFF' ? DEPTH_CHART_OFFENSE_EXTRA_ORDER : [];
+				const rank = (pos) => { const i = order.indexOf(pos); return i < 0 ? order.length : i; };
+				const entries = Object.entries(byPos).sort((x, y) => rank(x[0]) - rank(y[0]));
+				for (const [pos, rows] of entries) {
 					if (Array.isArray(rows) && rows.length) positionsWrap.appendChild(buildDepthChartOtherTable(pos, rows));
 				}
 			}
