@@ -2287,8 +2287,11 @@
 			   is at least a quarter of the row (less the three gaps) and at
 			   least 250px, a little over the narrowest the table can get with
 			   the cell sizing below (~245px with the longest kickoff, "Mon,
-			   11/16, 7:15 PM"). Narrower rows drop to fewer columns. */
-			grid-template-columns: repeat(auto-fill, minmax(max(250px, calc((100% - 3rem) / 4)), 1fr));
+			   11/16, 7:15 PM"). Narrower rows drop to fewer columns. auto-fit rather than auto-fill
+			   so empty tracks collapse: with only a favorite or two showing (the
+			   collapsed card), the boxes share the full row instead of each
+			   taking a quarter of it. */
+			grid-template-columns: repeat(auto-fit, minmax(max(250px, calc((100% - 3rem) / 4)), 1fr));
 		}
 		/* Schedules' own search box: the Depth Charts one is a single shared
 		   node (see relocateSearchControls), so this card builds its own,
