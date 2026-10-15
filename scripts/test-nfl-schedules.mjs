@@ -144,6 +144,51 @@ const titles = (container) => findAll(container, (n) => has(n, 'nfl-schedule-tit
 	assert.ok(findAll(buf, (n) => has(n, 'nfl-schedule-bye')).some((r) => text(r) === '3BYE—'), 'a bye renders as BYE');
 }
 
+{
+	// Division pills + search. Real abbreviations so DEPTH_CHART_DIVISIONS
+	// places them: KC afc-west, BUF afc-east, DAL/NYG nfc-east.
+	const card = ctx.renderNflSchedulesCard({ teams }, names);
+	const [all, summary] = card.children.filter((c) => has(c, 'nfl-schedule-teams'));
+	const boxes = findAll(all, (n) => has(n, 'nfl-schedule-team'));
+	const visible = () => boxes.filter((b) => !has(b, 'hidden')).map((b) => b.dataset.teamName.split(' ').pop().toUpperCase()).sort();
+	const pills = findAll(card, (n) => n.tag === 'button' && has(n, 'tab-btn'));
+	const pill = (label) => pills.find((b) => b.textContent === label);
+	const click = (n) => n.listeners.click.forEach((fn) => fn());
+	const input = findAll(card, (n) => n.tag === 'input')[0];
+	const clearBtn = findAll(card, (n) => n.tag === 'button' && n.attrs['aria-label'] === 'Clear search')[0];
+	input.focus = () => {};
+	const empty = card.children.find((c) => has(c, 'error-box'));
+	const type = (v) => { input.value = v; input.listeners.input.forEach((fn) => fn()); };
+
+	assert.deepEqual(pills.map((b) => b.textContent), ['AFC East', 'AFC West', 'NFC East'], 'one pill per division present, in division order');
+	assert.deepEqual(visible(), ['BUF', 'DAL', 'KC', 'NYG'], 'every division starts checked');
+
+	click(pill('NFC East'));
+	assert.deepEqual(visible(), ['BUF', 'KC'], 'unchecking a division hides its teams');
+	assert.deepEqual(titles(summary), ['★ Kansas City Chiefs', '★ New York Giants'], 'the collapsed favorites are exempt from the filter');
+	assert.equal(JSON.parse(store.get('myfflLeagueTypesByView'))['nfl-schedules'].includes('nfl-east'), false);
+
+	type('chiefs');
+	assert.deepEqual(visible(), ['KC'], 'search matches team name within the checked divisions');
+	type('bu');
+	assert.deepEqual(visible(), ['BUF']);
+	type('dal');
+	assert.deepEqual(visible(), [], 'a match in an unchecked division stays hidden');
+	assert.equal(has(empty, 'hidden'), false, 'the empty message shows when nothing matches');
+	click(pill('NFC East'));
+	assert.deepEqual(visible(), ['DAL'], 'rechecking the division brings the match back');
+	assert.equal(has(empty, 'hidden'), true);
+	assert.equal(has(clearBtn, 'hidden'), false, 'clear button appears with text');
+	click(clearBtn);
+	assert.equal(input.value, '');
+	assert.deepEqual(visible(), ['BUF', 'DAL', 'KC', 'NYG']);
+	assert.equal(has(clearBtn, 'hidden'), true);
+}
+
+assert.equal(ctx.nflScheduleBoxMatches('afc-east', 'buffalo bills buf', new Set(['afc-east']), 'bills'), true);
+assert.equal(ctx.nflScheduleBoxMatches('afc-east', 'buffalo bills buf', new Set(['nfc-east']), ''), false);
+assert.equal(ctx.nflScheduleBoxMatches(undefined, 'x', new Set(), ''), true, 'a team with no known division is never filtered out by a pill');
+
 assert.equal(ctx.renderNflSchedulesCard(undefined), null);
 assert.equal(ctx.renderNflSchedulesCard({ teams: {} }), null);
 
