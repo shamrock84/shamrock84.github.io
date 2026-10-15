@@ -56,7 +56,7 @@ export const DEPTH_CHART_POSITIONS = ['qb', 'rb', 'wr', 'te'];
 // is skipped and logged by fetchAllDepthCharts, so the first sync's log shows
 // exactly what to add. Stored as team.other = {OFF|DEF|ST: {POS: [...]}}.
 export const OTHER_POSITION_GROUPS = {
-  OFF: ['lt', 'lg', 'c', 'rg', 'rt'],
+  OFF: ['lt', 'lg', 'c', 'rg', 'rt', 'fb'],
   DEF: ['lde', 'rde', 'ldt', 'rdt', 'nt', 'dt', 'de', 'wlb', 'mlb', 'slb', 'lilb', 'rilb', 'lolb', 'rolb', 'ilb', 'olb', 'lb', 'lcb', 'rcb', 'nb', 'ss', 'fs', 'cb', 's'],
   ST: ['pk', 'p', 'h', 'ko', 'ls', 'pr', 'kr'],
 };
