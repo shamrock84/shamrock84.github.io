@@ -73,6 +73,7 @@ import {
 import { fetchAllDepthCharts, DEPTH_CHART_POSITIONS } from './lib/espn-depth-chart.mjs';
 import { fetchNflStandings } from './lib/espn-standings.mjs';
 import { fetchNflPowerRankings } from './lib/espn-fpi.mjs';
+import { fetchNflSchedules } from './lib/espn-schedules.mjs';
 import {
   computeMflSeasonPlacements,
   computeMflSeasonPlacementsByPoints,
@@ -1859,6 +1860,17 @@ async function main() {
     console.error(`Failed to fetch NFL standings: ${err.message}`);
   }
 
+  // Season schedule for the NFL tab's Schedules card — same public ESPN
+  // host and never-fail posture, 18 sequential scoreboard requests (one per
+  // week). See scripts/lib/espn-schedules.mjs.
+  let nflSchedules = null;
+  try {
+    nflSchedules = await fetchNflSchedules({ season: process.env.MFL_YEAR || String(targetSeason) });
+    console.log(`NFL schedules — ${Object.keys(nflSchedules.teams).length} team(s)`);
+  } catch (err) {
+    console.error(`Failed to fetch NFL schedules: ${err.message}`);
+  }
+
   // NFL power rankings (ESPN's FPI) for the NFL tab's Power Index card —
   // same public ESPN host family and same never-fail posture, one request.
   // See scripts/lib/espn-fpi.mjs.
@@ -1939,6 +1951,9 @@ async function main() {
   if (!nflStandings && previous?.nflStandings) {
     nflStandings = previous.nflStandings;
   }
+  if (!nflSchedules && previous?.nflSchedules) {
+    nflSchedules = previous.nflSchedules;
+  }
   if (!nflPowerRankings && previous?.nflPowerRankings) {
     nflPowerRankings = previous.nflPowerRankings;
   }
@@ -1978,6 +1993,8 @@ async function main() {
     nflStandings,
     // And the Power Index card beside it. ~5KB.
     nflPowerRankings,
+    // And the Schedules card: ~30KB raw, ~5KB gzipped.
+    nflSchedules,
     leagues,
     // Extra header-toolbar links, carried through from config/leagues.json
     // verbatim — see loadLeagueConfig above and renderQuickLinks in

@@ -2276,6 +2276,56 @@
 				padding-right: 0.3rem;
 			}
 		}
+		/* Schedules: a wrap of small bordered per-team boxes inside one card
+		   (not nested .card elements, which updateVisibility would process a
+		   second time — see .depth-chart-team-card for the one place that is
+		   deliberate). The next unplayed game is tinted; byes are muted. */
+		.nfl-schedule-teams {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 1rem;
+		}
+		.nfl-schedule-team {
+			flex: 1 1 230px;
+			min-width: 0;
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			overflow: hidden;
+		}
+		.nfl-schedule-title {
+			display: flex;
+			justify-content: space-between;
+			gap: 0.5rem;
+			padding: 0.35rem 0.6rem;
+			font-weight: 600;
+			background: var(--chip-bg);
+			color: var(--accent);
+		}
+		.nfl-schedule-title .nfl-schedule-record {
+			font-weight: 400;
+			font-variant-numeric: tabular-nums;
+		}
+		.nfl-schedule-table {
+			width: 100%;
+		}
+		.nfl-schedule-table th,
+		.nfl-schedule-table td {
+			white-space: nowrap;
+		}
+		table.standings.nfl-schedule-table td:not(:first-child),
+		table.standings.nfl-schedule-table th:not(:first-child) {
+			text-align: left;
+		}
+		.nfl-schedule-bye td {
+			color: var(--muted);
+			font-style: italic;
+		}
+		.nfl-schedule-next td {
+			background: var(--chip-bg);
+		}
+		.nfl-schedule-win {
+			font-weight: 600;
+		}
 		.nfl-standings-seed {
 			margin-left: 0.3rem;
 			font-size: 0.7rem;
@@ -13378,13 +13428,13 @@
 		// isn't (the very first renderGrid() call, before
 		// renderDepthChartCards has run yet) — keeps the order stable
 		// either way.
-		// The Standings and Power Index cards (renderNflStandingsCard,
-		// renderNflPowerCard) are built once by renderGrid and left standing
+		// The Standings, Power Index and Schedules cards (renderNflStandingsCard,
+		// renderNflPowerCard, renderNflSchedulesCard) are built once by renderGrid and left standing
 		// exactly like the Depth Charts wrapper, and sit between Matchups and
 		// that wrapper — so a poll's fresh cards go ahead of whichever of the
 		// three comes first in the DOM.
 		function appendNflCard(gridEl, card) {
-			const anchor = gridEl.querySelector(':scope > [data-nfl-standings], :scope > [data-nfl-power], :scope > [data-depth-charts-wrap]');
+			const anchor = gridEl.querySelector(':scope > [data-nfl-standings], :scope > [data-nfl-power], :scope > [data-nfl-schedules], :scope > [data-depth-charts-wrap]');
 			if (anchor) gridEl.insertBefore(card, anchor);
 			else gridEl.appendChild(card);
 		}
@@ -13712,6 +13762,100 @@
 			return card;
 		}
 
+		// NFL Schedules: one card off the snapshot's `nflSchedules`
+		// (scripts/lib/espn-schedules.mjs) — a small box per team listing its
+		// 18 regular-season weeks. Favorites come first, then everyone else by
+		// team name; collapsed, the card keeps only the favorites' boxes
+		// (.nfl-fav-collapsed), same idiom as Standings and Power Index. Built
+		// once by renderGrid and left standing (see rerenderNflCards'
+		// exclusion), so a result is as fresh as the last sync. The boxes are
+		// not `.card`s on purpose: updateVisibility would process each a
+		// second time. Kickoff is formatted in the browser's zone — Vercel and
+		// the sync both run in UTC. A missing score never renders as 0.
+		function nflScheduleRecord(games) {
+			let w = 0;
+			let l = 0;
+			let t = 0;
+			for (const g of games) {
+				if (g.r === 'W') w++;
+				else if (g.r === 'L') l++;
+				else if (g.r === 'T') t++;
+			}
+			if (w + l + t === 0) return '';
+			return t ? `${w}-${l}-${t}` : `${w}-${l}`;
+		}
+		function formatNflScheduleKickoff(at) {
+			const d = at ? new Date(at) : null;
+			if (!d || Number.isNaN(d.getTime())) return 'TBD';
+			return d.toLocaleString(undefined, { weekday: 'short', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+		}
+		function buildNflScheduleBox(abbr, name, games, favs) {
+			const isFav = favs.has(favoriteTeamKey(abbr));
+			const box = el('div', { class: `nfl-schedule-team${isFav ? ' nfl-fav-team' : ''}` });
+			box.dataset.teamName = `${name} ${abbr}`.toLowerCase();
+			const record = nflScheduleRecord(games);
+			box.appendChild(el('div', { class: 'nfl-schedule-title' }, [
+				el('span', isFav ? { class: 'nfl-fav', text: `★ ${name}` } : { text: name }),
+				el('span', { class: 'nfl-schedule-record', text: record }),
+			]));
+			const table = el('table', { class: 'standings depth-chart-table nfl-standings-table nfl-schedule-table' });
+			table.appendChild(el('thead', {}, [el('tr', {}, [
+				el('th', { text: 'Wk' }), el('th', { text: 'Opp' }), el('th', { text: 'Result / Kickoff' }),
+			])]));
+			const tbody = el('tbody');
+			let nextMarked = false;
+			for (const g of games) {
+				const row = el('tr');
+				row.appendChild(el('td', { text: String(g.wk) }));
+				if (g.bye) {
+					row.classList.add('nfl-schedule-bye');
+					row.appendChild(el('td', { text: 'BYE' }));
+					row.appendChild(el('td', { text: '—' }));
+				} else {
+					const oppFav = favs.has(favoriteTeamKey(g.opp));
+					const oppCell = el('td');
+					oppCell.appendChild(document.createTextNode(`${g.home ? 'vs' : '@'} `));
+					oppCell.appendChild(el('span', oppFav ? { class: 'nfl-fav', text: `★ ${g.opp}` } : { text: g.opp }));
+					row.appendChild(oppCell);
+					if (g.r) {
+						const score = g.pf != null && g.pa != null ? ` ${g.pf}-${g.pa}` : '';
+						row.appendChild(el('td', { class: g.r === 'W' ? 'nfl-schedule-win' : '', text: `${g.r}${score}` }));
+					} else {
+						if (!nextMarked) { row.classList.add('nfl-schedule-next'); nextMarked = true; }
+						row.appendChild(el('td', { text: formatNflScheduleKickoff(g.at) }));
+					}
+				}
+				tbody.appendChild(row);
+			}
+			table.appendChild(tbody);
+			box.appendChild(table);
+			return box;
+		}
+		function renderNflSchedulesCard(schedules, names = {}) {
+			if (!schedules?.teams) return null;
+			const abbrs = Object.keys(schedules.teams);
+			if (abbrs.length === 0) return null;
+			const favs = favoriteNflTeams();
+			const nameOf = (abbr) => names[abbr] || abbr;
+			const isFav = (abbr) => favs.has(favoriteTeamKey(abbr));
+			const ordered = [...abbrs].sort((a, b) => (isFav(b) - isFav(a)) || nameOf(a).localeCompare(nameOf(b)));
+			const card = el('div', { class: 'card nfl-card', 'data-view': 'nfl' });
+			card.dataset.nflSchedules = 'true';
+			const headingEl = el('h2', { class: 'card-heading', text: 'Schedules' });
+			card.appendChild(headingEl);
+			makeCollapsible(card, headingEl, 'nfl-schedules');
+			const all = el('div', { class: 'nfl-schedule-teams' });
+			for (const abbr of ordered) all.appendChild(buildNflScheduleBox(abbr, nameOf(abbr), schedules.teams[abbr], favs));
+			card.appendChild(all);
+			const favAbbrs = ordered.filter(isFav);
+			if (favAbbrs.length > 0) {
+				const summary = el('div', { class: 'nfl-schedule-teams nfl-fav-collapsed card-collapse-visible' });
+				for (const abbr of favAbbrs) summary.appendChild(buildNflScheduleBox(abbr, nameOf(abbr), schedules.teams[abbr], favs));
+				card.appendChild(summary);
+			}
+			return card;
+		}
+
 		function rerenderNflCards() {
 			const gridEl = document.getElementById('grid');
 			// :scope > restricts this to gridEl's own DIRECT children —
@@ -13726,10 +13870,10 @@
 			// (renderNflCards never rebuilds it, so nothing replaced what
 			// this line removed), leaving the "no teams match" empty state
 			// permanently on screen after the first poll landed.
-			// The Standings and Power Index cards are excluded for the
+			// The Standings, Power Index and Schedules cards are excluded for the
 			// same reason as the wrapper: they read the snapshot, not this
 			// poll, and nothing here would rebuild them.
-			gridEl.querySelectorAll(':scope > .card[data-view="nfl"]:not([data-depth-charts-wrap]):not([data-nfl-standings]):not([data-nfl-power])').forEach((c) => c.remove());
+			gridEl.querySelectorAll(':scope > .card[data-view="nfl"]:not([data-depth-charts-wrap]):not([data-nfl-standings]):not([data-nfl-power]):not([data-nfl-schedules])').forEach((c) => c.remove());
 			renderNflCards(gridEl);
 			updateVisibility();
 		}
@@ -17595,6 +17739,11 @@
 			if (nflStandingsCard) gridEl.appendChild(nflStandingsCard);
 			const nflPowerCard = renderNflPowerCard(data.nflPowerRankings);
 			if (nflPowerCard) gridEl.appendChild(nflPowerCard);
+			const nflScheduleNames = {};
+			for (const [abbr, t] of Object.entries(data.nflStandings?.teams || {})) nflScheduleNames[abbr] = t.name;
+			for (const [abbr, t] of Object.entries(data.depthCharts?.teams || {})) nflScheduleNames[abbr] ||= t.name;
+			const nflSchedulesCard = renderNflSchedulesCard(data.nflSchedules, nflScheduleNames);
+			if (nflSchedulesCard) gridEl.appendChild(nflSchedulesCard);
 			renderDepthChartCards(gridEl, data);
 
 			// Logged-out visitors never get any analytics card, so 'analytics'
