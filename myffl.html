@@ -464,11 +464,20 @@
 		.depth-chart-fav-teams:not(.show-all-positions) .depth-chart-extra {
 			display: none;
 		}
+		.depth-chart-heading {
+			display: flex;
+			align-items: center;
+			flex-wrap: wrap;
+			column-gap: 0.75rem;
+		}
 		.depth-chart-all-toggle {
 			display: flex;
 			align-items: center;
-			gap: 0.5rem;
-			margin: 0 0 1rem;
+			gap: 0.35rem;
+			margin-left: auto;
+			font-size: 0.85rem;
+			font-weight: 400;
+			white-space: nowrap;
 			cursor: pointer;
 		}
 		.depth-chart-group-label {
@@ -13131,7 +13140,13 @@
 				favSummaryToggle(allBox.checked);
 				try { localStorage.setItem('myfflDepthAllPositions', allBox.checked ? '1' : '0'); } catch (e) { /* storage blocked */ }
 			});
-			wrap.appendChild(el('label', { class: 'depth-chart-all-toggle' }, [allBox, el('span', { text: 'All Positions' })]));
+			// Lives in the heading, beside the collapse arrow, so it stays
+			// usable while the card is collapsed (everything but the heading is
+			// hidden then). stopPropagation: the heading's own click collapses.
+			const allLabel = el('label', { class: 'depth-chart-all-toggle' }, [allBox, el('span', { text: 'All Positions' })]);
+			allLabel.addEventListener('click', (e) => e.stopPropagation());
+			heading.classList.add('depth-chart-heading');
+			heading.appendChild(allLabel);
 
 			// Same present-groups computation renderSubTabs uses for every
 			// other view's sub-tab strip, scoped to just this card's own team
