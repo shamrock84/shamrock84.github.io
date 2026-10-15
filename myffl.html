@@ -2285,6 +2285,46 @@
 			flex-wrap: wrap;
 			gap: 1rem;
 		}
+		/* Schedules' own search box: the Depth Charts one is a single shared
+		   node (see relocateSearchControls), so this card builds its own,
+		   styled like #search. */
+		.nfl-schedule-search {
+			position: relative;
+			max-width: 480px;
+			margin: 0 auto 1rem;
+		}
+		.nfl-schedule-search input {
+			width: 100%;
+			padding: 0.6rem 2.2rem 0.6rem 0.9rem;
+			border-radius: 999px;
+			border: 1px solid var(--border);
+			background: var(--card-bg);
+			color: var(--text);
+			font-size: 1rem;
+		}
+		.nfl-schedule-search input::-webkit-search-cancel-button {
+			display: none;
+		}
+		.nfl-schedule-search button {
+			position: absolute;
+			right: 0.5rem;
+			top: 50%;
+			transform: translateY(-50%);
+			width: 1.5rem;
+			height: 1.5rem;
+			border: none;
+			border-radius: 50%;
+			background: transparent;
+			color: var(--muted);
+			font-size: 1.2rem;
+			line-height: 1;
+			cursor: pointer;
+			padding: 0;
+		}
+		.nfl-schedule-search button:hover {
+			background: var(--chip-bg);
+			color: var(--text);
+		}
 		.nfl-schedule-team {
 			flex: 1 1 230px;
 			min-width: 0;
@@ -13795,6 +13835,7 @@
 			const isFav = favs.has(favoriteTeamKey(abbr));
 			const box = el('div', { class: `nfl-schedule-team${isFav ? ' nfl-fav-team' : ''}` });
 			box.dataset.teamName = `${name} ${abbr}`.toLowerCase();
+			if (DEPTH_CHART_DIVISIONS[abbr]) box.dataset.division = DEPTH_CHART_DIVISIONS[abbr];
 			const record = nflScheduleRecord(games);
 			box.appendChild(el('div', { class: 'nfl-schedule-title' }, [
 				el('span', isFav ? { class: 'nfl-fav', text: `★ ${name}` } : { text: name }),
@@ -13833,6 +13874,14 @@
 			box.appendChild(table);
 			return box;
 		}
+		// A box shows when its division is checked (a team with no known
+		// division always passes) and the query, if any, is in the team's
+		// name or abbreviation. Pure so the test can pin it.
+		function nflScheduleBoxMatches(division, teamName, selected, q) {
+			if (selected && division && !selected.has(division)) return false;
+			return !q || (teamName || '').includes(q);
+		}
+		const NFL_SCHEDULES_VIEW = 'nfl-schedules';
 		function renderNflSchedulesCard(schedules, names = {}) {
 			if (!schedules?.teams) return null;
 			const abbrs = Object.keys(schedules.teams);
@@ -13847,8 +13896,60 @@
 			card.appendChild(headingEl);
 			makeCollapsible(card, headingEl, 'nfl-schedules');
 			const all = el('div', { class: 'nfl-schedule-teams' });
-			for (const abbr of ordered) all.appendChild(buildNflScheduleBox(abbr, nameOf(abbr), schedules.teams[abbr], favs));
+			const boxes = ordered.map((abbr) => buildNflScheduleBox(abbr, nameOf(abbr), schedules.teams[abbr], favs));
+			boxes.forEach((b) => all.appendChild(b));
+
+			// Its own state under its own key, not the Depth Charts one: that
+			// card defaults to a single division and shares one search node,
+			// and a schedule view wants everyone unless told otherwise.
+			// Filtering stays inside this card (no updateVisibility), so the
+			// summary copies below are never hidden by it.
+			const divisions = DEPTH_CHART_DIVISION_ORDER.filter((d) => boxes.some((b) => b.dataset.division === d));
+			if (!selectedLeagueTypesByView[NFL_SCHEDULES_VIEW]) selectedLeagueTypesByView[NFL_SCHEDULES_VIEW] = new Set(divisions);
+			let query = '';
+			const empty = el('div', { class: 'error-box hidden', text: 'No teams match the current filters or search.' });
+			const applyFilters = () => {
+				const selected = selectedLeagueTypesByView[NFL_SCHEDULES_VIEW];
+				let any = false;
+				for (const box of boxes) {
+					const show = nflScheduleBoxMatches(box.dataset.division, box.dataset.teamName, selected, query);
+					box.classList.toggle('hidden', !show);
+					if (show) any = true;
+				}
+				empty.classList.toggle('hidden', any);
+			};
+			if (divisions.length > 1) {
+				const bar = el('div', { class: 'subtabs-bar depth-chart-subtabs' });
+				const buttonsEl = el('div', { class: 'tabs subtabs', role: 'group', 'aria-label': 'Schedule division filters' });
+				const selectAllEl = el('a', { href: '#', class: 'subtab-link', text: 'All' });
+				const unselectAllEl = el('a', { href: '#', class: 'subtab-link', text: 'None' });
+				bar.appendChild(selectAllEl);
+				bar.appendChild(buttonsEl);
+				bar.appendChild(unselectAllEl);
+				wireSubtabPills({ present: divisions, view: NFL_SCHEDULES_VIEW, buttonsEl, selectAllEl, unselectAllEl, afterChange: applyFilters });
+				card.appendChild(bar);
+			} else {
+				selectedLeagueTypesByView[NFL_SCHEDULES_VIEW] = new Set(divisions);
+			}
+			const input = el('input', { type: 'search', placeholder: 'Filter by NFL team…', autocomplete: 'off', 'aria-label': 'Filter schedules by team' });
+			const clear = el('button', { type: 'button', class: 'hidden', 'aria-label': 'Clear search', text: '×' });
+			input.addEventListener('input', () => {
+				query = input.value.trim().toLowerCase();
+				clear.classList.toggle('hidden', input.value.length === 0);
+				applyFilters();
+			});
+			clear.addEventListener('click', () => {
+				input.value = '';
+				query = '';
+				clear.classList.add('hidden');
+				input.focus();
+				applyFilters();
+			});
+			card.appendChild(el('div', { class: 'nfl-schedule-search' }, [input, clear]));
 			card.appendChild(all);
+			card.appendChild(empty);
+			applyFilters();
+
 			const favAbbrs = ordered.filter(isFav);
 			if (favAbbrs.length > 0) {
 				const summary = el('div', { class: 'nfl-schedule-teams nfl-fav-collapsed card-collapse-visible' });
