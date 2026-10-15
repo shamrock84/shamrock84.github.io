@@ -11,8 +11,11 @@
 // kickoff). Week 9 is the usual first bye window, so buildTeamSchedules'
 // bye detection can be eyeballed too.
 //
-// RUN 1: not yet run — dispatch probe-nfl-schedules.yml and record the
-// result here before trusting the parse.
+// RUN 1 (2026-10-15): HTTP 200 for weeks 1, 9 and 18, 16/15/16 events, every
+// one parsed with a kickoff. competitors carry homeAway, team.abbreviation
+// and a string score ("0" pregame); status.type has completed/state/detail.
+// Week 9 has 15 games (two byes). Week 18 kickoffs are placeholders:
+// date "2027-01-10T05:00Z" with detail "1/10 - TBD" — hence `tbd`.
 
 import { extractWeekGames } from './lib/espn-schedules.mjs';
 

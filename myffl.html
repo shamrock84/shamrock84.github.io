@@ -13784,9 +13784,11 @@
 			if (w + l + t === 0) return '';
 			return t ? `${w}-${l}-${t}` : `${w}-${l}`;
 		}
-		function formatNflScheduleKickoff(at) {
+		function formatNflScheduleKickoff(at, tbd) {
 			const d = at ? new Date(at) : null;
 			if (!d || Number.isNaN(d.getTime())) return 'TBD';
+			// ESPN's placeholder time is midnight Eastern — show the day only.
+			if (tbd) return `${d.toLocaleDateString('en-US', { weekday: 'short', month: 'numeric', day: 'numeric', timeZone: 'America/New_York' })} \u00b7 TBD`;
 			return d.toLocaleString(undefined, { weekday: 'short', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 		}
 		function buildNflScheduleBox(abbr, name, games, favs) {
@@ -13822,7 +13824,7 @@
 						row.appendChild(el('td', { class: g.r === 'W' ? 'nfl-schedule-win' : '', text: `${g.r}${score}` }));
 					} else {
 						if (!nextMarked) { row.classList.add('nfl-schedule-next'); nextMarked = true; }
-						row.appendChild(el('td', { text: formatNflScheduleKickoff(g.at) }));
+						row.appendChild(el('td', { text: formatNflScheduleKickoff(g.at, g.tbd) }));
 					}
 				}
 				tbody.appendChild(row);

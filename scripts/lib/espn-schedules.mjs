@@ -15,8 +15,11 @@
 //
 // Wire shape per team: an array of week entries, in week order, kept short
 // because every byte rides data/rosters.json:
-//   game: { wk, opp, home, at, r, pf, pa }   bye: { wk, bye: true }
-// `at` is ESPN's ISO kickoff (the page formats it in the browser's zone);
+//   game: { wk, opp, home, at, tbd?, r, pf, pa }   bye: { wk, bye: true }
+// `at` is ESPN's ISO kickoff (the page formats it in the browser's zone).
+// `tbd: true` means ESPN has not set the time (probe RUN 1: week 18 carries
+// a placeholder midnight-ET `date` with detail "1/10 - TBD"), so the page
+// shows the day only;
 // `r` ('W'|'L'|'T') and the scores exist only once the game is final. A
 // missing score is absent, never 0.
 //
@@ -47,11 +50,13 @@ export function extractWeekGames(data) {
     const awayAbbr = away?.team?.abbreviation;
     if (!homeAbbr || !awayAbbr) continue;
     const final = event.status?.type?.completed === true;
+    const tbd = !final && /TBD/i.test(event.status?.type?.detail || '');
     games.push({
       away: awayAbbr,
       home: homeAbbr,
       at: typeof event.date === 'string' ? event.date : null,
       final,
+      tbd,
       awayScore: final ? numOrNull(away.score) : null,
       homeScore: final ? numOrNull(home.score) : null,
     });
@@ -72,6 +77,7 @@ export function buildTeamSchedules(weeks) {
         const isHome = side === 'home';
         const abbr = isHome ? g.home : g.away;
         const entry = { wk: week, opp: isHome ? g.away : g.home, home: isHome, at: g.at };
+        if (g.tbd) entry.tbd = true;
         const pf = isHome ? g.homeScore : g.awayScore;
         const pa = isHome ? g.awayScore : g.homeScore;
         if (g.final && pf !== null && pa !== null) {
