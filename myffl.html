@@ -10712,6 +10712,57 @@
 			return problems;
 		}
 
+		// The league's own IR rule (config `irEligibility`, hand-recorded because
+		// MFL's API doesn't expose it) mapped onto the injury designations the
+		// snapshot carries. IR covers both of MFL's NFL-IR spellings; the rest
+		// are one-to-one. Anything not listed here (PUP, NFI, SUSP, a bare DTD)
+		// never qualifies a player, and is never read as "recovered" either --
+		// see irEligibilityProblems.
+		const IR_ELIGIBILITY_DESIGNATIONS = { IR: ['IR', 'IR R'], OUT: ['O'], DOUBTFUL: ['D'], QUESTIONABLE: ['Q'] };
+
+		// Players the league's IR rule says can go onto IR, and players sitting
+		// on IR who no longer qualify. Both need irEligibility recorded for the
+		// league; with it blank this says nothing, since "not recorded" is not
+		// "nobody qualifies".
+		//   - Move to IR: an active-roster (not taxi) player whose designation
+		//     qualifies, only while the league has a free IR slot -- with the
+		//     slots full there is nothing to act on until someone comes off.
+		//   - Take off IR: a player in an IR slot whose designation is gone or
+		//     no longer qualifies. A long-term designation that isn't an IR
+		//     spelling (PUP, NFI, SUSP, HOL, NA, RET) is left alone: those
+		//     aren't a recovery, and flagging them would be noise.
+		function irEligibilityProblems(league) {
+			const codes = Array.isArray(league.irEligibility) ? league.irEligibility : [];
+			if (codes.length === 0) return [];
+			const qualifying = new Set(codes.flatMap((c) => IR_ELIGIBILITY_DESIGNATIONS[c] || []));
+			if (qualifying.size === 0) return [];
+			const players = league.players || [];
+			const problems = [];
+
+			const onIr = players.filter((p) => p.status === 'INJURED_RESERVE');
+			for (const p of onIr) {
+				const inj = p.injuryStatus || '';
+				if (qualifying.has(inj)) continue;
+				if (inj && INJURY_SETTLED.includes(inj)) continue;
+				const part = p.injuryDetail && p.injuryDetail.part ? ` — ${p.injuryDetail.part}` : '';
+				problems.push({
+					kind: 'ir-activate',
+					player: p,
+					label: inj ? `is on IR but listed ${inj}${part}, which no longer qualifies` : 'is on IR but has no injury designation now',
+				});
+			}
+
+			const slots = league.rosterLimits?.ir;
+			if (slots != null && slots > onIr.length) {
+				for (const p of players) {
+					if (p.status !== 'ROSTER' || !qualifying.has(p.injuryStatus || '')) continue;
+					const part = p.injuryDetail && p.injuryDetail.part ? ` — ${p.injuryDetail.part}` : '';
+					problems.push({ kind: 'ir-move', player: p, label: `is listed ${p.injuryStatus}${part} and can move to IR` });
+				}
+			}
+			return problems;
+		}
+
 		// Has this week's rollover cutoff passed yet? The setting itself
 		// (Wednesday 7 PM Central today) lives only in providers.mjs's
 		// WEEKLY_ROLLOVER_CUTOFF, which the sync writes into the snapshot as
@@ -10844,6 +10895,11 @@
 			if (league.rosterLimits && notMidDraftOrTrailing) {
 				problems.push(...rosterLimitProblems(league));
 			}
+			// Like roster-limit rows these belong to no week, so they don't wait
+			// on the rollover cutoff or the lineup early returns below.
+			if (notMidDraftOrTrailing) {
+				problems.push(...irEligibilityProblems(league));
+			}
 
 			if (!Array.isArray(league.starters) || league.lineupWeek == null) return problems;
 			if (!pastCutoff) return problems;
@@ -10902,6 +10958,8 @@
 		// a decision. The distinction is what to fix versus what to weigh.
 		// A roster-limit violation is squarely the first kind — it isn't a
 		// judgment call, MFL's own deadline will force the drop eventually.
+		// The IR rows ('ir-move', 'ir-activate') are the gold kind: a roster
+		// move worth making, not something broken.
 		const DIGEST_ALERT_KINDS = ['sync', 'ineligible', 'empty', 'short', 'roster-limit'];
 
 		function renderProblemsDigest() {
