@@ -1,0 +1,45 @@
+name: Probe MFL IR Eligibility (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here, the
+# same rule the other manual workflows follow.
+#
+# Looks for the "Player Must Be Classified As ... Before Being Deactivated"
+# rule in MFL's TYPE=league export — see scripts/probe-mfl-ir-eligibility.mjs.
+#
+# Read-only: two TYPE=league GETs for one league (default MNMx, 26696).
+on:
+  workflow_dispatch:
+    inputs:
+      league_id:
+        description: MFL league id to dump (blank = MNMx Dynasty, 26696)
+        required: false
+        default: ''
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      # Blobless + sparse checkout; same five directories everywhere on
+      # purpose, see sync-fantasy-rosters.yml for the reasoning and numbers.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout: |
+            api
+            scripts
+            config
+            data
+            .github
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Dump TYPE=league and flag IR-shaped fields
+        env:
+          MFL_USERNAME: ${{ secrets.MFL_USERNAME }}
+          MFL_PASSWORD: ${{ secrets.MFL_PASSWORD }}
+          LEAGUE_ID: ${{ inputs.league_id }}
+        run: node scripts/probe-mfl-ir-eligibility.mjs
