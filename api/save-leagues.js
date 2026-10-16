@@ -42,7 +42,17 @@ const QUICKLINK_STYLES = new Set(['gold', 'purple']);
 //   commishEmail — renamed to commishContact, which accepts a URL as well as
 //                  an email address (for a commissioner who'd rather not be
 //                  emailed at all).
-const RETIRED_KEYS = new Set(['format', 'commishEmail']);
+//   cutdownRosterSize — renamed to rosterLimit, which every league type now
+//                  carries. mergeLeague reads the old key when the new one is
+//                  absent, so a save from a page loaded before the rename
+//                  keeps the number instead of dropping it.
+const RETIRED_KEYS = new Set(['format', 'commishEmail', 'cutdownRosterSize']);
+// The injury designations MFL's league settings offer for "Player Must Be
+// Classified As ... Before Being Deactivated" (the IR rule). MFL's API doesn't
+// expose that setting (probe-mfl-ir-eligibility.mjs), so it is set by hand.
+// Stored as a list in this order, which is also the order the Admin tab
+// shows them in.
+const IR_ELIGIBILITY = ['IR', 'OUT', 'DOUBTFUL', 'QUESTIONABLE'];
 const RANKING_TYPES = new Set(['DYNASTY', 'DRAFT', 'ROS', 'WEEKLY', 'ADP']);
 const SCORING_FORMATS = new Set(['PPR', 'HALF', 'STD']);
 
@@ -52,7 +62,7 @@ const SCORING_FORMATS = new Set(['PPR', 'HALF', 'STD']);
 const KEY_ORDER = [
   'id', 'franchiseId', 'name', 'displayName', 'type', 'provider',
   'tags', 'lineupPilot', 'rankingType', 'scoring', 'season', 'startYear', 'rulesUrl', 'commishContact',
-  'cutdownRosterSize', 'irSalaryPercent',
+  'rosterLimit', 'irEligibility', 'irSalaryPercent',
   'nickname', 'style',
   'dues', 'payout1', 'payout2', 'payout3', 'payoutDivisionWinner', 'payoutWeeklyHigh', 'payoutSeasonHigh',
 ];
@@ -248,8 +258,9 @@ function validate(leagues) {
         errors.push(`${label}: rules link must start with http:// or https://.`);
       }
     }
-    // Dynasty leagues only (cut planning is gated to that type — see
-    // cutsNeededFor in myffl.html), but checked on shape rather than on type
+    // Every league type (the Admin tab offers it everywhere; cut planning, the
+    // one consumer that is Dynasty-only — see cutsNeededFor in myffl.html —
+    // gates itself), checked on shape rather than on type
     // for the same reason commishContact above is: a league that changes type
     // shouldn't have a hand-set number silently discarded, and the Admin tab
     // already hides the field where it can't apply. A roster size, not a
@@ -257,15 +268,22 @@ function validate(leagues) {
     // be a whole number of players. The upper bound is loose on purpose: it's
     // there to catch a year typed into the wrong box (2023), not to have an
     // opinion about how deep a dynasty roster may be.
-    if (league.cutdownRosterSize != null && league.cutdownRosterSize !== '') {
-      const size = Number(league.cutdownRosterSize);
+    if (league.rosterLimit != null && league.rosterLimit !== '') {
+      const size = Number(league.rosterLimit);
       if (!Number.isInteger(size) || size < 1 || size > 100) {
-        errors.push(`${label}: cutdown roster size must be a whole number of players, or left blank.`);
+        errors.push(`${label}: roster limit must be a whole number of players, or left blank.`);
+      }
+    }
+    // Which injury designations let a player be moved to IR. A list of known
+    // codes; absent or empty means "not recorded", not "nobody qualifies".
+    if (league.irEligibility != null) {
+      if (!Array.isArray(league.irEligibility) || !league.irEligibility.every((c) => IR_ELIGIBILITY.includes(c))) {
+        errors.push(`${label}: IR eligibility must be a list drawn from ${IR_ELIGIBILITY.join(', ')}.`);
       }
     }
     // Salary-cap leagues only (what share of an IR player's salary counts
     // against the cap — see capSummaryNumbers in myffl.html), checked on shape
-    // rather than type like cutdownRosterSize above. 0 is a real answer (IR is
+    // rather than type like rosterLimit above. 0 is a real answer (IR is
     // free) and must pass; 50 vs 0.5 is the mistake the bounds can't catch, so
     // the Admin tab's label says percent.
     if (league.irSalaryPercent != null && league.irSalaryPercent !== '') {
@@ -394,12 +412,18 @@ function mergeLeague(league) {
   put('rulesUrl', league.rulesUrl);
   put('commishContact', league.commishContact == null ? '' : String(league.commishContact).trim());
   // A real JSON number like the payouts below, not a quoted string like
-  // season: it's arithmetic (rosterCount - cutdownRosterSize in cutsNeededFor),
+  // season: it's arithmetic (rosterCount - rosterLimit in cutsNeededFor),
   // and it is already stored unquoted in the three leagues that carried it
   // before this tab knew the field existed — reaching it through mergeLeague's
   // unknown-key passthrough would have turned those into strings the first
   // time anyone pressed Save.
-  putNumber('cutdownRosterSize', league.cutdownRosterSize);
+  putNumber('rosterLimit', league.rosterLimit ?? league.cutdownRosterSize);
+  // Kept in the canonical order whatever order the request listed them in, so
+  // ticking boxes in a different sequence is never a diff.
+  if (Array.isArray(league.irEligibility)) {
+    const codes = IR_ELIGIBILITY.filter((c) => league.irEligibility.includes(c));
+    if (codes.length) out.irEligibility = codes;
+  }
   // A real number, and 0 survives (putMoney only drops blank/null): IR that
   // costs nothing is a legitimate setting, distinct from blank, which means
   // the page's default.

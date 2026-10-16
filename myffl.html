@@ -3798,6 +3798,17 @@
 			padding-top: 0;
 			border-top: 0;
 		}
+		.admin-checks {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 0.3rem 0.8rem;
+		}
+		.admin-check {
+			display: flex;
+			align-items: center;
+			gap: 0.3rem;
+			cursor: pointer;
+		}
 		.admin-field-check {
 			flex-direction: row;
 			align-items: center;
@@ -7359,7 +7370,7 @@
 			// require once the season starts. That number lives nowhere any
 			// provider exposes (MNMx and OSD have no shared rules document at
 			// all, and Survivors' is private), so it's a manual per-league
-			// override, config/leagues.json's `cutdownRosterSize` — read live
+			// override, config/leagues.json's `rosterLimit` — read live
 			// off the league object rather than copied into a local, so an
 			// Admin-tab edit (or a hand edit) takes effect on the next
 			// render with no cache to invalidate.
@@ -7473,7 +7484,7 @@
 					taxiSalaryTotalEl = buildTaxiSalaryTotal(league, players);
 					taxiExpirationSummaryEl = buildTaxiContractExpirationSummary(league, players);
 				}
-				// Cuts are counted against cutdownRosterSize, which normally
+				// Cuts are counted against rosterLimit, which normally
 				// applies to ROSTER-status players only (see rosterLimitProblems,
 				// which checks MFL's own separate taxi/IR limits instead) — except
 				// inside duringIrClearingWindow, where cutsNeededFor also folds in
@@ -10677,7 +10688,8 @@
 				counts.set(p.status, (counts.get(p.status) || 0) + 1);
 				if (p.status === 'ROSTER') byPosition.set(p.position, (byPosition.get(p.position) || 0) + 1);
 			}
-			const { size, taxi, ir, position } = league.rosterLimits;
+			const { taxi, ir, position } = league.rosterLimits;
+			const { size } = effectiveRosterLimit(league);
 
 			const rosterCount = counts.get('ROSTER') || 0;
 			if (size != null && rosterCount > size) {
@@ -16185,7 +16197,7 @@
 		}
 
 		// The sub-window inside cut planning's own blackout window where getting
-		// under cutdownRosterSize means clearing IR: the stretch from the last
+		// under rosterLimit means clearing IR: the stretch from the last
 		// game of Week 17 (where duringWeeks1Through17 leaves off) through the
 		// Super Bowl (nflInSeason's own boundary). Rookie-draft-swollen rosters
 		// are still months away here, so a roster sitting right at its in-season
@@ -16220,7 +16232,7 @@
 		}
 
 		// The statuses cutsNeededFor/cutsPlannedFor count against
-		// cutdownRosterSize — ROSTER alone outside duringIrClearingWindow,
+		// rosterLimit — ROSTER alone outside duringIrClearingWindow,
 		// ROSTER plus INJURED_RESERVE inside it. Also what gates the Cut
 		// column onto the Injured Reserve table in renderCard: a status this
 		// function doesn't count is a status with no reason to expose a cut
@@ -16229,7 +16241,7 @@
 			return duringIrClearingWindow(now) ? ['ROSTER', 'INJURED_RESERVE'] : ['ROSTER'];
 		}
 
-		// How many players a Dynasty roster is over cutdownRosterSize by, or
+		// How many players a Dynasty roster is over rosterLimit by, or
 		// null when there's nothing to count yet — same two noise gates
 		// rosterLimitProblems uses (a roster mid-draft hasn't gone over
 		// anything, and a league still on last season isn't this week's
@@ -16237,12 +16249,12 @@
 		// a target). Pulled out of renderCard, where cutsNeeded()/cutsPlanned()
 		// close over `league`, so this can be pinned directly.
 		function cutsNeededFor(league, year, now = new Date()) {
-			if (league.cutdownRosterSize == null) return null;
+			if (league.rosterLimit == null) return null;
 			if (league.draftInProgress === true) return null;
 			if (Number(league.season) < Number(year)) return null;
 			const statuses = cutCountableStatuses(now);
 			const rosterCount = (league.players || []).filter((p) => statuses.includes((p.status || 'ROSTER').toUpperCase())).length;
-			return Math.max(0, rosterCount - league.cutdownRosterSize);
+			return Math.max(0, rosterCount - league.rosterLimit);
 		}
 
 		function cutsPlannedFor(league, now = new Date()) {
@@ -16251,6 +16263,28 @@
 				.filter((p) => statuses.includes((p.status || 'ROSTER').toUpperCase()) && getCutPlan(league.id, p.id))
 				.length;
 		}
+
+		// The roster size that applies to a league right now, for the roster-limit
+		// check. Two sources, switched by the calendar: during Weeks 1-17 the
+		// league's own rule (config `rosterLimit`, set by hand) wins; otherwise
+		// it's MFL's own rosterLimits.size, which a commissioner raises for the
+		// offseason so a rookie-swollen roster isn't flagged on MFL's site. With
+		// no hand-set number the in-season limit is MFL's too, and with no MFL
+		// number the hand-set one stands in, so blank always degrades to
+		// whichever of the two exists. Setting `rosterLimit` is the override;
+		// there's no separate switch. `size` is null when neither is known.
+		function effectiveRosterLimit(league, now = new Date()) {
+			const manual = league?.rosterLimit == null || league.rosterLimit === '' ? null : Number(league.rosterLimit);
+			const mfl = league?.rosterLimits?.size ?? null;
+			if (manual != null && (duringWeeks1Through17(now) || mfl == null)) return { size: manual, source: 'config' };
+			return { size: mfl, source: 'mfl' };
+		}
+
+		// MFL's league settings offer these as "Player Must Be Classified As ...
+		// Before Being Deactivated" (the IR rule); the API doesn't expose it, so
+		// the Admin tab records it by hand. Same codes and order as
+		// IR_ELIGIBILITY in api/save-leagues.js.
+		const ADMIN_IR_ELIGIBILITY = [['IR', 'IR'], ['OUT', 'Out'], ['DOUBTFUL', 'Doubtful'], ['QUESTIONABLE', 'Questionable']];
 
 		const ADMIN_RANKINGS = [['', 'Automatic'], ['DYNASTY', 'Dynasty'], ['DRAFT', 'Draft'], ['ROS', 'Rest-of-season'], ['WEEKLY', 'Weekly'], ['ADP', 'ADP']];
 		const ADMIN_SCORING = [['', 'Automatic'], ['PPR', 'PPR'], ['HALF', 'Half PPR'], ['STD', 'Standard']];
@@ -16345,12 +16379,13 @@
 			if (norm(cfg.provider) !== norm(live.provider)) out.push('Site');
 			if (JSON.stringify(cfg.tags || []) !== JSON.stringify(live.tags || [])) out.push('Tags');
 			if (norm(cfg.rulesUrl) !== norm(live.rulesUrl)) out.push('Rules link');
-			// Echoed back by the sync (see result.cutdownRosterSize in
+			// Echoed back by the sync (see result.rosterLimit in
 			// fetch-rosters.mjs), so it belongs here for the same reason the
 			// rest do: cut planning reads the synced copy, which means an edit
 			// made on this tab changes nothing on the Rosters card until the
 			// next sync has run — exactly what this notice exists to say.
-			if (norm(cfg.cutdownRosterSize) !== norm(live.cutdownRosterSize)) out.push('Cutdown roster size');
+			if (norm(cfg.rosterLimit) !== norm(live.rosterLimit)) out.push('Roster limit');
+			if (JSON.stringify(cfg.irEligibility || []) !== JSON.stringify(live.irEligibility || [])) out.push('IR eligibility');
 			// Echoed for the same reason: the cap math reads the synced copy.
 			if (norm(cfg.irSalaryPercent) !== norm(live.irSalaryPercent)) out.push('IR salary percent');
 			if (cfg.season && norm(cfg.season) !== norm(live.season)) out.push('Season');
@@ -16374,7 +16409,7 @@
 		// one alike. Compared this way rather than by JSON.stringify on the raw
 		// objects, which answers wrongly twice: the Admin tab's text inputs hand
 		// back strings where the config stores real numbers (every payout, and
-		// cutdownRosterSize), and a key the draft adds lands in a different
+		// rosterLimit), and a key the draft adds lands in a different
 		// position from the same key in the served entry. Both would report an
 		// edit that saves to a byte-identical file. Blank, null and undefined all
 		// collapse to absent, matching mergeLeague's own drop-the-empties rule in
@@ -16863,7 +16898,8 @@
 				if (league.season) bits.push(`Season pinned to ${league.season}`);
 				if (league.startYear) bits.push(`History from ${league.startYear}`);
 				if (league.lineupPilot) bits.push('Lineup editor');
-				if (league.cutdownRosterSize) bits.push(`Cut to ${league.cutdownRosterSize}`);
+				if (league.rosterLimit) bits.push(`Roster limit ${league.rosterLimit}`);
+				if (league.irEligibility?.length) bits.push(`IR needs ${league.irEligibility.map((c) => adminLabelFor(ADMIN_IR_ELIGIBILITY, c)).join(' / ')}`);
 				// Deviations only: 50 is the default and what MFL reports in every
 				// league so far, so it earns no chip. The override wins over MFL's
 				// own setting, as in capSummaryNumbers.
@@ -17000,24 +17036,46 @@
 					// value and folding them together would now hide the setting.
 					field('Scoring', adminSelect(ADMIN_SCORING, league.scoring, changed((v) => { league.scoring = v || undefined; })));
 					field('Rankings', adminSelect(ADMIN_RANKINGS, league.rankingType, changed((v) => { league.rankingType = v || undefined; })));
-					// Dynasty only: cut planning is gated to that type (see
-					// duringWeeks1Through17 and cutsNeededFor), so on any other
-					// league this number has nothing to count against. Deliberately
-					// not MFL's own rosterLimits.size, which describes what MFL will
-					// currently tolerate rather than what the league's rules require
-					// — commissioners routinely raise it for the offseason. Hidden
-					// rather than cleared when the type changes, the same way
-					// Commissioner contact below is: a value typed under one type
-					// shouldn't vanish because you looked at the Type dropdown.
-					if (league.type === 'dynasty') {
-						field('Cutdown roster size', adminText(league.cutdownRosterSize, 'e.g. 23', (v) => { league.cutdownRosterSize = v || undefined; }));
+					// Every league type. Blank follows MFL's own size (shown as the
+					// placeholder once a sync has read it); a number is the league's
+					// rules-required size and wins during Weeks 1-17 (see
+					// effectiveRosterLimit), while MFL's raised offseason size
+					// applies the rest of the year. On a Dynasty league it is also
+					// the target the Cut dropdown counts against (cutsNeededFor).
+					{
+						const mflSize = live?.rosterLimits?.size;
+						field('Roster limit', adminText(league.rosterLimit, mflSize != null ? `${mflSize} (from MFL)` : 'e.g. 23', (v) => { league.rosterLimit = v || undefined; }));
+					}
+					// Recorded by hand: MFL's API doesn't expose it
+					// (probe-mfl-ir-eligibility.mjs). A div rather than field()'s
+					// label, which would hand every click to the first checkbox.
+					{
+						const wrap = el('div', { class: 'admin-field admin-field-mid' });
+						wrap.appendChild(el('span', { class: 'admin-field-label', text: 'IR eligibility' }));
+						const group = el('div', { class: 'admin-checks' });
+						for (const [code, text] of ADMIN_IR_ELIGIBILITY) {
+							const item = el('label', { class: 'admin-check' });
+							const box = el('input', { type: 'checkbox' });
+							box.checked = (league.irEligibility || []).includes(code);
+							box.addEventListener('change', () => {
+								const next = ADMIN_IR_ELIGIBILITY.map(([c]) => c)
+									.filter((c) => (c === code ? box.checked : (league.irEligibility || []).includes(c)));
+								league.irEligibility = next.length ? next : undefined;
+								refreshAdminCard();
+							});
+							item.appendChild(box);
+							item.appendChild(el('span', { text }));
+							group.appendChild(item);
+						}
+						wrap.appendChild(group);
+						fields.appendChild(wrap);
 					}
 					// Salary Cap only: the share of an IR player's salary MFL counts
 					// against the cap (capSummaryNumbers). Blank means "use what MFL
 					// reports" (its includeIRWithSalary, shown as the placeholder once
 					// a sync has read it), else 50; any number here overrides MFL, and
 					// 0 means IR is free. Hidden rather than cleared off-type, like
-					// Cutdown roster size above.
+					// Roster limit above.
 					if (league.type === 'salarycap') {
 						const mflPercent = live?.irSalaryPercentMfl;
 						const placeholder = mflPercent != null ? `${mflPercent} (from MFL)` : '50 (default)';
