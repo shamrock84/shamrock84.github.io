@@ -102,17 +102,17 @@ check('allows a blank commissioner contact', validate(withField('commishContact'
 // silently discarded. A whole number of players, never a dollar amount and
 // never a year: 2023 in this box is the mistake the upper bound exists to
 // catch, since the field sits two rows from Start Year on the same form.
-check('rejects a non-numeric cutdown roster size', validate(withField('cutdownRosterSize', 'twenty three')).length > 0);
-check('rejects a fractional cutdown roster size', validate(withField('cutdownRosterSize', '22.5')).length > 0);
-check('rejects a zero cutdown roster size', validate(withField('cutdownRosterSize', 0)).length > 0);
-check('rejects a negative cutdown roster size', validate(withField('cutdownRosterSize', -5)).length > 0);
-check('rejects a year typed into the cutdown roster size', validate(withField('cutdownRosterSize', '2023')).length > 0);
-check('allows a normal cutdown roster size', validate(withField('cutdownRosterSize', 23)).length === 0,
-  JSON.stringify(validate(withField('cutdownRosterSize', 23))));
-check('allows a cutdown roster size typed as text by the Admin tab',
-  validate(withField('cutdownRosterSize', '23')).length === 0,
-  JSON.stringify(validate(withField('cutdownRosterSize', '23'))));
-check('allows a blank cutdown roster size', validate(withField('cutdownRosterSize', '')).length === 0);
+check('rejects a non-numeric roster limit', validate(withField('rosterLimit', 'twenty three')).length > 0);
+check('rejects a fractional roster limit', validate(withField('rosterLimit', '22.5')).length > 0);
+check('rejects a zero roster limit', validate(withField('rosterLimit', 0)).length > 0);
+check('rejects a negative roster limit', validate(withField('rosterLimit', -5)).length > 0);
+check('rejects a year typed into the roster limit', validate(withField('rosterLimit', '2023')).length > 0);
+check('allows a normal roster limit', validate(withField('rosterLimit', 23)).length === 0,
+  JSON.stringify(validate(withField('rosterLimit', 23))));
+check('allows a roster limit typed as text by the Admin tab',
+  validate(withField('rosterLimit', '23')).length === 0,
+  JSON.stringify(validate(withField('rosterLimit', '23'))));
+check('allows a blank roster limit', validate(withField('rosterLimit', '')).length === 0);
 // irSalaryPercent: share of an IR salary counted against the cap. Validated
 // on shape, not type. 0 is a real answer (IR is free) and must survive both
 // validation and mergeLeague, which drops blanks.
@@ -129,8 +129,8 @@ check('keeps an IR salary percent of 0', mergeLeague({ ...base(), irSalaryPercen
 check('drops a blank IR salary percent', !('irSalaryPercent' in mergeLeague({ ...base(), irSalaryPercent: '' })));
 // Not a type error, matching commishContact's own case just below: the tab
 // hides the field off-type, it doesn't reject the value.
-check('allows a cutdown roster size on a non-dynasty league',
-  validate([{ ...base(), type: 'redraft', cutdownRosterSize: 23 }]).length === 0);
+check('allows a roster limit on a non-dynasty league',
+  validate([{ ...base(), type: 'redraft', rosterLimit: 23 }]).length === 0);
 // Deliberately not tied to type: switching a league away from Salary Cap and
 // back must not silently discard the contact.
 check('allows a commissioner contact on a non-salarycap league',
@@ -253,8 +253,19 @@ check('drops a blank commissioner contact', !('commishContact' in mergeLeague({ 
 // subtracts it from a roster count. The Admin tab's text input hands it over as
 // a string, so this is the conversion that keeps the three leagues that already
 // carried it as JSON numbers from being rewritten as strings on the first save.
-check('stores a cutdown roster size as a number', mergeLeague({ ...base(), cutdownRosterSize: '23' }).cutdownRosterSize === 23);
-check('drops a blank cutdown roster size', !('cutdownRosterSize' in mergeLeague({ ...base(), cutdownRosterSize: '' })));
+check('stores a roster limit as a number', mergeLeague({ ...base(), rosterLimit: '23' }).rosterLimit === 23);
+check('drops a blank roster limit', !('rosterLimit' in mergeLeague({ ...base(), rosterLimit: '' })));
+// The key this field had before it applied to every league type: a save from
+// a page loaded before the rename must not lose the number.
+check('reads the retired cutdownRosterSize key', mergeLeague({ ...base(), cutdownRosterSize: 22 }).rosterLimit === 22);
+check('never writes the retired cutdownRosterSize key', !('cutdownRosterSize' in mergeLeague({ ...base(), cutdownRosterSize: 22 })));
+check('rosterLimit wins over the retired key', mergeLeague({ ...base(), rosterLimit: 23, cutdownRosterSize: 22 }).rosterLimit === 23);
+check('a cleared rosterLimit is not resurrected from the retired key', !('rosterLimit' in mergeLeague({ ...base(), rosterLimit: '', cutdownRosterSize: 22 })));
+check('allows an IR eligibility list', validate(withField('irEligibility', ['IR', 'OUT'])).length === 0);
+check('rejects an unknown IR eligibility code', validate(withField('irEligibility', ['IR', 'SUSPENDED'])).length > 0);
+check('rejects IR eligibility that is not a list', validate(withField('irEligibility', 'IR')).length > 0);
+check('stores IR eligibility in canonical order', JSON.stringify(mergeLeague({ ...base(), irEligibility: ['QUESTIONABLE', 'IR'] }).irEligibility) === '["IR","QUESTIONABLE"]');
+check('drops an empty IR eligibility list', !('irEligibility' in mergeLeague({ ...base(), irEligibility: [] })));
 check('trims a commissioner contact', mergeLeague({ ...base(), commishContact: '  c@e.com ' }).commishContact === 'c@e.com');
 check('drops a blank nickname', !('nickname' in mergeLeague({ ...base(), nickname: '' })));
 check('trims a nickname', mergeLeague({ ...base(), nickname: '  MNMx  ' }).nickname === 'MNMx');

@@ -75,6 +75,7 @@ vm.runInContext(scriptSource, context);
 const {
 	duringWeeks1Through17, duringIrClearingWindow,
 	cutCountableStatuses, cutsNeededFor, cutsPlannedFor, setCutPlan,
+	effectiveRosterLimit, rosterLimitProblems,
 } = context;
 
 let failures = 0;
@@ -148,13 +149,13 @@ const roster23roster2ir = [
 	player('ir1', 'INJURED_RESERVE'),
 	player('ir2', 'INJURED_RESERVE'),
 ];
-const cleanLeague = { id: 'L1', cutdownRosterSize: 23, season: '2026', draftInProgress: false, players: roster23roster2ir };
+const cleanLeague = { id: 'L1', rosterLimit: 23, season: '2026', draftInProgress: false, players: roster23roster2ir };
 
 check('ROSTER alone is already at the target -> 0 outside the IR-clearing window', cutsNeededFor(cleanLeague, '2026', MID_SEASON) === 0);
 check('the same roster still has 2 IR players to clear inside the IR-clearing window', cutsNeededFor(cleanLeague, '2026', IR_WINDOW) === 2);
 
-const noTarget = { ...cleanLeague, cutdownRosterSize: null };
-check('cutdownRosterSize null -> cutsNeededFor is null (nothing configured)', cutsNeededFor(noTarget, '2026', IR_WINDOW) === null);
+const noTarget = { ...cleanLeague, rosterLimit: null };
+check('rosterLimit null -> cutsNeededFor is null (nothing configured)', cutsNeededFor(noTarget, '2026', IR_WINDOW) === null);
 
 const midDraft = { ...cleanLeague, draftInProgress: true };
 check('mid-draft -> cutsNeededFor is null even inside the IR-clearing window', cutsNeededFor(midDraft, '2026', IR_WINDOW) === null);
@@ -169,6 +170,26 @@ setCutPlan('L1', 'r0', 'CUT');
 setCutPlan('L1', 'ir1', 'CUT');
 check('outside the IR-clearing window, only the ROSTER cut plan counts', cutsPlannedFor(cleanLeague, MID_SEASON) === 1);
 check('inside the IR-clearing window, the IR cut plan counts too', cutsPlannedFor(cleanLeague, IR_WINDOW) === 2);
+
+// effectiveRosterLimit: the hand-set rosterLimit during Weeks 1-17, MFL's own
+// (offseason-raised) size otherwise, and whichever exists when the other is
+// blank. Setting rosterLimit is the override; nothing else switches.
+const limitLeague = (manual, mfl) => ({ rosterLimit: manual, rosterLimits: mfl == null ? undefined : { size: mfl, position: [] } });
+const eff = (league, now) => JSON.stringify(effectiveRosterLimit(league, now));
+check('in season, the hand-set limit wins over MFL', eff(limitLeague(23, 28), MID_SEASON) === '{"size":23,"source":"config"}');
+check('in the offseason, MFL\'s raised size applies', eff(limitLeague(23, 28), IR_WINDOW) === '{"size":28,"source":"mfl"}');
+check('in season with nothing hand-set, MFL\'s size applies', eff(limitLeague(null, 28), MID_SEASON) === '{"size":28,"source":"mfl"}');
+check('offseason with no MFL size, the hand-set one stands in', eff(limitLeague(23, null), IR_WINDOW) === '{"size":23,"source":"config"}');
+check('neither known -> null size', effectiveRosterLimit(limitLeague(null, null), MID_SEASON).size === null);
+check('a blank string from the Admin tab counts as unset', eff(limitLeague('', 28), MID_SEASON) === '{"size":28,"source":"mfl"}');
+
+// rosterLimitProblems reads that size at the real clock; a roster of 25 is
+// over a hand-set 23 only while that figure applies.
+const rosterOf = (n) => Array.from({ length: n }, (_, i) => ({ id: `p${i}`, status: 'ROSTER', position: 'WR' }));
+const over = { ...limitLeague(23, 28), players: rosterOf(25) };
+const problemsNow = rosterLimitProblems(over).length;
+check('roster-limit problems follow effectiveRosterLimit at the current date',
+	problemsNow === (effectiveRosterLimit(over).size < 25 ? 1 : 0));
 
 if (failures) {
 	console.log(`\n${failures} cut-planning-window test(s) failed.`);

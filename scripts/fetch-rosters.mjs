@@ -1210,7 +1210,8 @@ async function main() {
         tags: league.tags || [],
         rulesUrl: league.rulesUrl || null,
         commishContact: league.commishContact || null,
-        cutdownRosterSize: league.cutdownRosterSize || null,
+        rosterLimit: league.rosterLimit || null,
+        irEligibility: league.irEligibility || null,
         irSalaryPercent: league.irSalaryPercent ?? null,
         dues: league.dues ?? null,
         payout1: league.payout1 ?? null,
@@ -1281,7 +1282,8 @@ async function main() {
       result.provider = league.provider || null;
       result.rulesUrl = league.rulesUrl || null;
       result.commishContact = league.commishContact || null;
-      result.cutdownRosterSize = league.cutdownRosterSize || null;
+      result.rosterLimit = league.rosterLimit || null;
+      result.irEligibility = league.irEligibility || null;
       result.irSalaryPercent = league.irSalaryPercent ?? null;
       // ?? rather than || — a real, deliberate $0 dues or payout must survive,
       // not collapse into null the way an empty string legitimately would for
@@ -1316,7 +1318,8 @@ async function main() {
         tags: league.tags || [],
         rulesUrl: league.rulesUrl || null,
         commishContact: league.commishContact || null,
-        cutdownRosterSize: league.cutdownRosterSize || null,
+        rosterLimit: league.rosterLimit || null,
+        irEligibility: league.irEligibility || null,
         irSalaryPercent: league.irSalaryPercent ?? null,
         dues: league.dues ?? null,
         payout1: league.payout1 ?? null,

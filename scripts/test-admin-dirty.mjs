@@ -10,7 +10,7 @@
 //     permanently claiming eighteen outstanding changes. The two ways to get
 //     one are baked into the shape of the data: the tab's text inputs hand back
 //     strings where config/leagues.json stores real numbers (every payout, and
-//     cutdownRosterSize), and a key the draft adds lands in a different position
+//     rosterLimit), and a key the draft adds lands in a different position
 //     from the same key in the served entry. Both would report an edit that
 //     saves to a byte-identical file.
 //   - a FALSE NEGATIVE is worse and quieter: the page says nothing is
@@ -100,8 +100,8 @@ const { adminComparable } = context;
 // either way (mergeLeague's putMoney/putNumber).
 assert.equal(adminComparable({ dues: 50 }), adminComparable({ dues: '50' }),
 	'a number and the string a text input produces are the same saved value');
-assert.equal(adminComparable({ cutdownRosterSize: 23 }), adminComparable({ cutdownRosterSize: '23' }),
-	'cutdownRosterSize compares the same way the payouts do');
+assert.equal(adminComparable({ rosterLimit: 23 }), adminComparable({ rosterLimit: '23' }),
+	'rosterLimit compares the same way the payouts do');
 
 // The other one: a draft that adds a key puts it at the end, while the served
 // entry carries it in KEY_ORDER position. Raw JSON.stringify would call these
