@@ -10620,6 +10620,12 @@
 		//     An unrecognised designation ranks -1 and lands under the floor,
 		//     so a string nobody has read can't put a healthy-in-truth player
 		//     on the strip.
+		// An invalid lineup *is* included, judged only against the league's own
+		// starting requirement (lineupValidityProblems): too few or too many
+		// starters, a position under its minimum or over its maximum, or a
+		// position the league has no slot for. Every one of those is a
+		// necessary condition for a legal lineup, so the check can miss a
+		// lineup that is wrong in a subtle flex way but never flags a legal one.
 		// The roster-level `error` *is* included: it means the league's whole
 		// card is stale fallback data, which is the one sync failure that
 		// misrenders as health — and it's also how a dead ESPN cookie, whose
@@ -10657,6 +10663,88 @@
 				matched = true;
 			}
 			return matched ? total : null;
+		}
+
+		// The starting-lineup requirement string ("1 QB, 2-3 RB, 2-3 WR, 1-2 TE,
+		// 1 PK, 1 Def") as per-position bounds: position -> { min, max }. The
+		// string's max already includes any flex slot's reach (see
+		// formatStartingLineupRequirement), and its min is the dedicated
+		// slots' guaranteed starters only. Both are therefore necessary
+		// conditions for a legal lineup, not sufficient ones: a lineup outside
+		// them is certainly invalid, one inside them might still be (flex
+		// competition), which is the right direction for a digest whose failure
+		// mode is noise. Null when the string is missing or unparseable.
+		// Position names are compared through lineupPositionKey, since MFL's
+		// slot names and a player's position can spell a kicker or defense
+		// differently across providers.
+		function lineupPositionKey(position) {
+			const key = String(position || '').trim().toUpperCase();
+			if (key === 'K') return 'PK';
+			if (key === 'DST' || key === 'D/ST' || key === 'DEF') return 'DEF';
+			return key;
+		}
+		function parseLineupBounds(requirement) {
+			if (!requirement) return null;
+			const bounds = new Map();
+			for (const m of String(requirement).matchAll(/(\d+)(?:\s*-\s*(\d+))?\s+([A-Za-z/]+)/g)) {
+				const min = Number(m[1]);
+				const max = m[2] != null ? Number(m[2]) : min;
+				bounds.set(lineupPositionKey(m[3]), { min, max, label: m[3] });
+			}
+			return bounds.size ? bounds : null;
+		}
+
+		// What is wrong with the lineup that is set, judged only against the
+		// league's own requirement: too many or too few starters in total, a
+		// position under its minimum or over its maximum, or a position the
+		// league has no slot for. Rows are separate facts (a lineup can be
+		// both a QB short and a TE over). Skipped, with nothing said, when:
+		//   - there are no starters at all, which the 'empty' row already says;
+		//   - there is no requirement to judge against (ESPN and Sleeper carry
+		//     no requirement string, and enforce their own slots at the
+		//     moment a lineup is set);
+		//   - a starter id doesn't resolve to a rostered player, because the
+		//     position counts would then be an undercount and read as a
+		//     shortage that isn't there (a same-sync race between the two MFL
+		//     exports, as in computeLeagueProblems' per-starter loop). The
+		//     total-size checks only need the id count and still run.
+		// The total uses `lineupSize` (starters.count, shipped by the sync)
+		// when there is one, since the sum of minimums undercounts whenever a
+		// flex slot exists; without it only the floor is checked, as before.
+		function lineupValidityProblems(league, wk) {
+			const starters = league.starters;
+			if (!Array.isArray(starters) || starters.length === 0) return [];
+			const problems = [];
+			const push = (label) => problems.push({ kind: 'invalid-lineup', player: null, label });
+
+			const size = Number.isInteger(league.lineupSize) && league.lineupSize > 0 ? league.lineupSize : null;
+			const floor = size ?? parseLineupMinimums(league.startingLineup);
+			if (floor != null && starters.length < floor) {
+				problems.push({ kind: 'short', player: null, label: `Only ${starters.length} of ${size != null ? '' : 'at least '}${floor} starters set for week ${wk}` });
+			} else if (size != null && starters.length > size) {
+				push(`${starters.length} starters set for week ${wk} — the league starts ${size}`);
+			}
+
+			const bounds = parseLineupBounds(league.startingLineup);
+			if (!bounds) return problems;
+			const byId = new Map((league.players || []).map((p) => [String(p.id), p]));
+			const counts = new Map();
+			for (const id of starters) {
+				const p = byId.get(String(id));
+				if (!p) return problems;
+				const key = lineupPositionKey(p.position);
+				counts.set(key, (counts.get(key) || 0) + 1);
+			}
+			for (const [key, { min, max, label }] of bounds) {
+				const have = counts.get(key) || 0;
+				const range = min === max ? `${min}` : `${min}-${max}`;
+				if (have < min) push(`Week ${wk} lineup has ${have} ${label} — needs ${range}`);
+				else if (have > max) push(`Week ${wk} lineup has ${have} ${label} — allows at most ${max}`);
+			}
+			for (const [key, have] of counts) {
+				if (!bounds.has(key)) push(`Week ${wk} lineup starts ${have} ${key} — this league has no ${key} slot`);
+			}
+			return problems;
 		}
 
 		// Whether a roster sits over any of MFL's own limits — total roster
@@ -10934,10 +11022,7 @@
 			if (league.starters.length === 0) {
 				problems.push({ kind: 'empty', player: null, label: `No starters set for week ${wk}` });
 			} else {
-				const min = parseLineupMinimums(league.startingLineup);
-				if (min != null && league.starters.length < min) {
-					problems.push({ kind: 'short', player: null, label: `Only ${league.starters.length} of at least ${min} starters set for week ${wk}` });
-				}
+				problems.push(...lineupValidityProblems(league, wk));
 			}
 			return problems;
 		}
@@ -10960,7 +11045,7 @@
 		// judgment call, MFL's own deadline will force the drop eventually.
 		// The IR rows ('ir-move', 'ir-activate') are the gold kind: a roster
 		// move worth making, not something broken.
-		const DIGEST_ALERT_KINDS = ['sync', 'ineligible', 'empty', 'short', 'roster-limit'];
+		const DIGEST_ALERT_KINDS = ['sync', 'ineligible', 'empty', 'short', 'invalid-lineup', 'roster-limit'];
 
 		function renderProblemsDigest() {
 			const digestEl = document.getElementById('digest');

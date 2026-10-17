@@ -65,7 +65,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
-import { parseRosterLimits, isPastWeeklyRolloverCutoff, WEEKLY_ROLLOVER_CUTOFF } from './lib/providers.mjs';
+import { parseRosterLimits, isPastWeeklyRolloverCutoff, startingLineupSize, WEEKLY_ROLLOVER_CUTOFF } from './lib/providers.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const html = fs.readFileSync(path.join(root, 'myffl.html'), 'utf8');
@@ -146,11 +146,15 @@ function league(overrides = {}) {
 	};
 }
 
-function player(id, { injury = null, slot = 'ROSTER', bye = '8', part = null } = {}) {
+// Ids 1-9 fill the default requirement ('1 QB, 2 RB, 3 WR, 1 TE, 1 PK, 1
+// Def') exactly, so a lineup of players 1-9 is legal by position as well as
+// by count; any other id is a plain RB.
+const DEFAULT_LINEUP_POSITIONS = ['QB', 'RB', 'RB', 'WR', 'WR', 'WR', 'TE', 'PK', 'Def'];
+function player(id, { injury = null, slot = 'ROSTER', bye = '8', part = null, position = DEFAULT_LINEUP_POSITIONS[Number(id) - 1] || 'RB' } = {}) {
 	return {
 		id,
 		name: `Player ${id}`,
-		position: 'RB',
+		position,
 		team: 'BUF',
 		status: slot,
 		bye,
@@ -321,7 +325,8 @@ const kinds = (problems) => [...problems].map((p) => p.kind);
 
 	const roster9 = Array.from({ length: 9 }, (_, i) => player(String(i + 1)));
 	const short = league({ starters: ['1', '2', '3', '4', '5', '6', '7'], players: roster9 });
-	assert.deepEqual(kinds(computeLeagueProblems(short, YEAR, {}, false)), ['short'], 'a short lineup still shows immediately');
+	// Players 1-7 leave the PK and Def slots empty, which is two more facts.
+	assert.deepEqual(kinds(computeLeagueProblems(short, YEAR, {}, false)), ['short', 'invalid-lineup', 'invalid-lineup'], 'a short lineup still shows immediately');
 }
 
 // ---- Absence of lineup data is "not asked", never "empty lineup" ----------
@@ -411,7 +416,7 @@ const kinds = (problems) => [...problems].map((p) => p.kind);
 	const roster = Array.from({ length: 9 }, (_, i) => player(String(i + 1)));
 	const short = league({ starters: ['1', '2', '3', '4', '5', '6', '7'], players: roster });
 	const problems = computeLeagueProblems(short, YEAR);
-	assert.deepEqual(kinds(problems), ['short']);
+	assert.deepEqual(kinds(problems), ['short', 'invalid-lineup', 'invalid-lineup'], 'the two empty slots (PK, Def) are separate rows');
 	assert.match(problems[0].label, /Only 7 of at least 9/);
 
 	const legal = league({ starters: roster.map((p) => p.id), players: roster });
@@ -707,6 +712,79 @@ const rosterLimits = (overrides = {}) => ({ size: 28, taxi: 4, ir: 0, position: 
 	// And the sync is what puts it there: the page has no other source.
 	const syncSource = fs.readFileSync(path.join(root, 'scripts', 'fetch-rosters.mjs'), 'utf8');
 	assert.match(syncSource, /weeklyRolloverCutoff: WEEKLY_ROLLOVER_CUTOFF,/, 'fetch-rosters.mjs no longer writes weeklyRolloverCutoff into the snapshot');
+}
+
+// ---- Lineup validity: positions and total size ----------------------------
+
+{
+	// The fixture's default requirement is '1 QB, 2 RB, 3 WR, 1 TE, 1 PK, 1
+	// Def'; players 1-9 fill it exactly. 10+ are plain RBs.
+	const roster = Array.from({ length: 12 }, (_, i) => player(String(i + 1)));
+	const lineup = (ids, overrides = {}) => league({ starters: ids.map(String), players: roster, ...overrides });
+	const rows = (l) => [...computeLeagueProblems(l, YEAR)].filter((p) => p.kind === 'invalid-lineup').map((p) => p.label);
+
+	assert.deepEqual(rows(lineup([1, 2, 3, 4, 5, 6, 7, 8, 9])), [], 'a lineup that fills every slot is silent');
+
+	// Swap the TE for a third RB: TE short, RB over.
+	const wrong = rows(lineup([1, 2, 3, 4, 5, 6, 10, 8, 9]));
+	assert.equal(wrong.length, 2);
+	assert.ok(wrong.some((r) => /0 TE — needs 1/.test(r)), 'TE shortage named');
+	assert.ok(wrong.some((r) => /3 RB — allows at most 2/.test(r)), 'RB overage named');
+	assert.ok(wrong.every((r) => /week 1|Week 1/.test(r)), 'the week rides in the label');
+
+	// Too many starters in total, when the league says how many it starts.
+	const over = [...computeLeagueProblems(lineup([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], { lineupSize: 9 }), YEAR)];
+	assert.ok(over.some((p) => /10 starters set for week 1 — the league starts 9/.test(p.label)));
+
+	// lineupSize makes a one-short lineup visible even though the sum of
+	// minimums (here 9 for a flex-free string) can't.
+	const flexString = '1 QB, 2-3 RB, 2-3 WR, 1-2 TE, 1 PK, 1 Def'; // min-sum 8, count 9
+	const eight = lineup([1, 2, 3, 4, 5, 6, 7, 8], { startingLineup: flexString });
+	assert.deepEqual(kinds(computeLeagueProblems(eight, YEAR)).filter((k) => k === 'short'), [], 'without lineupSize the min-sum floor misses it');
+	const eightKnown = lineup([1, 2, 3, 4, 5, 6, 7, 8], { startingLineup: flexString, lineupSize: 9 });
+	assert.ok([...computeLeagueProblems(eightKnown, YEAR)].some((p) => p.kind === 'short' && /Only 8 of 9 starters/.test(p.label)), 'with lineupSize it is one short');
+
+	// A flex league: 3 RB is inside 2-3, so it is not a position error.
+	const flexLegal = lineup([1, 2, 10, 4, 5, 6, 7, 8, 9], { startingLineup: flexString, lineupSize: 9 });
+	assert.deepEqual(rows(flexLegal), [], 'inside the flex-widened range is legal');
+
+	// A position the league has no slot for.
+	const kicker = lineup([1, 2, 3, 4, 5, 6, 7, 8, 9], { startingLineup: '1 QB, 2 RB, 3 WR, 1 TE, 1 Def' });
+	assert.ok(rows(kicker).some((r) => /starts 1 PK — this league has no PK slot/.test(r)));
+
+	// An unresolvable starter id: no position claims, but the count still runs.
+	const ghost = league({ starters: ['1', '2', '3', '4', '5', '6', '7', '8', '99'], players: roster });
+	assert.deepEqual(rows(ghost), [], 'an unresolved starter id never reads as a position shortage');
+
+	// No requirement string (ESPN/Sleeper): nothing to judge against.
+	assert.deepEqual(rows(lineup([1, 2, 3], { startingLineup: null })), []);
+
+	// Best-ball strings have no lineup to set and floor at zero.
+	assert.deepEqual(rows(lineup([1, 2, 3], { startingLineup: '0-2 QB, 0-8 RB, 0-8 WR, 0-8 TE' })).filter((r) => /needs/.test(r)), []);
+
+	// An empty lineup is the 'empty' row alone, not a pile of shortages.
+	assert.deepEqual(kinds(computeLeagueProblems(league({ starters: [], players: roster }), YEAR)), ['empty']);
+
+	// Held until the weekly rollover cutoff like every other lineup row.
+	assert.deepEqual(computeLeagueProblems(lineup([1, 2, 3]), YEAR, {}, true, false).length, 0);
+
+	// Kicker and defense spellings differ across providers.
+	assert.equal(context.lineupPositionKey('K'), 'PK');
+	assert.equal(context.lineupPositionKey('DST'), 'DEF');
+	assert.equal(context.lineupPositionKey('Def'), 'DEF');
+	assert.ok(DIGEST_ALERT_KINDS.includes('invalid-lineup'), 'an invalid lineup is a red row');
+}
+
+{
+	// The sync ships the lineup's total size (starters.count) beside the
+	// requirement string; null when MFL doesn't say, never a guess.
+	assert.equal(startingLineupSize({ league: { starters: { count: '9' } } }), 9);
+	assert.equal(startingLineupSize({ league: { starters: {} } }), null);
+	assert.equal(startingLineupSize({ league: { starters: { count: '' } } }), null);
+	assert.equal(startingLineupSize({ league: { starters: { count: '0' } } }), null);
+	assert.equal(startingLineupSize(null), null);
+	const providerSource = fs.readFileSync(path.join(root, 'scripts', 'lib', 'providers.mjs'), 'utf8');
+	assert.match(providerSource, /startingLineup,\n\s+lineupSize,/, 'fetchLeagueRoster no longer returns lineupSize');
 }
 
 console.log('test-problems-digest: all assertions passed');
