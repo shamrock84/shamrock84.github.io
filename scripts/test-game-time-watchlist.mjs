@@ -36,6 +36,12 @@
 //     league + starter id (backupPlans, which syncs) — a suggestion never
 //     is — and a saved pick who left the roster falls back to the
 //     suggestion.
+//   * each league that BENCHES a designated player gets a Notify checkbox
+//     (the push otherwise watches starters only). Checked by default when
+//     he is a starter's CHOSEN backup; the manager's choice is stored in
+//     notifyPlans only when it differs from that default, so the default
+//     keeps following the backup picks. The push's benchNotify is pinned
+//     against the page's watchlistBenchNotify over one fixture.
 //   * the card is login-gated, shows a loading state until game states
 //     have been asked (never a false "nothing to check"), and collapses
 //     itself when empty.
@@ -45,7 +51,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
-import { resolveBackup } from '../api/_lib/gametime.mjs';
+import { resolveBackup, benchNotify } from '../api/_lib/gametime.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const html = fs.readFileSync(path.join(root, 'myffl.html'), 'utf8');
@@ -482,6 +488,73 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 			const server = resolveBackup(lg, lg.players[0], saved);
 			assert.equal(server.player ? String(server.player.id) : null, page.player ? String(page.player.id) : null, `${lg.id} saved=${saved}: page and push name the same backup`);
 			assert.equal(server.source, page.source, `${lg.id} saved=${saved}: same source`);
+		}
+	}
+}
+
+// Bench Notify checkbox: default on for a starter's chosen backup, off
+// otherwise; only a choice that differs from the default is stored.
+{
+	const ctx = makeContext(LOGGED_IN);
+	setGames(ctx, { PHI: game('LAR', true, EARLY), DAL: game('NYG', true, EARLY) });
+	const l = league('N', [
+		player('a', 'Saquon Barkley', 'PHI', 'Q'),
+		player('r1', 'Yan Runner', 'DAL', 'Q'),
+		player('r2', 'Other Bench', 'DAL', 'Q'),
+	], ['a']);
+	const boxes = () => findAll(ctx.renderGameTimeWatchlistCard([l], YEAR), (n) => n.tag === 'input' && n.attrs.type === 'checkbox');
+	assert.equal(boxes().length, 2, 'one box per benched designated player; none for the starter');
+	assert.deepEqual(boxes().map((b) => b.checked), [false, false], 'no backup chosen: nothing is on by default');
+
+	ctx.setBackupPlan('N', 'a', 'r1');
+	assert.deepEqual(boxes().map((b) => b.checked).sort(), [false, true], 'the chosen backup is checked by default');
+	assert.deepEqual(plain(ctx.watchlistBenchNotify(l, l.players[1])), { on: true, backupFor: ['Saquon Barkley'] });
+	assert.equal(ctx.getNotifyPlan('N', 'r1'), '', 'a default is shown, not saved');
+
+	const on = boxes().find((b) => b.checked);
+	on.checked = false;
+	on.listeners.change[0]();
+	assert.equal(ctx.getNotifyPlan('N', 'r1'), 'off', 'unchecking a default stores off');
+	assert.equal(ctx.watchlistBenchNotify(l, l.players[1]).on, false);
+	on.checked = true;
+	on.listeners.change[0]();
+	assert.equal(ctx.getNotifyPlan('N', 'r1'), '', 'checking it again returns to the default');
+
+	const off = boxes().find((b) => !b.checked);
+	off.checked = true;
+	off.listeners.change[0]();
+	assert.equal(ctx.getNotifyPlan('N', 'r2'), 'on', 'checking a non-default stores on');
+	assert.deepEqual(plain(JSON.parse(ctx.__store.get('myfflPlanPending')).notifyPlans), { N: { r2: 'on', r1: '' } }, 'edits ride the sync, with the tombstone for a reset');
+
+	// A suggestion never counts, and a saved pick for a healthy starter is stale.
+	const healthy = league('H', [player('a', 'Saquon Barkley', 'PHI', null), player('r1', 'Yan Runner', 'DAL', 'Q')], ['a']);
+	ctx.setBackupPlan('H', 'a', 'r1');
+	assert.equal(ctx.watchlistBenchNotify(healthy, healthy.players[1]).on, false);
+}
+
+// The push's benchNotify duplicates the page's rule. Same fixture through
+// both, every combination of saved pick and explicit choice.
+{
+	const ctx = makeContext(LOGGED_IN);
+	const l = league('P', [
+		player('a', 'Saquon Barkley', 'PHI', 'Q'),
+		player('h', 'Healthy Starter', 'PHI', null),
+		player('r1', 'Yan Runner', 'DAL', 'Q'),
+		player('r2', 'Abe Runner', 'DAL', 'Q'),
+		player('r3', 'Clean Runner', 'DAL', null),
+	], ['a', 'h']);
+	for (const pick of [undefined, 'r1', 'r3', 'none', 'gone']) {
+		for (const choice of [undefined, 'on', 'off']) {
+			for (const [i, bench] of l.players.entries()) {
+				if (i < 2) continue;
+				ctx.__lg = l; ctx.__bench = bench;
+				ctx.__plans = { backupPlans: pick ? { P: { a: pick, h: 'r2' } } : { P: { h: 'r2' } }, notifyPlans: choice ? { P: { [bench.id]: choice } } : {} };
+				const page = vm.runInContext("(() => { localStorage.setItem('myfflBackupPlans', JSON.stringify(__plans.backupPlans)); localStorage.setItem('myfflNotifyPlans', JSON.stringify(__plans.notifyPlans)); return watchlistBenchNotify(__lg, __bench); })()", ctx);
+				const server = benchNotify(l, bench, ctx.__plans);
+				const tag = `pick=${pick} choice=${choice} bench=${bench.id}`;
+				assert.equal(server.on, page.on, `${tag}: page and push agree on whether he is notified`);
+				assert.deepEqual(server.backupFor, plain(page.backupFor), `${tag}: same starters`);
+			}
 		}
 	}
 }

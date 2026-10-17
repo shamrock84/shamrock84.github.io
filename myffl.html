@@ -2152,6 +2152,14 @@
 			color: var(--muted);
 			font-size: 0.8em;
 		}
+		.watchlist-notify {
+			display: flex;
+			align-items: center;
+			gap: 0.25rem;
+			font-size: 0.8em;
+			color: var(--muted);
+			cursor: pointer;
+		}
 		.watchlist-footnote {
 			padding: 0.3rem 0.5rem 0;
 			font-size: 0.75em;
@@ -4792,6 +4800,36 @@
 			schedulePlanPush();
 		}
 
+		// Whether the game-time push covers a designated BENCH player:
+		// leagueId -> player id -> 'on' | 'off', synced with the others. Absent
+		// means "follow the default", which watchlistBenchNotify computes (on for a
+		// starter's chosen backup) — so an 'off' must be stored, and a choice that
+		// matches the default is stored as nothing (setNotifyPlan's caller).
+		const NOTIFY_PLAN_STORAGE_KEY = 'myfflNotifyPlans';
+		function loadNotifyPlans() {
+			try {
+				return JSON.parse(localStorage.getItem(NOTIFY_PLAN_STORAGE_KEY) || '{}');
+			} catch {
+				return {};
+			}
+		}
+		function getNotifyPlan(leagueId, playerId) {
+			return readPlanMapCached(NOTIFY_PLAN_STORAGE_KEY)[leagueId]?.[playerId] || '';
+		}
+		function setNotifyPlan(leagueId, playerId, choice) {
+			const plans = loadNotifyPlans();
+			if (!choice) {
+				delete plans[leagueId]?.[playerId];
+				if (plans[leagueId] && Object.keys(plans[leagueId]).length === 0) delete plans[leagueId];
+			} else {
+				plans[leagueId] = plans[leagueId] || {};
+				plans[leagueId][playerId] = choice;
+			}
+			localStorage.setItem(NOTIFY_PLAN_STORAGE_KEY, JSON.stringify(plans));
+			recordPlanEdit('notifyPlans', leagueId, playerId, choice);
+			schedulePlanPush();
+		}
+
 		// A manager's own correction to a guessed Results-tab finish (see
 		// computeMflSeasonPlacements's 'guessed: true' — a regular-season-order
 		// fallback used when no bracket data settled a year's exact placement).
@@ -5019,7 +5057,7 @@
 		let planPushGeneration = 0;
 
 		function localPlansDocument() {
-			return { contractPlans: loadContractPlans(), salaryPlans: loadSalaryPlans(), cutPlans: loadCutPlans(), backupPlans: loadBackupPlans(), resultOverrides: loadResultOverrides(), tasks: loadTasks(), favorites: loadFavorites() };
+			return { contractPlans: loadContractPlans(), salaryPlans: loadSalaryPlans(), cutPlans: loadCutPlans(), backupPlans: loadBackupPlans(), notifyPlans: loadNotifyPlans(), resultOverrides: loadResultOverrides(), tasks: loadTasks(), favorites: loadFavorites() };
 		}
 
 		function writePlansLocal(doc) {
@@ -5027,6 +5065,7 @@
 			localStorage.setItem(SALARY_PLAN_STORAGE_KEY, JSON.stringify(doc.salaryPlans || {}));
 			localStorage.setItem(CUT_PLAN_STORAGE_KEY, JSON.stringify(doc.cutPlans || {}));
 			localStorage.setItem(BACKUP_PLAN_STORAGE_KEY, JSON.stringify(doc.backupPlans || {}));
+			localStorage.setItem(NOTIFY_PLAN_STORAGE_KEY, JSON.stringify(doc.notifyPlans || {}));
 			localStorage.setItem(RESULT_OVERRIDE_STORAGE_KEY, JSON.stringify(doc.resultOverrides || {}));
 			writeTasksLocal(doc.tasks);
 		}
@@ -5051,10 +5090,10 @@
 		// tasks does not fit this leagueId -> playerId -> string shape (it
 		// isn't league- or player-scoped) and is handled by its own pending
 		// log, TASKS_PENDING_KEY, just below.
-		const PLAN_KINDS = ['contractPlans', 'salaryPlans', 'cutPlans', 'backupPlans', 'resultOverrides'];
+		const PLAN_KINDS = ['contractPlans', 'salaryPlans', 'cutPlans', 'backupPlans', 'notifyPlans', 'resultOverrides'];
 
 		function emptyPlanEdits() {
-			return { contractPlans: {}, salaryPlans: {}, cutPlans: {}, backupPlans: {}, resultOverrides: {} };
+			return { contractPlans: {}, salaryPlans: {}, cutPlans: {}, backupPlans: {}, notifyPlans: {}, resultOverrides: {} };
 		}
 
 		function loadPendingPlanEdits() {
@@ -9800,6 +9839,27 @@
 			return suggested ? { player: suggested, source: 'suggested' } : { player: null, source: 'none' };
 		}
 
+		// Whether the game-time push covers this designated bench player in
+		// this league, and whom he is the chosen backup for. DUPLICATED in
+		// api/_lib/gametime.mjs (benchNotify) and pinned against it by
+		// test-game-time-check.mjs. The manager's explicit choice (notifyPlans:
+		// 'on' / 'off') wins; otherwise the default is on exactly when he is
+		// the CHOSEN backup of a starter who carries a designation — the swap
+		// his own status bears on. A suggestion never counts (it is healthy by
+		// construction) and neither does a saved pick for a healthy starter.
+		function watchlistBenchNotify(league, bench) {
+			const starting = new Set((league.starters || []).map(String));
+			const backupFor = [];
+			for (const s of league.players || []) {
+				if (!s.injuryStatus || !starting.has(String(s.id))) continue;
+				const { player, source } = watchlistBackupFor(league, s.id, s);
+				if (source === 'chosen' && String(player.id) === String(bench.id)) backupFor.push(s.name);
+			}
+			const choice = getNotifyPlan(league.id, bench.id);
+			const on = choice === 'on' ? true : choice === 'off' ? false : backupFor.length > 0;
+			return { on, backupFor };
+		}
+
 		// "Sun 1:00 PM" for a slot heading and "11:40 AM" for when to look,
 		// both in the viewer's own zone for the same reason formatGameWhen
 		// formats in the browser: the kickoff crosses the wire as ISO.
@@ -9843,8 +9903,9 @@
 				return card;
 			}
 
-			// Starters and bench counted apart because only starters get the
-			// automated push (api/_lib/gametime.mjs watches starters alone), so
+			// Starters and bench counted apart because the automated push is
+			// promised for starters (bench players ride along only when their
+			// Notify box is checked, api/_lib/gametime.mjs benchNotify), so
 			// the auto-check note is left off when there are none to promise
 			// it for. `starter` is already folded to "started in ANY league".
 			const allRows = slots.flatMap((s) => s.rows);
@@ -9972,6 +10033,33 @@
 					line.appendChild(select);
 					sideCol.appendChild(line);
 				});
+				// A Notify checkbox per league that BENCHES him, the mirror of the
+				// picker above: it opts him in to the game-time push, which otherwise
+				// watches starters only. Checked by default when he is a starter's
+				// chosen backup (watchlistBenchNotify). A choice that matches the
+				// default is stored as nothing, so the default keeps following the
+				// backup picks.
+				if (!asStarter) {
+					shownEntries.filter((en) => !en.starter).forEach((en) => {
+						const { on, backupFor } = watchlistBenchNotify(en.league, p);
+						const label = el('label', {
+							class: 'watchlist-notify',
+							title: backupFor.length > 0
+								? `Included in the game-time alert by default: backup for ${backupFor.join(', ')}`
+								: 'Include him in the game-time alert, which otherwise watches starters only',
+						});
+						const box = el('input', { type: 'checkbox' });
+						box.checked = on;
+						box.addEventListener('change', () => {
+							const isBackup = watchlistBenchNotify(en.league, p).backupFor.length > 0;
+							setNotifyPlan(en.league.id, en.playerId, box.checked === isBackup ? '' : (box.checked ? 'on' : 'off'));
+						});
+						box.addEventListener('click', (e) => e.stopPropagation());
+						label.appendChild(box);
+						label.appendChild(document.createTextNode(shownEntries.length > 1 ? ` Notify (${en.nickname})` : ' Notify'));
+						sideCol.appendChild(label);
+					});
+				}
 				row.appendChild(nameLine);
 				row.appendChild(sideCol);
 				container.appendChild(row);

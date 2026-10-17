@@ -18,6 +18,12 @@
 // flagged, never silently dropped, and a league with no backup says so
 // rather than leaving a gap.
 //
+// A designated BENCH player joins the watched set only when asked for: the
+// manager's notifyPlans 'on', or by default when he is the chosen backup of a
+// designated starter ('off' beats the default). Such a row is bench-only — it
+// says "bench in LEAGUE", never "swap him", and never raises the final call or
+// the high priority, since nothing rides on it.
+//
 // And the notification rules: the first look at a slot always sends, even
 // when everyone is playing (silence must mean "broken"); later polls send
 // only on a change; a still-pending player near kickoff gets one final call.
@@ -33,6 +39,7 @@ import {
   watchedForSlot,
   planMessage,
   resolveBackup,
+  benchNotify,
 } from '../api/_lib/gametime.mjs';
 
 const NOW = new Date('2026-10-04T16:20:00Z'); // 12:20 PM ET
@@ -275,6 +282,48 @@ assert.equal(classify({ ...get('Saquon Barkley'), designation: 'IR' }, feeds()).
   assert.doesNotMatch(planMessage([{ ...out, state: 'pending', why: 'x' }], null, 40, 'Sun 1:00 PM').message.body, /→/, 'only an OUT line names a backup');
   const noPlans = [...startersForSlot(snap, games, EARLY).values()][0];
   assert.equal(noPlans.backups[0].backup.name, 'Abe Runner', 'no plans store: the suggestion still shows');
+}
+
+// --- Bench players the manager opted in ---
+{
+  // SNAPSHOT league 100 benches p5 (Bench Guy, PHI, Q) behind starter p1 (Q).
+  const rows = (plans) => [...startersForSlot(SNAPSHOT, GAMES, EARLY, plans).values()];
+  const bg = (plans) => rows(plans).find((p) => p.name === 'Bench Guy');
+  assert.equal(bg(null), undefined, 'bench players are not watched unless asked for');
+  assert.equal(bg({ notifyPlans: { 100: { p5: 'off' } } }), undefined);
+
+  const asked = bg({ notifyPlans: { 100: { p5: 'on' } } });
+  assert.deepEqual(plain(asked.benchLeagues), [{ league: 'MNMx', backupFor: [] }]);
+  assert.deepEqual(asked.leagues, [], 'bench-only: nothing to swap');
+  assert.equal(asked.designation, 'Q');
+
+  const byDefault = bg({ backupPlans: { 100: { p1: 'p5' } } });
+  assert.deepEqual(plain(byDefault.benchLeagues), [{ league: 'MNMx', backupFor: ['Saquon Barkley'] }], "a starter's chosen backup is on by default");
+  assert.equal(bg({ backupPlans: { 100: { p1: 'p5' } }, notifyPlans: { 100: { p5: 'off' } } }), undefined, "'off' beats the default");
+  assert.equal(bg({ backupPlans: { 100: { p3: 'p5' } } }), undefined, 'a saved pick for a healthy starter is stale, not a reason');
+
+  // Bench-and-starter: one row, the starting league still listed as such.
+  const league = SNAPSHOT.leagues[0];
+  assert.deepEqual(benchNotify(league, league.players[4], { notifyPlans: { 100: { p5: 'on' } } }), { on: true, backupFor: [] });
+
+  // The message: bench copies say so, never "swap him", never high priority.
+  const watched = watchedForSlot(new Map([[asked.key, asked]]), feeds({ injuries: [['Bench Guy', 'Out', 'PHI']] }));
+  assert.equal(watched[0].state, 'inactive');
+  const out = planMessage(watched, null, 40, 'Sun 1:00 PM').message;
+  assert.match(out.body, /Bench Guy PHI \(Q\): OUT — .*bench in MNMx$/);
+  assert.doesNotMatch(out.body, /swap him/);
+  assert.equal(out.priority, 0);
+  assert.doesNotMatch(out.title, /lineup change needed/);
+  const why = planMessage([{ ...byDefault, state: 'active', why: 'x' }], null, 40, 'Sun 1:00 PM').message.body;
+  assert.match(why, /bench in MNMx \(backup for Saquon Barkley\)/, 'says whose backup he is');
+
+  // Pending bench players never trigger the final call.
+  const pending = [{ ...asked, state: 'pending', why: 'x' }];
+  const first = planMessage(pending, null, 40, 'Sun 1:00 PM');
+  assert.equal(planMessage(pending, first.next, 5, 'Sun 1:00 PM').message, null, 'no final call for a bench-only player');
+  const starterPending = [{ ...asked, state: 'pending', why: 'x' }, { ...get('Saquon Barkley'), state: 'pending', why: 'x' }];
+  const firstS = planMessage(starterPending, null, 40, 'Sun 1:00 PM');
+  assert.ok(planMessage(starterPending, firstS.next, 5, 'Sun 1:00 PM').message, 'a pending starter still does');
 }
 
 console.log('Game-time check tests passed');
