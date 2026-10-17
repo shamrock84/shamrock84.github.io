@@ -853,6 +853,17 @@ export function slotsFromSleeperRosterPositions(rosterPositions) {
   return entries.length > 0 ? entries : null;
 }
 
+// How many players the lineup holds in total, from the same node's `count`.
+// The requirement string above can only give the sum of each slot's minimum,
+// which undercounts whenever a flex slot exists ("1 QB, 2-3 RB, 2-3 WR, 1-2
+// TE, 1 PK, 1 Def" starts 9, not 8), so the page's lineup-validity check
+// reads this when it has it. Null when MFL doesn't say, never a guess.
+export function startingLineupSize(leagueData) {
+  const raw = leagueData?.league?.starters?.count;
+  const n = Number(raw);
+  return raw != null && raw !== '' && Number.isInteger(n) && n > 0 ? n : null;
+}
+
 export function formatStartingLineupRequirement(leagueData) {
   const rawSlots = leagueData?.league?.starters?.position;
   const slots = Array.isArray(rawSlots) ? rawSlots : rawSlots ? [rawSlots] : [];
@@ -1174,9 +1185,11 @@ export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, inj
   }
 
   let startingLineup = null;
+  let lineupSize = null;
   let lineupSlots = null;
   try {
     startingLineup = formatStartingLineupRequirement(leagueData);
+    lineupSize = startingLineupSize(leagueData);
     // The arithmetic version of the same node, for the power score. Never
     // written to data/rosters.json — fetch-rosters.mjs consumes it in the
     // same run and deletes it before the file is written.
@@ -1205,6 +1218,7 @@ export async function fetchLeagueRoster(league, cookie, playerMap, byeWeeks, inj
     salaryAdjustments,
     irSalaryPercentMfl,
     startingLineup,
+    lineupSize,
     lineupSlots,
     rosterLimits,
     draftPicks,
