@@ -75,7 +75,7 @@ vm.runInContext(scriptSource, context);
 const {
 	duringWeeks1Through17, duringIrClearingWindow,
 	cutCountableStatuses, cutsNeededFor, cutsPlannedFor, setCutPlan,
-	effectiveRosterLimit, rosterLimitProblems,
+	effectiveRosterLimit, rosterLimitProblems, rosterRoomProblems, computeLeagueProblems,
 } = context;
 
 let failures = 0;
@@ -190,6 +190,29 @@ const over = { ...limitLeague(23, 28), players: rosterOf(25) };
 const problemsNow = rosterLimitProblems(over).length;
 check('roster-limit problems follow effectiveRosterLimit at the current date',
 	problemsNow === (effectiveRosterLimit(over).size < 25 ? 1 : 0));
+
+// rosterRoomProblems: open roster spots, said only in season (Weeks 1-17)
+// against effectiveRosterLimit. GameOn (August 2026 data): MFL size 30,
+// hand-set limit 25, 24 on the roster -> one spot.
+const roomOf = (n, extra = {}) => ({ type: 'salarycap', ...limitLeague(25, 30), players: rosterOf(n), ...extra });
+const roomRows = (league, now) => [...rosterRoomProblems(league, now)];
+check('in season, one under the hand-set limit -> one spot', /room to add 1 player$/.test(roomRows(roomOf(24), MID_SEASON)[0]?.label ?? ''));
+check('the label says how many of how many', /24 of 25/.test(roomRows(roomOf(24), MID_SEASON)[0]?.label ?? ''));
+check('plural when more than one spot', /room to add 3 players$/.test(roomRows(roomOf(22), MID_SEASON)[0]?.label ?? ''));
+check('at the limit -> no row', roomRows(roomOf(25), MID_SEASON).length === 0);
+check('over the limit -> no room row (rosterLimitProblems owns that)', roomRows(roomOf(27), MID_SEASON).length === 0);
+check('the hand-set limit is the rule in season, not MFL\'s larger size', roomRows(roomOf(26), MID_SEASON).length === 0);
+check('no hand-set limit in season -> MFL\'s size is the rule', roomRows(roomOf(24, { rosterLimit: null }), MID_SEASON)[0]?.label.includes('24 of 30') === true);
+check('the offseason is silent (MFL raises its size then)', roomRows(roomOf(24), IR_WINDOW).length === 0);
+check('draft-only leagues have no adds to make', roomRows(roomOf(24, { type: 'draftonly' }), MID_SEASON).length === 0);
+check('an empty roster (nothing loaded) is not "room for 25"', roomRows(roomOf(0), MID_SEASON).length === 0);
+check('a league with no known limit says nothing', roomRows({ type: 'redraft', players: rosterOf(10) }, MID_SEASON).length === 0);
+check('IR and taxi players do not count against open spots',
+	roomRows({ ...roomOf(24), players: [...rosterOf(24), { id: 'ir', status: 'INJURED_RESERVE' }, { id: 'tx', status: 'TAXI_SQUAD' }] }, MID_SEASON).length === 1);
+check('an ESPN/Sleeper league with only a hand-set limit still gets the row',
+	/9 of 10/.test(roomRows({ type: 'redraft', rosterLimit: 10, players: rosterOf(9) }, MID_SEASON)[0]?.label ?? ''));
+check('a mid-draft league never gets the row through the digest',
+	![...computeLeagueProblems({ ...roomOf(24), draftInProgress: true, season: '2026' }, 2026)].some((p) => p.kind === 'roster-room'));
 
 if (failures) {
 	console.log(`\n${failures} cut-planning-window test(s) failed.`);

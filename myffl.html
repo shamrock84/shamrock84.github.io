@@ -10800,6 +10800,33 @@
 			return problems;
 		}
 
+		// The other side of rosterLimitProblems: a roster carrying fewer players
+		// than the limit has open spots, which in season means a free add you may
+		// not have noticed. Judged against effectiveRosterLimit, so a hand-set
+		// `rosterLimit` is the rule during Weeks 1-17 and MFL's own size stands
+		// in when none is set. Only said during Weeks 1-17: in the offseason
+		// MFL's size is deliberately raised and rosters sit well under it for
+		// months (a dynasty roster before the rookie draft), which would be a
+		// permanent row nobody could act on. Never for draftonly leagues, where
+		// there are no adds to make. Counts ROSTER players only, the same count
+		// rosterLimitProblems compares against the limit (IR and taxi have
+		// their own slots). Salary-cap leagues may have no cap room for the
+		// spot, which this doesn't weigh.
+		function rosterRoomProblems(league, now = new Date()) {
+			if (league.type === 'draftonly') return [];
+			if (!duringWeeks1Through17(now)) return [];
+			const { size } = effectiveRosterLimit(league, now);
+			if (!Number.isInteger(size) || size <= 0) return [];
+			const have = (league.players || []).filter((p) => p.status === 'ROSTER').length;
+			if (have === 0 || have >= size) return [];
+			const room = size - have;
+			return [{
+				kind: 'roster-room',
+				player: null,
+				label: `Roster has ${have} of ${size} players — room to add ${room} player${room === 1 ? '' : 's'}`,
+			}];
+		}
+
 		// The league's own IR rule (config `irEligibility`, hand-recorded because
 		// MFL's API doesn't expose it) mapped onto the injury designations the
 		// snapshot carries. IR covers both of MFL's NFL-IR spellings; the rest
@@ -10987,6 +11014,7 @@
 			// on the rollover cutoff or the lineup early returns below.
 			if (notMidDraftOrTrailing) {
 				problems.push(...irEligibilityProblems(league));
+				problems.push(...rosterRoomProblems(league));
 			}
 
 			if (!Array.isArray(league.starters) || league.lineupWeek == null) return problems;
