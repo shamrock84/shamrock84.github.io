@@ -2,7 +2,7 @@
 // minutes by an external scheduler (cron-job.org — Vercel's Hobby cron runs
 // once a day, and GitHub Actions cron is routinely 5-30+ minutes late, both
 // useless for a 45-minute window). For each kickoff inside that window it
-// checks the manager's starters against the gameday inactive feeds and sends
+// checks the manager's starters (and the bench players he opted in) against the gameday inactive feeds and sends
 // the answer to his phone through Pushover, instead of him setting an alarm
 // to go look. All the decisions live in api/_lib/gametime.mjs; this file only
 // fetches, stores and sends.
@@ -141,8 +141,9 @@ export default async function handler(req, res) {
     const espnInjuries = await getJson(`${ESPN_SITE}/injuries`).then(parseEspnInjuries).catch((e) => { feedErrors.push(`ESPN injuries: ${e.message}`); return null; });
     const mfl = await mflInjuries().catch((e) => { feedErrors.push(`MFL: ${e.message}`); return null; });
     // The manager's replacement picks (backupPlans), so an OUT line can say who
-    // goes in. Optional like every feed: unreadable plans cost the picks, and
-    // the message falls back to the suggestion rather than failing the check.
+    // goes in, and his bench Notify choices (notifyPlans). Optional like every
+    // feed: unreadable plans cost the picks and the bench alerts, and the
+    // message falls back to the suggestion rather than failing the check.
     const plans = store ? await storeGet(store, PLANS_KEY).catch((e) => { feedErrors.push(`Plans: ${e.message}`); return null; }) : null;
 
     const results = [];
@@ -170,7 +171,7 @@ export default async function handler(req, res) {
       results.push({
         kickoff,
         minutesToKickoff: Math.round(minutes),
-        watched: watched.map(({ name, team, designation, state, why, leagues, backups }) => ({ name, team, designation, state, why, leagues, backups })),
+        watched: watched.map(({ name, team, designation, state, why, leagues, backups, benchLeagues }) => ({ name, team, designation, state, why, leagues, backups, benchLeagues })),
         message,
       });
     }

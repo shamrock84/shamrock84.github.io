@@ -25,12 +25,15 @@
 //   * Otherwise PENDING — "list not posted yet" — never a guess. The
 //     notification says so and a later poll updates it.
 //
-// The watched set is starters only (the manager's explicit scope), read off
-// the synced snapshot the same way the watchlist card reads it — never the
-// live poll, which can still be on last week before kickoff. Two groups:
-// starters carrying a designation, who are always reported; and any other
-// starter the game summary lists INACTIVE, a surprise scratch that is
-// reported only when it happens.
+// The watched set is the manager's starters, read off the synced snapshot the
+// same way the watchlist card reads it — never the live poll, which can still
+// be on last week before kickoff. Two groups: starters carrying a designation,
+// who are always reported; and any other starter the game summary lists
+// INACTIVE, a surprise scratch that is reported only when it happens. On top
+// of that, a designated BENCH player is reported when the manager has asked
+// for him (the watchlist's Notify checkbox, plans.notifyPlans) — and he is
+// asked for by default when he is the chosen backup of a designated starter,
+// the one benched player whose status decides a swap. See benchNotify.
 
 import { normalizePlayerName } from '../../scripts/lib/fantasypros.mjs';
 
@@ -110,9 +113,38 @@ export function resolveBackup(league, starter, saved) {
   return { player: null, source: 'none' };
 }
 
-// Starters in games at `kickoff`, from the snapshot. One entry per player
+// Whether the push covers a designated bench player in this league, and
+// whom he is the chosen backup for. DUPLICATED from watchlistBenchNotify in
+// myffl.html and pinned against it by test-game-time-check.mjs, for the same
+// reason as resolveBackup.
+//
+// `notifyPlans[league][player id]` is the manager's explicit answer: 'on' or
+// 'off'; absent means "follow the default". The default is on exactly when he
+// is the manager's CHOSEN backup (a saved pick, never the suggestion — a
+// suggestion is healthy by construction, so it could never be designated) for
+// a starter who carries a designation, since that is the swap his own status
+// bears on. A saved pick for a starter who is healthy now is stale, not a plan.
+export function benchNotify(league, bench, plans) {
+  const starting = new Set((league.starters || []).map(String));
+  const backupFor = [];
+  for (const s of league.players || []) {
+    if (!s.injuryStatus || !starting.has(String(s.id))) continue;
+    const saved = plans?.backupPlans?.[league.id]?.[s.id];
+    if (!saved || saved === NO_BACKUP) continue;
+    const { player, source } = resolveBackup(league, s, saved);
+    if (source === 'chosen' && String(player.id) === String(bench.id)) backupFor.push(s.name);
+  }
+  const choice = plans?.notifyPlans?.[league.id]?.[bench.id];
+  const on = choice === 'on' ? true : choice === 'off' ? false : backupFor.length > 0;
+  return { on, backupFor };
+}
+
+// Starters in games at `kickoff`, from the snapshot, plus designated bench
+// players the manager is notified about (benchNotify). One entry per player
 // (normalized name + scoreboard team), carrying every league that starts him
-// and any MFL id seen, so MFL's by-id injury map can be joined exactly.
+// (`leagues`) or benches him with notify on (`benchLeagues`), and any MFL id
+// seen, so MFL's by-id injury map can be joined exactly. A row with no
+// `leagues` is bench-only: nothing to swap, only something to know.
 export function startersForSlot(snapshot, games, kickoff, plans = null) {
   const out = new Map();
   const year = Number(snapshot?.year);
@@ -122,18 +154,23 @@ export function startersForSlot(snapshot, games, kickoff, plans = null) {
     if (league.draftInProgress === true) continue;
     if (Number(league.season) < year) continue;
     const byId = new Map((league.players || []).map((p) => [String(p.id), p]));
+    const starting = new Set(league.starters.map(String));
+    const rowFor = (p, game) => {
+      const k = `${key(p.name)}|${game.team}`;
+      if (!out.has(k)) {
+        out.set(k, { key: k, name: p.name, team: game.team, designation: null, mflIds: new Set(), leagues: [], backups: [], benchLeagues: [] });
+      }
+      const row = out.get(k);
+      if (p.injuryStatus && !row.designation) row.designation = p.injuryStatus;
+      if (!league.provider || league.provider === 'mfl') row.mflIds.add(String(p.id));
+      return row;
+    };
     for (const id of league.starters) {
       const p = byId.get(String(id));
       if (!p || !p.team) continue;
       const game = games.get(p.team);
       if (!game || game.kickoff !== kickoff) continue;
-      const k = `${key(p.name)}|${game.team}`;
-      if (!out.has(k)) {
-        out.set(k, { key: k, name: p.name, team: game.team, designation: null, mflIds: new Set(), leagues: [], backups: [] });
-      }
-      const row = out.get(k);
-      if (p.injuryStatus && !row.designation) row.designation = p.injuryStatus;
-      if (!league.provider || league.provider === 'mfl') row.mflIds.add(String(p.id));
+      const row = rowFor(p, game);
       row.leagues.push(leagueLabel(league));
       // Per league, because the bench behind him is each league's own. A
       // backup whose game has already kicked off is flagged rather than
@@ -144,6 +181,17 @@ export function startersForSlot(snapshot, games, kickoff, plans = null) {
         league: leagueLabel(league),
         backup: b ? { name: b.name, position: b.position || null, team: b.team || null, locked: !!bGame && bGame.state !== 'pre' } : null,
       });
+    }
+    // Bench players ride along only with a designation and only when asked
+    // for. Active Roster only, like the card: taxi and IR can't play this week.
+    for (const p of league.players || []) {
+      if (starting.has(String(p.id)) || (p.status || 'ROSTER').toUpperCase() !== 'ROSTER') continue;
+      if (!p.injuryStatus || !p.team) continue;
+      const game = games.get(p.team);
+      if (!game || game.kickoff !== kickoff) continue;
+      const { on, backupFor } = benchNotify(league, p, plans);
+      if (!on) continue;
+      rowFor(p, game).benchLeagues.push({ league: leagueLabel(league), backupFor });
     }
   }
   return out;
@@ -254,7 +302,10 @@ export function planMessage(watched, sent, minutesToKickoff, whenLabel) {
   // A player new to the slot since the last message (a surprise scratch)
   // counts as a change too: prev[key] is undefined, which differs.
   const changed = first ? [] : watched.filter((p) => prev[p.key] !== p.state);
-  const pending = watched.filter((p) => p.state === 'pending');
+  // A bench-only row has no swap riding on it, so it never raises the final
+  // call, the high priority, or "lineup change needed" — it is told, not chased.
+  const benchOnly = (p) => (p.benchLeagues?.length || 0) > 0 && p.leagues.length === 0;
+  const pending = watched.filter((p) => p.state === 'pending' && !benchOnly(p));
   const finalCall = !next.finalCall && pending.length > 0 && minutesToKickoff <= FINAL_CALL_MINUTES;
   if (finalCall) next.finalCall = true;
   if (!first && changed.length === 0 && !finalCall) return { message: null, next };
@@ -262,17 +313,23 @@ export function planMessage(watched, sent, minutesToKickoff, whenLabel) {
   const rows = first || finalCall ? watched : changed;
   const line = (p) => {
     const icon = p.state === 'inactive' ? '❌' : p.state === 'active' ? '✅' : '⏳';
-    const verb = p.state === 'inactive' ? 'OUT — swap him' : p.state === 'active' ? 'playing' : 'not known yet';
+    const verb = p.state === 'inactive' ? (benchOnly(p) ? 'OUT' : 'OUT — swap him') : p.state === 'active' ? 'playing' : 'not known yet';
     const tag = p.designation ? ` (${p.designation})` : '';
     // An OUT starter is the one the manager has to act on, so only that line
     // names who goes in — per league, since each has its own bench. The rest
     // keep the plain league list. Older callers without `backups` do too.
-    const where = p.state === 'inactive' && p.backups?.length
+    const starts = p.state === 'inactive' && p.backups?.length
       ? p.backups.map(({ league, backup }) => `${league} → ${backupText(backup)}`).join('; ')
       : p.leagues.join(', ');
+    // Bench copies say so, and say whose backup he is when that is why he is
+    // here — an OUT backup is the news, not the bench slot.
+    const benched = (p.benchLeagues || [])
+      .map(({ league, backupFor }) => `bench in ${league}${backupFor?.length ? ` (backup for ${backupFor.join(', ')})` : ''}`)
+      .join('; ');
+    const where = [starts, benched].filter(Boolean).join('; ');
     return `${icon} ${p.name} ${p.team}${tag}: ${verb} — ${p.why}. ${where}`;
   };
-  const anyOut = rows.some((p) => p.state === 'inactive');
+  const anyOut = rows.some((p) => p.state === 'inactive' && !benchOnly(p));
   let title;
   if (finalCall) title = `${whenLabel} kickoff: still no word on ${pending.length} — check manually`;
   else if (first) title = anyOut ? `${whenLabel} kickoff: lineup change needed` : `${whenLabel} kickoff: ${watched.length} checked`;

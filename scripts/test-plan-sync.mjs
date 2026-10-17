@@ -359,7 +359,7 @@ test('an edit made with the store down is pushed on the next load', async () => 
 	offline.g.setContractPlan('L1', 'p1', '');
 	await flush(offline);
 	assert.deepEqual(offline.contracts(), {}, 'the page still works offline');
-	assert.deepEqual(offline.pending(), { contractPlans: { L1: { p1: '' } }, salaryPlans: {}, cutPlans: {}, backupPlans: {}, resultOverrides: {} });
+	assert.deepEqual(offline.pending(), { contractPlans: { L1: { p1: '' } }, salaryPlans: {}, cutPlans: {}, backupPlans: {}, notifyPlans: {}, resultOverrides: {} });
 
 	const back = loadPage(disk, store.serve);
 	await back.g.syncPlans();
@@ -401,7 +401,7 @@ test('an edit made while a push is in flight stays pending', async () => {
 
 	assert.deepEqual(
 		page.pending(),
-		{ contractPlans: { L1: { p1: '2', p2: '3' } }, salaryPlans: {}, cutPlans: {}, backupPlans: {}, resultOverrides: {} },
+		{ contractPlans: { L1: { p1: '2', p2: '3' } }, salaryPlans: {}, cutPlans: {}, backupPlans: {}, notifyPlans: {}, resultOverrides: {} },
 		'the second edit is not cleared by an answer that predates it'
 	);
 });
