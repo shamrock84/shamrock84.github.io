@@ -33,7 +33,7 @@ There is **no build step, no test framework, no linter and no dependencies**. `p
 
 **Fast path — live, never written down.** `api/live-scoring.js`, polled while the Scoring tab is open; it writes nothing and keeps a module-level cache that resets on cold start.
 
-Both import fetch logic from **`scripts/lib/providers.mjs`**; `fetch-rosters.mjs` is orchestration only. `api/trigger-sync.js` lets the page's sync button dispatch the sync. **It is login-gated** (Bearer token checked before the cooldown, button hidden when logged out) and has a **5-minute cooldown held in the Upstash store**. Keep the cooldown longer than a sync run (60–120s): the workflow queues dispatches, so a shorter gap lets syncs run back to back.
+Both import fetch logic from **`scripts/lib/providers.mjs`**; `fetch-rosters.mjs` is orchestration only. `api/trigger-sync.js` lets the page's sync button dispatch the sync, and **the 4-hourly run is a cron-job.org POST to it** (`Authorization: Bearer GAMETIME_CHECK_SECRET`, `17 */4 * * *`); the workflow has no `schedule:`, so never add one back. A cooldown hit from cron answers 200 `skipped`. **Otherwise it is login-gated** (Bearer token checked before the cooldown, button hidden when logged out) and has a **5-minute cooldown held in the Upstash store**. Keep the cooldown longer than a sync run (60–120s): the workflow queues dispatches, so a shorter gap lets syncs run back to back.
 
 ## `config/leagues.json` is the control plane
 
