@@ -1278,6 +1278,14 @@
 		.roster-group.roster-group-collapsed.watchlist-bench-group .watchlist-row:not(.watchlist-row-notify) {
 			display: none;
 		}
+		/* The row separator belongs between visible rows: with its neighbours
+		   hidden, the first shown row would otherwise carry a stray line. */
+		.roster-group.roster-group-collapsed.watchlist-bench-group .watchlist-row {
+			border-top: 0;
+		}
+		.roster-group.roster-group-collapsed.watchlist-bench-group .watchlist-row-notify ~ .watchlist-row-notify {
+			border-top: 1px solid var(--border);
+		}
 		.lineup-login {
 			margin-top: 0.6rem;
 		}
