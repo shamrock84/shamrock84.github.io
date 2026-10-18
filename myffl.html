@@ -9949,7 +9949,7 @@
 				const p = r.player;
 				const shownEntries = r.entries.filter((en) => en.starter === asStarter);
 				const row = el('div', { class: 'watchlist-row' });
-				if (!asStarter && shownEntries.some((en) => !en.starter && watchlistBenchNotify(en.league, p).on)) {
+				if (!asStarter && shownEntries.some((en) => !en.starter && watchlistBenchNotify(en.league, { id: en.playerId }).on)) {
 					row.classList.add('watchlist-row-notify');
 				}
 				const nameLine = el('div', { class: 'watchlist-name' });
@@ -10053,7 +10053,7 @@
 				// backup picks.
 				if (!asStarter) {
 					shownEntries.filter((en) => !en.starter).forEach((en) => {
-						const { on, backupFor } = watchlistBenchNotify(en.league, p);
+						const { on, backupFor } = watchlistBenchNotify(en.league, { id: en.playerId });
 						const label = el('label', {
 							class: 'watchlist-notify',
 							title: backupFor.length > 0
@@ -10063,9 +10063,9 @@
 						const box = el('input', { type: 'checkbox' });
 						box.checked = on;
 						box.addEventListener('change', () => {
-							const isBackup = watchlistBenchNotify(en.league, p).backupFor.length > 0;
+							const isBackup = watchlistBenchNotify(en.league, { id: en.playerId }).backupFor.length > 0;
 							setNotifyPlan(en.league.id, en.playerId, box.checked === isBackup ? '' : (box.checked ? 'on' : 'off'));
-							row.classList.toggle('watchlist-row-notify', shownEntries.some((x) => !x.starter && watchlistBenchNotify(x.league, p).on));
+							row.classList.toggle('watchlist-row-notify', shownEntries.some((x) => !x.starter && watchlistBenchNotify(x.league, { id: x.playerId }).on));
 						});
 						box.addEventListener('click', (e) => e.stopPropagation());
 						label.appendChild(box);
