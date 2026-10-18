@@ -51,7 +51,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
-import { resolveBackup, benchNotify } from '../api/_lib/gametime.mjs';
+import { resolveBackup, benchNotify, startersForSlot } from '../api/_lib/gametime.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const html = fs.readFileSync(path.join(root, 'myffl.html'), 'utf8');
@@ -530,6 +530,34 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	const healthy = league('H', [player('a', 'Saquon Barkley', 'PHI', null), player('r1', 'Yan Runner', 'DAL', 'Q')], ['a']);
 	ctx.setBackupPlan('H', 'a', 'r1');
 	assert.equal(ctx.watchlistBenchNotify(healthy, healthy.players[1]).on, false);
+}
+
+// A player who starts in one league and sits in another, under different
+// ids (MFL vs ESPN): the row is merged by name, so it carries ONE player
+// object. The bench Notify choice must still be read and saved under the
+// bench league's own id, which is the key the push reads (startersForSlot).
+{
+	const ctx = makeContext(LOGGED_IN);
+	setGames(ctx, { WAS: game('SF', false, EARLY) });
+	const starts = league('S', [player('111', 'Stefon Diggs', 'WAS', 'Q', { position: 'WR' })], ['111'], { nickname: 'Survivor' });
+	const sits = league('B', [player('esp-9', 'Stefon Diggs', 'WAS', 'Q', { position: 'WR' })], [], { nickname: 'NMLTLM', provider: 'espn' });
+	const boxes = () => findAll(ctx.renderGameTimeWatchlistCard([starts, sits], YEAR), (n) => n.tag === 'input' && n.attrs.type === 'checkbox');
+	assert.equal(boxes().length, 1, 'one Notify box, for the league that benches him');
+	assert.equal(boxes()[0].checked, false);
+
+	const box = boxes()[0];
+	box.checked = true;
+	box.listeners.change[0]();
+	assert.equal(ctx.getNotifyPlan('B', 'esp-9'), 'on', 'saved under the benching league\'s own id');
+	assert.equal(ctx.getNotifyPlan('B', '111'), '', 'not under the starting league\'s id');
+	assert.equal(boxes()[0].checked, true, 'still checked after the card is rebuilt');
+
+	const row = findAll(ctx.renderGameTimeWatchlistCard([starts, sits], YEAR), hasClass('watchlist-row-notify'));
+	assert.equal(row.length, 1, 'the row is marked so a collapsed Bench still shows it');
+
+	const snapshot = { year: 2026, leagues: [starts, sits].map((l) => ({ ...l, season: 2026 })) };
+	const slot = [...startersForSlot(snapshot, new Map([['WAS', { kickoff: EARLY, team: 'WAS', state: 'pre', id: 'g1' }]]), EARLY, { notifyPlans: plain(JSON.parse(ctx.__store.get('myfflNotifyPlans'))) }).values()][0];
+	assert.deepEqual(slot.benchLeagues.map((b) => b.league), ['NMLTLM'], 'the push covers him as a bench player in the same league');
 }
 
 // The push's benchNotify duplicates the page's rule. Same fixture through
