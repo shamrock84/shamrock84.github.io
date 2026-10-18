@@ -17735,10 +17735,11 @@
 			makeCollapsible(card, heading, 'admin-favorites');
 
 			// A section label, since the card will hold other kinds of favorites
-			// later. Visible when collapsed, like the summary it introduces.
-			card.appendChild(el('div', { class: 'favorites-section-label card-collapse-visible', text: 'NFL Teams' }));
-			// Visible even when the card is collapsed, so the picks stay readable.
-			const summary = el('div', { class: 'favorites-summary card-collapse-visible' });
+			// later.
+			card.appendChild(el('div', { class: 'favorites-section-label', text: 'NFL Teams' }));
+			// Hidden with the rest of the card when collapsed (the heading's
+			// count still says how many are picked).
+			const summary = el('div', { class: 'favorites-summary' });
 			const chips = el('div', { class: 'favorites-chips' });
 			if (selected.size === 0) chips.appendChild(el('span', { class: 'team', text: 'No favorite NFL teams selected.' }));
 			for (const abbr of [...selected].sort()) chips.appendChild(el('span', { class: 'favorites-chip nfl-fav', text: abbr }));
