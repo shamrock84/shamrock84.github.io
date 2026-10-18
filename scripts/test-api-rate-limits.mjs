@@ -304,6 +304,29 @@ const sync = (handler) => call(handler, { token: createToken(process.env.SESSION
 }
 
 {
+	// cron-job.org drives the every-4-hours sync through this endpoint with the
+	// cron secret. A wrong secret is refused; a right one dispatches; a cooldown
+	// hit is a 200 "skipped" (not a 429 the scheduler would log as a failure).
+	store = makeFakeStore();
+	withStoreEnv();
+	githubCalls = 0;
+	githubOk = true;
+	process.env.GAMETIME_CHECK_SECRET = 'cron-secret';
+	const handler = await freshHandler('../api/trigger-sync.js');
+	assert.equal((await call(handler, { token: 'wrong' })).statusCode, 401, 'a wrong secret is refused');
+	assert.equal(githubCalls, 0);
+
+	assert.equal((await call(handler, { token: 'cron-secret' })).statusCode, 200, 'the cron secret dispatches');
+	assert.equal(githubCalls, 1);
+	const again = await call(handler, { token: 'cron-secret' });
+	assert.equal(again.statusCode, 200, 'inside the cooldown the scheduler still gets a 200');
+	assert.equal(again.body.skipped, 'cooldown');
+	assert.equal(githubCalls, 1, 'without dispatching again');
+	assert.equal((await sync(handler)).statusCode, 429, 'a manual click inside the cooldown is still a 429');
+	delete process.env.GAMETIME_CHECK_SECRET;
+}
+
+{
 	// The cron endpoints' shared secret (game-time-check.js, weekly-results.js):
 	// header only. ?key= is refused, and its mere presence warns (without the
 	// value) even when the header is valid, so a leftover key in a

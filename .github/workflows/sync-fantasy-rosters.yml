@@ -1,12 +1,11 @@
 name: Sync Fantasy Rosters
 
 on:
-  schedule:
-    # Every 4 hours, offset to :17 rather than :00. GitHub's scheduler
-    # queues every repo's top-of-hour cron together, and that contention is
-    # what turned into 20-70 minute delays here — a less popular minute
-    # queues behind less of it. Not a guarantee, just less lateness.
-    - cron: '17 */4 * * *'
+  # No `schedule:` here on purpose. The every-4-hours run (17 */4 * * *) is a
+  # cron-job.org job that POSTs api/trigger-sync.js with the cron secret,
+  # which dispatches this workflow. GitHub's scheduler was delayed 20-70
+  # minutes and sometimes skipped runs. Don't add a schedule back alongside
+  # it, or every run doubles.
   workflow_dispatch:
     inputs:
       refresh_availability:

@@ -2,7 +2,15 @@
 // off a fresh run of the Sync Fantasy Rosters GitHub Action on demand, instead
 // of waiting for the next scheduled run (every 4 hours).
 //
-// Login-gated: it requires the same Bearer token as every other write
+// That scheduled run is cron-job.org calling this same endpoint, not a
+// `schedule:` trigger in the workflow: GitHub's scheduler was delayed or
+// skipped runs unpredictably. The scheduler authenticates with
+// GAMETIME_CHECK_SECRET as a Bearer header (cronAuthorized, like the other
+// cron endpoints) and takes the same cooldown, but a cooldown hit answers 200
+// `skipped` rather than 429 — a manual sync a minute earlier already did the
+// job, and a 429 would read as a failed run in the scheduler's history.
+//
+// Otherwise login-gated: it requires the same Bearer token as every other write
 // (api/login.js), and the page only shows the button when logged in. It
 // used to be public, which let anyone with curl dispatch syncs — each one a
 // full pass over MFL's rate limit, on the manager's account. It holds a
@@ -22,7 +30,7 @@
 // With no store configured, or the store unreachable, it falls back to the
 // old module-level check, so the button keeps working through an outage.
 
-import { verifyToken } from './_lib/auth.mjs';
+import { cronAuthorized, verifyToken } from './_lib/auth.mjs';
 import { applyCors } from './_lib/cors.mjs';
 import { storeClaim, storeRelease } from './_lib/store.mjs';
 import { resolveStore } from './plans.js';
@@ -75,18 +83,21 @@ export default async function handler(req, res) {
     return;
   }
 
-  const sessionSecret = process.env.SESSION_SECRET;
-  if (!sessionSecret) {
-    res.status(500).json({ error: 'SESSION_SECRET is not configured on this deployment.' });
-    return;
-  }
+  const authHeader = req.headers.authorization || '';
   // Checked before the cooldown, so an unauthenticated request can't spend it
   // and lock the manager out of their own button.
-  const authHeader = req.headers.authorization || '';
-  const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-  if (!verifyToken(bearer, sessionSecret)) {
-    res.status(401).json({ error: 'Log in to sync.' });
-    return;
+  const fromCron = cronAuthorized(req, process.env.GAMETIME_CHECK_SECRET);
+  if (!fromCron) {
+    const sessionSecret = process.env.SESSION_SECRET;
+    if (!sessionSecret) {
+      res.status(500).json({ error: 'SESSION_SECRET is not configured on this deployment.' });
+      return;
+    }
+    const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    if (!verifyToken(bearer, sessionSecret)) {
+      res.status(401).json({ error: 'Log in to sync.' });
+      return;
+    }
   }
 
   const token = process.env.GITHUB_DISPATCH_TOKEN;
@@ -96,6 +107,10 @@ export default async function handler(req, res) {
   }
 
   const cooldown = await takeCooldown();
+  if (!cooldown.ok && fromCron) {
+    res.status(200).json({ ok: true, skipped: 'cooldown', retryAfterSeconds: Math.ceil(cooldown.remainingMs / 1000) });
+    return;
+  }
   if (!cooldown.ok) {
     cooldownRefusal(res, cooldown.remainingMs);
     return;
