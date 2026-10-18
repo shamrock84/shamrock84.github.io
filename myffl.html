@@ -1269,6 +1269,15 @@
 		.roster-group.roster-group-collapsed .roster-group-content:has(.search-hit) {
 			display: block;
 		}
+		/* The Watchlist's collapsed Bench group still shows the players whose
+		   Notify box is on (.watchlist-row-notify): they are in the alert, so
+		   hiding them behind the toggle would hide a commitment. */
+		.roster-group.roster-group-collapsed.watchlist-bench-group .roster-group-content {
+			display: block;
+		}
+		.roster-group.roster-group-collapsed.watchlist-bench-group .watchlist-row:not(.watchlist-row-notify) {
+			display: none;
+		}
 		.lineup-login {
 			margin-top: 0.6rem;
 		}
@@ -9940,6 +9949,9 @@
 				const p = r.player;
 				const shownEntries = r.entries.filter((en) => en.starter === asStarter);
 				const row = el('div', { class: 'watchlist-row' });
+				if (!asStarter && shownEntries.some((en) => !en.starter && watchlistBenchNotify(en.league, p).on)) {
+					row.classList.add('watchlist-row-notify');
+				}
 				const nameLine = el('div', { class: 'watchlist-name' });
 				const first = el('div');
 				// First initial only, like the picker beside it and the matchup
@@ -10053,6 +10065,7 @@
 						box.addEventListener('change', () => {
 							const isBackup = watchlistBenchNotify(en.league, p).backupFor.length > 0;
 							setNotifyPlan(en.league.id, en.playerId, box.checked === isBackup ? '' : (box.checked ? 'on' : 'off'));
+							row.classList.toggle('watchlist-row-notify', shownEntries.some((x) => !x.starter && watchlistBenchNotify(x.league, p).on));
 						});
 						box.addEventListener('click', (e) => e.stopPropagation());
 						label.appendChild(box);
@@ -10087,6 +10100,7 @@
 					const subWrap = el('div', { class: 'roster-group' });
 					const subLabel = el('div', { class: 'group-label', text: `${label} (${subRows.length})` });
 					const subContent = el('div', { class: 'roster-group-content' });
+					if (!asStarter) subWrap.classList.add('watchlist-bench-group');
 					makeGroupCollapsible(subWrap, subLabel, `watchlist:${slot.kickoff}:${subKey}`, defaultCollapsed);
 					subWrap.appendChild(subLabel);
 					subRows.forEach((r) => appendRow(subContent, r, asStarter));
