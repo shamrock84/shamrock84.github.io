@@ -19,6 +19,8 @@
 //     slot) in ANY of my leagues is not playing and is not listed, for me
 //     and for an opponent who has him; Doubtful/Questionable stay, badged.
 //   * the same card runs as Sunday Night Simmer from 6:30 PM Central Sunday.
+//   * each matchup collapses (player rows only; summary, min left and win %
+//     stay): auto when win % is above 80 or below 20, and a hand toggle wins.
 //   * "remaining" means the game is pre or in progress.
 
 import assert from 'node:assert/strict';
@@ -427,6 +429,37 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	assert.match(fullText(ctx.renderMondayNightManiaCard([l], MONDAY)), /Monday Night Mayhem/);
 	const july = new Date(Date.UTC(2026, 6, 12, 23, 30));
 	assert.equal(ctx.renderMondayNightManiaCard([l], july), null);
+}
+
+{
+	// Per-matchup collapse: above 80% / below 20% starts collapsed, the band
+	// between (and no probability) starts open; a click flips it and is
+	// remembered; the summary with minutes left and win % stays either way.
+	const mk = (id, prob) => {
+		const l = lg(id, '90.00', '100.00', [pl('a', 'Tyreek Hill', 'MIA', null)], []);
+		l.scoring.teams[0].winProb = prob;
+		l.scoring.teams[0].minutesRemaining = 42;
+		return l;
+	};
+	const ctx = makeContext(LOGGED_IN);
+	setState(ctx, games);
+	const leagues = [mk('1', 81), mk('2', 80), mk('3', 20), mk('4', 19), mk('5', null)];
+	const card = ctx.renderMondayNightManiaCard(leagues, MONDAY);
+	const boxes = findAll(card, (n) => n.cls.split(/\s+/).includes('monday-matchup'));
+	const bodyOf = (b) => b.children.find((c) => c.cls.split(/\s+/).includes('monday-matchup-body'));
+	// Rendered likeliest first: 81, 80, 20, 19, none.
+	assert.deepEqual(plain(boxes.map((b) => bodyOf(b).hidden)), [true, false, false, true, false]);
+	// Collapsed still shows the summary: the gap, minutes left, win %.
+	assert.match(fullText(boxes[0]), /Down 10\.00[\s\S]*42 min left · Win 81%/);
+	// Clicking a collapsed head opens it and the choice survives a rebuild.
+	const head = boxes[0].children[0];
+	head.listeners.click[0]();
+	assert.equal(bodyOf(boxes[0]).hidden, false);
+	const again = findAll(ctx.renderMondayNightManiaCard(leagues, MONDAY), (n) => n.cls.split(/\s+/).includes('monday-matchup'));
+	assert.deepEqual(plain(again.map((b) => bodyOf(b).hidden)), [false, false, false, true, false]);
+	// And an open matchup can be collapsed by hand.
+	again[1].children[0].listeners.click[0]();
+	assert.equal(bodyOf(again[1]).hidden, true);
 }
 
 console.log('test-monday-night-mania: ok');

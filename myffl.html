@@ -2042,11 +2042,26 @@
 			overflow: hidden;
 		}
 		.monday-matchup-head {
+			display: flex;
+			align-items: center;
+			gap: 0.35rem;
+			width: 100%;
+			border: 0;
+			font: inherit;
+			text-align: left;
+			cursor: pointer;
 			font-size: 0.78rem;
 			font-weight: 700;
 			color: var(--accent);
 			background: var(--chip-bg);
 			padding: 0.35rem 0.5rem;
+		}
+		.monday-matchup-chevron {
+			display: inline-block;
+			transition: transform 0.15s;
+		}
+		.monday-matchup-collapsed .monday-matchup-chevron {
+			transform: rotate(-90deg);
 		}
 		.monday-summary {
 			padding: 0.3rem 0.5rem;
@@ -10193,6 +10208,15 @@
 			return weekday === 'Sun' && minutes >= 18 * 60 + 30 && nflInSeason(now);
 		}
 
+		// Per-matchup collapse state, stored as an override of the default
+		// (mondaySettledWinProb): absence follows the live win probability, so
+		// a matchup that swings back into the 20-80 band reopens by itself
+		// unless the reader chose otherwise.
+		const MONDAY_MATCHUP_NS = 'myfflMondayMatchupCollapsed';
+		function mondaySettledWinProb(winProb) {
+			return winProb != null && (winProb > 80 || winProb < 20);
+		}
+
 		function mondayIsBestBall(league) {
 			return Array.isArray(league.tags) && league.tags.includes('BestBall');
 		}
@@ -10404,7 +10428,20 @@
 			const wrap = el('div', { class: 'monday-matchups' });
 			for (const e of entries) {
 				const box = el('div', { class: 'monday-matchup' });
-				box.appendChild(el('div', { class: 'monday-matchup-head', text: leagueDisplayName(e.league) }));
+				// Collapsed by default once the result is nearly settled (above
+				// 80% or below 20%); the reader's own toggle beats that default
+				// and is stored, since every poll rebuilds the card. Collapsing
+				// hides the player rows only: the summary, minutes left and win
+				// percentage stay. No win probability means no basis to collapse.
+				const key = `${cardId}:${matchupDetailKey(e.league, [e.mine, e.opp])}`;
+				const settled = mondaySettledWinProb(e.mine.winProb);
+				const collapsed = isCardCollapsed(key, MONDAY_MATCHUP_NS, settled);
+				const head = el('button', { type: 'button', class: 'monday-matchup-head', 'aria-expanded': String(!collapsed) });
+				const chevron = el('span', { class: 'monday-matchup-chevron', 'aria-hidden': 'true', text: '▾' });
+				head.appendChild(chevron);
+				head.appendChild(document.createTextNode(leagueDisplayName(e.league)));
+				box.appendChild(head);
+				if (collapsed) box.classList.add('monday-matchup-collapsed');
 
 				const summary = el('div', { class: 'monday-summary' });
 				// Targets are the smallest score, to the hundredth, that wins: the
@@ -10435,8 +10472,18 @@
 				if (meta) summary.appendChild(el('div', { class: 'scoring-matchup-meta', text: meta }));
 				box.appendChild(summary);
 
-				appendTeamSection(box, e.mine, e.myLeft, e.needed);
-				appendTeamSection(box, e.opp, e.oppLeft, e.oppNeeded);
+				const teamsBody = el('div', { class: 'monday-matchup-body' });
+				teamsBody.hidden = collapsed;
+				appendTeamSection(teamsBody, e.mine, e.myLeft, e.needed);
+				appendTeamSection(teamsBody, e.opp, e.oppLeft, e.oppNeeded);
+				box.appendChild(teamsBody);
+				head.addEventListener('click', () => {
+					const next = !teamsBody.hidden;
+					teamsBody.hidden = next;
+					box.classList.toggle('monday-matchup-collapsed', next);
+					head.setAttribute('aria-expanded', String(!next));
+					setCardCollapsed(key, next, MONDAY_MATCHUP_NS, settled);
+				});
 				wrap.appendChild(box);
 			}
 			card.appendChild(wrap);
