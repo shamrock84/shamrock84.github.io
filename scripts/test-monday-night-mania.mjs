@@ -462,4 +462,25 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	assert.equal(bodyOf(again[1]).hidden, true);
 }
 
+{
+	// Each team is a plain collapsible group like Now Playing's Starters /
+	// Bench: "Name (N)" label, players inside, "Nobody left" when empty, and
+	// a click collapses it (remembered across a rebuild).
+	const l = lg('1', '98.40', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], []);
+	const ctx = makeContext(LOGGED_IN);
+	setState(ctx, games);
+	const groups = () => findAll(ctx.renderMondayNightManiaCard([l], MONDAY), (n) => n.cls.split(/\s+/).includes('roster-group'));
+	let g = groups();
+	assert.equal(g.length, 2);
+	assert.match(fullText(g[0]), /^▾?Me \(1\)/);
+	assert.match(fullText(g[1]), /Them \(0\)[\s\S]*Nobody left to play/);
+	assert.ok(!g[0].classList.contains('roster-group-collapsed'));
+	const label = g[0].children[0];
+	label.listeners.click[0]();
+	assert.ok(g[0].classList.contains('roster-group-collapsed'));
+	g = groups();
+	assert.ok(g[0].classList.contains('roster-group-collapsed'));
+	assert.ok(!g[1].classList.contains('roster-group-collapsed'));
+}
+
 console.log('test-monday-night-mania: ok');

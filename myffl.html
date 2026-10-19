@@ -2097,24 +2097,6 @@
 			margin-top: 0.75rem;
 			font-size: 0.85rem;
 		}
-		/* A team's block inside a matchup: its name as a highlighted bar with
-		   a stripe (purple for mine, grey for the opponent's), and its player
-		   rows indented beneath so each group reads as belonging to it. */
-		.monday-team-label {
-			font-size: 0.85rem;
-			font-weight: 700;
-			padding: 0.3rem 0.5rem;
-			border-top: 1px solid var(--border);
-			border-left: 4px solid var(--muted);
-			background: var(--chip-bg);
-		}
-		.monday-team-mine .monday-team-label {
-			border-left-color: var(--accent);
-			color: var(--accent);
-		}
-		.monday-team .monday-row {
-			padding-left: 1.25rem;
-		}
 		.monday-empty {
 			color: var(--muted);
 			font-size: 0.8em;
@@ -10400,14 +10382,19 @@
 				}
 				return line;
 			};
-			// One team's block inside a matchup: the team's name, then a row per
-			// player still to play (or a plain note when it has none). Mine and
-			// the opponent's share it so the two sides read the same.
-			const appendTeamSection = (box, team, players, target) => {
-				const section = el('div', { class: `monday-team${team.isMe ? ' monday-team-mine' : ''}` });
-				section.appendChild(el('div', { class: 'monday-team-label', text: team.teamName }));
+			// One team's block inside a matchup, laid out like the Now Playing
+			// card's Starters/Bench groups: a plain collapsible group label (the
+			// same .roster-group/.group-label classes, not a coloured bar) over
+			// a row per player still to play, or a plain note when it has none.
+			// Mine and the opponent's share it so the two sides read the same.
+			const appendTeamSection = (box, team, players, target, keyBase) => {
+				const section = el('div', { class: 'roster-group monday-team' });
+				const label = el('div', { class: 'group-label', text: `${team.teamName} (${players.length})` });
+				const content = el('div', { class: 'roster-group-content' });
+				makeGroupCollapsible(section, label, `${keyBase}:${team.franchiseId}`);
+				section.appendChild(label);
 				if (players.length === 0) {
-					section.appendChild(el('div', { class: 'monday-row monday-empty', text: 'Nobody left to play' }));
+					content.appendChild(el('div', { class: 'monday-row monday-empty', text: 'Nobody left to play' }));
 				}
 				for (const p of players) {
 					const row = el('div', { class: 'monday-row' });
@@ -10421,8 +10408,9 @@
 					if (game) name.appendChild(el('div', { class: 'scoring-matchup-meta', text: game }));
 					row.appendChild(name);
 					row.appendChild(el('div', { class: 'monday-need', text: p.points == null ? '–' : `${Number(p.points).toFixed(2)} so far` }));
-					section.appendChild(row);
+					content.appendChild(row);
 				}
+				section.appendChild(content);
 				box.appendChild(section);
 			};
 			const wrap = el('div', { class: 'monday-matchups' });
@@ -10474,8 +10462,8 @@
 
 				const teamsBody = el('div', { class: 'monday-matchup-body' });
 				teamsBody.hidden = collapsed;
-				appendTeamSection(teamsBody, e.mine, e.myLeft, e.needed);
-				appendTeamSection(teamsBody, e.opp, e.oppLeft, e.oppNeeded);
+				appendTeamSection(teamsBody, e.mine, e.myLeft, e.needed, key);
+				appendTeamSection(teamsBody, e.opp, e.oppLeft, e.oppNeeded, key);
 				box.appendChild(teamsBody);
 				head.addEventListener('click', () => {
 					const next = !teamsBody.hidden;
