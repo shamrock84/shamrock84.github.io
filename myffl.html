@@ -10173,7 +10173,8 @@
 		}
 
 		// Sunday Night Simmer: the same card, same format, for the Sunday
-		// night game. It takes over from 6 PM Central on Sunday and hands off
+		// night game. It takes over from 6:30 PM Central on Sunday (not 6:00, to leave room for
+		// long-running late-window games to finish) and hands off
 		// at midnight to Monday Night Mania. Central, not the browser's zone,
 		// because the line is drawn at the kickoff of the late window, not at
 		// a wall-clock hour wherever the manager happens to be. By then only
@@ -10184,11 +10185,12 @@
 				timeZone: 'America/Chicago',
 				weekday: 'short',
 				hour: 'numeric',
+				minute: 'numeric',
 				hourCycle: 'h23',
 			}).formatToParts(now);
 			const weekday = parts.find((p) => p.type === 'weekday')?.value;
-			const hour = Number(parts.find((p) => p.type === 'hour')?.value);
-			return weekday === 'Sun' && hour >= 18 && nflInSeason(now);
+			const minutes = Number(parts.find((p) => p.type === 'hour')?.value) * 60 + Number(parts.find((p) => p.type === 'minute')?.value);
+			return weekday === 'Sun' && minutes >= 18 * 60 + 30 && nflInSeason(now);
 		}
 
 		function mondayIsBestBall(league) {

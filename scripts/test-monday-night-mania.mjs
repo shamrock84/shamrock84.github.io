@@ -18,7 +18,7 @@
 //   * a player carrying Out (or any settled designation, or a league IR
 //     slot) in ANY of my leagues is not playing and is not listed, for me
 //     and for an opponent who has him; Doubtful/Questionable stay, badged.
-//   * the same card runs as Sunday Night Simmer from 6 PM Central Sunday.
+//   * the same card runs as Sunday Night Simmer from 6:30 PM Central Sunday.
 //   * "remaining" means the game is pre or in progress.
 
 import assert from 'node:assert/strict';
@@ -409,14 +409,14 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 }
 
 {
-	// Sunday Night Simmer: same card from 6 PM Central Sunday, absent before.
+	// Sunday Night Simmer: same card from 6:30 PM Central Sunday, absent before.
 	// Instants are UTC so the test doesn't depend on the runner's zone
 	// (CDT = UTC-5 in October).
 	const ctx = makeContext(LOGGED_IN);
 	setState(ctx, games);
 	const l = lg('1', '90.00', '100.00', [pl('a', 'Tyreek Hill', 'MIA', null)], []);
-	const before = new Date(Date.UTC(2026, 9, 11, 22, 59)); // Sun 5:59 PM CT
-	const at = new Date(Date.UTC(2026, 9, 11, 23, 0)); // Sun 6:00 PM CT
+	const before = new Date(Date.UTC(2026, 9, 11, 23, 29)); // Sun 6:29 PM CT
+	const at = new Date(Date.UTC(2026, 9, 11, 23, 30)); // Sun 6:30 PM CT
 	const lateNight = new Date(Date.UTC(2026, 9, 12, 4, 30)); // Sun 11:30 PM CT
 	assert.equal(ctx.renderMondayNightManiaCard([l], before), null);
 	const card = ctx.renderMondayNightManiaCard([l], at);
