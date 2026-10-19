@@ -206,7 +206,7 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	const card = ctx.renderMondayNightManiaCard([l], MONDAY);
 	assert.ok(card, 'renders on a Monday in season');
 	const text = fullText(card);
-	assert.match(text, /Monday Night Mania/);
+	assert.match(text, /Monday Night Mayhem/);
 	assert.match(text, /Down 11\.60/);
 	assert.match(text, /Down 11\.60 — score 11\.61 combined to win/);
 	assert.doesNotMatch(text, /alone|stay above/);
@@ -424,7 +424,7 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	assert.match(fullText(card), /Sunday Night Simmer/);
 	assert.match(fullText(card), /Down 10\.00 — score 10\.01 to win/);
 	assert.match(fullText(ctx.renderMondayNightManiaCard([l], lateNight)), /Sunday Night Simmer/);
-	assert.match(fullText(ctx.renderMondayNightManiaCard([l], MONDAY)), /Monday Night Mania/);
+	assert.match(fullText(ctx.renderMondayNightManiaCard([l], MONDAY)), /Monday Night Mayhem/);
 	const july = new Date(Date.UTC(2026, 6, 12, 23, 30));
 	assert.equal(ctx.renderMondayNightManiaCard([l], july), null);
 }
