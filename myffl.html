@@ -10172,6 +10172,27 @@
 			return now.getDay() === 1 && nflInSeason(now);
 		}
 
+		// Sunday Night Simmer: the same card, same format, for the Sunday
+		// night game. It takes over from 6:30 PM Central on Sunday (not 6:00, to leave room for
+		// long-running late-window games to finish) and hands off
+		// at midnight to Monday Night Mania. Central, not the browser's zone,
+		// because the line is drawn at the kickoff of the late window, not at
+		// a wall-clock hour wherever the manager happens to be. By then only
+		// the night game is left to play, and "remaining" (game pre or in
+		// progress) picks it out with no Sunday-specific arithmetic.
+		function sundayCardIsActive(now = new Date()) {
+			const parts = new Intl.DateTimeFormat('en-US', {
+				timeZone: 'America/Chicago',
+				weekday: 'short',
+				hour: 'numeric',
+				minute: 'numeric',
+				hourCycle: 'h23',
+			}).formatToParts(now);
+			const weekday = parts.find((p) => p.type === 'weekday')?.value;
+			const minutes = Number(parts.find((p) => p.type === 'hour')?.value) * 60 + Number(parts.find((p) => p.type === 'minute')?.value);
+			return weekday === 'Sun' && minutes >= 18 * 60 + 30 && nflInSeason(now);
+		}
+
 		function mondayIsBestBall(league) {
 			return Array.isArray(league.tags) && league.tags.includes('BestBall');
 		}
@@ -10297,19 +10318,24 @@
 		}
 
 		function renderMondayNightManiaCard(leagues, now = new Date()) {
-			if (!isLoggedIn() || !mondayCardIsActive(now)) return null;
-			const card = el('div', { class: 'card monday-card', id: 'monday-night', 'data-view': 'scoring', 'data-league-type': '' });
-			const heading = el('h2', { class: 'card-heading', text: 'Monday Night Mania' });
+			if (!isLoggedIn()) return null;
+			const sunday = sundayCardIsActive(now);
+			if (!sunday && !mondayCardIsActive(now)) return null;
+			// Its own id and collapse key: collapsing Sunday's card must not
+			// leave Monday's collapsed.
+			const cardId = sunday ? 'sunday-night' : 'monday-night';
+			const card = el('div', { class: 'card monday-card', id: cardId, 'data-view': 'scoring', 'data-league-type': '' });
+			const heading = el('h2', { class: 'card-heading', text: sunday ? 'Sunday Night Simmer' : 'Monday Night Mania' });
 			card.appendChild(heading);
 
 			if (!liveScoringAttempted) {
-				makeCollapsible(card, heading, 'monday-night');
+				makeCollapsible(card, heading, cardId);
 				card.appendChild(el('div', { class: 'loading-box', text: 'Loading live scores…' }));
 				return card;
 			}
 
 			const { live: entries, won, lost } = computeMondayNightMania(leagues, liveGames);
-			makeCollapsible(card, heading, 'monday-night', entries.length === 0);
+			makeCollapsible(card, heading, cardId, entries.length === 0);
 			// Last element of the card, visible even collapsed (an empty card
 			// collapses itself, and this is then the only thing worth reading).
 			const appendDecided = () => {
