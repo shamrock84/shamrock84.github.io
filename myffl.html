@@ -11270,7 +11270,7 @@
 						title: 'Go to this league',
 					});
 					row.appendChild(el('span', { class: 'digest-dot' }));
-					row.appendChild(el('span', { class: 'digest-league', text: leagueDisplayName(league) || league.id }));
+					row.appendChild(el('span', { class: 'digest-league', title: leagueDisplayName(league), text: quickLinkLabelForLeague(league) }));
 					const labelEl = el('span', { class: 'digest-label' });
 					if (problem.player) {
 						const nameEl = el('span', { class: 'digest-player', text: problem.player.name });
