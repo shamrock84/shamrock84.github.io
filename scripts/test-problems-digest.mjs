@@ -187,7 +187,7 @@ const kinds = (problems) => [...problems].map((p) => p.kind);
 	const problems = computeLeagueProblems(l, YEAR);
 	assert.deepEqual(kinds(problems), ['injury', 'injury', 'injury'], 'D/O/IR flagged; Q and unknown are not');
 	assert.deepEqual([...problems].map((p) => p.player.id), ['2', '3', '4']);
-	assert.match(problems[1].label, /listed O — Knee/, 'body part rides along when the report carries one');
+	assert.match(problems[1].label, /O — Knee/, 'body part rides along when the report carries one');
 	assert.match(problems[0].label, /week 1/, 'label names the week the lineup is for');
 }
 
@@ -538,7 +538,7 @@ const rosterLimits = (overrides = {}) => ({ size: 28, taxi: 4, ir: 0, position: 
 	assert.equal(problems.length, 1);
 	assert.equal(problems[0].kind, 'roster-limit');
 	assert.equal(problems[0].player, null);
-	assert.match(problems[0].label, /Roster carries 29 players — 1 over the 28 limit/);
+	assert.match(problems[0].label, /Roster 29 of 28 — 1 over/);
 }
 
 {
@@ -559,8 +559,8 @@ const rosterLimits = (overrides = {}) => ({ size: 28, taxi: 4, ir: 0, position: 
 	];
 	const problems = rosterLimitProblems(league({ rosterLimits: rosterLimits(), players: roster }));
 	assert.equal(problems.length, 2);
-	assert.match(problems[0].label, /Taxi squad carries 5 players — 1 over the 4 limit/);
-	assert.match(problems[1].label, /Injured Reserve carries 2 players — 2 over the 0 limit/);
+	assert.match(problems[0].label, /Taxi 5 of 4 — 1 over/);
+	assert.match(problems[1].label, /IR 2 of 0 — 2 over/);
 }
 
 {
@@ -571,7 +571,7 @@ const rosterLimits = (overrides = {}) => ({ size: 28, taxi: 4, ir: 0, position: 
 	for (const p of roster) p.position = 'QB';
 	const problems = rosterLimitProblems(league({ rosterLimits: rosterLimits({ size: 99, position: [{ position: 'QB', max: 4 }] }), players: roster }));
 	assert.equal(problems.length, 1);
-	assert.match(problems[0].label, /Roster carries 6 QB — 2 over the 4 limit/);
+	assert.match(problems[0].label, /QB 6 of 4 — 2 over/);
 }
 
 {
@@ -728,13 +728,13 @@ const rosterLimits = (overrides = {}) => ({ size: 28, taxi: 4, ir: 0, position: 
 	// Swap the TE for a third RB: TE short, RB over.
 	const wrong = rows(lineup([1, 2, 3, 4, 5, 6, 10, 8, 9]));
 	assert.equal(wrong.length, 2);
-	assert.ok(wrong.some((r) => /0 TE — needs 1/.test(r)), 'TE shortage named');
-	assert.ok(wrong.some((r) => /3 RB — allows at most 2/.test(r)), 'RB overage named');
+	assert.ok(wrong.some((r) => /0 TE, needs 1/.test(r)), 'TE shortage named');
+	assert.ok(wrong.some((r) => /3 RB, max 2/.test(r)), 'RB overage named');
 	assert.ok(wrong.every((r) => /week 1|Week 1/.test(r)), 'the week rides in the label');
 
 	// Too many starters in total, when the league says how many it starts.
 	const over = [...computeLeagueProblems(lineup([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], { lineupSize: 9 }), YEAR)];
-	assert.ok(over.some((p) => /10 starters set for week 1 — the league starts 9/.test(p.label)));
+	assert.ok(over.some((p) => /10 starters set for week 1 — league starts 9/.test(p.label)));
 
 	// lineupSize makes a one-short lineup visible even though the sum of
 	// minimums (here 9 for a flex-free string) can't.
@@ -750,7 +750,7 @@ const rosterLimits = (overrides = {}) => ({ size: 28, taxi: 4, ir: 0, position: 
 
 	// A position the league has no slot for.
 	const kicker = lineup([1, 2, 3, 4, 5, 6, 7, 8, 9], { startingLineup: '1 QB, 2 RB, 3 WR, 1 TE, 1 Def' });
-	assert.ok(rows(kicker).some((r) => /starts 1 PK — this league has no PK slot/.test(r)));
+	assert.ok(rows(kicker).some((r) => /1 PK, no PK slot/.test(r)));
 
 	// An unresolvable starter id: no position claims, but the count still runs.
 	const ghost = league({ starters: ['1', '2', '3', '4', '5', '6', '7', '8', '99'], players: roster });
