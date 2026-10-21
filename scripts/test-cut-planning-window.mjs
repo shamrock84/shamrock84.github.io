@@ -196,9 +196,9 @@ check('roster-limit problems follow effectiveRosterLimit at the current date',
 // hand-set limit 25, 24 on the roster -> one spot.
 const roomOf = (n, extra = {}) => ({ type: 'salarycap', ...limitLeague(25, 30), players: rosterOf(n), ...extra });
 const roomRows = (league, now) => [...rosterRoomProblems(league, now)];
-check('in season, one under the hand-set limit -> one spot', /can add 1$/.test(roomRows(roomOf(24), MID_SEASON)[0]?.label ?? ''));
-check('the label says how many of how many', /Rostering 24 of 25 players/.test(roomRows(roomOf(24), MID_SEASON)[0]?.label ?? ''));
-check('count only, no plural noun', /can add 3$/.test(roomRows(roomOf(22), MID_SEASON)[0]?.label ?? ''));
+check('in season, one under the hand-set limit -> one spot', /room to add 1 player$/.test(roomRows(roomOf(24), MID_SEASON)[0]?.label ?? ''));
+check('the label says how many of how many', /24 of 25/.test(roomRows(roomOf(24), MID_SEASON)[0]?.label ?? ''));
+check('plural when more than one spot', /room to add 3 players$/.test(roomRows(roomOf(22), MID_SEASON)[0]?.label ?? ''));
 check('at the limit -> no row', roomRows(roomOf(25), MID_SEASON).length === 0);
 check('over the limit -> no room row (rosterLimitProblems owns that)', roomRows(roomOf(27), MID_SEASON).length === 0);
 check('the hand-set limit is the rule in season, not MFL\'s larger size', roomRows(roomOf(26), MID_SEASON).length === 0);
