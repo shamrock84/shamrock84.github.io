@@ -30,6 +30,8 @@ import {
   fetchEspnStandings,
   fetchEspnScoring,
   loadSleeperPlayerMap,
+  positionFromPosRank,
+  SLEEPER_OFFENSIVE_POSITIONS,
   fetchSleeperLeagueRoster,
   fetchSleeperStandings,
   fetchSleeperScoring,
@@ -1660,6 +1662,19 @@ async function main() {
       }
     } catch (err) {
       console.error(`Failed to fetch per-position ranking pools for Depth Charts: ${err.message}`);
+    }
+
+    // A Sleeper player listed only under a defensive position (a two-way
+    // player) takes the skill position FantasyPros ranks him at, so no
+    // defensive position reaches the snapshot (sleeperFantasyPosition).
+    // Runs before the per-position fallback below, which keys on position.
+    for (const league of leagues) {
+      if (league.provider !== 'sleeper') continue;
+      for (const player of league.players || []) {
+        if (SLEEPER_OFFENSIVE_POSITIONS.includes(player.position) || !player.ecr) continue;
+        const fixed = positionFromPosRank(player.ecr.posRank);
+        if (fixed) player.position = fixed;
+      }
     }
 
     // See applyPositionEcrFallback's own comment for why this exists.

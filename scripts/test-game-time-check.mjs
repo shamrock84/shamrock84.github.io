@@ -268,17 +268,29 @@ assert.equal(classify({ ...get('Saquon Barkley'), designation: 'IR' }, feeds()).
   assert.equal(resolveBackup(league, sk, 'b2').source, 'chosen');
   assert.equal(resolveBackup(league, sk, 'none').player, null, "'none' is a deliberate no-backup");
   assert.equal(resolveBackup(league, sk, 'gone').player.name, 'Abe Runner', 'a saved pick off the roster falls back to the suggestion');
+  // Slot rules (swapKeepsLineupLegal): a WR can't replace the only RB the league requires.
+  const wrOnly = { ...league, startingLineup: '1-2 RB, 2 WR', players: league.players.filter((p) => p.id === 's1' || p.id === 'b4') };
+  assert.equal(resolveBackup(wrOnly, sk, 'b4').player, null, 'swap would drop RB below its minimum');
+  assert.equal(resolveBackup({ ...wrOnly, startingLineup: '0-2 RB, 2 WR' }, sk, 'b4').player.name, 'Zed Receiver', 'legal once RB may go to zero');
   const thin = { ...league, players: league.players.filter((p) => p.id === 's1' || p.id === 'b3' || p.id === 'b4') };
   assert.equal(resolveBackup(thin, sk, undefined).player, null, 'no healthy same-position player: no suggestion');
 
-  const games = gamesMap([{ id: '1', home: 'PHI', away: 'LAR', kickoff: EARLY }, { id: '5', home: 'DAL', away: 'NYG', kickoff: '2026-10-04T13:00:00Z', state: 'in' }]);
+  const games = gamesMap([{ id: '1', home: 'PHI', away: 'LAR', kickoff: EARLY }, { id: '5', home: 'DAL', away: 'NYG', kickoff: LATE }]);
   const plans = { backupPlans: { 100: { s1: 'b2' } } };
   const snap = { year: '2026', leagues: [league] };
   const row = [...startersForSlot(snap, games, EARLY, plans).values()][0];
-  assert.deepEqual(plain(row.backups), [{ league: 'MNMx', backup: { name: 'Yan Runner', position: 'RB', team: 'DAL', locked: true } }]);
+  assert.deepEqual(plain(row.backups), [{ league: 'MNMx', backup: { name: 'Yan Runner', position: 'RB', team: 'DAL', locked: false } }]);
+  // Kickoff gate: a bench player whose game starts BEFORE the starter's (or who
+  // is on a bye) can't replace him, so a saved pick like that falls away.
+  const earlier = gamesMap([{ id: '1', home: 'PHI', away: 'LAR', kickoff: EARLY }, { id: '5', home: 'DAL', away: 'NYG', kickoff: '2026-10-04T13:00:00Z', state: 'in' }]);
+  assert.equal(resolveBackup(league, { id: 's1', position: 'RB', team: 'PHI' }, 'b2', gamesMap([{ id: '1', home: 'PHI', away: 'LAR', kickoff: EARLY }])).player, null, 'bye / no game: not a replacement');
+  const skPhi = { id: 's1', position: 'RB', team: 'PHI' };
+  assert.equal(resolveBackup(league, skPhi, 'b2', earlier).player, null, 'earlier kickoff: not a replacement');
+  assert.equal(resolveBackup(league, skPhi, 'b2', games).player.name, 'Yan Runner', 'later kickoff: allowed');
+  assert.equal(resolveBackup(league, sk, 'b2').player.name, 'Yan Runner', 'no games given: nothing filtered');
   const out = { ...row, state: 'inactive', why: 'ruled out (MFL)' };
   const msg = planMessage([out], null, 40, 'Sun 1:00 PM').message.body;
-  assert.match(msg, /MNMx → Yan Runner \(RB DAL\) — game already started/);
+  assert.match(msg, /MNMx → Yan Runner \(RB DAL\)$/m);
   assert.doesNotMatch(planMessage([{ ...out, state: 'pending', why: 'x' }], null, 40, 'Sun 1:00 PM').message.body, /→/, 'only an OUT line names a backup');
   const noPlans = [...startersForSlot(snap, games, EARLY).values()][0];
   assert.equal(noPlans.backups[0].backup.name, 'Abe Runner', 'no plans store: the suggestion still shows');

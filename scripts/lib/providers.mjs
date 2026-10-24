@@ -3458,13 +3458,37 @@ export async function fetchSleeperWeekMatchups(league, week) {
 
 // Sleeper's full player database (~12k players) — fetch once and share
 // across every Sleeper league in a sync, same role as loadPlayerMap (MFL).
+// Sleeper's database lists a two-way player (Travis Hunter: WR and CB) under a
+// defensive position, so taking fantasy_positions[0] blindly put a lone `DB`
+// in the snapshot even though no league scores IDP. Prefer the first offensive
+// slot-eligible position Sleeper lists; only when it lists none does the
+// first listed (or `position`) stand, and fetch-rosters.mjs then repairs it
+// from the FantasyPros position rank (positionFromPosRank).
+export const SLEEPER_OFFENSIVE_POSITIONS = ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'];
+
+export function sleeperFantasyPosition(p) {
+  const listed = (p?.fantasy_positions || []).filter(Boolean);
+  return listed.find((pos) => SLEEPER_OFFENSIVE_POSITIONS.includes(pos))
+    || (SLEEPER_OFFENSIVE_POSITIONS.includes(p?.position) ? p.position : null)
+    || listed[0]
+    || p?.position
+    || '';
+}
+
+// "WR89" -> 'WR'. Only the four skill positions, since those are the ones a
+// FantasyPros position rank can vouch for here; anything else is null.
+export function positionFromPosRank(posRank) {
+  const m = /^(QB|RB|WR|TE)\d+$/.exec(String(posRank || ''));
+  return m ? m[1] : null;
+}
+
 export async function loadSleeperPlayerMap() {
   const data = await sleeperGet('/players/nfl');
   const map = new Map();
   for (const [id, p] of Object.entries(data)) {
     map.set(id, {
       name: p.full_name || [p.first_name, p.last_name].filter(Boolean).join(' ') || `Unknown Player (${id})`,
-      position: (p.fantasy_positions && p.fantasy_positions[0]) || p.position || '',
+      position: sleeperFantasyPosition(p),
       team: p.team || 'FA',
       injuryStatus: normalizeInjuryStatus(p.injury_status),
     });

@@ -89,21 +89,72 @@ export function slotsInWindow(games, now) {
 // roster falls back to the suggestion, exactly as the card does.
 export const NO_BACKUP = 'none';
 
-function backupCandidates(league, starter) {
+// Only a player whose game kicks off at or after the starter's qualifies; a
+// missing kickoff for the starter (or no `games`) filters nothing. Mirrors
+// the page's playsInTime.
+// Slot-rule gate, DUPLICATED from swapKeepsLineupLegal/parseLineupBounds in
+// myffl.html: the swap must leave every position inside the league's
+// startingLineup range ("1 QB, 2-3 RB, ..."). No requirement string, or an
+// unresolved starter id, filters nothing on counts.
+function lineupKey(position) {
+  const k = String(position || '').trim().toUpperCase();
+  if (k === 'K') return 'PK';
+  if (k === 'DST' || k === 'D/ST' || k === 'DEF') return 'DEF';
+  return k;
+}
+function lineupBounds(requirement) {
+  if (!requirement) return null;
+  const bounds = new Map();
+  for (const m of String(requirement).matchAll(/(\d+)(?:\s*-\s*(\d+))?\s+([A-Za-z/]+)/g)) {
+    const min = Number(m[1]);
+    bounds.set(lineupKey(m[3]), { min, max: m[2] != null ? Number(m[2]) : min });
+  }
+  return bounds.size ? bounds : null;
+}
+function swapKeepsLineupLegal(league, starter, candidate) {
+  const bounds = lineupBounds(league.startingLineup);
+  if (!bounds || !starter) return true;
+  const out = lineupKey(starter.position);
+  const inn = lineupKey(candidate.position);
+  if (out === inn) return true;
+  const into = bounds.get(inn);
+  if (!into || into.max < 1) return false;
+  const byId = new Map((league.players || []).map((p) => [String(p.id), p]));
+  const counts = new Map();
+  for (const id of league.starters || []) {
+    const sp = byId.get(String(id));
+    if (!sp) return true;
+    const k = lineupKey(sp.position);
+    counts.set(k, (counts.get(k) || 0) + 1);
+  }
+  if ((counts.get(inn) || 0) + 1 > into.max) return false;
+  const from = bounds.get(out);
+  if (from && (counts.get(out) || 0) - 1 < from.min) return false;
+  return true;
+}
+
+function backupCandidates(league, starter, games) {
   const starting = new Set((league.starters || []).map(String));
+  const startAt = starter.team && games?.get(starter.team)?.kickoff
+    ? new Date(games.get(starter.team).kickoff).getTime() : NaN;
+  const playsInTime = (p) => {
+    if (Number.isNaN(startAt)) return true;
+    const at = p.team && games.get(p.team)?.kickoff ? new Date(games.get(p.team).kickoff).getTime() : NaN;
+    return !Number.isNaN(at) && at >= startAt;
+  };
   const samePos = (p) => (p.position && starter.position && p.position === starter.position ? 0 : 1);
   const ecr = (p) => (p.ecr && Number.isFinite(p.ecr.rank) ? p.ecr.rank : Infinity);
   return (league.players || [])
-    .filter((p) => (p.status || 'ROSTER').toUpperCase() === 'ROSTER' && !starting.has(String(p.id)))
+    .filter((p) => (p.status || 'ROSTER').toUpperCase() === 'ROSTER' && !starting.has(String(p.id)) && playsInTime(p) && swapKeepsLineupLegal(league, starter, p))
     .sort((a, b) => samePos(a) - samePos(b)
       || (a.injuryStatus ? 1 : 0) - (b.injuryStatus ? 1 : 0)
       || (ecr(a) === ecr(b) ? 0 : ecr(a) < ecr(b) ? -1 : 1)
       || String(a.name).localeCompare(String(b.name)));
 }
 
-export function resolveBackup(league, starter, saved) {
+export function resolveBackup(league, starter, saved, games) {
   if (saved === NO_BACKUP) return { player: null, source: 'none' };
-  const candidates = backupCandidates(league, starter);
+  const candidates = backupCandidates(league, starter, games);
   const chosen = saved && candidates.find((c) => String(c.id) === String(saved));
   if (chosen) return { player: chosen, source: 'chosen' };
   const first = candidates[0];
@@ -124,14 +175,14 @@ export function resolveBackup(league, starter, saved) {
 // suggestion is healthy by construction, so it could never be designated) for
 // a starter who carries a designation, since that is the swap his own status
 // bears on. A saved pick for a starter who is healthy now is stale, not a plan.
-export function benchNotify(league, bench, plans) {
+export function benchNotify(league, bench, plans, games) {
   const starting = new Set((league.starters || []).map(String));
   const backupFor = [];
   for (const s of league.players || []) {
     if (!s.injuryStatus || !starting.has(String(s.id))) continue;
     const saved = plans?.backupPlans?.[league.id]?.[s.id];
     if (!saved || saved === NO_BACKUP) continue;
-    const { player, source } = resolveBackup(league, s, saved);
+    const { player, source } = resolveBackup(league, s, saved, games);
     if (source === 'chosen' && String(player.id) === String(bench.id)) backupFor.push(s.name);
   }
   const choice = plans?.notifyPlans?.[league.id]?.[bench.id];
@@ -175,7 +226,7 @@ export function startersForSlot(snapshot, games, kickoff, plans = null) {
       // Per league, because the bench behind him is each league's own. A
       // backup whose game has already kicked off is flagged rather than
       // dropped: he is still the pick, but the lineup slot is locked.
-      const { player: b } = resolveBackup(league, p, plans?.backupPlans?.[league.id]?.[p.id]);
+      const { player: b } = resolveBackup(league, p, plans?.backupPlans?.[league.id]?.[p.id], games);
       const bGame = b?.team ? games.get(b.team) : null;
       row.backups.push({
         league: leagueLabel(league),
@@ -189,7 +240,7 @@ export function startersForSlot(snapshot, games, kickoff, plans = null) {
       if (!p.injuryStatus || !p.team) continue;
       const game = games.get(p.team);
       if (!game || game.kickoff !== kickoff) continue;
-      const { on, backupFor } = benchNotify(league, p, plans);
+      const { on, backupFor } = benchNotify(league, p, plans, games);
       if (!on) continue;
       rowFor(p, game).benchLeagues.push({ league: leagueLabel(league), backupFor });
     }
