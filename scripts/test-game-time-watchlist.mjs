@@ -376,7 +376,7 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 // Backup picker: candidates, the ECR-driven default, persistence, and fallbacks.
 {
 	const ctx = makeContext(LOGGED_IN);
-	setGames(ctx, { PHI: game('LAR', true, EARLY) });
+	setGames(ctx, { PHI: game('LAR', true, EARLY), DAL: game('NYG', true, LATE) });
 	const ecr = (rank) => ({ ecr: { rank } });
 	const l = league('L', [
 		player('a', 'Saquon Barkley', 'PHI', 'Q'),
@@ -393,6 +393,14 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	assert.deepEqual(plain(names), ['Abe Runner', 'Yan Runner', 'Unranked Runner', 'Zack Runner', 'Zed Receiver'],
 		'same position first, healthy first, best ECR first (unranked last); no starters/taxi/the starter himself');
 	assert.equal(ctx.watchlistSuggestedBackup(l, l.players[0]).name, 'Abe Runner', 'best-ranked healthy same-position player');
+
+	// Kickoff gate: DAL plays before PHI, or on a bye, or the same time / later.
+	const gate = (g) => plain(ctx.watchlistBackupCandidates(l, l.players[0], g).map((c) => c.name));
+	assert.deepEqual(gate({ PHI: game('LAR', true, LATE), DAL: game('NYG', true, EARLY) }), [], 'earlier game: excluded');
+	assert.deepEqual(gate({ PHI: game('LAR', true, EARLY) }), [], 'no game (bye): excluded');
+	assert.equal(gate({ PHI: game('LAR', true, EARLY), DAL: game('NYG', true, EARLY) }).length, 5, 'same kickoff: kept');
+	assert.equal(gate({ PHI: game('LAR', true, EARLY), DAL: game('NYG', true, LATE) }).length, 5, 'later kickoff: kept');
+	assert.equal(gate({}).length, 5, 'starter kickoff unknown: nothing filtered');
 
 	// No healthy same-position player: no suggestion, never a doubtful one.
 	const thin = league('T', [player('a', 'Saquon Barkley', 'PHI', 'Q'), player('x', 'Zack Runner', 'DAL', 'Q', ecr(2)), player('w', 'Zed Receiver', 'DAL', null, { position: 'WR', ...ecr(1) })], ['a']);

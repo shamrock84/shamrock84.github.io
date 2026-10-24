@@ -9811,12 +9811,27 @@
 		// ECR column reads; unranked last), then name. A designated bench
 		// player stays listed, not dropped — the manager may well know he's
 		// the best option, and the label carries his designation either way.
-		function watchlistBackupCandidates(league, starter) {
+		//
+		// Kickoff gates the list: only a player whose game starts at or after
+		// the starter's can replace him, since once his own game has kicked off
+		// (or he is on a bye) he can no longer be swapped in. With no kickoff
+		// known for the starter (games not loaded) nothing is filtered, so a
+		// missing scoreboard never empties the picker. DUPLICATED in
+		// api/_lib/gametime.mjs (backupCandidates), pinned by the tests.
+		function watchlistBackupCandidates(league, starter, games = liveGames) {
 			const starting = new Set((league.starters || []).map(String));
+			const startAt = starter && starter.team && games && games[starter.team] && games[starter.team].kickoff
+				? new Date(games[starter.team].kickoff).getTime() : NaN;
+			const playsInTime = (p) => {
+				if (Number.isNaN(startAt)) return true;
+				const g = p.team && games[p.team];
+				const at = g && g.kickoff ? new Date(g.kickoff).getTime() : NaN;
+				return !Number.isNaN(at) && at >= startAt;
+			};
 			const samePos = (p) => (p.position && starter && p.position === starter.position ? 0 : 1);
 			const ecrRank = (p) => (p.ecr && Number.isFinite(p.ecr.rank) ? p.ecr.rank : Infinity);
 			return (league.players || [])
-				.filter((p) => (p.status || 'ROSTER').toUpperCase() === 'ROSTER' && !starting.has(String(p.id)))
+				.filter((p) => (p.status || 'ROSTER').toUpperCase() === 'ROSTER' && !starting.has(String(p.id)) && playsInTime(p))
 				.sort((a, b) => samePos(a) - samePos(b)
 					|| (a.injuryStatus ? 1 : 0) - (b.injuryStatus ? 1 : 0)
 					|| (ecrRank(a) === ecrRank(b) ? 0 : ecrRank(a) < ecrRank(b) ? -1 : 1)
@@ -9832,8 +9847,8 @@
 		// Questionable one, disqualifies: the suggestion exists for the
 		// moment the starter is ruled out, when a second coin flip is the
 		// last thing wanted.
-		function watchlistSuggestedBackup(league, starter) {
-			const first = watchlistBackupCandidates(league, starter)[0];
+		function watchlistSuggestedBackup(league, starter, games = liveGames) {
+			const first = watchlistBackupCandidates(league, starter, games)[0];
 			if (!first || first.injuryStatus) return null;
 			if (!starter || !first.position || first.position !== starter.position) return null;
 			return first;

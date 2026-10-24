@@ -89,21 +89,31 @@ export function slotsInWindow(games, now) {
 // roster falls back to the suggestion, exactly as the card does.
 export const NO_BACKUP = 'none';
 
-function backupCandidates(league, starter) {
+// Only a player whose game kicks off at or after the starter's qualifies; a
+// missing kickoff for the starter (or no `games`) filters nothing. Mirrors
+// the page's playsInTime.
+function backupCandidates(league, starter, games) {
   const starting = new Set((league.starters || []).map(String));
+  const startAt = starter.team && games?.get(starter.team)?.kickoff
+    ? new Date(games.get(starter.team).kickoff).getTime() : NaN;
+  const playsInTime = (p) => {
+    if (Number.isNaN(startAt)) return true;
+    const at = p.team && games.get(p.team)?.kickoff ? new Date(games.get(p.team).kickoff).getTime() : NaN;
+    return !Number.isNaN(at) && at >= startAt;
+  };
   const samePos = (p) => (p.position && starter.position && p.position === starter.position ? 0 : 1);
   const ecr = (p) => (p.ecr && Number.isFinite(p.ecr.rank) ? p.ecr.rank : Infinity);
   return (league.players || [])
-    .filter((p) => (p.status || 'ROSTER').toUpperCase() === 'ROSTER' && !starting.has(String(p.id)))
+    .filter((p) => (p.status || 'ROSTER').toUpperCase() === 'ROSTER' && !starting.has(String(p.id)) && playsInTime(p))
     .sort((a, b) => samePos(a) - samePos(b)
       || (a.injuryStatus ? 1 : 0) - (b.injuryStatus ? 1 : 0)
       || (ecr(a) === ecr(b) ? 0 : ecr(a) < ecr(b) ? -1 : 1)
       || String(a.name).localeCompare(String(b.name)));
 }
 
-export function resolveBackup(league, starter, saved) {
+export function resolveBackup(league, starter, saved, games) {
   if (saved === NO_BACKUP) return { player: null, source: 'none' };
-  const candidates = backupCandidates(league, starter);
+  const candidates = backupCandidates(league, starter, games);
   const chosen = saved && candidates.find((c) => String(c.id) === String(saved));
   if (chosen) return { player: chosen, source: 'chosen' };
   const first = candidates[0];
@@ -124,14 +134,14 @@ export function resolveBackup(league, starter, saved) {
 // suggestion is healthy by construction, so it could never be designated) for
 // a starter who carries a designation, since that is the swap his own status
 // bears on. A saved pick for a starter who is healthy now is stale, not a plan.
-export function benchNotify(league, bench, plans) {
+export function benchNotify(league, bench, plans, games) {
   const starting = new Set((league.starters || []).map(String));
   const backupFor = [];
   for (const s of league.players || []) {
     if (!s.injuryStatus || !starting.has(String(s.id))) continue;
     const saved = plans?.backupPlans?.[league.id]?.[s.id];
     if (!saved || saved === NO_BACKUP) continue;
-    const { player, source } = resolveBackup(league, s, saved);
+    const { player, source } = resolveBackup(league, s, saved, games);
     if (source === 'chosen' && String(player.id) === String(bench.id)) backupFor.push(s.name);
   }
   const choice = plans?.notifyPlans?.[league.id]?.[bench.id];
@@ -175,7 +185,7 @@ export function startersForSlot(snapshot, games, kickoff, plans = null) {
       // Per league, because the bench behind him is each league's own. A
       // backup whose game has already kicked off is flagged rather than
       // dropped: he is still the pick, but the lineup slot is locked.
-      const { player: b } = resolveBackup(league, p, plans?.backupPlans?.[league.id]?.[p.id]);
+      const { player: b } = resolveBackup(league, p, plans?.backupPlans?.[league.id]?.[p.id], games);
       const bGame = b?.team ? games.get(b.team) : null;
       row.backups.push({
         league: leagueLabel(league),
@@ -189,7 +199,7 @@ export function startersForSlot(snapshot, games, kickoff, plans = null) {
       if (!p.injuryStatus || !p.team) continue;
       const game = games.get(p.team);
       if (!game || game.kickoff !== kickoff) continue;
-      const { on, backupFor } = benchNotify(league, p, plans);
+      const { on, backupFor } = benchNotify(league, p, plans, games);
       if (!on) continue;
       rowFor(p, game).benchLeagues.push({ league: leagueLabel(league), backupFor });
     }
