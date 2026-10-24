@@ -401,6 +401,13 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	assert.equal(gate({ PHI: game('LAR', true, EARLY), DAL: game('NYG', true, EARLY) }).length, 5, 'same kickoff: kept');
 	assert.equal(gate({ PHI: game('LAR', true, EARLY), DAL: game('NYG', true, LATE) }).length, 5, 'later kickoff: kept');
 	assert.equal(gate({}).length, 5, 'starter kickoff unknown: nothing filtered');
+	const at = (offsetMin) => new Date(new Date(LATE).getTime() + offsetMin * 60000).toISOString();
+	const dal = (offsetMin) => gate({ PHI: game('LAR', true, LATE), DAL: game('NYG', true, at(offsetMin)) }).length;
+	assert.equal(dal(-10), 5, 'kicks off 10 min before the starter (3:05 vs 3:15): still swappable when the injury is known');
+	assert.equal(dal(-44), 5, 'just inside the 45-minute lead');
+	assert.equal(dal(-45), 0, 'under way exactly when the injury becomes known: excluded');
+	assert.equal(dal(-90), 0, 'well before: excluded');
+
 
 	// Slot rules: with a requirement string only legal swaps are offered.
 	// 1 RB starter; WR slots are full (2 of max 2) so a WR can't come in, a TE
