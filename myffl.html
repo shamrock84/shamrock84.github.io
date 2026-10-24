@@ -9812,9 +9812,13 @@
 		// player stays listed, not dropped — the manager may well know he's
 		// the best option, and the label carries his designation either way.
 		//
-		// Kickoff gates the list: only a player whose game starts at or after
-		// the starter's can replace him, since once his own game has kicked off
-		// (or he is on a bye) he can no longer be swapped in. With no kickoff
+		// Kickoff gates the list: a replacement must still be swappable when the
+		// injury becomes known, which is WATCHLIST_CHECK_LEAD_MINUTES before the
+		// starter's kickoff. So his game must start after that moment: later
+		// games and the starter's own slot qualify, and so does a game a few
+		// minutes earlier (a 3:05 player behind a 3:15 starter, as Sunday
+		// afternoon kickoffs stagger), but not a game already under way by then
+		// (or a bye). With no kickoff
 		// known for the starter (games not loaded) nothing is filtered, so a
 		// missing scoreboard never empties the picker. DUPLICATED in
 		// api/_lib/gametime.mjs (backupCandidates), pinned by the tests.
@@ -9857,7 +9861,7 @@
 				if (Number.isNaN(startAt)) return true;
 				const g = p.team && games[p.team];
 				const at = g && g.kickoff ? new Date(g.kickoff).getTime() : NaN;
-				return !Number.isNaN(at) && at >= startAt;
+				return !Number.isNaN(at) && at > startAt - WATCHLIST_CHECK_LEAD_MINUTES * 60000;
 			};
 			const samePos = (p) => (p.position && starter && p.position === starter.position ? 0 : 1);
 			const ecrRank = (p) => (p.ecr && Number.isFinite(p.ecr.rank) ? p.ecr.rank : Infinity);

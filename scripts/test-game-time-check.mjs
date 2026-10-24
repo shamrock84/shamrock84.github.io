@@ -284,6 +284,10 @@ assert.equal(classify({ ...get('Saquon Barkley'), designation: 'IR' }, feeds()).
   // is on a bye) can't replace him, so a saved pick like that falls away.
   const earlier = gamesMap([{ id: '1', home: 'PHI', away: 'LAR', kickoff: EARLY }, { id: '5', home: 'DAL', away: 'NYG', kickoff: '2026-10-04T13:00:00Z', state: 'in' }]);
   assert.equal(resolveBackup(league, { id: 's1', position: 'RB', team: 'PHI' }, 'b2', gamesMap([{ id: '1', home: 'PHI', away: 'LAR', kickoff: EARLY }])).player, null, 'bye / no game: not a replacement');
+  const shift = (iso, min) => new Date(new Date(iso).getTime() + min * 60000).toISOString();
+  const staggered = (min) => gamesMap([{ id: '1', home: 'PHI', away: 'LAR', kickoff: EARLY }, { id: '5', home: 'DAL', away: 'NYG', kickoff: shift(EARLY, min) }]);
+  assert.equal(resolveBackup(league, { id: 's1', position: 'RB', team: 'PHI' }, 'b2', staggered(-10)).player.name, 'Yan Runner', '10 min earlier kickoff: still a replacement');
+  assert.equal(resolveBackup(league, { id: 's1', position: 'RB', team: 'PHI' }, 'b2', staggered(-45)).player, null, '45 min earlier: already under way when the injury is known');
   const skPhi = { id: 's1', position: 'RB', team: 'PHI' };
   assert.equal(resolveBackup(league, skPhi, 'b2', earlier).player, null, 'earlier kickoff: not a replacement');
   assert.equal(resolveBackup(league, skPhi, 'b2', games).player.name, 'Yan Runner', 'later kickoff: allowed');

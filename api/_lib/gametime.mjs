@@ -89,7 +89,9 @@ export function slotsInWindow(games, now) {
 // roster falls back to the suggestion, exactly as the card does.
 export const NO_BACKUP = 'none';
 
-// Only a player whose game kicks off at or after the starter's qualifies; a
+// Only a player whose game kicks off after WATCH_LEAD_MINUTES before the
+// starter's (the moment the injury is known; so a 3:05 player can still
+// replace a 3:15 starter) qualifies; a
 // missing kickoff for the starter (or no `games`) filters nothing. Mirrors
 // the page's playsInTime.
 // Slot-rule gate, DUPLICATED from swapKeepsLineupLegal/parseLineupBounds in
@@ -140,7 +142,7 @@ function backupCandidates(league, starter, games) {
   const playsInTime = (p) => {
     if (Number.isNaN(startAt)) return true;
     const at = p.team && games.get(p.team)?.kickoff ? new Date(games.get(p.team).kickoff).getTime() : NaN;
-    return !Number.isNaN(at) && at >= startAt;
+    return !Number.isNaN(at) && at > startAt - WATCH_LEAD_MINUTES * 60000;
   };
   const samePos = (p) => (p.position && starter.position && p.position === starter.position ? 0 : 1);
   const ecr = (p) => (p.ecr && Number.isFinite(p.ecr.rank) ? p.ecr.rank : Infinity);
