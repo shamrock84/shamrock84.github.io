@@ -402,6 +402,26 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	assert.equal(gate({ PHI: game('LAR', true, EARLY), DAL: game('NYG', true, LATE) }).length, 5, 'later kickoff: kept');
 	assert.equal(gate({}).length, 5, 'starter kickoff unknown: nothing filtered');
 
+	// Slot rules: with a requirement string only legal swaps are offered.
+	// 1 RB starter; WR slots are full (2 of max 2) so a WR can't come in, a TE
+	// has a slot and room, a QB has no slot at all.
+	const slotted = league('S', [
+		player('a', 'Saquon Barkley', 'PHI', 'Q'),
+		player('w1', 'Wide One', 'DAL', null, { position: 'WR' }),
+		player('w2', 'Wide Two', 'DAL', null, { position: 'WR' }),
+		player('b1', 'Bench RB', 'DAL', null),
+		player('bw', 'Bench WR', 'DAL', null, { position: 'WR' }),
+		player('bt', 'Bench TE', 'DAL', null, { position: 'TE' }),
+		player('bq', 'Bench QB', 'DAL', null, { position: 'QB' }),
+	], ['a', 'w1', 'w2'], { startingLineup: '0-2 RB, 2 WR, 0-1 TE' });
+	assert.deepEqual(plain(ctx.watchlistBackupCandidates(slotted, slotted.players[0]).map((c) => c.name)), ['Bench RB', 'Bench TE'],
+		'same position, and positions with a slot and room; full or slotless positions dropped');
+	// Taking the only starter at a position below its minimum is not legal either.
+	const floor = { ...slotted, startingLineup: '1-2 RB, 2 WR, 0-1 TE' };
+	assert.deepEqual(plain(ctx.watchlistBackupCandidates(floor, floor.players[0]).map((c) => c.name)), ['Bench RB'],
+		'the starter is the last RB the league needs: only another RB can replace him');
+	assert.equal(ctx.watchlistBackupCandidates({ ...slotted, startingLineup: null }, slotted.players[0]).length, 4, 'no requirement string: nothing filtered');
+
 	// No healthy same-position player: no suggestion, never a doubtful one.
 	const thin = league('T', [player('a', 'Saquon Barkley', 'PHI', 'Q'), player('x', 'Zack Runner', 'DAL', 'Q', ecr(2)), player('w', 'Zed Receiver', 'DAL', null, { position: 'WR', ...ecr(1) })], ['a']);
 	assert.equal(ctx.watchlistSuggestedBackup(thin, thin.players[0]), null);

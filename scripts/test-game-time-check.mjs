@@ -268,6 +268,10 @@ assert.equal(classify({ ...get('Saquon Barkley'), designation: 'IR' }, feeds()).
   assert.equal(resolveBackup(league, sk, 'b2').source, 'chosen');
   assert.equal(resolveBackup(league, sk, 'none').player, null, "'none' is a deliberate no-backup");
   assert.equal(resolveBackup(league, sk, 'gone').player.name, 'Abe Runner', 'a saved pick off the roster falls back to the suggestion');
+  // Slot rules (swapKeepsLineupLegal): a WR can't replace the only RB the league requires.
+  const wrOnly = { ...league, startingLineup: '1-2 RB, 2 WR', players: league.players.filter((p) => p.id === 's1' || p.id === 'b4') };
+  assert.equal(resolveBackup(wrOnly, sk, 'b4').player, null, 'swap would drop RB below its minimum');
+  assert.equal(resolveBackup({ ...wrOnly, startingLineup: '0-2 RB, 2 WR' }, sk, 'b4').player.name, 'Zed Receiver', 'legal once RB may go to zero');
   const thin = { ...league, players: league.players.filter((p) => p.id === 's1' || p.id === 'b3' || p.id === 'b4') };
   assert.equal(resolveBackup(thin, sk, undefined).player, null, 'no healthy same-position player: no suggestion');
 

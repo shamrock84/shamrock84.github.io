@@ -92,6 +92,47 @@ export const NO_BACKUP = 'none';
 // Only a player whose game kicks off at or after the starter's qualifies; a
 // missing kickoff for the starter (or no `games`) filters nothing. Mirrors
 // the page's playsInTime.
+// Slot-rule gate, DUPLICATED from swapKeepsLineupLegal/parseLineupBounds in
+// myffl.html: the swap must leave every position inside the league's
+// startingLineup range ("1 QB, 2-3 RB, ..."). No requirement string, or an
+// unresolved starter id, filters nothing on counts.
+function lineupKey(position) {
+  const k = String(position || '').trim().toUpperCase();
+  if (k === 'K') return 'PK';
+  if (k === 'DST' || k === 'D/ST' || k === 'DEF') return 'DEF';
+  return k;
+}
+function lineupBounds(requirement) {
+  if (!requirement) return null;
+  const bounds = new Map();
+  for (const m of String(requirement).matchAll(/(\d+)(?:\s*-\s*(\d+))?\s+([A-Za-z/]+)/g)) {
+    const min = Number(m[1]);
+    bounds.set(lineupKey(m[3]), { min, max: m[2] != null ? Number(m[2]) : min });
+  }
+  return bounds.size ? bounds : null;
+}
+function swapKeepsLineupLegal(league, starter, candidate) {
+  const bounds = lineupBounds(league.startingLineup);
+  if (!bounds || !starter) return true;
+  const out = lineupKey(starter.position);
+  const inn = lineupKey(candidate.position);
+  if (out === inn) return true;
+  const into = bounds.get(inn);
+  if (!into || into.max < 1) return false;
+  const byId = new Map((league.players || []).map((p) => [String(p.id), p]));
+  const counts = new Map();
+  for (const id of league.starters || []) {
+    const sp = byId.get(String(id));
+    if (!sp) return true;
+    const k = lineupKey(sp.position);
+    counts.set(k, (counts.get(k) || 0) + 1);
+  }
+  if ((counts.get(inn) || 0) + 1 > into.max) return false;
+  const from = bounds.get(out);
+  if (from && (counts.get(out) || 0) - 1 < from.min) return false;
+  return true;
+}
+
 function backupCandidates(league, starter, games) {
   const starting = new Set((league.starters || []).map(String));
   const startAt = starter.team && games?.get(starter.team)?.kickoff
@@ -104,7 +145,7 @@ function backupCandidates(league, starter, games) {
   const samePos = (p) => (p.position && starter.position && p.position === starter.position ? 0 : 1);
   const ecr = (p) => (p.ecr && Number.isFinite(p.ecr.rank) ? p.ecr.rank : Infinity);
   return (league.players || [])
-    .filter((p) => (p.status || 'ROSTER').toUpperCase() === 'ROSTER' && !starting.has(String(p.id)) && playsInTime(p))
+    .filter((p) => (p.status || 'ROSTER').toUpperCase() === 'ROSTER' && !starting.has(String(p.id)) && playsInTime(p) && swapKeepsLineupLegal(league, starter, p))
     .sort((a, b) => samePos(a) - samePos(b)
       || (a.injuryStatus ? 1 : 0) - (b.injuryStatus ? 1 : 0)
       || (ecr(a) === ecr(b) ? 0 : ecr(a) < ecr(b) ? -1 : 1)
