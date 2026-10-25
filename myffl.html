@@ -5495,7 +5495,6 @@
 		// whenever polling stops (stopLiveScoringPolling) so it isn't
 		// repainting a hidden or backgrounded tab for nothing.
 		let liveStatusTickTimer = null;
-		let nightCardTimer = null;
 		const LIVE_STATUS_TICK_MS = 15000;
 
 		// Live-scoring proxy (Vercel), separate from the 4-hour GitHub Actions
@@ -10384,6 +10383,12 @@
 			return sundayCardIsActive(now) ? 'sunday' : mondayCardIsActive(now) ? 'monday' : null;
 		}
 		let renderedNightCardVariant = null;
+		// The status line's own ticker (15s) carries the check, so it runs
+		// exactly while that ticker does and needs no timer of its own.
+		function tickLiveStatus() {
+			renderLiveStatusFreshness();
+			syncNightCard();
+		}
 		function syncNightCard() {
 			if (!pageData || nightCardVariant() === renderedNightCardVariant) return;
 			// Repaint now from what is known, then poll so the new card
@@ -16481,7 +16486,7 @@
 				// guarded on the timer itself so a later poll doesn't stack
 				// a second ticker on top of the one already running.
 				if (liveScoringPollingEnabled && !liveStatusTickTimer) {
-					liveStatusTickTimer = setInterval(renderLiveStatusFreshness, LIVE_STATUS_TICK_MS);
+					liveStatusTickTimer = setInterval(tickLiveStatus, LIVE_STATUS_TICK_MS);
 				}
 			} catch (err) {
 				console.warn(`Live scoring refresh failed: ${err.message}`);
@@ -16517,7 +16522,6 @@
 			document.getElementById('live-status').classList.remove('hidden');
 			if (liveScoringPollingEnabled) return;
 			liveScoringPollingEnabled = true;
-			if (!nightCardTimer) nightCardTimer = setInterval(syncNightCard, 30000);
 			if (liveScoringDataIsFresh()) {
 				// The cached poll is still within its own cadence window —
 				// resume the display from it (it may have sat un-ticked while
@@ -16527,7 +16531,7 @@
 				// back (a backgrounded tab regaining focus, or a quick tab
 				// switch). See liveScoringDataIsFresh's own comment.
 				renderLiveStatusFreshness();
-				if (!liveStatusTickTimer) liveStatusTickTimer = setInterval(renderLiveStatusFreshness, LIVE_STATUS_TICK_MS);
+				if (!liveStatusTickTimer) liveStatusTickTimer = setInterval(tickLiveStatus, LIVE_STATUS_TICK_MS);
 				scheduleLiveScoringPoll(Math.max(nextLiveScoringDelayMs() - msSinceLastLivePoll(), 0));
 			} else {
 				refreshLiveScoring();
@@ -16537,10 +16541,6 @@
 		function stopLiveScoringPolling() {
 			document.getElementById('live-status').classList.add('hidden');
 			liveScoringPollingEnabled = false;
-			if (nightCardTimer) {
-				clearInterval(nightCardTimer);
-				nightCardTimer = null;
-			}
 			if (liveScoringTimer) {
 				clearTimeout(liveScoringTimer);
 				liveScoringTimer = null;
