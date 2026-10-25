@@ -7012,7 +7012,11 @@
 			// The `{ type: 'leagues' }` entry marks where the league block sits
 			// (see LEAGUE_LINKS_TYPE in api/save-leagues.js). A snapshot from
 			// before it existed has none, and its leagues came first.
-			const entries = pageData?.quickLinks || [];
+			// Logged in with the live config loaded (the Admin tab's copy, as last
+			// saved — never unsaved drafts), its Quick Links win over the synced
+			// snapshot's, so a saved edit shows without waiting for a sync. Other
+			// visitors and devices still see the snapshot until the next sync.
+			const entries = (authToken && Array.isArray(leagueConfig?.quickLinks)) ? leagueConfig.quickLinks : (pageData?.quickLinks || []);
 			if (!entries.some((e) => e?.type === 'leagues')) appendLeagueLinks();
 			for (const extra of entries) {
 				if (extra?.type === 'leagues') appendLeagueLinks();
@@ -17041,6 +17045,7 @@
 				leagueConfig = JSON.parse(new TextDecoder().decode(bytes));
 				leagueConfigSha = await gitBlobSha(bytes).catch(() => null);
 				leagueConfigError = null;
+				if (pageData) renderQuickLinks();
 			} catch (err) {
 				leagueConfig = null;
 				leagueConfigSha = null;
@@ -17143,6 +17148,7 @@
 					}
 					leagueConfig.leagues = JSON.parse(JSON.stringify(adminDraft));
 					leagueConfig.quickLinks = JSON.parse(JSON.stringify(adminLinksDraft));
+					renderQuickLinks();
 					// What this session now has is the version just committed, so the
 					// next save from here is checked against that, not the old one.
 					leagueConfigSha = body.sha || null;
