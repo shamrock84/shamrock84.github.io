@@ -178,6 +178,64 @@
 		#quicklinks a.quicklink-purple:focus-visible .quicklink-pill {
 			color: var(--text);
 		}
+		/* Combo mode: one "More" button whose menu holds every gold/purple entry
+		   (see renderQuickLinks). Entries keep their own pill colors inside it.
+		   The divider mirrors the one #quicklinks a::after draws; the menu
+		   opens left- or right-aligned (.align-right) so it stays on screen. */
+		#quicklinks .quicklink-combo {
+			position: relative;
+			display: inline-flex;
+			align-items: center;
+		}
+		#quicklinks .quicklink-combo:not(:last-child)::after {
+			content: '';
+			display: inline-block;
+			width: 1px;
+			height: 0.7rem;
+			background: var(--border);
+			margin-left: 0.4rem;
+		}
+		#quicklinks .quicklink-combo-btn {
+			font: inherit;
+			font-size: 0.8rem;
+			font-weight: 600;
+			color: var(--accent);
+			background: var(--chip-bg);
+			border: 0;
+			border-radius: 999px;
+			padding: 0.15rem 0.55rem;
+			cursor: pointer;
+		}
+		#quicklinks .quicklink-combo-btn:hover,
+		#quicklinks .quicklink-combo-btn:focus-visible,
+		#quicklinks .quicklink-combo.open .quicklink-combo-btn {
+			color: var(--text);
+		}
+		#quicklinks .quicklink-combo-menu {
+			display: none;
+			position: absolute;
+			top: calc(100% + 0.35rem);
+			left: 0;
+			z-index: 31;
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 0.35rem;
+			background: var(--card-bg);
+			border: 1px solid var(--border);
+			border-radius: 0.5rem;
+			box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+			padding: 0.5rem 0.65rem;
+		}
+		#quicklinks .quicklink-combo.align-right .quicklink-combo-menu {
+			left: auto;
+			right: 0;
+		}
+		#quicklinks .quicklink-combo.open .quicklink-combo-menu {
+			display: flex;
+		}
+		#quicklinks .quicklink-combo-menu a::after {
+			display: none;
+		}
 		/* A footnote-style marker appended after a quick link's own label —
 		   see renderQuickLinks/appendQuickLink — counting open Tasks
 		   (renderTasksCard) whose category exactly matches this entry's
@@ -6867,12 +6925,68 @@
 			return league.nickname || leagueDisplayName(league) || league.id;
 		}
 
+		// Device-local, like the Depth Charts position toggle: a phone and a
+		// desktop can reasonably want different toolbars, and it needs no config
+		// schema change or commit.
+		function quickLinksComboEnabled() {
+			try { return localStorage.getItem('myfflToolbarCombo') === '1'; } catch (e) { return false; }
+		}
+
+		function closeQuickLinkCombos() {
+			for (const open of document.querySelectorAll('.quicklink-combo.open')) {
+				open.classList.remove('open');
+				open.querySelector('.quicklink-combo-btn')?.setAttribute('aria-expanded', 'false');
+			}
+		}
+		// Registered once; renderQuickLinks rebuilds the bar and must not stack these.
+		document.addEventListener('click', (e) => {
+			if (!e.target.closest?.('.quicklink-combo')) closeQuickLinkCombos();
+		});
+		document.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape') closeQuickLinkCombos();
+		});
+
 		function renderQuickLinks() {
 			const bar = document.getElementById('quicklinks');
 			if (!bar) return;
 			const leagues = (pageData?.leagues || []).filter((league) => league.type !== 'draftonly');
 			bar.innerHTML = '';
 			const taskCounts = quickLinkTaskCounts();
+			// Combo mode (Admin tab > Quick Links, device-local): every gold or
+			// purple entry moves into one dropdown, anchored where the first
+			// of them sat in the bar. Plain entries stay in the bar either way.
+			const combo = quickLinksComboEnabled();
+			let comboMenu = null;
+			let comboTasks = 0;
+			let comboBadge = null;
+			const appendQuickLinkTo = (opts) => {
+				if (!combo || (opts.style !== 'gold' && opts.style !== 'purple')) return appendQuickLink(bar, opts);
+				if (!comboMenu) {
+					const wrap = el('div', { class: 'quicklink-combo' });
+					const btn = el('button', { type: 'button', class: 'quicklink-combo-btn', 'aria-haspopup': 'true', 'aria-expanded': 'false' });
+					btn.appendChild(document.createTextNode('More ▾'));
+					comboBadge = el('sup', { class: 'quicklink-tasknote' });
+					comboBadge.hidden = true;
+					btn.appendChild(comboBadge);
+					comboMenu = el('div', { class: 'quicklink-combo-menu' });
+					btn.addEventListener('click', () => {
+						const open = !wrap.classList.contains('open');
+						closeQuickLinkCombos();
+						if (!open) return;
+						wrap.classList.add('open');
+						btn.setAttribute('aria-expanded', 'true');
+						wrap.classList.remove('align-right');
+						const r = btn.getBoundingClientRect();
+						if (r.left + r.width / 2 > window.innerWidth / 2) wrap.classList.add('align-right');
+					});
+					wrap.appendChild(btn);
+					wrap.appendChild(comboMenu);
+					bar.appendChild(wrap);
+				}
+				comboTasks += opts.taskCount || 0;
+				if (comboTasks) { comboBadge.textContent = String(comboTasks); comboBadge.hidden = false; }
+				return appendQuickLink(comboMenu, opts);
+			};
 			const appendLeagueLinks = () => {
 				for (const league of leagues) {
 					const label = quickLinkLabelForLeague(league);
@@ -6886,7 +7000,7 @@
 					// this display text, so a manager's task category ("MNMx")
 					// still matches regardless of the score.
 					const record = recordDetails(league, league.franchiseId);
-					appendQuickLink(bar, { url: league.url, label, record, title: leagueDisplayName(league) || label, style: league.style, taskCount: taskCounts[label] });
+					appendQuickLinkTo({ url: league.url, label, record, title: leagueDisplayName(league) || label, style: league.style, taskCount: taskCounts[label] });
 				}
 			};
 			// The `{ type: 'leagues' }` entry marks where the league block sits
@@ -6896,7 +7010,7 @@
 			if (!entries.some((e) => e?.type === 'leagues')) appendLeagueLinks();
 			for (const extra of entries) {
 				if (extra?.type === 'leagues') appendLeagueLinks();
-				else appendQuickLink(bar, { url: extra.url, label: extra.nickname, style: extra.style, taskCount: taskCounts[extra.nickname] });
+				else appendQuickLinkTo({ url: extra.url, label: extra.nickname, style: extra.style, taskCount: taskCounts[extra.nickname] });
 			}
 		}
 
@@ -17820,7 +17934,18 @@
 				linksList.appendChild(row);
 			});
 			card.appendChild(linksList);
-			const addLinkBtn = el('button', { type: 'button', class: 'admin-add-btn', text: '+ Add a link' });
+			// Applies at once and on this device only; not part of Save/Discard.
+			const comboLabel = el('label', { class: 'admin-field' });
+			const comboBox = el('input', { type: 'checkbox' });
+			comboBox.checked = quickLinksComboEnabled();
+			comboBox.addEventListener('change', () => {
+				try { localStorage.setItem('myfflToolbarCombo', comboBox.checked ? '1' : '0'); } catch (e) { /* storage blocked */ }
+				renderQuickLinks();
+			});
+			comboLabel.appendChild(comboBox);
+			comboLabel.appendChild(document.createTextNode(' Combine gold and purple toolbar entries into one "More" dropdown (this device only)'));
+			card.appendChild(comboLabel);
+			const addLinkBtn =el('button', { type: 'button', class: 'admin-add-btn', text: '+ Add a link' });
 			addLinkBtn.addEventListener('click', () => {
 				adminLinksDraft.push({ url: '', nickname: '' });
 				refreshQuickLinksCard();
