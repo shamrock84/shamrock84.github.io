@@ -101,7 +101,9 @@ const SCORING_PAYOUT_FIELDS = [
 // own _readme entry for the schema and why both fields are required (unlike
 // a league's own nickname, there's no live name for a plain external link
 // to fall back to).
-const LINK_KEY_ORDER = ['url', 'nickname', 'style'];
+// `group` is free text: every link sharing one (case-insensitively) folds into
+// a single dropdown pill in the toolbar, labelled with that name.
+const LINK_KEY_ORDER = ['url', 'nickname', 'style', 'group'];
 
 // The one permanent, non-editable quickLinks entry: `{ "type": "leagues" }`
 // marks where the league links sit in the toolbar as a single solid block, so
@@ -360,6 +362,9 @@ function validateQuickLinks(links) {
     if (link.style != null && link.style !== '' && !QUICKLINK_STYLES.has(link.style)) {
       errors.push(`${where}: style must be gold, purple, or left blank for plain.`);
     }
+    if (link.group != null && typeof link.group !== 'string') {
+      errors.push(`${where}: group must be text.`);
+    }
   });
 
   return errors;
@@ -459,6 +464,8 @@ function mergeLink(link) {
   out.url = String(link.url).trim();
   out.nickname = String(link.nickname).trim();
   if (link.style != null && link.style !== '') out.style = link.style;
+  const group = link.group == null ? '' : String(link.group).trim();
+  if (group) out.group = group;
   for (const [k, v] of Object.entries(link)) {
     if (!LINK_KEY_ORDER.includes(k) && v !== undefined) out[k] = v;
   }

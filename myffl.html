@@ -178,6 +178,69 @@
 		#quicklinks a.quicklink-purple:focus-visible .quicklink-pill {
 			color: var(--text);
 		}
+		/* A Quick Link group: one button, labelled with the group name, whose menu holds its links
+		   (see renderQuickLinks). Entries keep their own pill colors inside it.
+		   The divider mirrors the one #quicklinks a::after draws; the menu
+		   opens left- or right-aligned (.align-right) so it stays on screen. */
+		#quicklinks .quicklink-combo {
+			position: relative;
+			display: inline-flex;
+			align-items: center;
+		}
+		#quicklinks .quicklink-combo:not(:last-child)::after {
+			content: '';
+			display: inline-block;
+			width: 1px;
+			height: 0.7rem;
+			background: var(--border);
+			margin-left: 0.4rem;
+		}
+		#quicklinks .quicklink-combo-btn {
+			font: inherit;
+			font-size: 0.8rem;
+			font-weight: 600;
+			color: var(--muted);
+			background: transparent;
+			border: 0;
+			border-radius: 999px;
+			padding: 0.15rem 0.55rem;
+			cursor: pointer;
+		}
+		#quicklinks .quicklink-combo-btn.quicklink-combo-gold {
+			color: var(--gold-chip-text);
+			background: var(--gold-chip-bg);
+		}
+		#quicklinks .quicklink-combo-btn.quicklink-combo-purple {
+			color: var(--accent);
+			background: var(--chip-bg);
+		}
+		#quicklinks .quicklink-combo-btn:hover,
+		#quicklinks .quicklink-combo-btn:focus-visible,
+		#quicklinks .quicklink-combo.open .quicklink-combo-btn {
+			color: var(--text);
+		}
+		#quicklinks .quicklink-combo-menu {
+			display: none;
+			position: absolute;
+			top: calc(100% + 0.35rem);
+			left: 0;
+			z-index: 31;
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 0.35rem;
+			background: transparent;
+			padding: 0;
+		}
+		#quicklinks .quicklink-combo.align-right .quicklink-combo-menu {
+			left: auto;
+			right: 0;
+		}
+		#quicklinks .quicklink-combo.open .quicklink-combo-menu {
+			display: flex;
+		}
+		#quicklinks .quicklink-combo-menu a::after {
+			display: none;
+		}
 		/* A footnote-style marker appended after a quick link's own label —
 		   see renderQuickLinks/appendQuickLink — counting open Tasks
 		   (renderTasksCard) whose category exactly matches this entry's
@@ -3967,7 +4030,8 @@
 		.admin-link-row .admin-field-link {
 			flex: 2;
 		}
-		.admin-link-row .admin-field-nickname {
+		.admin-link-row .admin-field-nickname,
+		.admin-link-row .admin-field-group {
 			flex: 1;
 		}
 		/* A three-option dropdown never needs as much room as the free-text
@@ -6867,12 +6931,68 @@
 			return league.nickname || leagueDisplayName(league) || league.id;
 		}
 
+		function closeQuickLinkCombos() {
+			for (const open of document.querySelectorAll('.quicklink-combo.open')) {
+				open.classList.remove('open');
+				open.querySelector('.quicklink-combo-btn')?.setAttribute('aria-expanded', 'false');
+			}
+		}
+		// Registered once; renderQuickLinks rebuilds the bar and must not stack these.
+		document.addEventListener('click', (e) => {
+			if (!e.target.closest?.('.quicklink-combo')) closeQuickLinkCombos();
+		});
+		document.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape') closeQuickLinkCombos();
+		});
+
 		function renderQuickLinks() {
 			const bar = document.getElementById('quicklinks');
 			if (!bar) return;
 			const leagues = (pageData?.leagues || []).filter((league) => league.type !== 'draftonly');
 			bar.innerHTML = '';
 			const taskCounts = quickLinkTaskCounts();
+			// A Quick Link with a Group name (Admin tab > Quick Links) is folded
+			// into one dropdown pill labelled with that name, placed where the
+			// group's first link sits; members keep their Admin order and their
+			// own style inside the menu, and the pill takes the first member's
+			// style. Names match case-insensitively. Leagues are never grouped.
+			const groups = new Map();
+			const appendGroupedLink = (opts, groupName) => {
+				const key = groupName.toLowerCase();
+				let g = groups.get(key);
+				if (!g) {
+					const wrap = el('div', { class: 'quicklink-combo' });
+					const btn = el('button', {
+						type: 'button',
+						class: `quicklink-combo-btn${opts.style === 'gold' ? ' quicklink-combo-gold' : opts.style === 'purple' ? ' quicklink-combo-purple' : ''}`,
+						'aria-haspopup': 'true',
+						'aria-expanded': 'false',
+					});
+					btn.appendChild(document.createTextNode(`${groupName} ▾`));
+					const badge = el('sup', { class: 'quicklink-tasknote' });
+					badge.hidden = true;
+					btn.appendChild(badge);
+					const menu = el('div', { class: 'quicklink-combo-menu' });
+					btn.addEventListener('click', () => {
+						const open = !wrap.classList.contains('open');
+						closeQuickLinkCombos();
+						if (!open) return;
+						wrap.classList.add('open');
+						btn.setAttribute('aria-expanded', 'true');
+						wrap.classList.remove('align-right');
+						const r = btn.getBoundingClientRect();
+						if (r.left + r.width / 2 > window.innerWidth / 2) wrap.classList.add('align-right');
+					});
+					wrap.appendChild(btn);
+					wrap.appendChild(menu);
+					bar.appendChild(wrap);
+					g = { menu, badge, tasks: 0 };
+					groups.set(key, g);
+				}
+				g.tasks += opts.taskCount || 0;
+				if (g.tasks) { g.badge.textContent = String(g.tasks); g.badge.hidden = false; }
+				appendQuickLink(g.menu, opts);
+			};
 			const appendLeagueLinks = () => {
 				for (const league of leagues) {
 					const label = quickLinkLabelForLeague(league);
@@ -6896,7 +7016,12 @@
 			if (!entries.some((e) => e?.type === 'leagues')) appendLeagueLinks();
 			for (const extra of entries) {
 				if (extra?.type === 'leagues') appendLeagueLinks();
-				else appendQuickLink(bar, { url: extra.url, label: extra.nickname, style: extra.style, taskCount: taskCounts[extra.nickname] });
+				else {
+					const opts = { url: extra.url, label: extra.nickname, style: extra.style, taskCount: taskCounts[extra.nickname] };
+					const groupName = typeof extra.group === 'string' ? extra.group.trim() : '';
+					if (groupName) appendGroupedLink(opts, groupName);
+					else appendQuickLink(bar, opts);
+				}
 			}
 		}
 
@@ -17783,6 +17908,11 @@
 					nickWrap.appendChild(el('span', { class: 'admin-field-label', text: 'Nickname' }));
 					nickWrap.appendChild(adminText(link.nickname, 'e.g. Sleeper App', (v) => { link.nickname = v; }));
 					row.appendChild(nickWrap);
+					// Links sharing a group name fold into one toolbar dropdown.
+					const groupWrap = el('label', { class: 'admin-field admin-field-group' });
+					groupWrap.appendChild(el('span', { class: 'admin-field-label', text: 'Group' }));
+					groupWrap.appendChild(adminText(link.group, 'optional', (v) => { link.group = v || undefined; }));
+					row.appendChild(groupWrap);
 					// Same three choices as a league's own Toolbar Style field —
 					// see appendQuickLink, which reads both off the same `style`
 					// field. Blank is plain.
@@ -17834,7 +17964,7 @@
 
 			const legend = el('div', { class: 'admin-legend' });
 			const legendList = el('ul');
-			legendList.appendChild(el('li', { text: 'Extra links shown in the header toolbar; the League Links block is fixed, but it can be moved to put links before or after the leagues' }));
+			legendList.appendChild(el('li', { text: 'Extra links shown in the header toolbar; the League Links block is fixed, but it can be moved to put links before or after the leagues. Links sharing a Group name become one dropdown pill with that name, listed in this order' }));
 			legend.appendChild(legendList);
 			card.appendChild(legend);
 

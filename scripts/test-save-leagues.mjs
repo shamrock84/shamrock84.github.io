@@ -215,6 +215,12 @@ check('allows a gold quick link style',
 check('allows a purple quick link style',
   validateQuickLinks([{ url: 'https://example.com', nickname: 'Example', style: 'purple' }]).length === 0);
 
+// group — links sharing a name fold into one dropdown pill.
+check('allows a quick link group',
+  validateQuickLinks([{ url: 'https://example.com', nickname: 'Example', group: 'Tools' }]).length === 0);
+check('rejects a non-text quick link group',
+  validateQuickLinks([{ url: 'https://example.com', nickname: 'Example', group: 5 }]).length > 0);
+
 // ---- mergeLink ----
 const mergedLink = mergeLink({ url: '  https://example.com  ', nickname: '  Example  ' });
 check('trims a quick link url', mergedLink.url === 'https://example.com', JSON.stringify(mergedLink));
@@ -222,6 +228,8 @@ check('trims a quick link nickname', mergedLink.nickname === 'Example', JSON.str
 check('key order is stable for a quick link', Object.keys(mergedLink).join() === 'url,nickname');
 check('drops a blank quick link style', !('style' in mergedLink));
 check('keeps a quick link style', mergeLink({ url: 'https://example.com', nickname: 'Example', style: 'gold' }).style === 'gold');
+check('trims and keeps a quick link group', mergeLink({ url: 'https://example.com', nickname: 'Example', group: '  Tools ' }).group === 'Tools');
+check('drops a blank quick link group', !('group' in mergeLink({ url: 'https://example.com', nickname: 'Example', group: '  ' })));
 check('preserves unknown fields on a quick link',
   mergeLink({ url: 'https://example.com', nickname: 'Example', someFutureField: 1 }).someFutureField === 1);
 
