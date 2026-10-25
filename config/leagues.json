@@ -57,8 +57,8 @@
   ],
   "quickLinks": [
     { "type": "leagues" },
-    { "url": "https://www.fantasypros.com/nfl/myplaybook/start-sit-assistant.php", "nickname": "FP", "style": "gold" },
-    { "url": "https://dynastyleaguefootball.com/", "nickname": "DLF", "style": "gold" },
+    { "url": "https://www.fantasypros.com/nfl/myplaybook/start-sit-assistant.php", "nickname": "FantasyPros", "style": "gold", "group": "FFL" },
+    { "url": "https://dynastyleaguefootball.com/", "nickname": "DLF", "style": "gold", "group": "FFL" },
     { "url": "https://github.com/shamrock84/shamrock84.github.io/actions", "nickname": "GitHub", "style": "purple", "group": "Dev" },
     { "url": "https://vercel.com/shamrock84/shamrock84-github-io", "nickname": "Vercel", "style": "purple", "group": "Dev" },
     { "url": "https://console.cron-job.org/dashboard", "nickname": "Cron", "style": "purple", "group": "Dev" },
