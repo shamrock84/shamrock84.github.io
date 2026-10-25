@@ -178,7 +178,7 @@
 		#quicklinks a.quicklink-purple:focus-visible .quicklink-pill {
 			color: var(--text);
 		}
-		/* Combo mode: one "More" button whose menu holds every gold/purple entry
+		/* A Quick Link group: one button, labelled with the group name, whose menu holds its links
 		   (see renderQuickLinks). Entries keep their own pill colors inside it.
 		   The divider mirrors the one #quicklinks a::after draws; the menu
 		   opens left- or right-aligned (.align-right) so it stays on screen. */
@@ -199,12 +199,20 @@
 			font: inherit;
 			font-size: 0.8rem;
 			font-weight: 600;
-			color: var(--accent);
-			background: var(--chip-bg);
+			color: var(--muted);
+			background: transparent;
 			border: 0;
 			border-radius: 999px;
 			padding: 0.15rem 0.55rem;
 			cursor: pointer;
+		}
+		#quicklinks .quicklink-combo-btn.quicklink-combo-gold {
+			color: var(--gold-chip-text);
+			background: var(--gold-chip-bg);
+		}
+		#quicklinks .quicklink-combo-btn.quicklink-combo-purple {
+			color: var(--accent);
+			background: var(--chip-bg);
 		}
 		#quicklinks .quicklink-combo-btn:hover,
 		#quicklinks .quicklink-combo-btn:focus-visible,
@@ -4025,7 +4033,8 @@
 		.admin-link-row .admin-field-link {
 			flex: 2;
 		}
-		.admin-link-row .admin-field-nickname {
+		.admin-link-row .admin-field-nickname,
+		.admin-link-row .admin-field-group {
 			flex: 1;
 		}
 		/* A three-option dropdown never needs as much room as the free-text
@@ -6925,13 +6934,6 @@
 			return league.nickname || leagueDisplayName(league) || league.id;
 		}
 
-		// Device-local, like the Depth Charts position toggle: a phone and a
-		// desktop can reasonably want different toolbars, and it needs no config
-		// schema change or commit.
-		function quickLinksComboEnabled() {
-			try { return localStorage.getItem('myfflToolbarCombo') === '1'; } catch (e) { return false; }
-		}
-
 		function closeQuickLinkCombos() {
 			for (const open of document.querySelectorAll('.quicklink-combo.open')) {
 				open.classList.remove('open');
@@ -6952,23 +6954,28 @@
 			const leagues = (pageData?.leagues || []).filter((league) => league.type !== 'draftonly');
 			bar.innerHTML = '';
 			const taskCounts = quickLinkTaskCounts();
-			// Combo mode (Admin tab > Quick Links, device-local): every gold or
-			// purple entry moves into one dropdown, anchored where the first
-			// of them sat in the bar. Plain entries stay in the bar either way.
-			const combo = quickLinksComboEnabled();
-			let comboMenu = null;
-			let comboTasks = 0;
-			let comboBadge = null;
-			const appendQuickLinkTo = (opts) => {
-				if (!combo || (opts.style !== 'gold' && opts.style !== 'purple')) return appendQuickLink(bar, opts);
-				if (!comboMenu) {
+			// A Quick Link with a Group name (Admin tab > Quick Links) is folded
+			// into one dropdown pill labelled with that name, placed where the
+			// group's first link sits; members keep their Admin order and their
+			// own style inside the menu, and the pill takes the first member's
+			// style. Names match case-insensitively. Leagues are never grouped.
+			const groups = new Map();
+			const appendGroupedLink = (opts, groupName) => {
+				const key = groupName.toLowerCase();
+				let g = groups.get(key);
+				if (!g) {
 					const wrap = el('div', { class: 'quicklink-combo' });
-					const btn = el('button', { type: 'button', class: 'quicklink-combo-btn', 'aria-haspopup': 'true', 'aria-expanded': 'false' });
-					btn.appendChild(document.createTextNode('More ▾'));
-					comboBadge = el('sup', { class: 'quicklink-tasknote' });
-					comboBadge.hidden = true;
-					btn.appendChild(comboBadge);
-					comboMenu = el('div', { class: 'quicklink-combo-menu' });
+					const btn = el('button', {
+						type: 'button',
+						class: `quicklink-combo-btn${opts.style === 'gold' ? ' quicklink-combo-gold' : opts.style === 'purple' ? ' quicklink-combo-purple' : ''}`,
+						'aria-haspopup': 'true',
+						'aria-expanded': 'false',
+					});
+					btn.appendChild(document.createTextNode(`${groupName} ▾`));
+					const badge = el('sup', { class: 'quicklink-tasknote' });
+					badge.hidden = true;
+					btn.appendChild(badge);
+					const menu = el('div', { class: 'quicklink-combo-menu' });
 					btn.addEventListener('click', () => {
 						const open = !wrap.classList.contains('open');
 						closeQuickLinkCombos();
@@ -6980,12 +6987,14 @@
 						if (r.left + r.width / 2 > window.innerWidth / 2) wrap.classList.add('align-right');
 					});
 					wrap.appendChild(btn);
-					wrap.appendChild(comboMenu);
+					wrap.appendChild(menu);
 					bar.appendChild(wrap);
+					g = { menu, badge, tasks: 0 };
+					groups.set(key, g);
 				}
-				comboTasks += opts.taskCount || 0;
-				if (comboTasks) { comboBadge.textContent = String(comboTasks); comboBadge.hidden = false; }
-				return appendQuickLink(comboMenu, opts);
+				g.tasks += opts.taskCount || 0;
+				if (g.tasks) { g.badge.textContent = String(g.tasks); g.badge.hidden = false; }
+				appendQuickLink(g.menu, opts);
 			};
 			const appendLeagueLinks = () => {
 				for (const league of leagues) {
@@ -7000,7 +7009,7 @@
 					// this display text, so a manager's task category ("MNMx")
 					// still matches regardless of the score.
 					const record = recordDetails(league, league.franchiseId);
-					appendQuickLinkTo({ url: league.url, label, record, title: leagueDisplayName(league) || label, style: league.style, taskCount: taskCounts[label] });
+					appendQuickLink(bar, { url: league.url, label, record, title: leagueDisplayName(league) || label, style: league.style, taskCount: taskCounts[label] });
 				}
 			};
 			// The `{ type: 'leagues' }` entry marks where the league block sits
@@ -7010,7 +7019,12 @@
 			if (!entries.some((e) => e?.type === 'leagues')) appendLeagueLinks();
 			for (const extra of entries) {
 				if (extra?.type === 'leagues') appendLeagueLinks();
-				else appendQuickLinkTo({ url: extra.url, label: extra.nickname, style: extra.style, taskCount: taskCounts[extra.nickname] });
+				else {
+					const opts = { url: extra.url, label: extra.nickname, style: extra.style, taskCount: taskCounts[extra.nickname] };
+					const groupName = typeof extra.group === 'string' ? extra.group.trim() : '';
+					if (groupName) appendGroupedLink(opts, groupName);
+					else appendQuickLink(bar, opts);
+				}
 			}
 		}
 
@@ -17897,6 +17911,11 @@
 					nickWrap.appendChild(el('span', { class: 'admin-field-label', text: 'Nickname' }));
 					nickWrap.appendChild(adminText(link.nickname, 'e.g. Sleeper App', (v) => { link.nickname = v; }));
 					row.appendChild(nickWrap);
+					// Links sharing a group name fold into one toolbar dropdown.
+					const groupWrap = el('label', { class: 'admin-field admin-field-group' });
+					groupWrap.appendChild(el('span', { class: 'admin-field-label', text: 'Group' }));
+					groupWrap.appendChild(adminText(link.group, 'optional', (v) => { link.group = v || undefined; }));
+					row.appendChild(groupWrap);
 					// Same three choices as a league's own Toolbar Style field —
 					// see appendQuickLink, which reads both off the same `style`
 					// field. Blank is plain.
@@ -17934,18 +17953,7 @@
 				linksList.appendChild(row);
 			});
 			card.appendChild(linksList);
-			// Applies at once and on this device only; not part of Save/Discard.
-			const comboLabel = el('label', { class: 'admin-field' });
-			const comboBox = el('input', { type: 'checkbox' });
-			comboBox.checked = quickLinksComboEnabled();
-			comboBox.addEventListener('change', () => {
-				try { localStorage.setItem('myfflToolbarCombo', comboBox.checked ? '1' : '0'); } catch (e) { /* storage blocked */ }
-				renderQuickLinks();
-			});
-			comboLabel.appendChild(comboBox);
-			comboLabel.appendChild(document.createTextNode(' Combine gold and purple toolbar entries into one "More" dropdown (this device only)'));
-			card.appendChild(comboLabel);
-			const addLinkBtn =el('button', { type: 'button', class: 'admin-add-btn', text: '+ Add a link' });
+			const addLinkBtn = el('button', { type: 'button', class: 'admin-add-btn', text: '+ Add a link' });
 			addLinkBtn.addEventListener('click', () => {
 				adminLinksDraft.push({ url: '', nickname: '' });
 				refreshQuickLinksCard();
@@ -17959,7 +17967,7 @@
 
 			const legend = el('div', { class: 'admin-legend' });
 			const legendList = el('ul');
-			legendList.appendChild(el('li', { text: 'Extra links shown in the header toolbar; the League Links block is fixed, but it can be moved to put links before or after the leagues' }));
+			legendList.appendChild(el('li', { text: 'Extra links shown in the header toolbar; the League Links block is fixed, but it can be moved to put links before or after the leagues. Links sharing a Group name become one dropdown pill with that name, listed in this order' }));
 			legend.appendChild(legendList);
 			card.appendChild(legend);
 
