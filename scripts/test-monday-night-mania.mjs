@@ -483,4 +483,23 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	assert.ok(!g[1].classList.contains('roster-group-collapsed'));
 }
 
+{
+	// A page left open across 6:30 PM Sunday must swap the card in without
+	// waiting for the 30-minute idle poll: syncNightCard repaints when the
+	// clock calls for a different card than the one last rendered.
+	const ctx = makeContext(LOGGED_IN);
+	const at = new Date(Date.UTC(2026, 9, 25, 23, 46)); // Sun 6:46 PM CT
+	assert.equal(ctx.nightCardVariant(new Date(Date.UTC(2026, 9, 25, 23, 29))), null);
+	assert.equal(ctx.nightCardVariant(at), 'sunday');
+	assert.equal(ctx.nightCardVariant(MONDAY), 'monday');
+	let repaints = 0;
+	ctx.rerenderScoringCards = () => { repaints += 1; vm.runInContext('renderedNightCardVariant = "sunday"', ctx); };
+	ctx.nightCardVariant = () => 'sunday';
+	vm.runInContext('pageData = { leagues: [] }; renderedNightCardVariant = null;', ctx);
+	vm.runInContext('syncNightCard()', ctx);
+	assert.equal(repaints, 1);
+	vm.runInContext('syncNightCard()', ctx);
+	assert.equal(repaints, 1, 'no repaint once the right card is up');
+}
+
 console.log('test-monday-night-mania: ok');

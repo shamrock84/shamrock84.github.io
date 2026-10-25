@@ -10374,6 +10374,29 @@
 			return weekday === 'Sun' && minutes >= 18 * 60 + 30 && nflInSeason(now);
 		}
 
+		// Which of the two night cards the clock calls for, and which one the
+		// last Scoring render actually built. A page left open across 6:30 PM
+		// Sunday (or midnight) would otherwise keep the old card until the next
+		// poll, and the idle poll is 30 minutes apart. syncNightCard, run on a
+		// short timer while Scoring polling is on, closes that gap.
+		function nightCardVariant(now = new Date()) {
+			return sundayCardIsActive(now) ? 'sunday' : mondayCardIsActive(now) ? 'monday' : null;
+		}
+		let renderedNightCardVariant = null;
+		// The status line's own ticker (15s) carries the check, so it runs
+		// exactly while that ticker does and needs no timer of its own.
+		function tickLiveStatus() {
+			renderLiveStatusFreshness();
+			syncNightCard();
+		}
+		function syncNightCard() {
+			if (!pageData || nightCardVariant() === renderedNightCardVariant) return;
+			// Repaint now from what is known, then poll so the new card
+			// isn't built on a half-hour-old scoreboard.
+			rerenderScoringCards();
+			if (liveScoringPollingEnabled) refreshLiveScoring();
+		}
+
 		// Per-matchup collapse state, stored as an override of the default
 		// (mondaySettledWinProb): absence follows the live win probability, so
 		// a matchup that swings back into the 20-80 band reopens by itself
@@ -16287,6 +16310,7 @@
 			// own comment for why DOM order is what actually puts it there.
 			const watchlist = renderGameTimeWatchlistCard(pageData.leagues, pageData.year);
 			if (watchlist) gridEl.appendChild(watchlist);
+			renderedNightCardVariant = nightCardVariant();
 			const mondayNight = renderMondayNightManiaCard(pageData.leagues);
 			if (mondayNight) gridEl.appendChild(mondayNight);
 			const nowPlaying = renderNowPlayingCard(pageData.leagues);
@@ -16462,7 +16486,7 @@
 				// guarded on the timer itself so a later poll doesn't stack
 				// a second ticker on top of the one already running.
 				if (liveScoringPollingEnabled && !liveStatusTickTimer) {
-					liveStatusTickTimer = setInterval(renderLiveStatusFreshness, LIVE_STATUS_TICK_MS);
+					liveStatusTickTimer = setInterval(tickLiveStatus, LIVE_STATUS_TICK_MS);
 				}
 			} catch (err) {
 				console.warn(`Live scoring refresh failed: ${err.message}`);
@@ -16507,7 +16531,7 @@
 				// back (a backgrounded tab regaining focus, or a quick tab
 				// switch). See liveScoringDataIsFresh's own comment.
 				renderLiveStatusFreshness();
-				if (!liveStatusTickTimer) liveStatusTickTimer = setInterval(renderLiveStatusFreshness, LIVE_STATUS_TICK_MS);
+				if (!liveStatusTickTimer) liveStatusTickTimer = setInterval(tickLiveStatus, LIVE_STATUS_TICK_MS);
 				scheduleLiveScoringPoll(Math.max(nextLiveScoringDelayMs() - msSinceLastLivePoll(), 0));
 			} else {
 				refreshLiveScoring();
@@ -18559,6 +18583,7 @@
 			// actually puts it first among data-view="scoring" cards.
 			const watchlist = renderGameTimeWatchlistCard(data.leagues, data.year);
 			if (watchlist) gridEl.appendChild(watchlist);
+			renderedNightCardVariant = nightCardVariant();
 			const mondayNight = renderMondayNightManiaCard(data.leagues);
 			if (mondayNight) gridEl.appendChild(mondayNight);
 			const nowPlaying = renderNowPlayingCard(data.leagues);
