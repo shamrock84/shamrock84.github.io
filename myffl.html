@@ -181,7 +181,7 @@
 		/* A Quick Link group: one button, labelled with the group name, whose menu holds its links
 		   (see renderQuickLinks). Entries keep their own pill colors inside it.
 		   The divider mirrors the one #quicklinks a::after draws; the menu
-		   opens left- or right-aligned (.align-right) so it stays on screen. */
+		   opens left-aligned, flipping to .align-right only when it would leave the screen. */
 		#quicklinks .quicklink-combo {
 			position: relative;
 			display: inline-flex;
@@ -6980,8 +6980,8 @@
 						wrap.classList.add('open');
 						btn.setAttribute('aria-expanded', 'true');
 						wrap.classList.remove('align-right');
-						const r = btn.getBoundingClientRect();
-						if (r.left + r.width / 2 > window.innerWidth / 2) wrap.classList.add('align-right');
+						// Left-aligned (opens rightward) unless that would run off the screen.
+						if (btn.getBoundingClientRect().left + menu.offsetWidth > window.innerWidth - 8) wrap.classList.add('align-right');
 					});
 					wrap.appendChild(btn);
 					wrap.appendChild(menu);
