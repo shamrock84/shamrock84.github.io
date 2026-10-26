@@ -10666,20 +10666,20 @@
 				};
 				if (e.needed != null) {
 					summary.appendChild(downLabel());
-					summary.appendChild(document.createTextNode(` — ${mustScore(mineNames, e.myLeft.length, e.needed.toFixed(2), theirNames)} to win`));
+					summary.appendChild(document.createTextNode(` — ${mustScore(mineNames, e.myLeft.length, e.needed.toFixed(2), theirNames)} for you to win`));
 				} else if (e.oppMustLose != null) {
 					summary.appendChild(downLabel());
-					summary.appendChild(document.createTextNode(` — you are done; ${mustScore(theirNames, e.oppLeft.length, `−${e.oppMustLose.toFixed(2)} or lower`, '')} for you to win`));
+					summary.appendChild(document.createTextNode(` — ${mustScore(theirNames, e.oppLeft.length, `−${e.oppMustLose.toFixed(2)} or lower`, '')} for you to win`));
 				} else if (e.oppNeeded != null) {
 					summary.appendChild(upLabel());
 					summary.appendChild(document.createTextNode(` — ${mustScore(theirNames, e.oppLeft.length, e.oppNeeded.toFixed(2), mineNames)} for you to lose`));
 				} else {
-					// Lowest total that still holds the lead: myRisk is the first
-					// negative that loses it, so the floor is two hundredths above.
-					const floor = (Math.round(e.myRisk * 100) - 2) / 100;
-					const floorText = floor === 0 ? '0.00' : `−${floor.toFixed(2)} or better`;
+					// Ahead with the opponent done: the framing is what it takes for
+					// me to LOSE, so the figure is myRisk itself — the first
+					// negative total that gives the lead away, mirroring how
+					// oppMustLose is stated for a win.
 					summary.appendChild(upLabel());
-					summary.appendChild(document.createTextNode(` — opponent is done; ${mustScore(mineNames, e.myLeft.length, floorText, '')} to win`));
+					summary.appendChild(document.createTextNode(` — ${mustScore(mineNames, e.myLeft.length, `−${e.myRisk.toFixed(2)} or lower`, '')} for you to lose`));
 				}
 				const meta = scoringMetaLine(e.mine);
 				if (meta) summary.appendChild(el('div', { class: 'scoring-matchup-meta', text: meta }));
