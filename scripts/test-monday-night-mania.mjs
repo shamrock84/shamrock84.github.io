@@ -210,7 +210,7 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	const text = fullText(card);
 	assert.match(text, /Monday Night Mayhem/);
 	assert.match(text, /Down 11\.60/);
-	assert.match(text, /Down 11\.60 — score 11\.61 combined to win/);
+	assert.match(text, /Down 11\.60 — your T\. Hill and J\. Waddle must combine for 11\.61 more than opponent's O\. Guy to win/);
 	assert.doesNotMatch(text, /alone|stay above/);
 	assert.match(text, /3\.00 so far/);
 	assert.match(text, /Them/);
@@ -218,7 +218,7 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	assert.match(text, /League 1/);
 	// "combined" only with several players on the side that must score.
 	const one = lg('2', '98.40', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], [pl('c', 'Opp Guy', 'NYJ', 5)]);
-	assert.match(fullText(ctx.renderMondayNightManiaCard([one], MONDAY)), /Down 11\.60 — score 11\.61 to win/);
+	assert.match(fullText(ctx.renderMondayNightManiaCard([one], MONDAY)), /Down 11\.60 — your T\. Hill must score 11\.61 more than opponent's O\. Guy to win/);
 	assert.equal(ctx.renderMondayNightManiaCard([l], TUESDAY), null);
 	assert.equal(ctx.renderMondayNightManiaCard([l], JULY_MONDAY), null);
 }
@@ -276,7 +276,7 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	// With live matchups too, the summary sits above them, won before lost.
 	const live = lg('4', '98.40', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], []);
 	const card = ctx.renderMondayNightManiaCard([live, won, lost], MONDAY);
-	assert.match(fullText(card), /Already won: L1[\s\S]*Already lost: L2[\s\S]*score 11\.61 to win/);
+	assert.match(fullText(card), /Already won: L1[\s\S]*Already lost: L2[\s\S]*your T\. Hill must score 11\.61 to win/);
 }
 
 {
@@ -318,14 +318,14 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	assert.equal(r.live.length, 1);
 	assert.equal(r.live[0].needed, null);
 	assert.equal(r.live[0].oppMustLose, 10.01);
-	assert.match(fullText(ctx.renderMondayNightManiaCard([down], MONDAY)), /Down 10\.00 — you are done; opponent must score −10\.01 or lower for you to win/);
+	assert.match(fullText(ctx.renderMondayNightManiaCard([down], MONDAY)), /Down 10\.00 — you are done; opponent's O\. Guy must score −10\.01 or lower for you to win/);
 	// 99% with the opponent done: lost only if my own player goes negative.
 	const up = lg('2', '100.00', '90.00', [pl('a', 'Tyreek Hill', 'MIA', null)], [pl('c', 'Opp Guy', 'KC', 5)]);
 	up.scoring.teams[0].winProb = 99;
 	const r2 = ctx.computeMondayNightMania([up], games);
 	assert.equal(r2.won.length, 0);
 	assert.equal(r2.live[0].myRisk, 10.01);
-	assert.match(fullText(ctx.renderMondayNightManiaCard([up], MONDAY)), /Up 10\.00 — opponent is done; score −9\.99 or better to win/);
+	assert.match(fullText(ctx.renderMondayNightManiaCard([up], MONDAY)), /Up 10\.00 — opponent is done; your T\. Hill must score −9\.99 or better to win/);
 	// A tie with nobody left on either side is neither in play nor decided.
 	const dead = lg('3', '100.00', '100.00', [pl('b', 'Done Guy', 'KC', 20)], [pl('c', 'Opp Guy', 'KC', 5)]);
 	dead.scoring.teams[0].winProb = 50;
@@ -411,6 +411,20 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 }
 
 {
+	// The summary names the players, as a sentence ("for you to lose" when
+	// I lead): nobody left on my side, then my side still has players who
+	// can add, which the target is "more than".
+	const ctx = makeContext(LOGGED_IN);
+	setState(ctx, games);
+	const iron = lg('1', '93.28', '0.00', [], [pl('c', 'Tyreek Bigsby', 'NYJ', 0)]);
+	assert.match(fullText(ctx.renderMondayNightManiaCard([iron], MONDAY)), /Up 93\.28 — opponent's T\. Bigsby must score 93\.29 for you to lose/);
+	const gameOn = lg('2', '100.00', '79.41', [pl('a', 'Saquon Barkley', 'MIA', 0), pl('b', 'Jake Ferguson', 'NYJ', 0)], [pl('c', 'CeeDee Lamb', 'NYJ', 0)]);
+	assert.match(fullText(ctx.renderMondayNightManiaCard([gameOn], MONDAY)), /Up 20\.59 — opponent's C\. Lamb must score 20\.60 more than your S\. Barkley and J\. Ferguson for you to lose/);
+	// Long lists are capped.
+	assert.equal(ctx.mondayNameList([1, 2, 3, 4, 5].map((i) => ({ name: `A Player${i}` }))), 'A. Player1, A. Player2, A. Player3 and 2 more');
+}
+
+{
 	// Sunday Night Simmer: same card from 6:30 PM Central Sunday, absent before.
 	// Instants are UTC so the test doesn't depend on the runner's zone
 	// (CDT = UTC-5 in October).
@@ -424,7 +438,7 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	const card = ctx.renderMondayNightManiaCard([l], at);
 	assert.equal(card.id ?? card.attrs.id, 'sunday-night');
 	assert.match(fullText(card), /Sunday Night Simmer/);
-	assert.match(fullText(card), /Down 10\.00 — score 10\.01 to win/);
+	assert.match(fullText(card), /Down 10\.00 — your T\. Hill must score 10\.01 to win/);
 	assert.match(fullText(ctx.renderMondayNightManiaCard([l], lateNight)), /Sunday Night Simmer/);
 	assert.match(fullText(ctx.renderMondayNightManiaCard([l], MONDAY)), /Monday Night Mayhem/);
 	const july = new Date(Date.UTC(2026, 6, 12, 23, 30));
