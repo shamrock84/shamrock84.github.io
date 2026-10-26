@@ -10397,14 +10397,10 @@
 			if (liveScoringPollingEnabled) refreshLiveScoring();
 		}
 
-		// Per-matchup collapse state, stored as an override of the default
-		// (mondaySettledWinProb): absence follows the live win probability, so
-		// a matchup that swings back into the 20-80 band reopens by itself
-		// unless the reader chose otherwise.
+		// Per-matchup collapse state, stored as an override of the default:
+		// every matchup starts collapsed, whatever its win probability, and
+		// only a matchup the reader opened is remembered (as '0').
 		const MONDAY_MATCHUP_NS = 'myfflMondayMatchupCollapsed';
-		function mondaySettledWinProb(winProb) {
-			return winProb != null && (winProb > 80 || winProb < 20);
-		}
 
 		function mondayIsBestBall(league) {
 			return Array.isArray(league.tags) && league.tags.includes('BestBall');
@@ -10626,14 +10622,12 @@
 			const wrap = el('div', { class: 'monday-matchups' });
 			for (const e of entries) {
 				const box = el('div', { class: 'monday-matchup' });
-				// Collapsed by default once the result is nearly settled (above
-				// 80% or below 20%); the reader's own toggle beats that default
+				// Always collapsed by default; the reader's own toggle beats that
 				// and is stored, since every poll rebuilds the card. Collapsing
 				// hides the player rows only: the summary, minutes left and win
-				// percentage stay. No win probability means no basis to collapse.
+				// percentage stay.
 				const key = `${cardId}:${matchupDetailKey(e.league, [e.mine, e.opp])}`;
-				const settled = mondaySettledWinProb(e.mine.winProb);
-				const collapsed = isCardCollapsed(key, MONDAY_MATCHUP_NS, settled);
+				const collapsed = isCardCollapsed(key, MONDAY_MATCHUP_NS, true);
 				const head = el('button', { type: 'button', class: 'monday-matchup-head', 'aria-expanded': String(!collapsed) });
 				const chevron = el('span', { class: 'monday-matchup-chevron', 'aria-hidden': 'true', text: '▾' });
 				head.appendChild(chevron);
@@ -10680,7 +10674,7 @@
 					teamsBody.hidden = next;
 					box.classList.toggle('monday-matchup-collapsed', next);
 					head.setAttribute('aria-expanded', String(!next));
-					setCardCollapsed(key, next, MONDAY_MATCHUP_NS, settled);
+					setCardCollapsed(key, next, MONDAY_MATCHUP_NS, true);
 				});
 				wrap.appendChild(box);
 			}
