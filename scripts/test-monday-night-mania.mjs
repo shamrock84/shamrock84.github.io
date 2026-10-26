@@ -273,10 +273,10 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	assert.match(text, /Already won: L1/);
 	assert.match(text, /Already lost: L2/);
 	assert.doesNotMatch(text, /L3/);
-	// With live matchups too, the summary still closes the card.
+	// With live matchups too, the summary sits above them, won before lost.
 	const live = lg('4', '98.40', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], []);
 	const card = ctx.renderMondayNightManiaCard([live, won, lost], MONDAY);
-	assert.match(fullText(card), /score 11\.61 to win[\s\S]*Already won: L1[\s\S]*Already lost: L2/);
+	assert.match(fullText(card), /Already won: L1[\s\S]*Already lost: L2[\s\S]*score 11\.61 to win/);
 }
 
 {

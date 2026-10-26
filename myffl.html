@@ -2162,7 +2162,7 @@
 			font-weight: 700;
 		}
 		.monday-decided {
-			margin-top: 0.75rem;
+			margin-bottom: 0.75rem;
 			font-size: 0.85rem;
 		}
 		.monday-empty {
@@ -10348,7 +10348,7 @@
 		//
 		// Decided matchups are not just dropped: a lead the opponent can no
 		// longer touch is "already won" and a deficit I can no longer close is
-		// "already lost", listed by nickname in the summary at the bottom.
+		// "already lost", listed by nickname in the summary at the top.
 		function mondayCardIsActive(now = new Date()) {
 			return now.getDay() === 1 && nflInSeason(now);
 		}
@@ -10549,15 +10549,17 @@
 
 			const { live: entries, won, lost } = computeMondayNightMania(leagues, liveGames);
 			makeCollapsible(card, heading, cardId, entries.length === 0);
-			// Last element of the card, visible even collapsed (an empty card
-			// collapses itself, and this is then the only thing worth reading).
+			// Sits right under the subtitle, above the matchups still in play,
+			// and stays visible collapsed (an empty card collapses itself, and
+			// this is then the only thing worth reading). Won is green and
+			// lost is red, like a finished matchup on the Scoring tab.
 			const appendDecided = () => {
 				const names = (list) => list.map(quickLinkLabelForLeague).join(', ');
 				if (won.length === 0 && lost.length === 0) return;
 				const box = el('div', { class: 'monday-decided card-collapse-visible' });
 				if (won.length > 0) {
 					const line = el('div');
-					line.appendChild(el('strong', { text: 'Already won: ' }));
+					line.appendChild(el('strong', { class: 'monday-leading', text: 'Already won: ' }));
 					line.appendChild(document.createTextNode(names(won)));
 					box.appendChild(line);
 				}
@@ -10578,6 +10580,7 @@
 				class: 'team card-collapse-visible',
 				text: `${entries.length} matchup${entries.length === 1 ? '' : 's'} still in play`,
 			}));
+			appendDecided();
 
 			const playerLine = (p) => {
 				const line = el('div');
@@ -10682,7 +10685,6 @@
 				wrap.appendChild(box);
 			}
 			card.appendChild(wrap);
-			appendDecided();
 			return card;
 		}
 
