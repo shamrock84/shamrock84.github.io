@@ -10464,6 +10464,16 @@
 		// not the starter's score. Only the side that has to gain gets a
 		// number; the other side's players just say they must outscore one.
 
+		// "T. Bigsby", "A and B", "A, B and C", "A, B, C and 2 more": the
+		// players a matchup summary names. Capped so a deep bench stays a line.
+		function mondayNameList(players, max = 3) {
+			const names = players.map((p) => abbreviatePlayerName(p.name, p.position) || `#${p.id || '?'}`);
+			if (names.length <= 1) return names[0] || '';
+			if (names.length <= max) return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+			const rest = names.length - max;
+			return `${names.slice(0, max).join(', ')} and ${rest} more`;
+		}
+
 		// Smallest score, in hundredths, that strictly beats `gap` points.
 		function mondayPointsToPass(gap) {
 			return (Math.floor(gap * 100 + 1e-6) + 1) / 100;
@@ -10640,25 +10650,36 @@
 				// gap plus 0.01 (a score equal to the gap only ties). `needed`,
 				// `oppNeeded` and `oppMustLose` already carry that figure.
 				const gap = Math.abs(e.margin).toFixed(2);
-				const multi = (list) => (list.length > 1 ? ' combined' : '');
 				const downLabel = () => el('span', { class: 'monday-trailing', text: e.margin === 0 ? 'Tied' : `Down ${gap}` });
 				const upLabel = () => el('span', { class: 'monday-leading', text: `Up ${gap}` });
+				// The summary is a sentence naming who has to do what: "opponent's
+				// T. Bigsby must score 93.29 for you to lose". The target is the
+				// gap as it stands, so when the OTHER side still has players who
+				// can add points it is that much MORE than they score ("20.60
+				// more than your S. Barkley"), which is exactly what it means.
+				// Several players on the scoring side "combine for" the figure.
+				const mineNames = e.myLeft.length > 0 ? `your ${mondayNameList(e.myLeft)}` : '';
+				const theirNames = e.oppLeft.length > 0 ? `opponent's ${mondayNameList(e.oppLeft)}` : '';
+				const mustScore = (who, count, what, versus) => {
+					const verb = count > 1 ? `must combine for ${what}` : `must score ${what}`;
+					return `${who} ${verb}${versus ? ` more than ${versus}` : ''}`;
+				};
 				if (e.needed != null) {
 					summary.appendChild(downLabel());
-					summary.appendChild(document.createTextNode(` — score ${e.needed.toFixed(2)}${multi(e.myLeft)} to win`));
+					summary.appendChild(document.createTextNode(` — ${mustScore(mineNames, e.myLeft.length, e.needed.toFixed(2), theirNames)} for you to win`));
 				} else if (e.oppMustLose != null) {
 					summary.appendChild(downLabel());
-					summary.appendChild(document.createTextNode(` — you are done; opponent must score −${e.oppMustLose.toFixed(2)} or lower${multi(e.oppLeft)} for you to win`));
+					summary.appendChild(document.createTextNode(` — ${mustScore(theirNames, e.oppLeft.length, `−${e.oppMustLose.toFixed(2)} or lower`, '')} for you to win`));
 				} else if (e.oppNeeded != null) {
 					summary.appendChild(upLabel());
-					summary.appendChild(document.createTextNode(` — opponent must score ${e.oppNeeded.toFixed(2)}${multi(e.oppLeft)} to win`));
+					summary.appendChild(document.createTextNode(` — ${mustScore(theirNames, e.oppLeft.length, e.oppNeeded.toFixed(2), mineNames)} for you to lose`));
 				} else {
-					// Lowest total that still holds the lead: myRisk is the first
-					// negative that loses it, so the floor is two hundredths above.
-					const floor = (Math.round(e.myRisk * 100) - 2) / 100;
-					const floorText = floor === 0 ? '0.00' : `−${floor.toFixed(2)} or better`;
+					// Ahead with the opponent done: the framing is what it takes for
+					// me to LOSE, so the figure is myRisk itself — the first
+					// negative total that gives the lead away, mirroring how
+					// oppMustLose is stated for a win.
 					summary.appendChild(upLabel());
-					summary.appendChild(document.createTextNode(` — opponent is done; score ${floorText}${multi(e.myLeft)} to win`));
+					summary.appendChild(document.createTextNode(` — ${mustScore(mineNames, e.myLeft.length, `−${e.myRisk.toFixed(2)} or lower`, '')} for you to lose`));
 				}
 				const meta = scoringMetaLine(e.mine);
 				if (meta) summary.appendChild(el('div', { class: 'scoring-matchup-meta', text: meta }));
