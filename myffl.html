@@ -14393,6 +14393,8 @@
 			// renderGrid (see rerenderNflCards' exclusion of it).
 			let view = readNflStandingsView();
 			let body = renderNflStandingsBody(standings, view);
+			// Set below once the collapsed summary exists (only with favorites).
+			let refreshSummary = () => {};
 			const bar = el('div', { class: 'subtabs-bar nfl-standings-toggle' });
 			const buttonsEl = el('div', { class: 'tabs subtabs', role: 'group', 'aria-label': 'Standings grouping' });
 			const buttons = NFL_STANDINGS_VIEWS.map(([key, label]) => {
@@ -14410,6 +14412,7 @@
 					const next = renderNflStandingsBody(standings, view);
 					body.replaceWith(next);
 					body = next;
+					refreshSummary();
 				});
 				buttonsEl.appendChild(btn);
 				return btn;
@@ -14417,17 +14420,30 @@
 			bar.appendChild(buttonsEl);
 			card.appendChild(bar);
 			card.appendChild(body);
-			// Collapsed view: just the favorite teams, in the division order
-			// ESPN's own standings use, whichever grouping is open.
+			// Collapsed view: the boxes holding a favorite team, in whichever
+			// grouping is pressed (the favorite's division, or its
+			// conference), so the toggle still does something on a collapsed
+			// card. With no favorites there is nothing to show collapsed, so
+			// the toggle stays hidden with the body.
 			const favs = favoriteNflTeams();
-			if (favs.size > 0) {
-				const favTeams = [...buildNflStandingsByDivision(standings).values()].flat().filter((t) => favs.has(favoriteTeamKey(t.abbr)));
-				if (favTeams.length > 0) {
-					const showDiv = favTeams.some((t) => t.div);
-					const summary = el('div', { class: 'nfl-standings nfl-fav-collapsed card-collapse-visible' });
-					summary.appendChild(renderNflStandingsBox('Favorites', favTeams, showDiv, false, 'favorites', favs));
-					card.appendChild(summary);
-				}
+			const favoriteGroups = (v) => buildNflStandingsGroups(standings, v)
+				.filter(([, teams]) => teams.some((t) => favs.has(favoriteTeamKey(t.abbr))));
+			if (favs.size > 0 && favoriteGroups(view).length > 0) {
+				bar.classList.add('card-collapse-visible');
+				let summary = null;
+				const renderSummary = () => {
+					const next = el('div', { class: 'nfl-standings nfl-fav-collapsed card-collapse-visible' });
+					const groups = favoriteGroups(view);
+					const showDiv = groups.some(([, teams]) => teams.some((t) => t.div));
+					for (const [label, teams] of groups) {
+						next.appendChild(renderNflStandingsBox(label, teams, showDiv, view === 'conference', `favorites-${view}`, favs));
+					}
+					if (summary) summary.replaceWith(next);
+					else card.appendChild(next);
+					summary = next;
+				};
+				renderSummary();
+				refreshSummary = renderSummary;
 			}
 			return card;
 		}
