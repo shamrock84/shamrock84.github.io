@@ -18,6 +18,10 @@
 //   * each box collapses on its banner (makeGroupCollapsible), remembered
 //     per view, so a division collapsed in one view doesn't collapse the
 //     conference box in the other; no "as of" line on the card.
+//   * with favorites, the League/Division-style toggle stays visible on a
+//     collapsed card (card-collapse-visible) and drives the collapsed
+//     summary: the favorite's division box, or its conference box ranked.
+//     With none, the toggle is hidden with the body.
 //   * no `nflStandings` on the snapshot means no card at all.
 //   * rerenderNflCards' removal query excludes the card — a poll must not
 //     delete it, since nothing on the poll path rebuilds it (the same bug
@@ -220,6 +224,51 @@ const text = (n) => (n._text || '') + (n.children || []).map(text).join('');
 	const divBoxes = findAll(again, (n) => n.cls.split(/\s+/).includes('nfl-standings-division'));
 	assert.ok(!divBoxes.some((b) => b.classList.contains('roster-group-collapsed')), 'collapsing AFC in Conference view collapses nothing in Division view');
 	assert.ok(!text(again).includes('As of'), 'no last-sync line on the card');
+	store.clear();
+}
+
+// --- Collapsed card: toggle stays, summary follows it ------------------------
+
+{
+	const standings = {
+		teams: {
+			KC: { w: 3, l: 0, t: 0, seed: 1, order: 0 },
+			LV: { w: 1, l: 2, t: 0, seed: 5, order: 1 },
+			DAL: { w: 3, l: 0, t: 0, seed: 1, order: 2 },
+		},
+	};
+	const hasCls = (n, c) => n.cls.split(/\s+/).includes(c);
+	const summaryOf = (card) => findAll(card, (n) => hasCls(n, 'nfl-fav-collapsed'));
+	const boxesIn = (root) => findAll(root, (n) => hasCls(n, 'nfl-standings-division'));
+
+	// No favorites: nothing to show collapsed, so the toggle is not exempted.
+	store.clear();
+	let card = ctx.renderNflStandingsCard(standings);
+	const bar = findAll(card, (n) => hasCls(n, 'nfl-standings-toggle'))[0];
+	assert.ok(!hasCls(bar, 'card-collapse-visible'));
+	assert.equal(summaryOf(card).length, 0);
+
+	// Favorite KC: toggle exempted from the collapse; Division summary is
+	// AFC West only (KC and LV), no DAL.
+	vm.runInContext("authToken = 'x'", ctx);
+	store.set('myfflFavorites', JSON.stringify({ nflTeams: ['KC'] }));
+	card = ctx.renderNflStandingsCard(standings);
+	const bar2 = findAll(card, (n) => hasCls(n, 'nfl-standings-toggle'))[0];
+	assert.ok(hasCls(bar2, 'card-collapse-visible'), 'toggle stays usable on a collapsed card');
+	let summary = summaryOf(card);
+	assert.equal(summary.length, 1);
+	assert.ok(hasCls(summary[0], 'card-collapse-visible'));
+	assert.deepEqual(boxesIn(summary[0]).map((b) => text(b).includes('AFC West')), [true]);
+	assert.ok(!text(summary[0]).includes('DAL'));
+
+	// Conference: summary swaps to the AFC box, ranked; still one summary node.
+	findAll(card, (n) => n.dataset?.standingsView === 'conference')[0].listeners.click[0]();
+	summary = summaryOf(card);
+	assert.equal(summary.length, 1, 'the summary is replaced, not duplicated');
+	assert.deepEqual(boxesIn(summary[0]).map((b) => text(b).includes('AFC')), [true]);
+	assert.equal(findAll(summary[0], (n) => n.cls === 'nfl-standings-rank').length, 2);
+	assert.ok(!text(summary[0]).includes('DAL'));
+	vm.runInContext("authToken = ''", ctx);
 	store.clear();
 }
 

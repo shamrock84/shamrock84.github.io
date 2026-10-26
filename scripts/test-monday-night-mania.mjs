@@ -273,10 +273,10 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	assert.match(text, /Already won: L1/);
 	assert.match(text, /Already lost: L2/);
 	assert.doesNotMatch(text, /L3/);
-	// With live matchups too, the summary still closes the card.
+	// With live matchups too, the summary sits above them, won before lost.
 	const live = lg('4', '98.40', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], []);
 	const card = ctx.renderMondayNightManiaCard([live, won, lost], MONDAY);
-	assert.match(fullText(card), /score 11\.61 to win[\s\S]*Already won: L1[\s\S]*Already lost: L2/);
+	assert.match(fullText(card), /Already won: L1[\s\S]*Already lost: L2[\s\S]*score 11\.61 to win/);
 }
 
 {
@@ -432,9 +432,9 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 }
 
 {
-	// Per-matchup collapse: above 80% / below 20% starts collapsed, the band
-	// between (and no probability) starts open; a click flips it and is
-	// remembered; the summary with minutes left and win % stays either way.
+	// Per-matchup collapse: every matchup starts collapsed whatever its win
+	// probability (or none); a click opens it and is remembered; the summary
+	// with minutes left and win % stays either way.
 	const mk = (id, prob) => {
 		const l = lg(id, '90.00', '100.00', [pl('a', 'Tyreek Hill', 'MIA', null)], []);
 		l.scoring.teams[0].winProb = prob;
@@ -448,7 +448,7 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	const boxes = findAll(card, (n) => n.cls.split(/\s+/).includes('monday-matchup'));
 	const bodyOf = (b) => b.children.find((c) => c.cls.split(/\s+/).includes('monday-matchup-body'));
 	// Rendered likeliest first: 81, 80, 20, 19, none.
-	assert.deepEqual(plain(boxes.map((b) => bodyOf(b).hidden)), [true, false, false, true, false]);
+	assert.deepEqual(plain(boxes.map((b) => bodyOf(b).hidden)), [true, true, true, true, true]);
 	// Collapsed still shows the summary: the gap, minutes left, win %.
 	assert.match(fullText(boxes[0]), /Down 10\.00[\s\S]*42 min left · Win 81%/);
 	// Clicking a collapsed head opens it and the choice survives a rebuild.
@@ -456,10 +456,10 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	head.listeners.click[0]();
 	assert.equal(bodyOf(boxes[0]).hidden, false);
 	const again = findAll(ctx.renderMondayNightManiaCard(leagues, MONDAY), (n) => n.cls.split(/\s+/).includes('monday-matchup'));
-	assert.deepEqual(plain(again.map((b) => bodyOf(b).hidden)), [false, false, false, true, false]);
+	assert.deepEqual(plain(again.map((b) => bodyOf(b).hidden)), [false, true, true, true, true]);
 	// And an open matchup can be collapsed by hand.
-	again[1].children[0].listeners.click[0]();
-	assert.equal(bodyOf(again[1]).hidden, true);
+	again[0].children[0].listeners.click[0]();
+	assert.equal(bodyOf(again[0]).hidden, true);
 }
 
 {

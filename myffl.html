@@ -2162,7 +2162,7 @@
 			font-weight: 700;
 		}
 		.monday-decided {
-			margin-top: 0.75rem;
+			margin-bottom: 0.75rem;
 			font-size: 0.85rem;
 		}
 		.monday-empty {
@@ -10348,7 +10348,7 @@
 		//
 		// Decided matchups are not just dropped: a lead the opponent can no
 		// longer touch is "already won" and a deficit I can no longer close is
-		// "already lost", listed by nickname in the summary at the bottom.
+		// "already lost", listed by nickname in the summary at the top.
 		function mondayCardIsActive(now = new Date()) {
 			return now.getDay() === 1 && nflInSeason(now);
 		}
@@ -10397,14 +10397,10 @@
 			if (liveScoringPollingEnabled) refreshLiveScoring();
 		}
 
-		// Per-matchup collapse state, stored as an override of the default
-		// (mondaySettledWinProb): absence follows the live win probability, so
-		// a matchup that swings back into the 20-80 band reopens by itself
-		// unless the reader chose otherwise.
+		// Per-matchup collapse state, stored as an override of the default:
+		// every matchup starts collapsed, whatever its win probability, and
+		// only a matchup the reader opened is remembered (as '0').
 		const MONDAY_MATCHUP_NS = 'myfflMondayMatchupCollapsed';
-		function mondaySettledWinProb(winProb) {
-			return winProb != null && (winProb > 80 || winProb < 20);
-		}
 
 		function mondayIsBestBall(league) {
 			return Array.isArray(league.tags) && league.tags.includes('BestBall');
@@ -10549,15 +10545,17 @@
 
 			const { live: entries, won, lost } = computeMondayNightMania(leagues, liveGames);
 			makeCollapsible(card, heading, cardId, entries.length === 0);
-			// Last element of the card, visible even collapsed (an empty card
-			// collapses itself, and this is then the only thing worth reading).
+			// Sits right under the subtitle, above the matchups still in play,
+			// and stays visible collapsed (an empty card collapses itself, and
+			// this is then the only thing worth reading). Won is green and
+			// lost is red, like a finished matchup on the Scoring tab.
 			const appendDecided = () => {
 				const names = (list) => list.map(quickLinkLabelForLeague).join(', ');
 				if (won.length === 0 && lost.length === 0) return;
 				const box = el('div', { class: 'monday-decided card-collapse-visible' });
 				if (won.length > 0) {
 					const line = el('div');
-					line.appendChild(el('strong', { text: 'Already won: ' }));
+					line.appendChild(el('strong', { class: 'monday-leading', text: 'Already won: ' }));
 					line.appendChild(document.createTextNode(names(won)));
 					box.appendChild(line);
 				}
@@ -10578,6 +10576,7 @@
 				class: 'team card-collapse-visible',
 				text: `${entries.length} matchup${entries.length === 1 ? '' : 's'} still in play`,
 			}));
+			appendDecided();
 
 			const playerLine = (p) => {
 				const line = el('div');
@@ -10623,14 +10622,12 @@
 			const wrap = el('div', { class: 'monday-matchups' });
 			for (const e of entries) {
 				const box = el('div', { class: 'monday-matchup' });
-				// Collapsed by default once the result is nearly settled (above
-				// 80% or below 20%); the reader's own toggle beats that default
+				// Always collapsed by default; the reader's own toggle beats that
 				// and is stored, since every poll rebuilds the card. Collapsing
 				// hides the player rows only: the summary, minutes left and win
-				// percentage stay. No win probability means no basis to collapse.
+				// percentage stay.
 				const key = `${cardId}:${matchupDetailKey(e.league, [e.mine, e.opp])}`;
-				const settled = mondaySettledWinProb(e.mine.winProb);
-				const collapsed = isCardCollapsed(key, MONDAY_MATCHUP_NS, settled);
+				const collapsed = isCardCollapsed(key, MONDAY_MATCHUP_NS, true);
 				const head = el('button', { type: 'button', class: 'monday-matchup-head', 'aria-expanded': String(!collapsed) });
 				const chevron = el('span', { class: 'monday-matchup-chevron', 'aria-hidden': 'true', text: '▾' });
 				head.appendChild(chevron);
@@ -10677,12 +10674,11 @@
 					teamsBody.hidden = next;
 					box.classList.toggle('monday-matchup-collapsed', next);
 					head.setAttribute('aria-expanded', String(!next));
-					setCardCollapsed(key, next, MONDAY_MATCHUP_NS, settled);
+					setCardCollapsed(key, next, MONDAY_MATCHUP_NS, true);
 				});
 				wrap.appendChild(box);
 			}
 			card.appendChild(wrap);
-			appendDecided();
 			return card;
 		}
 
@@ -14393,6 +14389,8 @@
 			// renderGrid (see rerenderNflCards' exclusion of it).
 			let view = readNflStandingsView();
 			let body = renderNflStandingsBody(standings, view);
+			// Set below once the collapsed summary exists (only with favorites).
+			let refreshSummary = () => {};
 			const bar = el('div', { class: 'subtabs-bar nfl-standings-toggle' });
 			const buttonsEl = el('div', { class: 'tabs subtabs', role: 'group', 'aria-label': 'Standings grouping' });
 			const buttons = NFL_STANDINGS_VIEWS.map(([key, label]) => {
@@ -14410,6 +14408,7 @@
 					const next = renderNflStandingsBody(standings, view);
 					body.replaceWith(next);
 					body = next;
+					refreshSummary();
 				});
 				buttonsEl.appendChild(btn);
 				return btn;
@@ -14417,17 +14416,30 @@
 			bar.appendChild(buttonsEl);
 			card.appendChild(bar);
 			card.appendChild(body);
-			// Collapsed view: just the favorite teams, in the division order
-			// ESPN's own standings use, whichever grouping is open.
+			// Collapsed view: the boxes holding a favorite team, in whichever
+			// grouping is pressed (the favorite's division, or its
+			// conference), so the toggle still does something on a collapsed
+			// card. With no favorites there is nothing to show collapsed, so
+			// the toggle stays hidden with the body.
 			const favs = favoriteNflTeams();
-			if (favs.size > 0) {
-				const favTeams = [...buildNflStandingsByDivision(standings).values()].flat().filter((t) => favs.has(favoriteTeamKey(t.abbr)));
-				if (favTeams.length > 0) {
-					const showDiv = favTeams.some((t) => t.div);
-					const summary = el('div', { class: 'nfl-standings nfl-fav-collapsed card-collapse-visible' });
-					summary.appendChild(renderNflStandingsBox('Favorites', favTeams, showDiv, false, 'favorites', favs));
-					card.appendChild(summary);
-				}
+			const favoriteGroups = (v) => buildNflStandingsGroups(standings, v)
+				.filter(([, teams]) => teams.some((t) => favs.has(favoriteTeamKey(t.abbr))));
+			if (favs.size > 0 && favoriteGroups(view).length > 0) {
+				bar.classList.add('card-collapse-visible');
+				let summary = null;
+				const renderSummary = () => {
+					const next = el('div', { class: 'nfl-standings nfl-fav-collapsed card-collapse-visible' });
+					const groups = favoriteGroups(view);
+					const showDiv = groups.some(([, teams]) => teams.some((t) => t.div));
+					for (const [label, teams] of groups) {
+						next.appendChild(renderNflStandingsBox(label, teams, showDiv, view === 'conference', `favorites-${view}`, favs));
+					}
+					if (summary) summary.replaceWith(next);
+					else card.appendChild(next);
+					summary = next;
+				};
+				renderSummary();
+				refreshSummary = renderSummary;
 			}
 			return card;
 		}
