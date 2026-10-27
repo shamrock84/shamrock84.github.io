@@ -18260,39 +18260,52 @@
 			return card;
 		}
 
-		// Admin → Problems Digest: the rows the manager has dismissed, each with a
-		// Restore button. Built from the live digest rather than from the saved
-		// map, since a saved dismissal carries only a key, and a dismissal whose
-		// problem has cleared is deleted anyway.
+		// Admin → Problems Digest: every row the digest currently raises, split
+		// into collapsible Active and Dismissed sections like the Tasks card's
+		// categories. Built from the live digest rather than from the saved map,
+		// since a saved dismissal carries only a key, and a dismissal whose
+		// problem has cleared is deleted anyway. Whether each section is open
+		// lives in a variable because a dismiss or restore rebuilds the card.
+		const digestSectionOpen = { active: true, dismissed: false };
 		function renderDigestDismissalsCard() {
 			const card = el('div', { class: 'card admin-digest-card', 'data-view': 'admin', 'data-league-type': '' });
-			const dismissed = pageData ? digestRowsWithDismissals(pageData.leagues, pageData.year).rows.filter((r) => r.dismissed) : [];
-			const heading = el('h2', { class: 'card-heading', text: `Problems Digest (${dismissed.length})` });
+			const all = pageData ? digestRowsWithDismissals(pageData.leagues, pageData.year).rows : [];
+			const active = all.filter((r) => !r.dismissed);
+			const dismissed = all.filter((r) => r.dismissed);
+			const heading = el('h2', { class: 'card-heading', text: `Problems Digest (${active.length})` });
 			card.appendChild(heading);
 			makeCollapsible(card, heading, 'admin-digest');
-			if (dismissed.length === 0) {
-				card.appendChild(el('div', { class: 'team', text: 'No dismissed alerts. Use Dismiss on a Problems Digest row to hide it; it is listed here to restore, and a dismissal ends by itself once the problem clears.' }));
-				return card;
-			}
-			for (const { league, problem, key } of dismissed) {
-				const row = el('div', { class: 'digest-row digest-dismissed-row' });
-				row.appendChild(el('span', { class: 'digest-league', title: leagueDisplayName(league), text: quickLinkLabelForLeague(league) }));
-				const labelEl = el('span', { class: 'digest-label' });
-				if (problem.player) {
-					labelEl.appendChild(el('span', { class: 'digest-player', text: problem.player.name }));
-					labelEl.appendChild(document.createTextNode(' '));
+
+			const section = (key, label, rows, actionLabel, onAction) => {
+				const details = el('details', { class: 'planning-task-section' });
+				if (digestSectionOpen[key]) details.setAttribute('open', 'true');
+				details.addEventListener('toggle', () => { digestSectionOpen[key] = details.open; });
+				details.appendChild(el('summary', { text: `${label} (${rows.length})` }));
+				if (rows.length === 0) details.appendChild(el('div', { class: 'planning-empty', text: key === 'active' ? 'Nothing needs attention.' : 'Nothing dismissed.' }));
+				for (const { league, problem, key: rowKey } of rows) {
+					const row = el('div', { class: 'digest-row digest-admin-row' });
+					row.appendChild(el('span', { class: 'digest-league', title: leagueDisplayName(league), text: quickLinkLabelForLeague(league) }));
+					const labelEl = el('span', { class: 'digest-label' });
+					if (problem.player) {
+						labelEl.appendChild(el('span', { class: 'digest-player', text: problem.player.name }));
+						labelEl.appendChild(document.createTextNode(' '));
+					}
+					labelEl.appendChild(document.createTextNode(problem.label));
+					row.appendChild(labelEl);
+					const btn = el('button', { type: 'button', class: 'admin-add-btn', text: actionLabel });
+					btn.addEventListener('click', () => onAction(league, rowKey));
+					row.appendChild(btn);
+					details.appendChild(row);
 				}
-				labelEl.appendChild(document.createTextNode(problem.label));
-				row.appendChild(labelEl);
-				const restore = el('button', { type: 'button', class: 'admin-add-btn', text: 'Restore' });
-				restore.addEventListener('click', () => {
-					setDigestDismissal(league.id, key, false);
-					renderProblemsDigest();
-					refreshDigestDismissalsCard();
-				});
-				row.appendChild(restore);
-				card.appendChild(row);
-			}
+				return details;
+			};
+			const change = (on) => (league, rowKey) => {
+				setDigestDismissal(league.id, rowKey, on);
+				renderProblemsDigest();
+				refreshDigestDismissalsCard();
+			};
+			card.appendChild(section('active', 'Active', active, 'Dismiss', change(true)));
+			card.appendChild(section('dismissed', 'Dismissed', dismissed, 'Restore', change(false)));
 			return card;
 		}
 
