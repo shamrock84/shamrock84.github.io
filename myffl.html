@@ -1126,12 +1126,14 @@
 		.digest-dismiss {
 			flex: none;
 			margin-left: auto;
-			padding: 0 0.4rem;
+			padding: 0.1rem 0.5rem;
 			color: var(--muted);
-			font-size: 1rem;
-			line-height: 1;
+			font-size: 0.75rem;
+			line-height: 1.2;
+			border: 1px solid var(--border);
+			border-radius: 999px;
 		}
-		.digest-dismiss:hover { color: var(--text); }
+		.digest-dismiss:hover { color: var(--text); border-color: var(--muted); }
 		.digest-text-short { display: none; }
 		@media (max-width: 480px) {
 			.digest-text-full { display: none; }
@@ -11670,7 +11672,7 @@
 					}
 					row.appendChild(labelEl);
 					if (isLoggedIn()) {
-						const dismiss = el('span', { class: 'digest-dismiss', role: 'button', tabindex: '0', title: 'Dismiss this alert (restore it from Admin → Problems Digest)', 'aria-label': 'Dismiss this alert', text: '×' });
+						const dismiss = el('span', { class: 'digest-dismiss', role: 'button', tabindex: '0', title: 'Dismiss this alert (restore it from Admin → Problems Digest)', 'aria-label': 'Dismiss this alert', text: 'Dismiss' });
 						const doDismiss = (e) => {
 							e.stopPropagation();
 							e.preventDefault();
@@ -18269,7 +18271,7 @@
 			card.appendChild(heading);
 			makeCollapsible(card, heading, 'admin-digest');
 			if (dismissed.length === 0) {
-				card.appendChild(el('div', { class: 'team', text: 'No dismissed alerts. Use × on a Problems Digest row to hide it; it is listed here to restore, and a dismissal ends by itself once the problem clears.' }));
+				card.appendChild(el('div', { class: 'team', text: 'No dismissed alerts. Use Dismiss on a Problems Digest row to hide it; it is listed here to restore, and a dismissal ends by itself once the problem clears.' }));
 				return card;
 			}
 			for (const { league, problem, key } of dismissed) {
