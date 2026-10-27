@@ -432,6 +432,39 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 }
 
 {
+	// Sunday Night Simmer is the same card, so everything above must hold
+	// there too: sentences naming players, decided leagues above the
+	// matchups (won green, lost red), and every matchup starting collapsed.
+	const SUN = new Date(Date.UTC(2026, 9, 11, 23, 30)); // Sun 6:30 PM CT
+	const ctx = makeContext(LOGGED_IN);
+	setState(ctx, games);
+	const iron = lg('1', '93.28', '0.00', [], [pl('c', 'Tyreek Bigsby', 'NYJ', 0)]);
+	const gameOn = lg('2', '100.00', '79.41', [pl('a', 'Saquon Barkley', 'MIA', 0), pl('b', 'Jake Ferguson', 'NYJ', 0)], [pl('c', 'CeeDee Lamb', 'NYJ', 0)]);
+	const lincoln = lg('3', '72.82', '100.00', [pl('a', 'CeeDee Lamb', 'NYJ', 0)], []);
+	const wise = lg('4', '89.09', '100.00', [], [pl('c', 'Marvin Brown', 'NYJ', 0)]);
+	const won = lg('5', '120.00', '110.00', [], [pl('c', 'Opp Guy', 'KC', 5)]);
+	won.scoring.teams[0].winProb = 100;
+	const lost = lg('6', '90.00', '110.00', [pl('b', 'Done Guy', 'KC', 20)], []);
+	lost.scoring.teams[0].winProb = 0;
+	const card = ctx.renderMondayNightManiaCard([iron, gameOn, lincoln, wise, won, lost], SUN);
+	assert.equal(card.id ?? card.attrs.id, 'sunday-night');
+	const text = fullText(card);
+	assert.match(text, /Sunday Night Simmer/);
+	assert.match(text, /opponent's T\. Bigsby must score 93\.29 for you to lose/);
+	assert.match(text, /opponent's C\. Lamb must score 20\.60 more than your S\. Barkley and J\. Ferguson for you to lose/);
+	assert.match(text, /your C\. Lamb must score 27\.19 for you to win/);
+	assert.match(text, /opponent's M\. Brown must score −10\.92 or lower for you to win/);
+	assert.doesNotMatch(text, /you are done/);
+	assert.ok(text.indexOf('Already won') < text.indexOf('Up 93.28'), 'decided leagues sit above the matchups');
+	const cls = (c) => findAll(card, (n) => n.cls.split(/\s+/).includes(c)).map(fullText);
+	assert.ok(cls('monday-leading').includes('Already won: '));
+	assert.ok(cls('monday-trailing').includes('Already lost: '));
+	const bodies = findAll(card, (n) => n.cls.split(/\s+/).includes('monday-matchup-body'));
+	assert.equal(bodies.length, 4);
+	assert.ok(bodies.every((b) => b.hidden === true), 'every matchup starts collapsed');
+}
+
+{
 	// Sunday Night Simmer: same card from 6:30 PM Central Sunday, absent before.
 	// Instants are UTC so the test doesn't depend on the runner's zone
 	// (CDT = UTC-5 in October).
