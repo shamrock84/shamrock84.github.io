@@ -2127,6 +2127,16 @@
 		.monday-matchup-chevron {
 			display: inline-block;
 			transition: transform 0.15s;
+			border: 0;
+			background: none;
+			color: inherit;
+			font: inherit;
+			padding: 0;
+			cursor: pointer;
+		}
+		.monday-matchup-link {
+			color: inherit;
+			text-decoration: underline;
 		}
 		.monday-matchup-collapsed .monday-matchup-chevron {
 			transform: rotate(-90deg);
@@ -8409,7 +8419,8 @@
 		}
 
 		function renderScoringCard(league) {
-			const card = el('div', { class: 'card', 'data-view': 'scoring', 'data-league-type': subtabType(league) || '' });
+			// data-league-id is how the Sunday/Monday Night cards link here.
+			const card = el('div', { class: 'card', 'data-view': 'scoring', 'data-league-type': subtabType(league) || '', 'data-league-id': league.id });
 			card.appendChild(buildCardHead(card, league, formatBadgeLabels(league)));
 
 			const teams = league.scoring?.teams || [];
@@ -10643,10 +10654,32 @@
 				// percentage stay.
 				const key = `${cardId}:${matchupDetailKey(e.league, [e.mine, e.opp])}`;
 				const collapsed = isCardCollapsed(key, MONDAY_MATCHUP_NS, true);
-				const head = el('button', { type: 'button', class: 'monday-matchup-head', 'aria-expanded': String(!collapsed) });
-				const chevron = el('span', { class: 'monday-matchup-chevron', 'aria-hidden': 'true', text: '▾' });
+				// A div, not a button: the league name inside is a link down to
+				// that league's Scoring card, and a link can't nest in a button.
+				// The chevron button keeps the keyboard toggle; a click anywhere
+				// else on the bar toggles too, except on the link.
+				const head = el('div', { class: 'monday-matchup-head' });
+				const chevron = el('button', { type: 'button', class: 'monday-matchup-chevron', 'aria-expanded': String(!collapsed), 'aria-label': 'Show players', text: '▾' });
 				head.appendChild(chevron);
-				head.appendChild(document.createTextNode(leagueDisplayName(e.league)));
+				const nameLink = el('a', { class: 'monday-matchup-link', href: '#', text: leagueDisplayName(e.league) });
+				nameLink.addEventListener('click', (ev) => {
+					ev.preventDefault();
+					ev.stopPropagation();
+					// If the league's pill is unchecked its card is hidden, so check
+					// it first (adding to the selection, never replacing it) and
+					// repaint the pills and visibility the way a pill click does.
+					const group = subtabType(e.league);
+					const selected = selectedLeagueTypesByView.scoring;
+					if (group && selected && !selected.has(group)) {
+						selected.add(group);
+						saveSelectedLeagueTypes();
+						renderSubTabs();
+						updateVisibility();
+					}
+					const target = document.querySelector(`.card[data-view="scoring"][data-league-id="${e.league.id}"]`);
+					if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+				});
+				head.appendChild(nameLink);
 				box.appendChild(head);
 				if (collapsed) box.classList.add('monday-matchup-collapsed');
 
@@ -10699,7 +10732,7 @@
 					const next = !teamsBody.hidden;
 					teamsBody.hidden = next;
 					box.classList.toggle('monday-matchup-collapsed', next);
-					head.setAttribute('aria-expanded', String(!next));
+					chevron.setAttribute('aria-expanded', String(!next));
 					setCardCollapsed(key, next, MONDAY_MATCHUP_NS, true);
 				});
 				wrap.appendChild(box);
