@@ -11676,7 +11676,7 @@
 							e.preventDefault();
 							setDigestDismissal(league.id, digestProblemKey(problem), true);
 							renderProblemsDigest();
-							if (currentView === 'admin') renderGrid();
+							refreshDigestDismissalsCard();
 						};
 						dismiss.addEventListener('click', doDismiss);
 						dismiss.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') doDismiss(e); });
@@ -18269,7 +18269,7 @@
 			card.appendChild(heading);
 			makeCollapsible(card, heading, 'admin-digest');
 			if (dismissed.length === 0) {
-				card.appendChild(el('div', { class: 'team', text: 'No dismissed alerts. Use × on a Problems Digest row to hide it; it comes back here, and on its own if the problem clears and returns.' }));
+				card.appendChild(el('div', { class: 'team', text: 'No dismissed alerts. Use × on a Problems Digest row to hide it; it is listed here to restore, and a dismissal ends by itself once the problem clears.' }));
 				return card;
 			}
 			for (const { league, problem, key } of dismissed) {
@@ -18285,12 +18285,23 @@
 				const restore = el('button', { type: 'button', class: 'admin-add-btn', text: 'Restore' });
 				restore.addEventListener('click', () => {
 					setDigestDismissal(league.id, key, false);
-					renderGrid();
+					renderProblemsDigest();
+					refreshDigestDismissalsCard();
 				});
 				row.appendChild(restore);
 				card.appendChild(row);
 			}
 			return card;
+		}
+
+		// The cards are built once per renderGrid, so a dismissal made on the
+		// digest (or a Restore) swaps the Admin card in place instead of
+		// rebuilding the whole grid.
+		function refreshDigestDismissalsCard() {
+			const old = document.querySelector('.admin-digest-card');
+			if (!old) return;
+			old.replaceWith(renderDigestDismissalsCard());
+			updateVisibility();
 		}
 
 		// All Admin cards are always appended together, in this order —
