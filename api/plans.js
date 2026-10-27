@@ -53,7 +53,10 @@ const MAX_BODY_BYTES = 256 * 1024;
 // notifyPlans is whether the game-time push covers a designated BENCH player:
 // leagueId -> player id -> 'on' | 'off'. Absent means "follow the default" (on
 // for a starter's chosen backup), which is why 'off' has to be stored.
-const PLAN_KINDS = ['contractPlans', 'salaryPlans', 'cutPlans', 'backupPlans', 'notifyPlans', 'resultOverrides'];
+// digestDismissals is the Problems Digest's dismissed rows: leagueId -> a
+// row key (see digestProblemKey in myffl.html) -> '1'. The page deletes a
+// dismissal when its problem clears, so an entry here is always a live one.
+const PLAN_KINDS = ['contractPlans', 'salaryPlans', 'cutPlans', 'backupPlans', 'notifyPlans', 'resultOverrides', 'digestDismissals'];
 
 // The Planning tab's task list. Id-keyed rather than leagueId -> playerId ->
 // value — a task isn't scoped to a league or a player — so it doesn't fit
@@ -106,7 +109,7 @@ function resolveStore(env) {
 }
 
 function emptyDocument() {
-  return { contractPlans: {}, salaryPlans: {}, cutPlans: {}, backupPlans: {}, notifyPlans: {}, resultOverrides: {}, tasks: {}, favorites: { nflTeams: [] }, updatedAt: null };
+  return { contractPlans: {}, salaryPlans: {}, cutPlans: {}, backupPlans: {}, notifyPlans: {}, resultOverrides: {}, digestDismissals: {}, tasks: {}, favorites: { nflTeams: [] }, updatedAt: null };
 }
 
 // Returns an array of human-readable problems — empty means valid.

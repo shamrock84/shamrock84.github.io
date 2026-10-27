@@ -788,4 +788,56 @@ const rosterLimits = (overrides = {}) => ({ size: 28, taxi: 4, ir: 0, position: 
 	assert.match(providerSource, /startingLineup,\n\s+lineupSize,/, 'fetchLeagueRoster no longer returns lineupSize');
 }
 
+{
+	// Dismissals (digestRowsWithDismissals): keyed league -> "kind:playerId",
+	// applied only logged in, and deleted only when a family that was actually
+	// checked no longer raises the row -- "not being looked at" must never read
+	// as "cleared", or a dismissal would evaporate every Monday.
+	const store = new Map();
+	context.localStorage = { getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, v), removeItem: (k) => store.delete(k) };
+	const setDismissals = (obj) => store.set('myfflDigestDismissals', JSON.stringify(obj));
+	const injured = () => league({ starters: ['1'], players: [player('1', { injury: 'O' }), player('2')] });
+	const digest = (lg) => {
+		const r = context.digestRowsWithDismissals([lg], YEAR);
+		return { rows: [...r.rows].filter((x) => x.key.startsWith('injury:')), stale: JSON.parse(JSON.stringify(r.stale)) };
+	};
+
+	assert.equal(context.digestProblemKey({ kind: 'injury', player: { id: '1' }, label: 'x' }), 'injury:1');
+	assert.equal(context.digestProblemKey({ kind: 'short', player: null, label: 'Only 3 of 9' }), 'short:Only 3 of 9');
+
+	vm.runInContext("authToken = 'tok';", context);
+	setDismissals({ L1: { 'injury:1': '1' } });
+	let out = digest(injured());
+	assert.deepEqual(out.rows.map((r) => [r.key, r.dismissed]), [['injury:1', true]]);
+	assert.equal(out.stale.length, 0);
+
+	// Specific to the player: another player's injury is not dismissed.
+	const two = league({ starters: ['1', '2'], players: [player('1', { injury: 'O' }), player('2', { injury: 'O' })] });
+	assert.deepEqual(digest(two).rows.map((r) => [r.key, r.dismissed]), [['injury:1', true], ['injury:2', false]]);
+
+	// Cleared problem: the player is healthy now, so the dismissal is stale...
+	const healthy = league({ starters: ['1'], players: [player('1'), player('2')] });
+	assert.deepEqual(digest(healthy).stale, [{ leagueId: 'L1', key: 'injury:1' }]);
+	// ...but not while lineup rows are held before the rollover cutoff,
+	context.pastWeeklyRolloverCutoff = () => false;
+	assert.equal(digest(healthy).stale.length, 0);
+	context.pastWeeklyRolloverCutoff = () => true;
+	// ...nor before the game states have been asked,
+	vm.runInContext('gameStatesAttempted = false;', context);
+	assert.equal(digest(healthy).stale.length, 0);
+	vm.runInContext('gameStatesAttempted = true;', context);
+	// ...nor for a roster-level row on a league that is mid-draft.
+	setDismissals({ L1: { 'roster-limit:Roster carries 30 players': '1' } });
+	assert.equal(digest(league({ draftInProgress: true })).stale.length, 0);
+	assert.equal(digest(league()).stale.length, 1);
+
+	// Logged out: nothing dismissed, nothing pruned.
+	setDismissals({ L1: { 'injury:1': '1' } });
+	vm.runInContext('authToken = null;', context);
+	out = digest(healthy);
+	assert.equal(out.stale.length, 0);
+	out = digest(injured());
+	assert.equal(out.rows[0].dismissed, false);
+}
+
 console.log('test-problems-digest: all assertions passed');

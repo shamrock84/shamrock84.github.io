@@ -34,6 +34,8 @@ eq('accepts a well-formed document', validatePlans({
 }), []);
 eq('accepts an empty object', validatePlans({}), []);
 eq('accepts notifyPlans on/off', validatePlans({ notifyPlans: { 30641: { 16148: 'on', 9: 'off' } } }), []);
+eq('accepts digestDismissals', validatePlans({ digestDismissals: { 30641: { 'injury:16148': '1' } } }), []);
+check('rejects a non-object digestDismissals kind', validatePlans({ digestDismissals: 'nope' }).length === 1);
 check('rejects a non-object notifyPlans kind', validatePlans({ notifyPlans: 'nope' }).length === 1);
 eq('accepts numbers (older browsers wrote them)', validatePlans({
   contractPlans: { 30641: { 16148: 2 } },
@@ -112,7 +114,7 @@ eq('an empty incoming document never erases a stored task',
   { t1: { text: 'a', category: '', done: false, order: 1, createdAt: 1, completedAt: null } });
 
 console.log('emptyDocument');
-eq('carries every plan kind plus tasks', emptyDocument(), { contractPlans: {}, salaryPlans: {}, cutPlans: {}, backupPlans: {}, notifyPlans: {}, resultOverrides: {}, tasks: {}, favorites: { nflTeams: [] }, updatedAt: null });
+eq('carries every plan kind plus tasks', emptyDocument(), { contractPlans: {}, salaryPlans: {}, cutPlans: {}, backupPlans: {}, notifyPlans: {}, resultOverrides: {}, digestDismissals: {}, tasks: {}, favorites: { nflTeams: [] }, updatedAt: null });
 
 console.log('mergePlans');
 // The case this endpoint exists for: a phone that has never synced posts an
@@ -146,7 +148,7 @@ eq('all four PLAN_KINDS merge independently',
     { contractPlans: { 30641: { 1: '1' } }, salaryPlans: { 30641: { 9: '50' } }, cutPlans: { 30641: { 2: '1' } }, backupPlans: { 30641: { 3: '4' } }, resultOverrides: { 30641: { 2024: '3' } } },
     { salaryPlans: { 30641: { 8: '25' } } },
   ),
-  { contractPlans: { 30641: { 1: '1' } }, salaryPlans: { 30641: { 8: '25', 9: '50' } }, cutPlans: { 30641: { 2: '1' } }, backupPlans: { 30641: { 3: '4' } }, notifyPlans: {}, resultOverrides: { 30641: { 2024: '3' } }, tasks: {}, favorites: { nflTeams: [] }, updatedAt: null });
+  { contractPlans: { 30641: { 1: '1' } }, salaryPlans: { 30641: { 8: '25', 9: '50' } }, cutPlans: { 30641: { 2: '1' } }, backupPlans: { 30641: { 3: '4' } }, notifyPlans: {}, resultOverrides: { 30641: { 2024: '3' } }, digestDismissals: {}, tasks: {}, favorites: { nflTeams: [] }, updatedAt: null });
 eq('notifyPlans merges like the other kinds, stored winning',
   mergePlans({ notifyPlans: { 1: { a: 'off' } } }, { notifyPlans: { 1: { a: 'on', b: 'on' } } }).notifyPlans,
   { 1: { a: 'off', b: 'on' } });

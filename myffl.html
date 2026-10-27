@@ -1123,6 +1123,15 @@
 			color: var(--accent);
 		}
 		.digest-player { font-weight: 600; }
+		.digest-dismiss {
+			flex: none;
+			margin-left: auto;
+			padding: 0 0.4rem;
+			color: var(--muted);
+			font-size: 1rem;
+			line-height: 1;
+		}
+		.digest-dismiss:hover { color: var(--text); }
 		.digest-text-short { display: none; }
 		@media (max-width: 480px) {
 			.digest-text-full { display: none; }
@@ -4923,6 +4932,41 @@
 			schedulePlanPush();
 		}
 
+		// Problems Digest rows the manager has dismissed: leagueId -> row key
+		// (digestProblemKey) -> '1', synced with the other plans. A dismissal
+		// lives only as long as its problem: the digest deletes any entry whose
+		// problem is no longer raised (pruneDigestDismissals), so the same
+		// problem coming back later shows again.
+		const DIGEST_DISMISS_STORAGE_KEY = 'myfflDigestDismissals';
+		function loadDigestDismissals() {
+			try {
+				return JSON.parse(localStorage.getItem(DIGEST_DISMISS_STORAGE_KEY) || '{}');
+			} catch {
+				return {};
+			}
+		}
+		function isDigestDismissed(leagueId, key) {
+			return !!readPlanMapCached(DIGEST_DISMISS_STORAGE_KEY)[leagueId]?.[key];
+		}
+		// Writes locally and records the edit; the caller schedules the push so
+		// a prune of several rows is one request.
+		function writeDigestDismissal(leagueId, key, on) {
+			const all = loadDigestDismissals();
+			if (!on) {
+				delete all[leagueId]?.[key];
+				if (all[leagueId] && Object.keys(all[leagueId]).length === 0) delete all[leagueId];
+			} else {
+				all[leagueId] = all[leagueId] || {};
+				all[leagueId][key] = '1';
+			}
+			localStorage.setItem(DIGEST_DISMISS_STORAGE_KEY, JSON.stringify(all));
+			recordPlanEdit('digestDismissals', leagueId, key, on ? '1' : '');
+		}
+		function setDigestDismissal(leagueId, key, on) {
+			writeDigestDismissal(leagueId, key, on);
+			schedulePlanPush();
+		}
+
 		// A manager's own correction to a guessed Results-tab finish (see
 		// computeMflSeasonPlacements's 'guessed: true' — a regular-season-order
 		// fallback used when no bracket data settled a year's exact placement).
@@ -5150,7 +5194,7 @@
 		let planPushGeneration = 0;
 
 		function localPlansDocument() {
-			return { contractPlans: loadContractPlans(), salaryPlans: loadSalaryPlans(), cutPlans: loadCutPlans(), backupPlans: loadBackupPlans(), notifyPlans: loadNotifyPlans(), resultOverrides: loadResultOverrides(), tasks: loadTasks(), favorites: loadFavorites() };
+			return { contractPlans: loadContractPlans(), salaryPlans: loadSalaryPlans(), cutPlans: loadCutPlans(), backupPlans: loadBackupPlans(), notifyPlans: loadNotifyPlans(), resultOverrides: loadResultOverrides(), digestDismissals: loadDigestDismissals(), tasks: loadTasks(), favorites: loadFavorites() };
 		}
 
 		function writePlansLocal(doc) {
@@ -5160,6 +5204,7 @@
 			localStorage.setItem(BACKUP_PLAN_STORAGE_KEY, JSON.stringify(doc.backupPlans || {}));
 			localStorage.setItem(NOTIFY_PLAN_STORAGE_KEY, JSON.stringify(doc.notifyPlans || {}));
 			localStorage.setItem(RESULT_OVERRIDE_STORAGE_KEY, JSON.stringify(doc.resultOverrides || {}));
+			localStorage.setItem(DIGEST_DISMISS_STORAGE_KEY, JSON.stringify(doc.digestDismissals || {}));
 			writeTasksLocal(doc.tasks);
 		}
 
@@ -5183,10 +5228,10 @@
 		// tasks does not fit this leagueId -> playerId -> string shape (it
 		// isn't league- or player-scoped) and is handled by its own pending
 		// log, TASKS_PENDING_KEY, just below.
-		const PLAN_KINDS = ['contractPlans', 'salaryPlans', 'cutPlans', 'backupPlans', 'notifyPlans', 'resultOverrides'];
+		const PLAN_KINDS = ['contractPlans', 'salaryPlans', 'cutPlans', 'backupPlans', 'notifyPlans', 'resultOverrides', 'digestDismissals'];
 
 		function emptyPlanEdits() {
-			return { contractPlans: {}, salaryPlans: {}, cutPlans: {}, backupPlans: {}, notifyPlans: {}, resultOverrides: {} };
+			return { contractPlans: {}, salaryPlans: {}, cutPlans: {}, backupPlans: {}, notifyPlans: {}, resultOverrides: {}, digestDismissals: {} };
 		}
 
 		function loadPendingPlanEdits() {
@@ -11441,13 +11486,21 @@
 		// "short" lineup checks below — those are counts off the synced
 		// snapshot, unrelated to any individual player's game clock, and
 		// have never had anything to flicker.
-		function computeLeagueProblems(league, year, games = liveGames, attempted = gameStatesAttempted, pastCutoff = pastWeeklyRolloverCutoff()) {
+		//
+		// `coverage`, when passed, is filled in with which families of rows this
+		// call was in a position to raise (roster-level, lineup-level, and the
+		// per-starter ones that also wait on the game states): "a row is absent"
+		// only means "the problem cleared" for a family that was covered, which
+		// is what lets pruneDigestDismissals tell a cleared problem from one
+		// that is merely not being checked right now.
+		function computeLeagueProblems(league, year, games = liveGames, attempted = gameStatesAttempted, pastCutoff = pastWeeklyRolloverCutoff(), coverage = null) {
 			const problems = [];
 			if (league.error) {
 				problems.push({ kind: 'sync', player: null, label: `Roster sync failing — showing older data (${league.error})`, short: `Sync failing — showing older data (${league.error})` });
 			}
 
 			const notMidDraftOrTrailing = league.draftInProgress !== true && !(Number(league.season) < Number(year));
+			if (coverage) coverage.roster = notMidDraftOrTrailing;
 			if (league.rosterLimits && notMidDraftOrTrailing) {
 				problems.push(...rosterLimitProblems(league));
 			}
@@ -11465,6 +11518,10 @@
 			if ((league.players || []).length === 0) return problems;
 
 			const wk = league.lineupWeek;
+			if (coverage) {
+				coverage.lineup = true;
+				coverage.players = !!attempted;
+			}
 			if (attempted) {
 				const byId = new Map((league.players || []).map((p) => [String(p.id), p]));
 				for (const id of league.starters) {
@@ -11516,11 +11573,67 @@
 		// move worth making, not something broken.
 		const DIGEST_ALERT_KINDS = ['sync', 'ineligible', 'empty', 'short', 'invalid-lineup', 'roster-limit'];
 
+		// A dismissal is keyed by the problem's type and, where it has one, its
+		// player (league is the outer key): "injury:16148" dismisses that
+		// player's injury row, not injuries in general. A row with no player
+		// (roster limit, short lineup...) has no finer identity than its
+		// wording, so a changed count raises it afresh.
+		function digestProblemKey(problem) {
+			return `${problem.kind}:${problem.player ? problem.player.id : problem.label}`;
+		}
+
+		// Which rows each coverage family can vouch for; see computeLeagueProblems.
+		const DIGEST_PLAYER_KINDS = ['ineligible', 'injury', 'bye'];
+		const DIGEST_LINEUP_KINDS = ['empty', 'short', 'invalid-lineup'];
+		function digestKindCovered(kind, coverage) {
+			if (DIGEST_PLAYER_KINDS.includes(kind)) return coverage.players;
+			if (DIGEST_LINEUP_KINDS.includes(kind)) return coverage.lineup;
+			if (kind === 'sync') return true;
+			return coverage.roster;
+		}
+
+		// Every league's rows with their dismissal state, plus the stale
+		// dismissals: ones whose problem is no longer raised by a family that
+		// was actually checked. Logged out, nothing is dismissed (the strip
+		// shows everything) and nothing is pruned.
+		function digestRowsWithDismissals(leagues, year) {
+			const rows = [];
+			const stale = [];
+			const loggedIn = isLoggedIn();
+			const saved = loggedIn ? loadDigestDismissals() : {};
+			for (const league of leagues || []) {
+				const coverage = { roster: false, lineup: false, players: false };
+				const problems = computeLeagueProblems(league, year, liveGames, gameStatesAttempted, pastWeeklyRolloverCutoff(), coverage);
+				const live = new Set();
+				for (const problem of problems) {
+					const key = digestProblemKey(problem);
+					live.add(key);
+					rows.push({ league, problem, key, dismissed: loggedIn && !!(saved[league.id] && saved[league.id][key]) });
+				}
+				for (const key of Object.keys(saved[league.id] || {})) {
+					if (!live.has(key) && digestKindCovered(key.slice(0, key.indexOf(':')), coverage)) stale.push({ leagueId: league.id, key });
+				}
+			}
+			return { rows, stale };
+		}
+
+		function pruneDigestDismissals(stale) {
+			if (stale.length === 0) return;
+			for (const { leagueId, key } of stale) writeDigestDismissal(leagueId, key, false);
+			schedulePlanPush();
+		}
+
 		function renderProblemsDigest() {
 			const digestEl = document.getElementById('digest');
 			if (!digestEl) return;
 			digestEl.innerHTML = '';
-			const entries = pageData ? computeProblemsDigest(pageData.leagues, pageData.year) : [];
+			const { rows, stale } = pageData ? digestRowsWithDismissals(pageData.leagues, pageData.year) : { rows: [], stale: [] };
+			pruneDigestDismissals(stale);
+			const entries = [];
+			for (const league of pageData ? pageData.leagues : []) {
+				const problems = rows.filter((r) => r.league === league && !r.dismissed).map((r) => r.problem);
+				if (problems.length > 0) entries.push({ league, problems });
+			}
 			const count = entries.reduce((n, e) => n + e.problems.length, 0);
 			if (count === 0) {
 				digestEl.classList.add('hidden');
@@ -11556,6 +11669,19 @@
 						labelEl.appendChild(document.createTextNode(problem.label));
 					}
 					row.appendChild(labelEl);
+					if (isLoggedIn()) {
+						const dismiss = el('span', { class: 'digest-dismiss', role: 'button', tabindex: '0', title: 'Dismiss this alert (restore it from Admin → Problems Digest)', 'aria-label': 'Dismiss this alert', text: '×' });
+						const doDismiss = (e) => {
+							e.stopPropagation();
+							e.preventDefault();
+							setDigestDismissal(league.id, digestProblemKey(problem), true);
+							renderProblemsDigest();
+							if (currentView === 'admin') renderGrid();
+						};
+						dismiss.addEventListener('click', doDismiss);
+						dismiss.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') doDismiss(e); });
+						row.appendChild(dismiss);
+					}
 					row.addEventListener('click', () => jumpToLeagueCard(league));
 					digestEl.appendChild(row);
 				}
@@ -18132,6 +18258,41 @@
 			return card;
 		}
 
+		// Admin → Problems Digest: the rows the manager has dismissed, each with a
+		// Restore button. Built from the live digest rather than from the saved
+		// map, since a saved dismissal carries only a key, and a dismissal whose
+		// problem has cleared is deleted anyway.
+		function renderDigestDismissalsCard() {
+			const card = el('div', { class: 'card admin-digest-card', 'data-view': 'admin', 'data-league-type': '' });
+			const dismissed = pageData ? digestRowsWithDismissals(pageData.leagues, pageData.year).rows.filter((r) => r.dismissed) : [];
+			const heading = el('h2', { class: 'card-heading', text: `Problems Digest (${dismissed.length})` });
+			card.appendChild(heading);
+			makeCollapsible(card, heading, 'admin-digest');
+			if (dismissed.length === 0) {
+				card.appendChild(el('div', { class: 'team', text: 'No dismissed alerts. Use × on a Problems Digest row to hide it; it comes back here, and on its own if the problem clears and returns.' }));
+				return card;
+			}
+			for (const { league, problem, key } of dismissed) {
+				const row = el('div', { class: 'digest-row digest-dismissed-row' });
+				row.appendChild(el('span', { class: 'digest-league', title: leagueDisplayName(league), text: quickLinkLabelForLeague(league) }));
+				const labelEl = el('span', { class: 'digest-label' });
+				if (problem.player) {
+					labelEl.appendChild(el('span', { class: 'digest-player', text: problem.player.name }));
+					labelEl.appendChild(document.createTextNode(' '));
+				}
+				labelEl.appendChild(document.createTextNode(problem.label));
+				row.appendChild(labelEl);
+				const restore = el('button', { type: 'button', class: 'admin-add-btn', text: 'Restore' });
+				restore.addEventListener('click', () => {
+					setDigestDismissal(league.id, key, false);
+					renderGrid();
+				});
+				row.appendChild(restore);
+				card.appendChild(row);
+			}
+			return card;
+		}
+
 		// All Admin cards are always appended together, in this order —
 		// Tasks first (the former Plans tab's only card), then Quick Links,
 		// then Favorites, then Leagues. renderAdminCard is still called before
@@ -18147,6 +18308,7 @@
 			if (linksCard) gridEl.appendChild(linksCard);
 			gridEl.appendChild(renderFavoritesCard());
 			gridEl.appendChild(adminCard);
+			gridEl.appendChild(renderDigestDismissalsCard());
 		}
 
 		// A search on the Analytics tab shows every league-type group's cards
