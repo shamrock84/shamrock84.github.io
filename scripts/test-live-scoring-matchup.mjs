@@ -115,8 +115,8 @@ const liveScoringResponse = {
 	assert.deepEqual(
 		me.players,
 		[
-			{ id: '9001', secondsRemaining: 1800, name: null, position: null, team: null, points: 6.2, stats: [] },
-			{ id: '9002', secondsRemaining: 3600, name: null, position: null, team: null, points: 0, stats: [] },
+			{ id: '9001', secondsRemaining: 1800, name: null, position: null, team: null, points: 6.2, injuryStatus: null, stats: [] },
+			{ id: '9002', secondsRemaining: 3600, name: null, position: null, team: null, points: 0, injuryStatus: null, stats: [] },
 		],
 		'the nonstarter is excluded from starters; stats is [] with no boxscore index/rates passed (see test-mfl-boxscore-breakdown.mjs for that case)'
 	);
@@ -125,7 +125,7 @@ const liveScoringResponse = {
 	// test-mfl-bench.mjs for bench's own dedicated coverage.
 	assert.deepEqual(
 		me.bench,
-		[{ id: '9003', secondsRemaining: 0, name: null, position: null, team: null, points: 4, stats: [] }],
+		[{ id: '9003', secondsRemaining: 0, name: null, position: null, team: null, points: 4, injuryStatus: null, stats: [] }],
 		'the nonstarter entry is excluded from players but included in bench, with secondsRemaining forced to 0'
 	);
 
@@ -137,7 +137,7 @@ const liveScoringResponse = {
 		const mine = withNames.teams.find((t) => t.franchiseId === '0001');
 		assert.deepEqual(
 			mine.players[0],
-			{ id: '9001', secondsRemaining: 1800, name: 'Real Name', position: 'WR', team: 'SEA', points: 6.2, stats: [] }
+			{ id: '9001', secondsRemaining: 1800, name: 'Real Name', position: 'WR', team: 'SEA', points: 6.2, injuryStatus: null, stats: [] }
 		);
 		assert.equal(mine.players[1].name, null, 'a player the map does not cover still renders, name unresolved');
 	}

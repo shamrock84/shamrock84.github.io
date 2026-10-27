@@ -15,6 +15,7 @@ import {
   fetchMflFranchiseNames,
   fetchScoring,
   loadPlayerMap,
+  fetchMflInjuries,
   fetchEspnScoring,
   fetchSleeperScoring,
   fetchSleeperWeekStats,
@@ -62,6 +63,8 @@ const cache = {
   sleeperPlayerMapAt: 0,
   mflPlayerMap: null, // loadPlayerMap's id -> { name, position, team }
   mflPlayerMapAt: 0,
+  mflInjuries: null, // fetchMflInjuries' id -> { status, detail }
+  mflInjuriesAt: 0,
   nflWeek: null,
   nflWeekAt: 0,
   projections: null, // fetchProjections' index: { byMflId, byName, meta }
@@ -144,6 +147,23 @@ async function getMflPlayerMap(cookie) {
     // on a failure.
   }
   return cache.mflPlayerMap;
+}
+
+// Short TTL, unlike the player map: a late scratch or an Out designation on
+// game day is exactly what moves the win probability. One global request,
+// shared by every MFL league. Null on failure (the estimate just keeps
+// projecting everyone, as before), and a stale copy beats none.
+const MFL_INJURIES_TTL_MS = 5 * 60 * 1000;
+async function getMflInjuries(cookie) {
+  const age = Date.now() - cache.mflInjuriesAt;
+  if (cache.mflInjuries && age < MFL_INJURIES_TTL_MS) return cache.mflInjuries;
+  try {
+    cache.mflInjuries = await fetchMflInjuries(cookie);
+    cache.mflInjuriesAt = Date.now();
+  } catch {
+    // keep any stale copy; don't stamp, so the next poll retries.
+  }
+  return cache.mflInjuries;
 }
 
 async function getCurrentNflWeek() {
@@ -469,6 +489,7 @@ export default async function handler(req, res) {
   // each other, so these run concurrently too rather than one after another.
   let mflPlayerMap = null;
   let mflBoxscoreStatIndex = null;
+  let mflInjuries = null;
   let projections = null;
   let sleeperWeeklyStats = null;
   await Promise.all([
@@ -491,6 +512,9 @@ export default async function handler(req, res) {
     // spending a request that can only ever come back empty. Failures are
     // per-game (see getEspnBoxscore's own try/catch below) so one bad game
     // costs only its own players' breakdowns, never the whole poll.
+    (async () => {
+      if (mflCookie && anyMflLeague) mflInjuries = await getMflInjuries(mflCookie);
+    })(),
     (async () => {
       if (!mflCookie || !anyMflLeague) return;
       const eventIds = new Map(); // eventId -> isFinal, deduped across every team entry
@@ -579,7 +603,7 @@ export default async function handler(req, res) {
         // See mflPlayerEntry's own comment in providers.mjs for the two
         // approaches that were tried and reverted before landing here.
         const scoring = await fetchScoring(
-          league, mflCookie, franchiseInfo, projectPlayer, mflPlayerMap, mflBoxscoreStatIndex, mflRatesByPosition, nflClocks
+          league, mflCookie, franchiseInfo, projectPlayer, mflPlayerMap, mflBoxscoreStatIndex, mflRatesByPosition, nflClocks, mflInjuries
         );
         return { id: league.id, name: league.name, scoring, scoringError: null };
       })

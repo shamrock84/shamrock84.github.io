@@ -264,8 +264,8 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
   assert.deepEqual(
     home.players,
     [
-      { name: 'Seattle Starter', secondsRemaining: 1800, position: 'WR', team: 'SEA', points: 12.5, stats: [] },
-      { name: 'Patriot Starter', secondsRemaining: 0, position: 'TE', team: 'NE', points: 0, stats: [] },
+      { name: 'Seattle Starter', secondsRemaining: 1800, position: 'WR', team: 'SEA', points: 12.5, injuryStatus: null, stats: [] },
+      { name: 'Patriot Starter', secondsRemaining: 0, position: 'TE', team: 'NE', points: 0, injuryStatus: null, stats: [] },
     ],
     'the benched entry is excluded from the per-player breakdown too, by name since ESPN has no id FantasyPros joins against; stats is [] since these fixtures carry no player.stats array (see test-stat-breakdown.mjs for that)'
   );
@@ -274,7 +274,7 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
   // "played and scored nothing" and "we don't know yet" are different facts.
   assert.deepEqual(
     away.players,
-    [{ name: 'Chief Starter', secondsRemaining: 3600, position: 'QB', team: 'KC', points: null, stats: [] }]
+    [{ name: 'Chief Starter', secondsRemaining: 3600, position: 'QB', team: 'KC', points: null, injuryStatus: null, stats: [] }]
   );
   // The benched entry excluded from players above isn't dropped — it's the
   // Scoring tab's nested "Show bench" drawer's own data, same shape as a
@@ -283,7 +283,7 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
   // fetchEspnScoring already made for the starters.
   assert.deepEqual(
     home.bench,
-    [{ name: 'Bench Guy', secondsRemaining: 3600, position: 'WR', team: 'KC', points: 99, stats: [] }],
+    [{ name: 'Bench Guy', secondsRemaining: 3600, position: 'WR', team: 'KC', points: 99, injuryStatus: null, stats: [] }],
     'the benched KC entry lands in bench instead of vanishing'
   );
   assert.deepEqual(away.bench, [], 'no benched entries on this roster');
@@ -335,12 +335,12 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
   assert.equal(home.winProb + away.winProb, 100);
   assert.deepEqual(
     home.players,
-    [{ name: 'Cowboy Starter', secondsRemaining: 900, position: 'RB', team: 'DAL', points: 10, stats: [] }],
+    [{ name: 'Cowboy Starter', secondsRemaining: 900, position: 'RB', team: 'DAL', points: 10, injuryStatus: null, stats: [] }],
     'only the roster\'s own `starters` list feeds the per-player breakdown, same as minutesRemaining'
   );
   assert.deepEqual(
     away.players,
-    [{ name: 'Eagle Starter', secondsRemaining: 3600, position: 'QB', team: 'PHI', points: null, stats: [] }],
+    [{ name: 'Eagle Starter', secondsRemaining: 3600, position: 'QB', team: 'PHI', points: null, injuryStatus: null, stats: [] }],
     'no players_points on this roster means null points, not a fabricated 0'
   );
   // Roster 1's own `players` field (['100', '102']) is its full roster for
@@ -350,7 +350,7 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
   // /matchups/1 read fetchSleeperScoring already made.
   assert.deepEqual(
     home.bench,
-    [{ name: 'Cowboy Bench', secondsRemaining: 900, position: 'WR', team: 'DAL', points: 4.5, stats: [] }],
+    [{ name: 'Cowboy Bench', secondsRemaining: 900, position: 'WR', team: 'DAL', points: 4.5, injuryStatus: null, stats: [] }],
     'the rostered-but-not-starting id lands in bench'
   );
   assert.deepEqual(away.bench, [], 'roster 2 carries no `players` field at all — bench degrades to empty, not a crash');

@@ -98,8 +98,8 @@ const liveScoringResponse = {
 	assert.deepEqual(
 		me.bench,
 		[
-			{ id: '9010', secondsRemaining: 0, name: 'Bench Guy', position: 'WR', team: 'MIA', points: 14.3, stats: [] },
-			{ id: '9099', secondsRemaining: 0, name: 'No Score Yet', position: 'RB', team: 'DAL', points: null, stats: [] },
+			{ id: '9010', secondsRemaining: 0, name: 'Bench Guy', position: 'WR', team: 'MIA', points: 14.3, injuryStatus: null, stats: [] },
+			{ id: '9099', secondsRemaining: 0, name: 'No Score Yet', position: 'RB', team: 'DAL', points: null, injuryStatus: null, stats: [] },
 		],
 		'9001/9002 are excluded (status starter); 9010 carries its real DETAILS=1 score; 9099 has none yet and reads null, not 0 — and secondsRemaining is always 0 regardless of the raw gameSecondsRemaining field'
 	);
@@ -109,7 +109,7 @@ const liveScoringResponse = {
 	const teamD = result.teams.find((t) => t.franchiseId === '0008');
 	assert.deepEqual(
 		teamD.bench,
-		[{ id: '9020', secondsRemaining: 0, name: null, position: null, team: null, points: null, stats: [] }],
+		[{ id: '9020', secondsRemaining: 0, name: null, position: null, team: null, points: null, injuryStatus: null, stats: [] }],
 		'a bare-object nonstarter with no playerMap entry and an empty score string still renders, unresolved rather than dropped'
 	);
 }
