@@ -10665,6 +10665,17 @@
 				nameLink.addEventListener('click', (ev) => {
 					ev.preventDefault();
 					ev.stopPropagation();
+					// If the league's pill is unchecked its card is hidden, so check
+					// it first (adding to the selection, never replacing it) and
+					// repaint the pills and visibility the way a pill click does.
+					const group = subtabType(e.league);
+					const selected = selectedLeagueTypesByView.scoring;
+					if (group && selected && !selected.has(group)) {
+						selected.add(group);
+						saveSelectedLeagueTypes();
+						renderSubTabs();
+						updateVisibility();
+					}
 					const target = document.querySelector(`.card[data-view="scoring"][data-league-id="${e.league.id}"]`);
 					if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
 				});
