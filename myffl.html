@@ -10677,7 +10677,13 @@
 						updateVisibility();
 					}
 					const target = document.querySelector(`.card[data-view="scoring"][data-league-id="${e.league.id}"]`);
-					if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+					if (target) {
+						// The sticky #quicklinks bar (several rows on a phone) would
+						// cover the top of the card, so stop short by its height.
+						const bar = document.getElementById('quicklinks');
+						const barHeight = bar ? bar.getBoundingClientRect().height : 0;
+						window.scrollTo({ top: window.scrollY + target.getBoundingClientRect().top - barHeight - 8, behavior: 'smooth' });
+					}
 				});
 				head.appendChild(nameLink);
 				box.appendChild(head);
