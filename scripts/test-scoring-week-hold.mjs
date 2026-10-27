@@ -116,12 +116,12 @@ const okJson = (body) => ({ ok: true, status: 200, json: async () => body, text:
   assert.equal(home.winProb + away.winProb, 100, 'a 0-minutes-remaining matchup still resolves to a decisive win prob, same as a genuinely finished current week');
   assert.deepEqual(
     home.players,
-    [{ name: 'Seattle Starter', secondsRemaining: 0, position: 'WR', team: 'SEA', points: 20.5, stats: [] }],
+    [{ name: 'Seattle Starter', secondsRemaining: 0, position: 'WR', team: 'SEA', points: 20.5, injuryStatus: null, stats: [] }],
     'the benched entry is excluded, same as the live path'
   );
   assert.deepEqual(
     home.bench,
-    [{ name: 'Bench Guy', secondsRemaining: 0, position: 'WR', team: 'KC', points: 99, stats: [] }]
+    [{ name: 'Bench Guy', secondsRemaining: 0, position: 'WR', team: 'KC', points: 99, injuryStatus: null, stats: [] }]
   );
 }
 

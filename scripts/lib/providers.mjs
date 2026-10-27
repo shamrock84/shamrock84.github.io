@@ -1685,6 +1685,29 @@ export function estimateWinProbability(scoreA, minutesA, scoreB, minutesB, remai
   return Math.min(99, Math.max(1, Math.round(raw)));
 }
 
+// A starter who is known not to play this week: a designation that settles it
+// (Out, any reserve list, suspension, inactive-for-the-season) on the player's
+// own `injuryStatus`, normalized by normalizeInjuryStatus. His game clock may
+// still be running or untouched, but he can never add a point, so the win
+// probability must neither project him nor count his minutes as undecided —
+// otherwise a team whose last "player left" is on IR reads as still live and
+// the estimate is clamped to 1/99 while the outcome is settled. Doubtful and
+// Questionable are deliberately not here: they play often enough to project.
+// A player who already has points on the board is playing whatever a stale
+// report says. Mirrors the page's INJURY_SETTLED plus 'O'.
+const KNOWN_OUT_STATUSES = new Set(['O', 'IR', 'IR R', 'PUP', 'NFI', 'SUSP', 'HOL', 'NA', 'RET']);
+export function isKnownOut(p) {
+  return KNOWN_OUT_STATUSES.has(p?.injuryStatus) && !p.points;
+}
+
+// Player-minutes of one team's starters that are still undecided: the sum of
+// their own clocks, minus any known-out starter's. `fallbackMinutes` is the
+// provider's own team-level figure, used when no starter list reached us.
+function undecidedMinutes(team) {
+  const outSeconds = (team.players || []).reduce((n, p) => n + (isKnownOut(p) ? (p.secondsRemaining || 0) : 0), 0);
+  return Math.max(0, team.minutesRemaining - Math.round(outSeconds / 60));
+}
+
 // Sums one team's still-playing starters' own projected remaining points —
 // projectPlayer(player) => this week's full projected points for them, or
 // null/undefined when no projection reached the caller (no API key this
@@ -1704,7 +1727,7 @@ export function estimateWinProbability(scoreA, minutesA, scoreB, minutesB, remai
 export function estimateRemainingPoints(players, projectPlayer) {
   let total = 0;
   for (const p of players || []) {
-    if (!(p.secondsRemaining > 0)) continue;
+    if (!(p.secondsRemaining > 0) || isKnownOut(p)) continue;
     const fraction = p.secondsRemaining / 3600;
     const projected = projectPlayer ? projectPlayer(p) : null;
     total += (projected != null ? projected : WP_POINTS_PER_MINUTE * 60) * fraction;
@@ -1794,7 +1817,7 @@ export function bestBallProjection(team, spec, projectPlayer, nflClocks) {
   if (all.length === 0 || all.every(([p]) => !p.position)) return null;
   let minutes = 0;
   const entries = all.map(([p, seconds]) => {
-    const left = seconds > 0 ? seconds : 0;
+    const left = seconds > 0 && !isKnownOut(p) ? seconds : 0;
     if (spec.positions[p.position]) minutes += left / 60;
     let value = p.points ?? 0;
     if (left > 0) {
@@ -1815,7 +1838,7 @@ export function bestBallProjection(team, spec, projectPlayer, nflClocks) {
 // altogether (rather than passing one that always returns null) to fall
 // straight back to estimateWinProbability's flat per-minute rate for every
 // player, the same behavior this had before projections existed.
-function attachWinProbabilities(teams, matchups, projectPlayer) {
+export function attachWinProbabilities(teams, matchups, projectPlayer) {
   const byId = new Map(teams.map((t) => [t.franchiseId, t]));
   for (const m of matchups) {
     if (m.teamIds.length !== 2) continue;
@@ -1832,8 +1855,14 @@ function attachWinProbabilities(teams, matchups, projectPlayer) {
     }
     const remainingA = projectPlayer ? estimateRemainingPoints(a.players, projectPlayer) : undefined;
     const remainingB = projectPlayer ? estimateRemainingPoints(b.players, projectPlayer) : undefined;
-    a.winProb = estimateWinProbability(a.score, a.minutesRemaining, b.score, b.minutesRemaining, remainingA, remainingB);
+    const minutesA = undecidedMinutes(a);
+    const minutesB = undecidedMinutes(b);
+    a.winProb = estimateWinProbability(a.score, minutesA, b.score, minutesB, remainingA, remainingB);
     b.winProb = 100 - a.winProb;
+    // "N min left" and the (W)/(L) mark read this figure, so it must agree
+    // with the estimate above: a known-out starter's clock is not time left.
+    a.minutesRemaining = minutesA;
+    b.minutesRemaining = minutesB;
   }
 }
 
@@ -2318,7 +2347,7 @@ export function isPastWeeklyRolloverCutoff(now = new Date(), cutoff = WEEKLY_ROL
 // scoreboard shows for a player whose game hasn't started). A missing
 // points field must degrade to a dash rather than a confident 0.0, which
 // would read as "played and scored nothing".
-function mflPlayerEntry(p, playerMap, boxscoreStatIndex, mflRatesByPosition, secondsRemaining) {
+function mflPlayerEntry(p, playerMap, boxscoreStatIndex, mflRatesByPosition, secondsRemaining, injuries) {
   const info = playerMap?.get(String(p.id));
   return {
     id: String(p.id),
@@ -2326,6 +2355,8 @@ function mflPlayerEntry(p, playerMap, boxscoreStatIndex, mflRatesByPosition, sec
     name: info?.name ?? null,
     position: info?.position ?? null,
     team: info?.team ?? null,
+    // Feeds isKnownOut; `injuries` is fetchMflInjuries' global id -> entry map.
+    injuryStatus: injuries?.get(String(p.id))?.status ?? null,
     points: p.score == null || p.score === '' ? null : Number(p.score),
     // See mflStatBreakdownFromBoxscore's own comment — MFL's API has
     // no source for this at all (mfl/README.md), so it's built from
@@ -2335,12 +2366,12 @@ function mflPlayerEntry(p, playerMap, boxscoreStatIndex, mflRatesByPosition, sec
   };
 }
 
-function mflLiveStarters(f, playerMap, boxscoreStatIndex, mflRatesByPosition) {
+function mflLiveStarters(f, playerMap, boxscoreStatIndex, mflRatesByPosition, injuries) {
   const raw = f.players?.player;
   const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
   return list
     .filter((p) => String(p.status).toLowerCase() === 'starter')
-    .map((p) => mflPlayerEntry(p, playerMap, boxscoreStatIndex, mflRatesByPosition, Number(p.gameSecondsRemaining ?? 0)));
+    .map((p) => mflPlayerEntry(p, playerMap, boxscoreStatIndex, mflRatesByPosition, Number(p.gameSecondsRemaining ?? 0), injuries));
 }
 
 // The bench half of the Scoring tab's nested "Show bench" drawer
@@ -2350,12 +2381,12 @@ function mflLiveStarters(f, playerMap, boxscoreStatIndex, mflRatesByPosition) {
 // costs nothing beyond what fetchScoring already fetches for starters,
 // exactly the same "for free" posture ESPN's mRoster and Sleeper's
 // matchups already have (see fetchEspnScoring/fetchSleeperScoring).
-function mflNonstarterBench(f, playerMap, boxscoreStatIndex, mflRatesByPosition) {
+function mflNonstarterBench(f, playerMap, boxscoreStatIndex, mflRatesByPosition, injuries) {
   const raw = f.players?.player;
   const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
   return list
     .filter((p) => String(p.status).toLowerCase() !== 'starter')
-    .map((p) => mflPlayerEntry(p, playerMap, boxscoreStatIndex, mflRatesByPosition, 0));
+    .map((p) => mflPlayerEntry(p, playerMap, boxscoreStatIndex, mflRatesByPosition, 0, injuries));
 }
 
 // projectPlayer is optional — see attachWinProbabilities' own comment for
@@ -2388,7 +2419,7 @@ function mflNonstarterBench(f, playerMap, boxscoreStatIndex, mflRatesByPosition)
 // TYPE=playerScores&RULES=1 cost two extra MFL requests per league every
 // poll and, worse, RUN 10 proved playerScores itself unreliable for
 // nonstarters regardless of which week it was asked for.
-export async function fetchScoring(league, cookie, franchiseInfo, projectPlayer, playerMap, boxscoreStatIndex, mflRatesByPosition, nflClocks) {
+export async function fetchScoring(league, cookie, franchiseInfo, projectPlayer, playerMap, boxscoreStatIndex, mflRatesByPosition, nflClocks, injuries) {
   const [{ nameById, ownerById, lineupSpec }, liveData] = await Promise.all([
     franchiseInfo ? Promise.resolve(franchiseInfo) : fetchMflFranchiseNames(league, cookie),
     // DETAILS=1 is what makes players.player carry the WHOLE roster
@@ -2423,7 +2454,7 @@ export async function fetchScoring(league, cookie, franchiseInfo, projectPlayer,
   // same real capture fetchScoring's matchup fix used) — so this is exactly
   // "how many player-minutes has this team not played yet", no extra fetch.
   const teams = rows.map((f) => {
-    const starters = mflLiveStarters(f, playerMap, boxscoreStatIndex, mflRatesByPosition);
+    const starters = mflLiveStarters(f, playerMap, boxscoreStatIndex, mflRatesByPosition, injuries);
     return {
       franchiseId: f.id,
       teamName: nameById.get(f.id) || f.id,
@@ -2434,7 +2465,7 @@ export async function fetchScoring(league, cookie, franchiseInfo, projectPlayer,
       minutesRemaining: Math.round(Number(f.gameSecondsRemaining ?? 0) / 60),
       isMe: f.id === league.franchiseId,
       players: starters,
-      bench: mflNonstarterBench(f, playerMap, boxscoreStatIndex, mflRatesByPosition),
+      bench: mflNonstarterBench(f, playerMap, boxscoreStatIndex, mflRatesByPosition, injuries),
     };
   });
 
@@ -2877,6 +2908,7 @@ function espnTeamLiveStarters(teamSide, clockMap, currentPeriod) {
       secondsRemaining: clockMap.get(abbr) ?? 0,
       position: ESPN_POSITION_MAP[p?.defaultPositionId] ?? null,
       team: abbr ?? null,
+      injuryStatus: normalizeInjuryStatus(p?.injuryStatus),
       points: points == null ? null : Number(points),
       stats: espnStatBreakdown(p?.stats, currentPeriod),
     };
@@ -3765,6 +3797,7 @@ function sleeperRosterPlayerEntry(id, playerMap, clockMap, pointsById, weeklySta
     secondsRemaining: clockMap.get(info?.team) ?? 0,
     position: info?.position ?? null,
     team: info?.team ?? null,
+    injuryStatus: info?.injuryStatus ?? null,
     points: points == null ? null : Number(points),
     stats: sleeperStatBreakdown(id, weeklyStats, scoringSettings),
   };

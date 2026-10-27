@@ -10449,7 +10449,12 @@
 			for (const p of pool) {
 				const state = p.team ? games[p.team]?.state : null;
 				if (state !== 'pre' && state !== 'in') continue;
-				const status = designations ? designations.get(normalizeName(p.name) || p.name) : null;
+				// The live player carries its own provider's designation (the sync's
+				// roster join only knows players I roster), and one with points on
+				// the board is playing whatever a stale report says.
+				const own = p.injuryStatus && !p.points ? p.injuryStatus : null;
+				const joined = designations ? designations.get(normalizeName(p.name) || p.name) : null;
+				const status = joined && own ? (injurySeverityRank(joined) >= injurySeverityRank(own) ? joined : own) : joined || own;
 				if (status && mondayIsOutDesignation(status)) continue;
 				out.push(status ? { ...p, injury: status } : p);
 			}
