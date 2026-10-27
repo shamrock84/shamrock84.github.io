@@ -145,6 +145,17 @@ function lg(id, mineScore, oppScore, minePlayers, oppPlayers, extra = {}) {
 const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 
 {
+	// A live player's own provider designation drops him even when no roster
+	// of mine carries it (an opponent's IR player), unless he already scored.
+	const ctx = makeContext();
+	const out = { ...pl('c', 'Opp Guy', 'NYJ', 0), injuryStatus: 'IR' };
+	const l = lg('1', '98.40', '90.00', [pl('a', 'Tyreek Hill', 'MIA', null)], [out]);
+	assert.equal(ctx.computeMondayNightMania([l], games).live[0].oppLeft.length, 0);
+	out.points = 3;
+	assert.equal(ctx.computeMondayNightMania([l], games).live[0].oppLeft.length, 1);
+}
+
+{
 	const ctx = makeContext();
 	// Trailing 98.40 to 110.00: need 11.61, one player left.
 	const l = lg('1', '98.40', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null), pl('b', 'Done Guy', 'KC', 20)], [pl('c', 'Opp Guy', 'NYJ', 5)]);

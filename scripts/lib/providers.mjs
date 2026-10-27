@@ -1838,7 +1838,7 @@ export function bestBallProjection(team, spec, projectPlayer, nflClocks) {
 // altogether (rather than passing one that always returns null) to fall
 // straight back to estimateWinProbability's flat per-minute rate for every
 // player, the same behavior this had before projections existed.
-function attachWinProbabilities(teams, matchups, projectPlayer) {
+export function attachWinProbabilities(teams, matchups, projectPlayer) {
   const byId = new Map(teams.map((t) => [t.franchiseId, t]));
   for (const m of matchups) {
     if (m.teamIds.length !== 2) continue;
@@ -1855,8 +1855,14 @@ function attachWinProbabilities(teams, matchups, projectPlayer) {
     }
     const remainingA = projectPlayer ? estimateRemainingPoints(a.players, projectPlayer) : undefined;
     const remainingB = projectPlayer ? estimateRemainingPoints(b.players, projectPlayer) : undefined;
-    a.winProb = estimateWinProbability(a.score, undecidedMinutes(a), b.score, undecidedMinutes(b), remainingA, remainingB);
+    const minutesA = undecidedMinutes(a);
+    const minutesB = undecidedMinutes(b);
+    a.winProb = estimateWinProbability(a.score, minutesA, b.score, minutesB, remainingA, remainingB);
     b.winProb = 100 - a.winProb;
+    // "N min left" and the (W)/(L) mark read this figure, so it must agree
+    // with the estimate above: a known-out starter's clock is not time left.
+    a.minutesRemaining = minutesA;
+    b.minutesRemaining = minutesB;
   }
 }
 

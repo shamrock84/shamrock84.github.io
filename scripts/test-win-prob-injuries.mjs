@@ -2,7 +2,7 @@
 // projects points nor keeps a matchup "live" in the win-probability model
 // (isKnownOut, estimateRemainingPoints, undecidedMinutes via attachWinProbabilities).
 import assert from 'node:assert/strict';
-import { isKnownOut, estimateRemainingPoints, bestBallProjection } from './lib/providers.mjs';
+import { isKnownOut, estimateRemainingPoints, bestBallProjection, attachWinProbabilities } from './lib/providers.mjs';
 
 const healthy = { secondsRemaining: 1800, points: 0, injuryStatus: null };
 const ir = { secondsRemaining: 1800, points: 0, injuryStatus: 'IR' };
@@ -25,4 +25,19 @@ const out = bestBallProjection(
 );
 assert.equal(out.minutes, 0);
 assert.equal(out.projectedScore, 0);
+// A team whose only player left is out: minutes drop to 0, the matchup
+// resolves (100/0 rather than the 1/99 clamp) and "min left" agrees.
+const mk = (id, score, minutes, players) => ({ franchiseId: id, score, minutesRemaining: minutes, players });
+const me = mk('1', 120, 0, [{ ...healthy, secondsRemaining: 0, points: 20 }]);
+const opp = mk('2', 30, 30, [{ ...ir, secondsRemaining: 1800 }]);
+attachWinProbabilities([me, opp], [{ teamIds: ['1', '2'] }], flat);
+assert.equal(me.winProb, 100);
+assert.equal(opp.winProb, 0);
+assert.equal(opp.minutesRemaining, 0);
+// Same matchup with him healthy stays live and keeps his minutes.
+const opp2 = mk('2', 30, 30, [{ ...healthy, secondsRemaining: 1800 }]);
+const me2 = mk('1', 120, 0, [{ ...healthy, secondsRemaining: 0, points: 20 }]);
+attachWinProbabilities([me2, opp2], [{ teamIds: ['1', '2'] }], flat);
+assert.equal(opp2.minutesRemaining, 30);
+assert.ok(me2.winProb < 100);
 console.log('test-win-prob-injuries: ok');
