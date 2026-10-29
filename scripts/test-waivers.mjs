@@ -267,6 +267,24 @@ await test('ESPN: a processed record belonging to ANOTHER team never resolves mi
   assert.equal(parseEspnPendingWaivers(log, '5').length, 1);
 });
 
+// RUN 8, League 1: the owner's claim was cancelled (its drop was released
+// first). ESPN wrote a WAIVER/CANCELED record, executionType CANCEL, whose
+// isPending stays true, beside the untouched PENDING original. Both showed.
+await test('ESPN: a CANCELED record (isPending still true) cancels its claim and is never listed itself (RUN 8)', () => {
+  const log = { transactions: [
+    claim({ status: 'PENDING', isPending: true, proposedDate: 100 * T, items: item(30, 99) }),
+    claim({ status: 'CANCELED', isPending: true, executionType: 'CANCEL', proposedDate: 100 * T + 1, processDate: 107 * T, items: item(30, 99) }),
+  ] };
+  assert.deepEqual(parseEspnPendingWaivers(log, '5'), []);
+});
+await test('ESPN: a claim filed again after a cancel is still pending', () => {
+  const log = { transactions: [
+    claim({ status: 'CANCELED', isPending: true, proposedDate: 100 * T, processDate: 107 * T, items: item(30, 99) }),
+    claim({ status: 'PENDING', isPending: true, proposedDate: 120 * T, items: item(30, 99) }),
+  ] };
+  assert.equal(parseEspnPendingWaivers(log, '5').length, 1);
+});
+
 // RUN 6: acquisitionType WAIVERS_TRADITIONAL, isUsingAcquisitionBudget false,
 // every bidAmount 0, waiverRank 10 / 6. A bid is for a league that bids.
 await test('ESPN: a non-FAAB league shows the team’s waiver priority, never a $0 bid', () => {

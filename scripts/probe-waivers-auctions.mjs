@@ -103,6 +103,14 @@
 //   NOT yet seen: a populated mPendingTransactions, so its record shape is
 //   unverified; it is folded in defensively and the log alone is correct.
 //
+// RUN 8 (2026-10-29): the manager reports two identical ESPN claims showing
+//   after the player they were to drop was released. League 1's log held the
+//   original WAIVER/PENDING record with NO processed twin, plus a SEPARATE
+//   WAIVER/CANCELED record (execType CANCEL, a processDate, same add/drop)
+//   whose isPending stayed true. The old `status === 'PENDING' || isPending`
+//   test counted that cancel record as a claim too, and kept the original
+//   because the cancel was never treated as processed. mPendingTransactions was
+//   again empty. parseEspnPendingWaivers now lets status decide.
 // RUN 7 (2026-10-01): BLIND-BID BALANCE, last section. Found: each franchise row
 //   of TYPE=league carries `bbidAvailableBalance` ("88.00" / "47.00" for OSD
 //   and Survivor), and the league carries `bbidSeasonLimit` ("100") and
