@@ -2649,6 +2649,21 @@
 			font-weight: 700;
 			white-space: nowrap;
 		}
+		/* The team record "(10-5-1)", small and centred under the
+		   abbreviation. The team span is a column so the record adds height,
+		   not width, and the score keeps lining up with the abbreviation
+		   (inline-flex baseline is its first line). */
+		.nfl-game-team {
+			display: inline-flex;
+			flex-direction: column;
+			align-items: center;
+		}
+		.nfl-game-record {
+			color: var(--muted);
+			font-size: 0.68rem;
+			font-weight: 400;
+			line-height: 1.1;
+		}
 		/* Desktop only: the favorite star adds ~1ch per side, which wrapped
 		   "★ KC" when many matchups squeezed the cards to their minimum.
 		   Phones keep 135px so two still fit a 360px screen. */
@@ -14239,17 +14254,22 @@
 				// no such nudge: the data already in hand doesn't go stale by
 				// being hidden.
 				if (next) refreshNflScoreboard();
+				// A favorite game's row exists twice (full list and collapsed
+				// summary) behind one stored key; rebuild both so the copy that
+				// wasn't clicked doesn't show the old state.
+				if (pill.classList.contains('nfl-fav-game')) rerenderNflCards();
 			});
 
 			pill.appendChild(toggle);
 			pill.appendChild(body);
 		}
 
-		// `compact` is the collapsed-card favorites summary: just teams, score
-		// and status, with no ESPN link or stat drawer — that drawer's open
-		// state is keyed by game id, and a second copy of it in the same card
-		// would fight the real row's.
-		function renderNflGameRow(game, favs = new Set(), compact = false) {
+		// The collapsed-card favorites summary renders this same row, ESPN link
+		// and stat drawer included. The drawer's open state is keyed by game
+		// id, so a favorite's two copies (summary and full list) would drift
+		// apart after a toggle; appendNflBoxscoreToggle re-renders the NFL
+		// cards for favorite games to keep them in step.
+		function renderNflGameRow(game, favs = new Set()) {
 			const showScore = game.state !== 'pre' && game.away.score != null && game.home.score != null;
 			// Plain/gold/purple reads the same "hasn't played / live /
 			// finished" state as the score and status text below, just at a
@@ -14261,16 +14281,29 @@
 			const isFavGame = favs.has(favoriteTeamKey(game.away.team)) || favs.has(favoriteTeamKey(game.home.team));
 			const row = el('div', { class: `nfl-game-row${stateClass}${isFavGame ? ' nfl-fav-game' : ''}` });
 			const teams = el('div', { class: 'nfl-game-teams' });
-			const teamClass = (abbr) => `nfl-game-team${favs.has(favoriteTeamKey(abbr)) ? ' nfl-fav' : ''}`;
-			const teamText = (abbr) => (favs.has(favoriteTeamKey(abbr)) ? `★ ${abbr}` : abbr);
-			teams.appendChild(el('span', { class: teamClass(game.away.team), text: teamText(game.away.team) }));
+			// Record in parens off the snapshot's nflStandings, so it is as
+			// fresh as the last sync (up to four hours) and lags a game that
+			// just went final. No standings entry (an older snapshot, or an
+			// abbreviation it doesn't know) leaves the bare abbreviation.
+			const teamRecord = (abbr) => {
+				const t = pageData?.nflStandings?.teams?.[favoriteTeamKey(abbr)];
+				return t && t.w != null && t.l != null ? `(${formatNflRecord(t)})` : '';
+			};
+			const teamText = (abbr) => `${favs.has(favoriteTeamKey(abbr)) ? '★ ' : ''}${abbr}`;
+			const teamSpan = (abbr) => {
+				const span = el('span', { class: 'nfl-game-team' });
+				span.appendChild(el('span', favs.has(favoriteTeamKey(abbr)) ? { class: 'nfl-fav', text: teamText(abbr) } : { text: teamText(abbr) }));
+				const record = teamRecord(abbr);
+				if (record) span.appendChild(el('span', { class: 'nfl-game-record', text: record }));
+				return span;
+			};
+			teams.appendChild(teamSpan(game.away.team));
 			if (showScore) teams.appendChild(el('span', { class: 'nfl-game-score', text: String(game.away.score) }));
 			teams.appendChild(el('span', { class: 'nfl-game-at', text: '@' }));
-			teams.appendChild(el('span', { class: teamClass(game.home.team), text: teamText(game.home.team) }));
+			teams.appendChild(teamSpan(game.home.team));
 			if (showScore) teams.appendChild(el('span', { class: 'nfl-game-score', text: String(game.home.score) }));
 			row.appendChild(teams);
 			row.appendChild(el('div', { class: 'nfl-game-status', text: [formatGameWhen(game), game.broadcast].filter(Boolean).join(' · ') }));
-			if (compact) return row;
 
 			// Still the only place for kicking/team-defense stats (see
 			// nflBoxscorePlayerLines' own comment) — its own small line
@@ -14313,7 +14346,9 @@
 			// Collapsing the card also closes every Show detail drawer in it
 			// (clicking each open toggle, which clears its stored open key), so
 			// re-expanding shows a tidy list rather than stale open drawers.
-			const closeDrawers = () => card.querySelectorAll('.nfl-boxscore-toggle[aria-expanded="true"]').forEach((t) => t.click());
+			// Favorite games keep theirs: their drawers are also offered in the
+			// collapsed summary, and closing one copy would clear the shared key.
+			const closeDrawers = () => card.querySelectorAll('.nfl-game-row:not(.nfl-fav-game) .nfl-boxscore-toggle[aria-expanded="true"]').forEach((t) => t.click());
 			makeCollapsible(card, headingEl, id, autoCollapseEmpty && games.length === 0, closeDrawers);
 			if (subtitle) card.appendChild(el('div', { class: 'team card-collapse-visible', text: subtitle }));
 			const body = el('div', { class: 'nfl-scoreboard' });
@@ -14328,7 +14363,7 @@
 			const favGames = favs.size === 0 ? [] : games.filter((g) => favs.has(favoriteTeamKey(g.away.team)) || favs.has(favoriteTeamKey(g.home.team)));
 			if (favGames.length > 0) {
 				const summary = el('div', { class: 'nfl-scoreboard nfl-fav-collapsed card-collapse-visible' });
-				for (const game of favGames) summary.appendChild(renderNflGameRow(game, favs, true));
+				for (const game of favGames) summary.appendChild(renderNflGameRow(game, favs));
 				card.appendChild(summary);
 			}
 			return card;
