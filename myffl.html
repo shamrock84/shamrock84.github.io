@@ -14276,7 +14276,6 @@
 			const isFavGame = favs.has(favoriteTeamKey(game.away.team)) || favs.has(favoriteTeamKey(game.home.team));
 			const row = el('div', { class: `nfl-game-row${stateClass}${isFavGame ? ' nfl-fav-game' : ''}` });
 			const teams = el('div', { class: 'nfl-game-teams' });
-			const teamClass = (abbr) => `nfl-game-team${favs.has(favoriteTeamKey(abbr)) ? ' nfl-fav' : ''}`;
 			// Record in parens off the snapshot's nflStandings, so it is as
 			// fresh as the last sync (up to four hours) and lags a game that
 			// just went final. No standings entry (an older snapshot, or an
@@ -14287,8 +14286,8 @@
 			};
 			const teamText = (abbr) => `${favs.has(favoriteTeamKey(abbr)) ? '★ ' : ''}${abbr}`;
 			const teamSpan = (abbr) => {
-				const span = el('span', { class: teamClass(abbr) });
-				span.appendChild(el('span', { text: teamText(abbr) }));
+				const span = el('span', { class: 'nfl-game-team' });
+				span.appendChild(el('span', favs.has(favoriteTeamKey(abbr)) ? { class: 'nfl-fav', text: teamText(abbr) } : { text: teamText(abbr) }));
 				const record = teamRecord(abbr);
 				if (record) span.appendChild(el('span', { class: 'nfl-game-record', text: record }));
 				return span;
