@@ -2569,8 +2569,8 @@
 			gap: 0.5rem;
 		}
 		.nfl-game-row {
-			flex: 1 1 200px;
-			min-width: 190px;
+			flex: 1 1 135px;
+			min-width: 120px;
 			display: flex;
 			flex-direction: column;
 			gap: 0.3rem;
@@ -2649,19 +2649,28 @@
 			font-weight: 700;
 			white-space: nowrap;
 		}
-		/* The team record "(10-5-1)" in parens after the abbreviation. */
+		/* The team record "(10-5-1)", small and centred under the
+		   abbreviation. The team span is a column so the record adds height,
+		   not width, and the score keeps lining up with the abbreviation
+		   (inline-flex baseline is its first line). */
+		.nfl-game-team {
+			display: inline-flex;
+			flex-direction: column;
+			align-items: center;
+		}
 		.nfl-game-record {
 			color: var(--muted);
-			font-size: 0.75rem;
+			font-size: 0.68rem;
 			font-weight: 400;
+			line-height: 1.1;
 		}
-		/* Desktop only: the favorite star and records add width per side.
-		   The records mean two rows no longer fit a 360px phone, so phones
-		   get one per row at the 200px basis above. */
+		/* Desktop only: the favorite star adds ~1ch per side, which wrapped
+		   "★ KC" when many matchups squeezed the cards to their minimum.
+		   Phones keep 135px so two still fit a 360px screen. */
 		@media (min-width: 40rem) {
 			.nfl-game-row {
-				flex-basis: 230px;
-				min-width: 220px;
+				flex-basis: 165px;
+				min-width: 150px;
 			}
 		}
 		.nfl-game-score {
@@ -14274,11 +14283,12 @@
 			// abbreviation it doesn't know) leaves the bare abbreviation.
 			const teamRecord = (abbr) => {
 				const t = pageData?.nflStandings?.teams?.[favoriteTeamKey(abbr)];
-				return t && t.w != null && t.l != null ? ` (${formatNflRecord(t)})` : '';
+				return t && t.w != null && t.l != null ? `(${formatNflRecord(t)})` : '';
 			};
 			const teamText = (abbr) => `${favs.has(favoriteTeamKey(abbr)) ? '★ ' : ''}${abbr}`;
 			const teamSpan = (abbr) => {
-				const span = el('span', { class: teamClass(abbr), text: teamText(abbr) });
+				const span = el('span', { class: teamClass(abbr) });
+				span.appendChild(el('span', { text: teamText(abbr) }));
 				const record = teamRecord(abbr);
 				if (record) span.appendChild(el('span', { class: 'nfl-game-record', text: record }));
 				return span;
