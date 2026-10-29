@@ -3362,7 +3362,12 @@ const espnClaimKey = (t) => {
 export function parseEspnPendingWaivers(data, franchiseId, { faab = null, priority = null } = {}) {
   const mine = asArray(data?.transactions)
     .filter((t) => t?.type === 'WAIVER' && String(t.teamId) === String(franchiseId));
-  const unresolved = (t) => t.status === 'PENDING' || t.isPending === true;
+  // RUN 8: a cancelled claim is a SECOND record, status CANCELED with
+  // executionType CANCEL and a processDate, whose isPending flag stays true.
+  // So status decides when there is one; isPending is only the fallback for a
+  // record with none. Reading the flag first listed the cancel record as a
+  // claim of its own and left the original PENDING one without a twin.
+  const unresolved = (t) => (t.status ? t.status === 'PENDING' : t.isPending === true);
   const processed = mine.filter((t) => !unresolved(t));
   const resolved = (t) => processed.some((q) => espnClaimKey(q) === espnClaimKey(t)
     && Number(q.processDate ?? q.proposedDate ?? 0) >= Number(t.proposedDate ?? 0));
