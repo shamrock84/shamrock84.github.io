@@ -14254,17 +14254,22 @@
 				// no such nudge: the data already in hand doesn't go stale by
 				// being hidden.
 				if (next) refreshNflScoreboard();
+				// A favorite game's row exists twice (full list and collapsed
+				// summary) behind one stored key; rebuild both so the copy that
+				// wasn't clicked doesn't show the old state.
+				if (pill.classList.contains('nfl-fav-game')) rerenderNflCards();
 			});
 
 			pill.appendChild(toggle);
 			pill.appendChild(body);
 		}
 
-		// `compact` is the collapsed-card favorites summary: just teams, score
-		// and status, with no ESPN link or stat drawer — that drawer's open
-		// state is keyed by game id, and a second copy of it in the same card
-		// would fight the real row's.
-		function renderNflGameRow(game, favs = new Set(), compact = false) {
+		// The collapsed-card favorites summary renders this same row, ESPN link
+		// and stat drawer included. The drawer's open state is keyed by game
+		// id, so a favorite's two copies (summary and full list) would drift
+		// apart after a toggle; appendNflBoxscoreToggle re-renders the NFL
+		// cards for favorite games to keep them in step.
+		function renderNflGameRow(game, favs = new Set()) {
 			const showScore = game.state !== 'pre' && game.away.score != null && game.home.score != null;
 			// Plain/gold/purple reads the same "hasn't played / live /
 			// finished" state as the score and status text below, just at a
@@ -14299,7 +14304,6 @@
 			if (showScore) teams.appendChild(el('span', { class: 'nfl-game-score', text: String(game.home.score) }));
 			row.appendChild(teams);
 			row.appendChild(el('div', { class: 'nfl-game-status', text: [formatGameWhen(game), game.broadcast].filter(Boolean).join(' · ') }));
-			if (compact) return row;
 
 			// Still the only place for kicking/team-defense stats (see
 			// nflBoxscorePlayerLines' own comment) — its own small line
@@ -14342,7 +14346,9 @@
 			// Collapsing the card also closes every Show detail drawer in it
 			// (clicking each open toggle, which clears its stored open key), so
 			// re-expanding shows a tidy list rather than stale open drawers.
-			const closeDrawers = () => card.querySelectorAll('.nfl-boxscore-toggle[aria-expanded="true"]').forEach((t) => t.click());
+			// Favorite games keep theirs: their drawers are also offered in the
+			// collapsed summary, and closing one copy would clear the shared key.
+			const closeDrawers = () => card.querySelectorAll('.nfl-game-row:not(.nfl-fav-game) .nfl-boxscore-toggle[aria-expanded="true"]').forEach((t) => t.click());
 			makeCollapsible(card, headingEl, id, autoCollapseEmpty && games.length === 0, closeDrawers);
 			if (subtitle) card.appendChild(el('div', { class: 'team card-collapse-visible', text: subtitle }));
 			const body = el('div', { class: 'nfl-scoreboard' });
@@ -14357,7 +14363,7 @@
 			const favGames = favs.size === 0 ? [] : games.filter((g) => favs.has(favoriteTeamKey(g.away.team)) || favs.has(favoriteTeamKey(g.home.team)));
 			if (favGames.length > 0) {
 				const summary = el('div', { class: 'nfl-scoreboard nfl-fav-collapsed card-collapse-visible' });
-				for (const game of favGames) summary.appendChild(renderNflGameRow(game, favs, true));
+				for (const game of favGames) summary.appendChild(renderNflGameRow(game, favs));
 				card.appendChild(summary);
 			}
 			return card;
