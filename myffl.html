@@ -2569,8 +2569,8 @@
 			gap: 0.5rem;
 		}
 		.nfl-game-row {
-			flex: 1 1 135px;
-			min-width: 120px;
+			flex: 1 1 200px;
+			min-width: 190px;
 			display: flex;
 			flex-direction: column;
 			gap: 0.3rem;
@@ -2649,13 +2649,19 @@
 			font-weight: 700;
 			white-space: nowrap;
 		}
-		/* Desktop only: the favorite star adds ~1ch per side, which wrapped
-		   "★ KC" when many matchups squeezed the cards to their minimum.
-		   Phones keep 135px so two still fit a 360px screen. */
+		/* The team record "(10-5-1)" in parens after the abbreviation. */
+		.nfl-game-record {
+			color: var(--muted);
+			font-size: 0.75rem;
+			font-weight: 400;
+		}
+		/* Desktop only: the favorite star and records add width per side.
+		   The records mean two rows no longer fit a 360px phone, so phones
+		   get one per row at the 200px basis above. */
 		@media (min-width: 40rem) {
 			.nfl-game-row {
-				flex-basis: 165px;
-				min-width: 150px;
+				flex-basis: 230px;
+				min-width: 220px;
 			}
 		}
 		.nfl-game-score {
@@ -14262,11 +14268,25 @@
 			const row = el('div', { class: `nfl-game-row${stateClass}${isFavGame ? ' nfl-fav-game' : ''}` });
 			const teams = el('div', { class: 'nfl-game-teams' });
 			const teamClass = (abbr) => `nfl-game-team${favs.has(favoriteTeamKey(abbr)) ? ' nfl-fav' : ''}`;
-			const teamText = (abbr) => (favs.has(favoriteTeamKey(abbr)) ? `★ ${abbr}` : abbr);
-			teams.appendChild(el('span', { class: teamClass(game.away.team), text: teamText(game.away.team) }));
+			// Record in parens off the snapshot's nflStandings, so it is as
+			// fresh as the last sync (up to four hours) and lags a game that
+			// just went final. No standings entry (an older snapshot, or an
+			// abbreviation it doesn't know) leaves the bare abbreviation.
+			const teamRecord = (abbr) => {
+				const t = pageData?.nflStandings?.teams?.[favoriteTeamKey(abbr)];
+				return t && t.w != null && t.l != null ? ` (${formatNflRecord(t)})` : '';
+			};
+			const teamText = (abbr) => `${favs.has(favoriteTeamKey(abbr)) ? '★ ' : ''}${abbr}`;
+			const teamSpan = (abbr) => {
+				const span = el('span', { class: teamClass(abbr), text: teamText(abbr) });
+				const record = teamRecord(abbr);
+				if (record) span.appendChild(el('span', { class: 'nfl-game-record', text: record }));
+				return span;
+			};
+			teams.appendChild(teamSpan(game.away.team));
 			if (showScore) teams.appendChild(el('span', { class: 'nfl-game-score', text: String(game.away.score) }));
 			teams.appendChild(el('span', { class: 'nfl-game-at', text: '@' }));
-			teams.appendChild(el('span', { class: teamClass(game.home.team), text: teamText(game.home.team) }));
+			teams.appendChild(teamSpan(game.home.team));
 			if (showScore) teams.appendChild(el('span', { class: 'nfl-game-score', text: String(game.home.score) }));
 			row.appendChild(teams);
 			row.appendChild(el('div', { class: 'nfl-game-status', text: [formatGameWhen(game), game.broadcast].filter(Boolean).join(' · ') }));
