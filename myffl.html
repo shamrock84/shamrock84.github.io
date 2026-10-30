@@ -19113,7 +19113,9 @@
 
 			syncBtn.disabled = true;
 			syncBtn.classList.add('spinning');
-			updatedEl.textContent = 'Requesting sync…';
+			// These share one centered line with the season record on a phone, so
+			// each stays short enough not to wrap (about 24 characters).
+			updatedEl.textContent = 'Starting sync…';
 
 			try {
 				const res = await fetch(TRIGGER_SYNC_URL, {
@@ -19130,9 +19132,17 @@
 					doLogout();
 					return;
 				}
-				if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+				if (!res.ok) {
+					const err = new Error(body.error || `HTTP ${res.status}`);
+					// The cooldown refusal is a full sentence from the server;
+					// the line only has room for the part that matters.
+					if (res.status === 429 && body.retryAfterSeconds) {
+						err.short = `Try again in ${Math.max(1, Math.ceil(body.retryAfterSeconds / 60))} min`;
+					}
+					throw err;
+				}
 
-				updatedEl.textContent = 'Sync started — checking for fresh data…';
+				updatedEl.textContent = 'Syncing…';
 				if (syncPollTimer) clearInterval(syncPollTimer);
 				let attempts = 0;
 				// The sync itself runs 1-2 minutes, and then deploy-pages.yml has to
@@ -19167,14 +19177,17 @@
 						// Deliberately not "Last synced X ago — still syncing": that
 						// combination goes stale and misleading the moment the sync
 						// actually finishes a minute after this message appears.
-						updatedEl.textContent = "Taking longer than usual — reload the page in a bit to check";
+						updatedEl.textContent = 'Slow — reload in a bit';
 					}
 				}, 10000);
 			} catch (err) {
 				syncBtn.disabled = false;
 				syncBtn.classList.remove('spinning');
-				updatedEl.textContent = `Couldn't start sync: ${err.message}`;
+				// The full reason rides the tooltip; the line itself stays short.
+				updatedEl.textContent = err.short || 'Sync failed';
+				updatedEl.title = err.message;
 				setTimeout(() => {
+					updatedEl.title = '';
 					if (pageData?.generatedAt) updatedEl.textContent = `Last synced ${timeAgo(pageData.generatedAt)}`;
 				}, 4000);
 			}
