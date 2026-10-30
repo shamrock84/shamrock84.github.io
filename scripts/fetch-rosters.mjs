@@ -73,6 +73,7 @@ import {
   automaticRankingType,
   lookupPlayer,
 } from './lib/fantasypros.mjs';
+import { resolveMflLeagueInfo, parseLeagueMeta, serializeLeagueMeta } from './lib/league-meta.mjs';
 import { fetchAllDepthCharts, DEPTH_CHART_POSITIONS } from './lib/espn-depth-chart.mjs';
 import { fetchNflStandings } from './lib/espn-standings.mjs';
 import { fetchNflPowerRankings } from './lib/espn-fpi.mjs';
@@ -89,6 +90,8 @@ import {
 const USERNAME = process.env.MFL_USERNAME;
 const PASSWORD = process.env.MFL_PASSWORD;
 const OUTPUT_PATH = fileURLToPath(new URL('../data/rosters.json', import.meta.url));
+// Not part of the snapshot the page downloads — see lib/league-meta.mjs.
+const LEAGUE_META_PATH = fileURLToPath(new URL('../data/mfl-league-meta.json', import.meta.url));
 const CONFIG_PATH = fileURLToPath(new URL('../config/leagues.json', import.meta.url));
 
 // Serializes the whole snapshot for data/rosters.json: top-level keys one per
@@ -1313,6 +1316,12 @@ async function main() {
   // access instead).
   const mflFranchiseInfoById = new Map();
 
+  // The slow-moving half of that same TYPE=league data, kept between syncs in
+  // its own file so it never rides rosters.json to every visitor. Read once
+  // here, updated in place by the roster pass below, written at the end.
+  const leagueMeta = parseLeagueMeta(await readFile(LEAGUE_META_PATH, 'utf8').catch(() => ''));
+  let metaRequestsSaved = 0;
+
   let frozenDraftonly = 0;
 
   const leagues = [];
@@ -1353,18 +1362,37 @@ async function main() {
       continue;
     }
     try {
+      // Decided first, because it also decides whether this league needs its
+      // TYPE=league read at all (see resolveMflLeagueInfo).
+      const prevEntry = previousById.get(league.id);
+      const frozen = draftonlyRosterIsSettled(league, prevEntry, forceDraftonlyRefresh);
+      if (frozen) frozenDraftonly += 1;
       // The one TYPE=league read for this league, taken here because the roster
       // pass is the first thing that needs it and needs the most of it (roster
       // limits, starting-lineup slots and the salary cap all come off the same
       // response, not just the names the other two passes want).
+      //
+      // Two exceptions, both from the league-meta cache (lib/league-meta.mjs):
+      // the owner-name read against the league's own regional host happens at
+      // most daily, and a frozen draft-only league with a fresh entry skips
+      // both reads, since it has no roster to build and only needs its names.
       let mflLeagueData = null;
       if (!league.provider || league.provider === 'mfl') {
-        mflLeagueData = await fetchMflLeagueData(league, cookie);
-        mflFranchiseInfoById.set(league.id, {
-          nameById: mflFranchiseNames(mflLeagueData),
-          ownerById: await fetchMflOwnerNames(league, cookie, mflLeagueData),
-          divisionById: mflFranchiseDivisions(mflLeagueData),
+        const resolved = await resolveMflLeagueInfo({
+          league,
+          entry: leagueMeta[league.id],
+          frozen,
+          now,
+          force: forceAvailability,
+          fetchLeagueData: () => fetchMflLeagueData(league, cookie),
+          fetchOwners: (leagueData) => fetchMflOwnerNames(league, cookie, leagueData),
+          franchiseNames: mflFranchiseNames,
+          franchiseDivisions: mflFranchiseDivisions,
         });
+        mflLeagueData = resolved.leagueData;
+        mflFranchiseInfoById.set(league.id, resolved.info);
+        if (resolved.record) leagueMeta[league.id] = resolved.record;
+        metaRequestsSaved += resolved.requestsSaved;
       }
       // A finished draft-only league keeps the roster it already has, at the
       // cost of no requests at all. Built as `result` and then run through the
@@ -1373,9 +1401,6 @@ async function main() {
       // a frozen league — those come off the config, not off the provider, and
       // silently pinning them to whatever they were when the draft ended would
       // be a much worse bug than a stale roster.
-      const prevEntry = previousById.get(league.id);
-      const frozen = draftonlyRosterIsSettled(league, prevEntry, forceDraftonlyRefresh);
-      if (frozen) frozenDraftonly += 1;
       const result = frozen
         // updatedAt deliberately carries forward untouched: it is the age of
         // this roster, and stamping it with now() would claim a read that
@@ -1468,6 +1493,7 @@ async function main() {
   if (frozenDraftonly) {
     console.log(`Froze ${frozenDraftonly} finished draft-only roster(s), saving ${frozenDraftonly * 3} MFL requests`);
   }
+  console.log(`League meta: ${metaRequestsSaved} TYPE=league request(s) answered from the cache`);
 
   for (const league of LEAGUES) {
     const target = leagues.find((l) => l.id === league.id);
@@ -1507,9 +1533,25 @@ async function main() {
     }
   }
 
+  let draftonlyScoringSkipped = 0;
   for (const league of LEAGUES) {
     const target = leagues.find((l) => l.id === league.id);
     if (!target || !league.franchiseId) continue;
+    // A draft-only league runs one draft and no head-to-head schedule, so MFL
+    // answers "No live scoring available yet" for every one, every sync — eight
+    // wasted requests a run, ~3s. Nothing reads the result: the Scoring tab
+    // excludes the type client-side and hasLiveScoring does server-side, and
+    // every other reader of `scoring` skips draftonly. Skipped by TYPE and never
+    // by the roster freeze (test-draftonly-freeze.mjs pins both), and standings,
+    // which do move all season, are still fetched for every league. `scoring`
+    // was already always null for these, so the one visible change is that
+    // `scoringError` is null rather than that same message.
+    if (league.type === 'draftonly') {
+      target.scoring = null;
+      target.scoringError = null;
+      draftonlyScoringSkipped++;
+      continue;
+    }
     try {
       const scoring = league.provider === 'espn'
         ? await fetchEspnScoring(league, nflClocks, undefined, pastRolloverCutoff)
@@ -1525,6 +1567,9 @@ async function main() {
       target.scoring = prev?.scoring || null;
       target.scoringError = err.message;
     }
+  }
+  if (draftonlyScoringSkipped) {
+    console.log(`Scoring: skipped ${draftonlyScoringSkipped} draft-only league(s), which have no live scoring`);
   }
 
   // fetchMflLineup needs the actual current NFL week (see its own comment) —
@@ -2151,6 +2196,7 @@ async function main() {
   };
 
   await writeFile(OUTPUT_PATH, serializeSnapshot(output));
+  await writeFile(LEAGUE_META_PATH, serializeLeagueMeta(leagueMeta, LEAGUES.map((l) => l.id)));
   console.log(`Wrote ${OUTPUT_PATH}`);
 }
 

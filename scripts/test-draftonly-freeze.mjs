@@ -9,10 +9,18 @@
 // does not change again — across fourteen consecutive snapshots every
 // draft-only roster was byte-identical for as long as its draft was finished.
 //
-// Standings and live scoring are deliberately still fetched every sync — they
-// move every week of the season and are the whole point of these leagues. Only
-// the roster block is frozen. That split is a decision, not an accident, and
-// the integration assertion at the bottom of this file is what holds it.
+// Standings are deliberately still fetched every sync — they move every week of
+// the season and are the whole point of these leagues. Only the roster block is
+// frozen. That split is a decision, not an accident, and the integration
+// assertion at the bottom of this file is what holds it.
+//
+// Live scoring is not fetched for draft-only leagues at all, but by their TYPE,
+// not by the freeze: they have no head-to-head schedule, MFL answers "No live
+// scoring available yet" for every one every sync, and nothing reads the result
+// (see the scoring pass in fetch-rosters.mjs, and test-league-meta.mjs, which
+// pins that guard). The assertion below keeps it that way round — scoring must
+// never be gated on the freeze, because a frozen league is not a different kind
+// of league from an unfrozen one.
 //
 // Every negative case below is a way the frozen answer would be *wrong*, and
 // each fails silently if it regresses: a league stuck showing last season's
@@ -160,9 +168,11 @@ for (const type of ['dynasty', 'salarycap', 'redraft', undefined]) {
 
 // --- The freeze covers the roster block and nothing else ----------------------
 // Read the source rather than trusting the comment: standings and scoring must
-// still be fetched for every league each sync, so their call sites must not be
-// gated on the freeze. If someone later "optimises" by skipping those too, this
-// is what says no — the leagues would quietly stop scoring mid-season.
+// not be gated on the freeze, so their call sites must not mention it. If
+// someone later "optimises" by skipping standings for frozen leagues, this is
+// what says no — they would quietly stop updating mid-season. (Scoring is
+// skipped for draft-only leagues by type, which is a different guard and
+// passes this check on purpose.)
 {
 	const src = await (await import('node:fs/promises')).readFile(
 		new URL('./fetch-rosters.mjs', import.meta.url), 'utf8'
