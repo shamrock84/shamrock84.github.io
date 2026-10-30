@@ -263,6 +263,26 @@ function paceMflRequest() {
   return turn;
 }
 
+// A short human reason for a rejected fetch, read off undici's .cause (or the
+// first of an AggregateError's, which is what a dual-stack connect timeout
+// looks like). Unknown codes pass through as the code, which is still far more
+// useful than "fetch failed". Exported for the test.
+const TRANSPORT_REASONS = {
+  UND_ERR_CONNECT_TIMEOUT: 'connect timeout',
+  ETIMEDOUT: 'connect timeout',
+  UND_ERR_HEADERS_TIMEOUT: 'response timeout',
+  UND_ERR_BODY_TIMEOUT: 'response timeout',
+  ECONNRESET: 'connection reset',
+  UND_ERR_SOCKET: 'connection closed',
+  ECONNREFUSED: 'connection refused',
+  ENOTFOUND: 'DNS lookup failed',
+  EAI_AGAIN: 'DNS lookup failed',
+};
+export function describeTransportError(err) {
+  const code = err?.cause?.code || err?.cause?.errors?.[0]?.code || err?.code;
+  return TRANSPORT_REASONS[code] || code || err?.message || 'network error';
+}
+
 // Whether mflGet sleeps and retries a 429 (1.5s, 3s, 4.5s: up to 9s on one
 // request) or surfaces it at once as an error carrying `status: 429`. On by
 // default, which is right for everything the page depends on. The sync's
@@ -292,10 +312,25 @@ export function setMflRetryOn429(enabled) {
 // comment for why the generic host can't be trusted for privileged fields.
 export async function mflGet(path, cookie, year = YEAR, attempt = 1, host = 'https://api.myfantasyleague.com') {
   await paceMflRequest();
-  const res = await fetch(`${host}/${year}${path}`, {
-    headers: cookie ? { Cookie: cookie } : {},
-    redirect: 'follow',
-  });
+  let res;
+  try {
+    res = await fetch(`${host}/${year}${path}`, {
+      headers: cookie ? { Cookie: cookie } : {},
+      redirect: 'follow',
+    });
+  } catch (cause) {
+    // fetch rejecting means no HTTP answer at all: the connection never
+    // happened or died. undici's own message is the uninformative "fetch
+    // failed" (the real reason is on .cause), which is what the page's "Sync
+    // failing" row showed. `transport` is what lets the sync tell this apart
+    // from an HTTP error: a host that cannot be reached will not answer the
+    // league's next request either, and each attempt costs a ten-second connect
+    // timeout (see unreachable in fetch-rosters.mjs).
+    const err = new Error(`MFL unreachable: ${describeTransportError(cause)}`);
+    err.transport = true;
+    err.cause = cause;
+    throw err;
+  }
   if (res.status === 429 && mflRetryOn429 && attempt < 4) {
     await sleep(attempt * 1500);
     return mflGet(path, cookie, year, attempt + 1, host);

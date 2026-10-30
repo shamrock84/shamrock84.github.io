@@ -735,7 +735,7 @@ export async function backfillLeagueHistory(leagues, previousById, cookie, optio
   }
 }
 
-async function runLeagueHistoryBackfill(leagues, previousById, cookie, { throttle = false, now = new Date() } = {}) {
+async function runLeagueHistoryBackfill(leagues, previousById, cookie, { throttle = false, now = new Date(), skipLeagueIds = null } = {}) {
   const retry = throttle ? { now } : undefined;
   const today = now.toISOString().slice(0, 10);
   let mflBudget = HISTORY_MFL_REQUEST_BUDGET;
@@ -767,6 +767,11 @@ async function runLeagueHistoryBackfill(leagues, previousById, cookie, { throttl
     league.results = prev?.results ? prev.results.map((r) => ({ ...r })) : [];
     if (prev?.historyBoundaryYear) league.historyBoundaryYear = prev.historyBoundaryYear;
     if (prev?.historyCheck) league.historyCheck = prev.historyCheck;
+
+    // Carried above, so a skipped league keeps everything it had. The sync passes
+    // the leagues it found unreachable this run: asking their host again would
+    // only spend another connect timeout on bonus data.
+    if (skipLeagueIds?.has(league.id)) continue;
 
     if (league.provider === 'sleeper') continue; // out of scope for now
     if (!league.franchiseId) continue; // nothing to match a placement against, ever
@@ -1303,7 +1308,8 @@ async function main() {
   // case where the roster pass failed before caching one. Both fall through to
   // the pre-existing behaviour: fetchStandings and fetchScoring each fetch their
   // own when handed nothing, so a league whose rosters failed can still get
-  // standings, exactly as before.
+  // standings, exactly as before — except when the failure was a transport one
+  // (see `unreachable` below), where the next request cannot work either.
   //
   // Carries { nameById, ownerById, divisionById } per league rather than a
   // bare name map. nameById and divisionById ride along for free off the
@@ -1315,6 +1321,23 @@ async function main() {
   // of how this project used to believe that was gated by commissioner
   // access instead).
   const mflFranchiseInfoById = new Map();
+
+  // MFL leagues whose host could not be reached this run, by league id, with the
+  // error text. A rejected fetch (no HTTP answer at all: err.transport, set by
+  // mflGet) is almost always the league's MFL server being down, not one bad
+  // request, and every further request to it costs a ten-second connect timeout.
+  // Seen 2026-10-30: three leagues' hosts unreachable for ~85s turned a 36s sync
+  // into 100s, nine timeouts for what one had already established. Once a league
+  // is in here its later passes and its history backfill skip MFL and fall back
+  // to the previous snapshot exactly as a failed read would, just without paying
+  // for it again. HTTP errors (429, 5xx, 404) are NOT recorded: those are
+  // answers, and the next request may well succeed.
+  const unreachable = new Map();
+  const markUnreachable = (league, err) => {
+    if (!err?.transport || unreachable.has(league.id)) return;
+    unreachable.set(league.id, err.message);
+    console.error(`${league.name}: ${err.message} — skipping its remaining MFL reads this run`);
+  };
 
   // The slow-moving half of that same TYPE=league data, kept between syncs in
   // its own file so it never rides rosters.json to every visitor. Read once
@@ -1451,6 +1474,7 @@ async function main() {
         : `Fetched ${league.name}: ${result.players.length} players`);
     } catch (err) {
       console.error(`Failed to fetch ${league.name}: ${err.message}`);
+      markUnreachable(league, err);
       const prev = previousById.get(league.id);
       leagues.push({
         id: league.id,
@@ -1499,6 +1523,7 @@ async function main() {
     const target = leagues.find((l) => l.id === league.id);
     if (!target || !league.franchiseId) continue;
     try {
+      if (unreachable.has(league.id)) throw new Error(unreachable.get(league.id));
       target.standings = league.provider === 'espn'
         ? await fetchEspnStandings(league)
         : league.provider === 'sleeper'
@@ -1508,6 +1533,7 @@ async function main() {
       console.log(`Fetched standings for ${league.name}: ${target.standings.length} teams`);
     } catch (err) {
       console.error(`Failed to fetch standings for ${league.name}: ${err.message}`);
+      markUnreachable(league, err);
       const prev = previousById.get(league.id);
       target.standings = prev?.standings || [];
       target.standingsError = err.message;
@@ -1553,6 +1579,7 @@ async function main() {
       continue;
     }
     try {
+      if (unreachable.has(league.id)) throw new Error(unreachable.get(league.id));
       const scoring = league.provider === 'espn'
         ? await fetchEspnScoring(league, nflClocks, undefined, pastRolloverCutoff)
         : league.provider === 'sleeper'
@@ -1563,6 +1590,7 @@ async function main() {
       console.log(`Fetched scoring for ${league.name}: ${target.scoring.teams.length} teams`);
     } catch (err) {
       console.error(`Failed to fetch scoring for ${league.name}: ${err.message}`);
+      markUnreachable(league, err);
       const prev = previousById.get(league.id);
       target.scoring = prev?.scoring || null;
       target.scoringError = err.message;
@@ -1597,6 +1625,7 @@ async function main() {
     const target = leagues.find((l) => l.id === league.id);
     if (!target || !league.franchiseId) continue;
     try {
+      if (unreachable.has(league.id)) throw new Error(unreachable.get(league.id));
       const { week, starterIds } = league.provider === 'sleeper'
         ? await fetchSleeperLineup(league)
         : league.provider === 'espn'
@@ -1608,6 +1637,7 @@ async function main() {
       console.log(`Fetched lineup for ${league.name}: ${starterIds.length} starters`);
     } catch (err) {
       console.error(`Failed to fetch lineup for ${league.name}: ${err.message}`);
+      markUnreachable(league, err);
       target.starters = null;
       target.lineupError = err.message;
     }
@@ -1652,7 +1682,7 @@ async function main() {
   let settled = 0;
   for (const league of LEAGUES) {
     const target = leagues.find((l) => l.id === league.id);
-    if (!target || !league.franchiseId || target.error) continue;
+    if (!target || !league.franchiseId || target.error || unreachable.has(league.id)) continue;
     // Sleeper arrives with both its rostered names and its draft status
     // already attached, at no extra request.
     if (league.provider === 'sleeper' || target.rosteredNames) continue;
@@ -2157,7 +2187,7 @@ async function main() {
   // MFL's rate limit. See backfillLeagueHistory's own comment for the
   // budget/backfill shape.
   try {
-    await backfillLeagueHistory(leagues, previousById, cookie, { throttle: true, now });
+    await backfillLeagueHistory(leagues, previousById, cookie, { throttle: true, now, skipLeagueIds: new Set(unreachable.keys()) });
   } catch (err) {
     console.error(`History backfill failed: ${err.message}`);
   }
