@@ -610,7 +610,25 @@ const ESPN_HISTORY_LOOKBACK_YEARS = 15;
 // high-confidence directive — the same reason `LEAGUE_ID` already lets
 // explicit intent skip the normal per-league queue — so it earns first
 // crack at the budget rather than losing to years nobody chose to prioritize.
-export function yearsNeedingHistoryBackfill(historyYears, existingResults, currentSeason, startYear, leagueType, overrideYears) {
+//
+// `retry` ({ now: Date }) is the sync's throttle on the retry rule above, and is
+// absent for the on-demand backfill, which wants every guess re-read. A guessed
+// year stamped `triedAt` less than GUESSED_RETRY_DAYS ago is left alone: most
+// guesses are a genuine bracket gap that re-fetches byte-identical, and
+// re-reading them every four hours spent the whole MFL budget (and ~35s of the
+// sync) on answers that never changed — seven consecutive syncs, no `results`
+// difference. The retry still happens, weekly, so a guess that was only a 429
+// blip heals. A guess with no `triedAt` (written before the stamp existed) is
+// eligible, and gets stamped when it is next re-read.
+export const GUESSED_RETRY_DAYS = 7;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function daysSince(stamp, now) {
+  const then = Date.parse(stamp);
+  return Number.isFinite(then) ? Math.floor((now.getTime() - then) / DAY_MS) : Infinity;
+}
+
+export function yearsNeedingHistoryBackfill(historyYears, existingResults, currentSeason, startYear, leagueType, overrideYears, retry) {
   const canBackfillDivisionWinner = leagueType !== 'draftonly';
   const haveYears = new Set(
     (existingResults || [])
@@ -618,6 +636,16 @@ export function yearsNeedingHistoryBackfill(historyYears, existingResults, curre
       .filter((r) => !canBackfillDivisionWinner || r.divisionWinnerFranchiseId != null)
       .map((r) => String(r.year))
   );
+  if (retry?.now) {
+    // Only an entry that is still a guess is throttled. A confirmed year that
+    // is missing its division winner (excluded from haveYears above) has no
+    // `triedAt` to be throttled by and is re-read as before.
+    for (const r of existingResults || []) {
+      if (r.guessed !== false && r.triedAt && daysSince(r.triedAt, retry.now) < GUESSED_RETRY_DAYS) {
+        haveYears.add(String(r.year));
+      }
+    }
+  }
   const overrideYearSet = new Set(Object.keys(overrideYears || {}));
   return (historyYears || [])
     .filter((h) => Number(h.year) < Number(currentSeason))
@@ -658,10 +686,38 @@ export function applyHistoryLeagueIdOverrides(historyYears, overrides) {
   return [...byYear.values()];
 }
 
+// What the history lookup's answer depends on. The lookup (TYPE=league, read
+// for its history.league[] chain) was a request per MFL league per sync, made
+// before knowing whether anything was missing, so finished leagues paid it
+// forever. A league that was checked with nothing eligible records
+// `historyCheck: { on, key }`, and is not looked up again until the key
+// changes (a season rollover, an edited startYear, type or override) or
+// GUESSED_RETRY_DAYS pass. The week is also when a throttled guess comes due.
+export function historyCheckKey(league) {
+  const overrides = Object.entries(league.historyLeagueIds || {})
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([year, id]) => `${year}:${id}`)
+    .join(',');
+  return [league.season, league.startYear ?? '', league.type, overrides].join('|');
+}
+
+export function historyLookupIsDue(league, now) {
+  const check = league.historyCheck;
+  if (!check || check.key !== historyCheckKey(league)) return true;
+  return daysSince(check.on, now) >= GUESSED_RETRY_DAYS;
+}
+
 // Exported so backfill-history.mjs — the on-demand, standalone companion to
 // this pass (see that file's header) — can invoke exactly this logic with
 // its own uncontested cookie and budget, instead of duplicating it.
-export async function backfillLeagueHistory(leagues, previousById, cookie) {
+//
+// `throttle` is the sync's setting and the on-demand run's absence of it:
+// with it, a recently tried guess is left alone and a league checked this week
+// skips its lookup; without it, every guessed year is re-read, which is what
+// dispatching backfill-history.yml by hand is for.
+export async function backfillLeagueHistory(leagues, previousById, cookie, { throttle = false, now = new Date() } = {}) {
+  const retry = throttle ? { now } : undefined;
+  const today = now.toISOString().slice(0, 10);
   let mflBudget = HISTORY_MFL_REQUEST_BUDGET;
   let espnBudget = HISTORY_ESPN_REQUEST_BUDGET;
   let yearsAdded = 0;
@@ -690,6 +746,7 @@ export async function backfillLeagueHistory(leagues, previousById, cookie) {
     const prev = previousById.get(league.id);
     league.results = prev?.results ? prev.results.map((r) => ({ ...r })) : [];
     if (prev?.historyBoundaryYear) league.historyBoundaryYear = prev.historyBoundaryYear;
+    if (prev?.historyCheck) league.historyCheck = prev.historyCheck;
 
     if (league.provider === 'sleeper') continue; // out of scope for now
     if (!league.franchiseId) continue; // nothing to match a placement against, ever
@@ -747,6 +804,7 @@ export async function backfillLeagueHistory(leagues, previousById, cookie) {
 
     // MFL
     if (mflBudget <= 0 || mflRateLimited) continue;
+    if (throttle && !historyLookupIsDue(league, now)) continue;
     // Draftonly leagues cost far more per year than a bracket walk does
     // (see HISTORY_MFL_DRAFTONLY_PER_LEAGUE_BUDGET) — Math.max rather than a
     // straight override so the existing single-league full-budget case
@@ -765,7 +823,7 @@ export async function backfillLeagueHistory(leagues, previousById, cookie) {
       continue;
     }
     historyYears = applyHistoryLeagueIdOverrides(historyYears, league.historyLeagueIds);
-    const missing = yearsNeedingHistoryBackfill(historyYears, league.results, league.season, league.startYear, league.type, league.historyLeagueIds);
+    const missing = yearsNeedingHistoryBackfill(historyYears, league.results, league.season, league.startYear, league.type, league.historyLeagueIds, retry);
     for (const { year, id } of missing) {
       if (mflBudget <= 0 || mflRateLimited || leagueMflBudget <= 0) break;
       try {
@@ -853,6 +911,8 @@ export async function backfillLeagueHistory(leagues, previousById, cookie) {
           const existing = league.results.find((r) => String(r.year) === String(year));
           league.results = league.results.filter((r) => String(r.year) !== String(year));
           const entry = { year, rank: mine.rank, total: mine.total, guessed: mine.guessed };
+          // Only a guess needs the stamp; a confirmed year is never re-read.
+          if (mine.guessed) entry.triedAt = today;
           if (divisionWinnerFranchiseId) entry.divisionWinnerFranchiseId = divisionWinnerFranchiseId;
           if (existing?.scoring) entry.scoring = existing.scoring;
           league.results.push(entry);
@@ -864,6 +924,15 @@ export async function backfillLeagueHistory(leagues, previousById, cookie) {
         console.error(`History backfill failed for ${league.name} (${year}): ${err.message}`);
       }
     }
+
+    // Re-ask what is eligible now rather than reusing `missing`: this run's
+    // own reads have confirmed some years and stamped others. Anything still
+    // eligible (a year the budget didn't reach, a failed read, a bracket that
+    // could not be placed at all) leaves the league due for a lookup next
+    // sync, exactly as before.
+    const stillMissing = yearsNeedingHistoryBackfill(historyYears, league.results, league.season, league.startYear, league.type, league.historyLeagueIds, retry);
+    if (stillMissing.length === 0) league.historyCheck = { on: today, key: historyCheckKey(league) };
+    else delete league.historyCheck;
   }
 
   for (const league of leagues) {
@@ -1067,6 +1136,17 @@ export async function backfillLeagueScoringRecords(leagues, previousById, cookie
   );
 }
 
+// Starts a fetch now and returns a promise that never rejects, resolving to
+// { value } or { error }. For work that doesn't touch MFL, so it can run
+// underneath the MFL passes (which are paced to a request every 300ms and so
+// spend most of their time waiting) and be collected where its result is used.
+// Never rejecting is the point: a fetch that fails while nobody is awaiting it
+// would otherwise be an unhandled rejection that kills the run, where the
+// sync's rule is that these degrade to the previous snapshot.
+function startEarly(fn) {
+  return Promise.resolve().then(fn).then((value) => ({ value }), (error) => ({ error }));
+}
+
 async function main() {
   if (!USERNAME || !PASSWORD) {
     throw new Error('MFL_USERNAME and MFL_PASSWORD environment variables are required.');
@@ -1090,6 +1170,24 @@ async function main() {
   const now = new Date();
   const phase = nflSeasonPhase(now);
   const targetSeason = phase.season;
+
+  // Everything below that never touches MFL starts now and is collected where
+  // its result is used: the ESPN public NFL feeds (depth charts alone are 64
+  // sequential requests) and the FantasyPros projections. They were ~20s of a
+  // ~90s run, spent after the MFL passes had finished, and none of them
+  // competes with MFL's rate limit or with each other's hosts. Each keeps its
+  // own never-fail handling at the collection point, so a failure here costs
+  // the same as it did inline: that feed carries forward from the last sync.
+  const nflSeason = process.env.MFL_YEAR || String(targetSeason);
+  const fpApiKey = fantasyProsApiKey();
+  const depthChartsRead = startEarly(() => fetchAllDepthCharts({ season: nflSeason }));
+  const nflStandingsRead = startEarly(() => fetchNflStandings({ season: nflSeason }));
+  const nflSchedulesRead = startEarly(() => fetchNflSchedules({ season: nflSeason }));
+  const nflPowerRankingsRead = startEarly(() => fetchNflPowerRankings({ season: nflSeason }));
+  const projectionsRead = fpApiKey
+    ? startEarly(() => fetchProjections({ apiKey: fpApiKey, season: nflSeason, ros: phase.inSeason, inSeason: phase.inSeason }))
+    : null;
+
   const probes = {
     mfl: (l, season) => mflLeagueExists(l, cookie, season),
     espn: (l, season) => espnLeagueExists(l, season),
@@ -1584,7 +1682,6 @@ async function main() {
   // to fetch above. Skipped entirely without an API key so the sync behaves
   // exactly as it did before this existed, and never allowed to fail the run
   // — every league keeps its roster whether or not rankings came through.
-  const fpApiKey = fantasyProsApiKey();
   let rankingPools = {};
   // Which ranking type the Depth Charts tab's extra per-position pools were
   // fetched under (see below) — null when there's no key to fetch them
@@ -1729,11 +1826,14 @@ async function main() {
       // needs to say different things about each rather than one banner
       // wording standing in for both.
       let projectionsUnavailable = null;
-      try {
-        projections = await fetchProjections({ apiKey: fpApiKey, season, ros: phase.inSeason, inSeason: phase.inSeason });
-      } catch (err) {
+      // Started at the top of main() — see projectionsRead there.
+      const projectionsResult = await projectionsRead;
+      if (projectionsResult.error) {
+        const err = projectionsResult.error;
         projectionsUnavailable = err.projectionsNotPublished ? 'not_published' : 'fetch_failed';
         console.log(`FantasyPros — projections unavailable (${err.message}); power ranks fall back to consensus rankings`);
+      } else {
+        projections = projectionsResult.value;
       }
 
       // One ECR index per distinct ranking pool rather than per league, the
@@ -1856,48 +1956,56 @@ async function main() {
   // Never allowed to fail the run, same as every other enrichment here —
   // and never allowed to compete with MFL's rate limit either, since it
   // doesn't touch MFL at all.
+  //
+  // These four NFL feeds were started at the top of main() and run underneath
+  // the MFL passes; this only collects them, in the original order, so the log
+  // and the carry-forward below read the same as when they were fetched here.
   let depthCharts = null;
-  try {
-    depthCharts = await fetchAllDepthCharts({ season: process.env.MFL_YEAR || String(targetSeason) });
+  const depthChartsResult = await depthChartsRead;
+  if (depthChartsResult.error) {
+    console.error(`Failed to fetch depth charts: ${depthChartsResult.error.message}`);
+  } else {
+    depthCharts = depthChartsResult.value;
     console.log(
       `Depth charts — ${Object.keys(depthCharts.teams).length}/${depthCharts.teamCount} team(s)`
       + `${depthCharts.failureCount > 0 ? `, ${depthCharts.failureCount} failed` : ''}`
     );
-  } catch (err) {
-    console.error(`Failed to fetch depth charts: ${err.message}`);
   }
 
   // NFL standings for the NFL tab's Standings card — same public ESPN host
   // and same never-fail posture as the depth charts above, one request.
   // See scripts/lib/espn-standings.mjs.
   let nflStandings = null;
-  try {
-    nflStandings = await fetchNflStandings({ season: process.env.MFL_YEAR || String(targetSeason) });
+  const nflStandingsResult = await nflStandingsRead;
+  if (nflStandingsResult.error) {
+    console.error(`Failed to fetch NFL standings: ${nflStandingsResult.error.message}`);
+  } else {
+    nflStandings = nflStandingsResult.value;
     console.log(`NFL standings — ${Object.keys(nflStandings.teams).length} team(s)`);
-  } catch (err) {
-    console.error(`Failed to fetch NFL standings: ${err.message}`);
   }
 
   // Season schedule for the NFL tab's Schedules card — same public ESPN
   // host and never-fail posture, 18 sequential scoreboard requests (one per
   // week). See scripts/lib/espn-schedules.mjs.
   let nflSchedules = null;
-  try {
-    nflSchedules = await fetchNflSchedules({ season: process.env.MFL_YEAR || String(targetSeason) });
+  const nflSchedulesResult = await nflSchedulesRead;
+  if (nflSchedulesResult.error) {
+    console.error(`Failed to fetch NFL schedules: ${nflSchedulesResult.error.message}`);
+  } else {
+    nflSchedules = nflSchedulesResult.value;
     console.log(`NFL schedules — ${Object.keys(nflSchedules.teams).length} team(s)`);
-  } catch (err) {
-    console.error(`Failed to fetch NFL schedules: ${err.message}`);
   }
 
   // NFL power rankings (ESPN's FPI) for the NFL tab's Power Index card —
   // same public ESPN host family and same never-fail posture, one request.
   // See scripts/lib/espn-fpi.mjs.
   let nflPowerRankings = null;
-  try {
-    nflPowerRankings = await fetchNflPowerRankings({ season: process.env.MFL_YEAR || String(targetSeason) });
+  const nflPowerRankingsResult = await nflPowerRankingsRead;
+  if (nflPowerRankingsResult.error) {
+    console.error(`Failed to fetch NFL power rankings: ${nflPowerRankingsResult.error.message}`);
+  } else {
+    nflPowerRankings = nflPowerRankingsResult.value;
     console.log(`NFL power rankings — ${Object.keys(nflPowerRankings.teams).length} team(s)`);
-  } catch (err) {
-    console.error(`Failed to fetch NFL power rankings: ${err.message}`);
   }
 
   // Degrade the same way everything else here does: a league that couldn't be
@@ -1987,7 +2095,7 @@ async function main() {
   // MFL's rate limit. See backfillLeagueHistory's own comment for the
   // budget/backfill shape.
   try {
-    await backfillLeagueHistory(leagues, previousById, cookie);
+    await backfillLeagueHistory(leagues, previousById, cookie, { throttle: true, now });
   } catch (err) {
     console.error(`History backfill failed: ${err.message}`);
   }
