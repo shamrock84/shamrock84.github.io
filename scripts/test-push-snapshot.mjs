@@ -106,11 +106,39 @@ try {
 
     const run = runScript(clone);
     assert.equal(run.status, 0, `${run.stdout}\n${run.stderr}`);
-    assert.match(run.stdout, /re-applying data\/rosters\.json onto the new tip/);
+    assert.match(run.stdout, /re-applying data\/rosters\.json data\/mfl-league-meta\.json onto the new tip/);
     assert.equal(originFile(bare, 'data/rosters.json'), '{"generatedAt":"sync"}', "the sync's snapshot landed");
     assert.equal(originFile(bare, 'config/leagues.json'), '{"leagues":["a","b"]}', "the other writer's change was not lost");
     assert.equal(originFile(bare, 'docs/readme.md'), 'outside the sparse set', 'files outside the sparse checkout are intact');
     assert.deepEqual(originLog(bare), ['Update MFL rosters data', 'someone else merged', 'seed'], 'history stays linear');
+  }
+
+  // ---- both files, with the cache file new on this run, and main moved ------
+  // The league-meta cache is committed beside the snapshot. On its first run it
+  // does not exist at origin at all; on later runs it does. Both must survive
+  // the re-apply, and a run that changes only the cache (no snapshot change) is
+  // still a commit.
+  {
+    const { bare, seed } = makeOrigin('twofiles');
+    const clone = workflowClone(bare, 'twofiles-clone');
+    writeFileSync(join(clone, 'data/rosters.json'), '{"generatedAt":"sync"}\n');
+    writeFileSync(join(clone, 'data/mfl-league-meta.json'), '{"version":1,"leagues":{}}\n');
+    writeFileSync(join(seed, 'config/leagues.json'), '{"leagues":["a","b"]}\n');
+    git(seed, 'commit', '-q', '-am', 'someone else merged');
+    git(seed, 'push', '-q', 'origin', 'HEAD:main');
+    const run = runScript(clone);
+    assert.equal(run.status, 0, `${run.stdout}\n${run.stderr}`);
+    assert.equal(originFile(bare, 'data/rosters.json'), '{"generatedAt":"sync"}');
+    assert.equal(originFile(bare, 'data/mfl-league-meta.json'), '{"version":1,"leagues":{}}', 'a cache file that did not exist at origin is added');
+    assert.equal(originFile(bare, 'config/leagues.json'), '{"leagues":["a","b"]}', "the other writer's change was not lost");
+
+    // Next run: the cache exists at origin and only it changes.
+    const second = workflowClone(bare, 'twofiles-clone-2');
+    writeFileSync(join(second, 'data/mfl-league-meta.json'), '{"version":1,"leagues":{"1":{}}}\n');
+    const run2 = runScript(second);
+    assert.equal(run2.status, 0, `${run2.stdout}\n${run2.stderr}`);
+    assert.equal(originFile(bare, 'data/mfl-league-meta.json'), '{"version":1,"leagues":{"1":{}}}', 'a cache-only change is committed');
+    assert.equal(originFile(bare, 'data/rosters.json'), '{"generatedAt":"sync"}', 'and the snapshot is untouched');
   }
 
   // ---- main moved to a tip that already has this exact snapshot ------------
@@ -137,7 +165,7 @@ try {
     writeFileSync(join(clone, 'data/rosters.json'), '{"generatedAt":"sync"}\n');
     const run = runScript(clone, { SNAPSHOT_PUSH_ATTEMPTS: '2' });
     assert.notEqual(run.status, 0, 'gives up with a failure after the last attempt');
-    assert.match(run.stdout + run.stderr, /Could not push data\/rosters\.json to main after 2 attempts/);
+    assert.match(run.stdout + run.stderr, /Could not push data\/rosters\.json data\/mfl-league-meta\.json to main after 2 attempts/);
     assert.equal(originFile(bare, 'data/rosters.json'), '{"generatedAt":"v1"}', 'main is untouched');
   }
 
