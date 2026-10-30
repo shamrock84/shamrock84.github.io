@@ -51,6 +51,7 @@ import {
   mflFranchiseDivisions,
   fetchMflOwnerNames,
   setMflRequestInterval,
+  setMflRetryOn429,
   fetchNflGameClocks,
   isPastWeeklyRolloverCutoff,
   WEEKLY_ROLLOVER_CUTOFF,
@@ -715,7 +716,23 @@ export function historyLookupIsDue(league, now) {
 // with it, a recently tried guess is left alone and a league checked this week
 // skips its lookup; without it, every guessed year is re-read, which is what
 // dispatching backfill-history.yml by hand is for.
-export async function backfillLeagueHistory(leagues, previousById, cookie, { throttle = false, now = new Date() } = {}) {
+//
+// The sync's setting also means a 429 is not retried: mflGet would sleep up to
+// 9s per request and this pass abandons the run on the first 429 it surfaces
+// anyway (mflRateLimited), so on a rate-limited sync the sleeping was most of
+// the backfill's time for nothing. The on-demand run keeps the retries — it
+// has the rate-limit window to itself and is trying to finish a league.
+export async function backfillLeagueHistory(leagues, previousById, cookie, options = {}) {
+  if (!options.throttle) return runLeagueHistoryBackfill(leagues, previousById, cookie, options);
+  setMflRetryOn429(false);
+  try {
+    return await runLeagueHistoryBackfill(leagues, previousById, cookie, options);
+  } finally {
+    setMflRetryOn429(true);
+  }
+}
+
+async function runLeagueHistoryBackfill(leagues, previousById, cookie, { throttle = false, now = new Date() } = {}) {
   const retry = throttle ? { now } : undefined;
   const today = now.toISOString().slice(0, 10);
   let mflBudget = HISTORY_MFL_REQUEST_BUDGET;

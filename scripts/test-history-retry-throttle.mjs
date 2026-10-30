@@ -18,6 +18,7 @@ import {
   historyLookupIsDue,
   backfillLeagueHistory,
 } from './fetch-rosters.mjs';
+import { mflGet } from './lib/providers.mjs';
 
 const NOW = new Date('2026-10-30T13:00:00Z');
 const daysAgo = (n) => new Date(NOW.getTime() - n * 86400000).toISOString().slice(0, 10);
@@ -142,6 +143,49 @@ const missingYears = (history, results, retry, overrides) =>
     league = makeLeague();
     await backfillLeagueHistory([league], prev2, 'cookie');
     assert.ok(requests.length > 1, 'the on-demand backfill ignores both the stamp and the carried check');
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+}
+
+// ---- a 429 in the sync's backfill is not slept through ----------------------
+// mflGet retries a 429 on a 1.5s/3s/4.5s backoff, up to 9s a request. The sync's
+// backfill abandons the run on the first 429 it sees anyway, so it turns the
+// retries off for its own duration (and only the sync does).
+{
+  const realFetch = globalThis.fetch;
+  let requests = [];
+  globalThis.fetch = async (url) => {
+    const u = String(url);
+    requests.push(u);
+    if (u.includes('TYPE=league&')) {
+      const body = { league: { history: { league: [{ year: '2024', url: 'https://www43.myfantasyleague.com/2024/home/22222' }] } } };
+      return { ok: true, status: 200, json: async () => body, text: async () => JSON.stringify(body) };
+    }
+    return { ok: false, status: 429, json: async () => ({}), text: async () => '' };
+  };
+  try {
+    const league = { id: '1', name: 'T', provider: 'mfl', type: 'dynasty', franchiseId: '0002', season: '2026' };
+    const prev = new Map([['1', { id: '1', results: [{ year: '2024', rank: 2, total: 3, guessed: true }] }]]);
+    const started = Date.now();
+    await backfillLeagueHistory([league], prev, 'cookie', { throttle: true, now: NOW });
+    const elapsed = Date.now() - started;
+    assert.equal(requests.filter((u) => !u.includes('TYPE=league&')).length, 2,
+      'the year read sends its two requests once each: a 429 is not retried');
+    assert.ok(elapsed < 1000, `no backoff sleep (took ${elapsed}ms)`);
+    assert.deepEqual(league.results, [{ year: '2024', rank: 2, total: 3, guessed: true }], 'the year is left as it was for the next sync');
+
+    // Retries are back on afterwards: a 429 followed by a 200 succeeds on the second try.
+    requests = [];
+    let calls = 0;
+    globalThis.fetch = async () => {
+      calls++;
+      if (calls === 1) return { ok: false, status: 429, json: async () => ({}), text: async () => '' };
+      return { ok: true, status: 200, json: async () => ({ ok: 1 }), text: async () => '{"ok":1}' };
+    };
+    const body = await mflGet('/export?TYPE=anything&JSON=1', 'cookie');
+    assert.deepEqual(body, { ok: 1 });
+    assert.equal(calls, 2, 'the retry setting was restored once the backfill returned');
   } finally {
     globalThis.fetch = realFetch;
   }

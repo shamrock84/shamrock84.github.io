@@ -263,6 +263,21 @@ function paceMflRequest() {
   return turn;
 }
 
+// Whether mflGet sleeps and retries a 429 (1.5s, 3s, 4.5s: up to 9s on one
+// request) or surfaces it at once as an error carrying `status: 429`. On by
+// default, which is right for everything the page depends on. The sync's
+// history backfill turns it off for its own duration: that pass is bonus data
+// that runs last, already treats the first 429 as "stop for this run"
+// (mflRateLimited), and was spending most of a rate-limited run asleep in
+// retries it then abandoned anyway. Module state, like the pacing interval
+// above, and safe for the same reason: nothing else talks to MFL while that
+// pass runs (the sync's other fetches are ESPN/FantasyPros hosts).
+let mflRetryOn429 = true;
+
+export function setMflRetryOn429(enabled) {
+  mflRetryOn429 = !!enabled;
+}
+
 // year defaults to the current season; pass a specific year (e.g. for
 // prior-season lookups) to hit that year's API host instead. A full sync
 // makes a lot of MFL requests back-to-back, and MFL rate-limits bursts
@@ -281,7 +296,7 @@ export async function mflGet(path, cookie, year = YEAR, attempt = 1, host = 'htt
     headers: cookie ? { Cookie: cookie } : {},
     redirect: 'follow',
   });
-  if (res.status === 429 && attempt < 4) {
+  if (res.status === 429 && mflRetryOn429 && attempt < 4) {
     await sleep(attempt * 1500);
     return mflGet(path, cookie, year, attempt + 1, host);
   }
