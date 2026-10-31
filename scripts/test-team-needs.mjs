@@ -546,16 +546,16 @@ const labelsOf = (card) =>
 	const charlieCells = cellsOf('Charlie');
 	assert.ok(charlieCells.every((c) => c.cls.includes('power-tbd') && fullText(c) === 'TBD'));
 
-	// Default order matches computeMyPowerRows' own order (the row average),
-	// not a Team-Needs-specific resort — the two cards describe the same
-	// leagues and should read in the same order.
+	// Default order is the reverse of computeMyPowerRows' own order (the row
+	// average): weakest power rank first, on the assumption that the weakest
+	// teams have the biggest needs.
 	// Spread first, same reason test-power-rank.mjs does: an array built
 	// inside the vm-evaluated script is a different realm's Array than one
 	// built here, and [...x] re-materializes it as a plain array in this
 	// realm before deepEqual compares it.
 	const powerRows = [...domCtx.computeMyPowerRows(leagues, ['dynasty'], 2026)];
 	const base = [...labelsOf(card)];
-	assert.deepEqual(base, powerRows.map((r) => r.label));
+	assert.deepEqual(base, powerRows.map((r) => r.label).reverse());
 
 	// Click-to-sort on a position column: natural (best-first, TBD last),
 	// reverse (still TBD last — the rule that's silent when wrong), then

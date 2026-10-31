@@ -13278,10 +13278,11 @@
 		// columns — a need is more useful as a single verdict ("weakest at
 		// RB") than as two numbers a reader has to weigh themselves.
 		//
-		// Rows keep computeMyPowerRows' own order (the row average) rather
-		// than re-sorting by "worst position": the two cards describe the
-		// same set of leagues, and matching order is what lets a reader move
-		// between them without re-finding each row. Every column is still
+		// Rows run in the reverse of computeMyPowerRows' order (the row
+		// average), worst power rank first, on the assumption that the weakest
+		// teams have the biggest needs (the manager's call; average positional
+		// rank per league size was considered and declined as more complexity
+		// than it earns). Every column is still
 		// clickable for a reader who specifically wants "who's weakest at RB
 		// across my leagues".
 		function renderTeamNeedsCard(types, leagues, year) {
@@ -13320,7 +13321,10 @@
 					},
 				])),
 			};
-			const { sortedRows, sortableHeader } = makeTableSort(rows, SORTS, () => renderBody());
+			// Default order is Power Rankings' reversed: the weakest teams are assumed
+			// to have the biggest needs, so they come first. Clicking a column header
+			// still re-sorts; ties keep this order.
+			const { sortedRows, sortableHeader } = makeTableSort([...rows].reverse(), SORTS, () => renderBody());
 
 			// Which positions count as a need for one row (the bolded cells and the
 			// collapsed summary line). Pulled out of renderBody so the two can't disagree.
