@@ -8371,7 +8371,9 @@
 		// divisions, the division race is the one that matters first. Only
 		// an explicit League click is stored as anything else.
 		const LEAGUE_STANDINGS_VIEW_KEY = 'myfflLeagueStandingsView';
-		const LEAGUE_STANDINGS_VIEWS = [['division', 'Division'], ['league', 'League']];
+		// League comes first for consistency with the NFL tab's Standings pills
+		// (left to right, widest grouping to narrowest); the default stays Division.
+		const LEAGUE_STANDINGS_VIEWS = [['league', 'League'], ['division', 'Division']];
 		function leagueStandingsViewKey(leagueId) {
 			return `${LEAGUE_STANDINGS_VIEW_KEY}:${leagueId}`;
 		}
@@ -13276,10 +13278,11 @@
 		// columns — a need is more useful as a single verdict ("weakest at
 		// RB") than as two numbers a reader has to weigh themselves.
 		//
-		// Rows keep computeMyPowerRows' own order (the row average) rather
-		// than re-sorting by "worst position": the two cards describe the
-		// same set of leagues, and matching order is what lets a reader move
-		// between them without re-finding each row. Every column is still
+		// Rows run in the reverse of computeMyPowerRows' order (the row
+		// average), worst power rank first, on the assumption that the weakest
+		// teams have the biggest needs (the manager's call; average positional
+		// rank per league size was considered and declined as more complexity
+		// than it earns). Every column is still
 		// clickable for a reader who specifically wants "who's weakest at RB
 		// across my leagues".
 		function renderTeamNeedsCard(types, leagues, year) {
@@ -13318,7 +13321,10 @@
 					},
 				])),
 			};
-			const { sortedRows, sortableHeader } = makeTableSort(rows, SORTS, () => renderBody());
+			// Default order is Power Rankings' reversed: the weakest teams are assumed
+			// to have the biggest needs, so they come first. Clicking a column header
+			// still re-sorts; ties keep this order.
+			const { sortedRows, sortableHeader } = makeTableSort([...rows].reverse(), SORTS, () => renderBody());
 
 			// Which positions count as a need for one row (the bolded cells and the
 			// collapsed summary line). Pulled out of renderBody so the two can't disagree.
@@ -14489,10 +14495,11 @@
 		//     own conference view does exactly this). Seeded teams ahead of
 		//     unseeded ones, then win percentage, then ESPN's order.
 		const NFL_STANDINGS_VIEW_KEY = 'myfflNflStandingsView';
-		const NFL_STANDINGS_VIEWS = [['conference', 'Conference'], ['division', 'Division']];
+		const NFL_STANDINGS_VIEWS = [['league', 'League'], ['conference', 'Conference'], ['division', 'Division']];
 		function readNflStandingsView() {
 			try {
-				return localStorage.getItem(NFL_STANDINGS_VIEW_KEY) === 'conference' ? 'conference' : 'division';
+				const saved = localStorage.getItem(NFL_STANDINGS_VIEW_KEY);
+				return saved === 'league' || saved === 'conference' ? saved : 'division';
 			} catch {
 				return 'division';
 			}
@@ -14533,6 +14540,12 @@
 		// [label, teams] pairs in display order, for either grouping.
 		function buildNflStandingsGroups(standings, view) {
 			const byDivision = buildNflStandingsByDivision(standings);
+			// League: one table of all 32 teams, ranked the way a division is
+			// (win percentage first), since seeds only exist within a conference.
+			if (view === 'league') {
+				const all = [...byDivision.values()].flat().sort(compareNflStandings);
+				return [['League', all]];
+			}
 			if (view !== 'conference') {
 				return [...byDivision].map(([division, teams]) => [SUBTAB_LABEL_OVERRIDES[division] || division, teams]);
 			}
@@ -14601,7 +14614,7 @@
 			const showDiv = groups.some(([, teams]) => teams.some((t) => t.div));
 			const body = el('div', { class: `nfl-standings nfl-standings-by-${view}` });
 			for (const [label, teams] of groups) {
-				if (teams.length > 0) body.appendChild(renderNflStandingsBox(label, teams, showDiv, view === 'conference', view, favs));
+				if (teams.length > 0) body.appendChild(renderNflStandingsBox(label, teams, showDiv, view !== 'division', view, favs));
 			}
 			return body;
 		}
@@ -14651,17 +14664,20 @@
 			// card. With no favorites there is nothing to show collapsed, so
 			// the toggle stays hidden with the body.
 			const favs = favoriteNflTeams();
-			const favoriteGroups = (v) => buildNflStandingsGroups(standings, v)
+			// League view would be all 32 teams, so a collapsed card shows the
+			// favorites' divisions instead.
+			const favoriteGroups = (v) => buildNflStandingsGroups(standings, v === 'league' ? 'division' : v)
 				.filter(([, teams]) => teams.some((t) => favs.has(favoriteTeamKey(t.abbr))));
 			if (favs.size > 0 && favoriteGroups(view).length > 0) {
 				bar.classList.add('card-collapse-visible');
 				let summary = null;
 				const renderSummary = () => {
 					const next = el('div', { class: 'nfl-standings nfl-fav-collapsed card-collapse-visible' });
+					const summaryView = view === 'league' ? 'division' : view;
 					const groups = favoriteGroups(view);
 					const showDiv = groups.some(([, teams]) => teams.some((t) => t.div));
 					for (const [label, teams] of groups) {
-						next.appendChild(renderNflStandingsBox(label, teams, showDiv, view === 'conference', `favorites-${view}`, favs));
+						next.appendChild(renderNflStandingsBox(label, teams, showDiv, summaryView === 'conference', `favorites-${summaryView}`, favs));
 					}
 					if (summary) summary.replaceWith(next);
 					else card.appendChild(next);
