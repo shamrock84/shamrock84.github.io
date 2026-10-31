@@ -172,7 +172,7 @@ const team = (id, divisionId, division, isMe = false) => ({
 	assert.equal(findAll(card, hasCls('league-standings-division')).length, 2);
 	const toggle = findAll(card, hasCls('league-standings-toggle'))[0];
 	assert.ok(toggle.classList.contains('card-collapse-visible'), 'toggle survives a collapsed card');
-	assert.deepEqual(findAll(toggle, (n) => n.dataset?.standingsView).map((b) => b.dataset.standingsView), ['division', 'league'], 'Division left of League');
+	assert.deepEqual(findAll(toggle, (n) => n.dataset?.standingsView).map((b) => b.dataset.standingsView), ['league', 'division'], 'League left of Division (matches the NFL tab)');
 
 	// Each card is independent: switching L1 to League leaves L2 alone,
 	// on screen and in storage, and each survives a rebuild on its own.

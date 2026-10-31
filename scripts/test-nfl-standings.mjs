@@ -200,6 +200,14 @@ const text = (n) => (n._text || '') + (n.children || []).map(text).join('');
 	assert.equal(btn('conference').attrs['aria-pressed'], 'true');
 	assert.equal(btn('division').attrs['aria-pressed'], 'false');
 	assert.equal(store.get('myfflNflStandingsView'), 'conference');
+	// League pill: leftmost, one ranked box holding every team.
+	const pillOrder = findAll(card, (n) => n.dataset?.standingsView).map((b) => b.dataset.standingsView);
+	assert.deepEqual(pillOrder, ['league', 'conference', 'division'], 'League left of Conference');
+	btn('league').listeners.click[0]();
+	assert.equal(store.get('myfflNflStandingsView'), 'league');
+	assert.equal(boxes().length, 1, 'League view: a single box');
+	assert.equal(findAll(boxes()[0], (n) => n.cls === 'nfl-standings-rank').length, 9, 'all nine teams ranked');
+	btn('conference').listeners.click[0]();
 	const afcRanks = findAll(boxes()[0], (n) => n.cls === 'nfl-standings-rank').map((n) => n._text);
 	assert.deepEqual(afcRanks.slice(0, 5), ['1', '2', '3', '4', '5']);
 	assert.equal(findAll(boxes()[0], (n) => n.cls === 'nfl-standings-seed').length, 0, 'no seed superscript beside a rank that already says it');
