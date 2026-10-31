@@ -14574,7 +14574,9 @@
 		// column-label row and body are the `roster-group-content` it hides.
 		// Keyed per view as well as per box, so collapsing AFC East leaves
 		// the Conference view's AFC box alone.
-		function renderNflStandingsBox(label, teams, showDiv, ranked, view, favs = new Set()) {
+		// `rankOf` (optional) maps abbr to the rank to print, for a box that holds
+		// only some of the league (the collapsed League view's favorites).
+		function renderNflStandingsBox(label, teams, showDiv, ranked, view, favs = new Set(), rankOf = null) {
 			const box = el('div', { class: 'nfl-standings-division roster-group' });
 			const table = el('table', { class: 'standings depth-chart-table nfl-standings-table' });
 			const columns = ['Team', 'W-L', ...(showDiv ? ['Div'] : []), 'PF', 'PA', 'Strk'];
@@ -14588,7 +14590,7 @@
 			teams.forEach((t, i) => {
 				const row = el('tr', favs.has(favoriteTeamKey(t.abbr)) ? { class: 'nfl-fav-row' } : {});
 				const nameCell = el('td', { title: t.name || t.abbr });
-				if (ranked) nameCell.appendChild(el('span', { class: 'nfl-standings-rank', text: String(i + 1) }));
+				if (ranked) nameCell.appendChild(el('span', { class: 'nfl-standings-rank', text: String(rankOf ? rankOf.get(t.abbr) : i + 1) }));
 				nameCell.appendChild(el('span', favs.has(favoriteTeamKey(t.abbr)) ? { class: 'nfl-fav', text: `★ ${t.abbr}` } : { text: t.abbr }));
 				if (!ranked && t.seed != null) {
 					nameCell.appendChild(el('span', { class: 'nfl-standings-seed', title: `Conference seed ${t.seed}`, text: String(t.seed) }));
@@ -14664,20 +14666,25 @@
 			// card. With no favorites there is nothing to show collapsed, so
 			// the toggle stays hidden with the body.
 			const favs = favoriteNflTeams();
-			// League view would be all 32 teams, so a collapsed card shows the
-			// favorites' divisions instead.
-			const favoriteGroups = (v) => buildNflStandingsGroups(standings, v === 'league' ? 'division' : v)
+			// League view is all 32 teams, so a collapsed card shows just the
+			// favorites in one box, each keeping its rank in the full league.
+			const favoriteGroups = (v) => buildNflStandingsGroups(standings, v)
 				.filter(([, teams]) => teams.some((t) => favs.has(favoriteTeamKey(t.abbr))));
 			if (favs.size > 0 && favoriteGroups(view).length > 0) {
 				bar.classList.add('card-collapse-visible');
 				let summary = null;
 				const renderSummary = () => {
 					const next = el('div', { class: 'nfl-standings nfl-fav-collapsed card-collapse-visible' });
-					const summaryView = view === 'league' ? 'division' : view;
 					const groups = favoriteGroups(view);
 					const showDiv = groups.some(([, teams]) => teams.some((t) => t.div));
 					for (const [label, teams] of groups) {
-						next.appendChild(renderNflStandingsBox(label, teams, showDiv, summaryView === 'conference', `favorites-${summaryView}`, favs));
+						if (view === 'league') {
+							const rankOf = new Map(teams.map((t, i) => [t.abbr, i + 1]));
+							const mine = teams.filter((t) => favs.has(favoriteTeamKey(t.abbr)));
+							next.appendChild(renderNflStandingsBox(label, mine, showDiv, true, 'favorites-league', favs, rankOf));
+						} else {
+							next.appendChild(renderNflStandingsBox(label, teams, showDiv, view === 'conference', `favorites-${view}`, favs));
+						}
 					}
 					if (summary) summary.replaceWith(next);
 					else card.appendChild(next);
