@@ -276,6 +276,16 @@ const text = (n) => (n._text || '') + (n.children || []).map(text).join('');
 	assert.deepEqual(boxesIn(summary[0]).map((b) => text(b).includes('AFC')), [true]);
 	assert.equal(findAll(summary[0], (n) => n.cls === 'nfl-standings-rank').length, 2);
 	assert.ok(!text(summary[0]).includes('DAL'));
+	// League: the summary is one box of just the favorite, ranked in the
+	// whole league (LV is 3rd of 3 here), not its division rank.
+	store.set('myfflFavorites', JSON.stringify({ nflTeams: ['LV'] }));
+	card = ctx.renderNflStandingsCard(standings);
+	findAll(card, (n) => n.dataset?.standingsView === 'league')[0].listeners.click[0]();
+	summary = summaryOf(card);
+	assert.equal(summary.length, 1);
+	assert.deepEqual(boxesIn(summary[0]).map((b) => text(b).includes('League')), [true]);
+	assert.deepEqual(findAll(summary[0], (n) => n.cls === 'nfl-standings-rank').map((n) => n._text), ['3']);
+	assert.ok(!text(summary[0]).includes('KC') && !text(summary[0]).includes('DAL'));
 	vm.runInContext("authToken = ''", ctx);
 	store.clear();
 }
