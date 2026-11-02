@@ -1360,6 +1360,8 @@ async function main() {
         rulesUrl: league.rulesUrl || null,
         commishContact: league.commishContact || null,
         rosterLimit: league.rosterLimit || null,
+        // Only present when true, so the other leagues carry nothing extra.
+        ...(league.weeklyMedianGame ? { weeklyMedianGame: true } : {}),
         irEligibility: league.irEligibility || null,
         irSalaryPercent: league.irSalaryPercent ?? null,
         dues: league.dues ?? null,
@@ -1448,6 +1450,7 @@ async function main() {
       result.rulesUrl = league.rulesUrl || null;
       result.commishContact = league.commishContact || null;
       result.rosterLimit = league.rosterLimit || null;
+      if (league.weeklyMedianGame) result.weeklyMedianGame = true;
       result.irEligibility = league.irEligibility || null;
       result.irSalaryPercent = league.irSalaryPercent ?? null;
       // ?? rather than || — a real, deliberate $0 dues or payout must survive,
@@ -1485,6 +1488,8 @@ async function main() {
         rulesUrl: league.rulesUrl || null,
         commishContact: league.commishContact || null,
         rosterLimit: league.rosterLimit || null,
+        // Only present when true, so the other leagues carry nothing extra.
+        ...(league.weeklyMedianGame ? { weeklyMedianGame: true } : {}),
         irEligibility: league.irEligibility || null,
         irSalaryPercent: league.irSalaryPercent ?? null,
         dues: league.dues ?? null,
