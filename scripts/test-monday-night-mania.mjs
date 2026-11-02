@@ -329,7 +329,7 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	assert.equal(r.live.length, 1);
 	assert.equal(r.live[0].needed, null);
 	assert.equal(r.live[0].oppMustLose, 10.01);
-	assert.match(fullText(ctx.renderMondayNightManiaCard([down], MONDAY)), /Down 10\.00 — opponent's O\. Guy \(MNF\) must score −10\.01 or lower for you to win/);
+	assert.match(fullText(ctx.renderMondayNightManiaCard([down], MONDAY)), /Down 10\.00 — opponent's O\. Guy \(MNF\) must score −10\.01 or lower to win/);
 	// 99% with the opponent done: lost only if my own player goes negative.
 	const up = lg('2', '100.00', '90.00', [pl('a', 'Tyreek Hill', 'MIA', null)], [pl('c', 'Opp Guy', 'KC', 5)]);
 	up.scoring.teams[0].winProb = 99;
@@ -436,7 +436,7 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	assert.match(fullText(ctx.renderMondayNightManiaCard([lincoln], MONDAY)), /Down 27\.18 — C\. Lamb \(MNF\) must score 27\.19 to win/);
 	const wise = lg('4', '89.09', '100.00', [], [pl('c', 'Marvin Brown', 'NYJ', 0)]);
 	const wiseText = fullText(ctx.renderMondayNightManiaCard([wise], MONDAY));
-	assert.match(wiseText, /Down 10\.91 — opponent's M\. Brown \(MNF\) must score −10\.92 or lower for you to win/);
+	assert.match(wiseText, /Down 10\.91 — opponent's M\. Brown \(MNF\) must score −10\.92 or lower to win/);
 	assert.doesNotMatch(wiseText, /you are done/);
 	// Long lists are capped.
 	assert.equal(ctx.mondayNameList([1, 2, 3, 4, 5].map((i) => ({ name: `A Player${i}` }))), 'A. Player1, A. Player2, A. Player3 and 2 more');
@@ -464,7 +464,7 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	assert.match(text, /opponent's T\. Bigsby \(MNF\) must score 93\.29 to lose/);
 	assert.match(text, /opponent's C\. Lamb \(MNF\) must score 20\.60 more than S\. Barkley \(MNF\) and J\. Ferguson \(MNF\) to lose/);
 	assert.match(text, /C\. Lamb \(MNF\) must score 27\.19 to win/);
-	assert.match(text, /opponent's M\. Brown \(MNF\) must score −10\.92 or lower for you to win/);
+	assert.match(text, /opponent's M\. Brown \(MNF\) must score −10\.92 or lower to win/);
 	assert.doesNotMatch(text, /you are done/);
 	assert.ok(text.indexOf('Already won') < text.indexOf('Up 93.28'), 'decided leagues sit above the matchups');
 	const cls = (c) => findAll(card, (n) => n.cls.split(/\s+/).includes(c)).map(fullText);

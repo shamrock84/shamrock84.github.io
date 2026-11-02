@@ -10799,7 +10799,7 @@
 					summary.appendChild(document.createTextNode(` — ${mustScore(mineNames, e.myLeft.length, e.needed.toFixed(2), theirNames)} to win`));
 				} else if (e.oppMustLose != null) {
 					summary.appendChild(downLabel());
-					summary.appendChild(document.createTextNode(` — ${mustScore(theirNames, e.oppLeft.length, `−${e.oppMustLose.toFixed(2)} or lower`, '')} for you to win`));
+					summary.appendChild(document.createTextNode(` — ${mustScore(theirNames, e.oppLeft.length, `−${e.oppMustLose.toFixed(2)} or lower`, '')} to win`));
 				} else if (e.oppNeeded != null) {
 					summary.appendChild(upLabel());
 					summary.appendChild(document.createTextNode(` — ${mustScore(theirNames, e.oppLeft.length, e.oppNeeded.toFixed(2), mineNames)} to lose`));
