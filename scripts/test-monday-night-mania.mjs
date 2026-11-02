@@ -588,4 +588,19 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	assert.equal(list, 'R. White (SNF) and D. Swift (MNF)');
 }
 
+{
+	// The heading carries the predicted weekly record across all matchups:
+	// above 50 is a win, below a loss, no win probability falls back to score.
+	const ctx = makeContext(LOGGED_IN);
+	setState(ctx, games);
+	const w = lg('1', '98.40', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], []);
+	w.scoring.teams[0].winProb = 70;
+	const l = lg('2', '98.40', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], []);
+	l.scoring.teams[0].winProb = 20;
+	const f = lg('3', '120.00', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], []);
+	delete f.scoring.teams[0].winProb;
+	assert.equal(ctx.predictedWeekRecord([w, l, f]), '2-1');
+	assert.match(fullText(ctx.renderMondayNightManiaCard([w, l, f], MONDAY)), /Monday Night Mayhem \(2-1\)/);
+}
+
 console.log('test-monday-night-mania: ok');
