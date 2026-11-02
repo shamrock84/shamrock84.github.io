@@ -10765,9 +10765,10 @@
 				// T. Bigsby must score 93.29 for you to lose". The target is the
 				// gap as it stands, so when the OTHER side still has players who
 				// can add points it is that much MORE than they score ("20.60
-				// more than your S. Barkley"), which is exactly what it means.
+				// more than S. Barkley"), which is exactly what it means. My own
+				// players are named bare; only the opponent's carry a possessive.
 				// Several players on the scoring side "combine for" the figure.
-				const mineNames = e.myLeft.length > 0 ? `your ${mondayNameList(e.myLeft)}` : '';
+				const mineNames = e.myLeft.length > 0 ? mondayNameList(e.myLeft) : '';
 				const theirNames = e.oppLeft.length > 0 ? `opponent's ${mondayNameList(e.oppLeft)}` : '';
 				const mustScore = (who, count, what, versus) => {
 					const verb = count > 1 ? `must combine for ${what}` : `must score ${what}`;
