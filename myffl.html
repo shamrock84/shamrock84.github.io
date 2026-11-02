@@ -10564,7 +10564,18 @@
 		// players a matchup summary names, each tagged with his night game
 		// when `games` is given. Capped so a deep bench stays a line.
 		function mondayNameList(players, max = 3, games = null) {
-			const names = players.map((p) => {
+			// Earlier kickoff first, so SNF players always precede MNF ones;
+			// ties and unknown kickoffs keep their roster order (stable sort).
+			const kickoffMs = (p) => {
+				const t = games && games[p.team]?.kickoff ? new Date(games[p.team].kickoff).getTime() : NaN;
+				return Number.isNaN(t) ? Infinity : t;
+			};
+			const ordered = games ? [...players].sort((a, b) => {
+				const ka = kickoffMs(a);
+				const kb = kickoffMs(b);
+				return ka === kb ? 0 : ka < kb ? -1 : 1;
+			}) : players;
+			const names = ordered.map((p) => {
 				const name = abbreviatePlayerName(p.name, p.position) || `#${p.id || '?'}`;
 				const tag = games ? nightGameLabel(games[p.team]) : '';
 				return tag ? `${name} (${tag})` : name;
