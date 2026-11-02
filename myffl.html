@@ -10802,7 +10802,7 @@
 					summary.appendChild(document.createTextNode(` — ${mustScore(theirNames, e.oppLeft.length, `−${e.oppMustLose.toFixed(2)} or lower`, '')} for you to win`));
 				} else if (e.oppNeeded != null) {
 					summary.appendChild(upLabel());
-					summary.appendChild(document.createTextNode(` — ${mustScore(theirNames, e.oppLeft.length, e.oppNeeded.toFixed(2), mineNames)} for you to lose`));
+					summary.appendChild(document.createTextNode(` — ${mustScore(theirNames, e.oppLeft.length, e.oppNeeded.toFixed(2), mineNames)} to lose`));
 				} else {
 					// Ahead with the opponent done: the framing is what it takes for
 					// me to LOSE, so the figure is myRisk itself — the first
