@@ -10545,10 +10545,30 @@
 		// not the starter's score. Only the side that has to gain gets a
 		// number; the other side's players just say they must outscore one.
 
-		// "T. Bigsby", "A and B", "A, B and C", "A, B, C and 2 more": the
-		// players a matchup summary names. Capped so a deep bench stays a line.
-		function mondayNameList(players, max = 3) {
-			const names = players.map((p) => abbreviatePlayerName(p.name, p.position) || `#${p.id || '?'}`);
+		// "SNF" / "MNF" for a game that kicks off in prime time Sunday or
+		// Monday night, judged in Central (where the night-card line is also
+		// drawn), else ''. Sunday counts from 6 PM so the late window, which
+		// can still be playing when the Sunday card takes over, is not "SNF".
+		function nightGameLabel(game) {
+			const at = game && game.kickoff ? new Date(game.kickoff) : null;
+			if (!at || Number.isNaN(at.getTime())) return '';
+			const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', weekday: 'short', hour: 'numeric', hourCycle: 'h23' }).formatToParts(at);
+			const weekday = parts.find((p) => p.type === 'weekday')?.value;
+			const hour = Number(parts.find((p) => p.type === 'hour')?.value);
+			if (weekday === 'Mon') return 'MNF';
+			if (weekday === 'Sun' && hour >= 18) return 'SNF';
+			return '';
+		}
+
+		// "T. Bigsby (MNF)", "A and B", "A, B and C", "A, B, C and 2 more": the
+		// players a matchup summary names, each tagged with his night game
+		// when `games` is given. Capped so a deep bench stays a line.
+		function mondayNameList(players, max = 3, games = null) {
+			const names = players.map((p) => {
+				const name = abbreviatePlayerName(p.name, p.position) || `#${p.id || '?'}`;
+				const tag = games ? nightGameLabel(games[p.team]) : '';
+				return tag ? `${name} (${tag})` : name;
+			});
 			if (names.length <= 1) return names[0] || '';
 			if (names.length <= max) return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 			const rest = names.length - max;
@@ -10765,30 +10785,31 @@
 				// T. Bigsby must score 93.29 for you to lose". The target is the
 				// gap as it stands, so when the OTHER side still has players who
 				// can add points it is that much MORE than they score ("20.60
-				// more than your S. Barkley"), which is exactly what it means.
+				// more than S. Barkley"), which is exactly what it means. My own
+				// players are named bare; only the opponent's carry a possessive.
 				// Several players on the scoring side "combine for" the figure.
-				const mineNames = e.myLeft.length > 0 ? `your ${mondayNameList(e.myLeft)}` : '';
-				const theirNames = e.oppLeft.length > 0 ? `opponent's ${mondayNameList(e.oppLeft)}` : '';
+				const mineNames = e.myLeft.length > 0 ? mondayNameList(e.myLeft, 3, liveGames) : '';
+				const theirNames = e.oppLeft.length > 0 ? `opponent's ${mondayNameList(e.oppLeft, 3, liveGames)}` : '';
 				const mustScore = (who, count, what, versus) => {
 					const verb = count > 1 ? `must combine for ${what}` : `must score ${what}`;
 					return `${who} ${verb}${versus ? ` more than ${versus}` : ''}`;
 				};
 				if (e.needed != null) {
 					summary.appendChild(downLabel());
-					summary.appendChild(document.createTextNode(` — ${mustScore(mineNames, e.myLeft.length, e.needed.toFixed(2), theirNames)} for you to win`));
+					summary.appendChild(document.createTextNode(` — ${mustScore(mineNames, e.myLeft.length, e.needed.toFixed(2), theirNames)} to win`));
 				} else if (e.oppMustLose != null) {
 					summary.appendChild(downLabel());
-					summary.appendChild(document.createTextNode(` — ${mustScore(theirNames, e.oppLeft.length, `−${e.oppMustLose.toFixed(2)} or lower`, '')} for you to win`));
+					summary.appendChild(document.createTextNode(` — ${mustScore(theirNames, e.oppLeft.length, `−${e.oppMustLose.toFixed(2)} or lower`, '')} to win`));
 				} else if (e.oppNeeded != null) {
 					summary.appendChild(upLabel());
-					summary.appendChild(document.createTextNode(` — ${mustScore(theirNames, e.oppLeft.length, e.oppNeeded.toFixed(2), mineNames)} for you to lose`));
+					summary.appendChild(document.createTextNode(` — ${mustScore(theirNames, e.oppLeft.length, e.oppNeeded.toFixed(2), mineNames)} to lose`));
 				} else {
 					// Ahead with the opponent done: the framing is what it takes for
 					// me to LOSE, so the figure is myRisk itself — the first
 					// negative total that gives the lead away, mirroring how
 					// oppMustLose is stated for a win.
 					summary.appendChild(upLabel());
-					summary.appendChild(document.createTextNode(` — ${mustScore(mineNames, e.myLeft.length, `−${e.myRisk.toFixed(2)} or lower`, '')} for you to lose`));
+					summary.appendChild(document.createTextNode(` — ${mustScore(mineNames, e.myLeft.length, `−${e.myRisk.toFixed(2)} or lower`, '')} to lose`));
 				}
 				const meta = scoringMetaLine(e.mine);
 				if (meta) summary.appendChild(el('div', { class: 'scoring-matchup-meta', text: meta }));

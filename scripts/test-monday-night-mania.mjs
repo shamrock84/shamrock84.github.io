@@ -221,7 +221,7 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	const text = fullText(card);
 	assert.match(text, /Monday Night Mayhem/);
 	assert.match(text, /Down 11\.60/);
-	assert.match(text, /Down 11\.60 — your T\. Hill and J\. Waddle must combine for 11\.61 more than opponent's O\. Guy for you to win/);
+	assert.match(text, /Down 11\.60 — T\. Hill \(MNF\) and J\. Waddle \(MNF\) must combine for 11\.61 more than opponent's O\. Guy \(MNF\) to win/);
 	assert.doesNotMatch(text, /alone|stay above/);
 	assert.match(text, /3\.00 so far/);
 	assert.match(text, /Them/);
@@ -229,7 +229,7 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	assert.match(text, /League 1/);
 	// "combined" only with several players on the side that must score.
 	const one = lg('2', '98.40', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], [pl('c', 'Opp Guy', 'NYJ', 5)]);
-	assert.match(fullText(ctx.renderMondayNightManiaCard([one], MONDAY)), /Down 11\.60 — your T\. Hill must score 11\.61 more than opponent's O\. Guy for you to win/);
+	assert.match(fullText(ctx.renderMondayNightManiaCard([one], MONDAY)), /Down 11\.60 — T\. Hill \(MNF\) must score 11\.61 more than opponent's O\. Guy \(MNF\) to win/);
 	assert.equal(ctx.renderMondayNightManiaCard([l], TUESDAY), null);
 	assert.equal(ctx.renderMondayNightManiaCard([l], JULY_MONDAY), null);
 }
@@ -287,7 +287,7 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	// With live matchups too, the summary sits above them, won before lost.
 	const live = lg('4', '98.40', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], []);
 	const card = ctx.renderMondayNightManiaCard([live, won, lost], MONDAY);
-	assert.match(fullText(card), /Already won: L1[\s\S]*Already lost: L2[\s\S]*your T\. Hill must score 11\.61 for you to win/);
+	assert.match(fullText(card), /Already won: L1[\s\S]*Already lost: L2[\s\S]*T\. Hill \(MNF\) must score 11\.61 to win/);
 }
 
 {
@@ -329,14 +329,14 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	assert.equal(r.live.length, 1);
 	assert.equal(r.live[0].needed, null);
 	assert.equal(r.live[0].oppMustLose, 10.01);
-	assert.match(fullText(ctx.renderMondayNightManiaCard([down], MONDAY)), /Down 10\.00 — opponent's O\. Guy must score −10\.01 or lower for you to win/);
+	assert.match(fullText(ctx.renderMondayNightManiaCard([down], MONDAY)), /Down 10\.00 — opponent's O\. Guy \(MNF\) must score −10\.01 or lower to win/);
 	// 99% with the opponent done: lost only if my own player goes negative.
 	const up = lg('2', '100.00', '90.00', [pl('a', 'Tyreek Hill', 'MIA', null)], [pl('c', 'Opp Guy', 'KC', 5)]);
 	up.scoring.teams[0].winProb = 99;
 	const r2 = ctx.computeMondayNightMania([up], games);
 	assert.equal(r2.won.length, 0);
 	assert.equal(r2.live[0].myRisk, 10.01);
-	assert.match(fullText(ctx.renderMondayNightManiaCard([up], MONDAY)), /Up 10\.00 — your T\. Hill must score −10\.01 or lower for you to lose/);
+	assert.match(fullText(ctx.renderMondayNightManiaCard([up], MONDAY)), /Up 10\.00 — T\. Hill \(MNF\) must score −10\.01 or lower to lose/);
 	// A tie with nobody left on either side is neither in play nor decided.
 	const dead = lg('3', '100.00', '100.00', [pl('b', 'Done Guy', 'KC', 20)], [pl('c', 'Opp Guy', 'KC', 5)]);
 	dead.scoring.teams[0].winProb = 50;
@@ -428,15 +428,15 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	const ctx = makeContext(LOGGED_IN);
 	setState(ctx, games);
 	const iron = lg('1', '93.28', '0.00', [], [pl('c', 'Tyreek Bigsby', 'NYJ', 0)]);
-	assert.match(fullText(ctx.renderMondayNightManiaCard([iron], MONDAY)), /Up 93\.28 — opponent's T\. Bigsby must score 93\.29 for you to lose/);
+	assert.match(fullText(ctx.renderMondayNightManiaCard([iron], MONDAY)), /Up 93\.28 — opponent's T\. Bigsby \(MNF\) must score 93\.29 to lose/);
 	const gameOn = lg('2', '100.00', '79.41', [pl('a', 'Saquon Barkley', 'MIA', 0), pl('b', 'Jake Ferguson', 'NYJ', 0)], [pl('c', 'CeeDee Lamb', 'NYJ', 0)]);
-	assert.match(fullText(ctx.renderMondayNightManiaCard([gameOn], MONDAY)), /Up 20\.59 — opponent's C\. Lamb must score 20\.60 more than your S\. Barkley and J\. Ferguson for you to lose/);
+	assert.match(fullText(ctx.renderMondayNightManiaCard([gameOn], MONDAY)), /Up 20\.59 — opponent's C\. Lamb \(MNF\) must score 20\.60 more than S\. Barkley \(MNF\) and J\. Ferguson \(MNF\) to lose/);
 	// Behind, it is what it takes for me to WIN (never "you are done;").
 	const lincoln = lg('3', '72.82', '100.00', [pl('a', 'CeeDee Lamb', 'NYJ', 0)], []);
-	assert.match(fullText(ctx.renderMondayNightManiaCard([lincoln], MONDAY)), /Down 27\.18 — your C\. Lamb must score 27\.19 for you to win/);
+	assert.match(fullText(ctx.renderMondayNightManiaCard([lincoln], MONDAY)), /Down 27\.18 — C\. Lamb \(MNF\) must score 27\.19 to win/);
 	const wise = lg('4', '89.09', '100.00', [], [pl('c', 'Marvin Brown', 'NYJ', 0)]);
 	const wiseText = fullText(ctx.renderMondayNightManiaCard([wise], MONDAY));
-	assert.match(wiseText, /Down 10\.91 — opponent's M\. Brown must score −10\.92 or lower for you to win/);
+	assert.match(wiseText, /Down 10\.91 — opponent's M\. Brown \(MNF\) must score −10\.92 or lower to win/);
 	assert.doesNotMatch(wiseText, /you are done/);
 	// Long lists are capped.
 	assert.equal(ctx.mondayNameList([1, 2, 3, 4, 5].map((i) => ({ name: `A Player${i}` }))), 'A. Player1, A. Player2, A. Player3 and 2 more');
@@ -461,10 +461,10 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	assert.equal(card.id ?? card.attrs.id, 'sunday-night');
 	const text = fullText(card);
 	assert.match(text, /Sunday Night Simmer/);
-	assert.match(text, /opponent's T\. Bigsby must score 93\.29 for you to lose/);
-	assert.match(text, /opponent's C\. Lamb must score 20\.60 more than your S\. Barkley and J\. Ferguson for you to lose/);
-	assert.match(text, /your C\. Lamb must score 27\.19 for you to win/);
-	assert.match(text, /opponent's M\. Brown must score −10\.92 or lower for you to win/);
+	assert.match(text, /opponent's T\. Bigsby \(MNF\) must score 93\.29 to lose/);
+	assert.match(text, /opponent's C\. Lamb \(MNF\) must score 20\.60 more than S\. Barkley \(MNF\) and J\. Ferguson \(MNF\) to lose/);
+	assert.match(text, /C\. Lamb \(MNF\) must score 27\.19 to win/);
+	assert.match(text, /opponent's M\. Brown \(MNF\) must score −10\.92 or lower to win/);
 	assert.doesNotMatch(text, /you are done/);
 	assert.ok(text.indexOf('Already won') < text.indexOf('Up 93.28'), 'decided leagues sit above the matchups');
 	const cls = (c) => findAll(card, (n) => n.cls.split(/\s+/).includes(c)).map(fullText);
@@ -489,7 +489,7 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	const card = ctx.renderMondayNightManiaCard([l], at);
 	assert.equal(card.id ?? card.attrs.id, 'sunday-night');
 	assert.match(fullText(card), /Sunday Night Simmer/);
-	assert.match(fullText(card), /Down 10\.00 — your T\. Hill must score 10\.01 for you to win/);
+	assert.match(fullText(card), /Down 10\.00 — T\. Hill \(MNF\) must score 10\.01 to win/);
 	assert.match(fullText(ctx.renderMondayNightManiaCard([l], lateNight)), /Sunday Night Simmer/);
 	assert.match(fullText(ctx.renderMondayNightManiaCard([l], MONDAY)), /Monday Night Mayhem/);
 	const july = new Date(Date.UTC(2026, 6, 12, 23, 30));
@@ -565,6 +565,19 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	assert.equal(repaints, 1);
 	vm.runInContext('syncNightCard()', ctx);
 	assert.equal(repaints, 1, 'no repaint once the right card is up');
+}
+
+{
+	// Night-game tags are judged in Central: Monday is MNF, Sunday from 6 PM
+	// is SNF, and the Sunday late window or a Thursday game gets none.
+	const ctx = makeContext();
+	const label = (kickoff) => ctx.nightGameLabel({ kickoff });
+	assert.equal(label('2026-11-09T01:20:00Z'), 'SNF'); // Sun Nov 8, 7:20 PM CT
+	assert.equal(label('2026-11-08T21:25:00Z'), ''); // Sun 3:25 PM CT late window
+	assert.equal(label('2026-11-10T01:15:00Z'), 'MNF'); // Mon Nov 9, 7:15 PM CT
+	assert.equal(label('2026-11-06T01:15:00Z'), ''); // Thu Nov 5
+	assert.equal(label(null), '');
+	assert.equal(ctx.mondayNameList([{ name: 'Rashid White', team: 'AAA', position: 'WR' }], 3, { AAA: { kickoff: '2026-11-09T01:20:00Z' } }).endsWith('(SNF)'), true);
 }
 
 console.log('test-monday-night-mania: ok');
