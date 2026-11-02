@@ -600,7 +600,7 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	const f = lg('3', '120.00', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], []);
 	delete f.scoring.teams[0].winProb;
 	assert.equal(ctx.predictedWeekRecord([w, l, f]), '2-1');
-	assert.match(fullText(ctx.renderMondayNightManiaCard([w, l, f], MONDAY)), /Monday Night Mayhem \(2-1\)/);
+	assert.match(fullText(ctx.renderMondayNightManiaCard([w, l, f], MONDAY)), /Monday Night Mayhem \(predicted 2-1\)/);
 	// A weekly-median league (SFB) adds a second decision: my score against
 	// the average of every team's score as it stands.
 	const m = lg('4', '120.00', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], []);
