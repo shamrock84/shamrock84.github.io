@@ -580,4 +580,12 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	assert.equal(ctx.mondayNameList([{ name: 'Rashid White', team: 'AAA', position: 'WR' }], 3, { AAA: { kickoff: '2026-11-09T01:20:00Z' } }).endsWith('(SNF)'), true);
 }
 
+{
+	// SNF players are always named before MNF ones, whatever the roster order.
+	const ctx = makeContext();
+	const g = { AAA: { kickoff: '2026-11-10T01:15:00Z' }, BBB: { kickoff: '2026-11-09T01:20:00Z' } };
+	const list = ctx.mondayNameList([{ name: 'Dan Swift', team: 'AAA', position: 'RB' }, { name: 'Rashid White', team: 'BBB', position: 'WR' }], 3, g);
+	assert.equal(list, 'R. White (SNF) and D. Swift (MNF)');
+}
+
 console.log('test-monday-night-mania: ok');
