@@ -10653,7 +10653,9 @@
 		// tie at exactly 50. Already-decided matchups count as they stand (100
 		// and 0). A matchup with no win probability falls back to the score
 		// margin, and is left out when that is also unreadable, so the total
-		// can be smaller than the league count. Returns "W-L" or "W-L-T".
+		// can be smaller than the league count. A weekly-median league adds a
+		// second decision (my score against the league average). Returns
+		// "W-L" or "W-L-T".
 		function predictedWeekRecord(leagues) {
 			let w = 0;
 			let l = 0;
@@ -10670,10 +10672,25 @@
 					const opp = teams.find((x) => x.franchiseId === matchup.teamIds.find((id) => id !== mine.franchiseId));
 					edge = opp ? Number(mine.score) - Number(opp.score) : NaN;
 				}
-				if (!Number.isFinite(edge)) continue;
-				if (edge > 0) w++;
-				else if (edge < 0) l++;
-				else t++;
+				if (Number.isFinite(edge)) {
+					if (edge > 0) w++;
+					else if (edge < 0) l++;
+					else t++;
+				}
+				// A weekly-median league (Scott Fish Bowl) plays a second game off
+				// the same score: above the average of every team's score is a W,
+				// below an L, equal a T. This is the score as it stands, not a
+				// projection, so early in the week it is rough.
+				if (league.weeklyMedianGame) {
+					const scores = teams.map((x) => Number(x.score));
+					const mineScore = Number(mine.score);
+					if (scores.length > 0 && scores.every(Number.isFinite) && Number.isFinite(mineScore)) {
+						const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+						if (mineScore > avg) w++;
+						else if (mineScore < avg) l++;
+						else t++;
+					}
+				}
 			}
 			return t > 0 ? `${w}-${l}-${t}` : `${w}-${l}`;
 		}

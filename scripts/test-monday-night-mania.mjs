@@ -601,6 +601,16 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	delete f.scoring.teams[0].winProb;
 	assert.equal(ctx.predictedWeekRecord([w, l, f]), '2-1');
 	assert.match(fullText(ctx.renderMondayNightManiaCard([w, l, f], MONDAY)), /Monday Night Mayhem \(2-1\)/);
+	// A weekly-median league (SFB) adds a second decision: my score against
+	// the average of every team's score as it stands.
+	const m = lg('4', '120.00', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], []);
+	m.scoring.teams[0].winProb = 70;
+	m.weeklyMedianGame = true;
+	m.scoring.teams.push({ franchiseId: '9', teamName: 'Third', score: '200.00', isMe: false });
+	// avg = (120+110+200)/3 = 143.33; mine is below it: W + L.
+	assert.equal(ctx.predictedWeekRecord([m]), '1-1');
+	m.scoring.teams[2].score = '50.00'; // avg 93.33; mine is above: W + W.
+	assert.equal(ctx.predictedWeekRecord([m]), '2-0');
 }
 
 console.log('test-monday-night-mania: ok');
