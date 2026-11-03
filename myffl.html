@@ -5355,11 +5355,29 @@
 		// express a deletion: a plan cleared on the iPad is absent from the store,
 		// so the phone's next merge hands it back *and re-uploads it*, undoing the
 		// clear everywhere. GET is the only read that carries a deletion across.
+		// Carries the status so the callers can tell a refused token (401) from
+		// every other failure; the message is unchanged from before.
+		function planRequestError(status, body) {
+			const err = new Error(body.error || `HTTP ${status}`);
+			err.status = status;
+			return err;
+		}
+		// A 401 means the saved token is expired or no longer verifies. Drop it
+		// like every other login-gated call, so the header stops claiming a login
+		// the server refused. doLogout also discards unpushed plan edits (see its
+		// comment) and clears any stale sync error with them, since the next
+		// login reads the store afresh. Returns true when it handled the error.
+		function handlePlanAuthFailure(err) {
+			if (!err || err.status !== 401) return false;
+			setPlanSyncError(null);
+			doLogout();
+			return true;
+		}
 		async function getPlans() {
 			const res = await fetch(PLANS_URL, {
 				headers: { Authorization: `Bearer ${authToken}` },
 			});
-			if (!res.ok) throw new Error(`HTTP ${res.status}`);
+			if (!res.ok) throw planRequestError(res.status, {});
 			return (await res.json()).plans;
 		}
 		async function postPlans(mode) {
@@ -5378,7 +5396,7 @@
 				// setPlanSyncError below has to show, since "HTTP 400" alone gives
 				// no clue which task or plan is malformed.
 				const body = await res.json().catch(() => ({}));
-				throw new Error(body.error || `HTTP ${res.status}`);
+				throw planRequestError(res.status, body);
 			}
 			return (await res.json()).plans;
 		}
@@ -5442,7 +5460,9 @@
 				// device cleared. Adopting it re-applies the tombstone and asks
 				// for one more push — now in replace mode — to remove it there.
 				if (mode === 'merge' && stored && adoptRemotePlans(stored)) schedulePlanPush();
-			}).catch((err) => setPlanSyncError(err.message || 'Sync failed'));
+			}).catch((err) => {
+				if (!handlePlanAuthFailure(err)) setPlanSyncError(err.message || 'Sync failed');
+			});
 		}
 
 		function markPlanSyncDone() {
@@ -5508,11 +5528,12 @@
 				if (storeBehind) schedulePlanPush();
 				const after = JSON.stringify(localPlansDocument());
 				if (after !== before && pageData) renderGrid();
-			} catch {
-				// Offline, logged out server-side, or the store isn't
-				// configured yet — keep using the local copy silently. Plans
-				// are a convenience, not something worth an error banner over
-				// the whole roster.
+			} catch (err) {
+				// A refused token logs out (see handlePlanAuthFailure). Anything
+				// else — offline, or the store isn't configured yet — keeps the
+				// local copy silently. Plans are a convenience, not something
+				// worth an error banner over the whole roster.
+				handlePlanAuthFailure(err);
 			}
 		}
 		let pageData = null;

@@ -90,6 +90,8 @@ function loadPage(disk, respond) {
 			requests.push(request);
 			const answer = await respond(request);
 			if (answer === undefined) return { ok: false, status: 503, json: async () => ({}) };
+			// { status, body } answers with that HTTP status instead of a 200.
+			if (answer && answer.status) return { ok: false, status: answer.status, json: async () => answer.body || {} };
 			return { ok: true, status: 200, json: async () => answer };
 		},
 	};
@@ -438,6 +440,42 @@ test('the page renders and accepts edits with no store at all', async () => {
 	await flush(page);
 
 	assert.deepEqual(page.contracts(), {}, 'localStorage is still the working copy');
+});
+
+// The server refuses the saved token (expired, or SESSION_SECRET changed): the
+// page must stop claiming a login, from either half of the sync.
+test('a 401 on the read logs the page out', async () => {
+	const disk = newDisk({ [CONTRACT_KEY]: JSON.stringify({ L1: { p1: '2' } }), [SYNCED_KEY]: '1' });
+	const page = loadPage(disk, async () => ({ status: 401, body: { error: 'Log in again' } }));
+
+	await page.g.syncPlans();
+	await settle();
+
+	assert.equal(disk.has('mflAuthToken'), false, 'the refused token is dropped');
+	assert.equal(page.g.isLoggedIn(), false);
+	assert.equal(disk.has('myfflPlanSyncError'), false, 'and no sync-failure banner is left behind');
+});
+
+test('a 401 on a push logs the page out', async () => {
+	const disk = newDisk({ [SYNCED_KEY]: '1' });
+	const page = loadPage(disk, async () => ({ status: 401, body: { error: 'Log in again' } }));
+
+	page.g.setContractPlan('L1', 'p1', '2');
+	await flush(page);
+
+	assert.equal(disk.has('mflAuthToken'), false, 'the refused token is dropped');
+	assert.equal(page.g.isLoggedIn(), false);
+});
+
+test('any other failure still keeps the login and shows the error', async () => {
+	const disk = newDisk({ [SYNCED_KEY]: '1' });
+	const page = loadPage(disk, async () => ({ status: 400, body: { error: 'bad task' } }));
+
+	page.g.setContractPlan('L1', 'p1', '2');
+	await flush(page);
+
+	assert.equal(disk.get('mflAuthToken'), 'test-token', 'a 400 is not a login problem');
+	assert.equal(disk.get('myfflPlanSyncError'), 'bad task');
 });
 
 for (const [name, fn] of tests) {
