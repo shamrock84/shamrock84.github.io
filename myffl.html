@@ -13527,7 +13527,8 @@
 			// Shown only while collapsed (CSS): each league by toolbar nickname with
 			// its flagged need positions in parens, in the card's default order.
 			// A league with nothing flagged is left out.
-			const needsSummary = rows
+			// Same reversed order as the table's default (worst power rank first).
+			const needsSummary = [...rows].reverse()
 				.map((r) => ({ r, needs: needPositionsFor(r) }))
 				.filter((x) => x.needs.length > 0)
 				.map((x) => `${x.r.nickname} (${x.needs.join(', ')})`)
