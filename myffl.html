@@ -18660,6 +18660,15 @@
 			try {
 				const res = await fetch(WAIVERS_URL, { headers: { Authorization: `Bearer ${authToken}` }, cache: 'no-store' });
 				const body = await res.json().catch(() => ({}));
+				if (res.status === 401) {
+					// The saved token is expired or no longer verifies. Same handling
+					// as every other login-gated call: drop it, so the header stops
+					// claiming a login the server has refused. doLogout also resets
+					// waiversState and re-renders, and loadWaivers returns early once
+					// logged out, so this cannot loop.
+					doLogout();
+					return;
+				}
 				if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
 				waiversState = { status: 'done', data: body, error: null, at: Date.now() };
 			} catch (err) {
