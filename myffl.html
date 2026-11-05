@@ -1948,6 +1948,9 @@
 			font-weight: 700;
 			padding-top: 0.6rem;
 		}
+		/* Player rows sit indented under their league's name row so the
+		   league headings read as group titles. */
+		.waivers-item-row td:first-child { padding-left: 1.1rem; }
 		.waivers-drop,
 		.waivers-bidder {
 			font-size: 0.78rem;
@@ -18954,7 +18957,7 @@
 				table.appendChild(groupRow);
 
 				for (const item of items) {
-					const tr = el('tr');
+					const tr = el('tr', { class: 'waivers-item-row' });
 					if (kind === 'waivers') {
 						const td = el('td');
 						const adds = item.adds.length ? item.adds : [];
