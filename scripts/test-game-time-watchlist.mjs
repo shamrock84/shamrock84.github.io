@@ -40,6 +40,8 @@
 //     it for the lineup's week (`weeklyEcrWeek`), then on the ROS rank: two
 //     tiers, never one mixed number. A week mismatch or no week falls back
 //     to ROS, and the push's resolveBackup is pinned to the same answers.
+//     QB/K/DST, absent from the overall weekly list, rank on their own
+//     `weeklyPosEcr` in a middle tier (overall weekly, positional weekly, ROS).
 //   * each league that BENCHES a designated player gets a Notify checkbox
 //     (the push otherwise watches starters only). Checked by default when
 //     he is a starter's CHOSEN backup; the manager's choice is stored in
@@ -565,6 +567,38 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 
 	// Same fixtures through the push.
 	for (const extra of [{}, { weeklyEcrWeek: 3 }, { weeklyEcrWeek: 4 }, { weeklyEcrWeek: 4, lineupWeek: null }, { weeklyEcrWeek: null }]) {
+		const lg = mk(extra);
+		ctx.__lg = lg;
+		const page = vm.runInContext("(() => { localStorage.setItem('myfflBackupPlans', '{}'); return watchlistBackupFor(__lg, 'a', __lg.players[0]); })()", ctx);
+		const server = resolveBackup(lg, lg.players[0], undefined, new Map());
+		assert.equal(server.player ? String(server.player.id) : null, page.player ? String(page.player.id) : null, `${JSON.stringify(extra)}: page and push name the same suggestion`);
+	}
+}
+
+// Weekly ECR for QB/K/DST: the overall weekly list doesn't carry them, so
+// they rank on `weeklyPosEcr` (rank within the position, a different scale)
+// in a tier of their own: overall weekly, then positional weekly, then ROS.
+{
+	const ctx = makeContext(LOGGED_IN);
+	const ros = (rank) => ({ ecr: { rank } });
+	const qb = (id, name, extra = {}) => player(id, name, 'DAL', null, { position: 'QB', ...extra });
+	const mk = (extra = {}) => league('Q', [
+		qb('a', 'Hurt Starter', { injuryStatus: 'Q' }),
+		qb('q1', 'Ros Qb', ros(5)),
+		qb('q2', 'Pos Ten Qb', { ...ros(60), weeklyPosEcr: 10 }),
+		qb('q3', 'Pos Two Qb', { ...ros(90), weeklyPosEcr: 2 }),
+		player('r', 'Overall Rb', 'DAL', null, { ...ros(1), weeklyEcr: 1 }),
+	], ['a'], extra);
+	const order = (lg) => plain(ctx.watchlistBackupCandidates(lg, lg.players[0]).map((c) => c.name));
+	assert.deepEqual(order(mk()), ['Ros Qb', 'Pos Ten Qb', 'Pos Two Qb', 'Overall Rb'] , 'no weekly data: ROS order within the QB group');
+	// (the RB is not a legal swap for a QB only where a requirement string says so; none here)
+	assert.deepEqual(order(mk({ weeklyEcrWeek: 3 })), ['Pos Two Qb', 'Pos Ten Qb', 'Ros Qb', 'Overall Rb'],
+		'same-position QBs: positional weekly rank first (2 before 10), then the one with only a ROS rank');
+	assert.deepEqual(order(mk({ weeklyEcrWeek: 4 })), order(mk()), 'a positional rank for another week is ignored too');
+	assert.equal(ctx.watchlistSuggestedBackup(mk({ weeklyEcrWeek: 3 }), mk().players[0]).name, 'Pos Two Qb');
+
+	// Page and push agree, with positional ranks in play.
+	for (const extra of [{}, { weeklyEcrWeek: 3 }, { weeklyEcrWeek: 4 }]) {
 		const lg = mk(extra);
 		ctx.__lg = lg;
 		const page = vm.runInContext("(() => { localStorage.setItem('myfflBackupPlans', '{}'); return watchlistBackupFor(__lg, 'a', __lg.players[0]); })()", ctx);

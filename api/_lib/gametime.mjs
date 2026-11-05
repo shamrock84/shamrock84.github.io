@@ -155,12 +155,15 @@ function backupCandidates(league, starter, games) {
     return !Number.isNaN(at) && at > startAt - WATCH_LEAD_MINUTES * 60000;
   };
   const samePos = (p) => (p.position && starter.position && p.position === starter.position ? 0 : 1);
-  // Weekly ECR leads, then ROS: two tiers, never one mixed number. Mirrors
+  // Weekly ECR leads (overall, then within-position), then ROS: three tiers,
+  // never one mixed number. Mirrors
   // the page's rankKey/byRank in watchlistBackupCandidates.
   const useWeekly = weeklyEcrApplies(league);
   const rankKey = (p) => (useWeekly && Number.isFinite(p.weeklyEcr)
     ? [0, p.weeklyEcr]
-    : [1, p.ecr && Number.isFinite(p.ecr.rank) ? p.ecr.rank : Infinity]);
+    : useWeekly && Number.isFinite(p.weeklyPosEcr)
+    ? [1, p.weeklyPosEcr]
+    : [2, p.ecr && Number.isFinite(p.ecr.rank) ? p.ecr.rank : Infinity]);
   const byRank = (a, b) => {
     const ka = rankKey(a);
     const kb = rankKey(b);
