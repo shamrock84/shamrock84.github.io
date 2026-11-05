@@ -10110,14 +10110,19 @@
 			};
 			const samePos = (p) => (p.position && starter && p.position === starter.position ? 0 : 1);
 			// This week's ECR leads when the league's snapshot has it for the
-			// lineup's own week; everyone else falls to the ROS rank. Two tiers,
-			// never one mixed number: weekly and ROS are different lists, so a
-			// weekly 40 and a ROS 30 must not be compared.
+			// lineup's own week: first the overall rank (RB/WR/TE, weeklyEcr),
+			// then the rank within the position (QB/K/DST, weeklyPosEcr, whose
+			// own list is the only place they are ranked), then the ROS rank.
+			// Three tiers, never one mixed number: these are different lists
+			// on different scales, so a weekly 40 and a ROS 30 must not be
+			// compared, nor an overall 5 and a position rank of 5.
 			// DUPLICATED in api/_lib/gametime.mjs (backupCandidates).
 			const useWeekly = watchlistWeeklyEcrApplies(league);
 			const rankKey = (p) => (useWeekly && Number.isFinite(p.weeklyEcr)
 				? [0, p.weeklyEcr]
-				: [1, p.ecr && Number.isFinite(p.ecr.rank) ? p.ecr.rank : Infinity]);
+				: useWeekly && Number.isFinite(p.weeklyPosEcr)
+				? [1, p.weeklyPosEcr]
+				: [2, p.ecr && Number.isFinite(p.ecr.rank) ? p.ecr.rank : Infinity]);
 			const byRank = (a, b) => {
 				const ka = rankKey(a);
 				const kb = rankKey(b);

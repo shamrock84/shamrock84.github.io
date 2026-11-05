@@ -518,49 +518,91 @@ export async function attachRankings(leagues, leagueConfigs, { apiKey, season, n
 // Weekly ECR for the Game-Time Watchlist's replacement suggestions. The
 // per-player `ecr` above is the ROS list in season: a long-horizon value,
 // where a start/sit call wants this week's rank. probe-fantasypros-weekly-ecr
-// (RUN 1) found type=WEEKLY&position=ALL is a real overall list (~400 deep,
-// ranks 1..N, per-league scoring honoured), that an omitted `week` is the live
-// one, and that the NEXT week answers 200 with zero players until it is
-// published. So:
-//   * a player's rank lands in `weeklyEcr`, a bare number beside `ecr`, never
-//     replacing it: the ECR column and everything else keep reading ROS;
-//   * the list's week lands on the league as `weeklyEcrWeek`, which is what
-//     lets the page ignore a rank that is for a different week than the
-//     lineup in front of it;
-//   * an empty list, or one that doesn't say its week, attaches nothing: the
-//     picker then falls back to ROS rather than reading "everyone unranked".
-// Always the ALL list (superflex's OP list is not used): the picker is
-// same-position first, so the overall number only has to order players.
-// Skipped out of season, when there is no week to rank. Failures are
-// per-league and non-fatal, like attachRankings. Returns summary lines.
-export async function attachWeeklyRankings(leagues, leagueConfigs, { apiKey, season, now = new Date() }) {
+// (RUN 1) found type=WEEKLY&position=ALL is a real overall list, that an
+// omitted `week` is the live one, and that the NEXT week answers 200 with zero
+// players until it is published. The follow-up sync run found the overall list
+// is RB/WR/TE only (no QB, K or DST), so those three come from their own
+// per-position lists. So:
+//   * RB/WR/TE ranks land in `weeklyEcr` (overall scale, from ALL);
+//   * QB/K/DST ranks land in `weeklyPosEcr` (rank within the position, from
+//     the position's own list). A different field because it is a different
+//     scale: the page ranks the three tiers (weeklyEcr, weeklyPosEcr, ROS)
+//     apart and never compares across them;
+//   * both sit beside, never replacing, the ROS `ecr`, so the ECR column and
+//     everything else keep reading ROS;
+//   * the list's week lands on the league as `weeklyEcrWeek` (taken from the
+//     overall list), which is what lets the page ignore ranks that are for a
+//     different week than the lineup in front of it. A position list that
+//     answers for another week is dropped;
+//   * an empty overall list, or one that doesn't say its week, attaches
+//     nothing at all: the picker then falls back to ROS rather than reading
+//     "everyone unranked".
+// Requests: ALL and QB once per distinct scoring, K and DST once (their lists
+// are scoring-free; PPR is sent), spaced WEEKLY_REQUEST_GAP_MS apart because
+// the probe drew 429s at 400ms. A list that fails is simply absent. Skipped
+// out of season, when there is no week to rank. Returns summary lines.
+const WEEKLY_REQUEST_GAP_MS = 700;
+const WEEKLY_POSITION_LISTS = { QB: true, K: false, DST: false }; // position -> scoring-dependent
+export async function attachWeeklyRankings(leagues, leagueConfigs, { apiKey, season, now = new Date(), gapMs = WEEKLY_REQUEST_GAP_MS }) {
   const summary = [];
   if (!nflSeasonPhase(now).inSeason) return summary;
   const provider = createRankingsProvider(apiKey, season);
   const configById = new Map((leagueConfigs || []).map((l) => [l.id, l]));
+  const lists = new Map();
+  let requested = 0;
+
+  // One list, fetched at most once per (position, scoring) and never throwing:
+  // a failure is null, remembered so it is not retried for every league.
+  async function load(position, scoring) {
+    const key = `${position}|${scoring}`;
+    if (!lists.has(key)) {
+      if (requested++ > 0) await sleep(gapMs);
+      let set = null;
+      try {
+        set = await provider.getRankings('WEEKLY', scoring, position);
+      } catch (err) {
+        summary.push(`weekly ${position}/${scoring} failed — ${err.message}`);
+      }
+      lists.set(key, set?.index?.size && set.week != null ? set : null);
+    }
+    return lists.get(key);
+  }
 
   for (const league of leagues) {
     if (!league.players || league.players.length === 0) continue;
     const scoring = rankingSpecForLeague(configById.get(league.id) || league, now).scoring;
-    try {
-      const set = await provider.getRankings('WEEKLY', scoring, 'ALL');
-      if (!set?.index?.size || set.week == null) {
-        summary.push(`${league.name}: no weekly list yet (${scoring})`);
-        continue;
+    const overall = await load('ALL', scoring);
+    if (!overall) {
+      summary.push(`${league.name}: no weekly list yet (${scoring})`);
+      continue;
+    }
+    let matched = 0;
+    for (const player of league.players) {
+      const hit = lookupPlayer(overall.index, player);
+      if (hit && hit.ecr != null) {
+        player.weeklyEcr = hit.ecr;
+        matched++;
       }
-      let matched = 0;
+    }
+    league.weeklyEcrWeek = overall.week;
+
+    // QB, K and DST: only the positions this league actually rosters.
+    let positional = 0;
+    const present = new Set(league.players.map((p) => canonicalPosition(p.position)));
+    for (const [position, byScoring] of Object.entries(WEEKLY_POSITION_LISTS)) {
+      if (!present.has(position)) continue;
+      const list = await load(position, byScoring ? scoring : 'PPR');
+      if (!list || list.week !== overall.week) continue;
       for (const player of league.players) {
-        const hit = lookupPlayer(set.index, player);
+        if (canonicalPosition(player.position) !== position) continue;
+        const hit = lookupPlayer(list.index, player);
         if (hit && hit.ecr != null) {
-          player.weeklyEcr = hit.ecr;
-          matched++;
+          player.weeklyPosEcr = hit.ecr;
+          positional++;
         }
       }
-      league.weeklyEcrWeek = set.week;
-      summary.push(`${league.name}: ${matched}/${league.players.length} weekly-ranked (week ${set.week}, ${scoring})`);
-    } catch (err) {
-      summary.push(`${league.name}: weekly rankings failed — ${err.message}`);
     }
+    summary.push(`${league.name}: ${matched} overall + ${positional} positional of ${league.players.length} weekly-ranked (week ${overall.week}, ${scoring})`);
   }
   return summary;
 }

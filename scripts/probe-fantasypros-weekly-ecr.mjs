@@ -45,8 +45,14 @@
 //   * Rate limit: 8 of 23 requests got 429 at 400ms pacing. The sync's fpGet
 //     retries 429s with backoff; attachWeeklyRankings makes one request per
 //     distinct scoring (at most three).
-//   * Not checked: whether the overall list carries K and DST (their rows
-//     fall back to ROS in the picker if it doesn't).
+//   * FOUND AFTER, from the first real sync with the weekly fetch (same day):
+//     the overall list carries NO QB, K or DST (0 of 67 rostered QBs, 0 of 8
+//     K, 0 of 8 Def matched; RB/WR/TE matched ~85-95%). Those three come from
+//     their own position lists, kept in `weeklyPosEcr` because a position rank
+//     is a different scale. QB's own list was never read here (that request
+//     drew a 429), so its shape is assumed to match RB/WR/TE until a sync
+//     shows otherwise. ESPN "Lions D/ST"-style defense names don't join to
+//     FantasyPros names, the same gap ROS ecr already has.
 //   * Used by attachWeeklyRankings (lib/fantasypros.mjs).
 
 import { fantasyProsApiKey, nflSeasonPhase } from './lib/fantasypros.mjs';
