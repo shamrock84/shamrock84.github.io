@@ -378,6 +378,9 @@ export function createRankingsProvider(apiKey, season) {
           list: buildRankingList(data?.players),
           lastUpdated: data?.last_updated ?? null,
           totalExperts: toNumberOrNull(data?.total_experts),
+          // The NFL week a WEEKLY list is for (the response echoes it, and an
+          // omitted `week` means the live one). Null for other list types.
+          week: toNumberOrNull(data?.week),
         }))
       );
     }
@@ -510,6 +513,56 @@ export async function attachRankings(leagues, leagueConfigs, { apiKey, season, n
   }
 
   return { summary, pools };
+}
+
+// Weekly ECR for the Game-Time Watchlist's replacement suggestions. The
+// per-player `ecr` above is the ROS list in season: a long-horizon value,
+// where a start/sit call wants this week's rank. probe-fantasypros-weekly-ecr
+// (RUN 1) found type=WEEKLY&position=ALL is a real overall list (~400 deep,
+// ranks 1..N, per-league scoring honoured), that an omitted `week` is the live
+// one, and that the NEXT week answers 200 with zero players until it is
+// published. So:
+//   * a player's rank lands in `weeklyEcr`, a bare number beside `ecr`, never
+//     replacing it: the ECR column and everything else keep reading ROS;
+//   * the list's week lands on the league as `weeklyEcrWeek`, which is what
+//     lets the page ignore a rank that is for a different week than the
+//     lineup in front of it;
+//   * an empty list, or one that doesn't say its week, attaches nothing: the
+//     picker then falls back to ROS rather than reading "everyone unranked".
+// Always the ALL list (superflex's OP list is not used): the picker is
+// same-position first, so the overall number only has to order players.
+// Skipped out of season, when there is no week to rank. Failures are
+// per-league and non-fatal, like attachRankings. Returns summary lines.
+export async function attachWeeklyRankings(leagues, leagueConfigs, { apiKey, season, now = new Date() }) {
+  const summary = [];
+  if (!nflSeasonPhase(now).inSeason) return summary;
+  const provider = createRankingsProvider(apiKey, season);
+  const configById = new Map((leagueConfigs || []).map((l) => [l.id, l]));
+
+  for (const league of leagues) {
+    if (!league.players || league.players.length === 0) continue;
+    const scoring = rankingSpecForLeague(configById.get(league.id) || league, now).scoring;
+    try {
+      const set = await provider.getRankings('WEEKLY', scoring, 'ALL');
+      if (!set?.index?.size || set.week == null) {
+        summary.push(`${league.name}: no weekly list yet (${scoring})`);
+        continue;
+      }
+      let matched = 0;
+      for (const player of league.players) {
+        const hit = lookupPlayer(set.index, player);
+        if (hit && hit.ecr != null) {
+          player.weeklyEcr = hit.ecr;
+          matched++;
+        }
+      }
+      league.weeklyEcrWeek = set.week;
+      summary.push(`${league.name}: ${matched}/${league.players.length} weekly-ranked (week ${set.week}, ${scoring})`);
+    } catch (err) {
+      summary.push(`${league.name}: weekly rankings failed — ${err.message}`);
+    }
+  }
+  return summary;
 }
 
 // Attaches a `sleeper` object to every player who appears on FantasyPros'

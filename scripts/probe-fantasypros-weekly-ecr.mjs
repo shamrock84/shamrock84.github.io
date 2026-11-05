@@ -25,7 +25,29 @@
 // A control request (the call the sync already makes) must succeed first, or a
 // candidate's failure would mean "broken key" rather than "no such list".
 //
-// RUN 1: not yet run. Record the findings here before writing the fetch.
+// RUN 1 (2026-11-05, week 9, season 2026):
+//   * type=WEEKLY works, and position=ALL is a real OVERALL list: 396
+//     players, rank_ecr 1..396 (17 experts), with pos_rank (WR1, RB3, ...)
+//     alongside, so ranks compare across positions. Per position: RB 109,
+//     WR 173, TE 114, K 32, DST 30. DEF is a 400 ("Invalid Position"); the
+//     valid spellings include QB, RB, WR, TE, K, OP, FLX, DST, IDP.
+//   * An OMITTED `week` is the live week: identical to week=9, and the
+//     response echoes `week`. week=8 (past) still serves; week=10 answers 200
+//     with players=0, experts=0, last_updated "1/01" until it is published;
+//     week=0 answers an empty Draft list. So an empty list means "not
+//     published yet", never "nobody is ranked".
+//   * Same fields buildRankingIndex reads (player_name, rank_ecr, pos_rank,
+//     player_team_id, player_position_id, player_page_url) but NO `tier`.
+//     Extras not used: player_game_status, player_opponent, rank_ave,
+//     rank_std, recommendation, note.
+//   * `scoring` is real: PPR/HALF/STD are separate lists (WR depth 173/222/173,
+//     experts 18/20/16), though the WR top 5 was identical.
+//   * Rate limit: 8 of 23 requests got 429 at 400ms pacing. The sync's fpGet
+//     retries 429s with backoff; attachWeeklyRankings makes one request per
+//     distinct scoring (at most three).
+//   * Not checked: whether the overall list carries K and DST (their rows
+//     fall back to ROS in the picker if it doesn't).
+//   * Used by attachWeeklyRankings (lib/fantasypros.mjs).
 
 import { fantasyProsApiKey, nflSeasonPhase } from './lib/fantasypros.mjs';
 

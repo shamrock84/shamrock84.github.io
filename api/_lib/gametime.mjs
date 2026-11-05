@@ -135,6 +135,16 @@ function swapKeepsLineupLegal(league, starter, candidate) {
   return true;
 }
 
+// DUPLICATED from watchlistWeeklyEcrApplies in myffl.html: this league's
+// weekly ECR (`weeklyEcr` per player, `weeklyEcrWeek` on the league) is for
+// the week its lineup is set for. See the page's copy for the reasoning.
+function weeklyEcrApplies(league) {
+  const wk = Number(league.weeklyEcrWeek);
+  if (league.weeklyEcrWeek == null || !Number.isInteger(wk)) return false;
+  const lw = league.lineupWeek;
+  return lw == null || lw === '' || Number(lw) === wk;
+}
+
 function backupCandidates(league, starter, games) {
   const starting = new Set((league.starters || []).map(String));
   const startAt = starter.team && games?.get(starter.team)?.kickoff
@@ -145,12 +155,22 @@ function backupCandidates(league, starter, games) {
     return !Number.isNaN(at) && at > startAt - WATCH_LEAD_MINUTES * 60000;
   };
   const samePos = (p) => (p.position && starter.position && p.position === starter.position ? 0 : 1);
-  const ecr = (p) => (p.ecr && Number.isFinite(p.ecr.rank) ? p.ecr.rank : Infinity);
+  // Weekly ECR leads, then ROS: two tiers, never one mixed number. Mirrors
+  // the page's rankKey/byRank in watchlistBackupCandidates.
+  const useWeekly = weeklyEcrApplies(league);
+  const rankKey = (p) => (useWeekly && Number.isFinite(p.weeklyEcr)
+    ? [0, p.weeklyEcr]
+    : [1, p.ecr && Number.isFinite(p.ecr.rank) ? p.ecr.rank : Infinity]);
+  const byRank = (a, b) => {
+    const ka = rankKey(a);
+    const kb = rankKey(b);
+    return ka[0] - kb[0] || (ka[1] === kb[1] ? 0 : ka[1] < kb[1] ? -1 : 1);
+  };
   return (league.players || [])
     .filter((p) => (p.status || 'ROSTER').toUpperCase() === 'ROSTER' && !starting.has(String(p.id)) && playsInTime(p) && swapKeepsLineupLegal(league, starter, p))
     .sort((a, b) => samePos(a) - samePos(b)
       || (a.injuryStatus ? 1 : 0) - (b.injuryStatus ? 1 : 0)
-      || (ecr(a) === ecr(b) ? 0 : ecr(a) < ecr(b) ? -1 : 1)
+      || byRank(a, b)
       || String(a.name).localeCompare(String(b.name)));
 }
 

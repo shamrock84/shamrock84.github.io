@@ -36,6 +36,10 @@
 //     league + starter id (backupPlans, which syncs) — a suggestion never
 //     is — and a saved pick who left the roster falls back to the
 //     suggestion.
+//   * suggestions rank on this week's ECR (`weeklyEcr`) when the league has
+//     it for the lineup's week (`weeklyEcrWeek`), then on the ROS rank: two
+//     tiers, never one mixed number. A week mismatch or no week falls back
+//     to ROS, and the push's resolveBackup is pinned to the same answers.
 //   * each league that BENCHES a designated player gets a Notify checkbox
 //     (the push otherwise watches starters only). Checked by default when
 //     he is a starter's CHOSEN backup; the manager's choice is stored in
@@ -524,6 +528,48 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 			assert.equal(server.player ? String(server.player.id) : null, page.player ? String(page.player.id) : null, `${lg.id} saved=${saved}: page and push name the same backup`);
 			assert.equal(server.source, page.source, `${lg.id} saved=${saved}: same source`);
 		}
+	}
+}
+
+// Weekly ECR (probe-fantasypros-weekly-ecr RUN 1): replacement suggestions
+// rank on this week's list when the league's snapshot has it FOR THE LINEUP'S
+// WEEK, then on the ROS rank. Two tiers, never one mixed number: a weekly
+// rank is only compared with other weekly ranks. The push's resolveBackup is
+// pinned to the same answers.
+{
+	const ctx = makeContext(LOGGED_IN);
+	const ros = (rank) => ({ ecr: { rank } });
+	const mk = (extra = {}) => league('W', [
+		player('a', 'Saquon Barkley', 'PHI', 'Q'),
+		player('r1', 'Yan Runner', 'DAL', null, { ...ros(5), weeklyEcr: 80 }),
+		player('r2', 'Abe Runner', 'DAL', null, { ...ros(40), weeklyEcr: 20 }),
+		player('r3', 'No Weekly Runner', 'DAL', null, ros(1)),
+		player('r4', 'Hurt Runner', 'DAL', 'Q', { ...ros(2), weeklyEcr: 1 }),
+		player('s', 'Other Starter', 'DAL', null, ros(1)),
+	], ['a', 's'], extra);
+	const order = (lg) => plain(ctx.watchlistBackupCandidates(lg, lg.players[0]).map((c) => c.name));
+
+	assert.deepEqual(order(mk()), ['No Weekly Runner', 'Yan Runner', 'Abe Runner', 'Hurt Runner'], 'no weekly data for the league: ROS order, as before');
+	assert.deepEqual(order(mk({ weeklyEcrWeek: 3 })), ['Abe Runner', 'Yan Runner', 'No Weekly Runner', 'Hurt Runner'],
+		'weekly ranks lead (20 before 80, despite the ROS order); a player with no weekly rank follows, on ROS; healthy still before designated');
+	assert.deepEqual(order(mk({ weeklyEcrWeek: '3' })), order(mk({ weeklyEcrWeek: 3 })), 'the week may arrive as a string');
+	assert.deepEqual(order(mk({ weeklyEcrWeek: 4 })), ['No Weekly Runner', 'Yan Runner', 'Abe Runner', 'Hurt Runner'],
+		'weekly ECR for a different week than the lineup (lineupWeek 3) is ignored');
+	assert.deepEqual(order(mk({ weeklyEcrWeek: 4, lineupWeek: null })), ['Abe Runner', 'Yan Runner', 'No Weekly Runner', 'Hurt Runner'],
+		'a league with no lineupWeek cannot be checked and trusts the sync');
+	assert.deepEqual(order(mk({ weeklyEcrWeek: null })), order(mk()), 'no week on the list: not used');
+
+	// The suggestion is the first same-position healthy candidate, so it follows.
+	assert.equal(ctx.watchlistSuggestedBackup(mk({ weeklyEcrWeek: 3 }), mk().players[0]).name, 'Abe Runner');
+	assert.equal(ctx.watchlistSuggestedBackup(mk(), mk().players[0]).name, 'No Weekly Runner');
+
+	// Same fixtures through the push.
+	for (const extra of [{}, { weeklyEcrWeek: 3 }, { weeklyEcrWeek: 4 }, { weeklyEcrWeek: 4, lineupWeek: null }, { weeklyEcrWeek: null }]) {
+		const lg = mk(extra);
+		ctx.__lg = lg;
+		const page = vm.runInContext("(() => { localStorage.setItem('myfflBackupPlans', '{}'); return watchlistBackupFor(__lg, 'a', __lg.players[0]); })()", ctx);
+		const server = resolveBackup(lg, lg.players[0], undefined, new Map());
+		assert.equal(server.player ? String(server.player.id) : null, page.player ? String(page.player.id) : null, `${JSON.stringify(extra)}: page and push name the same suggestion`);
 	}
 }
 
