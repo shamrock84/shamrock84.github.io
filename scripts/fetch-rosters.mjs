@@ -59,6 +59,7 @@ import {
 } from './lib/providers.mjs';
 import {
   attachRankings,
+  attachWeeklyRankings,
   attachSleepers,
   fantasyProsApiKey,
   nflSeasonPhase,
@@ -1805,6 +1806,16 @@ async function main() {
       }
     } catch (err) {
       console.error(`Failed to attach FantasyPros rankings: ${err.message}`);
+    }
+
+    // This week's ECR, beside (never replacing) the ROS `ecr` above: the
+    // Game-Time Watchlist ranks replacement suggestions on it.
+    try {
+      for (const line of await attachWeeklyRankings(leagues, LEAGUES, { apiKey: fpApiKey, season, now })) {
+        console.log(`FantasyPros — ${line}`);
+      }
+    } catch (err) {
+      console.error(`Failed to attach FantasyPros weekly rankings: ${err.message}`);
     }
 
     // Four more ranking pools, one per position, for the Depth Charts tab's

@@ -10033,8 +10033,10 @@
 		// player can't be started this week. Same-position players lead
 		// (the usual swap), then the rest so a flex-eligible or
 		// position-changing pick is still reachable; within each, healthy
-		// before designated, then best ECR (p.ecr.rank, the same field the
-		// ECR column reads; unranked last), then name. A designated bench
+		// before designated, then best ECR (this week's `weeklyEcr` when the
+		// league has it for the lineup's week, else p.ecr.rank, the ROS rank the
+		// ECR column reads; weekly-ranked players first, unranked last; see
+		// watchlistWeeklyEcrApplies), then name. A designated bench
 		// player stays listed, not dropped — the manager may well know he's
 		// the best option, and the label carries his designation either way.
 		//
@@ -10081,6 +10083,21 @@
 			return true;
 		}
 
+		// Whether this league's weekly ECR (`weeklyEcr` on each player, the
+		// list's week as `weeklyEcrWeek`, both from the sync) is for the week
+		// the lineup is set for. A mismatch (the provider advanced its week
+		// before FantasyPros published the next list, or the reverse) means the
+		// ranks are for another week's games, so they are ignored and the ROS
+		// rank is used. A league with no lineupWeek can't be checked and
+		// trusts the sync, which only attaches a published, non-empty list.
+		// DUPLICATED in api/_lib/gametime.mjs (weeklyEcrApplies).
+		function watchlistWeeklyEcrApplies(league) {
+			const wk = Number(league.weeklyEcrWeek);
+			if (league.weeklyEcrWeek == null || !Number.isInteger(wk)) return false;
+			const lw = league.lineupWeek;
+			return lw == null || lw === '' || Number(lw) === wk;
+		}
+
 		function watchlistBackupCandidates(league, starter, games = liveGames) {
 			const starting = new Set((league.starters || []).map(String));
 			const startAt = starter && starter.team && games && games[starter.team] && games[starter.team].kickoff
@@ -10092,12 +10109,25 @@
 				return !Number.isNaN(at) && at > startAt - WATCHLIST_CHECK_LEAD_MINUTES * 60000;
 			};
 			const samePos = (p) => (p.position && starter && p.position === starter.position ? 0 : 1);
-			const ecrRank = (p) => (p.ecr && Number.isFinite(p.ecr.rank) ? p.ecr.rank : Infinity);
+			// This week's ECR leads when the league's snapshot has it for the
+			// lineup's own week; everyone else falls to the ROS rank. Two tiers,
+			// never one mixed number: weekly and ROS are different lists, so a
+			// weekly 40 and a ROS 30 must not be compared.
+			// DUPLICATED in api/_lib/gametime.mjs (backupCandidates).
+			const useWeekly = watchlistWeeklyEcrApplies(league);
+			const rankKey = (p) => (useWeekly && Number.isFinite(p.weeklyEcr)
+				? [0, p.weeklyEcr]
+				: [1, p.ecr && Number.isFinite(p.ecr.rank) ? p.ecr.rank : Infinity]);
+			const byRank = (a, b) => {
+				const ka = rankKey(a);
+				const kb = rankKey(b);
+				return ka[0] - kb[0] || (ka[1] === kb[1] ? 0 : ka[1] < kb[1] ? -1 : 1);
+			};
 			return (league.players || [])
 				.filter((p) => (p.status || 'ROSTER').toUpperCase() === 'ROSTER' && !starting.has(String(p.id)) && playsInTime(p) && swapKeepsLineupLegal(league, starter, p))
 				.sort((a, b) => samePos(a) - samePos(b)
 					|| (a.injuryStatus ? 1 : 0) - (b.injuryStatus ? 1 : 0)
-					|| (ecrRank(a) === ecrRank(b) ? 0 : ecrRank(a) < ecrRank(b) ? -1 : 1)
+					|| byRank(a, b)
 					|| a.name.localeCompare(b.name));
 		}
 
