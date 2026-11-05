@@ -351,6 +351,35 @@ const realSwitchToView = context.switchToView;
 	context.switchToView = realSwitchToView;
 }
 
+{
+	// 'problems' target: Tasks card is expanded, but the page scrolls to the
+	// #digest strip so both show; hidden strip falls back to the card.
+	for (const hidden of [false, true]) {
+		const calls = [];
+		context.switchToView = (v) => calls.push(v);
+		const toggle = node('button');
+		let toggleClicked = 0;
+		toggle.click = () => { toggleClicked++; };
+		const card = node('div');
+		card.className = 'planning-card card-collapsed';
+		card.querySelector = () => toggle;
+		let cardScrolled = 0;
+		card.scrollIntoView = () => { cardScrolled++; };
+		const digest = node('div');
+		if (hidden) digest.className = 'hidden';
+		let digestScrolled = 0;
+		digest.scrollIntoView = () => { digestScrolled++; };
+		context.document.querySelector = () => card;
+		context.document.getElementById = (id) => (id === 'digest' ? digest : node());
+		goToTasksCard('problems');
+		assert.deepEqual(calls, ['admin']);
+		assert.equal(toggleClicked, 1, 'the Tasks card is expanded when collapsed');
+		assert.equal(digestScrolled, hidden ? 0 : 1, 'scrolls to the digest strip when it is showing');
+		assert.equal(cardScrolled, hidden ? 1 : 0, 'otherwise to the Tasks card');
+		context.switchToView = realSwitchToView;
+	}
+}
+
 console.log('All quick-link task-footnote checks passed.');
 
 // ---- Problems: combined toolbar footnote, separate card badge ---------------

@@ -7195,7 +7195,7 @@
 				// taskCount is the combined figure; with any problems in it the
 				// click lands on the Problems Digest card (Admin tab), else Tasks.
 				attachTaskBadgeClick(note, problemCount ? 'problems' : 'tasks');
-				if (problemCount) note.title = `${taskCount - problemCount} Tasks, ${problemCount} Problems — go to Problems Digest`;
+				if (problemCount) note.title = `${taskCount - problemCount} Tasks, ${problemCount} Problems — go to Problems Digest and Tasks`;
 				link.appendChild(note);
 			}
 			if (record) {
@@ -17088,15 +17088,21 @@
 		// is a silent no-op rather than switching to an Admin tab with
 		// nothing on it.
 		function goToTasksCard(target = 'tasks') {
-			// 'problems' lands on the Admin tab's Problems Digest card instead.
-			const card = document.querySelector(target === 'problems' ? '.admin-digest-card' : '.planning-card');
+			// Both targets land on the Admin tab with the Tasks card expanded.
+			// 'problems' aligns the top of the page's Problems Digest strip
+			// (#digest, which sits above every tab) to the top of the screen,
+			// so the strip and the Tasks card under it are visible together;
+			// with no strip showing it falls back to the Tasks card itself.
+			const card = document.querySelector('.planning-card');
 			if (!card) return;
 			switchToView('admin');
 			// Reuses the toggle's own click handling (class, aria-expanded,
 			// title, the collapsed-state write) rather than re-implementing
 			// it here — see makeCollapsible.
 			if (card.classList.contains('card-collapsed')) card.querySelector('.card-collapse-toggle')?.click();
-			card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			const digest = target === 'problems' ? document.getElementById('digest') : null;
+			const anchor = digest && !digest.classList.contains('hidden') ? digest : card;
+			anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
 		}
 
 		// Shared by every red task-count marker (the toolbar footnote's <sup>,
@@ -17110,7 +17116,7 @@
 			node.classList.add('task-badge-link');
 			node.setAttribute('role', 'button');
 			node.setAttribute('tabindex', '0');
-			node.title = target === 'problems' ? 'Go to Problems Digest' : 'Go to Tasks';
+			node.title = target === 'problems' ? 'Go to Problems Digest and Tasks' : 'Go to Tasks';
 			const activate = (e) => {
 				e.preventDefault();
 				e.stopPropagation();
