@@ -352,3 +352,32 @@ const realSwitchToView = context.switchToView;
 }
 
 console.log('All quick-link task-footnote checks passed.');
+
+// ---- Problems: combined toolbar footnote, separate card badge ---------------
+//
+// A league's open (undismissed) Problems Digest rows join its task count in
+// the toolbar footnote, and get their own "N Problems" badge beside "N Tasks".
+// The footnote's click lands on the Problems Digest card when any problem is
+// in the number, else on Tasks.
+
+assert.equal(context.problemBadgeLabel(1), '1 Problem');
+assert.equal(context.problemBadgeLabel(3), '3 Problems');
+
+{
+	const link = renderedLink({ url: 'https://example.com', label: 'MNMx', taskCount: 5, problemCount: 2 });
+	const note = link.children.find((c) => c.cls.split(' ').includes('quicklink-tasknote'));
+	assert.equal(note.textContent, '5', 'the footnote shows the combined figure');
+	assert.match(note.attrs.title ?? note.title, /3 Tasks, 2 Problems/, 'its tooltip splits the sum');
+}
+
+{
+	const picked = [];
+	const real = context.goToTasksCard;
+	context.goToTasksCard = (t) => picked.push(t);
+	const a = node('span'); attachTaskBadgeClick(a, 'problems');
+	const b = node('span'); attachTaskBadgeClick(b);
+	const ev = { preventDefault() {}, stopPropagation() {} };
+	a.listeners.click[0](ev); b.listeners.click[0](ev);
+	assert.deepEqual(picked, ['problems', 'tasks'], 'problems badges go to the digest card, others to Tasks');
+	context.goToTasksCard = real;
+}
