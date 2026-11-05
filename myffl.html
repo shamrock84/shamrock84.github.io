@@ -1948,6 +1948,9 @@
 			font-weight: 700;
 			padding-top: 0.6rem;
 		}
+		/* Player rows sit indented under their league's name row so the
+		   league headings read as group titles. */
+		.waivers-item-row td:first-child { padding-left: 1.1rem; }
 		.waivers-drop,
 		.waivers-bidder {
 			font-size: 0.78rem;
@@ -7004,6 +7007,29 @@
 			return counts;
 		}
 
+		// Open Problems Digest rows per league id, dismissed ones excluded —
+		// even logged out, where the strip itself still shows them (the
+		// toolbar count is a "needs a look" signal, and a row the manager
+		// already dismissed on this device has been looked at). Memoised
+		// because every card head asks; renderGrid and every dismiss/restore
+		// clear it (invalidateProblemCounts), same cadence as the digest strip.
+		let problemCountsCache = null;
+		function invalidateProblemCounts() { problemCountsCache = null; }
+		function leagueProblemCounts() {
+			if (problemCountsCache) return problemCountsCache;
+			const counts = {};
+			if (typeof pageData !== 'undefined' && pageData) {
+				const saved = loadDigestDismissals();
+				for (const league of pageData.leagues || []) {
+					const n = computeLeagueProblems(league, pageData.year)
+						.filter((problem) => !saved[league.id]?.[digestProblemKey(problem)]).length;
+					if (n) counts[league.id] = n;
+				}
+			}
+			problemCountsCache = counts;
+			return counts;
+		}
+
 		// The exact key a league's tasks are filed under — its nickname (the
 		// Admin tab's "Toolbar Label" field) falling back to leagueDisplayName
 		// and then its id, same chain the toolbar itself uses to pick a label.
@@ -7045,6 +7071,7 @@
 			const leagues = (pageData?.leagues || []).filter((league) => league.type !== 'draftonly');
 			bar.innerHTML = '';
 			const taskCounts = quickLinkTaskCounts();
+			const problemCounts = leagueProblemCounts();
 			// A Quick Link with a Group name (Admin tab > Quick Links) is folded
 			// into one dropdown pill labelled with that name, placed where the
 			// group's first link sits; members keep their Admin order and their
@@ -7100,7 +7127,9 @@
 					// this display text, so a manager's task category ("MNMx")
 					// still matches regardless of the score.
 					const record = recordDetails(league, league.franchiseId);
-					appendQuickLink(bar, { url: league.url, label, record, title: leagueDisplayName(league) || label, style: league.style, taskCount: taskCounts[label] });
+					const problemCount = problemCounts[league.id] || 0;
+					// One combined footnote: open tasks plus undismissed problems.
+					appendQuickLink(bar, { url: league.url, label, record, title: leagueDisplayName(league) || label, style: league.style, taskCount: (taskCounts[label] || 0) + problemCount, problemCount });
 				}
 			};
 			// The `{ type: 'leagues' }` entry marks where the league block sits
@@ -7151,7 +7180,7 @@
 		// marker with a fact (the record) that keeps its own green/red/plain
 		// color regardless of whether a task is pending (see .roster-record
 		// and the #quicklinks a.quicklink-flagged CSS comments).
-		function appendQuickLink(bar, { url, label, title, style, taskCount, record }) {
+		function appendQuickLink(bar, { url, label, title, style, taskCount, record, problemCount = 0 }) {
 			const cls = style === 'gold' ? 'quicklink-gold' : style === 'purple' ? 'quicklink-purple' : '';
 			const attrs = { href: url, target: '_blank', rel: 'noopener' };
 			const classes = [cls, taskCount ? 'quicklink-flagged' : ''].filter(Boolean).join(' ');
@@ -7163,7 +7192,10 @@
 			labelHost.appendChild(document.createTextNode(label));
 			if (taskCount) {
 				const note = el('sup', { class: 'quicklink-tasknote', text: String(taskCount) });
-				attachTaskBadgeClick(note);
+				// taskCount is the combined figure; with any problems in it the
+				// click lands on the Problems Digest card (Admin tab), else Tasks.
+				attachTaskBadgeClick(note, problemCount ? 'problems' : 'tasks');
+				if (problemCount) note.title = `${taskCount - problemCount} Tasks, ${problemCount} Problems — go to Problems Digest`;
 				link.appendChild(note);
 			}
 			if (record) {
@@ -7444,12 +7476,16 @@
 		function taskBadgeLabel(count) {
 			return `${count} Task${count === 1 ? '' : 's'}`;
 		}
+		function problemBadgeLabel(count) {
+			return `${count} Problem${count === 1 ? '' : 's'}`;
+		}
 
 		function buildCardHead(card, league, extraLabels = []) {
 			const cardHead = el('div', { class: 'card-head card-heading' });
 			cardHead.appendChild(buildLeagueHeading(league));
 			const season = seasonBadgeLabel(league);
 			const taskCount = quickLinkTaskCounts()[quickLinkLabelForLeague(league)] || 0;
+			const problemCount = leagueProblemCounts()[league.id] || 0;
 			// Gold leads: where it's hosted, then which season. The purple chips
 			// after them describe the league's own format. The red task badge,
 			// when there is one, trails everything else — same position as the
@@ -7461,6 +7497,7 @@
 				...(season ? [{ text: season, gold: true, season: true, stale: seasonIsBehind(season) }] : []),
 				...extraLabels.map((text) => ({ text })),
 				...(taskCount ? [{ text: taskBadgeLabel(taskCount), task: true }] : []),
+				...(problemCount ? [{ text: problemBadgeLabel(problemCount), task: true, problems: true }] : []),
 			];
 			const badgesEl = el('div', { class: `badges${labels.length > 2 ? ' badges-wrap' : ''}` });
 			for (const label of labels) {
@@ -7473,7 +7510,7 @@
 				// makeCollapsible's whole toggle target below, so this has to
 				// stop the click from also collapsing the card (see
 				// attachTaskBadgeClick).
-				if (label.task) attachTaskBadgeClick(badge);
+				if (label.task) attachTaskBadgeClick(badge, label.problems ? 'problems' : 'tasks');
 				badgesEl.appendChild(badge);
 			}
 			cardHead.appendChild(badgesEl);
@@ -11838,6 +11875,8 @@
 							e.stopPropagation();
 							e.preventDefault();
 							setDigestDismissal(league.id, digestProblemKey(problem), true);
+							invalidateProblemCounts();
+							renderQuickLinks();
 							renderProblemsDigest();
 							refreshDigestDismissalsCard();
 						};
@@ -17048,8 +17087,9 @@
 		// a logged-out visitor whose browser still carries stale task data —
 		// is a silent no-op rather than switching to an Admin tab with
 		// nothing on it.
-		function goToTasksCard() {
-			const card = document.querySelector('.planning-card');
+		function goToTasksCard(target = 'tasks') {
+			// 'problems' lands on the Admin tab's Problems Digest card instead.
+			const card = document.querySelector(target === 'problems' ? '.admin-digest-card' : '.planning-card');
 			if (!card) return;
 			switchToView('admin');
 			// Reuses the toggle's own click handling (class, aria-expanded,
@@ -17066,15 +17106,15 @@
 		// link — there's nothing to navigate to outside the page — so it
 		// carries role="button"/tabindex itself, the same keyboard-parity
 		// idiom makeGroupCollapsible's disclosure label uses.
-		function attachTaskBadgeClick(node) {
+		function attachTaskBadgeClick(node, target = 'tasks') {
 			node.classList.add('task-badge-link');
 			node.setAttribute('role', 'button');
 			node.setAttribute('tabindex', '0');
-			node.title = 'Go to Tasks';
+			node.title = target === 'problems' ? 'Go to Problems Digest' : 'Go to Tasks';
 			const activate = (e) => {
 				e.preventDefault();
 				e.stopPropagation();
-				goToTasksCard();
+				goToTasksCard(target);
 			};
 			node.addEventListener('click', activate);
 			node.addEventListener('keydown', (e) => {
@@ -17795,12 +17835,14 @@
 				// "flags an outside fact, isn't part of the league's own
 				// format" reasoning buildCardHead's identical badge uses.
 				const taskCount = taskCounts[quickLinkLabelForLeague(league)] || 0;
+				const problemCount = leagueProblemCounts()[league.id] || 0;
 				const chips = [
 					{ text: providerBadgeLabel(league), gold: true },
 					...(live?.season ? [{ text: String(live.season), season: true, stale: seasonIsBehind(live.season) }] : []),
 					{ text: LEAGUE_TYPE_LABELS[league.type] || league.type || '?' },
 					...(league.tags || []).map((text) => ({ text })),
 					...(taskCount ? [{ text: taskBadgeLabel(taskCount), task: true }] : []),
+					...(problemCount ? [{ text: problemBadgeLabel(problemCount), task: true, problems: true }] : []),
 				];
 				const badges = el('div', { class: 'admin-badges' });
 				for (const chip of chips) {
@@ -17812,7 +17854,7 @@
 					// Clickable straight to the Tasks card, same as the
 					// identical badge on this league's own Rosters/Standings/
 					// Scoring cards (see attachTaskBadgeClick).
-					if (chip.task) attachTaskBadgeClick(badge);
+					if (chip.task) attachTaskBadgeClick(badge, chip.problems ? 'problems' : 'tasks');
 					badges.appendChild(badge);
 				}
 				head.appendChild(badges);
@@ -18504,6 +18546,8 @@
 			};
 			const change = (on) => (league, rowKey) => {
 				setDigestDismissal(league.id, rowKey, on);
+				invalidateProblemCounts();
+				renderQuickLinks();
 				renderProblemsDigest();
 				refreshDigestDismissalsCard();
 			};
@@ -18954,7 +18998,7 @@
 				table.appendChild(groupRow);
 
 				for (const item of items) {
-					const tr = el('tr');
+					const tr = el('tr', { class: 'waivers-item-row' });
 					if (kind === 'waivers') {
 						const td = el('td');
 						const adds = item.adds.length ? item.adds : [];
@@ -19036,6 +19080,7 @@
 			// there isn't one yet.
 			document.querySelector('.controls').appendChild(document.querySelector('.search-wrap'));
 
+			invalidateProblemCounts();
 			renderQuickLinks();
 			renderAuthControl();
 			renderProblemsDigest();
