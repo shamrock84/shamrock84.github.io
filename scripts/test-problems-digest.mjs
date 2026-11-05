@@ -760,6 +760,12 @@ const rosterLimits = (overrides = {}) => ({ size: 28, taxi: 4, ir: 0, position: 
 	// No requirement string (ESPN/Sleeper): nothing to judge against.
 	assert.deepEqual(rows(lineup([1, 2, 3], { startingLineup: null })), []);
 
+	// ESPN ships a position-level string that is looser than its real slot
+	// rules (espnStartingLineupRequirement), so it filters the watchlist
+	// picker but must never raise an invalid-lineup row.
+	assert.deepEqual(rows(lineup([1, 2, 3, 4, 5, 6, 10, 8, 9], { provider: 'espn' })), [], 'an ESPN league never gets lineup-validity rows');
+	assert.equal(rows(lineup([1, 2, 3, 4, 5, 6, 10, 8, 9], { provider: 'mfl' })).length, 2, 'the same lineup on MFL still does');
+
 	// Best-ball strings have no lineup to set and floor at zero.
 	assert.deepEqual(rows(lineup([1, 2, 3], { startingLineup: '0-2 QB, 0-8 RB, 0-8 WR, 0-8 TE' })).filter((r) => /needs/.test(r)), []);
 
