@@ -2703,6 +2703,50 @@ async function espnFetch(startUrl, extraHeaders = {}) {
   }
 }
 
+// ESPN's lineupSlotId -> the positions a slot accepts. Verified against two
+// real leagues (probe-espn-lineup-slot-counts.mjs RUN 1): every id below
+// appeared in a player's own `eligibleSlots` with exactly these positions.
+// Do NOT assume a position has ONE slot id: LHF seats its WRs in slot 5
+// (WR/TE) while the other league uses slot 4 (WR only), so the league's own
+// lineupSlotCounts is what says which exist. 20 is bench and 21 is IR; they
+// are not lineup slots. Any other id with a count (IDP, team QB, ...) is
+// unknown, so the whole requirement is null rather than a partial guess.
+const ESPN_LINEUP_SLOT_POSITIONS = {
+  0: ['QB'],
+  2: ['RB'],
+  3: ['RB', 'WR'],
+  4: ['WR'],
+  5: ['WR', 'TE'],
+  6: ['TE'],
+  7: ['QB', 'RB', 'WR', 'TE'],
+  16: ['Def'],
+  17: ['PK'],
+  23: ['RB', 'WR', 'TE'],
+};
+const ESPN_NON_LINEUP_SLOTS = new Set([20, 21]);
+
+// The ESPN half of formatStartingLineupRequirement: the same "1 QB, 2-3 RB,
+// ..." string the Game-Time Watchlist's swapKeepsLineupLegal judges a swap
+// against. It reuses that formatter by rebuilding MFL's slot shape, so the
+// two providers can't drift apart in format. Position-level only, so it is
+// LOOSER than ESPN's real rules (a WR/TE slot pair can't say "WR and TE
+// together must be 2"): it can let an illegal swap through, never block a
+// legal one. Null when settings are absent or any slot is unrecognised.
+export function espnStartingLineupRequirement(rosterSettings) {
+  const counts = rosterSettings?.lineupSlotCounts;
+  if (!counts || typeof counts !== 'object') return null;
+  const position = [];
+  for (const [rawId, rawCount] of Object.entries(counts)) {
+    const id = Number(rawId);
+    const count = Number(rawCount);
+    if (!Number.isInteger(count) || count <= 0 || ESPN_NON_LINEUP_SLOTS.has(id)) continue;
+    const accepts = ESPN_LINEUP_SLOT_POSITIONS[id];
+    if (!accepts) return null;
+    position.push({ name: accepts.join('+'), limit: String(count) });
+  }
+  return formatStartingLineupRequirement({ league: { starters: { position } } });
+}
+
 export async function fetchEspnLeagueRoster(league) {
   // mRoster alone returns team objects with an empty roster.entries unless
   // scoped to a specific team/period — rosterForTeamId + scoringPeriodId
@@ -2758,6 +2802,15 @@ export async function fetchEspnLeagueRoster(league) {
     })
     .sort((a, b) => positionRank(a.position) - positionRank(b.position) || a.name.localeCompare(b.name));
 
+  // Never fails the roster read: a settings shape change just leaves the
+  // requirement null, which filters nothing (the pre-existing behaviour).
+  let startingLineup = null;
+  try {
+    startingLineup = espnStartingLineupRequirement(data.settings?.rosterSettings);
+  } catch (err) {
+    console.error(`Failed to parse starting lineup requirements for ${league.name}: ${err.message}`);
+  }
+
   return {
     id: league.id,
     name: league.name,
@@ -2767,6 +2820,7 @@ export async function fetchEspnLeagueRoster(league) {
     teamName: espnTeamName(team),
     url: leagueUrl(league),
     players,
+    startingLineup,
     updatedAt: new Date().toISOString(),
     error: null,
   };

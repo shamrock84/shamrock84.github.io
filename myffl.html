@@ -10054,7 +10054,9 @@
 		// slot (max > 0), and the swap must keep every position inside its
 		// range — one more of his position than the max, or one fewer of the
 		// starter's than the min, is out. The same position always passes.
-		// Leagues with no requirement string (ESPN, Sleeper) or an unresolved
+		// Leagues with no requirement string (Sleeper; ESPN's is position-level
+		// and loose, so it can let a swap through but never blocks a legal
+		// one) or an unresolved
 		// starter id filter nothing on counts, as lineupValidityProblems does.
 		// DUPLICATED in api/_lib/gametime.mjs (swapKeepsLineupLegal).
 		function swapKeepsLineupLegal(league, starter, candidate) {
@@ -11305,9 +11307,9 @@
 		// league has no slot for. Rows are separate facts (a lineup can be
 		// both a QB short and a TE over). Skipped, with nothing said, when:
 		//   - there are no starters at all, which the 'empty' row already says;
-		//   - there is no requirement to judge against (ESPN and Sleeper carry
-		//     no requirement string, and enforce their own slots at the
-		//     moment a lineup is set);
+		//   - there is no requirement to judge against (Sleeper carries no
+		//     requirement string, and ESPN's is skipped above; both enforce
+		//     their own slots at the moment a lineup is set);
 		//   - a starter id doesn't resolve to a rostered player, because the
 		//     position counts would then be an undercount and read as a
 		//     shortage that isn't there (a same-sync race between the two MFL
@@ -11317,6 +11319,11 @@
 		// when there is one, since the sum of minimums undercounts whenever a
 		// flex slot exists; without it only the floor is checked, as before.
 		function lineupValidityProblems(league, wk) {
+			// ESPN's startingLineup is position-level and looser than its real
+			// slot rules (providers.mjs espnStartingLineupRequirement), good
+			// enough to filter the watchlist's backup picker but not to call a
+			// lineup invalid; ESPN enforces its own slots when one is set.
+			if (league.provider === 'espn') return [];
 			const starters = league.starters;
 			if (!Array.isArray(starters) || starters.length === 0) return [];
 			const problems = [];

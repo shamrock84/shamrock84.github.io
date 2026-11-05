@@ -24,7 +24,19 @@
 //   4. A line saying which of the hypothesised slot ids the league does NOT
 //      use, and any slot id present that the hypothesis has no name for.
 //
-// RUN 1: not yet run. Record the findings here before writing the mapper.
+// RUN 1 (2026-11-05, week 9; two ESPN leagues):
+//   * rosterSettings.lineupSlotCounts is {slotId: count} for ids 0-24, zeros
+//     included. Bench is 20 and IR is 21, both confirmed (a bench QB sat in 20).
+//   * The id -> position table is NOT one-to-one per league. LHF (421871710)
+//     has 1 QB(0), 2 RB(2), 2 WR/TE(5), 1 FLEX(23), D/ST(16), K(17), 7 bench,
+//     1 IR; ESPN League 2 (1966972) has 1 QB, 2 RB, 2 WR(4), 1 TE(6),
+//     1 FLEX, D/ST, K, 6 bench. WRs sit in slot 5 in one and slot 4 in the
+//     other.
+//   * Each player's `eligibleSlots` names the slots he can fill, and agrees
+//     with the standard table for every id seen: 3 = RB/WR, 5 = WR/TE,
+//     7 = QB/RB/WR/TE (superflex), 23 = RB/WR/TE. A QB is [0,7,20,21].
+//   * Used by espnStartingLineupRequirement (providers.mjs). positionLimits
+//     are roster maximums per position, not lineup rules; unused.
 
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
