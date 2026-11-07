@@ -236,8 +236,10 @@
 			main { padding: 0.6rem; }
 			.card { padding: 0.5rem; }
 			table { font-size: 0.82rem; }
-			th, td { padding: 0.35rem 0.4rem; }
-			.col-day, .city { display: none; }
+			.city, .long { display: none; }
+			th, td { padding: 0.3rem 0.3rem; }
+			td input { min-width: 4.2rem; }
+			td.opp input { min-width: 6rem; }
 		}
 	</style>
 </head>
@@ -322,7 +324,7 @@
 			const d = new Date(g.at);
 			if (Number.isNaN(d.getTime())) return { day: '', date: '', time: 'TBD', tbd: true };
 			const zone = g.tbd ? 'America/New_York' : 'America/Chicago';
-			const day = d.toLocaleDateString('en-US', { weekday: 'long', timeZone: zone });
+			const day = d.toLocaleDateString('en-US', { weekday: 'short', timeZone: zone });
 			const date = d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', timeZone: zone });
 			if (g.tbd) return { day: 'TBD', date, time: 'TBD', tbd: true };
 			// Like the sheet: "Noon", and no AM/PM on the rest (every kickoff is
@@ -521,8 +523,9 @@
 		function renderTable() {
 			const editable = isLoggedIn() && !ticketsFailed;
 			const head1 = el('tr');
-			for (const [label, cls] of [['Date', ''], ['Day', 'col-day'], ['Time (CT)', ''], ['Opponent', ''], ['Face Value', '']]) {
-				head1.appendChild(el('th', { rowspan: '2', class: cls, text: label }));
+			// The long half of a heading hides on a phone (.long) to save width.
+			for (const [short, long, cls] of [['Date', '', ''], ['Day', '', ''], ['Time', ' (CT)', ''], ['Opponent', '', ''], ['Face', ' Value', '']]) {
+				head1.appendChild(el('th', { rowspan: '2', class: cls }, [document.createTextNode(short), long ? el('span', { class: 'long', text: long }) : null]));
 			}
 			for (const grp of SEAT_GROUPS) {
 				const th = el('th', { colspan: String(grp.seats.length), class: 'group' }, [document.createTextNode(grp.owner), el('small', { text: grp.where })]);
