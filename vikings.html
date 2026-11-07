@@ -88,6 +88,12 @@
 			font-size: 0.8rem;
 			color: var(--muted);
 		}
+		.team-record {
+			margin-top: 0.3rem;
+			font-size: 0.85rem;
+			font-weight: 700;
+			color: var(--accent);
+		}
 		.card {
 			background: var(--card-bg);
 			border: 1px solid var(--border);
@@ -362,6 +368,7 @@
 			<div>
 				<h1 id="title">Vikings Season Tickets</h1>
 				<div class="subtitle" id="subtitle"></div>
+				<div class="team-record" id="record"></div>
 			</div>
 			<div class="login" id="login"></div>
 		</header>
@@ -426,6 +433,20 @@
 			return (schedule || [])
 				.filter((g) => g && g.home === true && g.opp)
 				.map((g) => ({ ...g, section, key: `${season}-${keyPrefix}${g.wk}` }));
+		}
+
+		// "Overall (W-L) | Home (W-L)" from the regular-season results in the
+		// schedule itself; a tie adds a third number. Empty before any result.
+		function recordLine(schedule) {
+			const played = (schedule || []).filter((g) => g && (g.r === 'W' || g.r === 'L' || g.r === 'T'));
+			if (!played.length) return '';
+			const fmt = (list) => {
+				const w = list.filter((g) => g.r === 'W').length;
+				const l = list.filter((g) => g.r === 'L').length;
+				const t = list.filter((g) => g.r === 'T').length;
+				return t ? `${w}-${l}-${t}` : `${w}-${l}`;
+			};
+			return `Overall Record (${fmt(played)}) | Home Record (${fmt(played.filter((g) => g.home === true))})`;
 		}
 
 		// Kickoffs show in the stadium's time zone, not the viewer's, so a name
@@ -800,6 +821,7 @@
 			document.getElementById('title').textContent = `${season} Vikings Season Tickets`;
 			const regular = games.filter((g) => g.section === 'Regular Season').length; // `games` has the manual playoff rows too
 			document.getElementById('subtitle').textContent = preGames.length ? `${preGames.length} preseason + ${regular} regular-season home games` : `${regular} home games`;
+			document.getElementById('record').textContent = recordLine(sched && sched.teams && sched.teams[TEAM]);
 			renderAll();
 		}
 
