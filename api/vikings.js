@@ -35,7 +35,11 @@ const MAX_NAME_LENGTH = 60;
 const MAX_FACE_LENGTH = 8;
 // `2026-9` is regular-season week 9; `2026-p3` is preseason week 3, which
 // would otherwise collide with a regular-season week of the same number.
-const GAME_KEY = /^\d{4}-p?\d{1,2}$/;
+// `2026-po1` is a hand-entered playoff row: the schedule feed can't know them,
+// so the manager types their date, day, time and opponent too (`info`).
+const GAME_KEY = /^\d{4}-(?:p|po)?\d{1,2}$/;
+const INFO_FIELDS = ['day', 'date', 'time', 'opp'];
+const MAX_INFO_LENGTH = 40;
 const SEAT_ID = /^\d{1,3}$/;
 
 export { validatePatch, applyPatch, emptyDocument, VIKINGS_KEY };
@@ -52,10 +56,21 @@ function validatePatch(patch) {
     return { errors: ['body must be an object'] };
   }
   if (typeof patch.game !== 'string' || !GAME_KEY.test(patch.game)) {
-    errors.push('game must look like 2026-9 or 2026-p3 (season-week)');
+    errors.push('game must look like 2026-9, 2026-p3 or 2026-po1');
   }
-  if (patch.face === undefined && patch.seats === undefined) {
-    errors.push('nothing to save: send face and/or seats');
+  if (patch.face === undefined && patch.seats === undefined && patch.info === undefined) {
+    errors.push('nothing to save: send face, seats and/or info');
+  }
+  if (patch.info !== undefined) {
+    const info = patch.info;
+    if (info === null || typeof info !== 'object' || Array.isArray(info)) {
+      errors.push('info must be an object');
+    } else {
+      for (const [k, v] of Object.entries(info)) {
+        if (!INFO_FIELDS.includes(k)) errors.push(`info.${k} is not a known field`);
+        else if (typeof v !== 'string' || v.trim().length > MAX_INFO_LENGTH) errors.push(`info.${k} must be a string up to ${MAX_INFO_LENGTH} characters`);
+      }
+    }
   }
   if (patch.face !== undefined && (typeof patch.face !== 'string' || patch.face.trim().length > MAX_FACE_LENGTH)) {
     errors.push(`face must be a string up to ${MAX_FACE_LENGTH} characters`);
@@ -79,22 +94,28 @@ function validatePatch(patch) {
 }
 
 // Pure: returns a new document with a validated patch applied. A game left
-// with neither a face value nor a seat is dropped, so clearing a row clears it.
+// with no face value, info or seat is dropped, so clearing a row clears it.
 function applyPatch(doc, patch) {
   const games = {};
   for (const [k, v] of Object.entries((doc && doc.games) || {})) {
-    games[k] = { ...(v.face ? { face: v.face } : {}), seats: { ...(v.seats || {}) } };
+    games[k] = { ...(v.face ? { face: v.face } : {}), ...(v.info ? { info: { ...v.info } } : {}), seats: { ...(v.seats || {}) } };
   }
   const game = games[patch.game] || { seats: {} };
   if (patch.face !== undefined) {
     const face = patch.face.trim();
     if (face) game.face = face; else delete game.face;
   }
+  for (const [k, raw] of Object.entries(patch.info || {})) {
+    const text = raw.trim();
+    game.info = { ...(game.info || {}) };
+    if (text) game.info[k] = text; else delete game.info[k];
+    if (!Object.keys(game.info).length) delete game.info;
+  }
   for (const [id, raw] of Object.entries(patch.seats || {})) {
     const name = raw.trim();
     if (name) game.seats[id] = name; else delete game.seats[id];
   }
-  if (game.face || Object.keys(game.seats).length) games[patch.game] = game;
+  if (game.face || game.info || Object.keys(game.seats).length) games[patch.game] = game;
   else delete games[patch.game];
   return { games, updatedAt: Date.now() };
 }

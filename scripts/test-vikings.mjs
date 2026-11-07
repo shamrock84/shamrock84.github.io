@@ -21,6 +21,21 @@ check('accepts a seat patch', () => assert.ok(ok({ game: '2026-9', seats: { 1: '
 check('accepts a face-only patch', () => assert.ok(ok({ game: '2026-9', face: '219' })));
 check('accepts clearing with empty strings', () => assert.ok(ok({ game: '2026-9', face: '', seats: { 1: '' } })));
 check('accepts a preseason game key', () => assert.ok(ok({ game: '2026-p3', seats: { 1: 'Nate' } })));
+check('accepts a playoff row with info', () => assert.ok(ok({ game: '2026-po1', info: { date: '1/17', opp: 'Rams' } })));
+check('rejects bad info', () => {
+  assert.ok(!ok({ game: '2026-po1', info: { venue: 'x' } }));
+  assert.ok(!ok({ game: '2026-po1', info: { opp: 5 } }));
+  assert.ok(!ok({ game: '2026-po1', info: { opp: 'x'.repeat(41) } }));
+  assert.ok(!ok({ game: '2026-po1', info: ['x'] }));
+});
+check('applyPatch merges info and deletes emptied fields', () => {
+  const a = applyPatch(emptyDocument(), { game: '2026-po1', info: { date: ' 1/17 ', opp: 'Rams' } });
+  assert.deepEqual(a.games['2026-po1'], { info: { date: '1/17', opp: 'Rams' }, seats: {} });
+  const b = applyPatch(a, { game: '2026-po1', info: { opp: '' }, seats: { 1: 'Jeff' } });
+  assert.deepEqual(b.games['2026-po1'], { info: { date: '1/17' }, seats: { 1: 'Jeff' } });
+  const c = applyPatch(applyPatch(b, { game: '2026-po1', info: { date: '' } }), { game: '2026-po1', seats: { 1: '' } });
+  assert.deepEqual(c.games, {}, 'a cleared playoff row disappears');
+});
 check('rejects a missing or malformed game key', () => {
   assert.ok(!ok({ seats: { 1: 'a' } }));
   assert.ok(!ok({ game: 'week9', seats: { 1: 'a' } }));

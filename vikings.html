@@ -172,6 +172,8 @@
 			font: inherit;
 			font-size: 16px;
 		}
+		td input.info { min-width: 3.5rem; }
+		td.opp input { min-width: 8rem; }
 		td.face input { min-width: 4rem; width: 4.5rem; }
 		td input:focus-visible,
 		.login-form input:focus-visible {
@@ -188,17 +190,6 @@
 		}
 		.status.error { color: var(--ir-text); }
 		.status.ok { color: var(--gain-text); }
-		.note {
-			margin: 0.6rem 0 0;
-			font-size: 0.78rem;
-			color: var(--muted);
-		}
-		.swipe-hint {
-			display: none;
-			margin: 0.4rem 0 0;
-			font-size: 0.75rem;
-			color: var(--muted);
-		}
 		.message { padding: 1rem 0.2rem; color: var(--muted); }
 		.message.error { color: var(--ir-text); }
 		/* Login control: same look as myffl.html's .lineup-login. */
@@ -247,7 +238,6 @@
 			table { font-size: 0.82rem; }
 			th, td { padding: 0.35rem 0.4rem; }
 			.col-day, .city { display: none; }
-			.swipe-hint { display: block; }
 		}
 	</style>
 </head>
@@ -277,7 +267,10 @@
 		//    only: the regular season from nflSchedules.teams.MIN (ESPN's feed,
 		//    the same one myFFL's NFL tab shows) and the preseason from
 		//    nflPreseason.teams.MIN (ESPN seasontype=1, Vikings only). Playoffs
-		//    are not listed: they don't exist until the team qualifies.
+		//    can't be known until the team qualifies, so MANUAL_PLAYOFF_ROWS
+		//    blank rows are typed in by hand (date, day, time, opponent) and
+		//    stored under `${season}-po${n}`; logged out they only appear once
+		//    something is entered.
 		//  - The NAMES and face values come from api/vikings.js on Vercel,
 		//    keyed `${season}-${week}`, or `${season}-p${week}` for preseason
 		//    (their week numbers would otherwise collide). Its GET is public (logged-out viewers
@@ -292,6 +285,8 @@
 		// The seats this account holds. Ids are what the store keys names by
 		// (api/vikings.js only checks they are numbers), so don't renumber a seat
 		// once names are saved against it.
+		const MANUAL_PLAYOFF_ROWS = 3; // a home playoff game per round, at most three
+
 		const SEAT_GROUPS = [
 			{ owner: 'Jeff', where: 'Sec 114 · Row 35', seats: [{ id: '1', label: 'Seat 1' }, { id: '2', label: 'Seat 2' }] },
 			{ owner: 'Kevin', where: 'Sec 124 · Row 9', seats: [{ id: '11', label: 'Seat 11' }, { id: '12', label: 'Seat 12' }] },
@@ -353,7 +348,6 @@
 
 		let season = null;
 		let games = [];
-let sections = [];
 		let tickets = { games: {} };
 		let ticketsFailed = null;
 
@@ -454,6 +448,35 @@ let sections = [];
 			}
 		}
 
+		const infoOf = (g) => (tickets.games[g.key] || {}).info || {};
+		const hasContent = (g) => {
+			const t = tickets.games[g.key] || {};
+			return !!(t.face || t.info || Object.keys(t.seats || {}).length);
+		};
+		// What a row is called to a screen reader.
+		const gameLabel = (g) => g.manual
+			? `Playoff game ${g.n}${infoOf(g).opp ? ' ' + infoOf(g).opp : ''}`
+			: `${formatWhen(g).date} ${TEAM_NAMES[g.opp] || g.opp}`;
+
+		// A hand-entered row's date / day / time / opponent: text, or an input
+		// per field when logged in. Saved through the same per-cell patch as a seat.
+		function manualCell(g, field, editable, extraClass) {
+			const value = infoOf(g)[field] || '';
+			const td = el('td', { class: [extraClass, field === 'opp' ? 'opp' : ''].filter(Boolean).join(' ') });
+			if (!editable) { td.textContent = value; return td; }
+			const label = { date: 'date', day: 'day', time: 'time', opp: 'opponent' }[field];
+			const input = el('input', { type: 'text', value, maxlength: '40', autocomplete: 'off', class: 'info', 'aria-label': `${gameLabel(g)}, ${label}` });
+			let last = value;
+			input.addEventListener('change', () => {
+				const next = input.value.trim();
+				if (next === last) return;
+				last = next;
+				saveCell(input, g, { info: { [field]: next } });
+			});
+			td.appendChild(input);
+			return td;
+		}
+
 		function seatCell(g, seat, first, editable) {
 			const value = ((tickets.games[gameKey(g)] || {}).seats || {})[seat.id] || '';
 			const td = el('td', { class: first ? 'seat-first' : '' });
@@ -462,7 +485,7 @@ let sections = [];
 				else td.appendChild(el('span', { class: 'empty', text: '—' }));
 				return td;
 			}
-			const input = el('input', { type: 'text', value, maxlength: '60', autocomplete: 'off', 'aria-label': `${formatWhen(g).date} ${TEAM_NAMES[g.opp] || g.opp}, ${seat.label}` });
+			const input = el('input', { type: 'text', value, maxlength: '60', autocomplete: 'off', 'aria-label': `${gameLabel(g)}, ${seat.label}` });
 			let last = value;
 			input.addEventListener('change', () => {
 				const next = input.value.trim();
@@ -482,7 +505,7 @@ let sections = [];
 				else td.appendChild(el('span', { class: 'empty', text: '—' }));
 				return td;
 			}
-			const input = el('input', { type: 'text', inputmode: 'decimal', value, maxlength: '8', autocomplete: 'off', placeholder: '$', 'aria-label': `${formatWhen(g).date} ${TEAM_NAMES[g.opp] || g.opp}, face value` });
+			const input = el('input', { type: 'text', inputmode: 'decimal', value, maxlength: '8', autocomplete: 'off', placeholder: '$', 'aria-label': `${gameLabel(g)}, face value` });
 			let last = value;
 			input.addEventListener('change', () => {
 				const next = input.value.replace(/[$,\s]/g, '');
@@ -510,15 +533,30 @@ let sections = [];
 			const thead = el('thead', {}, [head1, head2]);
 
 			const now = Date.now();
-			const nextIndex = games.findIndex((g) => g.r == null && !(g.at && new Date(g.at).getTime() + 4 * 3600e3 < now));
+			// Blank hand-entered rows are for typing into; to everyone else they
+			// only exist once something has been entered.
+			const rows = games.filter((g) => !g.manual || editable || hasContent(g));
+			const rowSections = [...new Set(rows.map((g) => g.section))];
+			const nextIndex = rows.findIndex((g) => !g.manual && g.r == null && !(g.at && new Date(g.at).getTime() + 4 * 3600e3 < now));
 			const tbody = el('tbody');
 			const colCount = 5 + SEAT_GROUPS.reduce((n, grp) => n + grp.seats.length, 0);
 			let lastSection = null;
-			games.forEach((g, i) => {
+			rows.forEach((g, i) => {
 				// Section rows, like the sheet's Preseason / Regular Season bands.
-				if (sections.length > 1 && g.section !== lastSection) {
+				if (rowSections.length > 1 && g.section !== lastSection) {
 					lastSection = g.section;
 					tbody.appendChild(el('tr', { class: 'section' }, [el('td', { colspan: String(colCount), text: g.section })]));
+				}
+				if (g.manual) {
+					const tr = el('tr');
+					tr.appendChild(manualCell(g, 'date', editable));
+					tr.appendChild(manualCell(g, 'day', editable, 'col-day'));
+					tr.appendChild(manualCell(g, 'time', editable));
+					tr.appendChild(manualCell(g, 'opp', editable));
+					tr.appendChild(faceCell(g, editable));
+					SEAT_GROUPS.forEach((grp) => grp.seats.forEach((st, si) => tr.appendChild(seatCell(g, st, si === 0, editable))));
+					tbody.appendChild(tr);
+					return;
 				}
 				const when = formatWhen(g);
 				const done = g.r != null || (g.at && !g.tbd && new Date(g.at).getTime() + 4 * 3600e3 < now);
@@ -550,8 +588,6 @@ let sections = [];
 				content.appendChild(el('div', { class: 'message error', text: `Couldn’t load seat names (${ticketsFailed}), so editing is turned off. Reload to try again.` }));
 			}
 			content.appendChild(renderTable());
-			content.appendChild(el('p', { class: 'swipe-hint', text: 'Swipe the table sideways to see every seat.' }));
-			content.appendChild(el('p', { class: 'note', text: 'Home games only, from the NFL schedule. Playoff games are not listed. Times are Central.' }));
 		}
 
 		async function load() {
@@ -577,16 +613,16 @@ let sections = [];
 			// last good read when ESPN fails) must not be shown against this one.
 			const preGames = pre && String(pre.season) === String(season) ? homeGames(pre.teams && pre.teams[TEAM], 'Preseason', 'p') : [];
 			games = [...preGames, ...homeGames(sched && sched.teams && sched.teams[TEAM], 'Regular Season', '')];
-			sections = [...new Set(games.map((g) => g.section))];
 			if (!games.length) {
 				content.textContent = '';
 				content.appendChild(el('div', { class: 'message', text: 'No Vikings home games found in the schedule yet.' }));
 				return;
 			}
+			for (let n = 1; n <= MANUAL_PLAYOFF_ROWS; n++) games.push({ section: 'Playoffs', key: `${season}-po${n}`, manual: true, n });
 			if (seats.status === 'fulfilled') tickets = { games: (seats.value && seats.value.games) || {} };
 			else ticketsFailed = seats.reason.message;
 			document.getElementById('title').textContent = `${season} Vikings Season Tickets`;
-			const regular = games.filter((g) => g.section === 'Regular Season').length;
+			const regular = games.filter((g) => g.section === 'Regular Season').length; // `games` has the manual playoff rows too
 			document.getElementById('subtitle').textContent = preGames.length ? `${preGames.length} preseason + ${regular} regular-season home games` : `${regular} home games`;
 			renderAll();
 		}
