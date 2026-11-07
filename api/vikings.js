@@ -22,14 +22,28 @@
 // single editor.
 //
 // Same Upstash store as plans.js (resolveStore), no expiry on the key.
+//
+// TASKS. The Admin tab's Tasks card keeps its list in a SECOND key
+// (TASKS_KEY), deliberately apart from myFFL's plans document: the two lists
+// share a card design, not data. Unlike the seats, tasks are private, so
+// `GET ?resource=tasks` needs the Bearer token (the seats GET above stays
+// public). A write is a per-task patch, like the seat patch —
+// { resource: 'tasks', tasks: { <id>: task | null } } — where null deletes, so
+// a device holding a stale list can only touch the tasks it edited. The task
+// shape and its validator are plans.js's own (validateTasks / mergeTasks).
 
 import { verifyToken } from './_lib/auth.mjs';
 import { applyCors } from './_lib/cors.mjs';
 import { storeGet, storeSet } from './_lib/store.mjs';
-import { resolveStore } from './plans.js';
+import { resolveStore, validateTasks, mergeTasks } from './plans.js';
 
 const VIKINGS_KEY = 'vikings:tickets';
-const MAX_GAMES = 40;
+const TASKS_KEY = 'vikings:tasks';
+const TASK_ID = /^[A-Za-z0-9]{1,40}$/;
+const MAX_TASKS = 300;
+// Every season back to 2016, each with preseason, regular-season and playoff
+// home games: about 15 a season.
+const MAX_GAMES = 300;
 const MAX_SEATS_PER_PATCH = 12;
 const MAX_NAME_LENGTH = 60;
 const MAX_FACE_LENGTH = 8;
@@ -42,7 +56,7 @@ const INFO_FIELDS = ['day', 'date', 'time', 'opp'];
 const MAX_INFO_LENGTH = 40;
 const SEAT_ID = /^\d{1,3}$/;
 
-export { validatePatch, applyPatch, emptyDocument, VIKINGS_KEY };
+export { validatePatch, applyPatch, emptyDocument, validateTaskPatch, applyTaskPatch, VIKINGS_KEY, TASKS_KEY };
 
 function emptyDocument() {
   return { games: {}, updatedAt: null };
@@ -120,6 +134,36 @@ function applyPatch(doc, patch) {
   return { games, updatedAt: Date.now() };
 }
 
+// { tasks: { id: task | null } } — shape only; the task fields are checked by
+// plans.js's validateTasks so the two lists can never disagree about a task.
+function validateTaskPatch(patch) {
+  const tasks = patch && patch.tasks;
+  if (tasks === null || typeof tasks !== 'object' || Array.isArray(tasks)) return { errors: ['tasks must be an object'] };
+  const errors = [];
+  const ids = Object.keys(tasks);
+  if (!ids.length) errors.push('nothing to save: tasks is empty');
+  if (ids.length > MAX_TASKS) errors.push(`tasks has more than ${MAX_TASKS} entries`);
+  const live = {};
+  for (const id of ids) {
+    if (!TASK_ID.test(id)) errors.push(`task id ${JSON.stringify(id)} must be letters and digits`);
+    else if (tasks[id] !== null) live[id] = tasks[id];
+  }
+  errors.push(...validateTasks(live));
+  return { errors };
+}
+
+// Pure: returns a new { tasks } list with the patch applied. mergeTasks only
+// normalises here (each patched task goes through an empty list), so a
+// stored task is replaced by the patched one rather than winning.
+function applyTaskPatch(stored, patch) {
+  const tasks = { ...(stored || {}) };
+  for (const [id, task] of Object.entries(patch.tasks)) {
+    if (task === null) delete tasks[id];
+    else tasks[id] = mergeTasks({}, { [id]: task })[id];
+  }
+  return tasks;
+}
+
 export default async function handler(req, res) {
   if (applyCors(req, res, { methods: 'GET, POST, OPTIONS', headers: 'Content-Type, Authorization' })) return;
   if (req.method !== 'GET' && req.method !== 'POST') {
@@ -127,7 +171,8 @@ export default async function handler(req, res) {
     return;
   }
 
-  if (req.method === 'POST') {
+  const wantsTasks = req.method === 'GET' ? (req.query && req.query.resource) === 'tasks' : (req.body || {}).resource === 'tasks';
+  if (req.method === 'POST' || wantsTasks) {
     const sessionSecret = process.env.SESSION_SECRET;
     if (!sessionSecret) {
       res.status(500).json({ error: 'SESSION_SECRET is not configured on this deployment.' });
@@ -148,6 +193,26 @@ export default async function handler(req, res) {
   }
 
   try {
+    if (wantsTasks) {
+      const storedTasks = (await storeGet(store, TASKS_KEY)) || {};
+      if (req.method === 'GET') {
+        res.status(200).json({ tasks: storedTasks });
+        return;
+      }
+      const { errors } = validateTaskPatch(req.body);
+      if (errors.length) {
+        res.status(400).json({ error: 'Nothing was saved — the request was malformed:', details: errors });
+        return;
+      }
+      const nextTasks = applyTaskPatch(storedTasks, req.body);
+      if (Object.keys(nextTasks).length > MAX_TASKS) {
+        res.status(400).json({ error: `Nothing was saved — more than ${MAX_TASKS} tasks.` });
+        return;
+      }
+      await storeSet(store, TASKS_KEY, nextTasks);
+      res.status(200).json({ tasks: nextTasks });
+      return;
+    }
     const stored = (await storeGet(store, VIKINGS_KEY)) || emptyDocument();
     if (req.method === 'GET') {
       res.status(200).json({ tickets: stored });
