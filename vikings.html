@@ -661,7 +661,7 @@
 					const seats = el('div', { class: 'seats' });
 					grp.seats.forEach((st) => seats.appendChild(seatItem(g, st, editable)));
 					const line = el('div', { class: 'seat-line' }, [
-						el('div', { class: 'owner' }, [document.createTextNode(grp.owner), el('small', { text: grp.where })]),
+						el('div', { class: 'owner' }, [document.createTextNode(`${grp.owner}\u2019s Seats`), el('small', { text: grp.where })]),
 						seats,
 					]);
 					return el('tr', { class: `seat-row ${cls}${gi === SEAT_GROUPS.length - 1 ? ' last' : ''}`.trim() }, [el('td', { colspan: '5' }, [line])]);
