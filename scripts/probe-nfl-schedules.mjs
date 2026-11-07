@@ -38,3 +38,25 @@ for (const week of [1, 9, 18]) {
   const games = extractWeekGames(data);
   console.log(`  extractWeekGames: ${games.length} game(s), ${games.filter((g) => !g.at).length} without a kickoff`);
 }
+
+// ---- Preseason (seasontype=1) and playoffs (seasontype=3) -------------------
+// Asked for by vikings.html, which lists every Minnesota home game. The
+// regular-season fetch above never touches these, and buildTeamSchedules'
+// bye detection must NOT see preseason weeks (a team that sits out a
+// preseason week is not on a bye). Prints Minnesota's games per week so the
+// parse and the week numbering can be checked before any code relies on them.
+const TEAM = process.env.PROBE_TEAM || 'MIN';
+for (const [label, seasontype, weeks] of [['preseason', 1, [1, 2, 3, 4, 5]], ['playoffs', 3, [1, 2, 3, 4, 5]]]) {
+  for (const week of weeks) {
+    const url = `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${SEASON}&seasontype=${seasontype}&week=${week}`;
+    const res = await fetch(url);
+    console.log(`\n${label} week ${week}: HTTP ${res.status} ${url}`);
+    if (!res.ok) continue;
+    const data = await res.json();
+    const games = extractWeekGames(data);
+    console.log(`  events: ${(data.events || []).length}, parsed: ${games.length}, season echoed: ${JSON.stringify(data.season)}, week echoed: ${JSON.stringify(data.week)}`);
+    for (const g of games.filter((x) => x.home === TEAM || x.away === TEAM)) console.log(`  ${TEAM}:`, JSON.stringify(g));
+    const raw = (data.events || []).find((e) => JSON.stringify(e).includes(`"abbreviation":"${TEAM}"`));
+    if (raw) console.log('  raw status.type:', JSON.stringify(raw.status?.type), '| name:', raw.name, '| season:', JSON.stringify(raw.season));
+  }
+}

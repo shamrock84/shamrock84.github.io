@@ -8,7 +8,7 @@ name: Probe NFL Schedules (manual, read-only, no secrets needed)
 # the sandbox this repo is normally edited from. See
 # scripts/probe-nfl-schedules.mjs's header.
 #
-# Read-only: three GETs.
+# Read-only: a handful of GETs (regular-season weeks, then preseason and playoff weeks).
 on:
   workflow_dispatch: {}
 
