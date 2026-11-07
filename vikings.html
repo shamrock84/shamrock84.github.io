@@ -320,14 +320,19 @@
 			thead th { font-size: 0.8rem; }
 			tr.section td { font-size: 0.9rem; padding: 0.45rem 0.8rem; }
 			.chip { font-size: 0.72rem; }
-			tr.seat-row td { padding-top: 0.2rem; padding-bottom: 0.2rem; }
-			tr.seat-row.last td { padding-bottom: 0.9rem; }
-			.seat-line { gap: 0.4rem 1.2rem; margin-left: 1.6rem; padding-left: 1rem; }
-			/* One line per ticket holder: name and section, then the two seats. */
-			.owner { flex-basis: 17rem; font-size: 1rem; }
+			tr.seat-row td { padding-top: 0.35rem; padding-bottom: 0.35rem; }
+			tr.seat-row.last td { padding-bottom: 1.1rem; }
+			.seat-line { gap: 0.4rem 1rem; margin-left: 1.6rem; padding-left: 1rem; }
+			/* One line per ticket holder: name and section on the left, then the two
+			   seats spread across the rest of the row (roughly under the Opponent and
+			   Face Value columns) instead of bunched together. */
+			.owner { flex-basis: 19rem; font-size: 1rem; }
 			.owner small { display: inline; margin-left: 0.5rem; font-size: 0.82rem; }
 			.seat-line { flex-wrap: nowrap; }
-			.seats { gap: 0.9rem; }
+			.seats { flex: 1 1 auto; justify-content: space-around; padding: 0 1rem; }
+			.seat-art { width: 6.4rem; }
+			.seat-name { font-size: 0.85rem; }
+			.seat-label { font-size: 0.78rem; margin-top: 0.15rem; }
 			.all-toggle, .login, .login-toggle { font-size: 0.9rem; }
 			.chev { font-size: 0.9rem; }
 		}
