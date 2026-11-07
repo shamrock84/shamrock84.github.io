@@ -882,18 +882,23 @@
 		// current year, data/vikings-history.json for the rest. Both carry the
 		// same wire shape, so one builder serves both. Playoffs are always the
 		// same three hand-entered rows.
-		function buildSeason(year, schedule, preseason) {
+		// Playoffs: when the backfill read them (`postseason` is an array, maybe
+		// empty) the home games come from the feed, keyed by round
+		// (`${year}-po${wk}`, wk 1-3) so a name stays with its round; otherwise
+		// (the current season, or a file without them) the manager types the rows.
+		function buildSeason(year, schedule, preseason, postseason) {
 			const pre = homeGames(preseason, 'Preseason', 'p', year);
 			const reg = homeGames(schedule, 'Regular Season', '', year);
 			const list = [...pre, ...reg];
-			for (let n = 1; n <= MANUAL_PLAYOFF_ROWS; n++) list.push({ section: 'Playoffs', key: `${year}-po${n}`, manual: true, n });
+			if (Array.isArray(postseason)) list.push(...homeGames(postseason, 'Playoffs', 'po', year));
+			else for (let n = 1; n <= MANUAL_PLAYOFF_ROWS; n++) list.push({ section: 'Playoffs', key: `${year}-po${n}`, manual: true, n });
 			return { year, games: list, preCount: pre.length, regular: reg.length, record: recordLine(schedule) };
 		}
 
 		function seasonData(year) {
 			if (currentData && String(year) === String(snapshotSeason)) return currentData;
 			const h = historyDoc && historyDoc.seasons && historyDoc.seasons[year];
-			return h ? buildSeason(year, h.schedule, h.preseason) : null;
+			return h ? buildSeason(year, h.schedule, h.preseason, h.postseason) : null;
 		}
 
 		function seasonCard(data, editable, withTitle = true) {

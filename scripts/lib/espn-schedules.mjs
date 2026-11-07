@@ -140,6 +140,27 @@ export async function fetchNflPreseason({ season, teams }) {
   return { generatedAt: new Date().toISOString(), season: String(season), teams: buildPreseasonGames(weeks, teams) };
 }
 
+// Postseason (`seasontype=3`) for the same teams, used only by the Vikings
+// history backfill (scripts/backfill-vikings-history.mjs): weeks 1-3 are the
+// Wild Card, Divisional and Conference rounds. Week 4 is the Pro Bowl and 5 the
+// Super Bowl, a neutral-site game whose "home" label means nothing, so they are
+// not read. Same wire shape and same rules as fetchNflPreseason (an empty
+// week is not an error; an HTTP failure throws). The request mirrors the
+// preseason call; that `seasontype=3` answers the same shape is unverified from
+// the sandbox, so check the backfill run's log before trusting it.
+export const POSTSEASON_WEEKS = 3;
+
+export async function fetchNflPostseason({ season, teams }) {
+  const weeks = [];
+  for (let week = 1; week <= POSTSEASON_WEEKS; week++) {
+    const url = `${SCOREBOARD_URL}?dates=${encodeURIComponent(season)}&seasontype=3&week=${week}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status} at ${url}`);
+    weeks.push({ week, games: extractWeekGames(await res.json()) });
+  }
+  return { generatedAt: new Date().toISOString(), season: String(season), teams: buildPreseasonGames(weeks, teams) };
+}
+
 export async function fetchNflSchedules({ season }) {
   const weeks = [];
   for (let week = 1; week <= REGULAR_SEASON_WEEKS; week++) {
