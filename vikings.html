@@ -129,6 +129,14 @@
 		}
 		tbody tr:last-child td { border-bottom: none; }
 		td.opp { font-weight: 600; }
+		/* Section band (Preseason / Regular Season), like the sheet's. */
+		tr.section td {
+			text-align: center;
+			font-weight: 700;
+			font-size: 0.8rem;
+			color: var(--accent);
+			background: var(--chip-bg);
+		}
 		td.face { font-variant-numeric: tabular-nums; }
 		tr.past td { color: var(--muted); }
 		tr.past td.opp { font-weight: 500; }
@@ -265,12 +273,14 @@
 		// face value becomes an input that saves on change.
 		//
 		// Two sources, deliberately separate:
-		//  - The SCHEDULE is read from the sync's committed snapshot
-		//    (data/rosters.json -> nflSchedules.teams.MIN, ESPN's feed, the same
-		//    one myFFL's NFL tab shows), home games only. Regular season only:
-		//    that feed has no preseason or playoff games.
+		//  - The SCHEDULE is read from the sync's committed snapshot, home games
+		//    only: the regular season from nflSchedules.teams.MIN (ESPN's feed,
+		//    the same one myFFL's NFL tab shows) and the preseason from
+		//    nflPreseason.teams.MIN (ESPN seasontype=1, Vikings only). Playoffs
+		//    are not listed: they don't exist until the team qualifies.
 		//  - The NAMES and face values come from api/vikings.js on Vercel,
-		//    keyed `${season}-${week}`. Its GET is public (logged-out viewers
+		//    keyed `${season}-${week}`, or `${season}-p${week}` for preseason
+		//    (their week numbers would otherwise collide). Its GET is public (logged-out viewers
 		//    see the names); its POST needs the Bearer token.
 
 		const TEAM = 'MIN';
@@ -300,8 +310,12 @@
 		};
 
 		// A game is a home game when the feed says so; a bye has no `home` at all.
-		function homeGames(schedule) {
-			return (schedule || []).filter((g) => g && g.home === true && g.opp);
+		// Each game is tagged with its section and the key its names are stored
+		// under, so nothing downstream has to know which feed it came from.
+		function homeGames(schedule, section, keyPrefix) {
+			return (schedule || [])
+				.filter((g) => g && g.home === true && g.opp)
+				.map((g) => ({ ...g, section, key: `${season}-${keyPrefix}${g.wk}` }));
 		}
 
 		// Kickoffs show in the stadium's time zone, not the viewer's, so a name
@@ -339,6 +353,7 @@
 
 		let season = null;
 		let games = [];
+let sections = [];
 		let tickets = { games: {} };
 		let ticketsFailed = null;
 
@@ -403,7 +418,7 @@
 			wrap.append(toggle, form);
 		}
 
-		const gameKey = (g) => `${season}-${g.wk}`;
+		const gameKey = (g) => g.key;
 
 		// POST one cell as a patch. The server returns the whole document, which
 		// we keep as the source of truth but do NOT re-render from: rebuilding
@@ -497,7 +512,14 @@
 			const now = Date.now();
 			const nextIndex = games.findIndex((g) => g.r == null && !(g.at && new Date(g.at).getTime() + 4 * 3600e3 < now));
 			const tbody = el('tbody');
+			const colCount = 5 + SEAT_GROUPS.reduce((n, grp) => n + grp.seats.length, 0);
+			let lastSection = null;
 			games.forEach((g, i) => {
+				// Section rows, like the sheet's Preseason / Regular Season bands.
+				if (sections.length > 1 && g.section !== lastSection) {
+					lastSection = g.section;
+					tbody.appendChild(el('tr', { class: 'section' }, [el('td', { colspan: String(colCount), text: g.section })]));
+				}
 				const when = formatWhen(g);
 				const done = g.r != null || (g.at && !g.tbd && new Date(g.at).getTime() + 4 * 3600e3 < now);
 				const tr = el('tr', { class: done ? 'past' : i === nextIndex ? 'next' : '' });
@@ -529,7 +551,7 @@
 			}
 			content.appendChild(renderTable());
 			content.appendChild(el('p', { class: 'swipe-hint', text: 'Swipe the table sideways to see every seat.' }));
-			content.appendChild(el('p', { class: 'note', text: 'Home games only, from the NFL schedule. Preseason and playoff games are not listed. Times are Central.' }));
+			content.appendChild(el('p', { class: 'note', text: 'Home games only, from the NFL schedule. Playoff games are not listed. Times are Central.' }));
 		}
 
 		async function load() {
@@ -550,7 +572,12 @@
 			}
 			const sched = snap.value && snap.value.nflSchedules;
 			season = sched && sched.season;
-			games = homeGames(sched && sched.teams && sched.teams[TEAM]);
+			const pre = snap.value && snap.value.nflPreseason;
+			// A preseason block left over from another season (the sync keeps the
+			// last good read when ESPN fails) must not be shown against this one.
+			const preGames = pre && String(pre.season) === String(season) ? homeGames(pre.teams && pre.teams[TEAM], 'Preseason', 'p') : [];
+			games = [...preGames, ...homeGames(sched && sched.teams && sched.teams[TEAM], 'Regular Season', '')];
+			sections = [...new Set(games.map((g) => g.section))];
 			if (!games.length) {
 				content.textContent = '';
 				content.appendChild(el('div', { class: 'message', text: 'No Vikings home games found in the schedule yet.' }));
@@ -559,7 +586,8 @@
 			if (seats.status === 'fulfilled') tickets = { games: (seats.value && seats.value.games) || {} };
 			else ticketsFailed = seats.reason.message;
 			document.getElementById('title').textContent = `${season} Vikings Season Tickets`;
-			document.getElementById('subtitle').textContent = `${games.length} home games`;
+			const regular = games.filter((g) => g.section === 'Regular Season').length;
+			document.getElementById('subtitle').textContent = preGames.length ? `${preGames.length} preseason + ${regular} regular-season home games` : `${regular} home games`;
 			renderAll();
 		}
 

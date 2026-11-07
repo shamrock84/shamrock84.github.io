@@ -101,6 +101,45 @@ export function buildTeamSchedules(weeks) {
   return teams;
 }
 
+// Preseason (`seasontype=1`) for the teams whose page lists it — today only
+// Minnesota, for vikings.html. probe-nfl-schedules.mjs RUN 2 (2026-11-07):
+// four weeks, week 1 is just the Hall of Fame game, the rest carry every team
+// (MIN @NYG wk 2, vs BAL wk 3, @DEN wk 4), and week 5 answers 200 with no
+// events. Kept apart from fetchNflSchedules on purpose: the myFFL Schedules
+// card must not see these weeks (a team idle in a preseason week is not on a
+// bye), and a preseason hiccup must not cost the regular-season read.
+//
+// Wire shape per team matches the regular season's game entries
+// ({ wk, opp, home, at, tbd?, r, pf, pa }); `wk` is ESPN's PRESEASON week
+// number, so consumers must not mix it with regular-season weeks (the page
+// keys these `${season}-p${wk}`). An HTTP failure throws, so the caller falls
+// back to the previous run; empty weeks are not an error (ESPN publishes the
+// preseason in the spring), they simply yield no games.
+export const PRESEASON_WEEKS = 5;
+
+// Pure and separately tested. weeks: [{ week, games }]; returns
+// { [abbr]: gameEntry[] } for the requested teams only, byes excluded.
+export function buildPreseasonGames(weeks, teams) {
+  const all = buildTeamSchedules(weeks);
+  const out = {};
+  for (const abbr of teams) {
+    const games = (all[abbr] || []).filter((e) => !e.bye);
+    if (games.length) out[abbr] = games;
+  }
+  return out;
+}
+
+export async function fetchNflPreseason({ season, teams }) {
+  const weeks = [];
+  for (let week = 1; week <= PRESEASON_WEEKS; week++) {
+    const url = `${SCOREBOARD_URL}?dates=${encodeURIComponent(season)}&seasontype=1&week=${week}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status} at ${url}`);
+    weeks.push({ week, games: extractWeekGames(await res.json()) });
+  }
+  return { generatedAt: new Date().toISOString(), season: String(season), teams: buildPreseasonGames(weeks, teams) };
+}
+
 export async function fetchNflSchedules({ season }) {
   const weeks = [];
   for (let week = 1; week <= REGULAR_SEASON_WEEKS; week++) {

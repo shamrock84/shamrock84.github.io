@@ -20,10 +20,12 @@ const ok = (p) => validatePatch(p).errors.length === 0;
 check('accepts a seat patch', () => assert.ok(ok({ game: '2026-9', seats: { 1: 'Jeff', 12: 'Oly' } })));
 check('accepts a face-only patch', () => assert.ok(ok({ game: '2026-9', face: '219' })));
 check('accepts clearing with empty strings', () => assert.ok(ok({ game: '2026-9', face: '', seats: { 1: '' } })));
+check('accepts a preseason game key', () => assert.ok(ok({ game: '2026-p3', seats: { 1: 'Nate' } })));
 check('rejects a missing or malformed game key', () => {
   assert.ok(!ok({ seats: { 1: 'a' } }));
   assert.ok(!ok({ game: 'week9', seats: { 1: 'a' } }));
   assert.ok(!ok({ game: '2026-9; DROP', seats: { 1: 'a' } }));
+  assert.ok(!ok({ game: '2026-x3', seats: { 1: 'a' } }));
 });
 check('rejects a patch that changes nothing', () => assert.ok(!ok({ game: '2026-9' })));
 check('rejects non-string and over-long values', () => {

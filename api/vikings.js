@@ -3,9 +3,10 @@
 //
 // The schedule itself is NOT stored here. The page reads it from the sync's
 // committed snapshot (data/rosters.json -> nflSchedules.teams.MIN, home games
-// only); this endpoint holds only what the manager types, keyed by
-// `${season}-${week}` (the week number survives a flex, so a moved kickoff
-// keeps its names).
+// only, plus preseason from nflPreseason); this endpoint holds only what the
+// manager types, keyed by `${season}-${week}` (`${season}-p${week}` for
+// preseason; the week number survives a flex, so a moved kickoff keeps its
+// names).
 //
 // GET is PUBLIC and POST needs the same Bearer token as every other write
 // (api/_lib/auth.mjs). That is the opposite of api/plans.js, and deliberate:
@@ -32,7 +33,9 @@ const MAX_GAMES = 40;
 const MAX_SEATS_PER_PATCH = 12;
 const MAX_NAME_LENGTH = 60;
 const MAX_FACE_LENGTH = 8;
-const GAME_KEY = /^\d{4}-\d{1,2}$/;
+// `2026-9` is regular-season week 9; `2026-p3` is preseason week 3, which
+// would otherwise collide with a regular-season week of the same number.
+const GAME_KEY = /^\d{4}-p?\d{1,2}$/;
 const SEAT_ID = /^\d{1,3}$/;
 
 export { validatePatch, applyPatch, emptyDocument, VIKINGS_KEY };
@@ -49,7 +52,7 @@ function validatePatch(patch) {
     return { errors: ['body must be an object'] };
   }
   if (typeof patch.game !== 'string' || !GAME_KEY.test(patch.game)) {
-    errors.push('game must look like 2026-9 (season-week)');
+    errors.push('game must look like 2026-9 or 2026-p3 (season-week)');
   }
   if (patch.face === undefined && patch.seats === undefined) {
     errors.push('nothing to save: send face and/or seats');

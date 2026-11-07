@@ -17,6 +17,13 @@
 // Week 9 has 15 games (two byes). Week 18 kickoffs are placeholders:
 // date "2027-01-10T05:00Z" with detail "1/10 - TBD" — hence `tbd`.
 
+// RUN 2 (2026-11-07): preseason (seasontype=1) has weeks 1-4 and week 5 is an
+// empty 200. Week 1 is only the Hall of Fame game; MIN played wk 2 @NYG
+// (2026-08-15T17:00Z), wk 3 vs BAL (08-22T17:00Z, noon CT) and wk 4 @DEN. Each
+// event carries season {year, type:1, slug:'preseason'}. seasontype=3 answers
+// 200 with games even though the 2026 playoffs can't be set yet, so it is NOT
+// trusted for the Vikings page (could be last January's bracket).
+
 import { extractWeekGames } from './lib/espn-schedules.mjs';
 
 const SEASON = process.env.MFL_YEAR || String(new Date().getFullYear());

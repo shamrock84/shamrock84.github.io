@@ -78,7 +78,7 @@ import { resolveMflLeagueInfo, parseLeagueMeta, serializeLeagueMeta } from './li
 import { fetchAllDepthCharts, DEPTH_CHART_POSITIONS } from './lib/espn-depth-chart.mjs';
 import { fetchNflStandings } from './lib/espn-standings.mjs';
 import { fetchNflPowerRankings } from './lib/espn-fpi.mjs';
-import { fetchNflSchedules } from './lib/espn-schedules.mjs';
+import { fetchNflSchedules, fetchNflPreseason } from './lib/espn-schedules.mjs';
 import {
   computeMflSeasonPlacements,
   computeMflSeasonPlacementsByPoints,
@@ -94,6 +94,9 @@ const OUTPUT_PATH = fileURLToPath(new URL('../data/rosters.json', import.meta.ur
 // Not part of the snapshot the page downloads — see lib/league-meta.mjs.
 const LEAGUE_META_PATH = fileURLToPath(new URL('../data/mfl-league-meta.json', import.meta.url));
 const CONFIG_PATH = fileURLToPath(new URL('../config/leagues.json', import.meta.url));
+// Teams whose preseason games ride the snapshot (nflPreseason). Each one costs a
+// few hundred bytes of the page's download; today only vikings.html reads it.
+const PRESEASON_TEAMS = ['MIN'];
 
 // Serializes the whole snapshot for data/rosters.json: top-level keys one per
 // line, and inside `leagues`, ONE LINE PER LEAGUE.
@@ -1209,6 +1212,8 @@ async function main() {
   const depthChartsRead = startEarly(() => fetchAllDepthCharts({ season: nflSeason }));
   const nflStandingsRead = startEarly(() => fetchNflStandings({ season: nflSeason }));
   const nflSchedulesRead = startEarly(() => fetchNflSchedules({ season: nflSeason }));
+  // Preseason games for the teams whose page lists them (vikings.html).
+  const nflPreseasonRead = startEarly(() => fetchNflPreseason({ season: nflSeason, teams: PRESEASON_TEAMS }));
   const nflPowerRankingsRead = startEarly(() => fetchNflPowerRankings({ season: nflSeason }));
   const projectionsRead = fpApiKey
     ? startEarly(() => fetchProjections({ apiKey: fpApiKey, season: nflSeason, ros: phase.inSeason, inSeason: phase.inSeason }))
@@ -2104,6 +2109,15 @@ async function main() {
     console.log(`NFL schedules — ${Object.keys(nflSchedules.teams).length} team(s)`);
   }
 
+  let nflPreseason = null;
+  const nflPreseasonResult = await nflPreseasonRead;
+  if (nflPreseasonResult.error) {
+    console.error(`Failed to fetch NFL preseason: ${nflPreseasonResult.error.message}`);
+  } else {
+    nflPreseason = nflPreseasonResult.value;
+    console.log(`NFL preseason — ${Object.values(nflPreseason.teams).reduce((n, g) => n + g.length, 0)} game(s)`);
+  }
+
   // NFL power rankings (ESPN's FPI) for the NFL tab's Power Index card —
   // same public ESPN host family and same never-fail posture, one request.
   // See scripts/lib/espn-fpi.mjs.
@@ -2188,6 +2202,9 @@ async function main() {
   if (!nflSchedules && previous?.nflSchedules) {
     nflSchedules = previous.nflSchedules;
   }
+  if (!nflPreseason && previous?.nflPreseason) {
+    nflPreseason = previous.nflPreseason;
+  }
   if (!nflPowerRankings && previous?.nflPowerRankings) {
     nflPowerRankings = previous.nflPowerRankings;
   }
@@ -2229,6 +2246,8 @@ async function main() {
     nflPowerRankings,
     // And the Schedules card: ~30KB raw, ~5KB gzipped.
     nflSchedules,
+    // Minnesota's preseason games only, for vikings.html (a few hundred bytes).
+    nflPreseason,
     leagues,
     // Extra header-toolbar links, carried through from config/leagues.json
     // verbatim — see loadLeagueConfig above and renderQuickLinks in
