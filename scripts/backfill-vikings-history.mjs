@@ -1,4 +1,4 @@
-// Writes data/vikings-history.json: the Vikings' regular-season and preseason
+// Writes data/vikings-history.json: the Vikings' regular-season, preseason and playoff
 // schedule (results included) for every season from 2016 up to, but not
 // including, the one data/rosters.json already carries. See
 // scripts/lib/vikings-history.mjs for the shape and why it is its own file.
@@ -14,7 +14,7 @@
 // Run: node scripts/backfill-vikings-history.mjs
 
 import fs from 'node:fs';
-import { fetchNflSchedules, fetchNflPreseason } from './lib/espn-schedules.mjs';
+import { fetchNflSchedules, fetchNflPreseason, fetchNflPostseason } from './lib/espn-schedules.mjs';
 import { buildSeasonEntry, seasonsToBackfill } from './lib/vikings-history.mjs';
 
 const TEAM = 'MIN';
@@ -37,13 +37,18 @@ for (const year of seasonsToBackfill(current)) {
       console.error(`  preseason ${year}: ${e.message}`);
       return null;
     });
-    const entry = buildSeasonEntry(schedules, preseason, TEAM);
+    const postseason = await fetchNflPostseason({ season: year, teams: [TEAM] }).catch((e) => {
+      console.error(`  postseason ${year}: ${e.message}`);
+      return null;
+    });
+    const entry = buildSeasonEntry(schedules, preseason, TEAM, postseason);
     if (!entry.schedule.some((g) => !g.bye)) throw new Error('no games for the team');
     // Keep an earlier good preseason read rather than blanking it on a failed one.
     if (!preseason && seasons[year] && seasons[year].preseason) entry.preseason = seasons[year].preseason;
+    if (!postseason && seasons[year] && seasons[year].postseason) entry.postseason = seasons[year].postseason;
     seasons[year] = entry;
     read++;
-    console.log(`${year}: ${entry.schedule.filter((g) => !g.bye && g.home).length} regular home, ${entry.preseason.filter((g) => g.home).length} preseason home`);
+    console.log(`${year}: ${entry.schedule.filter((g) => !g.bye && g.home).length} regular home, ${entry.preseason.filter((g) => g.home).length} preseason home, ${entry.postseason ? entry.postseason.filter((g) => g.home).length : 'unread'} playoff home`);
   } catch (e) {
     console.error(`${year}: kept previous (${e.message})`);
   }

@@ -28,5 +28,14 @@ check('a failed or empty preseason is an empty list, not an error', () => {
   assert.deepEqual(buildSeasonEntry(null, null, 'MIN'), { schedule: [], preseason: [] });
 });
 
+check('postseason is present only when that read succeeded', () => {
+  const sched = { teams: { MIN: [{ wk: 1, opp: 'GB', home: true }] } };
+  const post = { teams: { MIN: [{ wk: 2, opp: 'PHI', home: true }] } };
+  assert.deepEqual(buildSeasonEntry(sched, null, 'MIN', post).postseason, post.teams.MIN);
+  assert.deepEqual(buildSeasonEntry(sched, null, 'MIN', { teams: {} }).postseason, [], 'answered, no playoff games');
+  assert.ok(!('postseason' in buildSeasonEntry(sched, null, 'MIN', null)), 'failed read leaves it off');
+  assert.ok(!('postseason' in buildSeasonEntry(sched, null, 'MIN')));
+});
+
 if (failures) { console.log(`\n${failures} failed`); process.exit(1); }
 console.log('\nall passed');
