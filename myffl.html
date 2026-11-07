@@ -18573,8 +18573,8 @@
 		}
 
 		// All Admin cards are always appended together, in this order —
-		// Tasks first (the former Plans tab's only card), then Quick Links,
-		// then Favorites, then Leagues. renderAdminCard is still called before
+		// Tasks first (the former Plans tab's only card), then Problems
+		// Digest, then Quick Links, then Favorites, then Leagues. renderAdminCard is still called before
 		// renderQuickLinksCard, in spite of Quick Links now rendering first on
 		// screen — renderAdminCard is what kicks off loadLeagueConfig on a
 		// cold load (see its own body), and renderQuickLinksCard only ever
@@ -18582,12 +18582,12 @@
 		// to render yet) until that fetch has landed.
 		function appendAdminCards(gridEl) {
 			gridEl.appendChild(renderTasksCard());
+			gridEl.appendChild(renderDigestDismissalsCard());
 			const adminCard = renderAdminCard();
 			const linksCard = renderQuickLinksCard();
 			if (linksCard) gridEl.appendChild(linksCard);
 			gridEl.appendChild(renderFavoritesCard());
 			gridEl.appendChild(adminCard);
-			gridEl.appendChild(renderDigestDismissalsCard());
 		}
 
 		// A search on the Analytics tab shows every league-type group's cards
