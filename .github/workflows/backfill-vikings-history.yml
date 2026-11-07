@@ -1,0 +1,53 @@
+name: Backfill Vikings Schedules
+
+# Reads the Vikings' schedule and results for 2016 through last season from
+# ESPN's public scoreboard and commits data/vikings-history.json, which feeds
+# vikings.html's History tab and the Admin tab's Seasons card. Manual only:
+# run it once, then once a year after the season rolls over. See
+# scripts/backfill-vikings-history.mjs.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  # Same group as the sync and the other backfills so pushes queue, not race.
+  group: rosters-data-write
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout: |
+            api
+            scripts
+            config
+            data
+            .github
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Read Vikings schedules
+        run: node scripts/backfill-vikings-history.mjs
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/vikings-history.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Backfill Vikings schedules"
+            git push
+          fi

@@ -9,7 +9,7 @@
 // a patch that quietly dropped or kept the wrong value would show to everyone.
 
 import assert from 'node:assert/strict';
-import { validatePatch, applyPatch, emptyDocument } from '../api/vikings.js';
+import { validatePatch, applyPatch, emptyDocument, validateTaskPatch, applyTaskPatch } from '../api/vikings.js';
 
 let failures = 0;
 function check(name, fn) {
@@ -78,6 +78,32 @@ check('an empty string deletes, and an emptied game disappears', () => {
   assert.deepEqual(half.games, { '2026-9': { face: '219', seats: {} } });
   const none = applyPatch(half, { game: '2026-9', face: '  ' });
   assert.deepEqual(none.games, {});
+});
+
+const task = (o = {}) => ({ text: 'Fix it', category: 'Bugs', done: false, createdAt: 5, ...o });
+const okTasks = (p) => validateTaskPatch(p).errors.length === 0;
+check('task patch: accepts upserts and deletes', () => {
+  assert.ok(okTasks({ tasks: { t1: task(), t2: null } }));
+});
+check('task patch: rejects empty, malformed and bad ids', () => {
+  assert.ok(!okTasks({ tasks: {} }));
+  assert.ok(!okTasks({}));
+  assert.ok(!okTasks({ tasks: [] }));
+  assert.ok(!okTasks({ tasks: { 'bad id': task() } }));
+  assert.ok(!okTasks({ tasks: { t1: task({ text: '' }) } }));
+  assert.ok(!okTasks({ tasks: { t1: task({ done: 'yes' }) } }));
+  assert.ok(!okTasks({ tasks: { t1: 'x' } }));
+});
+check('task patch: replaces a stored task, adds, deletes and leaves others alone', () => {
+  const stored = { a: task({ text: 'old', createdAt: 1 }), b: task({ text: 'keep', createdAt: 2 }), c: task({ createdAt: 3 }) };
+  const next = applyTaskPatch(stored, { tasks: { a: task({ text: 'new', createdAt: 1, done: true, completedAt: 9 }), c: null, d: task({ text: 'added', createdAt: 4 }) } });
+  assert.equal(next.a.text, 'new');
+  assert.equal(next.a.done, true);
+  assert.equal(next.a.completedAt, 9);
+  assert.equal(next.b.text, 'keep');
+  assert.ok(!('c' in next));
+  assert.equal(next.d.order, 4, 'order backfills to createdAt like plans.js');
+  assert.equal(stored.a.text, 'old', 'input is not mutated');
 });
 
 if (failures) { console.log(`\n${failures} failed`); process.exit(1); }

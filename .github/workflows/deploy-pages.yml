@@ -37,6 +37,7 @@ on:
       - Sync Fantasy Rosters
       - Backfill League History
       - Backfill Weekly/Season High Scores
+      - Backfill Vikings Schedules
     types: [completed]
     branches: [main]
   workflow_dispatch:

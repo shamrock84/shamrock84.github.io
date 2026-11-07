@@ -32,6 +32,7 @@
 			--seat-on-fill: #4F2683;
 			--seat-on-stroke: #34195a;
 			--seat-on-ink: #ffffff;
+			--ir-bg: #fef2f2;
 		}
 		@media (prefers-color-scheme: dark) {
 			:root {
@@ -50,6 +51,7 @@
 				--seat-stroke: #4a3a66;
 				--seat-on-fill: #7a54b5;
 				--seat-on-stroke: #b48ee0;
+				--ir-bg: #341313;
 			}
 		}
 		body::before {
@@ -314,6 +316,93 @@
 		}
 		.login-form button[type="submit"]:disabled { opacity: 0.6; cursor: default; }
 		.login-status { font-size: 0.78rem; color: var(--ir-text); }
+		/* Tabs and cards. Pill tabs, same look as myffl.html's .tab-btn. */
+		.tabs { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.8rem; }
+		.tab-btn {
+			border: 1px solid var(--border);
+			background: var(--card-bg);
+			color: var(--muted);
+			padding: 0.45rem 1rem;
+			border-radius: 999px;
+			font: inherit;
+			font-size: 0.88rem;
+			font-weight: 600;
+			cursor: pointer;
+		}
+		.tab-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+		.tab-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+		#view > .card + .card { margin-top: 0.8rem; }
+		.card-heading { margin: 0 0 0.5rem; font-size: 1.05rem; color: var(--accent); }
+		.season-head { margin-bottom: 0.6rem; }
+		.season-title { margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+		.season-pick { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.7rem; font-size: 0.85rem; color: var(--muted); }
+		.season-pick select {
+			font: inherit;
+			font-size: 16px;
+			padding: 0.35rem 0.5rem;
+			border-radius: 6px;
+			border: 1px solid var(--border);
+			background: var(--card-bg);
+			color: var(--text);
+		}
+		/* The status line stays in view while a long table is edited. */
+		.status-bar { position: sticky; bottom: 0; background: var(--bg); padding: 0.2rem 0; }
+		/* Tasks card: the same look as myffl.html's, under its own names. */
+		.task-add-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0.6rem 0 0.8rem; }
+		.task-add-row .task-input:first-child { flex: 2 1 12rem; }
+		.task-add-row .suggest-wrap { flex: 1 1 8rem; }
+		.task-input {
+			font: inherit;
+			font-size: 16px;
+			padding: 0.35rem 0.55rem;
+			border: 1px solid var(--border);
+			border-radius: 6px;
+			background: var(--card-bg);
+			color: inherit;
+		}
+		.task-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+		.suggest-wrap { position: relative; min-width: 0; }
+		.suggest-wrap .task-input { width: 100%; }
+		.suggest-list {
+			position: absolute; top: 100%; left: 0; right: 0; z-index: 5; margin-top: 2px;
+			max-height: 9rem; overflow-y: auto;
+			background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px;
+			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+		}
+		.suggest-item { padding: 0.3rem 0.55rem; font-size: 0.85rem; cursor: pointer; }
+		.suggest-item:hover { background: var(--chip-bg); }
+		.task-add-btn {
+			font: inherit; font-size: 0.85rem; color: var(--accent); background: transparent;
+			border: 1px solid var(--accent); border-radius: 999px; padding: 0.35rem 0.9rem; cursor: pointer;
+		}
+		.task-icon-btn {
+			font: inherit; font-size: 0.8rem; line-height: 1; color: var(--ir-text); background: var(--ir-bg);
+			border: 1px solid var(--border); border-radius: 4px; padding: 0.2rem 0.35rem; cursor: pointer; flex-shrink: 0;
+		}
+		.task-save-btn { color: var(--accent); background: var(--chip-bg); }
+		.task-empty { color: var(--muted); font-size: 0.85rem; margin: 0.4rem 0; }
+		.task-counter { font-size: 0.75rem; color: var(--muted); flex-shrink: 0; }
+		.task-counter.limit { color: var(--ir-text); }
+		.task-sync-status { color: var(--ir-text); background: var(--ir-bg); border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.85rem; margin: 0.4rem 0 0; }
+		.task-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0; }
+		.task-row.editing { flex-wrap: wrap; }
+		.task-row.editing .task-input:first-of-type { flex: 2 1 12rem; }
+		.task-text { flex: 1; cursor: pointer; overflow-wrap: anywhere; }
+		.task-done .task-text { color: var(--muted); text-decoration: line-through; }
+		.task-grip { color: var(--muted); cursor: grab; line-height: 1; flex-shrink: 0; }
+		.task-row:active .task-grip { cursor: grabbing; }
+		@media (hover: none) { .task-grip { display: none; } }
+		.task-move { display: flex; gap: 0.2rem; flex-shrink: 0; }
+		.task-move-btn {
+			font: inherit; font-size: 0.8rem; line-height: 1; color: var(--accent); background: var(--chip-bg);
+			border: 1px solid var(--border); border-radius: 4px; padding: 0.2rem 0.35rem; cursor: pointer; flex-shrink: 0;
+		}
+		.task-move-btn:disabled { opacity: 0.35; cursor: default; }
+		.task-row.dragging { opacity: 0.4; }
+		.task-row.drop-before { box-shadow: inset 0 3px 0 0 var(--accent); }
+		.task-row.drop-after { box-shadow: inset 0 -3px 0 0 var(--accent); }
+		.task-section { margin-top: 0.7rem; }
+		.task-section summary { cursor: pointer; color: var(--muted); font-size: 0.85rem; }
 		/* Wide screens: a narrower column with bigger type and looser rows, so
 		   five short columns don't stretch across the whole window. */
 		@media (min-width: 48.01rem) {
@@ -365,24 +454,22 @@
 <body>
 	<main>
 		<header>
-			<div>
-				<h1 id="title">Vikings Season Tickets</h1>
-				<div class="subtitle" id="subtitle"></div>
-				<div class="team-record" id="record"></div>
-			</div>
+			<h1 id="title">Vikings Season Tickets</h1>
 			<div class="login" id="login"></div>
 		</header>
-		<div class="card">
-			<div id="content"><div class="message">Loading…</div></div>
-			<div class="status" id="status" role="status" aria-live="polite"></div>
-		</div>
+		<nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav>
+		<div id="view"><div class="card"><div class="message">Loading…</div></div></div>
+		<div class="status-bar"><div class="status" id="status" role="status" aria-live="polite"></div></div>
 	</main>
 
 	<script>
 		// melbostads.com/vikings — who is in each season-ticket seat for every
-		// Vikings home game. Logged out it is static text; logged in (the same
-		// password and token as myFFL, same localStorage key) every seat and
-		// face value becomes an input that saves on change.
+		// Vikings home game. Three tabs: Schedule (this season) and History
+		// (an earlier one, picked from a dropdown) are read-only text for
+		// everyone; Admin exists only when logged in (the same password and
+		// token as myFFL, same localStorage key) and holds the Tasks card and
+		// the Seasons card, where every seat and face value, 2016 on, is an
+		// input that saves on change.
 		//
 		// Two sources, deliberately separate:
 		//  - The SCHEDULE is read from the sync's committed snapshot, home games
@@ -391,8 +478,10 @@
 		//    nflPreseason.teams.MIN (ESPN seasontype=1, Vikings only). Playoffs
 		//    can't be known until the team qualifies, so MANUAL_PLAYOFF_ROWS
 		//    blank rows are typed in by hand (date, day, time, opponent) and
-		//    stored under `${season}-po${n}`; logged out they only appear once
-		//    something is entered.
+		//    stored under `${season}-po${n}`; outside Admin they only appear once
+		//    something is entered. Earlier seasons' schedules come from
+		//    data/vikings-history.json (scripts/backfill-vikings-history.mjs),
+		//    in the same wire shape.
 		//  - The NAMES and face values come from api/vikings.js on Vercel,
 		//    keyed `${season}-${week}`, or `${season}-p${week}` for preseason
 		//    (their week numbers would otherwise collide). Its GET is public (logged-out viewers
@@ -429,10 +518,10 @@
 		// A game is a home game when the feed says so; a bye has no `home` at all.
 		// Each game is tagged with its section and the key its names are stored
 		// under, so nothing downstream has to know which feed it came from.
-		function homeGames(schedule, section, keyPrefix) {
+		function homeGames(schedule, section, keyPrefix, year) {
 			return (schedule || [])
 				.filter((g) => g && g.home === true && g.opp)
-				.map((g) => ({ ...g, section, key: `${season}-${keyPrefix}${g.wk}` }));
+				.map((g) => ({ ...g, section, key: `${year}-${keyPrefix}${g.wk}` }));
 		}
 
 		// "Overall (W-L) | Home (W-L)" from the regular-season results in the
@@ -482,8 +571,6 @@
 		try { authToken = localStorage.getItem(AUTH_TOKEN_KEY) || null; } catch (e) { /* storage blocked: stay logged out */ }
 		const isLoggedIn = () => !!authToken;
 
-		let season = null;
-		let games = [];
 		let tickets = { games: {} };
 		let ticketsFailed = null;
 
@@ -507,6 +594,8 @@
 
 		function doLogout() {
 			authToken = null;
+			tasks = {};
+			tasksState = 'idle';
 			try { localStorage.removeItem(AUTH_TOKEN_KEY); } catch (e) { /* ignore */ }
 			setStatus('');
 			renderAll();
@@ -521,7 +610,7 @@
 				wrap.appendChild(out);
 				return;
 			}
-			const toggle = el('button', { type: 'button', class: 'login-toggle', text: 'Log in to edit' });
+			const toggle = el('button', { type: 'button', class: 'login-toggle', text: 'Log in' });
 			const form = el('form', { class: 'login-form hidden' });
 			const input = el('input', { type: 'password', placeholder: 'Password', autocomplete: 'current-password', 'aria-label': 'Password' });
 			const submit = el('button', { type: 'submit', text: 'Log in' });
@@ -677,8 +766,7 @@
 		const openPrefs = {};
 		try { localStorage.removeItem('vikingsOpen'); } catch (e) { /* ignore */ }
 
-		function renderTable() {
-			const editable = isLoggedIn() && !ticketsFailed;
+		function renderTable(games, editable) {
 			const head = el('tr');
 			// The long half of a heading hides on a phone (.long) to save width.
 			for (const [short, long] of [['Date', ''], ['Day', ''], ['Time', ' (CT)'], ['Opponent', ''], ['Face', ' Value']]) {
@@ -776,52 +864,469 @@
 			return el('div', {}, [el('div', { class: 'all-bar' }, [allBtn]), el('table', {}, [thead, tbody])]);
 		}
 
-		function renderAll() {
-			renderLogin();
-			const content = document.getElementById('content');
-			content.textContent = '';
-			if (!games.length) return;
+		// ---- Views ------------------------------------------------------------
+
+		const HISTORY_URL = '/data/vikings-history.json';
+		const FIRST_SEASON = 2016; // the oldest season the Seasons card edits
+
+		let snapshotSeason = null;
+		let currentData = null;     // the snapshot's season, built once
+		let historyDoc = null;      // data/vikings-history.json
+		let historyError = null;
+		let tab = 'schedule';
+		let historySeason = null;
+		let adminSeason = null;
+
+		// One season's games, whichever feed they came from: the snapshot for the
+		// current year, data/vikings-history.json for the rest. Both carry the
+		// same wire shape, so one builder serves both. Playoffs are always the
+		// same three hand-entered rows.
+		function buildSeason(year, schedule, preseason) {
+			const pre = homeGames(preseason, 'Preseason', 'p', year);
+			const reg = homeGames(schedule, 'Regular Season', '', year);
+			const list = [...pre, ...reg];
+			for (let n = 1; n <= MANUAL_PLAYOFF_ROWS; n++) list.push({ section: 'Playoffs', key: `${year}-po${n}`, manual: true, n });
+			return { year, games: list, preCount: pre.length, regular: reg.length, record: recordLine(schedule) };
+		}
+
+		function seasonData(year) {
+			if (currentData && String(year) === String(snapshotSeason)) return currentData;
+			const h = historyDoc && historyDoc.seasons && historyDoc.seasons[year];
+			return h ? buildSeason(year, h.schedule, h.preseason) : null;
+		}
+
+		function seasonCard(data, editable) {
+			const head = el('div', { class: 'season-head' }, [
+				el('h2', { class: 'season-title', text: `${data.year} Vikings Season Tickets` }),
+				el('div', { class: 'subtitle', text: data.preCount ? `${data.preCount} preseason + ${data.regular} regular-season home games` : `${data.regular} home games` }),
+				data.record ? el('div', { class: 'team-record', text: data.record }) : null,
+			]);
+			return el('div', {}, [head, data.regular || data.preCount ? renderTable(data.games, editable) : el('div', { class: 'message', text: 'No Vikings home games in this season’s schedule.' })]);
+		}
+
+		function seasonPicker(years, selected, onChange) {
+			const select = el('select', { 'aria-label': 'Season' });
+			years.forEach((y) => {
+				const opt = el('option', { value: String(y), text: String(y) });
+				if (String(y) === String(selected)) opt.selected = true;
+				select.appendChild(opt);
+			});
+			select.addEventListener('change', () => onChange(select.value));
+			return el('label', { class: 'season-pick' }, [document.createTextNode('Season'), select]);
+		}
+
+		const message = (text, kind) => el('div', { class: 'card' }, [el('div', { class: `message${kind ? ' ' + kind : ''}`, text })]);
+
+		function scheduleView() {
+			if (!currentData || !currentData.regular) return [message('No Vikings home games found in the schedule yet.')];
+			return [el('div', { class: 'card' }, [seasonCard(currentData, false)])];
+		}
+
+		function historyYears() {
+			return Object.keys((historyDoc && historyDoc.seasons) || {}).map(Number).filter((y) => y < Number(snapshotSeason)).sort((a, b) => b - a);
+		}
+
+		function historyView() {
+			if (historyError) return [message(`Couldn’t load earlier seasons (${historyError}).`, 'error')];
+			const years = historyYears();
+			if (!years.length) return [message('Earlier seasons haven’t been loaded yet.')];
+			if (!years.map(String).includes(String(historySeason))) historySeason = String(years[0]);
+			return [el('div', { class: 'card' }, [
+				seasonPicker(years, historySeason, (v) => { historySeason = v; renderAll(); }),
+				seasonCard(seasonData(historySeason), false),
+			])];
+		}
+
+		function seasonsCard() {
+			const card = el('div', { class: 'card' }, [el('h2', { class: 'card-heading', text: 'Seasons' })]);
+			if (!snapshotSeason) { card.appendChild(el('div', { class: 'message', text: 'No season to edit yet.' })); return card; }
+			const years = [];
+			for (let y = Number(snapshotSeason); y >= FIRST_SEASON; y--) years.push(y);
+			if (!years.map(String).includes(String(adminSeason))) adminSeason = String(snapshotSeason);
+			card.appendChild(seasonPicker(years, adminSeason, (v) => { adminSeason = v; setStatus(''); renderAll(); }));
+			const data = seasonData(adminSeason);
 			if (ticketsFailed) {
-				content.appendChild(el('div', { class: 'message error', text: `Couldn’t load seat names (${ticketsFailed}), so editing is turned off. Reload to try again.` }));
+				card.appendChild(el('div', { class: 'message error', text: `Couldn’t load seat names (${ticketsFailed}), so editing is turned off. Reload to try again.` }));
 			}
-			content.appendChild(renderTable());
+			if (!data) {
+				card.appendChild(el('div', { class: 'message', text: `The ${adminSeason} schedule hasn’t been loaded yet. Run the “Backfill Vikings Schedules” workflow in GitHub Actions, then reload.` }));
+			} else {
+				card.appendChild(seasonCard(data, !ticketsFailed));
+			}
+			return card;
+		}
+
+		// ---- Tasks card ---------------------------------------------------------
+		// The same list as myffl.html's Tasks card, but its own: stored under its
+		// own key by api/vikings.js (`?resource=tasks`, login-gated both ways), not
+		// in the plans document. Each change goes up as a per-task patch
+		// ({ id: task | null }), queued one at a time so two quick edits can't race
+		// each other's read-modify-write on the server.
+
+		const MAX_TASK_TEXT_LENGTH = 2000;
+		const TASK_COUNTER_THRESHOLD = MAX_TASK_TEXT_LENGTH - 400;
+		let tasks = {};
+		let tasksState = 'idle'; // idle | loading | ready | error
+		let tasksError = '';
+		let tasksSyncError = '';
+		let editingTaskId = null;
+		let tasksCardEl = null;
+		let pushChain = Promise.resolve();
+
+		function expireSession() {
+			authToken = null;
+			tasks = {};
+			tasksState = 'idle';
+			try { localStorage.removeItem(AUTH_TOKEN_KEY); } catch (e) { /* ignore */ }
+			renderAll();
+			setStatus('Your session expired — log in again to save.', 'error');
+		}
+
+		async function loadTasks() {
+			if (tasksState === 'loading' || tasksState === 'ready') return;
+			tasksState = 'loading';
+			try {
+				const res = await fetch(`${TICKETS_URL}?resource=tasks`, { headers: { Authorization: `Bearer ${authToken}` } });
+				const body = await res.json().catch(() => ({}));
+				if (res.status === 401) { tasksState = 'idle'; expireSession(); return; }
+				if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+				tasks = body.tasks || {};
+				tasksState = 'ready';
+			} catch (err) {
+				tasksState = 'error';
+				tasksError = err.message;
+			}
+			refreshTasksCard();
+		}
+
+		function pushTasks(patch) {
+			pushChain = pushChain.then(async () => {
+				try {
+					const res = await fetch(TICKETS_URL, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+						body: JSON.stringify({ resource: 'tasks', tasks: patch }),
+					});
+					const body = await res.json().catch(() => ({}));
+					if (res.status === 401) { expireSession(); return; }
+					if (!res.ok) throw new Error((body.details && body.details.join('; ')) || body.error || `HTTP ${res.status}`);
+					tasksSyncError = '';
+				} catch (err) {
+					tasksSyncError = err.message;
+				}
+				refreshTasksCard();
+			});
+		}
+
+		// Apply a { id: task | null } change locally, show it, and send it.
+		function commitTasks(changed) {
+			for (const [id, t] of Object.entries(changed)) {
+				if (t === null) delete tasks[id]; else tasks[id] = t;
+			}
+			refreshTasksCard();
+			pushTasks(changed);
+		}
+
+		const makeTaskId = () => `t${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+		const taskOrderValue = (t) => (typeof t.order === 'number' ? t.order : t.createdAt);
+		function openTaskIdsByCategory(category) {
+			return Object.entries(tasks)
+				.filter(([, t]) => !t.done && t.category === category)
+				.sort((a, b) => taskOrderValue(a[1]) - taskOrderValue(b[1]))
+				.map(([id]) => id);
+		}
+		// Stamps `order` on every task in the category, not just the one moved: a
+		// task nobody has reordered has no `order` and would sort back to the front.
+		function moveTaskWithinCategory(category, from, to) {
+			const ids = openTaskIdsByCategory(category);
+			if (from === to || from < 0 || from >= ids.length || to < 0 || to >= ids.length) return;
+			const [moved] = ids.splice(from, 1);
+			ids.splice(to, 0, moved);
+			const changed = {};
+			ids.forEach((id, order) => { changed[id] = { ...tasks[id], order }; });
+			commitTasks(changed);
+		}
+		function addTask(text, category) {
+			const now = Date.now();
+			commitTasks({ [makeTaskId()]: { text, category, done: false, order: now, createdAt: now, completedAt: null } });
+		}
+		const patchTask = (id, updates) => { if (tasks[id]) commitTasks({ [id]: { ...tasks[id], ...updates } }); };
+
+		// A hand-rolled stand-in for <datalist>, which iOS handles badly.
+		function attachCategorySuggestions(input, getCategories) {
+			const wrap = el('div', { class: 'suggest-wrap' });
+			wrap.appendChild(input);
+			const list = el('div', { class: 'suggest-list hidden' });
+			wrap.appendChild(list);
+			function render() {
+				const q = input.value.trim().toLowerCase();
+				const matches = getCategories().filter((c) => c.toLowerCase().includes(q) && c.toLowerCase() !== q);
+				list.textContent = '';
+				if (!matches.length) { list.classList.add('hidden'); return; }
+				for (const c of matches) {
+					const item = el('div', { class: 'suggest-item', text: c });
+					// mousedown, not click: it lands before the input's blur hides the list.
+					item.addEventListener('mousedown', (e) => {
+						e.preventDefault();
+						input.value = c;
+						list.classList.add('hidden');
+						input.focus();
+					});
+					list.appendChild(item);
+				}
+				list.classList.remove('hidden');
+			}
+			input.addEventListener('focus', render);
+			input.addEventListener('input', render);
+			input.addEventListener('blur', () => list.classList.add('hidden'));
+			return wrap;
+		}
+
+		// Only shown once text nears the limit; most tasks are a line.
+		function attachTaskCharCounter(input) {
+			const counter = el('span', { class: 'task-counter hidden' });
+			const update = () => {
+				const len = input.value.length;
+				counter.classList.toggle('hidden', len < TASK_COUNTER_THRESHOLD);
+				counter.classList.toggle('limit', len >= MAX_TASK_TEXT_LENGTH);
+				counter.textContent = `${len}/${MAX_TASK_TEXT_LENGTH}`;
+			};
+			input.addEventListener('input', update);
+			update();
+			return counter;
+		}
+
+		// Bugs first, then the manager's fixed buckets, anything new alphabetically,
+		// Backlog last.
+		const categoryTier = (key) => (key === 'Bugs' ? 0 : key === 'Manual Task' ? 2 : key === 'Site Enhancement' ? 3 : key === 'Backlog' ? 5 : 4);
+
+		function refreshTasksCard() {
+			if (!tasksCardEl || !tasksCardEl.isConnected) return;
+			const next = buildTasksCard();
+			tasksCardEl.replaceWith(next);
+			tasksCardEl = next;
+		}
+
+		function buildTasksCard() {
+			const card = el('div', { class: 'card' });
+			if (tasksState !== 'ready') {
+				card.appendChild(el('h2', { class: 'card-heading', text: 'Tasks' }));
+				card.appendChild(el('div', { class: `message${tasksState === 'error' ? ' error' : ''}`, text: tasksState === 'error' ? `Couldn’t load tasks (${tasksError}). Reload to try again.` : 'Loading…' }));
+				return card;
+			}
+			const entries = Object.entries(tasks);
+			card.appendChild(el('h2', { class: 'card-heading', text: `Tasks (${entries.filter(([, t]) => !t.done).length})` }));
+			if (tasksSyncError) card.appendChild(el('div', { class: 'task-sync-status', text: `⚠ Last save failed: ${tasksSyncError}` }));
+
+			const categories = [...new Set(entries.map(([, t]) => t.category).filter(Boolean))].sort();
+			const addRow = el('div', { class: 'task-add-row' });
+			const textInput = el('input', { type: 'text', class: 'task-input', placeholder: 'New task…', autocomplete: 'off', maxlength: String(MAX_TASK_TEXT_LENGTH) });
+			const categoryInput = el('input', { type: 'text', class: 'task-input', placeholder: 'Category', autocomplete: 'off' });
+			const addBtn = el('button', { type: 'button', class: 'task-add-btn', text: '+ Add' });
+			// Both fields are required, so every open task sits under a real category.
+			const submit = () => {
+				const text = textInput.value.trim();
+				const category = categoryInput.value.trim();
+				if (!text || !category) return;
+				addTask(text, category);
+			};
+			addBtn.addEventListener('click', submit);
+			textInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+			addRow.append(textInput, attachTaskCharCounter(textInput), attachCategorySuggestions(categoryInput, () => categories), addBtn);
+			card.appendChild(addRow);
+
+			if (!entries.length) {
+				card.appendChild(el('div', { class: 'task-empty', text: 'No tasks yet.' }));
+				return card;
+			}
+
+			let dragFrom = null;
+			const buildRow = (id, t, group) => {
+				if (editingTaskId === id) return buildEditRow(id, t, categories);
+				const row = el('div', { class: `task-row${t.done ? ' task-done' : ''}` });
+				const { key, index, groupEntries } = group || {};
+				if (group) {
+					row.appendChild(el('span', { class: 'task-grip', title: 'Drag to reorder', 'aria-hidden': 'true', text: '⠿' }));
+					row.draggable = true;
+				}
+				const box = el('input', { type: 'checkbox', 'aria-label': 'Done' });
+				box.checked = t.done;
+				box.addEventListener('change', () => patchTask(id, { done: box.checked, completedAt: box.checked ? Date.now() : null }));
+				row.appendChild(box);
+				// Done tasks lose their category's section, so the category rides along.
+				const label = t.done && t.category ? `${t.text} (${t.category})` : t.text;
+				const textSpan = el('span', { class: 'task-text', text: label, role: 'button', tabindex: '0', title: 'Click to edit' });
+				const edit = () => { editingTaskId = id; refreshTasksCard(); };
+				textSpan.addEventListener('click', edit);
+				textSpan.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); edit(); } });
+				row.appendChild(textSpan);
+				if (group) {
+					// Touch screens fire no drag events, so these are the only way to reorder there.
+					const up = el('button', { type: 'button', class: 'task-move-btn', title: 'Move up', 'aria-label': 'Move up', text: '↑' });
+					const down = el('button', { type: 'button', class: 'task-move-btn', title: 'Move down', 'aria-label': 'Move down', text: '↓' });
+					up.disabled = index === 0;
+					down.disabled = index === groupEntries.length - 1;
+					up.addEventListener('click', () => moveTaskWithinCategory(key, index, index - 1));
+					down.addEventListener('click', () => moveTaskWithinCategory(key, index, index + 1));
+					row.appendChild(el('div', { class: 'task-move' }, [up, down]));
+				}
+				const remove = el('button', { type: 'button', class: 'task-icon-btn', title: 'Delete task', 'aria-label': 'Delete task', text: '✕' });
+				remove.addEventListener('click', () => commitTasks({ [id]: null }));
+				row.appendChild(remove);
+
+				if (group) {
+					const after = (e) => { const r = row.getBoundingClientRect(); return e.clientY > r.top + r.height / 2; };
+					const clear = () => row.classList.remove('drop-before', 'drop-after');
+					row.addEventListener('dragstart', (e) => {
+						dragFrom = { key, index };
+						e.dataTransfer.effectAllowed = 'move';
+						e.dataTransfer.setData('text/plain', String(index));
+						setTimeout(() => row.classList.add('dragging'), 0);
+					});
+					row.addEventListener('dragend', () => { dragFrom = null; row.classList.remove('dragging'); clear(); });
+					row.addEventListener('dragover', (e) => {
+						if (!dragFrom || dragFrom.key !== key || dragFrom.index === index) return;
+						e.preventDefault();
+						e.dataTransfer.dropEffect = 'move';
+						row.classList.toggle('drop-after', after(e));
+						row.classList.toggle('drop-before', !after(e));
+					});
+					row.addEventListener('dragleave', clear);
+					row.addEventListener('drop', (e) => {
+						if (!dragFrom || dragFrom.key !== key) return;
+						e.preventDefault();
+						const from = dragFrom.index;
+						dragFrom = null;
+						clear();
+						// Insertion point in the pre-removal array, less the hole the dragged row leaves.
+						let insertAt = index + (after(e) ? 1 : 0);
+						if (from < insertAt) insertAt--;
+						moveTaskWithinCategory(key, from, insertAt);
+					});
+				}
+				return row;
+			};
+
+			const open = entries.filter(([, t]) => !t.done);
+			const done = entries.filter(([, t]) => t.done).sort((a, b) => (b[1].completedAt || 0) - (a[1].completedAt || 0));
+			const keys = [...new Set(open.map(([, t]) => t.category))].sort((a, b) => categoryTier(a) - categoryTier(b) || (categoryTier(a) === 4 ? a.localeCompare(b) : 0));
+			if (open.length) {
+				for (const key of keys) {
+					const groupEntries = openTaskIdsByCategory(key).map((id) => [id, tasks[id]]);
+					const details = el('details', { class: 'task-section', open: 'true' }, [el('summary', { text: `${key} (${groupEntries.length})` })]);
+					groupEntries.forEach(([id, t], index) => details.appendChild(buildRow(id, t, { key, index, groupEntries })));
+					card.appendChild(details);
+				}
+			} else {
+				card.appendChild(el('div', { class: 'task-empty', text: 'Nothing open — nice.' }));
+			}
+			if (done.length) {
+				const details = el('details', { class: 'task-section' }, [el('summary', { text: `Completed (${done.length})` })]);
+				for (const [id, t] of done) details.appendChild(buildRow(id, t));
+				card.appendChild(details);
+			}
+			return card;
+		}
+
+		// Edit a task in place: text and category are the only fields that can't
+		// change any other way. Moving category sends the task to the end of the
+		// new one, since an index from the old category means nothing there.
+		function buildEditRow(id, t, categories) {
+			const row = el('div', { class: 'task-row editing' });
+			const text = el('input', { type: 'text', class: 'task-input', value: t.text, autocomplete: 'off', maxlength: String(MAX_TASK_TEXT_LENGTH), 'aria-label': 'Task' });
+			const category = el('input', { type: 'text', class: 'task-input', value: t.category || '', placeholder: 'Category', autocomplete: 'off', 'aria-label': 'Category' });
+			const save = () => {
+				const nextText = text.value.trim();
+				const nextCategory = category.value.trim();
+				if (!nextText || !nextCategory) return;
+				editingTaskId = null;
+				const updates = { text: nextText, category: nextCategory };
+				if (nextCategory !== (t.category || '')) updates.order = Date.now();
+				patchTask(id, updates);
+			};
+			const cancel = () => { editingTaskId = null; refreshTasksCard(); };
+			const keydown = (e) => { if (e.key === 'Enter') save(); else if (e.key === 'Escape') cancel(); };
+			text.addEventListener('keydown', keydown);
+			category.addEventListener('keydown', keydown);
+			const saveBtn = el('button', { type: 'button', class: 'task-icon-btn task-save-btn', title: 'Save', 'aria-label': 'Save', text: '✓' });
+			saveBtn.addEventListener('click', save);
+			const cancelBtn = el('button', { type: 'button', class: 'task-icon-btn', title: 'Cancel', 'aria-label': 'Cancel', text: '✕' });
+			cancelBtn.addEventListener('click', cancel);
+			row.append(text, attachTaskCharCounter(text), attachCategorySuggestions(category, () => categories), saveBtn, cancelBtn);
+			setTimeout(() => { text.focus(); text.setSelectionRange(text.value.length, text.value.length); }, 0);
+			return row;
+		}
+
+		function adminView() {
+			if (tasksState === 'idle') loadTasks();
+			tasksCardEl = buildTasksCard();
+			return [tasksCardEl, seasonsCard()];
+		}
+
+		// ---- Shell ---------------------------------------------------------------
+
+		function setTab(next) {
+			tab = next;
+			editingTaskId = null;
+			setStatus('');
+			renderAll();
+		}
+
+		function renderTabs() {
+			const nav = document.getElementById('tabs');
+			nav.textContent = '';
+			// The Admin tab exists only while logged in; logging out removes it.
+			const tabs = [['schedule', 'Schedule'], ['history', 'History'], ...(isLoggedIn() ? [['admin', 'Admin']] : [])];
+			for (const [id, label] of tabs) {
+				const btn = el('button', { type: 'button', class: `tab-btn${tab === id ? ' active' : ''}`, role: 'tab', 'aria-selected': String(tab === id), text: label });
+				btn.addEventListener('click', () => setTab(id));
+				nav.appendChild(btn);
+			}
+		}
+
+		function renderAll() {
+			if (tab === 'admin' && !isLoggedIn()) tab = 'schedule';
+			renderLogin();
+			renderTabs();
+			const view = document.getElementById('view');
+			view.textContent = '';
+			tasksCardEl = null;
+			const cards = tab === 'history' ? historyView() : tab === 'admin' ? adminView() : scheduleView();
+			cards.forEach((c) => view.appendChild(c));
 		}
 
 		async function load() {
-			const content = document.getElementById('content');
+			const view = document.getElementById('view');
 			renderLogin();
-			const [snap, seats] = await Promise.allSettled([
-				fetch(SNAPSHOT_URL).then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }),
+			const json = (url) => fetch(url).then(async (r) => {
+				if (!r.ok) throw new Error(`HTTP ${r.status}`);
+				return r.json();
+			});
+			const [snap, seats, hist] = await Promise.allSettled([
+				json(SNAPSHOT_URL),
 				fetch(TICKETS_URL).then(async (r) => {
 					const b = await r.json().catch(() => ({}));
 					if (!r.ok) throw new Error(b.error || `HTTP ${r.status}`);
 					return b.tickets;
 				}),
+				json(HISTORY_URL),
 			]);
 			if (snap.status === 'rejected') {
-				content.textContent = '';
-				content.appendChild(el('div', { class: 'message error', text: `Couldn’t load the schedule (${snap.reason.message}).` }));
+				view.textContent = '';
+				view.appendChild(message(`Couldn’t load the schedule (${snap.reason.message}).`, 'error'));
 				return;
 			}
 			const sched = snap.value && snap.value.nflSchedules;
-			season = sched && sched.season;
+			snapshotSeason = sched && sched.season;
 			const pre = snap.value && snap.value.nflPreseason;
 			// A preseason block left over from another season (the sync keeps the
 			// last good read when ESPN fails) must not be shown against this one.
-			const preGames = pre && String(pre.season) === String(season) ? homeGames(pre.teams && pre.teams[TEAM], 'Preseason', 'p') : [];
-			games = [...preGames, ...homeGames(sched && sched.teams && sched.teams[TEAM], 'Regular Season', '')];
-			if (!games.length) {
-				content.textContent = '';
-				content.appendChild(el('div', { class: 'message', text: 'No Vikings home games found in the schedule yet.' }));
-				return;
-			}
-			for (let n = 1; n <= MANUAL_PLAYOFF_ROWS; n++) games.push({ section: 'Playoffs', key: `${season}-po${n}`, manual: true, n });
+			const preSchedule = pre && String(pre.season) === String(snapshotSeason) ? pre.teams && pre.teams[TEAM] : [];
+			if (snapshotSeason) currentData = buildSeason(snapshotSeason, sched.teams && sched.teams[TEAM], preSchedule);
 			if (seats.status === 'fulfilled') tickets = { games: (seats.value && seats.value.games) || {} };
 			else ticketsFailed = seats.reason.message;
-			document.getElementById('title').textContent = `${season} Vikings Season Tickets`;
-			const regular = games.filter((g) => g.section === 'Regular Season').length; // `games` has the manual playoff rows too
-			document.getElementById('subtitle').textContent = preGames.length ? `${preGames.length} preseason + ${regular} regular-season home games` : `${regular} home games`;
-			document.getElementById('record').textContent = recordLine(sched && sched.teams && sched.teams[TEAM]);
+			if (hist.status === 'fulfilled') historyDoc = hist.value;
+			else historyError = hist.reason.message === 'HTTP 404' ? null : hist.reason.message; // 404 = not backfilled yet
 			renderAll();
 		}
 
