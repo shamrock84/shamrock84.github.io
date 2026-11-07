@@ -335,16 +335,19 @@
 		.card-heading { margin: 0 0 0.5rem; font-size: 1.05rem; color: var(--accent); }
 		.season-head { margin-bottom: 0.6rem; }
 		.season-title { margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--accent); }
-		.season-pick { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.7rem; font-size: 0.85rem; color: var(--muted); }
-		.season-pick select {
-			font: inherit;
-			font-size: 16px;
-			padding: 0.35rem 0.5rem;
-			border-radius: 6px;
-			border: 1px solid var(--border);
-			background: var(--card-bg);
-			color: var(--text);
+		.season-card > summary, .season-mini > summary {
+			display: flex; align-items: baseline; gap: 0.7rem; cursor: pointer; list-style: none;
+			font-weight: 700; color: var(--accent);
 		}
+		.season-card > summary::-webkit-details-marker, .season-mini > summary::-webkit-details-marker { display: none; }
+		.season-card > summary::before, .season-mini > summary::before { content: '\25B8'; display: inline-block; transition: transform 0.12s; }
+		.season-card[open] > summary::before, .season-mini[open] > summary::before { transform: rotate(90deg); }
+		.season-card > summary { font-size: 1.1rem; }
+		.season-record { font-size: 0.8rem; font-weight: 600; color: var(--muted); }
+		.season-card > .season-body { margin-top: 0.6rem; }
+		.season-mini { border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.7rem; margin-top: 0.5rem; }
+		.season-mini > .season-body { margin-top: 0.5rem; }
+		.season-card + .season-card { margin-top: 0.8rem; }
 		/* The status line stays in view while a long table is edited. */
 		.status-bar { position: sticky; bottom: 0; background: var(--bg); padding: 0.2rem 0; }
 		/* Tasks card: the same look as myffl.html's, under its own names. */
@@ -874,8 +877,6 @@
 		let historyDoc = null;      // data/vikings-history.json
 		let historyError = null;
 		let tab = 'schedule';
-		let historySeason = null;
-		let adminSeason = null;
 
 		// One season's games, whichever feed they came from: the snapshot for the
 		// current year, data/vikings-history.json for the rest. Both carry the
@@ -895,24 +896,43 @@
 			return h ? buildSeason(year, h.schedule, h.preseason) : null;
 		}
 
-		function seasonCard(data, editable) {
+		function seasonCard(data, editable, withTitle = true) {
 			const head = el('div', { class: 'season-head' }, [
-				el('h2', { class: 'season-title', text: `${data.year} Vikings Season Tickets` }),
+				withTitle ? el('h2', { class: 'season-title', text: `${data.year} Vikings Season Tickets` }) : null,
 				el('div', { class: 'subtitle', text: data.preCount ? `${data.preCount} preseason + ${data.regular} regular-season home games` : `${data.regular} home games` }),
 				data.record ? el('div', { class: 'team-record', text: data.record }) : null,
 			]);
 			return el('div', {}, [head, data.regular || data.preCount ? renderTable(data.games, editable) : el('div', { class: 'message', text: 'No Vikings home games in this season’s schedule.' })]);
 		}
 
-		function seasonPicker(years, selected, onChange) {
-			const select = el('select', { 'aria-label': 'Season' });
-			years.forEach((y) => {
-				const opt = el('option', { value: String(y), text: String(y) });
-				if (String(y) === String(selected)) opt.selected = true;
-				select.appendChild(opt);
+		// One season as a <details>. Its table is built the first time it opens
+		// (eleven tables up front would be slow and mostly never looked at), and
+		// whether it is open survives a re-render (login, logout, tab change) in
+		// `seasonOpen`, keyed by the tab it sits on.
+		const seasonOpen = { history: {}, admin: {} };
+		function seasonDetails(scope, year, editable, className) {
+			const data = seasonData(year);
+			const open = !!seasonOpen[scope][year];
+			const details = el('details', { class: className });
+			if (open) details.open = true;
+			const label = data && data.record ? el('span', { class: 'season-record', text: data.record.replace(/^Overall Record \(([^)]*)\).*$/, '$1') }) : null;
+			details.appendChild(el('summary', {}, [el('span', { class: 'season-year', text: String(year) }), label]));
+			const body = el('div', { class: 'season-body' });
+			details.appendChild(body);
+			const fill = () => {
+				if (body.childNodes.length) return;
+				if (!data) {
+					body.appendChild(el('div', { class: 'message', text: `The ${year} schedule hasn’t been loaded yet. Run the “Backfill Vikings Schedules” workflow in GitHub Actions, then reload.` }));
+				} else {
+					body.appendChild(seasonCard(data, editable, false));
+				}
+			};
+			if (open) fill();
+			details.addEventListener('toggle', () => {
+				seasonOpen[scope][year] = details.open;
+				if (details.open) fill();
 			});
-			select.addEventListener('change', () => onChange(select.value));
-			return el('label', { class: 'season-pick' }, [document.createTextNode('Season'), select]);
+			return details;
 		}
 
 		const message = (text, kind) => el('div', { class: 'card' }, [el('div', { class: `message${kind ? ' ' + kind : ''}`, text })]);
@@ -930,29 +950,16 @@
 			if (historyError) return [message(`Couldn’t load earlier seasons (${historyError}).`, 'error')];
 			const years = historyYears();
 			if (!years.length) return [message('Earlier seasons haven’t been loaded yet.')];
-			if (!years.map(String).includes(String(historySeason))) historySeason = String(years[0]);
-			return [el('div', { class: 'card' }, [
-				seasonPicker(years, historySeason, (v) => { historySeason = v; renderAll(); }),
-				seasonCard(seasonData(historySeason), false),
-			])];
+			return years.map((y) => seasonDetails('history', y, false, 'card season-card'));
 		}
 
 		function seasonsCard() {
 			const card = el('div', { class: 'card' }, [el('h2', { class: 'card-heading', text: 'Seasons' })]);
 			if (!snapshotSeason) { card.appendChild(el('div', { class: 'message', text: 'No season to edit yet.' })); return card; }
-			const years = [];
-			for (let y = Number(snapshotSeason); y >= FIRST_SEASON; y--) years.push(y);
-			if (!years.map(String).includes(String(adminSeason))) adminSeason = String(snapshotSeason);
-			card.appendChild(seasonPicker(years, adminSeason, (v) => { adminSeason = v; setStatus(''); renderAll(); }));
-			const data = seasonData(adminSeason);
 			if (ticketsFailed) {
 				card.appendChild(el('div', { class: 'message error', text: `Couldn’t load seat names (${ticketsFailed}), so editing is turned off. Reload to try again.` }));
 			}
-			if (!data) {
-				card.appendChild(el('div', { class: 'message', text: `The ${adminSeason} schedule hasn’t been loaded yet. Run the “Backfill Vikings Schedules” workflow in GitHub Actions, then reload.` }));
-			} else {
-				card.appendChild(seasonCard(data, !ticketsFailed));
-			}
+			for (let y = Number(snapshotSeason); y >= FIRST_SEASON; y--) card.appendChild(seasonDetails('admin', y, !ticketsFailed, 'season-mini'));
 			return card;
 		}
 
