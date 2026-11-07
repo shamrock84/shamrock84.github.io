@@ -13,12 +13,15 @@ export async function storeGet(store, key) {
 
 export async function storeSet(store, key, value, ttlSeconds) {
   // Upstash's REST API takes a raw command as a JSON array, which is the
-  // simplest way to attach the expiry.
+  // simplest way to attach the expiry. No ttlSeconds means the key never
+  // expires (api/vikings.js keeps a document that must outlive any window).
+  const command = ['SET', key, JSON.stringify(value)];
+  if (ttlSeconds) command.push('EX', String(ttlSeconds));
   const res = await fetch(store.url, {
     method: 'POST',
     headers: { Authorization: `Bearer ${store.token}`, 'Content-Type': 'application/json' },
     signal: AbortSignal.timeout(8000),
-    body: JSON.stringify(['SET', key, JSON.stringify(value), 'EX', String(ttlSeconds)]),
+    body: JSON.stringify(command),
   });
   if (!res.ok) throw new Error(`Store write failed (${res.status})`);
 }

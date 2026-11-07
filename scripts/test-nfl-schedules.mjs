@@ -201,3 +201,24 @@ assert.match(scriptSource, /:not\(\[data-nfl-schedules\]\)'\)\.forEach/, 'rerend
 assert.match(scriptSource, /:scope > \[data-nfl-schedules\]/, 'appendNflCard inserts poll cards ahead of Schedules');
 
 console.log('test-nfl-schedules: all assertions passed');
+
+// ---- Preseason (vikings.html) ----------------------------------------------
+// buildPreseasonGames must keep a team's games and drop byes: a team idle in a
+// preseason week (or in the Hall of Fame week) is not "on a bye".
+{
+	const { buildPreseasonGames } = await import('./lib/espn-schedules.mjs');
+	const g = (away, home, extra = {}) => ({ away, home, at: '2026-08-22T17:00Z', final: false, tbd: false, awayScore: null, homeScore: null, ...extra });
+	const weeks = [
+		{ week: 1, games: [g('CAR', 'DAL')] },
+		{ week: 2, games: [g('MIN', 'NYG', { final: true, awayScore: 13, homeScore: 10 }), g('BAL', 'DEN')] },
+		{ week: 3, games: [g('BAL', 'MIN', { final: true, awayScore: 13, homeScore: 3 })] },
+		{ week: 5, games: [] },
+	];
+	const out = buildPreseasonGames(weeks, ['MIN', 'KC']);
+	assert.deepEqual(Object.keys(out), ['MIN'], 'a team with no preseason game is left out, not given byes');
+	assert.deepEqual(out.MIN.map((e) => [e.wk, e.opp, e.home]), [[2, 'NYG', false], [3, 'BAL', true]]);
+	assert.equal(out.MIN.some((e) => e.bye), false, 'no byes: MIN sitting out week 1 is not a bye');
+	assert.deepEqual([out.MIN[1].r, out.MIN[1].pf, out.MIN[1].pa], ['L', 3, 13], 'result is from the team\'s own side');
+	assert.deepEqual(buildPreseasonGames([{ week: 1, games: [] }], ['MIN']), {}, 'nothing published yet yields no teams');
+}
+console.log('test-nfl-schedules: preseason assertions passed');
