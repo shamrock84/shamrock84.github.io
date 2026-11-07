@@ -119,6 +119,14 @@
 			letter-spacing: 0.03em;
 			color: var(--muted);
 			vertical-align: bottom;
+			/* The column names stay on screen while the table scrolls under them
+			   (handy when typing into the playoff rows). An opaque background, and
+			   a shadow instead of a border, which border-collapse would drop. */
+			position: sticky;
+			top: 0;
+			z-index: 2;
+			background: var(--card-bg);
+			box-shadow: inset 0 -1px 0 var(--border);
 		}
 		.datecell { display: flex; align-items: center; gap: 0.2rem; }
 		.chev {
@@ -590,16 +598,13 @@
 			return td;
 		}
 
-		// Which games have their seats showing. A game's own choice (the chevron)
-		// is remembered per browser; with no choice, upcoming games are open and
-		// finished ones closed. Per-viewer convenience only, so storage failing
-		// just means the defaults.
-		const OPEN_KEY = 'vikingsOpen';
-		let openPrefs = {};
-		try { openPrefs = JSON.parse(localStorage.getItem(OPEN_KEY) || '{}') || {}; } catch (e) { /* defaults */ }
-		function rememberOpen() {
-			try { localStorage.setItem(OPEN_KEY, JSON.stringify(openPrefs)); } catch (e) { /* ignore */ }
-		}
+		// Which games have their seats showing. Every load starts the same way,
+		// on purpose: finished games closed, upcoming ones open. A chevron or
+		// Expand/Collapse all only lasts until the page is refreshed (it survives
+		// a login/logout re-render, which is why the choices live in this object).
+		// Nothing is stored; an old remembered state is cleared so it can't linger.
+		const openPrefs = {};
+		try { localStorage.removeItem('vikingsOpen'); } catch (e) { /* ignore */ }
 
 		function renderTable() {
 			const editable = isLoggedIn() && !ticketsFailed;
@@ -679,7 +684,6 @@
 				btn.addEventListener('click', () => {
 					open = !open;
 					openPrefs[g.key] = open;
-					rememberOpen();
 					apply();
 					updateAll();
 				});
@@ -695,7 +699,6 @@
 			allBtn.addEventListener('click', () => {
 				const next = !setters.every((x) => x.get());
 				setters.forEach((x) => { x.set(next); openPrefs[x.key] = next; });
-				rememberOpen();
 				updateAll();
 			});
 			updateAll();
