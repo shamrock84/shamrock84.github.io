@@ -900,7 +900,7 @@
 			const head = el('div', { class: 'season-head' }, [
 				withTitle ? el('h2', { class: 'season-title', text: `${data.year} Vikings Season Tickets` }) : null,
 				el('div', { class: 'subtitle', text: data.preCount ? `${data.preCount} preseason + ${data.regular} regular-season home games` : `${data.regular} home games` }),
-				data.record ? el('div', { class: 'team-record', text: data.record }) : null,
+				data.record && withTitle ? el('div', { class: 'team-record', text: data.record }) : null,
 			]);
 			return el('div', {}, [head, data.regular || data.preCount ? renderTable(data.games, editable) : el('div', { class: 'message', text: 'No Vikings home games in this season’s schedule.' })]);
 		}
@@ -915,7 +915,7 @@
 			const open = !!seasonOpen[scope][year];
 			const details = el('details', { class: className });
 			if (open) details.open = true;
-			const label = data && data.record ? el('span', { class: 'season-record', text: data.record.replace(/^Overall Record \(([^)]*)\).*$/, '$1') }) : null;
+			const label = data && data.record ? el('span', { class: 'season-record', text: data.record.replace(/ Record/g, '') }) : null;
 			details.appendChild(el('summary', {}, [el('span', { class: 'season-year', text: String(year) }), label]));
 			const body = el('div', { class: 'season-body' });
 			details.appendChild(body);
