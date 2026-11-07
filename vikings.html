@@ -1,14 +1,569 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Vikings Season Tickets</title>
-    <meta property="og:title" content="Vikings Season Tickets"/>
-    <meta property="og:image" content="http://www.melbostads.com/images/vikingsseasonticketsimage.jpg"/>
-  </head>
-  <body>
-    <br/>
-    <div>
-      <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vSaeQozC_LsYVCTftgESq14cF7og_QqydNXqmzhTnaaEgU9FhaqTyeJ740mCgM5sDGn23sO8UV2UCQh/pubhtml?gid=942680861&amp;single=true&amp;widget=false&amp;headers=false&amp;chrome=false" style="position: absolute; top: 0; left: 0; width: 100%; height: 100vh; border: 0;" allowfullscree></iframe>
-    </div>
-  </body>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Vikings Season Tickets</title>
+	<meta property="og:title" content="Vikings Season Tickets"/>
+	<meta property="og:image" content="http://www.melbostads.com/images/vikingsseasonticketsimage.jpg"/>
+	<link rel="icon" type="image/png" sizes="32x32" href="https://shamrock84.github.io/fflicons/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="https://shamrock84.github.io/fflicons/favicon-16x16.png">
+	<meta name="theme-color" media="(prefers-color-scheme: light)" content="#4F2683">
+	<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#140f1e">
+	<style>
+		/* Same palette and conventions as myffl.html (purple = primary accent,
+		   gold = "notable, not urgent"); only the tokens this page uses are
+		   copied. Keep them in step if myffl.html's palette changes. */
+		:root {
+			--bg: #f5f3f9;
+			--card-bg: #ffffff;
+			--text: #1b1425;
+			--muted: #6b6478;
+			--border: #e3daf0;
+			--accent: #4F2683;
+			--chip-bg: #ede3f8;
+			--ir-text: #991b1b;
+			--gain-text: #166534;
+			--gold: #FFC62F;
+			--gold-chip-bg: #fff3d1;
+			--gold-chip-text: #7a5c00;
+		}
+		@media (prefers-color-scheme: dark) {
+			:root {
+				--bg: #140f1e;
+				--card-bg: #1e1730;
+				--text: #ede9f5;
+				--muted: #a79bc2;
+				--border: #362a4a;
+				--accent: #b48ee0;
+				--chip-bg: #2c2145;
+				--ir-text: #fca5a5;
+				--gain-text: #86efac;
+				--gold-chip-bg: #3d2e05;
+				--gold-chip-text: #f0c33e;
+			}
+		}
+		body::before {
+			content: '';
+			display: block;
+			height: 4px;
+			background: linear-gradient(90deg, var(--accent), var(--gold));
+		}
+		* { box-sizing: border-box; }
+		body {
+			margin: 0;
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+			background: var(--bg);
+			color: var(--text);
+		}
+		.hidden { display: none !important; }
+		main {
+			max-width: 72rem;
+			margin: 0 auto;
+			padding: 1rem;
+		}
+		header {
+			display: flex;
+			align-items: baseline;
+			justify-content: space-between;
+			gap: 0.6rem 1rem;
+			flex-wrap: wrap;
+			margin-bottom: 0.8rem;
+		}
+		h1 {
+			margin: 0;
+			font-size: 1.35rem;
+			color: var(--accent);
+		}
+		.subtitle {
+			font-size: 0.8rem;
+			color: var(--muted);
+		}
+		.card {
+			background: var(--card-bg);
+			border: 1px solid var(--border);
+			border-radius: 10px;
+			padding: 0.8rem;
+		}
+		/* The table scrolls inside its own wrapper on a phone, never the page. */
+		.table-wrap {
+			overflow-x: auto;
+			-webkit-overflow-scrolling: touch;
+		}
+		table {
+			width: 100%;
+			border-collapse: collapse;
+			font-size: 0.9rem;
+		}
+		th, td {
+			padding: 0.4rem 0.5rem;
+			text-align: left;
+			border-bottom: 1px solid var(--border);
+			white-space: nowrap;
+		}
+		thead th {
+			font-size: 0.75rem;
+			text-transform: uppercase;
+			letter-spacing: 0.03em;
+			color: var(--muted);
+			vertical-align: bottom;
+		}
+		/* Ticket-holder group headings sit over their seats, like the sheet. */
+		thead th.group {
+			text-align: center;
+			color: var(--accent);
+			text-transform: none;
+			font-size: 0.85rem;
+			letter-spacing: 0;
+			border-bottom: 1px solid var(--border);
+			border-left: 1px solid var(--border);
+		}
+		thead th.group small {
+			display: block;
+			font-weight: 500;
+			color: var(--muted);
+			font-size: 0.75rem;
+		}
+		th.seat-first, td.seat-first {
+			border-left: 1px solid var(--border);
+		}
+		tbody tr:last-child td { border-bottom: none; }
+		td.opp { font-weight: 600; }
+		td.face { font-variant-numeric: tabular-nums; }
+		tr.past td { color: var(--muted); }
+		tr.past td.opp { font-weight: 500; }
+		/* The next game is the one worth finding at a glance: "notable, not urgent". */
+		tr.next td { background: var(--gold-chip-bg); }
+		tr.next td.opp { color: var(--gold-chip-text); }
+		.chip {
+			display: inline-block;
+			margin-left: 0.4rem;
+			padding: 0.05rem 0.4rem;
+			border-radius: 999px;
+			background: var(--gold-chip-bg);
+			border: 1px solid var(--gold-chip-text);
+			color: var(--gold-chip-text);
+			font-size: 0.68rem;
+			font-weight: 700;
+			text-transform: uppercase;
+			letter-spacing: 0.03em;
+			vertical-align: middle;
+		}
+		.tbd { color: var(--muted); }
+		.empty { color: var(--muted); }
+		/* 16px, not smaller — iOS Safari zooms the page in on focus of any
+		   text input under 16px (same fix as .lineup-login-form input). */
+		td input {
+			width: 100%;
+			min-width: 5rem;
+			padding: 0.3rem 0.4rem;
+			border-radius: 6px;
+			border: 1px solid var(--border);
+			background: var(--card-bg);
+			color: var(--text);
+			font: inherit;
+			font-size: 16px;
+		}
+		td.face input { min-width: 4rem; width: 4.5rem; }
+		td input:focus-visible,
+		.login-form input:focus-visible {
+			outline: 2px solid var(--accent);
+			outline-offset: 1px;
+		}
+		td input.saving { opacity: 0.6; }
+		td input.failed { border-color: var(--ir-text); }
+		.status {
+			min-height: 1.2em;
+			margin-top: 0.6rem;
+			font-size: 0.8rem;
+			color: var(--muted);
+		}
+		.status.error { color: var(--ir-text); }
+		.status.ok { color: var(--gain-text); }
+		.note {
+			margin: 0.6rem 0 0;
+			font-size: 0.78rem;
+			color: var(--muted);
+		}
+		.swipe-hint {
+			display: none;
+			margin: 0.4rem 0 0;
+			font-size: 0.75rem;
+			color: var(--muted);
+		}
+		.message { padding: 1rem 0.2rem; color: var(--muted); }
+		.message.error { color: var(--ir-text); }
+		/* Login control: same look as myffl.html's .lineup-login. */
+		.login { font-size: 0.8rem; }
+		.login-toggle {
+			background: none;
+			border: none;
+			color: var(--accent);
+			font-size: 0.8rem;
+			font-weight: 600;
+			cursor: pointer;
+			padding: 0;
+		}
+		.login-toggle:hover { text-decoration: underline; }
+		.login-form {
+			display: flex;
+			align-items: center;
+			gap: 0.4rem;
+			flex-wrap: wrap;
+		}
+		.login-form input[type="password"] {
+			flex: 1;
+			min-width: 8rem;
+			padding: 0.4rem 0.6rem;
+			border-radius: 6px;
+			border: 1px solid var(--border);
+			background: var(--card-bg);
+			color: var(--text);
+			font-size: 16px;
+		}
+		.login-form button[type="submit"] {
+			border: 1px solid var(--accent);
+			background: var(--accent);
+			color: #fff;
+			padding: 0.4rem 0.8rem;
+			border-radius: 6px;
+			font-size: 0.85rem;
+			font-weight: 600;
+			cursor: pointer;
+		}
+		.login-form button[type="submit"]:disabled { opacity: 0.6; cursor: default; }
+		.login-status { font-size: 0.78rem; color: var(--ir-text); }
+		@media (max-width: 40rem) {
+			main { padding: 0.6rem; }
+			.card { padding: 0.5rem; }
+			table { font-size: 0.82rem; }
+			th, td { padding: 0.35rem 0.4rem; }
+			.col-day, .city { display: none; }
+			.swipe-hint { display: block; }
+		}
+	</style>
+</head>
+<body>
+	<main>
+		<header>
+			<div>
+				<h1 id="title">Vikings Season Tickets</h1>
+				<div class="subtitle" id="subtitle"></div>
+			</div>
+			<div class="login" id="login"></div>
+		</header>
+		<div class="card">
+			<div id="content"><div class="message">Loading…</div></div>
+			<div class="status" id="status" role="status" aria-live="polite"></div>
+		</div>
+	</main>
+
+	<script>
+		// melbostads.com/vikings — who is in each season-ticket seat for every
+		// Vikings home game. Logged out it is static text; logged in (the same
+		// password and token as myFFL, same localStorage key) every seat and
+		// face value becomes an input that saves on change.
+		//
+		// Two sources, deliberately separate:
+		//  - The SCHEDULE is read from the sync's committed snapshot
+		//    (data/rosters.json -> nflSchedules.teams.MIN, ESPN's feed, the same
+		//    one myFFL's NFL tab shows), home games only. Regular season only:
+		//    that feed has no preseason or playoff games.
+		//  - The NAMES and face values come from api/vikings.js on Vercel,
+		//    keyed `${season}-${week}`. Its GET is public (logged-out viewers
+		//    see the names); its POST needs the Bearer token.
+
+		const TEAM = 'MIN';
+		const SNAPSHOT_URL = '/data/rosters.json';
+		const TICKETS_URL = 'https://shamrock84-github-io.vercel.app/api/vikings';
+		const LOGIN_URL = 'https://shamrock84-github-io.vercel.app/api/login';
+		const AUTH_TOKEN_KEY = 'mflAuthToken';
+
+		// The seats this account holds. Ids are what the store keys names by
+		// (api/vikings.js only checks they are numbers), so don't renumber a seat
+		// once names are saved against it.
+		const SEAT_GROUPS = [
+			{ owner: 'Jeff', where: 'Sec 114 · Row 35', seats: [{ id: '1', label: 'Seat 1' }, { id: '2', label: 'Seat 2' }] },
+			{ owner: 'Kevin', where: 'Sec 124 · Row 9', seats: [{ id: '11', label: 'Seat 11' }, { id: '12', label: 'Seat 12' }] },
+		];
+
+		// ESPN's abbreviations as the schedule feed spells them (WSH, not WAS).
+		const TEAM_NAMES = {
+			ARI: 'Arizona Cardinals', ATL: 'Atlanta Falcons', BAL: 'Baltimore Ravens', BUF: 'Buffalo Bills',
+			CAR: 'Carolina Panthers', CHI: 'Chicago Bears', CIN: 'Cincinnati Bengals', CLE: 'Cleveland Browns',
+			DAL: 'Dallas Cowboys', DEN: 'Denver Broncos', DET: 'Detroit Lions', GB: 'Green Bay Packers',
+			HOU: 'Houston Texans', IND: 'Indianapolis Colts', JAX: 'Jacksonville Jaguars', KC: 'Kansas City Chiefs',
+			LAC: 'Los Angeles Chargers', LAR: 'Los Angeles Rams', LV: 'Las Vegas Raiders', MIA: 'Miami Dolphins',
+			MIN: 'Minnesota Vikings', NE: 'New England Patriots', NO: 'New Orleans Saints', NYG: 'New York Giants',
+			NYJ: 'New York Jets', PHI: 'Philadelphia Eagles', PIT: 'Pittsburgh Steelers', SEA: 'Seattle Seahawks',
+			SF: 'San Francisco 49ers', TB: 'Tampa Bay Buccaneers', TEN: 'Tennessee Titans', WSH: 'Washington Commanders',
+		};
+
+		// A game is a home game when the feed says so; a bye has no `home` at all.
+		function homeGames(schedule) {
+			return (schedule || []).filter((g) => g && g.home === true && g.opp);
+		}
+
+		// Kickoffs show in the stadium's time zone, not the viewer's, so a name
+		// on the list always sits next to the time on the ticket. A TBD kickoff
+		// carries ESPN's placeholder (midnight Eastern), so it gets the day only,
+		// formatted in Eastern the way myFFL's Schedules card does.
+		function formatWhen(g) {
+			if (!g.at) return { day: '', date: '', time: 'TBD', tbd: true };
+			const d = new Date(g.at);
+			if (Number.isNaN(d.getTime())) return { day: '', date: '', time: 'TBD', tbd: true };
+			const zone = g.tbd ? 'America/New_York' : 'America/Chicago';
+			const day = d.toLocaleDateString('en-US', { weekday: 'long', timeZone: zone });
+			const date = d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', timeZone: zone });
+			if (g.tbd) return { day: 'TBD', date, time: 'TBD', tbd: true };
+			// Like the sheet: "Noon", and no AM/PM on the rest (every kickoff is
+			// between noon and midnight).
+			const raw = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: zone });
+			const time = raw === '12:00 PM' ? 'Noon' : raw.replace(/ [AP]M$/, '');
+			return { day, date, time, tbd: false };
+		}
+
+		function el(tag, attrs = {}, children = []) {
+			const node = document.createElement(tag);
+			for (const [k, v] of Object.entries(attrs)) {
+				if (k === 'text') node.textContent = v;
+				else node.setAttribute(k, v);
+			}
+			for (const c of [].concat(children)) if (c) node.appendChild(c);
+			return node;
+		}
+
+		let authToken = null;
+		try { authToken = localStorage.getItem(AUTH_TOKEN_KEY) || null; } catch (e) { /* storage blocked: stay logged out */ }
+		const isLoggedIn = () => !!authToken;
+
+		let season = null;
+		let games = [];
+		let tickets = { games: {} };
+		let ticketsFailed = null;
+
+		const statusEl = document.getElementById('status');
+		function setStatus(text, kind) {
+			statusEl.textContent = text || '';
+			statusEl.className = `status${kind ? ' ' + kind : ''}`;
+		}
+
+		async function doLogin(password) {
+			const res = await fetch(LOGIN_URL, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ password }),
+			});
+			const body = await res.json().catch(() => ({}));
+			if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+			authToken = body.token;
+			try { localStorage.setItem(AUTH_TOKEN_KEY, authToken); } catch (e) { /* works for this visit */ }
+		}
+
+		function doLogout() {
+			authToken = null;
+			try { localStorage.removeItem(AUTH_TOKEN_KEY); } catch (e) { /* ignore */ }
+			setStatus('');
+			renderAll();
+		}
+
+		function renderLogin() {
+			const wrap = document.getElementById('login');
+			wrap.textContent = '';
+			if (isLoggedIn()) {
+				const out = el('button', { type: 'button', class: 'login-toggle', text: 'Log out' });
+				out.addEventListener('click', doLogout);
+				wrap.appendChild(out);
+				return;
+			}
+			const toggle = el('button', { type: 'button', class: 'login-toggle', text: 'Log in to edit' });
+			const form = el('form', { class: 'login-form hidden' });
+			const input = el('input', { type: 'password', placeholder: 'Password', autocomplete: 'current-password', 'aria-label': 'Password' });
+			const submit = el('button', { type: 'submit', text: 'Log in' });
+			const msg = el('span', { class: 'login-status' });
+			form.append(input, submit, msg);
+			toggle.addEventListener('click', () => {
+				toggle.classList.add('hidden');
+				form.classList.remove('hidden');
+				input.focus();
+			});
+			form.addEventListener('submit', async (e) => {
+				e.preventDefault();
+				if (!input.value) return;
+				msg.textContent = 'Logging in…';
+				submit.disabled = true;
+				try {
+					await doLogin(input.value);
+					renderAll();
+				} catch (err) {
+					msg.textContent = err.message;
+					submit.disabled = false;
+				}
+			});
+			wrap.append(toggle, form);
+		}
+
+		const gameKey = (g) => `${season}-${g.wk}`;
+
+		// POST one cell as a patch. The server returns the whole document, which
+		// we keep as the source of truth but do NOT re-render from: rebuilding
+		// the table would steal focus from the cell the manager tabs into next.
+		async function saveCell(input, g, patch) {
+			input.classList.remove('failed');
+			input.classList.add('saving');
+			setStatus('Saving…');
+			try {
+				const res = await fetch(TICKETS_URL, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+					body: JSON.stringify({ game: gameKey(g), ...patch }),
+				});
+				const body = await res.json().catch(() => ({}));
+				if (res.status === 401) {
+					// Expired or invalid token: same handling as myFFL, drop it so
+					// the page stops claiming a login it no longer has.
+					authToken = null;
+					try { localStorage.removeItem(AUTH_TOKEN_KEY); } catch (e) { /* ignore */ }
+					renderAll();
+					setStatus('Your session expired — log in again to save.', 'error');
+					return;
+				}
+				if (!res.ok) throw new Error((body.details && body.details.join('; ')) || body.error || `HTTP ${res.status}`);
+				tickets = body.tickets;
+				setStatus('Saved', 'ok');
+			} catch (err) {
+				input.classList.add('failed');
+				setStatus(`Not saved: ${err.message}`, 'error');
+			} finally {
+				input.classList.remove('saving');
+			}
+		}
+
+		function seatCell(g, seat, first, editable) {
+			const value = ((tickets.games[gameKey(g)] || {}).seats || {})[seat.id] || '';
+			const td = el('td', { class: first ? 'seat-first' : '' });
+			if (!editable) {
+				if (value) td.textContent = value;
+				else td.appendChild(el('span', { class: 'empty', text: '—' }));
+				return td;
+			}
+			const input = el('input', { type: 'text', value, maxlength: '60', autocomplete: 'off', 'aria-label': `${formatWhen(g).date} ${TEAM_NAMES[g.opp] || g.opp}, ${seat.label}` });
+			let last = value;
+			input.addEventListener('change', () => {
+				const next = input.value.trim();
+				if (next === last) return;
+				last = next;
+				saveCell(input, g, { seats: { [seat.id]: next } });
+			});
+			td.appendChild(input);
+			return td;
+		}
+
+		function faceCell(g, editable) {
+			const value = (tickets.games[gameKey(g)] || {}).face || '';
+			const td = el('td', { class: 'face' });
+			if (!editable) {
+				if (value) td.textContent = `$${value}`;
+				else td.appendChild(el('span', { class: 'empty', text: '—' }));
+				return td;
+			}
+			const input = el('input', { type: 'text', inputmode: 'decimal', value, maxlength: '8', autocomplete: 'off', placeholder: '$', 'aria-label': `${formatWhen(g).date} ${TEAM_NAMES[g.opp] || g.opp}, face value` });
+			let last = value;
+			input.addEventListener('change', () => {
+				const next = input.value.replace(/[$,\s]/g, '');
+				input.value = next;
+				if (next === last) return;
+				last = next;
+				saveCell(input, g, { face: next });
+			});
+			td.appendChild(input);
+			return td;
+		}
+
+		function renderTable() {
+			const editable = isLoggedIn() && !ticketsFailed;
+			const head1 = el('tr');
+			for (const [label, cls] of [['Date', ''], ['Day', 'col-day'], ['Time (CT)', ''], ['Opponent', ''], ['Face Value', '']]) {
+				head1.appendChild(el('th', { rowspan: '2', class: cls, text: label }));
+			}
+			for (const grp of SEAT_GROUPS) {
+				const th = el('th', { colspan: String(grp.seats.length), class: 'group' }, [document.createTextNode(grp.owner), el('small', { text: grp.where })]);
+				head1.appendChild(th);
+			}
+			const head2 = el('tr');
+			SEAT_GROUPS.forEach((grp) => grp.seats.forEach((s, i) => head2.appendChild(el('th', { class: i === 0 ? 'seat-first' : '', text: s.label }))));
+			const thead = el('thead', {}, [head1, head2]);
+
+			const now = Date.now();
+			const nextIndex = games.findIndex((g) => g.r == null && !(g.at && new Date(g.at).getTime() + 4 * 3600e3 < now));
+			const tbody = el('tbody');
+			games.forEach((g, i) => {
+				const when = formatWhen(g);
+				const done = g.r != null || (g.at && !g.tbd && new Date(g.at).getTime() + 4 * 3600e3 < now);
+				const tr = el('tr', { class: done ? 'past' : i === nextIndex ? 'next' : '' });
+				tr.appendChild(el('td', { text: when.date }));
+				tr.appendChild(el('td', { class: 'col-day', text: when.day }));
+				tr.appendChild(el('td', { class: when.tbd ? 'tbd' : '', text: when.time }));
+				// City hides on a phone (.city) so the seats get the room.
+				const full = TEAM_NAMES[g.opp] || g.opp;
+				const cut = full.lastIndexOf(' ');
+				const opp = el('td', { class: 'opp' }, cut > 0
+					? [el('span', { class: 'city', text: full.slice(0, cut + 1) }), document.createTextNode(full.slice(cut + 1))]
+					: [document.createTextNode(full)]);
+				if (i === nextIndex) opp.appendChild(el('span', { class: 'chip', text: 'Next' }));
+				tr.appendChild(opp);
+				tr.appendChild(faceCell(g, editable));
+				SEAT_GROUPS.forEach((grp) => grp.seats.forEach((s, si) => tr.appendChild(seatCell(g, s, si === 0, editable))));
+				tbody.appendChild(tr);
+			});
+			return el('div', { class: 'table-wrap' }, [el('table', {}, [thead, tbody])]);
+		}
+
+		function renderAll() {
+			renderLogin();
+			const content = document.getElementById('content');
+			content.textContent = '';
+			if (!games.length) return;
+			if (ticketsFailed) {
+				content.appendChild(el('div', { class: 'message error', text: `Couldn’t load seat names (${ticketsFailed}), so editing is turned off. Reload to try again.` }));
+			}
+			content.appendChild(renderTable());
+			content.appendChild(el('p', { class: 'swipe-hint', text: 'Swipe the table sideways to see every seat.' }));
+			content.appendChild(el('p', { class: 'note', text: 'Home games only, from the NFL schedule. Preseason and playoff games are not listed. Times are Central.' }));
+		}
+
+		async function load() {
+			const content = document.getElementById('content');
+			renderLogin();
+			const [snap, seats] = await Promise.allSettled([
+				fetch(SNAPSHOT_URL).then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }),
+				fetch(TICKETS_URL).then(async (r) => {
+					const b = await r.json().catch(() => ({}));
+					if (!r.ok) throw new Error(b.error || `HTTP ${r.status}`);
+					return b.tickets;
+				}),
+			]);
+			if (snap.status === 'rejected') {
+				content.textContent = '';
+				content.appendChild(el('div', { class: 'message error', text: `Couldn’t load the schedule (${snap.reason.message}).` }));
+				return;
+			}
+			const sched = snap.value && snap.value.nflSchedules;
+			season = sched && sched.season;
+			games = homeGames(sched && sched.teams && sched.teams[TEAM]);
+			if (!games.length) {
+				content.textContent = '';
+				content.appendChild(el('div', { class: 'message', text: 'No Vikings home games found in the schedule yet.' }));
+				return;
+			}
+			if (seats.status === 'fulfilled') tickets = { games: (seats.value && seats.value.games) || {} };
+			else ticketsFailed = seats.reason.message;
+			document.getElementById('title').textContent = `${season} Vikings Season Tickets`;
+			document.getElementById('subtitle').textContent = `${games.length} home games`;
+			renderAll();
+		}
+
+		load();
+	</script>
+</body>
 </html>
