@@ -270,6 +270,33 @@
 		}
 		.login-form button[type="submit"]:disabled { opacity: 0.6; cursor: default; }
 		.login-status { font-size: 0.78rem; color: var(--ir-text); }
+		/* Wide screens: a narrower column with bigger type and looser rows, so
+		   five short columns don't stretch across the whole window. */
+		@media (min-width: 48.01rem) {
+			main { max-width: 54rem; padding: 1.5rem 1rem; }
+			h1 { font-size: 1.7rem; }
+			.subtitle { font-size: 0.95rem; }
+			.card { padding: 1.2rem 1.4rem; }
+			table { font-size: 1.05rem; }
+			th, td { padding: 0.7rem 0.8rem; }
+			thead th { font-size: 0.8rem; }
+			tr.section td { font-size: 0.9rem; padding: 0.45rem 0.8rem; }
+			.chip { font-size: 0.72rem; }
+			tr.seat-row td { padding-top: 0.2rem; padding-bottom: 0.2rem; }
+			tr.seat-row.last td { padding-bottom: 0.9rem; }
+			.seat-line { gap: 0.4rem 1.2rem; margin-left: 1.6rem; padding-left: 1rem; }
+			/* One line per ticket holder: name and section, then each seat's
+			   label beside its name instead of above it. */
+			.owner { flex-basis: 17rem; font-size: 1rem; }
+			.owner small { display: inline; margin-left: 0.5rem; font-size: 0.82rem; }
+			.seat { flex-direction: row; align-items: center; gap: 0.5rem; font-size: 1.05rem; flex-basis: 13rem; width: 13rem; }
+			.seat-label { flex: none; width: 3.9rem; font-size: 0.75rem; }
+			.seat input { flex: 1; width: auto; }
+			.seat-line { flex-wrap: nowrap; }
+			.seats { flex-wrap: nowrap; }
+			.all-toggle, .login, .login-toggle { font-size: 0.9rem; }
+			.chev { font-size: 0.9rem; }
+		}
 		@media (max-width: 40rem) {
 			main { padding: 0.6rem; }
 			.card { padding: 0.5rem; }
