@@ -85,11 +85,23 @@
 			border-radius: 10px;
 			padding: 0.8rem;
 		}
-		/* The table scrolls inside its own wrapper on a phone, never the page. */
-		.table-wrap {
-			overflow-x: auto;
-			-webkit-overflow-scrolling: touch;
+		/* Seats sit under each game, indented, so nothing needs a sideways
+		   scroll: the table is only the five game columns. */
+		.all-bar {
+			display: flex;
+			justify-content: flex-end;
+			margin-bottom: 0.3rem;
 		}
+		.all-toggle {
+			background: none;
+			border: none;
+			color: var(--accent);
+			font-size: 0.8rem;
+			font-weight: 600;
+			cursor: pointer;
+			padding: 0;
+		}
+		.all-toggle:hover { text-decoration: underline; }
 		table {
 			width: 100%;
 			border-collapse: collapse;
@@ -108,25 +120,48 @@
 			color: var(--muted);
 			vertical-align: bottom;
 		}
-		/* Ticket-holder group headings sit over their seats, like the sheet. */
-		thead th.group {
-			text-align: center;
+		.datecell { display: flex; align-items: center; gap: 0.2rem; }
+		.chev {
+			flex: none;
+			width: 1.6rem;
+			height: 1.6rem;
+			margin-left: -0.3rem;
+			padding: 0;
+			border: none;
+			border-radius: 6px;
+			background: none;
 			color: var(--accent);
-			text-transform: none;
+			font-size: 0.8rem;
+			cursor: pointer;
+		}
+		.chev::before { content: '\25B8'; display: inline-block; transition: transform 0.12s; }
+		tr.open .chev::before { transform: rotate(90deg); }
+		.chev:focus-visible { outline: 2px solid var(--accent); }
+		tr.game.open td { border-bottom: none; }
+		tr.seat-row td { border-bottom: none; padding-top: 0.15rem; padding-bottom: 0.15rem; white-space: normal; }
+		tr.seat-row.last td { border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+		.seat-line {
+			display: flex;
+			align-items: center;
+			flex-wrap: wrap;
+			gap: 0.3rem 0.8rem;
+			margin-left: 1.3rem;
+			padding-left: 0.7rem;
+			border-left: 2px solid var(--border);
+		}
+		.owner {
+			flex: 0 0 9rem;
 			font-size: 0.85rem;
-			letter-spacing: 0;
-			border-bottom: 1px solid var(--border);
-			border-left: 1px solid var(--border);
+			font-weight: 600;
+			color: var(--accent);
 		}
-		thead th.group small {
-			display: block;
-			font-weight: 500;
-			color: var(--muted);
-			font-size: 0.75rem;
-		}
-		th.seat-first, td.seat-first {
-			border-left: 1px solid var(--border);
-		}
+		.owner small { display: block; font-weight: 500; color: var(--muted); font-size: 0.72rem; }
+		/* Fixed-width seats that sit together on a wide screen; on a phone they
+		   share the row (see the media query). */
+		.seats { display: flex; flex: 0 1 auto; gap: 0.6rem; flex-wrap: wrap; min-width: 0; }
+		.seat { display: flex; flex-direction: column; flex: 0 1 11rem; width: 11rem; min-width: 0; font-size: 0.9rem; }
+		.seat-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); }
+		.seat-name { min-height: 1.4em; }
 		tbody tr:last-child td { border-bottom: none; }
 		td.opp { font-weight: 600; }
 		/* Section band (Preseason / Regular Season), like the sheet's. */
@@ -161,7 +196,8 @@
 		.empty { color: var(--muted); }
 		/* 16px, not smaller — iOS Safari zooms the page in on focus of any
 		   text input under 16px (same fix as .lineup-login-form input). */
-		td input {
+		td input,
+		.seat input {
 			width: 100%;
 			min-width: 5rem;
 			padding: 0.3rem 0.4rem;
@@ -172,16 +208,18 @@
 			font: inherit;
 			font-size: 16px;
 		}
-		td input.info { min-width: 3.5rem; }
+		td input.info { min-width: 3.2rem; }
 		td.opp input { min-width: 8rem; }
 		td.face input { min-width: 4rem; width: 4.5rem; }
+		.seat input { min-width: 0; }
 		td input:focus-visible,
+		.seat input:focus-visible,
 		.login-form input:focus-visible {
 			outline: 2px solid var(--accent);
 			outline-offset: 1px;
 		}
-		td input.saving { opacity: 0.6; }
-		td input.failed { border-color: var(--ir-text); }
+		input.saving { opacity: 0.6; }
+		input.failed { border-color: var(--ir-text); }
 		.status {
 			min-height: 1.2em;
 			margin-top: 0.6rem;
@@ -238,8 +276,13 @@
 			table { font-size: 0.82rem; }
 			.city, .long { display: none; }
 			th, td { padding: 0.3rem 0.3rem; }
-			td input { min-width: 4.2rem; }
-			td.opp input { min-width: 6rem; }
+			td input.info { min-width: 2.6rem; }
+			td.opp input { min-width: 5.5rem; }
+			td.face input { min-width: 3.4rem; width: 3.6rem; }
+			.seat-line { margin-left: 0.9rem; padding-left: 0.5rem; }
+			.owner { flex-basis: 100%; }
+			.seats { flex: 1 1 100%; }
+			.seat { flex: 1 1 7rem; width: auto; }
 		}
 	</style>
 </head>
@@ -479,13 +522,14 @@
 			return td;
 		}
 
-		function seatCell(g, seat, first, editable) {
+		// One seat: a small label over the name (text) or an input (logged in).
+		function seatItem(g, seat, editable) {
 			const value = ((tickets.games[gameKey(g)] || {}).seats || {})[seat.id] || '';
-			const td = el('td', { class: first ? 'seat-first' : '' });
 			if (!editable) {
-				if (value) td.textContent = value;
-				else td.appendChild(el('span', { class: 'empty', text: '—' }));
-				return td;
+				return el('div', { class: 'seat' }, [
+					el('span', { class: 'seat-label', text: seat.label }),
+					el('span', { class: value ? 'seat-name' : 'seat-name empty', text: value || '—' }),
+				]);
 			}
 			const input = el('input', { type: 'text', value, maxlength: '60', autocomplete: 'off', 'aria-label': `${gameLabel(g)}, ${seat.label}` });
 			let last = value;
@@ -495,8 +539,7 @@
 				last = next;
 				saveCell(input, g, { seats: { [seat.id]: next } });
 			});
-			td.appendChild(input);
-			return td;
+			return el('div', { class: 'seat' }, [el('span', { class: 'seat-label', text: seat.label }), input]);
 		}
 
 		function faceCell(g, editable) {
@@ -520,20 +563,25 @@
 			return td;
 		}
 
+		// Which games have their seats showing. A game's own choice (the chevron)
+		// is remembered per browser; with no choice, upcoming games are open and
+		// finished ones closed. Per-viewer convenience only, so storage failing
+		// just means the defaults.
+		const OPEN_KEY = 'vikingsOpen';
+		let openPrefs = {};
+		try { openPrefs = JSON.parse(localStorage.getItem(OPEN_KEY) || '{}') || {}; } catch (e) { /* defaults */ }
+		function rememberOpen() {
+			try { localStorage.setItem(OPEN_KEY, JSON.stringify(openPrefs)); } catch (e) { /* ignore */ }
+		}
+
 		function renderTable() {
 			const editable = isLoggedIn() && !ticketsFailed;
-			const head1 = el('tr');
+			const head = el('tr');
 			// The long half of a heading hides on a phone (.long) to save width.
-			for (const [short, long, cls] of [['Date', '', ''], ['Day', '', ''], ['Time', ' (CT)', ''], ['Opponent', '', ''], ['Face', ' Value', '']]) {
-				head1.appendChild(el('th', { rowspan: '2', class: cls }, [document.createTextNode(short), long ? el('span', { class: 'long', text: long }) : null]));
+			for (const [short, long] of [['Date', ''], ['Day', ''], ['Time', ' (CT)'], ['Opponent', ''], ['Face', ' Value']]) {
+				head.appendChild(el('th', {}, [document.createTextNode(short), long ? el('span', { class: 'long', text: long }) : null]));
 			}
-			for (const grp of SEAT_GROUPS) {
-				const th = el('th', { colspan: String(grp.seats.length), class: 'group' }, [document.createTextNode(grp.owner), el('small', { text: grp.where })]);
-				head1.appendChild(th);
-			}
-			const head2 = el('tr');
-			SEAT_GROUPS.forEach((grp) => grp.seats.forEach((s, i) => head2.appendChild(el('th', { class: i === 0 ? 'seat-first' : '', text: s.label }))));
-			const thead = el('thead', {}, [head1, head2]);
+			const thead = el('thead', {}, [head]);
 
 			const now = Date.now();
 			// Blank hand-entered rows are for typing into; to everyone else they
@@ -542,44 +590,89 @@
 			const rowSections = [...new Set(rows.map((g) => g.section))];
 			const nextIndex = rows.findIndex((g) => !g.manual && g.r == null && !(g.at && new Date(g.at).getTime() + 4 * 3600e3 < now));
 			const tbody = el('tbody');
-			const colCount = 5 + SEAT_GROUPS.reduce((n, grp) => n + grp.seats.length, 0);
+			const setters = [];
 			let lastSection = null;
 			rows.forEach((g, i) => {
 				// Section rows, like the sheet's Preseason / Regular Season bands.
 				if (rowSections.length > 1 && g.section !== lastSection) {
 					lastSection = g.section;
-					tbody.appendChild(el('tr', { class: 'section' }, [el('td', { colspan: String(colCount), text: g.section })]));
+					tbody.appendChild(el('tr', { class: 'section' }, [el('td', { colspan: '5', text: g.section })]));
 				}
+				const done = !g.manual && (g.r != null || (g.at && !g.tbd && new Date(g.at).getTime() + 4 * 3600e3 < now));
+				const cls = done ? 'past' : i === nextIndex ? 'next' : '';
+				const tr = el('tr', { class: `game ${cls}`.trim() });
+				let dateCell;
 				if (g.manual) {
-					const tr = el('tr');
-					tr.appendChild(manualCell(g, 'date', editable));
-					tr.appendChild(manualCell(g, 'day', editable, 'col-day'));
+					tr.appendChild(dateCell = manualCell(g, 'date', editable));
+					tr.appendChild(manualCell(g, 'day', editable));
 					tr.appendChild(manualCell(g, 'time', editable));
 					tr.appendChild(manualCell(g, 'opp', editable));
-					tr.appendChild(faceCell(g, editable));
-					SEAT_GROUPS.forEach((grp) => grp.seats.forEach((st, si) => tr.appendChild(seatCell(g, st, si === 0, editable))));
-					tbody.appendChild(tr);
-					return;
+				} else {
+					const when = formatWhen(g);
+					dateCell = el('td', { text: when.date });
+					tr.appendChild(dateCell);
+					tr.appendChild(el('td', { text: when.day }));
+					tr.appendChild(el('td', { class: when.tbd ? 'tbd' : '', text: when.time }));
+					// City hides on a phone (.city) so the row stays narrow.
+					const full = TEAM_NAMES[g.opp] || g.opp;
+					const cut = full.lastIndexOf(' ');
+					const opp = el('td', { class: 'opp' }, cut > 0
+						? [el('span', { class: 'city', text: full.slice(0, cut + 1) }), document.createTextNode(full.slice(cut + 1))]
+						: [document.createTextNode(full)]);
+					if (i === nextIndex) opp.appendChild(el('span', { class: 'chip', text: 'Next' }));
+					tr.appendChild(opp);
 				}
-				const when = formatWhen(g);
-				const done = g.r != null || (g.at && !g.tbd && new Date(g.at).getTime() + 4 * 3600e3 < now);
-				const tr = el('tr', { class: done ? 'past' : i === nextIndex ? 'next' : '' });
-				tr.appendChild(el('td', { text: when.date }));
-				tr.appendChild(el('td', { class: 'col-day', text: when.day }));
-				tr.appendChild(el('td', { class: when.tbd ? 'tbd' : '', text: when.time }));
-				// City hides on a phone (.city) so the seats get the room.
-				const full = TEAM_NAMES[g.opp] || g.opp;
-				const cut = full.lastIndexOf(' ');
-				const opp = el('td', { class: 'opp' }, cut > 0
-					? [el('span', { class: 'city', text: full.slice(0, cut + 1) }), document.createTextNode(full.slice(cut + 1))]
-					: [document.createTextNode(full)]);
-				if (i === nextIndex) opp.appendChild(el('span', { class: 'chip', text: 'Next' }));
-				tr.appendChild(opp);
 				tr.appendChild(faceCell(g, editable));
-				SEAT_GROUPS.forEach((grp) => grp.seats.forEach((s, si) => tr.appendChild(seatCell(g, s, si === 0, editable))));
+
+				// The seats, one indented row per ticket holder.
+				const seatRows = SEAT_GROUPS.map((grp, gi) => {
+					const seats = el('div', { class: 'seats' });
+					grp.seats.forEach((st) => seats.appendChild(seatItem(g, st, editable)));
+					const line = el('div', { class: 'seat-line' }, [
+						el('div', { class: 'owner' }, [document.createTextNode(grp.owner), el('small', { text: grp.where })]),
+						seats,
+					]);
+					return el('tr', { class: `seat-row ${cls}${gi === SEAT_GROUPS.length - 1 ? ' last' : ''}`.trim() }, [el('td', { colspan: '5' }, [line])]);
+				});
+
+				// Chevron inside the date cell, before whatever is already there.
+				const btn = el('button', { type: 'button', class: 'chev' });
+				const wrap = el('div', { class: 'datecell' });
+				wrap.appendChild(btn);
+				Array.from(dateCell.childNodes).forEach((n) => wrap.appendChild(n));
+				dateCell.appendChild(wrap);
+
+				let open = g.key in openPrefs ? !!openPrefs[g.key] : !done;
+				const apply = () => {
+					tr.classList.toggle('open', open);
+					btn.setAttribute('aria-expanded', String(open));
+					btn.setAttribute('aria-label', `${open ? 'Hide' : 'Show'} seats for ${gameLabel(g)}`);
+					seatRows.forEach((r) => { r.hidden = !open; });
+				};
+				btn.addEventListener('click', () => {
+					open = !open;
+					openPrefs[g.key] = open;
+					rememberOpen();
+					apply();
+					updateAll();
+				});
+				apply();
+				setters.push({ key: g.key, get: () => open, set: (v) => { open = v; apply(); } });
 				tbody.appendChild(tr);
+				seatRows.forEach((r) => tbody.appendChild(r));
 			});
-			return el('div', { class: 'table-wrap' }, [el('table', {}, [thead, tbody])]);
+
+			// Expand/collapse every game at once.
+			const allBtn = el('button', { type: 'button', class: 'all-toggle' });
+			function updateAll() { allBtn.textContent = setters.every((x) => x.get()) ? 'Collapse all' : 'Expand all'; }
+			allBtn.addEventListener('click', () => {
+				const next = !setters.every((x) => x.get());
+				setters.forEach((x) => { x.set(next); openPrefs[x.key] = next; });
+				rememberOpen();
+				updateAll();
+			});
+			updateAll();
+			return el('div', {}, [el('div', { class: 'all-bar' }, [allBtn]), el('table', {}, [thead, tbody])]);
 		}
 
 		function renderAll() {
