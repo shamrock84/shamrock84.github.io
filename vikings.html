@@ -27,6 +27,11 @@
 			--gold: #FFC62F;
 			--gold-chip-bg: #fff3d1;
 			--gold-chip-text: #7a5c00;
+			--seat-fill: #ede3f8;
+			--seat-stroke: #cdbbe6;
+			--seat-on-fill: #4F2683;
+			--seat-on-stroke: #34195a;
+			--seat-on-ink: #ffffff;
 		}
 		@media (prefers-color-scheme: dark) {
 			:root {
@@ -41,6 +46,10 @@
 				--gain-text: #86efac;
 				--gold-chip-bg: #3d2e05;
 				--gold-chip-text: #f0c33e;
+				--seat-fill: #2c2145;
+				--seat-stroke: #4a3a66;
+				--seat-on-fill: #7a54b5;
+				--seat-on-stroke: #b48ee0;
 			}
 		}
 		body::before {
@@ -164,12 +173,24 @@
 			color: var(--accent);
 		}
 		.owner small { display: block; font-weight: 500; color: var(--muted); font-size: 0.72rem; }
-		/* Fixed-width seats that sit together on a wide screen; on a phone they
-		   share the row (see the media query). */
-		.seats { display: flex; flex: 0 1 auto; gap: 0.6rem; flex-wrap: wrap; min-width: 0; }
-		.seat { display: flex; flex-direction: column; flex: 0 1 11rem; width: 11rem; min-width: 0; font-size: 0.9rem; }
-		.seat-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); }
-		.seat-name { min-height: 1.4em; }
+		/* A seat is an armchair icon: the person's name sits over the backrest
+		   (text, or an input when logged in) and the seat number underneath. A
+		   filled seat is solid purple; an empty one is a pale outline. */
+		.seats { display: flex; flex: 0 0 auto; gap: 0.5rem; flex-wrap: nowrap; min-width: 0; }
+		.seat { display: flex; flex-direction: column; align-items: center; flex: 0 0 auto; gap: 0.1rem; }
+		.seat-art { position: relative; width: 5.6rem; aspect-ratio: 80 / 64; }
+		.seat-svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+		.seat-svg .part { fill: var(--seat-fill); stroke: var(--seat-stroke); stroke-width: 1.5; transition: fill 0.15s; }
+		.seat.taken .seat-svg .part { fill: var(--seat-on-fill); stroke: var(--seat-on-stroke); }
+		/* The name box is the backrest: 65% wide, from 7% down, half the height. */
+		.seat-name,
+		.seat input {
+			position: absolute; left: 17.5%; width: 65%; top: 7%; height: 50%;
+			display: flex; align-items: center; justify-content: center;
+			text-align: center; line-height: 1.1; overflow: hidden; overflow-wrap: anywhere;
+			font-size: 0.75rem; font-weight: 600; color: var(--seat-on-ink);
+		}
+		.seat-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); }
 		tbody tr:last-child td { border-bottom: none; }
 		td.opp { font-weight: 600; }
 		/* Section band (Preseason / Regular Season), like the sheet's. */
@@ -204,8 +225,7 @@
 		.empty { color: var(--muted); }
 		/* 16px, not smaller — iOS Safari zooms the page in on focus of any
 		   text input under 16px (same fix as .lineup-login-form input). */
-		td input,
-		.seat input {
+		td input {
 			width: 100%;
 			min-width: 5rem;
 			padding: 0.3rem 0.4rem;
@@ -219,9 +239,19 @@
 		td input.info { min-width: 3.2rem; }
 		td.opp input { min-width: 8rem; }
 		td.face input { min-width: 4rem; width: 4.5rem; }
-		.seat input { min-width: 0; }
+		/* The seat input sits on the backrest: transparent, no box. Touch screens
+		   get 16px (below) so iOS Safari doesn't zoom on focus; a mouse gets the
+		   smaller size, which fits longer names. A long name scrolls inside it. */
+		.seat input {
+			min-width: 0; padding: 0 0.1rem; border: none; border-radius: 8px; background: transparent;
+			font-family: inherit; font-size: 0.75rem; text-overflow: ellipsis; box-shadow: none;
+			color: var(--text);
+		}
+		@media (pointer: coarse) { .seat input { font-size: 16px; } }
+		.seat.taken input { color: var(--seat-on-ink); }
+		.seat input.failed { box-shadow: inset 0 0 0 2px var(--ir-text); }
+		.seat input:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; background: rgba(255, 255, 255, 0.12); }
 		td input:focus-visible,
-		.seat input:focus-visible,
 		.login-form input:focus-visible {
 			outline: 2px solid var(--accent);
 			outline-offset: 1px;
@@ -293,15 +323,11 @@
 			tr.seat-row td { padding-top: 0.2rem; padding-bottom: 0.2rem; }
 			tr.seat-row.last td { padding-bottom: 0.9rem; }
 			.seat-line { gap: 0.4rem 1.2rem; margin-left: 1.6rem; padding-left: 1rem; }
-			/* One line per ticket holder: name and section, then each seat's
-			   label beside its name instead of above it. */
+			/* One line per ticket holder: name and section, then the two seats. */
 			.owner { flex-basis: 17rem; font-size: 1rem; }
 			.owner small { display: inline; margin-left: 0.5rem; font-size: 0.82rem; }
-			.seat { flex-direction: row; align-items: center; gap: 0.5rem; font-size: 1.05rem; flex-basis: 13rem; width: 13rem; }
-			.seat-label { flex: none; width: 3.9rem; font-size: 0.75rem; }
-			.seat input { flex: 1; width: auto; }
 			.seat-line { flex-wrap: nowrap; }
-			.seats { flex-wrap: nowrap; }
+			.seats { gap: 0.9rem; }
 			.all-toggle, .login, .login-toggle { font-size: 0.9rem; }
 			.chev { font-size: 0.9rem; }
 		}
@@ -314,10 +340,14 @@
 			td input.info { min-width: 2.6rem; }
 			td.opp input { min-width: 5.5rem; }
 			td.face input { min-width: 3.4rem; width: 3.6rem; }
-			.seat-line { margin-left: 0.9rem; padding-left: 0.5rem; }
-			.owner { flex-basis: 100%; }
-			.seats { flex: 1 1 100%; }
-			.seat { flex: 1 1 7rem; width: auto; }
+			/* Each holder is one line: label on the left, both seats on the right. */
+			.seat-line { flex-wrap: nowrap; gap: 0 0.4rem; margin-left: 0.9rem; padding-left: 0.5rem; }
+			.owner { flex: 1 1 0; min-width: 0; font-size: 0.85rem; }
+			.owner small { font-size: 0.68rem; }
+			.seats { gap: 0.25rem; }
+			.seat-art { width: 4.9rem; }
+			.seat-name { font-size: 0.68rem; }
+			.seat-label { font-size: 0.62rem; }
 		}
 	</style>
 </head>
@@ -558,23 +588,38 @@
 		}
 
 		// One seat: a small label over the name (text) or an input (logged in).
+		const SEAT_SVG = '<svg class="seat-svg" viewBox="0 0 80 64" aria-hidden="true" focusable="false">'
+			+ '<rect class="part" x="2" y="26" width="10" height="26" rx="4"/>'
+			+ '<rect class="part" x="68" y="26" width="10" height="26" rx="4"/>'
+			+ '<rect class="part" x="14" y="4" width="52" height="34" rx="11"/>'
+			+ '<rect class="part" x="10" y="36" width="60" height="15" rx="6"/>'
+			+ '<rect class="part" x="16" y="50" width="7" height="9" rx="2"/>'
+			+ '<rect class="part" x="57" y="50" width="7" height="9" rx="2"/>'
+			+ '</svg>';
+
+		// One seat: the icon with the name over the backrest and the seat number
+		// under it. Logged out the name is text; logged in it is an input on the
+		// icon, and the seat fills in as soon as something is typed.
 		function seatItem(g, seat, editable) {
 			const value = ((tickets.games[gameKey(g)] || {}).seats || {})[seat.id] || '';
+			const art = el('div', { class: 'seat-art' });
+			art.innerHTML = SEAT_SVG; // constant markup above, no user text
+			const wrap = el('div', { class: `seat${value ? ' taken' : ''}` }, [art, el('span', { class: 'seat-label', text: seat.label })]);
 			if (!editable) {
-				return el('div', { class: 'seat' }, [
-					el('span', { class: 'seat-label', text: seat.label }),
-					el('span', { class: value ? 'seat-name' : 'seat-name empty', text: value || '—' }),
-				]);
+				if (value) art.appendChild(el('span', { class: 'seat-name', text: value }));
+				return wrap;
 			}
 			const input = el('input', { type: 'text', value, maxlength: '60', autocomplete: 'off', 'aria-label': `${gameLabel(g)}, ${seat.label}` });
 			let last = value;
+			input.addEventListener('input', () => wrap.classList.toggle('taken', !!input.value.trim()));
 			input.addEventListener('change', () => {
 				const next = input.value.trim();
 				if (next === last) return;
 				last = next;
 				saveCell(input, g, { seats: { [seat.id]: next } });
 			});
-			return el('div', { class: 'seat' }, [el('span', { class: 'seat-label', text: seat.label }), input]);
+			art.appendChild(input);
+			return wrap;
 		}
 
 		function faceCell(g, editable) {
