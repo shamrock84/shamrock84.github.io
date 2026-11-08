@@ -980,7 +980,9 @@
 		// own key by api/vikings.js (`?resource=tasks`, login-gated both ways), not
 		// in the plans document. Each change goes up as a per-task patch
 		// ({ id: task | null }), queued one at a time so two quick edits can't race
-		// each other's read-modify-write on the server.
+		// each other's read-modify-write on the server. The list is fetched when the
+		// Admin tab opens and whenever the page returns to the foreground, so a task
+		// added on another device shows up without a reload.
 
 		const MAX_TASK_TEXT_LENGTH = 2000;
 		const TASK_COUNTER_THRESHOLD = MAX_TASK_TEXT_LENGTH - 400;
@@ -991,6 +993,11 @@
 		let editingTaskId = null;
 		let tasksCardEl = null;
 		let pushChain = Promise.resolve();
+		// Changes the server hasn't confirmed yet, id -> task | null. They stay
+		// here until a save succeeds (so a failed save is retried with the next
+		// one, never silently dropped), and the list is not refetched over them.
+		const unsaved = {};
+		let saving = false;
 
 		function expireSession() {
 			authToken = null;
@@ -1001,38 +1008,59 @@
 			setStatus('Your session expired — log in again to save.', 'error');
 		}
 
+		// First load shows "Loading…"; later calls (opening the tab, coming back to
+		// the page) refetch quietly, because another device may have changed the
+		// list since this page loaded. Never over unsaved edits, an edit in
+		// progress or text typed into the add row.
 		async function loadTasks() {
-			if (tasksState === 'loading' || tasksState === 'ready') return;
-			tasksState = 'loading';
+			if (tasksState === 'loading') return;
+			const quiet = tasksState === 'ready';
+			if (quiet) {
+				const typing = tasksCardEl && [...tasksCardEl.querySelectorAll('.task-input')].some((i) => i.value);
+				if (saving || Object.keys(unsaved).length || editingTaskId || typing) return;
+			} else {
+				tasksState = 'loading';
+			}
 			try {
-				const res = await fetch(`${TICKETS_URL}?resource=tasks`, { headers: { Authorization: `Bearer ${authToken}` } });
+				const res = await fetch(`${TICKETS_URL}?resource=tasks`, { headers: { Authorization: `Bearer ${authToken}` }, cache: 'no-store' });
 				const body = await res.json().catch(() => ({}));
 				if (res.status === 401) { tasksState = 'idle'; expireSession(); return; }
 				if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+				// A save or edit may have started while this was in flight; don't clobber it.
+				if (quiet && (saving || Object.keys(unsaved).length || editingTaskId)) return;
 				tasks = body.tasks || {};
 				tasksState = 'ready';
 			} catch (err) {
+				if (quiet) return; // a failed background refresh keeps what is on screen
 				tasksState = 'error';
 				tasksError = err.message;
 			}
 			refreshTasksCard();
 		}
 
-		function pushTasks(patch) {
+		// Send every unconfirmed change. One at a time, so two quick edits can't
+		// race each other's read-modify-write on the server.
+		function flushTasks() {
 			pushChain = pushChain.then(async () => {
+				const sent = { ...unsaved };
+				if (!Object.keys(sent).length) return;
+				saving = true;
 				try {
 					const res = await fetch(TICKETS_URL, {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
-						body: JSON.stringify({ resource: 'tasks', tasks: patch }),
+						body: JSON.stringify({ resource: 'tasks', tasks: sent }),
 					});
 					const body = await res.json().catch(() => ({}));
-					if (res.status === 401) { expireSession(); return; }
+					if (res.status === 401) { saving = false; expireSession(); return; }
 					if (!res.ok) throw new Error((body.details && body.details.join('; ')) || body.error || `HTTP ${res.status}`);
+					// Keep anything edited again while this was in flight.
+					for (const id of Object.keys(sent)) if (unsaved[id] === sent[id]) delete unsaved[id];
 					tasksSyncError = '';
 				} catch (err) {
 					tasksSyncError = err.message;
 				}
+				saving = false;
 				refreshTasksCard();
 			});
 		}
@@ -1042,8 +1070,9 @@
 			for (const [id, t] of Object.entries(changed)) {
 				if (t === null) delete tasks[id]; else tasks[id] = t;
 			}
+			Object.assign(unsaved, changed);
 			refreshTasksCard();
-			pushTasks(changed);
+			flushTasks();
 		}
 
 		const makeTaskId = () => `t${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
@@ -1135,7 +1164,14 @@
 			}
 			const entries = Object.entries(tasks);
 			card.appendChild(el('h2', { class: 'card-heading', text: `Tasks (${entries.filter(([, t]) => !t.done).length})` }));
-			if (tasksSyncError) card.appendChild(el('div', { class: 'task-sync-status', text: `⚠ Last save failed: ${tasksSyncError}` }));
+			// Stays up until the unsaved changes go through; Retry resends them.
+			if (tasksSyncError && Object.keys(unsaved).length) {
+				const warn = el('div', { class: 'task-sync-status' }, [document.createTextNode(`⚠ Not saved yet (${tasksSyncError}). `)]);
+				const retry = el('button', { type: 'button', class: 'task-add-btn', text: 'Retry' });
+				retry.addEventListener('click', flushTasks);
+				warn.appendChild(retry);
+				card.appendChild(warn);
+			}
 
 			const categories = [...new Set(entries.map(([, t]) => t.category).filter(Boolean))].sort();
 			const addRow = el('div', { class: 'task-add-row' });
@@ -1277,10 +1313,18 @@
 		}
 
 		function adminView() {
-			if (tasksState === 'idle') loadTasks();
 			tasksCardEl = buildTasksCard();
+			loadTasks(); // first load, or a quiet refresh when the tab is reopened
 			return [tasksCardEl, seasonsCard()];
 		}
+
+		// Coming back to the page (switching apps on a phone or iPad, or restoring
+		// it from the back/forward cache) refreshes the list too.
+		function refreshTasksIfVisible() {
+			if (tab === 'admin' && isLoggedIn() && document.visibilityState === 'visible') loadTasks();
+		}
+		document.addEventListener('visibilitychange', refreshTasksIfVisible);
+		window.addEventListener('pageshow', refreshTasksIfVisible);
 
 		// ---- Shell ---------------------------------------------------------------
 
