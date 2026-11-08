@@ -16,6 +16,10 @@ on:
       tasks:
         description: 'Exact task text to mark done, one per line'
         required: true
+      vikings:
+        description: "Mark the Vikings page's Admin tasks instead of myFFL's"
+        type: boolean
+        default: false
 
 jobs:
   mark-done:
@@ -41,4 +45,5 @@ jobs:
         env:
           SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
           TASK_TEXTS: ${{ github.event.inputs.tasks }}
+          VIKINGS_TASKS: ${{ github.event.inputs.vikings == 'true' && '1' || '' }}
         run: node scripts/mark-tasks-done.mjs

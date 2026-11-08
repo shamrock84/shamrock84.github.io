@@ -28,6 +28,11 @@
 // through as, sidestepping shell quoting entirely for task text that
 // contains an apostrophe or other shell-special character.
 
+// VIKINGS_TASKS=1 targets the vikings.html Admin tab's own list instead
+// (api/vikings.js ?resource=tasks). That store takes per-task patches, so
+// only the matched tasks are posted — no whole-document replace needed.
+const VIKINGS = process.env.VIKINGS_TASKS === '1';
+
 const API_BASE = process.env.MYFFL_API_BASE || 'https://shamrock84-github-io.vercel.app';
 
 async function main() {
@@ -61,19 +66,20 @@ async function main() {
 	}
 	const token = loginBody.token;
 
-	const getRes = await fetch(`${API_BASE}/api/plans`, { headers: { Authorization: `Bearer ${token}` } });
+	const getRes = await fetch(`${API_BASE}/api/${VIKINGS ? 'vikings?resource=tasks' : 'plans'}`, { headers: { Authorization: `Bearer ${token}` } });
 	const getBody = await getRes.json();
 	if (!getRes.ok) {
 		console.error(`Fetching plans failed (${getRes.status}): ${getBody.error || 'unknown error'}`);
 		process.exitCode = 1;
 		return;
 	}
-	const plans = getBody.plans;
+	const plans = VIKINGS ? { tasks: getBody.tasks || {} } : getBody.plans;
+	const changed = {};
 
 	const now = Date.now();
 	const remaining = new Set(targets);
 	let matched = 0;
-	for (const task of Object.values(plans.tasks || {})) {
+	for (const [id, task] of Object.entries(plans.tasks || {})) {
 		if (!remaining.has(task.text)) continue;
 		remaining.delete(task.text);
 		if (task.done) {
@@ -83,6 +89,7 @@ async function main() {
 		task.done = true;
 		task.completedAt = now;
 		matched++;
+		changed[id] = task;
 		console.log(`Marking done: [${task.category || '(no category)'}] ${task.text}`);
 	}
 	for (const text of remaining) {
@@ -94,10 +101,10 @@ async function main() {
 		return;
 	}
 
-	const postRes = await fetch(`${API_BASE}/api/plans`, {
+	const postRes = await fetch(`${API_BASE}/api/${VIKINGS ? 'vikings' : 'plans'}`, {
 		method: 'POST',
 		headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-		body: JSON.stringify({ plans, mode: 'replace' }),
+		body: JSON.stringify(VIKINGS ? { resource: 'tasks', tasks: changed } : { plans, mode: 'replace' }),
 	});
 	const postBody = await postRes.json();
 	if (!postRes.ok) {

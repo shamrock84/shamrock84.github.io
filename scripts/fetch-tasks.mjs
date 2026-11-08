@@ -42,7 +42,10 @@ async function main() {
 		return;
 	}
 
-	const plansRes = await fetch(`${API_BASE}/api/plans`, {
+	// VIKINGS_TASKS=1 reads the vikings.html Admin tab's own list (api/vikings.js
+	// ?resource=tasks, login-gated on GET) instead of myFFL's plans document.
+	const vikings = process.env.VIKINGS_TASKS === '1';
+	const plansRes = await fetch(`${API_BASE}/api/${vikings ? 'vikings?resource=tasks' : 'plans'}`, {
 		headers: { Authorization: `Bearer ${loginBody.token}` },
 	});
 	const plansBody = await plansRes.json();
@@ -52,7 +55,7 @@ async function main() {
 		return;
 	}
 
-	const tasks = plansBody.plans?.tasks || {};
+	const tasks = (vikings ? plansBody.tasks : plansBody.plans?.tasks) || {};
 	const categoryFilter = process.argv[2] ? process.argv[2].trim().toLowerCase() : null;
 	const entries = Object.entries(tasks).filter(
 		([, t]) => !categoryFilter || (t.category || '').trim().toLowerCase() === categoryFilter,
