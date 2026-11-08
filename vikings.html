@@ -349,6 +349,8 @@
 		.season-card > summary::before, .season-mini > summary::before { content: '\25B8'; display: inline-block; transition: transform 0.12s; }
 		.season-card[open] > summary::before, .season-mini[open] > summary::before { transform: rotate(90deg); }
 		.season-card > summary { font-size: 1.1rem; }
+		.season-card > summary { flex-wrap: wrap; }
+		.season-sub { flex: none; width: calc(100% - 1.5rem); margin-left: 1.5rem; white-space: normal; font-size: 0.8rem; font-weight: 400; color: var(--muted); }
 		.season-record { font-size: 0.8rem; font-weight: 600; color: var(--muted); }
 		.season-card > .season-body { margin-top: 0.6rem; }
 		.season-mini { border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.7rem; margin-top: 0.5rem; }
@@ -991,14 +993,14 @@
 			return parts.join(' + ');
 		}
 
-		function seasonCard(data, editable, withTitle = true) {
+		function seasonCard(data, editable, withTitle = true, withSubtitle = true) {
 			const head = el('div', { class: 'season-head' }, [
 				// Same form as a History row's summary: "2026  Overall (6-1) | Home (3-0)".
 				withTitle ? el('h2', { class: 'season-title' }, [
 					el('span', { class: 'season-year', text: String(data.year) }),
 					data.record ? el('span', { class: 'season-record', text: data.record.replace(/ Record/g, '') }) : null,
 				]) : null,
-				el('div', { class: 'subtitle', text: seasonSubtitle(data) }),
+				withSubtitle ? el('div', { class: 'subtitle', text: seasonSubtitle(data) }) : null,
 			]);
 			return el('div', {}, [head, data.regular || data.preCount ? renderTable(data.games, editable) : el('div', { class: 'message', text: 'No Vikings home games in this season’s schedule.' })]);
 		}
@@ -1014,7 +1016,10 @@
 			const details = el('details', { class: className });
 			if (open) details.open = true;
 			const label = data && data.record ? el('span', { class: 'season-record', text: data.record.replace(/ Record/g, '') }) : null;
-			details.appendChild(el('summary', {}, [el('span', { class: 'season-year', text: String(year) }), label]));
+			// History rows carry the game-count line in the summary so it shows
+			// while collapsed; the body then leaves it out.
+			const sub = scope === 'history' && data ? el('span', { class: 'season-sub', text: seasonSubtitle(data) }) : null;
+			details.appendChild(el('summary', {}, [el('span', { class: 'season-year', text: String(year) }), label, sub]));
 			const body = el('div', { class: 'season-body' });
 			details.appendChild(body);
 			const fill = () => {
@@ -1022,7 +1027,7 @@
 				if (!data) {
 					body.appendChild(el('div', { class: 'message', text: `The ${year} schedule hasn’t been loaded yet. Run the “Backfill Vikings Schedules” workflow in GitHub Actions, then reload.` }));
 				} else {
-					body.appendChild(seasonCard(data, editable, false));
+					body.appendChild(seasonCard(data, editable, false, scope !== 'history'));
 				}
 			};
 			if (open) fill();
