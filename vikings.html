@@ -501,10 +501,16 @@
 		// once names are saved against it.
 		const MANUAL_PLAYOFF_ROWS = 3; // a home playoff game per round, at most three
 
+		// `since` / `seasons` limit a group to the years the account held it, so
+		// earlier seasons don't show rows that never existed: Kevin's pair starts
+		// in 2024 (the old sheet only has his columns from then), and Jeff's
+		// Section 101 pair was a 2024-only extra.
 		const SEAT_GROUPS = [
 			{ owner: 'Jeff', where: 'Sec 114 · Row 35', seats: [{ id: '1', label: 'Seat 1' }, { id: '2', label: 'Seat 2' }] },
-			{ owner: 'Kevin', where: 'Sec 124 · Row 9', seats: [{ id: '11', label: 'Seat 11' }, { id: '12', label: 'Seat 12' }] },
+			{ owner: 'Jeff', where: 'Sec 101 · Row 35', seasons: [2024], seats: [{ id: '15', label: 'Seat 15' }, { id: '16', label: 'Seat 16' }] },
+			{ owner: 'Kevin', where: 'Sec 124 · Row 9', since: 2024, seats: [{ id: '11', label: 'Seat 11' }, { id: '12', label: 'Seat 12' }] },
 		];
+		const seatGroupsFor = (year) => SEAT_GROUPS.filter((grp) => (!grp.seasons || grp.seasons.includes(year)) && (!grp.since || year >= grp.since));
 
 		// ESPN's abbreviations as the schedule feed spells them (WSH, not WAS).
 		const TEAM_NAMES = {
@@ -819,14 +825,15 @@
 				tr.appendChild(faceCell(g, editable));
 
 				// The seats, one indented row per ticket holder.
-				const seatRows = SEAT_GROUPS.map((grp, gi) => {
+				const groups = seatGroupsFor(Number(g.key.slice(0, 4)));
+				const seatRows = groups.map((grp, gi) => {
 					const seats = el('div', { class: 'seats' });
 					grp.seats.forEach((st) => seats.appendChild(seatItem(g, st, editable)));
 					const line = el('div', { class: 'seat-line' }, [
 						el('div', { class: 'owner' }, [document.createTextNode(`${grp.owner}\u2019s Seats`), el('small', { text: grp.where })]),
 						seats,
 					]);
-					return el('tr', { class: `seat-row ${cls}${gi === SEAT_GROUPS.length - 1 ? ' last' : ''}`.trim() }, [el('td', { colspan: '5' }, [line])]);
+					return el('tr', { class: `seat-row ${cls}${gi === groups.length - 1 ? ' last' : ''}`.trim() }, [el('td', { colspan: '5' }, [line])]);
 				});
 
 				// Chevron inside the date cell, before whatever is already there.
