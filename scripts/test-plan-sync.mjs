@@ -371,6 +371,88 @@ test('an edit made with the store down is pushed on the next load', async () => 
 	assert.deepEqual(back.contracts(), {});
 });
 
+// --- coming back to a page that has been open a while -----------------------
+
+// The throttle is on the real clock, so the tests move lastPlanSyncAt instead.
+const longAgo = (page) => vm.runInContext('lastPlanSyncAt = 0', page.g);
+const gets = (page) => page.requests.filter((r) => r.method === 'GET' && r.url.includes('/api/plans')).length;
+
+test('returning to the page picks up a task added on another device', async () => {
+	const store = newStore();
+	const ipad = loadPage(newDisk({ [SYNCED_KEY]: '1' }), store.serve);
+	await ipad.g.syncPlans();
+	assert.deepEqual(ipad.tasks(), {});
+
+	// The phone adds a task; the iPad has been open the whole time.
+	const phone = loadPage(newDisk({ [SYNCED_KEY]: '1' }), store.serve);
+	await phone.g.syncPlans();
+	phone.g.addTask('From the phone', 'Bugs');
+	await flush(phone);
+
+	longAgo(ipad);
+	ipad.g.syncPlansOnReturn();
+	await settle();
+	assert.deepEqual(Object.values(ipad.tasks()).map((t) => t.text), ['From the phone']);
+});
+
+test('a return keeps this device\'s own unpushed edits over the answer', async () => {
+	const store = newStore({ contractPlans: { L1: { p1: '2' } } });
+	const page = loadPage(newDisk({ [CONTRACT_KEY]: JSON.stringify({ L1: { p1: '2' } }), [SYNCED_KEY]: '1' }), store.serve);
+	await page.g.syncPlans();
+	page.g.setContractPlan('L1', 'p1', '5'); // queued, not yet pushed
+	page.g.clearTimeout(vm.runInContext('planPushTimer', page.g));
+	vm.runInContext('planPushTimer = null', page.g);
+
+	longAgo(page);
+	page.g.syncPlansOnReturn();
+	await settle();
+	assert.deepEqual(page.contracts(), { L1: { p1: '5' } }, 'the pending edit wins over the store');
+});
+
+test('a return stands down when it would disturb or repeat work', async () => {
+	const store = newStore();
+	const make = () => loadPage(newDisk({ [SYNCED_KEY]: '1' }), store.serve);
+
+	// Throttled: a read just happened.
+	let page = make();
+	await page.g.syncPlans();
+	page.g.syncPlansOnReturn();
+	await settle();
+	assert.equal(gets(page), 1, 'no second read inside the throttle window');
+
+	// A push is queued.
+	page = make();
+	longAgo(page);
+	page.g.setContractPlan('L1', 'p1', '2');
+	page.g.syncPlansOnReturn();
+	await settle();
+	assert.equal(gets(page), 0, 'not while a push is waiting');
+	page.g.clearTimeout(vm.runInContext('planPushTimer', page.g));
+
+	// Focus is in a field.
+	page = make();
+	longAgo(page);
+	page.g.document.activeElement = { tagName: 'INPUT' };
+	page.g.syncPlansOnReturn();
+	await settle();
+	assert.equal(gets(page), 0, 'not while someone is typing');
+
+	// The page is hidden.
+	page = make();
+	longAgo(page);
+	page.g.document.visibilityState = 'hidden';
+	page.g.syncPlansOnReturn();
+	await settle();
+	assert.equal(gets(page), 0, 'not while hidden');
+
+	// A device the store has never heard from leaves its introduction to page load.
+	page = loadPage(newDisk(), store.serve);
+	longAgo(page);
+	page.g.syncPlansOnReturn();
+	await settle();
+	assert.equal(page.requests.filter((r) => r.url.includes('/api/plans')).length, 0, 'no plans request (merge POST) from a return');
+});
+
 test('a confirmed push clears the pending log', async () => {
 	const store = newStore();
 	const disk = newDisk({ [SYNCED_KEY]: '1' });
