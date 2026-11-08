@@ -970,7 +970,7 @@
 			return h ? buildSeason(year, h.schedule, h.preseason, h.postseason) : null;
 		}
 
-		// "1 preseason + 9 regular-season home games + 1 playoff game + 1 away game
+		// "1 preseason + 9 home games + 1 playoff game + 1 away game
 		// (Tampa Bay)". Away games only appear once a seat name is saved against
 		// them. A playoff game counts once it exists: from the feed, or a
 		// hand-typed row with something in it (blank rows don't).
@@ -985,9 +985,8 @@
 			const away = data.games.filter((g) => g.away && g.section !== 'Playoffs' && hasSeats(g));
 			const awayPlayoffs = playoffs.filter((g) => g.away);
 			const parts = [];
-			const extras = data.preCount || playoffs.length || away.length;
 			if (data.preCount) parts.push(`${data.preCount} preseason`);
-			parts.push(`${data.regular} ${extras ? 'regular-season ' : ''}home games`);
+			parts.push(`${data.regular} home games`);
 			if (playoffs.length) parts.push(plural(playoffs.length, 'playoff game') + (awayPlayoffs.length ? ` (at ${awayPlayoffs.map((g) => shortTeam(g.opp)).join(', ')})` : ''));
 			if (away.length) parts.push(`${plural(away.length, 'away game')} (${away.map((g) => shortTeam(g.opp)).join(', ')})`);
 			return parts.join(' + ');
