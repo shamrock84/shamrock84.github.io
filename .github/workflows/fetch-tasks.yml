@@ -15,6 +15,10 @@ on:
         description: 'Optional category to filter to (e.g. Bugs)'
         required: false
         default: ''
+      vikings:
+        description: "Read the Vikings page's Admin tasks instead of myFFL's"
+        type: boolean
+        default: false
 
 jobs:
   fetch:
@@ -42,4 +46,5 @@ jobs:
       - name: Fetch tasks
         env:
           SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
+          VIKINGS_TASKS: ${{ github.event.inputs.vikings == 'true' && '1' || '' }}
         run: node scripts/fetch-tasks.mjs "${{ github.event.inputs.category }}"
