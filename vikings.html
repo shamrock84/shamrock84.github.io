@@ -348,6 +348,18 @@
 		.tab-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 		#view > .card + .card { margin-top: 0.8rem; }
 		.card-heading { margin: 0 0 0.5rem; font-size: 1.05rem; color: var(--accent); }
+		/* A collapsible card, as on myffl.html: the whole heading toggles, the
+		   chevron turns, and everything but the heading goes away. */
+		.card-heading.collapsible { position: relative; padding-right: 2.3rem; cursor: pointer; }
+		.card-collapse-toggle {
+			position: absolute; top: 50%; right: 0; transform: translateY(-50%);
+			background: none; border: none; padding: 0.15rem 0.3rem; margin: 0;
+			color: var(--muted); cursor: pointer; font-size: 1.5rem; line-height: 1; transition: transform 0.15s ease;
+		}
+		.card-collapse-toggle:hover { color: var(--text); }
+		.card.card-collapsed .card-collapse-toggle { transform: translateY(-50%) rotate(-90deg); }
+		.card.card-collapsed > *:not(.card-heading) { display: none; }
+		.card.card-collapsed > .card-heading { margin-bottom: 0; }
 		.season-head { margin-bottom: 0.6rem; }
 		.season-title { display: flex; align-items: baseline; gap: 0.7rem; margin: 0 0 0.6rem; font-size: 1.1rem; font-weight: 700; color: var(--accent); }
 		.season-card > summary, .season-mini > summary {
@@ -632,6 +644,38 @@
 			}
 			for (const c of [].concat(children)) if (c) node.appendChild(c);
 			return node;
+		}
+
+		// Collapsed cards are remembered per device, with phone and desktop widths
+		// kept apart (same 600px cutoff and key shape as myffl.html), so a card
+		// folded on a phone stays open on a desktop. Absence means expanded.
+		const collapseKey = (key) => `vikingsCardCollapsed:${window.matchMedia('(max-width: 600px)').matches ? 'mobile' : 'desktop'}:${key}`;
+		function isCardCollapsed(key) {
+			try { return localStorage.getItem(collapseKey(key)) === '1'; } catch (e) { return false; }
+		}
+		function setCardCollapsed(key, collapsed) {
+			try {
+				if (collapsed) localStorage.setItem(collapseKey(key), '1'); else localStorage.removeItem(collapseKey(key));
+			} catch (e) { /* the toggle still works for this render */ }
+		}
+		// The key is fixed per card, not per render: a card is rebuilt on every edit
+		// and the new node has to remember what the old one was doing.
+		function makeCollapsible(card, heading, key) {
+			const collapsed = isCardCollapsed(key);
+			card.classList.toggle('card-collapsed', collapsed);
+			heading.classList.add('collapsible');
+			const toggle = el('button', { type: 'button', class: 'card-collapse-toggle', 'aria-expanded': String(!collapsed), title: collapsed ? 'Expand' : 'Collapse', 'aria-label': collapsed ? 'Expand' : 'Collapse', text: '\u25BE' });
+			const flip = () => {
+				const next = !card.classList.contains('card-collapsed');
+				card.classList.toggle('card-collapsed', next);
+				toggle.setAttribute('aria-expanded', String(!next));
+				toggle.title = next ? 'Expand' : 'Collapse';
+				toggle.setAttribute('aria-label', next ? 'Expand' : 'Collapse');
+				setCardCollapsed(key, next);
+			};
+			toggle.addEventListener('click', (e) => { e.stopPropagation(); flip(); });
+			heading.appendChild(toggle);
+			heading.addEventListener('click', flip);
 		}
 
 		let authToken = null;
@@ -1209,7 +1253,9 @@
 
 		function buildQuickLinksCard() {
 			if (!qlDraft) qlDraft = qlCopy(quickLinks);
-			const card = el('div', { class: 'card' }, [el('h2', { class: 'card-heading', text: `Quick Links (${qlDraft.length})` })]);
+			const qlHead = el('h2', { class: 'card-heading', text: `Quick Links (${qlDraft.length})` });
+			const card = el('div', { class: 'card' }, [qlHead]);
+			makeCollapsible(card, qlHead, 'quicklinks');
 			const list = el('div', { class: 'ql-list' });
 			const field = (cls, label, input) => el('label', { class: `ql-field ${cls}` }, [el('span', { text: label }), input]);
 			const text = (link, key, placeholder, type) => {
@@ -1446,12 +1492,16 @@
 		function buildTasksCard() {
 			const card = el('div', { class: 'card' });
 			if (tasksState !== 'ready') {
-				card.appendChild(el('h2', { class: 'card-heading', text: 'Tasks' }));
+				const loadingHead = el('h2', { class: 'card-heading', text: 'Tasks' });
+				card.appendChild(loadingHead);
+				makeCollapsible(card, loadingHead, 'tasks');
 				card.appendChild(el('div', { class: `message${tasksState === 'error' ? ' error' : ''}`, text: tasksState === 'error' ? `Couldn’t load tasks (${tasksError}). Reload to try again.` : 'Loading…' }));
 				return card;
 			}
 			const entries = Object.entries(tasks);
-			card.appendChild(el('h2', { class: 'card-heading', text: `Tasks (${entries.filter(([, t]) => !t.done).length})` }));
+			const tasksHead = el('h2', { class: 'card-heading', text: `Tasks (${entries.filter(([, t]) => !t.done).length})` });
+			card.appendChild(tasksHead);
+			makeCollapsible(card, tasksHead, 'tasks');
 			// Stays up until the unsaved changes go through; Retry resends them.
 			if (tasksSyncError && Object.keys(unsaved).length) {
 				const warn = el('div', { class: 'task-sync-status' }, [document.createTextNode(`⚠ Not saved yet (${tasksSyncError}). `)]);
