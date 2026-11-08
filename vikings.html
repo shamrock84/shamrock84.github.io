@@ -195,7 +195,16 @@
 		.seat-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); }
 		tbody tr:last-child td { border-bottom: none; }
 		td.opp { font-weight: 600; }
-		/* Section band (Preseason / Regular Season), like the sheet's. */
+		/* Section band (Preseason / Regular Season / Playoffs), like the sheet's;
+		   a button inside it folds the section. */
+		.sec-btn {
+			display: inline-flex; align-items: center; gap: 0.4rem; justify-content: center; width: 100%;
+			font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer;
+		}
+		.sec-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+		.sec-chev::before { content: '\25B8'; display: inline-block; transition: transform 0.12s; transform: rotate(90deg); }
+		tr.section.folded .sec-chev::before { transform: none; }
+		tr.sec-folded { display: none; }
 		tr.section td {
 			text-align: center;
 			font-weight: 700;
@@ -825,6 +834,10 @@
 		// a login/logout re-render, which is why the choices live in this object).
 		// Nothing is stored; an old remembered state is cleared so it can't linger.
 		const openPrefs = {};
+		// Which section bands (Preseason / Regular Season / Playoffs) are folded,
+		// keyed `${year}|${section}`. Same lifetime as openPrefs: it survives a
+		// re-render, never a refresh, and everything starts unfolded.
+		const sectionFolded = {};
 		try { localStorage.removeItem('vikingsOpen'); } catch (e) { /* ignore */ }
 
 		function renderTable(games, editable) {
@@ -844,12 +857,27 @@
 			const nextIndex = rows.findIndex((g) => !g.manual && g.r == null && !(g.at && new Date(g.at).getTime() + 4 * 3600e3 < now));
 			const tbody = el('tbody');
 			const setters = [];
+			const foldAppliers = [];
 			let lastSection = null;
+			let sectionRows = null;
 			rows.forEach((g, i) => {
 				// Section rows, like the sheet's Preseason / Regular Season bands.
+				// Each is a toggle that folds that section's games and seats away.
 				if (rowSections.length > 1 && g.section !== lastSection) {
 					lastSection = g.section;
-					tbody.appendChild(el('tr', { class: 'section' }, [el('td', { colspan: '5', text: g.section })]));
+					const foldKey = `${g.key.slice(0, 4)}|${g.section}`;
+					const members = (sectionRows = []);
+					const btn = el('button', { type: 'button', class: 'sec-btn' }, [el('span', { class: 'sec-chev', 'aria-hidden': 'true' }), document.createTextNode(g.section)]);
+					const bandRow = el('tr', { class: 'section' }, [el('td', { colspan: '5' }, [btn])]);
+					const applyFold = () => {
+						const folded = !!sectionFolded[foldKey];
+						btn.setAttribute('aria-expanded', String(!folded));
+						bandRow.classList.toggle('folded', folded);
+						members.forEach((r) => r.classList.toggle('sec-folded', folded));
+					};
+					btn.addEventListener('click', () => { sectionFolded[foldKey] = !sectionFolded[foldKey]; applyFold(); });
+					tbody.appendChild(bandRow);
+					foldAppliers.push(applyFold);
 				}
 				const done = !g.manual && (g.r != null || (g.at && !g.tbd && new Date(g.at).getTime() + 4 * 3600e3 < now));
 				const cls = done ? 'past' : i === nextIndex ? 'next' : '';
@@ -918,7 +946,9 @@
 				setters.push({ key: g.key, get: () => open, set: (v) => { open = v; apply(); } });
 				tbody.appendChild(tr);
 				seatRows.forEach((r) => tbody.appendChild(r));
+				if (sectionRows) sectionRows.push(tr, ...seatRows);
 			});
+			foldAppliers.forEach((apply) => apply()); // restore folds kept from before a re-render
 
 			// Expand/collapse every game at once.
 			const allBtn = el('button', { type: 'button', class: 'all-toggle' });
