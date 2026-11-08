@@ -90,12 +90,6 @@
 			font-size: 0.8rem;
 			color: var(--muted);
 		}
-		.team-record {
-			margin-top: 0.3rem;
-			font-size: 0.85rem;
-			font-weight: 700;
-			color: var(--accent);
-		}
 		.card {
 			background: var(--card-bg);
 			border: 1px solid var(--border);
@@ -346,7 +340,7 @@
 		#view > .card + .card { margin-top: 0.8rem; }
 		.card-heading { margin: 0 0 0.5rem; font-size: 1.05rem; color: var(--accent); }
 		.season-head { margin-bottom: 0.6rem; }
-		.season-title { margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+		.season-title { display: flex; align-items: baseline; gap: 0.7rem; margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--accent); }
 		.season-card > summary, .season-mini > summary {
 			display: flex; align-items: baseline; gap: 0.7rem; cursor: pointer; list-style: none;
 			font-weight: 700; color: var(--accent);
@@ -974,22 +968,37 @@
 			return h ? buildSeason(year, h.schedule, h.preseason, h.postseason) : null;
 		}
 
-		// "1 preseason + 9 regular-season home games + 1 away game (Tampa Bay)";
-		// away games only appear once a seat name is saved against them.
+		// "1 preseason + 9 regular-season home games + 1 playoff game + 1 away game
+		// (Tampa Bay)". Away games only appear once a seat name is saved against
+		// them. A playoff game counts once it exists: from the feed, or a
+		// hand-typed row with something in it (blank rows don't).
+		const shortTeam = (abbr) => {
+			const n = TEAM_NAMES[abbr] || abbr;
+			const c = n.lastIndexOf(' ');
+			return c > 0 ? n.slice(0, c) : n;
+		};
 		function seasonSubtitle(data) {
-			const away = data.games.filter((g) => g.away && hasSeats(g));
+			const plural = (n, word) => `${n} ${word}${n > 1 ? 's' : ''}`;
+			const playoffs = data.games.filter((g) => g.section === 'Playoffs' && (g.away ? hasSeats(g) : (!g.manual || hasContent(g))));
+			const away = data.games.filter((g) => g.away && g.section !== 'Playoffs' && hasSeats(g));
+			const awayPlayoffs = playoffs.filter((g) => g.away);
 			const parts = [];
+			const extras = data.preCount || playoffs.length || away.length;
 			if (data.preCount) parts.push(`${data.preCount} preseason`);
-			parts.push(`${data.regular} ${data.preCount || away.length ? 'regular-season ' : ''}home games`);
-			if (away.length) parts.push(`${away.length} away game${away.length > 1 ? 's' : ''} (${away.map((g) => { const n = TEAM_NAMES[g.opp] || g.opp; const c = n.lastIndexOf(' '); return c > 0 ? n.slice(0, c) : n; }).join(', ')})`);
+			parts.push(`${data.regular} ${extras ? 'regular-season ' : ''}home games`);
+			if (playoffs.length) parts.push(plural(playoffs.length, 'playoff game') + (awayPlayoffs.length ? ` (at ${awayPlayoffs.map((g) => shortTeam(g.opp)).join(', ')})` : ''));
+			if (away.length) parts.push(`${plural(away.length, 'away game')} (${away.map((g) => shortTeam(g.opp)).join(', ')})`);
 			return parts.join(' + ');
 		}
 
 		function seasonCard(data, editable, withTitle = true) {
 			const head = el('div', { class: 'season-head' }, [
-				withTitle ? el('h2', { class: 'season-title', text: `${data.year} Vikings Season Tickets` }) : null,
+				// Same form as a History row's summary: "2026  Overall (6-1) | Home (3-0)".
+				withTitle ? el('h2', { class: 'season-title' }, [
+					el('span', { class: 'season-year', text: String(data.year) }),
+					data.record ? el('span', { class: 'season-record', text: data.record.replace(/ Record/g, '') }) : null,
+				]) : null,
 				el('div', { class: 'subtitle', text: seasonSubtitle(data) }),
-				data.record && withTitle ? el('div', { class: 'team-record', text: data.record }) : null,
 			]);
 			return el('div', {}, [head, data.regular || data.preCount ? renderTable(data.games, editable) : el('div', { class: 'message', text: 'No Vikings home games in this season’s schedule.' })]);
 		}
