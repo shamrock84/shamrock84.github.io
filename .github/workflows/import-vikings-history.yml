@@ -1,0 +1,41 @@
+name: Import Vikings Attendees (manual)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here.
+# One-off: writes 2016-2025's attendees from the old Google Sheet into the
+# ticket store (api/vikings.js) via scripts/import-vikings-history.mjs. It only
+# fills cells the store has empty, so a re-run changes nothing. Run with
+# dry_run first to see the plan. Uses the same SITE_PASSWORD secret as the
+# task workflows.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Log the plan and write nothing'
+        type: boolean
+        default: true
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout: |
+            api
+            scripts
+            config
+            data
+            .github
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Import attendees
+        env:
+          SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
+        run: node scripts/import-vikings-history.mjs
