@@ -90,12 +90,6 @@
 			font-size: 0.8rem;
 			color: var(--muted);
 		}
-		.team-record {
-			margin-top: 0.3rem;
-			font-size: 0.85rem;
-			font-weight: 700;
-			color: var(--accent);
-		}
 		.card {
 			background: var(--card-bg);
 			border: 1px solid var(--border);
@@ -346,7 +340,7 @@
 		#view > .card + .card { margin-top: 0.8rem; }
 		.card-heading { margin: 0 0 0.5rem; font-size: 1.05rem; color: var(--accent); }
 		.season-head { margin-bottom: 0.6rem; }
-		.season-title { margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+		.season-title { display: flex; align-items: baseline; gap: 0.7rem; margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--accent); }
 		.season-card > summary, .season-mini > summary {
 			display: flex; align-items: baseline; gap: 0.7rem; cursor: pointer; list-style: none;
 			font-weight: 700; color: var(--accent);
@@ -987,9 +981,12 @@
 
 		function seasonCard(data, editable, withTitle = true) {
 			const head = el('div', { class: 'season-head' }, [
-				withTitle ? el('h2', { class: 'season-title', text: `${data.year} Vikings Season Tickets` }) : null,
+				// Same form as a History row's summary: "2026  Overall (6-1) | Home (3-0)".
+				withTitle ? el('h2', { class: 'season-title' }, [
+					el('span', { class: 'season-year', text: String(data.year) }),
+					data.record ? el('span', { class: 'season-record', text: data.record.replace(/ Record/g, '') }) : null,
+				]) : null,
 				el('div', { class: 'subtitle', text: seasonSubtitle(data) }),
-				data.record && withTitle ? el('div', { class: 'team-record', text: data.record }) : null,
 			]);
 			return el('div', {}, [head, data.regular || data.preCount ? renderTable(data.games, editable) : el('div', { class: 'message', text: 'No Vikings home games in this season’s schedule.' })]);
 		}
