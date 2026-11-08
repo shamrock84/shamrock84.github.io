@@ -5213,6 +5213,9 @@
 		// push that follows it, so if this moved while the load was in flight the
 		// answer is already stale and adopting it would undo the push.
 		let planPushGeneration = 0;
+		// When the plans were last read from the store (page load, login, or a
+		// return to the page). Only syncPlansOnReturn reads it, to throttle.
+		let lastPlanSyncAt = 0;
 
 		function localPlansDocument() {
 			return { contractPlans: loadContractPlans(), salaryPlans: loadSalaryPlans(), cutPlans: loadCutPlans(), backupPlans: loadBackupPlans(), notifyPlans: loadNotifyPlans(), resultOverrides: loadResultOverrides(), digestDismissals: loadDigestDismissals(), tasks: loadTasks(), favorites: loadFavorites() };
@@ -5512,6 +5515,7 @@
 		// doesn't rebuild the grid under someone.
 		async function syncPlans() {
 			if (!isLoggedIn()) return;
+			lastPlanSyncAt = Date.now();
 			const before = JSON.stringify(localPlansDocument());
 			const generation = planPushGeneration;
 			try {
@@ -5539,6 +5543,33 @@
 				handlePlanAuthFailure(err);
 			}
 		}
+		// The read above otherwise happens only at page load and at login, so a
+		// device left open (an iPad tab, a home-screen app) never saw a task or
+		// plan made on another device until it was reloaded. Coming back to the
+		// page (switching apps, unlocking, restoring from the back/forward cache)
+		// reads the store again. It is the same syncPlans, so everything that
+		// makes that safe still applies: this device's unpushed edits are laid
+		// back over the answer (adoptRemotePlans), an answer that predates a push
+		// is dropped (planPushGeneration), and the grid is rebuilt only when the
+		// answer actually changed something. What it must not do is rebuild the
+		// page under someone, so it stands down while a push is queued, while
+		// focus is in a field (an Edit Task popover, a plan input), and for
+		// PLAN_RESYNC_MIN_MS after the last read, since the event fires on every
+		// app switch. Only for a device that has already introduced itself: the
+		// first sync is the merge POST, which belongs to page load.
+		const PLAN_RESYNC_MIN_MS = 20000;
+		function syncPlansOnReturn() {
+			if (document.visibilityState !== 'visible') return;
+			if (!isLoggedIn() || !planSyncDone) return;
+			if (planPushTimer) return;
+			if (Date.now() - lastPlanSyncAt < PLAN_RESYNC_MIN_MS) return;
+			const focused = document.activeElement;
+			if (focused && /^(INPUT|TEXTAREA|SELECT)$/.test(focused.tagName)) return;
+			syncPlans();
+		}
+		document.addEventListener('visibilitychange', syncPlansOnReturn);
+		window.addEventListener('pageshow', syncPlansOnReturn);
+
 		let pageData = null;
 		// A setTimeout handle, not setInterval's — the delay between polls
 		// varies (see nextLiveScoringDelayMs), so each poll schedules its own
