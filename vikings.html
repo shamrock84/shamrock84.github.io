@@ -362,6 +362,49 @@
 		.season-card + .season-card { margin-top: 0.8rem; }
 		/* The status line stays in view while a long table is edited. */
 		.status-bar { position: sticky; bottom: 0; background: var(--bg); padding: 0.2rem 0; }
+
+		/* Header quick-link toolbar: the same look as myffl.html's. Empty means
+		   no bar at all (:empty also drops the padding and border). */
+		#quicklinks {
+			position: sticky; top: 0; z-index: 30;
+			display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.4rem;
+			background: var(--card-bg);
+		}
+		#quicklinks:not(:empty) { padding: 0.4rem 1rem; border-bottom: 1px solid var(--border); }
+		#quicklinks a { color: var(--muted); text-decoration: none; font-size: 0.8rem; font-weight: 600; padding: 0.15rem 0; white-space: nowrap; }
+		#quicklinks a:hover, #quicklinks a:focus-visible { color: var(--accent); }
+		#quicklinks a::after { content: ''; display: inline-block; width: 1px; height: 0.7rem; background: var(--border); margin-left: 0.4rem; vertical-align: middle; }
+		#quicklinks a:last-child::after { display: none; }
+		#quicklinks a.quicklink-gold, #quicklinks a.quicklink-purple { padding: 0; }
+		#quicklinks a.quicklink-gold .quicklink-pill { background: var(--gold-chip-bg); color: var(--gold-chip-text); }
+		#quicklinks a.quicklink-purple .quicklink-pill { background: var(--chip-bg); color: var(--accent); }
+		#quicklinks a.quicklink-gold .quicklink-pill, #quicklinks a.quicklink-purple .quicklink-pill { display: inline-block; border-radius: 999px; padding: 0.15rem 0.55rem; }
+		#quicklinks a.quicklink-gold:hover .quicklink-pill, #quicklinks a.quicklink-gold:focus-visible .quicklink-pill,
+		#quicklinks a.quicklink-purple:hover .quicklink-pill, #quicklinks a.quicklink-purple:focus-visible .quicklink-pill { color: var(--text); }
+		/* A group: one button whose menu holds its links. */
+		#quicklinks .quicklink-combo { position: relative; display: inline-flex; align-items: center; }
+		#quicklinks .quicklink-combo:not(:last-child)::after { content: ''; display: inline-block; width: 1px; height: 0.7rem; background: var(--border); margin-left: 0.4rem; }
+		#quicklinks .quicklink-combo-btn { font: inherit; font-size: 0.8rem; font-weight: 600; color: var(--muted); background: transparent; border: 0; border-radius: 999px; padding: 0.15rem 0.55rem; cursor: pointer; }
+		#quicklinks .quicklink-combo-btn.quicklink-combo-gold { color: var(--gold-chip-text); background: var(--gold-chip-bg); }
+		#quicklinks .quicklink-combo-btn.quicklink-combo-purple { color: var(--accent); background: var(--chip-bg); }
+		#quicklinks .quicklink-combo-btn:hover, #quicklinks .quicklink-combo-btn:focus-visible, #quicklinks .quicklink-combo.open .quicklink-combo-btn { color: var(--text); }
+		#quicklinks .quicklink-combo-menu { display: none; position: absolute; top: calc(100% + 0.35rem); left: 0; z-index: 31; flex-direction: column; align-items: flex-start; gap: 0.35rem; }
+		#quicklinks .quicklink-combo.align-right .quicklink-combo-menu { left: auto; right: 0; }
+		#quicklinks .quicklink-combo.open .quicklink-combo-menu { display: flex; }
+		#quicklinks .quicklink-combo-menu a { background: var(--card-bg); border: 1px solid var(--border); border-radius: 999px; padding: 0.15rem 0.55rem; }
+		#quicklinks .quicklink-combo-menu a::after { display: none; }
+		/* Admin > Quick Links rows. */
+		.ql-list { display: flex; flex-direction: column; gap: 0.6rem; }
+		.ql-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.4rem 0.5rem; }
+		.ql-field { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+		.ql-field span { font-size: 0.7rem; color: var(--muted); }
+		.ql-link { flex: 2 1 14rem; }
+		.ql-nick, .ql-group { flex: 1 1 7rem; }
+		.ql-style { flex: 0 0 auto; }
+		.ql-row .task-input { width: 100%; }
+		.ql-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 0.8rem; }
+		.ql-errors { color: var(--ir-text); font-size: 0.85rem; margin: 0.5rem 0 0; padding-left: 1.1rem; }
+		.ql-note { color: var(--muted); font-size: 0.8rem; margin: 0.6rem 0 0; }
 		/* Tasks card: the same look as myffl.html's, under its own names. */
 		.task-add-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0.6rem 0 0.8rem; }
 		.task-add-row .task-input:first-child { flex: 2 1 12rem; }
@@ -467,6 +510,7 @@
 	</style>
 </head>
 <body>
+	<div id="quicklinks" aria-label="Quick links"></div>
 	<main>
 		<header>
 			<h1 id="title">Vikings Season Tickets</h1>
@@ -1008,6 +1052,174 @@
 			return card;
 		}
 
+		// ---- Quick links ----------------------------------------------------------
+		// The header toolbar, same behaviour as myffl.html's: plain, gold or
+		// purple entries, and links sharing a Group fold into one dropdown. The
+		// list is public (the GET needs no login) and edited from the Admin tab's
+		// Quick Links card. With no links the bar is empty and CSS hides it.
+		let quickLinks = [];
+
+		function closeQuickLinkCombos() {
+			for (const open of document.querySelectorAll('.quicklink-combo.open')) {
+				open.classList.remove('open');
+				const b = open.querySelector('.quicklink-combo-btn');
+				if (b) b.setAttribute('aria-expanded', 'false');
+			}
+		}
+		// Registered once: renderQuickLinks rebuilds the bar and must not stack these.
+		document.addEventListener('click', (e) => { if (!e.target.closest || !e.target.closest('.quicklink-combo')) closeQuickLinkCombos(); });
+		document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeQuickLinkCombos(); });
+
+		function appendQuickLink(bar, { url, label, style }) {
+			const cls = style === 'gold' ? 'quicklink-gold' : style === 'purple' ? 'quicklink-purple' : '';
+			const link = el('a', { href: url, target: '_blank', rel: 'noopener', ...(cls ? { class: cls } : {}) });
+			if (cls) link.appendChild(el('span', { class: 'quicklink-pill', text: label }));
+			else link.textContent = label;
+			bar.appendChild(link);
+		}
+
+		function renderQuickLinks() {
+			const bar = document.getElementById('quicklinks');
+			bar.textContent = '';
+			const groups = new Map();
+			for (const link of quickLinks) {
+				const opts = { url: link.url, label: link.nickname, style: link.style };
+				const name = typeof link.group === 'string' ? link.group.trim() : '';
+				if (!name) { appendQuickLink(bar, opts); continue; }
+				const key = name.toLowerCase();
+				let menu = groups.get(key);
+				if (!menu) {
+					const wrap = el('div', { class: 'quicklink-combo' });
+					const btn = el('button', {
+						type: 'button',
+						class: `quicklink-combo-btn${link.style === 'gold' ? ' quicklink-combo-gold' : link.style === 'purple' ? ' quicklink-combo-purple' : ''}`,
+						'aria-haspopup': 'true',
+						'aria-expanded': 'false',
+						text: `${name} ▾`,
+					});
+					menu = el('div', { class: 'quicklink-combo-menu' });
+					btn.addEventListener('click', () => {
+						const opening = !wrap.classList.contains('open');
+						closeQuickLinkCombos();
+						if (!opening) return;
+						wrap.classList.add('open');
+						btn.setAttribute('aria-expanded', 'true');
+						wrap.classList.remove('align-right');
+						if (btn.getBoundingClientRect().left + menu.offsetWidth > window.innerWidth - 8) wrap.classList.add('align-right');
+					});
+					wrap.append(btn, menu);
+					bar.appendChild(wrap);
+					groups.set(key, menu);
+				}
+				appendQuickLink(menu, opts);
+			}
+		}
+
+		// Admin > Quick Links. Edits go into a draft and nothing is saved until
+		// Save, like myFFL's card; the whole ordered list is replaced in one write.
+		let qlDraft = null;
+		let qlErrors = [];
+		let qlSaving = false;
+		let qlCardEl = null;
+		const qlCopy = (list) => list.map((l) => ({ url: l.url || '', nickname: l.nickname || '', style: l.style || '', group: l.group || '' }));
+		const qlDirty = () => JSON.stringify(qlCopy(qlDraft)) !== JSON.stringify(qlCopy(quickLinks));
+
+		function refreshQuickLinksCard() {
+			if (!qlCardEl) return;
+			const next = buildQuickLinksCard();
+			qlCardEl.replaceWith(next);
+			qlCardEl = next;
+		}
+
+		async function saveQuickLinks() {
+			qlErrors = [];
+			// Same rules as the server, so a mistake is named before the round trip.
+			const draft = qlCopy(qlDraft).map((l) => ({ ...l, url: l.url.trim(), nickname: l.nickname.trim(), group: l.group.trim() }));
+			draft.forEach((l, i) => {
+				if (!l.nickname) qlErrors.push(`Link ${i + 1}: nickname is required.`);
+				if (!/^https?:\/\/\S+$/i.test(l.url)) qlErrors.push(`Link ${i + 1}: link must start with http:// or https://.`);
+			});
+			if (qlErrors.length) { refreshQuickLinksCard(); return; }
+			qlSaving = true;
+			refreshQuickLinksCard();
+			setStatus('Saving…');
+			try {
+				const res = await fetch(TICKETS_URL, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+					body: JSON.stringify({ resource: 'quicklinks', links: draft }),
+				});
+				const body = await res.json().catch(() => ({}));
+				if (res.status === 401) { qlSaving = false; expireSession(); return; }
+				if (!res.ok) throw new Error((body.details && body.details.join('; ')) || body.error || `HTTP ${res.status}`);
+				quickLinks = body.links || [];
+				qlDraft = qlCopy(quickLinks);
+				renderQuickLinks();
+				setStatus('Saved', 'ok');
+			} catch (err) {
+				qlErrors = [`Not saved: ${err.message}`];
+				setStatus('');
+			}
+			qlSaving = false;
+			refreshQuickLinksCard();
+		}
+
+		function buildQuickLinksCard() {
+			if (!qlDraft) qlDraft = qlCopy(quickLinks);
+			const card = el('div', { class: 'card' }, [el('h2', { class: 'card-heading', text: `Quick Links (${qlDraft.length})` })]);
+			const list = el('div', { class: 'ql-list' });
+			const field = (cls, label, input) => el('label', { class: `ql-field ${cls}` }, [el('span', { text: label }), input]);
+			const text = (link, key, placeholder, type) => {
+				const input = el('input', { type: 'text', class: 'task-input', value: link[key], placeholder, autocomplete: 'off', ...(type === 'url' ? { inputmode: 'url', maxlength: '500' } : { maxlength: '40' }) });
+				input.addEventListener('input', () => { link[key] = input.value; });
+				return input;
+			};
+			qlDraft.forEach((link, i) => {
+				const style = el('select', { class: 'task-input' }, [['', 'Plain'], ['gold', 'Gold'], ['purple', 'Purple']].map(([v, t]) => {
+					const o = el('option', { value: v, text: t });
+					if ((link.style || '') === v) o.selected = true;
+					return o;
+				}));
+				style.addEventListener('change', () => { link.style = style.value; });
+				const move = (to) => { qlDraft.splice(to, 0, qlDraft.splice(i, 1)[0]); refreshQuickLinksCard(); };
+				const up = el('button', { type: 'button', class: 'task-icon-btn task-save-btn', title: 'Move up', 'aria-label': 'Move up', text: '↑' });
+				const down = el('button', { type: 'button', class: 'task-icon-btn task-save-btn', title: 'Move down', 'aria-label': 'Move down', text: '↓' });
+				up.disabled = i === 0;
+				down.disabled = i === qlDraft.length - 1;
+				up.addEventListener('click', () => move(i - 1));
+				down.addEventListener('click', () => move(i + 1));
+				const remove = el('button', { type: 'button', class: 'task-icon-btn', title: 'Remove this link', 'aria-label': 'Remove this link', text: '✕' });
+				remove.addEventListener('click', () => { qlDraft.splice(i, 1); refreshQuickLinksCard(); });
+				list.appendChild(el('div', { class: 'ql-row' }, [
+					field('ql-link', 'Link', text(link, 'url', 'https://…', 'url')),
+					field('ql-nick', 'Nickname', text(link, 'nickname', 'e.g. Vikings')),
+					field('ql-group', 'Group', text(link, 'group', 'optional')),
+					field('ql-style', 'Style', style),
+					up, down, remove,
+				]));
+			});
+			if (!qlDraft.length) card.appendChild(el('div', { class: 'task-empty', text: 'No links yet. With none, the toolbar stays hidden.' }));
+			card.appendChild(list);
+			const add = el('button', { type: 'button', class: 'task-add-btn', text: '+ Add a link' });
+			add.addEventListener('click', () => {
+				qlDraft.push({ url: '', nickname: '', style: '', group: '' });
+				refreshQuickLinksCard();
+				const rows = qlCardEl.querySelectorAll('.ql-row');
+				const last = rows[rows.length - 1];
+				if (last) last.querySelector('input').focus();
+			});
+			const save = el('button', { type: 'button', class: 'task-add-btn', text: qlSaving ? 'Saving…' : 'Save' });
+			save.disabled = qlSaving;
+			save.addEventListener('click', saveQuickLinks);
+			const discard = el('button', { type: 'button', class: 'task-add-btn', text: 'Discard changes' });
+			discard.disabled = qlSaving || !qlDirty();
+			discard.addEventListener('click', () => { qlDraft = qlCopy(quickLinks); qlErrors = []; refreshQuickLinksCard(); });
+			card.appendChild(el('div', { class: 'ql-actions' }, [add, save, discard]));
+			if (qlErrors.length) card.appendChild(el('ul', { class: 'ql-errors' }, qlErrors.map((t) => el('li', { text: t }))));
+			card.appendChild(el('div', { class: 'ql-note', text: 'Shown in the header toolbar, in this order. Links sharing a Group name fold into one dropdown with that name. Both a link and a nickname are required.' }));
+			return card;
+		}
+
 		// ---- Tasks card ---------------------------------------------------------
 		// The same list as myffl.html's Tasks card, but its own: stored under its
 		// own key by api/vikings.js (`?resource=tasks`, login-gated both ways), not
@@ -1348,7 +1560,10 @@
 		function adminView() {
 			tasksCardEl = buildTasksCard();
 			loadTasks(); // first load, or a quiet refresh when the tab is reopened
-			return [tasksCardEl, seasonsCard()];
+			qlDraft = null; // a fresh copy of what is saved each time the tab opens
+			qlErrors = [];
+			qlCardEl = buildQuickLinksCard();
+			return [tasksCardEl, qlCardEl, seasonsCard()];
 		}
 
 		// Coming back to the page (switching apps on a phone or iPad, or restoring
@@ -1384,6 +1599,7 @@
 			if (tab === 'admin' && !isLoggedIn()) tab = 'schedule';
 			renderLogin();
 			renderTabs();
+			renderQuickLinks();
 			const view = document.getElementById('view');
 			view.textContent = '';
 			tasksCardEl = null;
@@ -1398,6 +1614,12 @@
 				if (!r.ok) throw new Error(`HTTP ${r.status}`);
 				return r.json();
 			});
+			// Not awaited with the rest: the bar fills in when it arrives, and a failure
+			// just leaves it hidden.
+			fetch(`${TICKETS_URL}?resource=quicklinks`, { cache: 'no-store' })
+				.then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+				.then((b) => { quickLinks = Array.isArray(b.links) ? b.links : []; renderQuickLinks(); })
+				.catch(() => { /* no toolbar */ });
 			const [snap, seats, hist] = await Promise.allSettled([
 				json(SNAPSHOT_URL),
 				fetch(TICKETS_URL).then(async (r) => {

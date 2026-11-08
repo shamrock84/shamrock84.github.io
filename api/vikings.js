@@ -31,6 +31,14 @@
 // { resource: 'tasks', tasks: { <id>: task | null } } — where null deletes, so
 // a device holding a stale list can only touch the tasks it edited. The task
 // shape and its validator are plans.js's own (validateTasks / mergeTasks).
+//
+// QUICK LINKS. The page's header toolbar, edited from the Admin tab's Quick
+// Links card: `{ resource: 'quicklinks', links: [{ url, nickname, style?,
+// group? }] }`, the whole ordered list replaced in one write (array order is
+// toolbar order). Same fields as myFFL's quickLinks in config/leagues.json,
+// minus the League Links block, but stored in Upstash (QUICKLINKS_KEY) rather
+// than committed to the repo. Like the seats, the GET is public: logged-out
+// visitors see the toolbar too. The POST is login-gated like every write.
 
 import { verifyToken } from './_lib/auth.mjs';
 import { applyCors } from './_lib/cors.mjs';
@@ -39,6 +47,7 @@ import { resolveStore, validateTasks, mergeTasks } from './plans.js';
 
 const VIKINGS_KEY = 'vikings:tickets';
 const TASKS_KEY = 'vikings:tasks';
+const QUICKLINKS_KEY = 'vikings:quicklinks';
 const TASK_ID = /^[A-Za-z0-9]{1,40}$/;
 const MAX_TASKS = 300;
 // Every season back to 2016, each with preseason, regular-season and playoff
@@ -56,7 +65,10 @@ const INFO_FIELDS = ['day', 'date', 'time', 'opp'];
 const MAX_INFO_LENGTH = 40;
 const SEAT_ID = /^\d{1,3}$/;
 
-export { validatePatch, applyPatch, emptyDocument, validateTaskPatch, applyTaskPatch, VIKINGS_KEY, TASKS_KEY };
+const MAX_QUICKLINKS = 50;
+const QUICKLINK_STYLES = new Set(['gold', 'purple']);
+
+export { validatePatch, applyPatch, emptyDocument, validateTaskPatch, applyTaskPatch, validateQuickLinks, normalizeQuickLinks, VIKINGS_KEY, TASKS_KEY, QUICKLINKS_KEY };
 
 function emptyDocument() {
   return { games: {}, updatedAt: null };
@@ -164,6 +176,38 @@ function applyTaskPatch(stored, patch) {
   return tasks;
 }
 
+// { links: [...] } — returns { errors }, empty meaning valid.
+function validateQuickLinks(body) {
+  const links = body && body.links;
+  if (!Array.isArray(links)) return { errors: ['links must be a list'] };
+  if (links.length > MAX_QUICKLINKS) return { errors: [`links has more than ${MAX_QUICKLINKS} entries`] };
+  const errors = [];
+  links.forEach((link, i) => {
+    const where = `Quick link ${i + 1}`;
+    if (!link || typeof link !== 'object' || Array.isArray(link)) { errors.push(`${where}: not a valid entry.`); return; }
+    const nickname = typeof link.nickname === 'string' ? link.nickname.trim() : '';
+    const url = typeof link.url === 'string' ? link.url.trim() : '';
+    if (!nickname) errors.push(`${where}: nickname is required.`);
+    else if (nickname.length > 40) errors.push(`${where}: nickname is longer than 40 characters.`);
+    if (!/^https?:\/\/\S+$/i.test(url) || url.length > 500) errors.push(`${where}: link must start with http:// or https://.`);
+    if (link.style != null && link.style !== '' && !QUICKLINK_STYLES.has(link.style)) errors.push(`${where}: style must be gold, purple, or left blank for plain.`);
+    if (link.group != null && (typeof link.group !== 'string' || link.group.trim().length > 40)) errors.push(`${where}: group must be text up to 40 characters.`);
+  });
+  return { errors };
+}
+
+// Pure: the stored shape. Trims, drops blank optional fields and anything
+// unknown, so what reaches the page is only url, nickname, style and group.
+function normalizeQuickLinks(links) {
+  return (links || []).map((link) => {
+    const out = { url: link.url.trim(), nickname: link.nickname.trim() };
+    if (link.style) out.style = link.style;
+    const group = typeof link.group === 'string' ? link.group.trim() : '';
+    if (group) out.group = group;
+    return out;
+  });
+}
+
 export default async function handler(req, res) {
   if (applyCors(req, res, { methods: 'GET, POST, OPTIONS', headers: 'Content-Type, Authorization' })) return;
   if (req.method !== 'GET' && req.method !== 'POST') {
@@ -171,7 +215,9 @@ export default async function handler(req, res) {
     return;
   }
 
-  const wantsTasks = req.method === 'GET' ? (req.query && req.query.resource) === 'tasks' : (req.body || {}).resource === 'tasks';
+  const resource = req.method === 'GET' ? (req.query && req.query.resource) : (req.body || {}).resource;
+  const wantsTasks = resource === 'tasks';
+  const wantsQuickLinks = resource === 'quicklinks';
   if (req.method === 'POST' || wantsTasks) {
     const sessionSecret = process.env.SESSION_SECRET;
     if (!sessionSecret) {
@@ -193,6 +239,21 @@ export default async function handler(req, res) {
   }
 
   try {
+    if (wantsQuickLinks) {
+      if (req.method === 'GET') {
+        res.status(200).json({ links: (await storeGet(store, QUICKLINKS_KEY)) || [] });
+        return;
+      }
+      const { errors } = validateQuickLinks(req.body);
+      if (errors.length) {
+        res.status(400).json({ error: 'Nothing was saved — the request was malformed:', details: errors });
+        return;
+      }
+      const links = normalizeQuickLinks(req.body.links);
+      await storeSet(store, QUICKLINKS_KEY, links);
+      res.status(200).json({ links });
+      return;
+    }
     if (wantsTasks) {
       const storedTasks = (await storeGet(store, TASKS_KEY)) || {};
       if (req.method === 'GET') {

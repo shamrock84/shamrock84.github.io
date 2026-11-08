@@ -9,7 +9,7 @@
 // a patch that quietly dropped or kept the wrong value would show to everyone.
 
 import assert from 'node:assert/strict';
-import { validatePatch, applyPatch, emptyDocument, validateTaskPatch, applyTaskPatch } from '../api/vikings.js';
+import { validatePatch, applyPatch, emptyDocument, validateTaskPatch, applyTaskPatch, validateQuickLinks, normalizeQuickLinks } from '../api/vikings.js';
 
 let failures = 0;
 function check(name, fn) {
@@ -104,6 +104,23 @@ check('task patch: replaces a stored task, adds, deletes and leaves others alone
   assert.ok(!('c' in next));
   assert.equal(next.d.order, 4, 'order backfills to createdAt like plans.js');
   assert.equal(stored.a.text, 'old', 'input is not mutated');
+});
+
+const qlOk = (links) => validateQuickLinks({ links }).errors.length === 0;
+check('quick links: accepts plain, styled and grouped entries', () => {
+  assert.ok(qlOk([]));
+  assert.ok(qlOk([{ url: 'https://vikings.com', nickname: 'Vikings' }, { url: 'http://x.co/a', nickname: 'X', style: 'gold', group: 'Tools' }]));
+});
+check('quick links: rejects a missing nickname, a non-http link and a bad style', () => {
+  assert.ok(!qlOk([{ url: 'https://a.com', nickname: ' ' }]));
+  assert.ok(!qlOk([{ url: 'javascript:alert(1)', nickname: 'x' }]));
+  assert.ok(!qlOk([{ url: 'https://a.com', nickname: 'x', style: 'red' }]));
+  assert.ok(!qlOk([{ url: 'https://a.com', nickname: 'x', group: 5 }]));
+  assert.ok(!qlOk('nope'));
+});
+check('quick links: normalizing trims, drops blanks and unknown keys, keeps order', () => {
+  assert.deepEqual(normalizeQuickLinks([{ url: ' https://a.com ', nickname: ' A ', style: '', group: ' ', extra: 1 }, { url: 'https://b.com', nickname: 'B', style: 'purple', group: 'G' }]),
+    [{ url: 'https://a.com', nickname: 'A' }, { url: 'https://b.com', nickname: 'B', style: 'purple', group: 'G' }]);
 });
 
 if (failures) { console.log(`\n${failures} failed`); process.exit(1); }
