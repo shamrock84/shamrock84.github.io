@@ -1095,8 +1095,20 @@
 		// just starts at the defaults), and the Admin tab still falls back to
 		// Schedule when logged out (renderAll).
 		const VIEW_KEY = 'vikingsView';
+		// The Admin Tasks card's sections (one per category, plus Completed) are
+		// rebuilt on every render, so their open state lives here, keyed `cat:<name>`
+		// or `completed`. Categories start open, Completed starts closed.
+		const taskOpen = {};
+		function trackTaskSection(details, key, openByDefault) {
+			details.open = key in taskOpen ? !!taskOpen[key] : openByDefault;
+			details.addEventListener('toggle', () => {
+				if (details.open === (key in taskOpen ? !!taskOpen[key] : openByDefault)) return;
+				taskOpen[key] = details.open;
+				saveView();
+			});
+		}
 		function saveView() {
-			try { localStorage.setItem(VIEW_KEY, JSON.stringify({ tab, showAllGames, openPrefs, sectionFolded, seasonOpen })); } catch (e) { /* works for this visit */ }
+			try { localStorage.setItem(VIEW_KEY, JSON.stringify({ tab, showAllGames, openPrefs, sectionFolded, seasonOpen, taskOpen })); } catch (e) { /* works for this visit */ }
 		}
 		(function restoreView() {
 			let saved = null;
@@ -1110,6 +1122,7 @@
 			const so = plain(saved.seasonOpen);
 			Object.assign(seasonOpen.history, plain(so.history));
 			Object.assign(seasonOpen.admin, plain(so.admin));
+			Object.assign(taskOpen, plain(saved.taskOpen));
 		})();
 		function seasonDetails(scope, year, editable, className) {
 			const data = seasonData(year);
@@ -1637,7 +1650,8 @@
 			if (open.length) {
 				for (const key of keys) {
 					const groupEntries = openTaskIdsByCategory(key).map((id) => [id, tasks[id]]);
-					const details = el('details', { class: 'task-section', open: 'true' }, [el('summary', { text: `${key} (${groupEntries.length})` })]);
+					const details = el('details', { class: 'task-section' }, [el('summary', { text: `${key} (${groupEntries.length})` })]);
+					trackTaskSection(details, `cat:${key}`, true);
 					groupEntries.forEach(([id, t], index) => details.appendChild(buildRow(id, t, { key, index, groupEntries })));
 					card.appendChild(details);
 				}
@@ -1646,6 +1660,7 @@
 			}
 			if (done.length) {
 				const details = el('details', { class: 'task-section' }, [el('summary', { text: `Completed (${done.length})` })]);
+				trackTaskSection(details, 'completed', false);
 				for (const [id, t] of done) details.appendChild(buildRow(id, t));
 				card.appendChild(details);
 			}
