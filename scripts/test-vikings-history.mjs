@@ -10,11 +10,11 @@ function check(name, fn) {
   try { fn(); console.log(`  ok   ${name}`); } catch (e) { failures++; console.log(`  FAIL ${name} — ${e.message}`); }
 }
 
-check('backfills 2016 up to, not including, the snapshot season', () => {
-  assert.equal(FIRST_SEASON, 2016);
-  assert.deepEqual(seasonsToBackfill('2026'), [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025]);
-  assert.deepEqual(seasonsToBackfill(2017), [2016]);
-  assert.deepEqual(seasonsToBackfill(2016), []);
+check('backfills 2007 up to, not including, the snapshot season', () => {
+  assert.equal(FIRST_SEASON, 2007);
+  assert.deepEqual(seasonsToBackfill('2026'), [2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025]);
+  assert.deepEqual(seasonsToBackfill(2017), [2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016]);
+  assert.deepEqual(seasonsToBackfill(2007), []);
 });
 check('cuts out the team and keeps byes in the regular season', () => {
   const sched = { teams: { MIN: [{ wk: 1, opp: 'GB', home: true }, { wk: 2, bye: true }], GB: [{ wk: 1, opp: 'MIN', home: false }] } };

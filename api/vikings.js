@@ -50,7 +50,7 @@ const TASKS_KEY = 'vikings:tasks';
 const QUICKLINKS_KEY = 'vikings:quicklinks';
 const TASK_ID = /^[A-Za-z0-9]{1,40}$/;
 const MAX_TASKS = 300;
-// Every season back to 2016, each with preseason, regular-season and playoff
+// Every season back to 2007, each with preseason, regular-season and playoff
 // home games: about 15 a season.
 const MAX_GAMES = 300;
 const MAX_SEATS_PER_PATCH = 12;
