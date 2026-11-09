@@ -1130,7 +1130,9 @@
 		}
 
 		function seasonsCard() {
-			const card = el('div', { class: 'card' }, [el('h2', { class: 'card-heading', text: 'Seasons' })]);
+			const head = el('h2', { class: 'card-heading', text: 'Seasons' });
+			const card = el('div', { class: 'card' }, [head]);
+			makeCollapsible(card, head, 'seasons');
 			if (!snapshotSeason) { card.appendChild(el('div', { class: 'message', text: 'No season to edit yet.' })); return card; }
 			if (ticketsFailed) {
 				card.appendChild(el('div', { class: 'message error', text: `Couldn’t load seat names (${ticketsFailed}), so editing is turned off. Reload to try again.` }));
