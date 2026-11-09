@@ -360,6 +360,14 @@
 		.card.card-collapsed .card-collapse-toggle { transform: translateY(-50%) rotate(-90deg); }
 		.card.card-collapsed > *:not(.card-heading) { display: none; }
 		.card.card-collapsed > .card-heading { margin-bottom: 0; }
+		.perf-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.7rem; }
+		.pie-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 1rem; }
+		.pie-title { margin: 0 0 0.4rem; font-size: 0.95rem; color: var(--accent); }
+		.pie-row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+		.pie { width: 8rem; height: 8rem; flex: none; }
+		.pie-legend { list-style: none; margin: 0; padding: 0; font-size: 0.85rem; }
+		.pie-legend li { display: flex; align-items: center; gap: 0.4rem; }
+		.pie-swatch { width: 0.8rem; height: 0.8rem; border-radius: 2px; flex: none; }
 		.season-head { margin-bottom: 0.6rem; }
 		.season-title { display: flex; align-items: baseline; gap: 0.7rem; margin: 0 0 0.6rem; font-size: 1.1rem; font-weight: 700; color: var(--accent); }
 		.season-card > summary, .season-mini > summary {
@@ -543,8 +551,8 @@
 
 	<script>
 		// melbostads.com/vikings — who is in each season-ticket seat for every
-		// Vikings home game. Three tabs: Schedule (this season) and History
-		// (an earlier one, picked from a dropdown) are read-only text for
+		// Vikings home game. Four tabs: Schedule (this season) and History
+		// (an earlier one, picked from a dropdown) and Statistics (all-time cards) are read-only text for
 		// everyone; Admin exists only when logged in (the same password and
 		// token as myFFL, same localStorage key) and holds the Tasks card and
 		// the Seasons card, where every seat and face value, 2007 on, is an
@@ -611,15 +619,17 @@
 
 		// "Overall (W-L) | Home (W-L)" from the regular-season results in the
 		// schedule itself; a tie adds a third number. Empty before any result.
+		const playedGames = (schedule) => (schedule || []).filter((g) => g && (g.r === 'W' || g.r === 'L' || g.r === 'T'));
+		const fmtRecord = (list) => {
+			const w = list.filter((g) => g.r === 'W').length;
+			const l = list.filter((g) => g.r === 'L').length;
+			const t = list.filter((g) => g.r === 'T').length;
+			return t ? `${w}-${l}-${t}` : `${w}-${l}`;
+		};
 		function recordLine(schedule) {
-			const played = (schedule || []).filter((g) => g && (g.r === 'W' || g.r === 'L' || g.r === 'T'));
+			const played = playedGames(schedule);
 			if (!played.length) return '';
-			const fmt = (list) => {
-				const w = list.filter((g) => g.r === 'W').length;
-				const l = list.filter((g) => g.r === 'L').length;
-				const t = list.filter((g) => g.r === 'T').length;
-				return t ? `${w}-${l}-${t}` : `${w}-${l}`;
-			};
+			const fmt = fmtRecord;
 			return `Overall Record (${fmt(played)}) | Home Record (${fmt(played.filter((g) => g.home === true))})`;
 		}
 
@@ -1039,7 +1049,7 @@
 			const list = [...pre, ...reg];
 			if (Array.isArray(postseason)) list.push(...homeGames(postseason, 'Playoffs', 'po', year));
 			else for (let n = 1; n <= MANUAL_PLAYOFF_ROWS; n++) list.push({ section: 'Playoffs', key: `${year}-po${n}`, manual: true, n });
-			return { year, games: list, preCount: pre.filter((g) => !g.away).length, regular: reg.filter((g) => !g.away).length, record: recordLine(schedule) };
+			return { year, games: list, preCount: pre.filter((g) => !g.away).length, regular: reg.filter((g) => !g.away).length, record: recordLine(schedule), schedule: schedule || [] };
 		}
 
 		function seasonData(year) {
@@ -1115,7 +1125,7 @@
 			try { saved = JSON.parse(localStorage.getItem(VIEW_KEY)); } catch (e) { /* none */ }
 			if (!saved || typeof saved !== 'object') return;
 			const plain = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
-			if (['schedule', 'history', 'admin'].includes(saved.tab)) tab = saved.tab;
+			if (['schedule', 'history', 'stats', 'admin'].includes(saved.tab)) tab = saved.tab;
 			showAllGames = saved.showAllGames === true;
 			Object.assign(openPrefs, plain(saved.openPrefs));
 			Object.assign(sectionFolded, plain(saved.sectionFolded));
@@ -1169,6 +1179,83 @@
 			const years = historyYears();
 			if (!years.length) return [message('Earlier seasons haven’t been loaded yet.')];
 			return years.map((y) => seasonDetails('history', y, false, 'card season-card'));
+		}
+
+		// Regular-season results from every season on file (earlier years plus
+		// the current one), same "(W-L)" form as a season's record.
+		function allTimeRecordLine() {
+			const years = [...historyYears(), ...(snapshotSeason ? [Number(snapshotSeason)] : [])];
+			const played = years.flatMap((y) => { const d = seasonData(y); return d ? playedGames(d.schedule) : []; });
+			if (!played.length) return '';
+			return `All Time Total (${fmtRecord(played)}) | All Time Home (${fmtRecord(played.filter((g) => g.home === true))})`;
+		}
+
+		// Regular-season games with a result, every season on file. `witnessed`
+		// keeps those where at least one seat has a name (home or away).
+		function allTimePlayed(witnessed) {
+			const years = [...historyYears(), ...(snapshotSeason ? [Number(snapshotSeason)] : [])];
+			return years.flatMap((y) => {
+				const d = seasonData(y);
+				if (!d) return [];
+				return playedGames(d.schedule).filter((g) => !witnessed || hasSeats({ key: `${y}-${g.wk}` }));
+			});
+		}
+
+		// A W-L(-T) pie in plain SVG; wins in the accent purple, losses in gold,
+		// ties muted. One slice is a full circle (an arc can't span 360 degrees).
+		function recordPie(title, played, note) {
+			const counts = [['Wins', played.filter((g) => g.r === 'W').length, 'var(--accent)'], ['Losses', played.filter((g) => g.r === 'L').length, 'var(--gold)'], ['Ties', played.filter((g) => g.r === 'T').length, 'var(--muted)']].filter((c) => c[1] > 0);
+			const total = played.length;
+			const box = el('div', { class: 'pie-box' }, [el('h3', { class: 'pie-title', text: title })]);
+			if (note || !total) { box.appendChild(el('div', { class: 'message', text: note || 'No games yet.' })); return box; }
+			const NS = 'http://www.w3.org/2000/svg';
+			const svg = document.createElementNS(NS, 'svg');
+			svg.setAttribute('viewBox', '-1 -1 2 2');
+			svg.setAttribute('class', 'pie');
+			svg.setAttribute('role', 'img');
+			svg.setAttribute('aria-label', `${title}: ${counts.map((c) => `${c[1]} ${c[0].toLowerCase()}`).join(', ')}`);
+			let angle = -Math.PI / 2;
+			for (const [, n, color] of counts) {
+				let shape;
+				if (n === total) shape = document.createElementNS(NS, 'circle'), shape.setAttribute('r', '1');
+				else {
+					const next = angle + (n / total) * 2 * Math.PI;
+					shape = document.createElementNS(NS, 'path');
+					shape.setAttribute('d', `M0 0 L${Math.cos(angle)} ${Math.sin(angle)} A1 1 0 ${n / total > 0.5 ? 1 : 0} 1 ${Math.cos(next)} ${Math.sin(next)} Z`);
+					angle = next;
+				}
+				shape.setAttribute('fill', color);
+				shape.setAttribute('stroke', 'var(--card-bg)');
+				shape.setAttribute('stroke-width', '0.02');
+				svg.appendChild(shape);
+			}
+			const legend = el('ul', { class: 'pie-legend' }, counts.map(([name, n, color]) => {
+				const sw = el('span', { class: 'pie-swatch' });
+				sw.style.background = color;
+				return el('li', {}, [sw, el('span', { text: `${name} ${n} (${Math.round((n / total) * 100)}%)` })]);
+			}));
+			box.appendChild(el('div', { class: 'pie-row' }, [svg, legend]));
+			box.appendChild(el('div', { class: 'subtitle', text: `${total} games` }));
+			return box;
+		}
+
+		function performanceCard() {
+			const record = allTimeRecordLine();
+			const head = el('h2', { class: 'card-heading perf-heading' }, [
+				el('span', { text: 'Performance' }),
+				record ? el('span', { class: 'season-record', text: record }) : null,
+			]);
+			const card = el('div', { class: 'card' }, [head, el('div', { class: 'pie-grid' }, [
+				recordPie('Games', allTimePlayed(false)),
+				recordPie('Witnessed', allTimePlayed(true), ticketsFailed ? `Couldn’t load seat names (${ticketsFailed}).` : ''),
+			])]);
+			makeCollapsible(card, head, 'stats-performance');
+			return card;
+		}
+
+		function statsView() {
+			if (historyError) return [message(`Couldn’t load earlier seasons (${historyError}).`, 'error')];
+			return [performanceCard()];
 		}
 
 		function seasonsCard() {
@@ -1727,7 +1814,7 @@
 			const nav = document.getElementById('tabs');
 			nav.textContent = '';
 			// The Admin tab exists only while logged in; logging out removes it.
-			const tabs = [['schedule', 'Schedule'], ['history', 'History'], ...(isLoggedIn() ? [['admin', 'Admin']] : [])];
+			const tabs = [['schedule', 'Schedule'], ['history', 'History'], ['stats', 'Statistics'], ...(isLoggedIn() ? [['admin', 'Admin']] : [])];
 			for (const [id, label] of tabs) {
 				const btn = el('button', { type: 'button', class: `tab-btn${tab === id ? ' active' : ''}`, role: 'tab', 'aria-selected': String(tab === id), text: label });
 				btn.addEventListener('click', () => setTab(id));
@@ -1754,7 +1841,7 @@
 			const view = document.getElementById('view');
 			view.textContent = '';
 			tasksCardEl = null;
-			const cards = tab === 'history' ? historyView() : tab === 'admin' ? adminView() : scheduleView();
+			const cards = tab === 'history' ? historyView() : tab === 'stats' ? statsView() : tab === 'admin' ? adminView() : scheduleView();
 			cards.forEach((c) => view.appendChild(c));
 		}
 
