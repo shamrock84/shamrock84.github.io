@@ -386,7 +386,7 @@ test('returning to the page picks up a task added on another device', async () =
 	// The phone adds a task; the iPad has been open the whole time.
 	const phone = loadPage(newDisk({ [SYNCED_KEY]: '1' }), store.serve);
 	await phone.g.syncPlans();
-	phone.g.addTask('From the phone', 'Bugs');
+	phone.g.addTask('From the phone', 'Bug');
 	await flush(phone);
 
 	longAgo(ipad);

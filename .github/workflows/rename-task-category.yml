@@ -1,0 +1,50 @@
+name: Rename Tasks Card Category (manual)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here.
+# Runs scripts/rename-task-category.mjs, which WRITES to api/plans.js's shared
+# store (or api/vikings.js's, with the vikings box ticked). Renames every task
+# in a category, open and completed. Same SITE_PASSWORD repo secret as
+# mark-tasks-done.yml.
+on:
+  workflow_dispatch:
+    inputs:
+      from:
+        description: 'Existing category name (exact)'
+        required: true
+        default: 'Bugs'
+      to:
+        description: 'New category name'
+        required: true
+        default: 'Bug'
+      vikings:
+        description: "Rename in the Vikings page's Admin tasks instead of myFFL's"
+        type: boolean
+        default: false
+
+jobs:
+  rename:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout: |
+            api
+            scripts
+            config
+            data
+            .github
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Rename category
+        env:
+          SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
+          FROM_CATEGORY: ${{ github.event.inputs.from }}
+          TO_CATEGORY: ${{ github.event.inputs.to }}
+          VIKINGS_TASKS: ${{ github.event.inputs.vikings == 'true' && '1' || '' }}
+        run: node scripts/rename-task-category.mjs

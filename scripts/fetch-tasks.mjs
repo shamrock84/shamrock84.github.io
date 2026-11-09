@@ -18,7 +18,7 @@
 //
 // Usage:
 //   SITE_PASSWORD=... node scripts/fetch-tasks.mjs
-//   SITE_PASSWORD=... node scripts/fetch-tasks.mjs "Bugs"
+//   SITE_PASSWORD=... node scripts/fetch-tasks.mjs "Bug"
 
 const API_BASE = process.env.MYFFL_API_BASE || 'https://shamrock84-github-io.vercel.app';
 

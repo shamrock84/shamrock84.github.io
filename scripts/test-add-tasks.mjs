@@ -13,7 +13,7 @@ import { planNewTasks } from './add-tasks.mjs';
 import { validatePlans, mergePlans } from '../api/plans.js';
 
 const stored = {
-	tOld1: { text: 'Existing open task', category: 'Bugs', done: false, order: 1, createdAt: 1, completedAt: null },
+	tOld1: { text: 'Existing open task', category: 'Bug', done: false, order: 1, createdAt: 1, completedAt: null },
 	tOld2: { text: 'Existing done task', category: 'Site Enhancement', done: true, order: 2, createdAt: 2, completedAt: 3 },
 };
 
