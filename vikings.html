@@ -1215,7 +1215,9 @@
 			svg.setAttribute('role', 'img');
 			svg.setAttribute('aria-label', `${title}: ${counts.map((c) => `${c[1]} ${c[0].toLowerCase()}`).join(', ')}`);
 			let angle = -Math.PI / 2;
-			for (const [, n, color] of counts) {
+			// Drawn clockwise from the top, smallest first, so the largest slice
+			// ends at the top and fills the left side.
+			for (const [, n, color] of [...counts].sort((a, b) => a[1] - b[1])) {
 				let shape;
 				if (n === total) shape = document.createElementNS(NS, 'circle'), shape.setAttribute('r', '1');
 				else {
@@ -1232,7 +1234,7 @@
 			const legend = el('ul', { class: 'pie-legend' }, counts.map(([name, n, color]) => {
 				const sw = el('span', { class: 'pie-swatch' });
 				sw.style.background = color;
-				return el('li', {}, [sw, el('span', { text: `${name} ${n} (${Math.round((n / total) * 100)}%)` })]);
+				return el('li', {}, [sw, el('span', { text: `${n} ${n === 1 ? { Wins: 'win', Losses: 'loss', Ties: 'tie' }[name] : name.toLowerCase()} (${Math.round((n / total) * 100)}%)` })]);
 			}));
 			box.appendChild(el('div', { class: 'pie-row' }, [svg, legend]));
 			box.appendChild(el('div', { class: 'subtitle', text: `${total} games` }));
