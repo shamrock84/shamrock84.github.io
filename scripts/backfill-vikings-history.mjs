@@ -1,5 +1,5 @@
 // Writes data/vikings-history.json: the Vikings' regular-season, preseason and playoff
-// schedule (results included) for every season from 2016 up to, but not
+// schedule (results included) for every season from 2007 up to, but not
 // including, the one data/rosters.json already carries. See
 // scripts/lib/vikings-history.mjs for the shape and why it is its own file.
 //

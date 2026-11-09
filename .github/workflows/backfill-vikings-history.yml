@@ -1,6 +1,6 @@
 name: Backfill Vikings Schedules
 
-# Reads the Vikings' schedule and results for 2016 through last season from
+# Reads the Vikings' schedule and results for 2007 through last season from
 # ESPN's public scoreboard and commits data/vikings-history.json, which feeds
 # vikings.html's History tab and the Admin tab's Seasons card. Manual only:
 # run it once, then once a year after the season rolls over. See

@@ -15,7 +15,7 @@
 // parser. Names and face values are NOT here; they live in api/vikings.js
 // keyed `${season}-${wk}`.
 
-export const FIRST_SEASON = 2016;
+export const FIRST_SEASON = 2007;
 
 // Pure and separately tested (test-vikings-history.mjs). `schedules` is
 // fetchNflSchedules' return value, `preseason` fetchNflPreseason's (or null
