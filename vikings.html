@@ -877,15 +877,14 @@
 
 		// Which games have their seats showing. Every load starts the same way,
 		// on purpose: finished games closed, upcoming ones open. A chevron or
-		// Expand/Collapse all only lasts until the page is refreshed (it survives
-		// a login/logout re-render, which is why the choices live in this object).
-		// Nothing is stored; an old remembered state is cleared so it can't linger.
+		// Expand/Collapse all, the folded section bands, the open seasons, the
+		// "show all games" box and the current tab live in these objects so they
+		// survive a re-render, and saveView() (below) keeps them across a refresh.
 		const openPrefs = {};
 		// Which section bands (Preseason / Regular Season / Playoffs) are folded,
-		// keyed `${year}|${section}`. Same lifetime as openPrefs: it survives a
-		// re-render, never a refresh, and everything starts unfolded.
+		// keyed `${year}|${section}`. Same lifetime as openPrefs; everything
+		// starts unfolded.
 		const sectionFolded = {};
-		try { localStorage.removeItem('vikingsOpen'); } catch (e) { /* ignore */ }
 
 		function renderTable(games, editable) {
 			const head = el('tr');
@@ -922,7 +921,7 @@
 						bandRow.classList.toggle('folded', folded);
 						members.forEach((r) => r.classList.toggle('sec-folded', folded));
 					};
-					btn.addEventListener('click', () => { sectionFolded[foldKey] = !sectionFolded[foldKey]; applyFold(); });
+					btn.addEventListener('click', () => { sectionFolded[foldKey] = !sectionFolded[foldKey]; saveView(); applyFold(); });
 					tbody.appendChild(bandRow);
 					foldAppliers.push(applyFold);
 				}
@@ -986,6 +985,7 @@
 				btn.addEventListener('click', () => {
 					open = !open;
 					openPrefs[g.key] = open;
+					saveView();
 					apply();
 					updateAll();
 				});
@@ -1003,12 +1003,13 @@
 			allBtn.addEventListener('click', () => {
 				const next = !setters.every((x) => x.get());
 				setters.forEach((x) => { x.set(next); openPrefs[x.key] = next; });
+				saveView();
 				updateAll();
 			});
 			updateAll();
 			const showAll = el('input', { type: 'checkbox', id: 'show-all-games' });
 			showAll.checked = showAllGames;
-			showAll.addEventListener('change', () => { showAllGames = showAll.checked; renderAll(); });
+			showAll.addEventListener('change', () => { showAllGames = showAll.checked; saveView(); renderAll(); });
 			const showLabel = el('label', { class: 'show-all' }, [showAll, document.createTextNode(' Show all games (away too)')]);
 			return el('div', {}, [el('div', { class: 'all-bar' }, [showLabel, allBtn]), el('table', {}, [thead, tbody])]);
 		}
@@ -1086,6 +1087,30 @@
 		// whether it is open survives a re-render (login, logout, tab change) in
 		// `seasonOpen`, keyed by the tab it sits on.
 		const seasonOpen = { history: {}, admin: {} };
+
+		// What the page was showing, remembered per device so a refresh lands
+		// back where you were: the tab, which games and seasons are open, the
+		// folded section bands and the "show all games" box. One key, read once
+		// before the first render. Anything unreadable is ignored (a bad entry
+		// just starts at the defaults), and the Admin tab still falls back to
+		// Schedule when logged out (renderAll).
+		const VIEW_KEY = 'vikingsView';
+		function saveView() {
+			try { localStorage.setItem(VIEW_KEY, JSON.stringify({ tab, showAllGames, openPrefs, sectionFolded, seasonOpen })); } catch (e) { /* works for this visit */ }
+		}
+		(function restoreView() {
+			let saved = null;
+			try { saved = JSON.parse(localStorage.getItem(VIEW_KEY)); } catch (e) { /* none */ }
+			if (!saved || typeof saved !== 'object') return;
+			const plain = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
+			if (['schedule', 'history', 'admin'].includes(saved.tab)) tab = saved.tab;
+			showAllGames = saved.showAllGames === true;
+			Object.assign(openPrefs, plain(saved.openPrefs));
+			Object.assign(sectionFolded, plain(saved.sectionFolded));
+			const so = plain(saved.seasonOpen);
+			Object.assign(seasonOpen.history, plain(so.history));
+			Object.assign(seasonOpen.admin, plain(so.admin));
+		})();
 		function seasonDetails(scope, year, editable, className) {
 			const data = seasonData(year);
 			const open = !!seasonOpen[scope][year];
@@ -1109,6 +1134,7 @@
 			if (open) fill();
 			details.addEventListener('toggle', () => {
 				seasonOpen[scope][year] = details.open;
+				saveView();
 				if (details.open) fill();
 			});
 			return details;
@@ -1676,6 +1702,7 @@
 
 		function setTab(next) {
 			tab = next;
+			saveView();
 			editingTaskId = null;
 			setStatus('');
 			renderAll();
