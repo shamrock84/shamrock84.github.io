@@ -80,7 +80,7 @@ check('an empty string deletes, and an emptied game disappears', () => {
   assert.deepEqual(none.games, {});
 });
 
-const task = (o = {}) => ({ text: 'Fix it', category: 'Bugs', done: false, createdAt: 5, ...o });
+const task = (o = {}) => ({ text: 'Fix it', category: 'Bug', done: false, createdAt: 5, ...o });
 const okTasks = (p) => validateTaskPatch(p).errors.length === 0;
 check('task patch: accepts upserts and deletes', () => {
   assert.ok(okTasks({ tasks: { t1: task(), t2: null } }));

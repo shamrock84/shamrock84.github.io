@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       category:
-        description: 'Optional category to filter to (e.g. Bugs)'
+        description: 'Optional category to filter to (e.g. Bug)'
         required: false
         default: ''
       vikings:

@@ -1480,9 +1480,9 @@
 			return counter;
 		}
 
-		// Bugs first, then the manager's fixed buckets, anything new alphabetically,
+		// Bug first, then the manager's fixed buckets, anything new alphabetically,
 		// Backlog last.
-		const categoryTier = (key) => (key === 'Bugs' ? 0 : key === 'Manual Task' ? 2 : key === 'Site Enhancement' ? 3 : key === 'Backlog' ? 5 : 4);
+		const categoryTier = (key) => (key === 'Bug' ? 0 : key === 'Manual Task' ? 2 : key === 'Site Enhancement' ? 3 : key === 'Backlog' ? 5 : 4);
 
 		function refreshTasksCard() {
 			if (!tasksCardEl || !tasksCardEl.isConnected) return;
