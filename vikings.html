@@ -216,13 +216,11 @@
 		}
 		td.face { font-variant-numeric: tabular-nums; }
 		tr.past td { color: var(--muted); }
-		/* Result: a green WIN / red LOSS tag and a faint wash across the row. */
+		/* Result: a green WIN / red LOSS tag. */
 		.result { margin-left: 0.4rem; padding: 0.05rem 0.4rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.03em; white-space: nowrap; }
 		.result.W { background: #d7f0dc; color: #14632b; }
 		.result.L { background: #f8d9d9; color: #9b1c1c; }
 		.result.T { background: var(--chip-bg); color: var(--muted); }
-		tr.res-W td { background: rgba(34, 139, 34, 0.07); }
-		tr.res-L td { background: rgba(200, 40, 40, 0.07); }
 		@media (prefers-color-scheme: dark) {
 			.result.W { background: #174023; color: #8fe0a4; }
 			.result.L { background: #5a1f1f; color: #f5a3a3; }
@@ -927,7 +925,7 @@
 				}
 				const done = !g.manual && (g.r != null || (g.at && !g.tbd && new Date(g.at).getTime() + 4 * 3600e3 < now));
 				const cls = done ? 'past' : i === nextIndex ? 'next' : '';
-				const tr = el('tr', { class: `game ${cls}${g.r === 'W' || g.r === 'L' ? ' res-' + g.r : ''}`.trim() });
+				const tr = el('tr', { class: `game ${cls}`.trim() });
 				let dateCell;
 				if (g.manual) {
 					tr.appendChild(dateCell = manualCell(g, 'date', editable));
