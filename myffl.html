@@ -10832,7 +10832,7 @@
 			const cardId = sunday ? 'sunday-night' : 'monday-night';
 			const card = el('div', { class: 'card monday-card', id: cardId, 'data-view': 'scoring', 'data-league-type': '' });
 			const title = sunday ? 'Sunday Night Simmer' : 'Monday Night Mayhem';
-			const heading = el('h2', { class: 'card-heading', text: liveScoringAttempted ? `${title} (predicted ${predictedWeekRecord(leagues)})` : title });
+			const heading = el('h2', { class: 'card-heading', text: liveScoringAttempted ? `${title} (predict ${predictedWeekRecord(leagues)})` : title });
 			card.appendChild(heading);
 
 			if (!liveScoringAttempted) {
