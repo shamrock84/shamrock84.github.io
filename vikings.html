@@ -1184,10 +1184,11 @@
 		// Regular-season results from every season on file (earlier years plus
 		// the current one), same "(W-L)" form as a season's record.
 		function allTimeRecordLine() {
-			const years = [...historyYears(), ...(snapshotSeason ? [Number(snapshotSeason)] : [])];
-			const played = years.flatMap((y) => { const d = seasonData(y); return d ? playedGames(d.schedule) : []; });
+			const played = allTimePlayed(false);
 			if (!played.length) return '';
-			return `All Time Total (${fmtRecord(played)}) | All Time Home (${fmtRecord(played.filter((g) => g.home === true))})`;
+			// Witnessed needs the seat names; without them only the total shows.
+			const seen = ticketsFailed ? [] : allTimePlayed(true);
+			return `Total (${fmtRecord(played)})` + (seen.length ? ` | Witnessed (${fmtRecord(seen)})` : '');
 		}
 
 		// Regular-season games with a result, every season on file. `witnessed`
@@ -1248,7 +1249,7 @@
 				record ? el('span', { class: 'season-record', text: record }) : null,
 			]);
 			const card = el('div', { class: 'card' }, [head, el('div', { class: 'pie-grid' }, [
-				recordPie('Games', allTimePlayed(false)),
+				recordPie('Total', allTimePlayed(false)),
 				recordPie('Witnessed', allTimePlayed(true), ticketsFailed ? `Couldn’t load seat names (${ticketsFailed}).` : ''),
 			])]);
 			makeCollapsible(card, head, 'stats-performance');
