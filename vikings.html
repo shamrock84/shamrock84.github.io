@@ -1234,7 +1234,7 @@
 			const legend = el('ul', { class: 'pie-legend' }, counts.map(([name, n, color]) => {
 				const sw = el('span', { class: 'pie-swatch' });
 				sw.style.background = color;
-				return el('li', {}, [sw, el('span', { text: `${n} ${n === 1 ? name.toLowerCase().replace(/e?s$/, '') : name.toLowerCase()} (${Math.round((n / total) * 100)}%)` })]);
+				return el('li', {}, [sw, el('span', { text: `${n} ${n === 1 ? { Wins: 'win', Losses: 'loss', Ties: 'tie' }[name] : name.toLowerCase()} (${Math.round((n / total) * 100)}%)` })]);
 			}));
 			box.appendChild(el('div', { class: 'pie-row' }, [svg, legend]));
 			box.appendChild(el('div', { class: 'subtitle', text: `${total} games` }));
