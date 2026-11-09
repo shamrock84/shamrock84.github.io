@@ -17,6 +17,9 @@
 
 export const FIRST_SEASON = 2007;
 
+// Seasons the manager did not hold tickets for. Never read or shown.
+export const SKIPPED_SEASONS = [2010, 2011, 2012, 2013, 2014, 2015];
+
 // Pure and separately tested (test-vikings-history.mjs). `schedules` is
 // fetchNflSchedules' return value, `preseason` fetchNflPreseason's (or null
 // when that read failed — an empty preseason is not an error). `postseason` is
@@ -33,10 +36,10 @@ export function buildSeasonEntry(schedules, preseason, team, postseason = null) 
   return entry;
 }
 
-// Years to (re)read: every season from FIRST_SEASON up to but not including
+// Years to (re)read: every season (bar SKIPPED_SEASONS) from FIRST_SEASON up to but not including
 // the one the snapshot already carries.
 export function seasonsToBackfill(currentSeason, first = FIRST_SEASON) {
   const out = [];
-  for (let y = first; y < Number(currentSeason); y++) out.push(y);
+  for (let y = first; y < Number(currentSeason); y++) if (!SKIPPED_SEASONS.includes(y)) out.push(y);
   return out;
 }

@@ -1028,6 +1028,7 @@
 
 		const HISTORY_URL = '/data/vikings-history.json';
 		const FIRST_SEASON = 2007; // the oldest season the Seasons card edits
+		const SKIPPED_SEASONS = [2010, 2011, 2012, 2013, 2014, 2015]; // no tickets; keep in step with scripts/lib/vikings-history.mjs
 
 		let snapshotSeason = null;
 		let currentData = null;     // the snapshot's season, built once
@@ -1171,7 +1172,7 @@
 		}
 
 		function historyYears() {
-			return Object.keys((historyDoc && historyDoc.seasons) || {}).map(Number).filter((y) => y < Number(snapshotSeason)).sort((a, b) => b - a);
+			return Object.keys((historyDoc && historyDoc.seasons) || {}).map(Number).filter((y) => y < Number(snapshotSeason) && !SKIPPED_SEASONS.includes(y)).sort((a, b) => b - a);
 		}
 
 		function historyView() {
@@ -1269,7 +1270,7 @@
 			if (ticketsFailed) {
 				card.appendChild(el('div', { class: 'message error', text: `Couldn’t load seat names (${ticketsFailed}), so editing is turned off. Reload to try again.` }));
 			}
-			for (let y = Number(snapshotSeason); y >= FIRST_SEASON; y--) card.appendChild(seasonDetails('admin', y, !ticketsFailed, 'season-mini'));
+			for (let y = Number(snapshotSeason); y >= FIRST_SEASON; y--) if (!SKIPPED_SEASONS.includes(y)) card.appendChild(seasonDetails('admin', y, !ticketsFailed, 'season-mini'));
 			return card;
 		}
 
@@ -1825,14 +1826,14 @@
 			}
 		}
 
-		// "Ticket holder since 2007 (20 years)": every season in the history file
+		// "Ticket holder since 2007 (20 seasons)": every season in the history file
 		// plus the current one. Left as the plain 2007 line until the data loads.
 		function renderHolderSince() {
 			const node = document.getElementById('holder-since');
 			const years = historyYears();
 			if (!node || !snapshotSeason || !years.length) return;
 			const count = years.length + 1;
-			node.textContent = `Ticket holder since ${years[years.length - 1]} (${count} ${count === 1 ? 'year' : 'years'})`;
+			node.textContent = `Ticket holder since ${years[years.length - 1]} (${count} ${count === 1 ? 'season' : 'seasons'})`;
 		}
 
 		function renderAll() {
