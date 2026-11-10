@@ -4081,6 +4081,24 @@
 		.admin-link-row .admin-field-style {
 			flex: 0 0 auto;
 		}
+		/* Phone: six fields and two buttons in one flex line leave each a
+		   sliver, so let the row wrap — the URL takes a full line, the rest
+		   share the lines below it. */
+		@media (max-width: 40rem) {
+			.admin-link-row {
+				flex-wrap: wrap;
+			}
+			.admin-link-row .admin-field-link {
+				flex: 1 1 100%;
+			}
+			.admin-link-row .admin-field-nickname,
+			.admin-link-row .admin-field-group {
+				flex: 1 1 40%;
+			}
+			.admin-link-row .admin-field-style {
+				flex: 1 1 30%;
+			}
+		}
 		/* The permanent League Links block: one tinted, locked-looking bar in
 		   place of the three fields, under the same "Link" caption. */
 		.admin-link-fixed-wrap {
@@ -17347,7 +17365,7 @@
 		// a Quick Links extra, see appendQuickLink. Blank means plain, the
 		// look every toolbar entry had before this field existed.
 		const ADMIN_QUICKLINK_STYLES = [['', 'Plain'], ['gold', 'Gold'], ['purple', 'Purple']];
-		const ADMIN_QUICKLINK_VISIBILITIES = [['', 'Show always'], ['loggedin', 'Show logged in'], ['never', 'Show never']];
+		const ADMIN_QUICKLINK_VISIBILITIES = [['', 'Always'], ['loggedin', 'Logged in'], ['never', 'Never']];
 
 		// Unsaved edits, kept across re-renders (a lineup submission or a
 		// finished sync both call renderGrid) so typing isn't lost. Cleared on
@@ -17978,7 +17996,7 @@
 				// name it falls back to when blank is doing nothing.
 				if (league.nickname && league.nickname !== (league.displayName || name)) bits.push(`Toolbar "${league.nickname}"`);
 				if (league.style) bits.push(`${adminLabelFor(ADMIN_QUICKLINK_STYLES, league.style)} toolbar style`);
-				if (league.visibility) bits.push(adminLabelFor(ADMIN_QUICKLINK_VISIBILITIES, league.visibility) + ' in toolbar');
+				if (league.visibility) bits.push(`Toolbar: ${adminLabelFor(ADMIN_QUICKLINK_VISIBILITIES, league.visibility)}`);
 				// Always last and always present, so a scan down the list reads
 				// these in one column. The money was the one group of fields the
 				// collapsed row said nothing about at all, which made "which
