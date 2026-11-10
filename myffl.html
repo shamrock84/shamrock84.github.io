@@ -11838,14 +11838,13 @@
 
 		// Every league's rows with their dismissal state, plus the stale
 		// dismissals: ones whose problem is no longer raised by a family that
-		// was actually checked. Logged out, this device's saved dismissals still
-		// hide their rows (the store is unreachable, so the local copy is what
-		// there is), but nothing is pruned: a prune would push a deletion.
+		// was actually checked. Logged out, nothing is dismissed (the strip
+		// shows everything) and nothing is pruned.
 		function digestRowsWithDismissals(leagues, year) {
 			const rows = [];
 			const stale = [];
 			const loggedIn = isLoggedIn();
-			const saved = loadDigestDismissals();
+			const saved = loggedIn ? loadDigestDismissals() : {};
 			for (const league of leagues || []) {
 				const coverage = { roster: false, lineup: false, players: false };
 				const problems = computeLeagueProblems(league, year, liveGames, gameStatesAttempted, pastWeeklyRolloverCutoff(), coverage);
@@ -11853,10 +11852,10 @@
 				for (const problem of problems) {
 					const key = digestProblemKey(problem);
 					live.add(key);
-					rows.push({ league, problem, key, dismissed: !!(saved[league.id] && saved[league.id][key]) });
+					rows.push({ league, problem, key, dismissed: loggedIn && !!(saved[league.id] && saved[league.id][key]) });
 				}
 				for (const key of Object.keys(saved[league.id] || {})) {
-					if (loggedIn && !live.has(key) && digestKindCovered(key.slice(0, key.indexOf(':')), coverage)) stale.push({ leagueId: league.id, key });
+					if (!live.has(key) && digestKindCovered(key.slice(0, key.indexOf(':')), coverage)) stale.push({ leagueId: league.id, key });
 				}
 			}
 			return { rows, stale };
