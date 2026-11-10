@@ -4056,12 +4056,19 @@
 		.admin-links-list {
 			display: flex;
 			flex-direction: column;
-			gap: 0.45rem;
+			gap: 0.7rem;
 		}
+		/* Each link is its own tile, so on a phone, where a row wraps to three
+		   lines, it's clear which fields and which arrows belong together. */
 		.admin-link-row {
 			display: flex;
 			align-items: flex-end;
 			gap: 0.5rem;
+			padding: 0.6rem;
+			border: 1px solid var(--border);
+			border-left: 4px solid var(--accent);
+			border-radius: 8px;
+			background: var(--bg);
 		}
 		.admin-link-row .admin-field {
 			min-width: 0;
