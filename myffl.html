@@ -4098,6 +4098,15 @@
 			.admin-link-row .admin-field-style {
 				flex: 1 1 30%;
 			}
+			/* iOS sizes a select to its widest option and ignores flex-basis, which
+			   is what squeezed the text fields to nothing; pin every control to
+			   its cell. */
+			.admin-link-row .admin-field input,
+			.admin-link-row .admin-field select {
+				width: 100%;
+				min-width: 0;
+				box-sizing: border-box;
+			}
 		}
 		/* The permanent League Links block: one tinted, locked-looking bar in
 		   place of the three fields, under the same "Link" caption. */
