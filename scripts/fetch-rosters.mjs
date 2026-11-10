@@ -1380,6 +1380,7 @@ async function main() {
         nickname: league.nickname || null,
         displayName: league.displayName || null,
         style: league.style || null,
+        visibility: league.visibility || null,
         leagueName: league.name,
         franchiseId: null,
         teamName: league.name,
@@ -1473,6 +1474,7 @@ async function main() {
       result.nickname = league.nickname || null;
       result.displayName = league.displayName || null;
       result.style = league.style || null;
+      result.visibility = league.visibility || null;
       // Recorded per league because it's what the next sync reads to decide
       // whether this league has already rolled over — see resolveSeason.
       result.season = league.season;
@@ -1508,6 +1510,7 @@ async function main() {
         nickname: league.nickname || null,
         displayName: league.displayName || null,
         style: league.style || null,
+        visibility: league.visibility || null,
         leagueName: prev?.leagueName || league.name,
         franchiseId: league.franchiseId,
         teamName: prev?.teamName || league.name,

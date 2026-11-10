@@ -33,6 +33,10 @@ const PROVIDERS = new Set(['mfl', 'espn', 'sleeper']);
 // 'style'). 'plain' is not itself a valid value here: it's what an unset
 // field means, the same convention rankingType/scoring already use.
 const QUICKLINK_STYLES = new Set(['gold', 'purple']);
+// Who sees a toolbar entry. Unset means always; 'never' hides it for everyone
+// (logged in too), 'loggedin' hides it from logged-out visitors. Shared by a
+// league's entry and a quickLinks entry, like the style field above.
+const QUICKLINK_VISIBILITIES = new Set(['never', 'loggedin']);
 
 // Retired fields. Anything listed here is stripped on save rather than being
 // carried through by mergeLeague's unknown-key passthrough, which is what keeps
@@ -63,7 +67,7 @@ const KEY_ORDER = [
   'id', 'franchiseId', 'name', 'displayName', 'type', 'provider',
   'tags', 'lineupPilot', 'rankingType', 'scoring', 'season', 'startYear', 'rulesUrl', 'commishContact',
   'rosterLimit', 'irEligibility', 'irSalaryPercent',
-  'nickname', 'style',
+  'nickname', 'style', 'visibility',
   'dues', 'payout1', 'payout2', 'payout3', 'payoutDivisionWinner', 'payoutWeeklyHigh', 'payoutSeasonHigh',
 ];
 
@@ -103,7 +107,7 @@ const SCORING_PAYOUT_FIELDS = [
 // to fall back to).
 // `group` is free text: every link sharing one (case-insensitively) folds into
 // a single dropdown pill in the toolbar, labelled with that name.
-const LINK_KEY_ORDER = ['url', 'nickname', 'style', 'group'];
+const LINK_KEY_ORDER = ['url', 'nickname', 'style', 'visibility', 'group'];
 
 // The one permanent, non-editable quickLinks entry: `{ "type": "leagues" }`
 // marks where the league links sit in the toolbar as a single solid block, so
@@ -310,6 +314,9 @@ function validate(leagues) {
     if (league.style != null && league.style !== '' && !QUICKLINK_STYLES.has(league.style)) {
       errors.push(`${label}: toolbar style must be gold, purple, or left blank for plain.`);
     }
+    if (league.visibility != null && league.visibility !== '' && !QUICKLINK_VISIBILITIES.has(league.visibility)) {
+      errors.push(`${label}: toolbar visibility must be never, loggedin, or left blank for always.`);
+    }
     // Feeds the History tab's Finances card. All six are optional and
     // independent — a league can have dues entered with no payouts yet, or
     // vice versa; the card renders whatever's known and dashes the rest.
@@ -361,6 +368,9 @@ function validateQuickLinks(links) {
     // QUICKLINK_STYLES above. Blank/unset means plain.
     if (link.style != null && link.style !== '' && !QUICKLINK_STYLES.has(link.style)) {
       errors.push(`${where}: style must be gold, purple, or left blank for plain.`);
+    }
+    if (link.visibility != null && link.visibility !== '' && !QUICKLINK_VISIBILITIES.has(link.visibility)) {
+      errors.push(`${where}: visibility must be never, loggedin, or left blank for always.`);
     }
     if (link.group != null && typeof link.group !== 'string') {
       errors.push(`${where}: group must be text.`);
@@ -435,6 +445,7 @@ function mergeLeague(league) {
   putMoney('irSalaryPercent', league.irSalaryPercent);
   put('nickname', league.nickname == null ? '' : String(league.nickname).trim());
   put('style', league.style);
+  put('visibility', league.visibility);
   putMoney('dues', league.dues);
   putMoney('payout1', league.payout1);
   putMoney('payout2', league.payout2);
@@ -464,6 +475,7 @@ function mergeLink(link) {
   out.url = String(link.url).trim();
   out.nickname = String(link.nickname).trim();
   if (link.style != null && link.style !== '') out.style = link.style;
+  if (link.visibility != null && link.visibility !== '') out.visibility = link.visibility;
   const group = link.group == null ? '' : String(link.group).trim();
   if (group) out.group = group;
   for (const [k, v] of Object.entries(link)) {

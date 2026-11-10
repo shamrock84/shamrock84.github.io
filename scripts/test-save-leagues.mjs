@@ -72,6 +72,13 @@ check('rejects an unknown toolbar style', validate(withField('style', 'silver'))
 check('allows a blank toolbar style (plain)', validate(withField('style', '')).length === 0);
 check('allows a gold toolbar style', validate(withField('style', 'gold')).length === 0);
 check('allows a purple toolbar style', validate(withField('style', 'purple')).length === 0);
+// visibility — who sees the toolbar entry; blank means always.
+check('rejects an unknown toolbar visibility', validate(withField('visibility', 'sometimes')).length > 0);
+check('allows blank, never and loggedin toolbar visibility', ['', 'never', 'loggedin'].every((v) => validate(withField('visibility', v)).length === 0));
+check('mergeLeague keeps visibility and drops blank', mergeLeague({ id: '1', visibility: 'never' }).visibility === 'never' && !('visibility' in mergeLeague({ id: '1', visibility: '' })));
+check('rejects a quick link with an unknown visibility',
+  validateQuickLinks([{ url: 'https://example.com', nickname: 'Example', visibility: 'x' }]).length > 0);
+check('mergeLink keeps visibility', mergeLink({ url: 'https://example.com', nickname: 'E', visibility: 'loggedin' }).visibility === 'loggedin');
 // displayName — free text overriding the live-synced name everywhere on the
 // page (leagueDisplayName), not just the toolbar the way nickname is.
 check('rejects a non-text displayName', validate(withField('displayName', { oops: 1 })).length > 0);

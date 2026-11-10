@@ -837,13 +837,13 @@ const rosterLimits = (overrides = {}) => ({ size: 28, taxi: 4, ir: 0, position: 
 	assert.equal(digest(league({ draftInProgress: true })).stale.length, 0);
 	assert.equal(digest(league()).stale.length, 1);
 
-	// Logged out: nothing dismissed, nothing pruned.
+	// Logged out: the device's saved dismissals still hide rows, nothing pruned.
 	setDismissals({ L1: { 'injury:1': '1' } });
 	vm.runInContext('authToken = null;', context);
 	out = digest(healthy);
 	assert.equal(out.stale.length, 0);
 	out = digest(injured());
-	assert.equal(out.rows[0].dismissed, false);
+	assert.equal(out.rows[0].dismissed, true);
 }
 
 console.log('test-problems-digest: all assertions passed');
