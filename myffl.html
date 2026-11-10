@@ -4056,12 +4056,19 @@
 		.admin-links-list {
 			display: flex;
 			flex-direction: column;
-			gap: 0.45rem;
+			gap: 0.7rem;
 		}
+		/* Each link is its own tile, so on a phone, where a row wraps to three
+		   lines, it's clear which fields and which arrows belong together. */
 		.admin-link-row {
 			display: flex;
 			align-items: flex-end;
 			gap: 0.5rem;
+			padding: 0.6rem;
+			border: 1px solid var(--border);
+			border-left: 4px solid var(--accent);
+			border-radius: 8px;
+			background: var(--bg);
 		}
 		.admin-link-row .admin-field {
 			min-width: 0;
@@ -4080,6 +4087,33 @@
 		   fields beside it. */
 		.admin-link-row .admin-field-style {
 			flex: 0 0 auto;
+		}
+		/* Phone: six fields and two buttons in one flex line leave each a
+		   sliver, so let the row wrap — the URL takes a full line, the rest
+		   share the lines below it. */
+		@media (max-width: 40rem) {
+			.admin-link-row {
+				flex-wrap: wrap;
+			}
+			.admin-link-row .admin-field-link {
+				flex: 1 1 100%;
+			}
+			.admin-link-row .admin-field-nickname,
+			.admin-link-row .admin-field-group {
+				flex: 1 1 40%;
+			}
+			.admin-link-row .admin-field-style {
+				flex: 1 1 30%;
+			}
+			/* iOS sizes a select to its widest option and ignores flex-basis, which
+			   is what squeezed the text fields to nothing; pin every control to
+			   its cell. */
+			.admin-link-row .admin-field input,
+			.admin-link-row .admin-field select {
+				width: 100%;
+				min-width: 0;
+				box-sizing: border-box;
+			}
 		}
 		/* The permanent League Links block: one tinted, locked-looking bar in
 		   place of the three fields, under the same "Link" caption. */
@@ -17347,7 +17381,7 @@
 		// a Quick Links extra, see appendQuickLink. Blank means plain, the
 		// look every toolbar entry had before this field existed.
 		const ADMIN_QUICKLINK_STYLES = [['', 'Plain'], ['gold', 'Gold'], ['purple', 'Purple']];
-		const ADMIN_QUICKLINK_VISIBILITIES = [['', 'Show always'], ['loggedin', 'Show logged in'], ['never', 'Show never']];
+		const ADMIN_QUICKLINK_VISIBILITIES = [['', 'Always'], ['loggedin', 'Logged in'], ['never', 'Never']];
 
 		// Unsaved edits, kept across re-renders (a lineup submission or a
 		// finished sync both call renderGrid) so typing isn't lost. Cleared on
@@ -17978,7 +18012,7 @@
 				// name it falls back to when blank is doing nothing.
 				if (league.nickname && league.nickname !== (league.displayName || name)) bits.push(`Toolbar "${league.nickname}"`);
 				if (league.style) bits.push(`${adminLabelFor(ADMIN_QUICKLINK_STYLES, league.style)} toolbar style`);
-				if (league.visibility) bits.push(adminLabelFor(ADMIN_QUICKLINK_VISIBILITIES, league.visibility) + ' in toolbar');
+				if (league.visibility) bits.push(`Toolbar: ${adminLabelFor(ADMIN_QUICKLINK_VISIBILITIES, league.visibility)}`);
 				// Always last and always present, so a scan down the list reads
 				// these in one column. The money was the one group of fields the
 				// collapsed row said nothing about at all, which made "which
