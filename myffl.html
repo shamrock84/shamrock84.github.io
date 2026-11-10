@@ -7098,10 +7098,21 @@
 			if (e.key === 'Escape') closeQuickLinkCombos();
 		});
 
+		// Toolbar visibility: unset = always, 'loggedin' = only when logged in,
+		// 'never' = hidden for everyone. Toolbar only; the league's cards stay.
+		function quickLinkVisible(visibility) {
+			return visibility === 'never' ? false : visibility === 'loggedin' ? !!authToken : true;
+		}
+
 		function renderQuickLinks() {
 			const bar = document.getElementById('quicklinks');
 			if (!bar) return;
-			const leagues = (pageData?.leagues || []).filter((league) => league.type !== 'draftonly');
+			// Logged in with the live config loaded, its per-league visibility wins
+			// over the synced snapshot's, same as the Quick Links entries below.
+			const liveVisibility = new Map();
+			if (authToken && Array.isArray(leagueConfig?.leagues)) for (const l of leagueConfig.leagues) liveVisibility.set(l.id, l.visibility);
+			const leagues = (pageData?.leagues || []).filter((league) => league.type !== 'draftonly'
+				&& quickLinkVisible(liveVisibility.has(league.id) ? liveVisibility.get(league.id) : league.visibility));
 			bar.innerHTML = '';
 			const taskCounts = quickLinkTaskCounts();
 			const problemCounts = leagueProblemCounts();
@@ -7176,7 +7187,7 @@
 			if (!entries.some((e) => e?.type === 'leagues')) appendLeagueLinks();
 			for (const extra of entries) {
 				if (extra?.type === 'leagues') appendLeagueLinks();
-				else {
+				else if (quickLinkVisible(extra.visibility)) {
 					const opts = { url: extra.url, label: extra.nickname, style: extra.style, taskCount: taskCounts[extra.nickname] };
 					const groupName = typeof extra.group === 'string' ? extra.group.trim() : '';
 					if (groupName) appendGroupedLink(opts, groupName);
@@ -17336,6 +17347,7 @@
 		// a Quick Links extra, see appendQuickLink. Blank means plain, the
 		// look every toolbar entry had before this field existed.
 		const ADMIN_QUICKLINK_STYLES = [['', 'Plain'], ['gold', 'Gold'], ['purple', 'Purple']];
+		const ADMIN_QUICKLINK_VISIBILITIES = [['', 'Show always'], ['loggedin', 'Show logged in'], ['never', 'Show never']];
 
 		// Unsaved edits, kept across re-renders (a lineup submission or a
 		// finished sync both call renderGrid) so typing isn't lost. Cleared on
@@ -17966,6 +17978,7 @@
 				// name it falls back to when blank is doing nothing.
 				if (league.nickname && league.nickname !== (league.displayName || name)) bits.push(`Toolbar "${league.nickname}"`);
 				if (league.style) bits.push(`${adminLabelFor(ADMIN_QUICKLINK_STYLES, league.style)} toolbar style`);
+				if (league.visibility) bits.push(adminLabelFor(ADMIN_QUICKLINK_VISIBILITIES, league.visibility) + ' in toolbar');
 				// Always last and always present, so a scan down the list reads
 				// these in one column. The money was the one group of fields the
 				// collapsed row said nothing about at all, which made "which
@@ -18186,6 +18199,7 @@
 					// un-chipped link text the toolbar always used before this
 					// existed.
 					field('Toolbar Style', adminSelect(ADMIN_QUICKLINK_STYLES, league.style, changed((v) => { league.style = v || undefined; })));
+					field('Toolbar Visibility', adminSelect(ADMIN_QUICKLINK_VISIBILITIES, league.visibility, changed((v) => { league.visibility = v || undefined; })));
 
 					// Read by nothing outside the History tab. Start Year leads the
 					// group because it's the switch that decides which years the
@@ -18439,6 +18453,10 @@
 					styleWrap.appendChild(el('span', { class: 'admin-field-label', text: 'Style' }));
 					styleWrap.appendChild(adminSelect(ADMIN_QUICKLINK_STYLES, link.style, (v) => { link.style = v || undefined; }));
 					row.appendChild(styleWrap);
+					const visWrap = el('label', { class: 'admin-field admin-field-style' });
+					visWrap.appendChild(el('span', { class: 'admin-field-label', text: 'Visibility' }));
+					visWrap.appendChild(adminSelect(ADMIN_QUICKLINK_VISIBILITIES, link.visibility, (v) => { link.visibility = v || undefined; }));
+					row.appendChild(visWrap);
 				}
 				// Array order is toolbar order. Same arrows as the Leagues list
 				// and Tasks; the splice acts on the draft, so nothing is saved
