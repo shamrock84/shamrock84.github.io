@@ -34,7 +34,7 @@
 //
 // QUICK LINKS. The page's header toolbar, edited from the Admin tab's Quick
 // Links card: `{ resource: 'quicklinks', links: [{ url, nickname, style?,
-// group? }] }`, the whole ordered list replaced in one write (array order is
+// group?, visibility? }] }`, the whole ordered list replaced in one write (array order is
 // toolbar order). Same fields as myFFL's quickLinks in config/leagues.json,
 // minus the League Links block, but stored in Upstash (QUICKLINKS_KEY) rather
 // than committed to the repo. Like the seats, the GET is public: logged-out
@@ -67,6 +67,9 @@ const SEAT_ID = /^\d{1,3}$/;
 
 const MAX_QUICKLINKS = 50;
 const QUICKLINK_STYLES = new Set(['gold', 'purple']);
+// Unset = always; 'loggedin' hides from logged-out visitors; 'never' hides for all.
+// Page-side only: the public GET still returns every link.
+const QUICKLINK_VISIBILITIES = new Set(['never', 'loggedin']);
 
 export { validatePatch, applyPatch, emptyDocument, validateTaskPatch, applyTaskPatch, validateQuickLinks, normalizeQuickLinks, VIKINGS_KEY, TASKS_KEY, QUICKLINKS_KEY };
 
@@ -191,17 +194,19 @@ function validateQuickLinks(body) {
     else if (nickname.length > 40) errors.push(`${where}: nickname is longer than 40 characters.`);
     if (!/^https?:\/\/\S+$/i.test(url) || url.length > 500) errors.push(`${where}: link must start with http:// or https://.`);
     if (link.style != null && link.style !== '' && !QUICKLINK_STYLES.has(link.style)) errors.push(`${where}: style must be gold, purple, or left blank for plain.`);
+    if (link.visibility != null && link.visibility !== '' && !QUICKLINK_VISIBILITIES.has(link.visibility)) errors.push(`${where}: visibility must be never, loggedin, or left blank for always.`);
     if (link.group != null && (typeof link.group !== 'string' || link.group.trim().length > 40)) errors.push(`${where}: group must be text up to 40 characters.`);
   });
   return { errors };
 }
 
 // Pure: the stored shape. Trims, drops blank optional fields and anything
-// unknown, so what reaches the page is only url, nickname, style and group.
+// unknown, so what reaches the page is only url, nickname, style, visibility and group.
 function normalizeQuickLinks(links) {
   return (links || []).map((link) => {
     const out = { url: link.url.trim(), nickname: link.nickname.trim() };
     if (link.style) out.style = link.style;
+    if (link.visibility) out.visibility = link.visibility;
     const group = typeof link.group === 'string' ? link.group.trim() : '';
     if (group) out.group = group;
     return out;

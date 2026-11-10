@@ -121,6 +121,10 @@ check('quick links: rejects a missing nickname, a non-http link and a bad style'
 check('quick links: normalizing trims, drops blanks and unknown keys, keeps order', () => {
   assert.deepEqual(normalizeQuickLinks([{ url: ' https://a.com ', nickname: ' A ', style: '', group: ' ', extra: 1 }, { url: 'https://b.com', nickname: 'B', style: 'purple', group: 'G' }]),
     [{ url: 'https://a.com', nickname: 'A' }, { url: 'https://b.com', nickname: 'B', style: 'purple', group: 'G' }]);
+  assert.deepEqual(normalizeQuickLinks([{ url: 'https://a.com', nickname: 'A', visibility: 'never' }, { url: 'https://b.com', nickname: 'B', visibility: '' }]),
+    [{ url: 'https://a.com', nickname: 'A', visibility: 'never' }, { url: 'https://b.com', nickname: 'B' }]);
+  assert.ok(!qlOk([{ url: 'https://a.com', nickname: 'x', visibility: 'sometimes' }]));
+  assert.ok(qlOk([{ url: 'https://a.com', nickname: 'x', visibility: 'loggedin' }]));
 });
 
 if (failures) { console.log(`\n${failures} failed`); process.exit(1); }

@@ -419,14 +419,14 @@
 		#quicklinks .quicklink-combo-menu a { background: var(--card-bg); border: 1px solid var(--border); border-radius: 999px; padding: 0.15rem 0.55rem; }
 		#quicklinks .quicklink-combo-menu a::after { display: none; }
 		/* Admin > Quick Links rows. */
-		.ql-list { display: flex; flex-direction: column; gap: 0.6rem; }
-		.ql-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.4rem 0.5rem; }
+		.ql-list { display: flex; flex-direction: column; gap: 0.7rem; }
+		.ql-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.4rem 0.5rem; padding: 0.6rem; border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 8px; background: var(--bg); }
 		.ql-field { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
 		.ql-field span { font-size: 0.7rem; color: var(--muted); }
 		.ql-link { flex: 2 1 14rem; }
 		.ql-nick, .ql-group { flex: 1 1 7rem; }
 		.ql-style { flex: 0 0 auto; }
-		.ql-row .task-input { width: 100%; }
+		.ql-row .task-input { width: 100%; min-width: 0; box-sizing: border-box; }
 		.ql-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 0.8rem; }
 		.ql-errors { color: var(--ir-text); font-size: 0.85rem; margin: 0.5rem 0 0; padding-left: 1.1rem; }
 		.ql-note { color: var(--muted); font-size: 0.8rem; margin: 0.6rem 0 0; }
@@ -1305,6 +1305,7 @@
 			bar.textContent = '';
 			const groups = new Map();
 			for (const link of quickLinks) {
+				if (link.visibility === 'never' || (link.visibility === 'loggedin' && !authToken)) continue;
 				const opts = { url: link.url, label: link.nickname, style: link.style };
 				const name = typeof link.group === 'string' ? link.group.trim() : '';
 				if (!name) { appendQuickLink(bar, opts); continue; }
@@ -1343,7 +1344,7 @@
 		let qlErrors = [];
 		let qlSaving = false;
 		let qlCardEl = null;
-		const qlCopy = (list) => list.map((l) => ({ url: l.url || '', nickname: l.nickname || '', style: l.style || '', group: l.group || '' }));
+		const qlCopy = (list) => list.map((l) => ({ url: l.url || '', nickname: l.nickname || '', style: l.style || '', visibility: l.visibility || '', group: l.group || '' }));
 		const qlDirty = () => JSON.stringify(qlCopy(qlDraft)) !== JSON.stringify(qlCopy(quickLinks));
 
 		function refreshQuickLinksCard() {
@@ -1405,6 +1406,12 @@
 					return o;
 				}));
 				style.addEventListener('change', () => { link.style = style.value; });
+				const visibility = el('select', { class: 'task-input' }, [['', 'Always'], ['loggedin', 'Logged in'], ['never', 'Never']].map(([v, t]) => {
+					const o = el('option', { value: v, text: t });
+					if ((link.visibility || '') === v) o.selected = true;
+					return o;
+				}));
+				visibility.addEventListener('change', () => { link.visibility = visibility.value; });
 				const move = (to) => { qlDraft.splice(to, 0, qlDraft.splice(i, 1)[0]); refreshQuickLinksCard(); };
 				const up = el('button', { type: 'button', class: 'task-icon-btn task-save-btn', title: 'Move up', 'aria-label': 'Move up', text: '↑' });
 				const down = el('button', { type: 'button', class: 'task-icon-btn task-save-btn', title: 'Move down', 'aria-label': 'Move down', text: '↓' });
@@ -1419,6 +1426,7 @@
 					field('ql-nick', 'Nickname', text(link, 'nickname', 'e.g. Vikings')),
 					field('ql-group', 'Group', text(link, 'group', 'optional')),
 					field('ql-style', 'Style', style),
+					field('ql-style', 'Visibility', visibility),
 					up, down, remove,
 				]));
 			});
@@ -1426,7 +1434,7 @@
 			card.appendChild(list);
 			const add = el('button', { type: 'button', class: 'task-add-btn', text: '+ Add a link' });
 			add.addEventListener('click', () => {
-				qlDraft.push({ url: '', nickname: '', style: '', group: '' });
+				qlDraft.push({ url: '', nickname: '', style: '', visibility: '', group: '' });
 				refreshQuickLinksCard();
 				const rows = qlCardEl.querySelectorAll('.ql-row');
 				const last = rows[rows.length - 1];
