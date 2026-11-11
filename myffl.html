@@ -389,20 +389,6 @@
 		.auth-control .lineup-login {
 			margin-top: 0;
 		}
-		.auth-status-text {
-			font-size: 0.8rem;
-			color: var(--muted);
-			margin-right: 0.4rem;
-		}
-		.auth-logout-btn {
-			background: none;
-			border: none;
-			color: var(--muted);
-			font-size: 0.78rem;
-			cursor: pointer;
-			padding: 0;
-			text-decoration: underline;
-		}
 		#sync-btn {
 			display: inline-flex;
 			align-items: center;
@@ -6648,7 +6634,7 @@
 
 		function buildLoginPrompt() {
 			const wrap = el('div', { class: 'lineup-login' });
-			const toggleBtn = el('button', { type: 'button', class: 'lineup-login-toggle', text: 'Log in for advanced features' });
+			const toggleBtn = el('button', { type: 'button', class: 'lineup-login-toggle', text: 'Log in' });
 			const form = el('form', { class: 'lineup-login-form hidden' });
 			const input = el('input', { type: 'password', placeholder: 'Password', autocomplete: 'current-password' });
 			const submitBtn = el('button', { type: 'submit', text: 'Log in' });
@@ -6870,8 +6856,7 @@
 			// control, which would hide the Admin tab, which is where you'd go
 			// to switch them back on.
 			if (isLoggedIn()) {
-				container.appendChild(el('span', { class: 'auth-status-text', text: 'Logged in for advanced features' }));
-				const logoutBtn = el('button', { type: 'button', class: 'auth-logout-btn', text: 'Log out' });
+				const logoutBtn = el('button', { type: 'button', class: 'lineup-login-toggle', text: 'Log out' });
 				logoutBtn.addEventListener('click', doLogout);
 				container.appendChild(logoutBtn);
 			} else {
