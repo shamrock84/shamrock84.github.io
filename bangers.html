@@ -151,12 +151,13 @@
 			text-align: center;
 			font-family: Georgia, 'Times New Roman', serif;
 			font-size: 1.5rem;
-			color: #f5c542;
-			background: linear-gradient(180deg, #4d2590 0%, #34176a 55%, #26104f 100%);
-			border: 1px solid #aeb2bc;
-			border-color: #eceef2 #8b909b #8b909b #eceef2;
-			box-shadow: 0 3px 7px rgba(30, 14, 56, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.22);
-			text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+			color: #2f1259;
+			position: relative;
+			border-radius: 8px;
+			border: 1px solid rgba(255, 255, 255, 0.75);
+			background: linear-gradient(165deg, #f6f7fa 0%, #d3d6dc 42%, #b4b8c1 100%);
+			box-shadow: 0 3px 7px rgba(40, 20, 70, 0.45), inset 0 1px 0 #fff, inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+			text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
 			letter-spacing: 0.02em;
 		}
 		.plaques { display: grid; grid-template-columns: repeat(auto-fill, minmax(13.5rem, 1fr)); gap: 0.9rem; }
@@ -187,6 +188,19 @@
 		}
 		.plaque::before { left: 6px; }
 		.plaque::after { right: 6px; }
+		/* The title plate and year bands carry the same screws. */
+		.board-title::before, .board-title::after, .year-band::before, .year-band::after {
+			content: '';
+			position: absolute;
+			top: 50%;
+			width: 6px;
+			height: 6px;
+			margin-top: -3px;
+			border-radius: 50%;
+			background: radial-gradient(circle at 35% 35%, #ffffff, #6b6f78);
+		}
+		.board-title::before, .year-band::before { left: 6px; }
+		.board-title::after, .year-band::after { right: 6px; }
 		.plaque-year { font-size: 0.95rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #3f1d72; }
 		.plaque-by { font-size: 0.85rem; font-weight: 700; color: #1b1425; }
 		.plaque-by.unknown { font-weight: 400; font-style: italic; color: #5d5a68; }
@@ -228,16 +242,16 @@
 			font-weight: 700;
 			text-transform: uppercase;
 			letter-spacing: 0.04em;
-			color: #f5c542;
-			background: linear-gradient(180deg, #43207f 0%, #2c1259 100%);
-			border: 1px solid #aeb2bc;
-			border-color: #eceef2 #8b909b #8b909b #eceef2;
-			box-shadow: 0 2px 5px rgba(30, 14, 56, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.18);
-			text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+			color: #2f1259;
+			border-radius: 8px;
+			border: 1px solid rgba(255, 255, 255, 0.75);
+			background: linear-gradient(165deg, #f6f7fa 0%, #d3d6dc 42%, #b4b8c1 100%);
+			box-shadow: 0 3px 7px rgba(40, 20, 70, 0.45), inset 0 1px 0 #fff, inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+			text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
 		}
-		.year-band:hover { filter: brightness(1.12); }
-		.year-band:focus-visible { outline: 2px solid #f5c542; outline-offset: 2px; }
-		.year-chev { position: absolute; left: 0.8rem; top: 50%; margin-top: -0.55em; font-size: 0.85rem; line-height: 1.1; transition: transform 0.12s; transform: rotate(90deg); }
+		.year-band:hover { filter: brightness(1.05); }
+		.year-band:focus-visible { outline: 2px solid #2f1259; outline-offset: 2px; }
+		.year-chev { position: absolute; left: 1.1rem; color: #3f1d72; top: 50%; margin-top: -0.55em; font-size: 0.85rem; line-height: 1.1; transition: transform 0.12s; transform: rotate(90deg); }
 		.year-section.folded .year-chev { transform: none; }
 		.board-tools { display: flex; justify-content: flex-end; margin: -0.4rem 0 0.7rem; }
 		.fold-all {
@@ -246,7 +260,7 @@
 		}
 		.fold-all:hover { background: #fff; }
 		.fold-all:focus-visible { outline: 2px solid #2f1259; outline-offset: 2px; }
-		.year-band small { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.03em; color: #d9cdf0; text-shadow: none; }
+		.year-band small { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.03em; color: #4a4659; text-shadow: none; }
 		.board-empty { padding: 1.2rem; text-align: center; color: #efe6fb; font-family: Georgia, 'Times New Roman', serif; }
 
 		/* ---- Admin ------------------------------------------------------------ */
@@ -524,14 +538,20 @@
 		let loadState = 'loading';           // loading | ready | failed
 		let loadError = '';
 		let tab = 'winners';
-		// Years folded shut on the Nominees tab, by year id; absence means open.
-		// Kept on this device, like the Admin cards' collapsed state.
+		// Which years are folded on the Nominees tab, kept on this device like the
+		// Admin cards' collapsed state.
 		const FOLD_KEY = 'bangersNomineesFolded';
-		let foldedYears = {};
-		try { const f = JSON.parse(localStorage.getItem(FOLD_KEY)); if (f && typeof f === 'object' && !Array.isArray(f)) foldedYears = f; } catch (e) { /* all open */ }
+		// id -> true (folded) / false (open). A year with no saved choice follows the
+		// default: the most recent year is open and every older one folded.
+		let foldState = {};
+		try {
+			const f = JSON.parse(localStorage.getItem(FOLD_KEY));
+			if (f && typeof f === 'object' && !Array.isArray(f)) for (const [id, v] of Object.entries(f)) if (typeof v === 'boolean') foldState[id] = v;
+		} catch (e) { /* defaults */ }
 		function saveFolded() {
-			try { localStorage.setItem(FOLD_KEY, JSON.stringify(foldedYears)); } catch (e) { /* works for this visit */ }
+			try { localStorage.setItem(FOLD_KEY, JSON.stringify(foldState)); } catch (e) { /* works for this visit */ }
 		}
+		const isFolded = (y, index) => (y.id in foldState ? foldState[y.id] : index > 0);
 		try { const t = localStorage.getItem(TAB_KEY); if (t === 'nominees' || t === 'admin') tab = t; } catch (e) { /* default tab */ }
 
 		const statusEl = document.getElementById('status');
@@ -648,11 +668,11 @@
 			}
 			const sections = [];
 			const allBtn = el('button', { type: 'button', class: 'fold-all' });
-			const refreshAll = () => { allBtn.textContent = years.every((y) => foldedYears[y.id]) ? 'Expand all' : 'Collapse all'; };
+			const refreshAll = () => { allBtn.textContent = years.every((y, i) => isFolded(y, i)) ? 'Expand all' : 'Collapse all'; };
 			allBtn.addEventListener('click', () => {
-				const fold = !years.every((y) => foldedYears[y.id]);
+				const fold = !years.every((y, i) => isFolded(y, i));
 				for (const { y, section, band } of sections) {
-					if (fold) foldedYears[y.id] = true; else delete foldedYears[y.id];
+					foldState[y.id] = fold;
 					section.classList.toggle('folded', fold);
 					band.setAttribute('aria-expanded', String(!fold));
 				}
@@ -660,10 +680,10 @@
 				refreshAll();
 			});
 			board.appendChild(el('div', { class: 'board-tools' }, [allBtn]));
-			for (const y of years) {
+			years.forEach((y, index) => {
 				const sorted = [...y.nominees].sort((a, b) => Number(b.winner) - Number(a.winner)); // stable: ties keep their order
 				const count = `${sorted.length} ${sorted.length === 1 ? 'nominee' : 'nominees'}`;
-				const folded = !!foldedYears[y.id];
+				const folded = isFolded(y, index);
 				const band = el('button', { type: 'button', class: 'year-band', 'aria-expanded': String(!folded) }, [
 					el('span', { class: 'year-chev', 'aria-hidden': 'true', text: '\u25B8' }),
 					el('span', { text: y.label }),
@@ -676,13 +696,13 @@
 					const next = !section.classList.contains('folded');
 					section.classList.toggle('folded', next);
 					band.setAttribute('aria-expanded', String(!next));
-					if (next) foldedYears[y.id] = true; else delete foldedYears[y.id];
+					foldState[y.id] = next;
 					saveFolded();
 					refreshAll();
 				});
 				sections.push({ y, section, band });
 				board.appendChild(section);
-			}
+			});
 			refreshAll();
 			return [board];
 		}
