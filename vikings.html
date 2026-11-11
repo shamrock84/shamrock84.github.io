@@ -88,6 +88,28 @@
 			font-size: 1.35rem;
 			color: var(--accent);
 		}
+		/* Centered masthead, same treatment as myffl.html's .site-logo. */
+		header {
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			text-align: center;
+		}
+		.site-title {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+		.site-logo {
+			height: 64px;
+			width: auto;
+			display: block;
+		}
+		@media (prefers-color-scheme: dark) {
+			.site-logo {
+				filter: invert(1);
+			}
+		}
 		.subtitle {
 			font-size: 0.8rem;
 			color: var(--muted);
@@ -539,7 +561,9 @@
 	<main>
 		<header>
 			<div>
-				<h1 id="title">Vikings Season Tickets</h1>
+				<h1 id="title" class="site-title">
+					<img src="images/seasonticketlogo.png" alt="Vikings Season Tickets" class="site-logo">
+				</h1>
 				<div class="subtitle" id="holder-since">Ticket holder since 2007</div>
 			</div>
 			<div class="login" id="login"></div>
