@@ -43,9 +43,11 @@ async function main() {
 	}
 
 	// VIKINGS_TASKS=1 reads the vikings.html Admin tab's own list (api/vikings.js
-	// ?resource=tasks, login-gated on GET) instead of myFFL's plans document.
-	const vikings = process.env.VIKINGS_TASKS === '1';
-	const plansRes = await fetch(`${API_BASE}/api/${vikings ? 'vikings?resource=tasks' : 'plans'}`, {
+	// ?resource=tasks, login-gated on GET) instead of myFFL's plans document;
+	// BANGERS_TASKS=1 does the same for bangers.html (api/bangers.js).
+	const bangers = process.env.BANGERS_TASKS === '1';
+	const vikings = bangers || process.env.VIKINGS_TASKS === '1';
+	const plansRes = await fetch(`${API_BASE}/api/${vikings ? `${bangers ? 'bangers' : 'vikings'}?resource=tasks` : 'plans'}`, {
 		headers: { Authorization: `Bearer ${loginBody.token}` },
 	});
 	const plansBody = await plansRes.json();

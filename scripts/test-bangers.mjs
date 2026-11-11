@@ -7,7 +7,9 @@
 
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { validateBangers, normalizeBangers, serialize, isStaleBase } from '../api/bangers.js';
+import handler, { validateBangers, normalizeBangers, serialize, isStaleBase, TASKS_KEY, QUICKLINKS_KEY } from '../api/bangers.js';
+import { TASKS_KEY as VIKINGS_TASKS_KEY, QUICKLINKS_KEY as VIKINGS_QUICKLINKS_KEY } from '../api/vikings.js';
+import { createToken } from '../api/_lib/auth.mjs';
 
 let failures = 0;
 function check(name, fn) {
@@ -106,6 +108,53 @@ check('data/bangers.json (committed) is valid and already normalized', () => {
   assert.deepEqual(validateBangers(doc).errors, []);
   assert.equal(text, serialize(normalizeBangers(doc.years)), 'differs from what the Admin tab would write');
 });
+
+// ---- Tasks and Quick Links: who may do what, and which keys they use --------
+check('tasks and quick links use their own Upstash keys, never the Vikings page\'s', () => {
+  assert.notEqual(TASKS_KEY, VIKINGS_TASKS_KEY);
+  assert.notEqual(QUICKLINKS_KEY, VIKINGS_QUICKLINKS_KEY);
+  assert.notEqual(TASKS_KEY, QUICKLINKS_KEY);
+});
+
+// A tiny req/res pair. No store credentials are set, so a request that gets
+// past the auth checks stops at "No store is configured" (500) without any
+// network: 401 / 405 / 500 therefore tell the three outcomes apart.
+async function call(method, { query, body, token } = {}) {
+  const res = { code: null, json: null, headers: {}, setHeader(k, v) { this.headers[k] = v; }, status(c) { this.code = c; return this; }, end() { return this; } };
+  res.json = function (b) { this.body = b; return this; };
+  await handler({ method, query: query || {}, body: body || {}, headers: token ? { authorization: `Bearer ${token}` } : {} }, res);
+  return res.code;
+}
+
+const savedEnv = { ...process.env };
+for (const k of Object.keys(process.env)) if (/^(UPSTASH|KV_|REDIS|STORAGE_)/.test(k)) delete process.env[k];
+process.env.SESSION_SECRET = 'test-secret';
+const good = createToken('test-secret');
+
+for (const [name, run] of [
+  ['the quick-links GET is public (reaches the store check, not a 401)', async () => assert.equal(await call('GET', { query: { resource: 'quicklinks' } }), 500)],
+  ['the tasks GET needs a login', async () => {
+    assert.equal(await call('GET', { query: { resource: 'tasks' } }), 401);
+    assert.equal(await call('GET', { query: { resource: 'tasks' }, token: 'bogus' }), 401);
+    assert.equal(await call('GET', { query: { resource: 'tasks' }, token: good }), 500);
+  }],
+  ['every POST needs a login', async () => {
+    assert.equal(await call('POST', { body: { resource: 'quicklinks', links: [] } }), 401);
+    assert.equal(await call('POST', { body: { resource: 'tasks', tasks: {} } }), 401);
+    assert.equal(await call('POST', { body: { years: [] } }), 401);
+  }],
+  ['a bare GET (the list has none) is a 405', async () => assert.equal(await call('GET'), 405)],
+  ['other methods are a 405', async () => assert.equal(await call('DELETE'), 405)],
+  ['the list POST needs the GitHub token, then validates before it commits', async () => {
+    assert.equal(await call('POST', { token: good, body: { years: 'nope' } }), 500, 'GITHUB_CONTENTS_TOKEN not set');
+    process.env.GITHUB_CONTENTS_TOKEN = 'x';
+    assert.equal(await call('POST', { token: good, body: { years: 'nope' } }), 400);
+  }],
+]) {
+  try { await run(); console.log(`  ok   ${name}`); } catch (e) { failures++; console.log(`  FAIL ${name} — ${e.message}`); }
+}
+for (const k of Object.keys(process.env)) if (!(k in savedEnv)) delete process.env[k];
+Object.assign(process.env, savedEnv);
 
 if (failures) { console.log(`\n${failures} failed`); process.exit(1); }
 console.log('\nall passed');

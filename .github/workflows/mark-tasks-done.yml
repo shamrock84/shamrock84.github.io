@@ -20,6 +20,10 @@ on:
         description: "Mark the Vikings page's Admin tasks instead of myFFL's"
         type: boolean
         default: false
+      bangers:
+        description: "Use the Bangers page's Admin tasks instead of myFFL's (wins over the Vikings box)"
+        type: boolean
+        default: false
 
 jobs:
   mark-done:
@@ -46,4 +50,5 @@ jobs:
           SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
           TASK_TEXTS: ${{ github.event.inputs.tasks }}
           VIKINGS_TASKS: ${{ github.event.inputs.vikings == 'true' && '1' || '' }}
+          BANGERS_TASKS: ${{ github.event.inputs.bangers == 'true' && '1' || '' }}
         run: node scripts/mark-tasks-done.mjs

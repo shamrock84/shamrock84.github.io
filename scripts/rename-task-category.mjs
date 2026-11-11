@@ -14,8 +14,12 @@
 //   SITE_PASSWORD=... node scripts/rename-task-category.mjs "Bugs" "Bug"
 //   SITE_PASSWORD=... FROM_CATEGORY=Bugs TO_CATEGORY=Bug node scripts/rename-task-category.mjs
 //   VIKINGS_TASKS=1 ...   # the vikings.html Admin tab's own list instead
+//   BANGERS_TASKS=1 ...   # the bangers.html Admin tab's own list instead
 
-const VIKINGS = process.env.VIKINGS_TASKS === '1';
+const BANGERS = process.env.BANGERS_TASKS === '1';
+const VIKINGS = BANGERS || process.env.VIKINGS_TASKS === '1';
+// The two small pages keep their own task lists behind their own endpoints.
+const OWN_API = BANGERS ? 'bangers' : 'vikings';
 const API_BASE = process.env.MYFFL_API_BASE || 'https://shamrock84-github-io.vercel.app';
 
 // Pure, so the rename rule can be tested without a network: returns the
@@ -56,7 +60,7 @@ async function main() {
 	}
 	const token = loginBody.token;
 
-	const getRes = await fetch(`${API_BASE}/api/${VIKINGS ? 'vikings?resource=tasks' : 'plans'}`, { headers: { Authorization: `Bearer ${token}` } });
+	const getRes = await fetch(`${API_BASE}/api/${VIKINGS ? `${OWN_API}?resource=tasks` : 'plans'}`, { headers: { Authorization: `Bearer ${token}` } });
 	const getBody = await getRes.json();
 	if (!getRes.ok) {
 		console.error(`Fetching tasks failed (${getRes.status}): ${getBody.error || 'unknown error'}`);
@@ -75,7 +79,7 @@ async function main() {
 		plans.tasks[id] = changed[id];
 	}
 
-	const postRes = await fetch(`${API_BASE}/api/${VIKINGS ? 'vikings' : 'plans'}`, {
+	const postRes = await fetch(`${API_BASE}/api/${VIKINGS ? OWN_API : 'plans'}`, {
 		method: 'POST',
 		headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
 		body: JSON.stringify(VIKINGS ? { resource: 'tasks', tasks: changed } : { plans, mode: 'replace' }),
