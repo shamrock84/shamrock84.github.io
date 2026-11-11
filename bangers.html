@@ -1,165 +1,814 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <style type="text/css">
-    .plaqueframe{
-    background:#000;
-    padding:10px;
-    max-width:740px;
-    margin:0 auto;
-    border:2px solid #444;
-    border-color: #afafaf #444 #444 #afafaf;
-    }
-    .plaqueframe.flex{
-    width:auto;
-    margin:0 auto;
-    }
-    .plaque{
-    background:url(../images/wood_texture.jpg);
-    color:#999;
-    border:2px solid #444;
-    border-color:#444 #afafaf #afafaf #444;
-    }
-    .plaque div{ /* Plates */
-    overflow:hidden;
-    text-align:center;
-    float:left;
-    display:inline;/*ie6*/
-    background:url(../images/plaque.png) no-repeat;
-    width:157px;
-    height:81px;
-    margin-left:20px;
-    padding-bottom:20px;
-    }
-    .plaque h2{
-    padding:10px;
-    margin:10px 25px;
-    text-align:center;
-    border:1px solid #444;
-    border-color: #afafaf #444 #444 #afafaf;
-    font-size:20px;
-    background:#000;
-    color:#c90;
-    }
-    .plaque h3 {
-    margin:0;
-    font-size:13px;
-    padding:5px 3px 0 3px;
-    font-family: Georgia, "Times New Roman", Times, serif;
-    text-transform:uppercase;
-    color:#c90 !important;
-    text-align:center;
-    background:none;
-    }
-    .plaque h4{
-    margin:0;
-    padding:5px 6px 0 5px;
-    height:18px;
-    font-size:11px;
-    font-family: Georgia, "Times New Roman", Times, serif;
-    font-weight:bold;
-    color:#999;
-    text-align:center;
-    background:none;
-    }
-    .plaque h5{
-    margin:0;
-    padding:0 6px 0 5px;
-    height:28px;
-    font-size:11px;
-    font-family: Georgia, "Times New Roman", Times, serif;
-    font-weight:normal;
-    color:#999;
-    text-align:center;
-    background:none;
-    }
-    .plaque p{
-    font-size:10px;
-    font-weight:normal;
-    font-family:Arial, Helvetica, sans-serif;
-    margin:0;
-    padding:0 3px;
-    color:#999;
-    text-align:center;
-    background:none;
-    }
-    /*     Float containers fix - Thanks to: http://www.csscreator.com/attributes/containedfloat.php
-    =============================== */
-    .clearfix:after {
-         visibility: hidden;
-         display: block;
-         font-size: 0;
-         content: " ";
-         clear: both;
-         height: 0;
-         }
-    .clearfix { display: inline-block; }
-    /* start commented backslash hack */
-    * html .clearfix { height: 1%; }
-    .clearfix { display: block; }
-    /* close commented backslash hack */
-    </style>
-  </head>
-<body style="background-color:black;">
-<div class="plaqueframe flex">
-  <div class="plaque clearfix">
-    <h2>Hoot Owl Bangers</h2>
-    <div>
-      <h3>2023</h3>
-      <h4>Braden</h4>
-      <h5>"If I Were the Devil" by Colby Acuff</h5>
-    </div>
-    <div>
-      <h3>2022</h3>
-      <h4>Kristin</h4>
-      <h5>"Unapologetically Country as Hell" by Hardy</h5>
-    </div>
-    <div>
-      <h3>2021</h3>
-      <h4>Jason</h4>
-      <h5>"Lil' Bit" by Nelly & Florida Georgia Line</h5>
-    </div>
-    <div>
-      <h3>2020</h3>
-      <h4>Jason</h4>
-      <h5>"Hard to Forget" by Sam Hunt</h5>
-    </div>
-    <div>
-      <h3>2020 (Spring)</h3>
-      <h4>Braden</h4>
-      <h5>"I Wish Grandpa's Never Died" by Riley Green</h5>
-    </div>
-    <div>
-      <h3>2019</h3>
-      <h4>Kevin</h4>
-      <h5>"Beer Never Broke My Heard" by Luke Combs</h5>
-    </div>
-    <div>
-      <h3>2018</h3>
-      <h4>Kevin</h4>
-      <h5>"Sunrise, Sunburn, Sunset" by Luke Bryan</h5>
-    </div>
-    <div>
-      <h3>Grandfathered</h3>
-      <h4>Unkown</h4>
-      <h5>"Dirt Road Anthem (Remix)" by Jason Aldean ft. Ludacris</h5>
-    </div>
-    <div>
-      <h3>Grandfathered</h3>
-      <h4>Unkown</h4>
-      <h5>"Cruise" by Florida Georgia Line & Nelly</h5>
-    </div>
-    <div>
-      <h3>Grandfathered</h3>
-      <h4>Unkown</h4>
-      <h5>"Back Where I Come From" by Kenny Chesney</h5>
-    </div>
-    <div>
-      <h3>Grandfathered</h3>
-      <h4>Unkown</h4>
-      <h5>"Out Last Night" by Kenny Chesney</h5>
-    </div>
-  </div>
-</div>
-  </body>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>myBangers</title>
+	<meta property="og:title" content="Hoot Owl Bangers"/>
+	<meta property="og:image" content="https://melbostads.com/images/bangerslogo_large.png"/>
+	<link rel="apple-touch-icon" href="/bangersicons/apple-touch-icon.png?v=1">
+	<link rel="icon" type="image/png" sizes="32x32" href="/bangersicons/favicon-32x32.png?v=1">
+	<link rel="icon" type="image/png" sizes="16x16" href="/bangersicons/favicon-16x16.png?v=1">
+	<link rel="shortcut icon" href="/bangersicons/favicon.ico?v=1">
+	<meta name="theme-color" media="(prefers-color-scheme: light)" content="#4F2683">
+	<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#140f1e">
+	<style>
+		/* Same palette and shell as myffl.html and vikings.html (purple = primary
+		   accent, gold = "notable"); only the tokens this page uses are copied.
+		   Keep them in step if myffl.html's palette changes. The plaques are the
+		   exception: they are always dark brass on wood, in light mode too. */
+		:root {
+			--bg: #f5f3f9;
+			--card-bg: #ffffff;
+			--text: #1b1425;
+			--muted: #6b6478;
+			--border: #e3daf0;
+			--accent: #4F2683;
+			--chip-bg: #ede3f8;
+			--ir-text: #991b1b;
+			--ir-bg: #fef2f2;
+			--gain-text: #166534;
+			--gold: #FFC62F;
+			--gold-chip-bg: #fff3d1;
+			--gold-chip-text: #7a5c00;
+		}
+		@media (prefers-color-scheme: dark) {
+			:root {
+				--bg: #140f1e;
+				--card-bg: #1e1730;
+				--text: #ede9f5;
+				--muted: #a79bc2;
+				--border: #362a4a;
+				--accent: #b48ee0;
+				--chip-bg: #2c2145;
+				--ir-text: #fca5a5;
+				--ir-bg: #341313;
+				--gain-text: #86efac;
+				--gold-chip-bg: #3d2e05;
+				--gold-chip-text: #f0c33e;
+			}
+		}
+		body::before {
+			content: '';
+			display: block;
+			height: 4px;
+			background: linear-gradient(90deg, var(--accent), var(--gold));
+		}
+		* { box-sizing: border-box; }
+		body {
+			margin: 0;
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+			background: var(--bg);
+			color: var(--text);
+		}
+		.hidden { display: none !important; }
+		main { max-width: 62rem; margin: 0 auto; padding: 1.2rem 1rem; }
+		/* Centered masthead, same treatment as myffl.html's .site-logo. */
+		header {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			gap: 0.4rem;
+			text-align: center;
+			margin-bottom: 0.8rem;
+		}
+		h1 { margin: 0; }
+		.site-title { display: flex; align-items: center; justify-content: center; }
+		.site-logo-prefix {
+			font-family: Georgia, 'Times New Roman', serif;
+			font-weight: 400;
+			font-size: 1.85rem;
+			line-height: 1;
+			color: var(--text);
+			margin-right: 0.15rem;
+			margin-top: 0.75rem;
+		}
+		.site-logo { height: 64px; width: auto; display: block; }
+		@media (prefers-color-scheme: dark) { .site-logo { filter: invert(1); } }
+
+		/* Login control: same look as vikings.html's. */
+		.login { font-size: 0.8rem; }
+		.login-toggle { background: none; border: none; color: var(--accent); font-size: 0.8rem; font-weight: 600; cursor: pointer; padding: 0; }
+		.login-toggle:hover { text-decoration: underline; }
+		.login-form { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; justify-content: center; }
+		.login-form input[type="password"] {
+			flex: 1; min-width: 8rem; padding: 0.4rem 0.6rem; border-radius: 6px;
+			border: 1px solid var(--border); background: var(--card-bg); color: var(--text);
+			font-size: 16px; /* under 16px, iOS Safari zooms in on focus */
+		}
+		.login-form button[type="submit"] {
+			border: 1px solid var(--accent); background: var(--accent); color: #fff;
+			padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+		}
+		.login-form button[type="submit"]:disabled { opacity: 0.6; cursor: default; }
+		.login-form input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+		.login-status { font-size: 0.78rem; color: var(--ir-text); }
+
+		/* Pill tabs, same look as myffl.html's .tab-btn. */
+		.tabs { display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.9rem; }
+		.tab-btn {
+			border: 1px solid var(--border); background: var(--card-bg); color: var(--muted);
+			padding: 0.45rem 1rem; border-radius: 999px; font: inherit; font-size: 0.88rem; font-weight: 600; cursor: pointer;
+		}
+		.tab-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+		.tab-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+		.card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 0.8rem; }
+		.card-heading { margin: 0 0 0.6rem; font-size: 1.05rem; color: var(--accent); }
+		.card-heading.collapsible { position: relative; padding-right: 2.3rem; cursor: pointer; }
+		.card-collapse-toggle {
+			position: absolute; top: 50%; right: 0; transform: translateY(-50%);
+			background: none; border: none; padding: 0.15rem 0.3rem; margin: 0;
+			color: var(--muted); cursor: pointer; font-size: 1.5rem; line-height: 1; transition: transform 0.15s ease;
+		}
+		.card-collapse-toggle:hover { color: var(--text); }
+		.card.card-collapsed .card-collapse-toggle { transform: translateY(-50%) rotate(-90deg); }
+		.card.card-collapsed > *:not(.card-heading) { display: none; }
+		.card.card-collapsed > .card-heading { margin-bottom: 0; }
+		.message { padding: 1rem 0.2rem; color: var(--muted); }
+		.message.error { color: var(--ir-text); }
+		.status-bar { position: sticky; bottom: 0; background: var(--bg); padding: 0.2rem 0; }
+		.status { min-height: 1.2em; margin-top: 0.4rem; font-size: 0.8rem; color: var(--muted); text-align: center; }
+		.status.error { color: var(--ir-text); }
+		.status.ok { color: var(--gain-text); }
+
+		/* ---- The trophy board --------------------------------------------------
+		   Wood panel, a black title plate with gold lettering, and one brass-and-
+		   black plaque per song, as on the page this replaced, drawn in CSS so it
+		   scales to any screen. */
+		.board {
+			padding: 1rem;
+			border-radius: 12px;
+			border: 2px solid #444;
+			border-color: #afafaf #444 #444 #afafaf;
+			background: linear-gradient(rgba(30, 12, 4, 0.38), rgba(30, 12, 4, 0.38)), #5b2a14 url(images/wood_texture.jpg);
+			box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(0, 0, 0, 0.5);
+		}
+		.board-title {
+			margin: 0 0 1rem;
+			padding: 0.7rem 1rem;
+			text-align: center;
+			font-family: Georgia, 'Times New Roman', serif;
+			font-size: 1.5rem;
+			color: #d4a017;
+			background: #000;
+			border: 1px solid #444;
+			border-color: #afafaf #444 #444 #afafaf;
+			letter-spacing: 0.02em;
+		}
+		.plaques { display: grid; grid-template-columns: repeat(auto-fill, minmax(13.5rem, 1fr)); gap: 0.9rem; }
+		.plaque {
+			position: relative;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			text-align: center;
+			gap: 0.25rem;
+			padding: 0.8rem 1.3rem 0.9rem;
+			border-radius: 8px;
+			border: 1px solid rgba(255, 255, 255, 0.07);
+			background: linear-gradient(165deg, #35353a 0%, #16161a 55%, #0c0c0e 100%);
+			box-shadow: 0 3px 7px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+			font-family: Georgia, 'Times New Roman', serif;
+		}
+		/* A screw at each end. */
+		.plaque::before, .plaque::after {
+			content: '';
+			position: absolute;
+			top: 50%;
+			width: 6px;
+			height: 6px;
+			margin-top: -3px;
+			border-radius: 50%;
+			background: radial-gradient(circle at 35% 35%, #e8e8e8, #7a7a7a);
+		}
+		.plaque::before { left: 6px; }
+		.plaque::after { right: 6px; }
+		.plaque-year { font-size: 0.95rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #d4a017; }
+		.plaque-by { font-size: 0.85rem; font-weight: 700; color: #cfcfcf; }
+		.plaque-by.unknown { font-weight: 400; font-style: italic; color: #8f8f8f; }
+		.plaque-song { font-size: 0.82rem; line-height: 1.3; color: #a4a4a4; overflow-wrap: anywhere; }
+		.plaque-song q { quotes: '\201C' '\201D'; }
+		/* In the Nominees view the winner stands out and the also-rans recede. */
+		.plaque.winner { border-color: #d4a017; box-shadow: 0 0 0 1px #d4a017, 0 0 14px rgba(212, 160, 23, 0.45), 0 3px 7px rgba(0, 0, 0, 0.55); }
+		.plaque.nominee { opacity: 0.82; }
+		.plaque-badge {
+			margin-top: 0.15rem;
+			padding: 0.05rem 0.55rem;
+			border-radius: 999px;
+			background: #d4a017;
+			color: #1a1200;
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+			font-size: 0.65rem;
+			font-weight: 800;
+			letter-spacing: 0.06em;
+			text-transform: uppercase;
+		}
+		.year-band {
+			display: flex;
+			align-items: baseline;
+			justify-content: center;
+			gap: 0.6rem;
+			margin: 1.1rem 0 0.7rem;
+			padding: 0.35rem 0.8rem;
+			font-family: Georgia, 'Times New Roman', serif;
+			font-size: 1.05rem;
+			font-weight: 700;
+			text-transform: uppercase;
+			letter-spacing: 0.04em;
+			color: #d4a017;
+			background: rgba(0, 0, 0, 0.78);
+			border: 1px solid #444;
+			border-color: #afafaf #444 #444 #afafaf;
+		}
+		.year-band:first-of-type { margin-top: 0; }
+		.year-band small { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.03em; color: #a4a4a4; }
+		.board-empty { padding: 1.2rem; text-align: center; color: #e9dccb; font-family: Georgia, 'Times New Roman', serif; }
+
+		/* ---- Admin ------------------------------------------------------------ */
+		#view > * + * { margin-top: 0.8rem; }
+		.task-input {
+			font: inherit;
+			font-size: 16px;
+			padding: 0.35rem 0.55rem;
+			border: 1px solid var(--border);
+			border-radius: 6px;
+			background: var(--card-bg);
+			color: inherit;
+			min-width: 0;
+		}
+		.task-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+		.add-year-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0 0 0.8rem; }
+		.add-year-row .task-input { flex: 1 1 12rem; }
+		.task-add-btn {
+			font: inherit; font-size: 0.85rem; color: var(--accent); background: transparent;
+			border: 1px solid var(--accent); border-radius: 999px; padding: 0.35rem 0.9rem; cursor: pointer;
+		}
+		.task-add-btn:disabled { opacity: 0.5; cursor: default; }
+		.task-add-btn.primary { background: var(--accent); color: #fff; }
+		.task-icon-btn {
+			font: inherit; font-size: 0.8rem; line-height: 1; color: var(--ir-text); background: var(--ir-bg);
+			border: 1px solid var(--border); border-radius: 4px; padding: 0.3rem 0.4rem; cursor: pointer; flex-shrink: 0;
+		}
+		.task-icon-btn.move { color: var(--accent); background: var(--chip-bg); }
+		.task-icon-btn:disabled { opacity: 0.35; cursor: default; }
+		.year-mini { border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.7rem; margin-top: 0.5rem; }
+		.year-mini > summary {
+			display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.2rem 0.7rem; cursor: pointer; list-style: none;
+			font-weight: 700; color: var(--accent);
+		}
+		.year-mini > summary::-webkit-details-marker { display: none; }
+		.year-mini > summary::before { content: '\25B8'; display: inline-block; transition: transform 0.12s; }
+		.year-mini[open] > summary::before { transform: rotate(90deg); }
+		.year-sub { font-size: 0.8rem; font-weight: 400; color: var(--muted); }
+		.year-body { margin-top: 0.6rem; display: flex; flex-direction: column; gap: 0.6rem; }
+		.year-head-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.5rem; }
+		.year-head-row .task-input { flex: 1 1 10rem; font-weight: 600; }
+		.nom-row {
+			display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.4rem 0.5rem; padding: 0.6rem;
+			border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: 8px; background: var(--bg);
+		}
+		.nom-row.is-winner { border-left-color: var(--gold); }
+		.nom-field { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+		.nom-field span { font-size: 0.7rem; color: var(--muted); }
+		.nom-song { flex: 2 1 12rem; }
+		.nom-artist { flex: 2 1 10rem; }
+		.nom-by { flex: 1 1 7rem; }
+		.nom-field .task-input { width: 100%; }
+		.nom-win {
+			display: flex; align-items: center; gap: 0.35rem; align-self: center; flex: 0 0 auto;
+			font-size: 0.85rem; font-weight: 600; color: var(--gold-chip-text); background: var(--gold-chip-bg);
+			border-radius: 999px; padding: 0.3rem 0.7rem; cursor: pointer; user-select: none;
+		}
+		.nom-win input { width: 1.1rem; height: 1.1rem; margin: 0; accent-color: var(--accent); cursor: pointer; }
+		.nom-win:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+		.admin-actions {
+			position: sticky; bottom: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;
+			margin: 0.8rem -0.8rem -0.8rem; padding: 0.6rem 0.8rem; background: var(--card-bg);
+			border-top: 1px solid var(--border); border-radius: 0 0 10px 10px;
+		}
+		.dirty-flag { font-size: 0.8rem; font-weight: 600; color: var(--gold-chip-text); background: var(--gold-chip-bg); border-radius: 999px; padding: 0.15rem 0.6rem; }
+		.admin-errors { color: var(--ir-text); font-size: 0.85rem; margin: 0.5rem 0 0; padding-left: 1.1rem; }
+		.admin-note { color: var(--muted); font-size: 0.8rem; margin: 0.6rem 0 0; }
+		.task-empty { color: var(--muted); font-size: 0.85rem; margin: 0.4rem 0; }
+
+		@media (min-width: 48.01rem) {
+			main { padding: 1.5rem 1rem; }
+			.card { padding: 1.2rem 1.4rem; }
+			.admin-actions { margin: 0.8rem -1.4rem -1.2rem; padding: 0.6rem 1.4rem; }
+			.board { padding: 1.4rem; }
+			.board-title { font-size: 1.9rem; }
+			.plaques { grid-template-columns: repeat(auto-fill, minmax(14.5rem, 1fr)); gap: 1.1rem; }
+		}
+		@media (max-width: 40rem) {
+			main { padding: 0.6rem; }
+			.board { padding: 0.7rem; }
+			.board-title { font-size: 1.25rem; }
+			.plaques { grid-template-columns: 1fr; gap: 0.7rem; }
+		}
+	</style>
+</head>
+<body>
+	<main>
+		<header>
+			<h1 id="title" class="site-title">
+				<span class="site-logo-prefix">my</span>
+				<img src="images/bangerslogo.png" alt="Certified Banger" class="site-logo">
+			</h1>
+			<div class="login" id="login"></div>
+		</header>
+		<nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav>
+		<div id="view"><div class="card"><div class="message">Loading…</div></div></div>
+		<div class="status-bar"><div class="status" id="status" role="status" aria-live="polite"></div></div>
+	</main>
+
+	<script>
+		// melbostads.com/bangers — the Hoot Owl Bangers, year by year. Three
+		// tabs: Winners (one plaque per winning song) and Nominees (every song
+		// put up, the winner picked out in gold) are read-only text for
+		// everyone; Admin exists only when logged in (the same password and
+		// token as myFFL and myVST, same localStorage key) and holds the Years
+		// card: add a year, add nominees to it, tick the winner.
+		//
+		// The list lives in api/bangers.js (Upstash, public GET, login-gated
+		// POST, whole-document replace with a stale-copy check). Until the first
+		// Save the store is empty and the GET says so (`bangers: null`), so the
+		// page shows SEED_YEARS, the list the old hand-written page carried. That
+		// is also what visitors see if the API can't be reached, with a note.
+		// The first Save from Admin writes the whole list, seed included.
+
+		const BANGERS_URL = 'https://shamrock84-github-io.vercel.app/api/bangers';
+		const LOGIN_URL = 'https://shamrock84-github-io.vercel.app/api/login';
+		const AUTH_TOKEN_KEY = 'mflAuthToken';
+		const TAB_KEY = 'bangersTab';
+
+		// Newest first. `by` is who nominated the song; blank shows as "Unknown"
+		// (the four Grandfathered songs predate anyone keeping track). Ids are
+		// fixed so the first Save writes the same ones every time; they must be
+		// letters and digits only (api/bangers.js).
+		const SEED_YEARS = [
+			{ id: 'y2023', label: '2023', nominees: [{ id: 'n2023a', title: 'If I Were the Devil', artist: 'Colby Acuff', by: 'Braden', winner: true }] },
+			{ id: 'y2022', label: '2022', nominees: [{ id: 'n2022a', title: 'Unapologetically Country as Hell', artist: 'Hardy', by: 'Kristin', winner: true }] },
+			{ id: 'y2021', label: '2021', nominees: [{ id: 'n2021a', title: "Lil' Bit", artist: 'Nelly & Florida Georgia Line', by: 'Jason', winner: true }] },
+			{ id: 'y2020', label: '2020', nominees: [{ id: 'n2020a', title: 'Hard to Forget', artist: 'Sam Hunt', by: 'Jason', winner: true }] },
+			{ id: 'y2020s', label: '2020 (Spring)', nominees: [{ id: 'n2020sa', title: "I Wish Grandpa's Never Died", artist: 'Riley Green', by: 'Braden', winner: true }] },
+			{ id: 'y2019', label: '2019', nominees: [{ id: 'n2019a', title: 'Beer Never Broke My Heart', artist: 'Luke Combs', by: 'Kevin', winner: true }] },
+			{ id: 'y2018', label: '2018', nominees: [{ id: 'n2018a', title: 'Sunrise, Sunburn, Sunset', artist: 'Luke Bryan', by: 'Kevin', winner: true }] },
+			{
+				id: 'ygf',
+				label: 'Grandfathered',
+				nominees: [
+					{ id: 'ngfa', title: 'Dirt Road Anthem (Remix)', artist: 'Jason Aldean ft. Ludacris', by: '', winner: true },
+					{ id: 'ngfb', title: 'Cruise', artist: 'Florida Georgia Line & Nelly', by: '', winner: true },
+					{ id: 'ngfc', title: 'Back Where I Come From', artist: 'Kenny Chesney', by: '', winner: true },
+					{ id: 'ngfd', title: 'Out Last Night', artist: 'Kenny Chesney', by: '', winner: true },
+				],
+			},
+		];
+
+		// Deep copy, with every field present so nothing downstream has to guess.
+		const copyYears = (list) => list.map((y) => ({
+			id: y.id,
+			label: y.label || '',
+			nominees: (y.nominees || []).map((n) => ({ id: n.id, title: n.title || '', artist: n.artist || '', by: n.by || '', winner: !!n.winner })),
+		}));
+		// The same list trimmed, as a string: what Save would send, and how
+		// "unsaved changes" is told apart from a field someone typed a space into.
+		const normalized = (list) => copyYears(list).map((y) => ({
+			...y,
+			label: y.label.trim(),
+			nominees: y.nominees.map((n) => ({ ...n, title: n.title.trim(), artist: n.artist.trim(), by: n.by.trim() })),
+		}));
+		const normalizedKey = (list) => JSON.stringify(normalized(list));
+		const makeId = (prefix) => `${prefix}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+
+		function el(tag, attrs = {}, children = []) {
+			const node = document.createElement(tag);
+			for (const [k, v] of Object.entries(attrs)) {
+				if (k === 'text') node.textContent = v;
+				else node.setAttribute(k, v);
+			}
+			for (const c of [].concat(children)) if (c) node.appendChild(c);
+			return node;
+		}
+
+		// Collapsed cards are remembered per device, phone and desktop kept apart
+		// (same 600px cutoff and key shape as myffl.html). Absence means expanded.
+		const collapseKey = (key) => `bangersCardCollapsed:${window.matchMedia('(max-width: 600px)').matches ? 'mobile' : 'desktop'}:${key}`;
+		function isCardCollapsed(key) {
+			try { return localStorage.getItem(collapseKey(key)) === '1'; } catch (e) { return false; }
+		}
+		function setCardCollapsed(key, collapsed) {
+			try {
+				if (collapsed) localStorage.setItem(collapseKey(key), '1'); else localStorage.removeItem(collapseKey(key));
+			} catch (e) { /* the toggle still works for this render */ }
+		}
+		// The key is fixed per card, not per render: the card is rebuilt on every
+		// structural edit and the new node has to remember what the old one was doing.
+		function makeCollapsible(card, heading, key) {
+			const collapsed = isCardCollapsed(key);
+			card.classList.toggle('card-collapsed', collapsed);
+			heading.classList.add('collapsible');
+			const toggle = el('button', { type: 'button', class: 'card-collapse-toggle', 'aria-expanded': String(!collapsed), title: collapsed ? 'Expand' : 'Collapse', 'aria-label': collapsed ? 'Expand' : 'Collapse', text: '▾' });
+			const flip = () => {
+				const next = !card.classList.contains('card-collapsed');
+				card.classList.toggle('card-collapsed', next);
+				toggle.setAttribute('aria-expanded', String(!next));
+				toggle.title = next ? 'Expand' : 'Collapse';
+				toggle.setAttribute('aria-label', next ? 'Expand' : 'Collapse');
+				setCardCollapsed(key, next);
+			};
+			toggle.addEventListener('click', (e) => { e.stopPropagation(); flip(); });
+			heading.appendChild(toggle);
+			heading.addEventListener('click', flip);
+		}
+
+		// ---- State ---------------------------------------------------------------
+		let authToken = null;
+		try { authToken = localStorage.getItem(AUTH_TOKEN_KEY) || null; } catch (e) { /* storage blocked: stay logged out */ }
+		const isLoggedIn = () => !!authToken;
+
+		let bangers = copyYears(SEED_YEARS); // what visitors see: the last saved list
+		let baseUpdatedAt = null;            // the store's version of it, for the stale check
+		let loadState = 'loading';           // loading | ready | failed
+		let loadError = '';
+		let tab = 'winners';
+		try { const t = localStorage.getItem(TAB_KEY); if (t === 'nominees' || t === 'admin') tab = t; } catch (e) { /* default tab */ }
+
+		const statusEl = document.getElementById('status');
+		function setStatus(text, kind) {
+			statusEl.textContent = text || '';
+			statusEl.className = `status${kind ? ' ' + kind : ''}`;
+		}
+
+		// ---- Login ----------------------------------------------------------------
+		async function doLogin(password) {
+			const res = await fetch(LOGIN_URL, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ password }),
+			});
+			const body = await res.json().catch(() => ({}));
+			if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+			authToken = body.token;
+			try { localStorage.setItem(AUTH_TOKEN_KEY, authToken); } catch (e) { /* works for this visit */ }
+		}
+
+		function doLogout() {
+			authToken = null;
+			draft = null;
+			try { localStorage.removeItem(AUTH_TOKEN_KEY); } catch (e) { /* ignore */ }
+			setStatus('');
+			renderAll();
+		}
+
+		function expireSession() {
+			authToken = null;
+			draft = null;
+			try { localStorage.removeItem(AUTH_TOKEN_KEY); } catch (e) { /* ignore */ }
+			renderAll();
+			setStatus('Your session expired — log in again to save.', 'error');
+		}
+
+		function renderLogin() {
+			const wrap = document.getElementById('login');
+			wrap.textContent = '';
+			if (isLoggedIn()) {
+				const out = el('button', { type: 'button', class: 'login-toggle', text: 'Log out' });
+				out.addEventListener('click', doLogout);
+				wrap.appendChild(out);
+				return;
+			}
+			const toggle = el('button', { type: 'button', class: 'login-toggle', text: 'Log in' });
+			const form = el('form', { class: 'login-form hidden' });
+			const input = el('input', { type: 'password', placeholder: 'Password', autocomplete: 'current-password', 'aria-label': 'Password' });
+			const submit = el('button', { type: 'submit', text: 'Log in' });
+			const msg = el('span', { class: 'login-status' });
+			form.append(input, submit, msg);
+			toggle.addEventListener('click', () => {
+				toggle.classList.add('hidden');
+				form.classList.remove('hidden');
+				input.focus();
+			});
+			form.addEventListener('submit', async (e) => {
+				e.preventDefault();
+				if (!input.value) return;
+				msg.textContent = 'Logging in…';
+				submit.disabled = true;
+				try {
+					await doLogin(input.value);
+					renderAll();
+				} catch (err) {
+					msg.textContent = err.message;
+					submit.disabled = false;
+				}
+			});
+			wrap.append(toggle, form);
+		}
+
+		// ---- Winners and Nominees -----------------------------------------------
+		const message = (text, kind) => el('div', { class: 'card' }, [el('div', { class: `message${kind ? ' ' + kind : ''}`, text })]);
+
+		// One plaque: the year over the nominator over the song. A song title is
+		// set between curly quotes, with its artist after.
+		function plaque(label, n, mode) {
+			const by = n.by.trim();
+			const song = el('div', { class: 'plaque-song' });
+			const q = el('q', { text: n.title });
+			song.appendChild(q);
+			if (n.artist.trim()) song.appendChild(document.createTextNode(` by ${n.artist.trim()}`));
+			const card = el('div', { class: `plaque${mode === 'winner' ? ' winner' : mode === 'nominee' ? ' nominee' : ''}` }, [
+				el('div', { class: 'plaque-year', text: label }),
+				el('div', { class: `plaque-by${by ? '' : ' unknown'}`, text: by || 'Unknown' }),
+				song,
+			]);
+			if (mode === 'winner') card.appendChild(el('div', { class: 'plaque-badge', text: '★ Winner' }));
+			return card;
+		}
+
+		function boardNote() {
+			if (loadState !== 'failed') return null;
+			return el('div', { class: 'message error', text: `Couldn’t reach the live list (${loadError}), so this is the list the page shipped with and may be out of date.` });
+		}
+
+		function winnersView() {
+			const board = el('div', { class: 'board' }, [el('h2', { class: 'board-title', text: 'Hoot Owl Bangers' })]);
+			const grid = el('div', { class: 'plaques' });
+			for (const y of bangers) for (const n of y.nominees) if (n.winner) grid.appendChild(plaque(y.label, n, null));
+			if (grid.children.length) board.appendChild(grid);
+			else board.appendChild(el('div', { class: 'board-empty', text: 'No winners yet.' }));
+			return [board, boardNote()].filter(Boolean);
+		}
+
+		// Every nominee, under its year; a winner goes first and is lit in gold.
+		function nomineesView() {
+			const board = el('div', { class: 'board' }, [el('h2', { class: 'board-title', text: 'Hoot Owl Bangers' })]);
+			let any = false;
+			for (const y of bangers) {
+				if (!y.nominees.length) continue;
+				any = true;
+				const sorted = [...y.nominees].sort((a, b) => Number(b.winner) - Number(a.winner)); // stable: ties keep their order
+				const count = `${sorted.length} ${sorted.length === 1 ? 'nominee' : 'nominees'}`;
+				board.appendChild(el('div', { class: 'year-band' }, [el('span', { text: y.label }), el('small', { text: count })]));
+				const grid = el('div', { class: 'plaques' });
+				for (const n of sorted) grid.appendChild(plaque(y.label, n, n.winner ? 'winner' : 'nominee'));
+				board.appendChild(grid);
+			}
+			if (!any) board.appendChild(el('div', { class: 'board-empty', text: 'No nominees yet.' }));
+			return [board, boardNote()].filter(Boolean);
+		}
+
+		// ---- Admin: the Years card ------------------------------------------------
+		// Edits go into `draft` and nothing is saved until Save, like the Quick
+		// Links card on myFFL and myVST. Typing never rebuilds the card (that would
+		// steal focus); only adding, removing and moving does, and the open/closed
+		// state of each year is kept in openYears across those rebuilds.
+		let draft = null;
+		let adminErrors = [];
+		let saving = false;
+		let cardEl = null;
+		let focusId = null;       // the field to focus after the next rebuild
+		let updateDirty = () => {};
+		const openYears = new Set();
+
+		const yearSummary = (y) => {
+			const n = y.nominees.length;
+			const winners = y.nominees.filter((x) => x.winner).map((x) => x.title.trim() || '(untitled)');
+			const winner = winners.length ? `Winner: ${winners.join(', ')}` : 'no winner yet';
+			return `${n} ${n === 1 ? 'nominee' : 'nominees'} · ${winner}`;
+		};
+
+		function refreshAdmin() {
+			if (!cardEl) return;
+			const next = buildAdminCard();
+			cardEl.replaceWith(next);
+			cardEl = next;
+			const target = focusId && cardEl.querySelector('[data-focus]');
+			focusId = null;
+			if (target) { target.focus(); target.scrollIntoView({ block: 'nearest' }); }
+		}
+
+		async function saveBangers() {
+			adminErrors = [];
+			const clean = normalized(draft);
+			clean.forEach((y, i) => {
+				if (!y.label) adminErrors.push(`Year ${i + 1}: a name is required.`);
+				y.nominees.forEach((n, j) => { if (!n.title) adminErrors.push(`${y.label || `Year ${i + 1}`}, nominee ${j + 1}: a song title is required.`); });
+			});
+			if (adminErrors.length) { refreshAdmin(); return; }
+			saving = true;
+			refreshAdmin();
+			setStatus('Saving…');
+			try {
+				const res = await fetch(BANGERS_URL, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+					body: JSON.stringify({ years: clean, baseUpdatedAt }),
+				});
+				const body = await res.json().catch(() => ({}));
+				if (res.status === 401) { saving = false; expireSession(); return; }
+				if (!res.ok) throw new Error((body.details && body.details.join(' ')) || body.error || `HTTP ${res.status}`);
+				bangers = copyYears(body.bangers.years);
+				baseUpdatedAt = body.bangers.updatedAt;
+				draft = copyYears(bangers);
+				setStatus('Saved', 'ok');
+			} catch (err) {
+				adminErrors = [`Not saved: ${err.message}`];
+				setStatus('');
+			}
+			saving = false;
+			refreshAdmin();
+		}
+
+		function buildNomineeRow(y, n, nIndex) {
+			const row = el('div', { class: `nom-row${n.winner ? ' is-winner' : ''}` });
+			const field = (cls, label, input) => el('label', { class: `nom-field ${cls}` }, [el('span', { text: label }), input]);
+			const text = (key, placeholder, max) => {
+				const input = el('input', { type: 'text', class: 'task-input', value: n[key], placeholder, autocomplete: 'off', maxlength: String(max) });
+				if (key === 'title' && focusId === n.id) input.setAttribute('data-focus', '');
+				input.addEventListener('input', () => { n[key] = input.value; if (key === 'title') refreshYearSummary(y); updateDirty(); });
+				return input;
+			};
+			const box = el('input', { type: 'checkbox', ...(n.winner ? { checked: '' } : {}) });
+			box.checked = n.winner;
+			box.addEventListener('change', () => {
+				n.winner = box.checked;
+				row.classList.toggle('is-winner', n.winner);
+				refreshYearSummary(y);
+				updateDirty();
+			});
+			const win = el('label', { class: 'nom-win', title: 'Mark this song as a winner for the year' }, [box, el('span', { text: 'Winner' })]);
+			const remove = el('button', { type: 'button', class: 'task-icon-btn', title: 'Remove this nominee', 'aria-label': 'Remove this nominee', text: '✕' });
+			remove.addEventListener('click', () => { y.nominees.splice(nIndex, 1); refreshAdmin(); });
+			row.append(
+				win,
+				field('nom-song', 'Song', text('title', 'Song title', 120)),
+				field('nom-artist', 'Artist', text('artist', 'optional', 120)),
+				field('nom-by', 'Nominated by', text('by', 'optional', 60)),
+				remove,
+			);
+			return row;
+		}
+
+		// The summary line of each year, kept so typing can update it in place.
+		const summaryRefreshers = new Map();
+		function refreshYearSummary(y) { const fn = summaryRefreshers.get(y.id); if (fn) fn(); }
+
+		function buildYear(y, i) {
+			const det = el('details', { class: 'year-mini' });
+			if (openYears.has(y.id)) det.open = true;
+			det.addEventListener('toggle', () => { if (det.open) openYears.add(y.id); else openYears.delete(y.id); });
+			const sum = el('summary');
+			const fill = () => {
+				sum.textContent = '';
+				sum.append(el('span', { text: y.label.trim() || '(unnamed)' }), el('span', { class: 'year-sub', text: yearSummary(y) }));
+			};
+			summaryRefreshers.set(y.id, fill);
+			fill();
+
+			const name = el('input', { type: 'text', class: 'task-input', value: y.label, placeholder: 'Year name, e.g. 2024', 'aria-label': 'Year name', maxlength: '40', autocomplete: 'off' });
+			name.addEventListener('input', () => { y.label = name.value; fill(); updateDirty(); });
+			const move = (to) => { openYears.add(y.id); draft.splice(to, 0, draft.splice(i, 1)[0]); refreshAdmin(); };
+			const up = el('button', { type: 'button', class: 'task-icon-btn move', title: 'Move up', 'aria-label': 'Move this year up', text: '↑' });
+			const down = el('button', { type: 'button', class: 'task-icon-btn move', title: 'Move down', 'aria-label': 'Move this year down', text: '↓' });
+			up.disabled = i === 0;
+			down.disabled = i === draft.length - 1;
+			up.addEventListener('click', () => move(i - 1));
+			down.addEventListener('click', () => move(i + 1));
+			const removeYear = el('button', { type: 'button', class: 'task-icon-btn', title: 'Remove this year', 'aria-label': 'Remove this year', text: '✕' });
+			removeYear.addEventListener('click', () => {
+				if (y.nominees.length && !window.confirm(`Remove ${y.label.trim() || 'this year'} and its ${y.nominees.length} ${y.nominees.length === 1 ? 'nominee' : 'nominees'}?`)) return;
+				draft.splice(i, 1);
+				openYears.delete(y.id);
+				refreshAdmin();
+			});
+
+			const body = el('div', { class: 'year-body' }, [el('div', { class: 'year-head-row' }, [name, up, down, removeYear])]);
+			if (focusId === y.id) name.setAttribute('data-focus', '');
+			if (!y.nominees.length) body.appendChild(el('div', { class: 'task-empty', text: 'No nominees yet.' }));
+			y.nominees.forEach((n, j) => body.appendChild(buildNomineeRow(y, n, j)));
+			const add = el('button', { type: 'button', class: 'task-add-btn', text: '+ Add nominee' });
+			add.style.alignSelf = 'flex-start';
+			add.addEventListener('click', () => {
+				const n = { id: makeId('n'), title: '', artist: '', by: '', winner: false };
+				y.nominees.push(n);
+				openYears.add(y.id);
+				focusId = n.id;
+				refreshAdmin();
+			});
+			body.appendChild(add);
+			det.append(sum, body);
+			return det;
+		}
+
+		function buildAdminCard() {
+			if (!draft) draft = copyYears(bangers);
+			summaryRefreshers.clear();
+			const head = el('h2', { class: 'card-heading', text: `Years (${draft.length})` });
+			const card = el('div', { class: 'card' }, [head]);
+			makeCollapsible(card, head, 'years');
+			if (loadState === 'failed') {
+				card.appendChild(el('div', { class: 'message error', text: `Couldn’t load the saved list (${loadError}), so editing is turned off. Reload to try again.` }));
+				return card;
+			}
+
+			const newYear = el('input', { type: 'text', class: 'task-input', placeholder: 'New year, e.g. 2024', 'aria-label': 'New year name', maxlength: '40', autocomplete: 'off' });
+			const addYear = el('button', { type: 'button', class: 'task-add-btn', text: '+ Add year' });
+			const doAdd = () => {
+				const label = newYear.value.trim();
+				if (!label) { newYear.focus(); return; }
+				const y = { id: makeId('y'), label, nominees: [] };
+				draft.unshift(y); // newest first, like the Winners and Nominees tabs
+				openYears.add(y.id);
+				focusId = null;
+				refreshAdmin();
+			};
+			addYear.addEventListener('click', doAdd);
+			newYear.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); doAdd(); } });
+			card.appendChild(el('div', { class: 'add-year-row' }, [newYear, addYear]));
+
+			draft.forEach((y, i) => card.appendChild(buildYear(y, i)));
+			if (!draft.length) card.appendChild(el('div', { class: 'task-empty', text: 'No years yet. Add one above.' }));
+
+			const save = el('button', { type: 'button', class: 'task-add-btn primary', text: saving ? 'Saving…' : 'Save' });
+			save.disabled = saving;
+			save.addEventListener('click', saveBangers);
+			const discard = el('button', { type: 'button', class: 'task-add-btn', text: 'Discard changes' });
+			const flag = el('span', { class: 'dirty-flag hidden', text: 'Unsaved changes' });
+			updateDirty = () => {
+				const d = normalizedKey(draft) !== normalizedKey(bangers);
+				flag.classList.toggle('hidden', !d);
+				discard.disabled = saving || !d;
+			};
+			discard.addEventListener('click', () => { draft = copyYears(bangers); adminErrors = []; refreshAdmin(); });
+			updateDirty();
+			card.appendChild(el('div', { class: 'admin-actions' }, [save, discard, flag]));
+			if (adminErrors.length) card.appendChild(el('ul', { class: 'admin-errors' }, adminErrors.map((t) => el('li', { text: t }))));
+			card.appendChild(el('div', { class: 'admin-note', text: 'Newest first, in the order shown on the Winners and Nominees tabs (use the arrows to reorder). Tick Winner on every song that won that year; a year can have more than one, or none yet. Nothing is saved until you press Save.' }));
+			return card;
+		}
+
+		function adminView() {
+			draft = null; // a fresh copy of what is saved each time the tab opens
+			adminErrors = [];
+			cardEl = buildAdminCard();
+			return [cardEl];
+		}
+
+		// ---- Shell ---------------------------------------------------------------
+		function setTab(next) {
+			tab = next;
+			try { localStorage.setItem(TAB_KEY, tab); } catch (e) { /* the tab still switches */ }
+			setStatus('');
+			renderAll();
+		}
+
+		function renderTabs() {
+			const nav = document.getElementById('tabs');
+			nav.textContent = '';
+			// The Admin tab exists only while logged in; logging out removes it.
+			const tabs = [['winners', 'Winners'], ['nominees', 'Nominees'], ...(isLoggedIn() ? [['admin', 'Admin']] : [])];
+			for (const [id, label] of tabs) {
+				const btn = el('button', { type: 'button', class: `tab-btn${tab === id ? ' active' : ''}`, role: 'tab', 'aria-selected': String(tab === id), text: label });
+				btn.addEventListener('click', () => setTab(id));
+				nav.appendChild(btn);
+			}
+		}
+
+		function renderAll() {
+			if (tab === 'admin' && !isLoggedIn()) tab = 'winners';
+			renderLogin();
+			renderTabs();
+			const view = document.getElementById('view');
+			view.textContent = '';
+			cardEl = null;
+			if (loadState === 'loading') { view.appendChild(message('Loading…')); return; }
+			const cards = tab === 'nominees' ? nomineesView() : tab === 'admin' ? adminView() : winnersView();
+			cards.forEach((c) => view.appendChild(c));
+		}
+
+		async function load() {
+			renderLogin();
+			renderTabs();
+			try {
+				const res = await fetch(BANGERS_URL, { cache: 'no-store', signal: AbortSignal.timeout(10000) });
+				const body = await res.json().catch(() => ({}));
+				if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+				// null = nothing saved yet: keep showing the seed list.
+				if (body.bangers && Array.isArray(body.bangers.years)) {
+					bangers = copyYears(body.bangers.years);
+					baseUpdatedAt = body.bangers.updatedAt == null ? null : body.bangers.updatedAt;
+				}
+				loadState = 'ready';
+			} catch (err) {
+				loadState = 'failed';
+				loadError = err.message;
+			}
+			renderAll();
+		}
+
+		load();
+	</script>
+</body>
 </html>
