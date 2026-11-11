@@ -207,13 +207,22 @@
 			letter-spacing: 0.06em;
 			text-transform: uppercase;
 		}
+		.year-section + .year-section { margin-top: 1.1rem; }
+		.year-section .plaques { margin-top: 0.7rem; }
+		.year-section.folded .plaques { display: none; }
+		/* The band is the button that folds its year. */
 		.year-band {
+			position: relative;
 			display: flex;
+			width: 100%;
 			align-items: baseline;
 			justify-content: center;
 			gap: 0.6rem;
-			margin: 1.1rem 0 0.7rem;
-			padding: 0.35rem 0.8rem;
+			margin: 0;
+			cursor: pointer;
+			appearance: none;
+			text-align: center;
+			padding: 0.35rem 2.2rem;
 			font-family: Georgia, 'Times New Roman', serif;
 			font-size: 1.05rem;
 			font-weight: 700;
@@ -226,7 +235,17 @@
 			box-shadow: 0 2px 5px rgba(30, 14, 56, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 			text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
 		}
-		.year-band:first-of-type { margin-top: 0; }
+		.year-band:hover { filter: brightness(1.12); }
+		.year-band:focus-visible { outline: 2px solid #f5c542; outline-offset: 2px; }
+		.year-chev { position: absolute; left: 0.8rem; top: 50%; margin-top: -0.55em; font-size: 0.85rem; line-height: 1.1; transition: transform 0.12s; transform: rotate(90deg); }
+		.year-section.folded .year-chev { transform: none; }
+		.board-tools { display: flex; justify-content: flex-end; margin: -0.4rem 0 0.7rem; }
+		.fold-all {
+			font: inherit; font-size: 0.78rem; font-weight: 600; color: #2f1259; cursor: pointer;
+			background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(255, 255, 255, 0.9); border-radius: 999px; padding: 0.25rem 0.8rem;
+		}
+		.fold-all:hover { background: #fff; }
+		.fold-all:focus-visible { outline: 2px solid #2f1259; outline-offset: 2px; }
 		.year-band small { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.03em; color: #d9cdf0; text-shadow: none; }
 		.board-empty { padding: 1.2rem; text-align: center; color: #efe6fb; font-family: Georgia, 'Times New Roman', serif; }
 
@@ -505,6 +524,14 @@
 		let loadState = 'loading';           // loading | ready | failed
 		let loadError = '';
 		let tab = 'winners';
+		// Years folded shut on the Nominees tab, by year id; absence means open.
+		// Kept on this device, like the Admin cards' collapsed state.
+		const FOLD_KEY = 'bangersNomineesFolded';
+		let foldedYears = {};
+		try { const f = JSON.parse(localStorage.getItem(FOLD_KEY)); if (f && typeof f === 'object' && !Array.isArray(f)) foldedYears = f; } catch (e) { /* all open */ }
+		function saveFolded() {
+			try { localStorage.setItem(FOLD_KEY, JSON.stringify(foldedYears)); } catch (e) { /* works for this visit */ }
+		}
 		try { const t = localStorage.getItem(TAB_KEY); if (t === 'nominees' || t === 'admin') tab = t; } catch (e) { /* default tab */ }
 
 		const statusEl = document.getElementById('status');
@@ -614,18 +641,49 @@
 		// Every nominee, under its year; a winner goes first and is lit in gold.
 		function nomineesView() {
 			const board = el('div', { class: 'board' }, [el('h2', { class: 'board-title', text: 'Hoot Owl Bangers' })]);
-			let any = false;
-			for (const y of bangers) {
-				if (!y.nominees.length) continue;
-				any = true;
+			const years = bangers.filter((y) => y.nominees.length);
+			if (!years.length) {
+				board.appendChild(el('div', { class: 'board-empty', text: 'No nominees yet.' }));
+				return [board];
+			}
+			const sections = [];
+			const allBtn = el('button', { type: 'button', class: 'fold-all' });
+			const refreshAll = () => { allBtn.textContent = years.every((y) => foldedYears[y.id]) ? 'Expand all' : 'Collapse all'; };
+			allBtn.addEventListener('click', () => {
+				const fold = !years.every((y) => foldedYears[y.id]);
+				for (const { y, section, band } of sections) {
+					if (fold) foldedYears[y.id] = true; else delete foldedYears[y.id];
+					section.classList.toggle('folded', fold);
+					band.setAttribute('aria-expanded', String(!fold));
+				}
+				saveFolded();
+				refreshAll();
+			});
+			board.appendChild(el('div', { class: 'board-tools' }, [allBtn]));
+			for (const y of years) {
 				const sorted = [...y.nominees].sort((a, b) => Number(b.winner) - Number(a.winner)); // stable: ties keep their order
 				const count = `${sorted.length} ${sorted.length === 1 ? 'nominee' : 'nominees'}`;
-				board.appendChild(el('div', { class: 'year-band' }, [el('span', { text: y.label }), el('small', { text: count })]));
+				const folded = !!foldedYears[y.id];
+				const band = el('button', { type: 'button', class: 'year-band', 'aria-expanded': String(!folded) }, [
+					el('span', { class: 'year-chev', 'aria-hidden': 'true', text: '\u25B8' }),
+					el('span', { text: y.label }),
+					el('small', { text: count }),
+				]);
 				const grid = el('div', { class: 'plaques' });
 				for (const n of sorted) grid.appendChild(plaque(y.label, n, n.winner ? 'winner' : 'nominee'));
-				board.appendChild(grid);
+				const section = el('div', { class: `year-section${folded ? ' folded' : ''}` }, [band, grid]);
+				band.addEventListener('click', () => {
+					const next = !section.classList.contains('folded');
+					section.classList.toggle('folded', next);
+					band.setAttribute('aria-expanded', String(!next));
+					if (next) foldedYears[y.id] = true; else delete foldedYears[y.id];
+					saveFolded();
+					refreshAll();
+				});
+				sections.push({ y, section, band });
+				board.appendChild(section);
 			}
-			if (!any) board.appendChild(el('div', { class: 'board-empty', text: 'No nominees yet.' }));
+			refreshAll();
 			return [board];
 		}
 
