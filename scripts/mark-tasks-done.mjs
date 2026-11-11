@@ -29,9 +29,13 @@
 // contains an apostrophe or other shell-special character.
 
 // VIKINGS_TASKS=1 targets the vikings.html Admin tab's own list instead
-// (api/vikings.js ?resource=tasks). That store takes per-task patches, so
+// (api/vikings.js ?resource=tasks); BANGERS_TASKS=1 the bangers.html one
+// (api/bangers.js, same shape). That store takes per-task patches, so
 // only the matched tasks are posted — no whole-document replace needed.
-const VIKINGS = process.env.VIKINGS_TASKS === '1';
+const BANGERS = process.env.BANGERS_TASKS === '1';
+const VIKINGS = BANGERS || process.env.VIKINGS_TASKS === '1';
+// The two small pages keep their own task lists behind their own endpoints.
+const OWN_API = BANGERS ? 'bangers' : 'vikings';
 
 const API_BASE = process.env.MYFFL_API_BASE || 'https://shamrock84-github-io.vercel.app';
 
@@ -66,7 +70,7 @@ async function main() {
 	}
 	const token = loginBody.token;
 
-	const getRes = await fetch(`${API_BASE}/api/${VIKINGS ? 'vikings?resource=tasks' : 'plans'}`, { headers: { Authorization: `Bearer ${token}` } });
+	const getRes = await fetch(`${API_BASE}/api/${VIKINGS ? `${OWN_API}?resource=tasks` : 'plans'}`, { headers: { Authorization: `Bearer ${token}` } });
 	const getBody = await getRes.json();
 	if (!getRes.ok) {
 		console.error(`Fetching plans failed (${getRes.status}): ${getBody.error || 'unknown error'}`);
@@ -101,7 +105,7 @@ async function main() {
 		return;
 	}
 
-	const postRes = await fetch(`${API_BASE}/api/${VIKINGS ? 'vikings' : 'plans'}`, {
+	const postRes = await fetch(`${API_BASE}/api/${VIKINGS ? OWN_API : 'plans'}`, {
 		method: 'POST',
 		headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
 		body: JSON.stringify(VIKINGS ? { resource: 'tasks', tasks: changed } : { plans, mode: 'replace' }),

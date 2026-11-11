@@ -20,6 +20,10 @@ on:
         description: "Rename in the Vikings page's Admin tasks instead of myFFL's"
         type: boolean
         default: false
+      bangers:
+        description: "Use the Bangers page's Admin tasks instead of myFFL's (wins over the Vikings box)"
+        type: boolean
+        default: false
 
 jobs:
   rename:
@@ -47,4 +51,5 @@ jobs:
           FROM_CATEGORY: ${{ github.event.inputs.from }}
           TO_CATEGORY: ${{ github.event.inputs.to }}
           VIKINGS_TASKS: ${{ github.event.inputs.vikings == 'true' && '1' || '' }}
+          BANGERS_TASKS: ${{ github.event.inputs.bangers == 'true' && '1' || '' }}
         run: node scripts/rename-task-category.mjs

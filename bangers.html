@@ -142,7 +142,8 @@
 			border-radius: 12px;
 			border: 2px solid #444;
 			border-color: #afafaf #444 #444 #afafaf;
-			background: #3a1a6e url(images/purple_marble.jpg) center top / 1024px auto;
+			/* The wash dims the veins so the plaques, not the stone, carry the eye. */
+			background: linear-gradient(rgba(22, 9, 44, 0.55), rgba(22, 9, 44, 0.55)), #2a1450 url(images/purple_marble.jpg) center top / 1024px auto;
 			box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(0, 0, 0, 0.5);
 		}
 		.board-title {
@@ -293,6 +294,86 @@
 		.admin-note { color: var(--muted); font-size: 0.8rem; margin: 0.6rem 0 0; }
 		.task-empty { color: var(--muted); font-size: 0.85rem; margin: 0.4rem 0; }
 
+		/* ---- Quick links toolbar and Tasks card: ported from vikings.html; keep in step. ---- */
+		/* Header quick-link toolbar: the same look as myffl.html's. Empty means
+		   no bar at all (:empty also drops the padding and border). */
+		#quicklinks {
+			position: sticky; top: 0; z-index: 30;
+			display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.4rem;
+			background: var(--card-bg);
+		}
+		#quicklinks:not(:empty) { padding: 0.4rem 1rem; border-bottom: 1px solid var(--border); }
+		#quicklinks a { color: var(--muted); text-decoration: none; font-size: 0.8rem; font-weight: 600; padding: 0.15rem 0; white-space: nowrap; }
+		#quicklinks a:hover, #quicklinks a:focus-visible { color: var(--accent); }
+		#quicklinks a::after { content: ''; display: inline-block; width: 1px; height: 0.7rem; background: var(--border); margin-left: 0.4rem; vertical-align: middle; }
+		#quicklinks a:last-child::after { display: none; }
+		#quicklinks a.quicklink-gold, #quicklinks a.quicklink-purple { padding: 0; }
+		#quicklinks a.quicklink-gold .quicklink-pill { background: var(--gold-chip-bg); color: var(--gold-chip-text); }
+		#quicklinks a.quicklink-purple .quicklink-pill { background: var(--chip-bg); color: var(--accent); }
+		#quicklinks a.quicklink-gold .quicklink-pill, #quicklinks a.quicklink-purple .quicklink-pill { display: inline-block; border-radius: 999px; padding: 0.15rem 0.55rem; }
+		#quicklinks a.quicklink-gold:hover .quicklink-pill, #quicklinks a.quicklink-gold:focus-visible .quicklink-pill,
+		#quicklinks a.quicklink-purple:hover .quicklink-pill, #quicklinks a.quicklink-purple:focus-visible .quicklink-pill { color: var(--text); }
+		/* A group: one button whose menu holds its links. */
+		#quicklinks .quicklink-combo { position: relative; display: inline-flex; align-items: center; }
+		#quicklinks .quicklink-combo:not(:last-child)::after { content: ''; display: inline-block; width: 1px; height: 0.7rem; background: var(--border); margin-left: 0.4rem; }
+		#quicklinks .quicklink-combo-btn { font: inherit; font-size: 0.8rem; font-weight: 600; color: var(--muted); background: transparent; border: 0; border-radius: 999px; padding: 0.15rem 0.55rem; cursor: pointer; }
+		#quicklinks .quicklink-combo-btn.quicklink-combo-gold { color: var(--gold-chip-text); background: var(--gold-chip-bg); }
+		#quicklinks .quicklink-combo-btn.quicklink-combo-purple { color: var(--accent); background: var(--chip-bg); }
+		#quicklinks .quicklink-combo-btn:hover, #quicklinks .quicklink-combo-btn:focus-visible, #quicklinks .quicklink-combo.open .quicklink-combo-btn { color: var(--text); }
+		#quicklinks .quicklink-combo-menu { display: none; position: absolute; top: calc(100% + 0.35rem); left: 0; z-index: 31; flex-direction: column; align-items: flex-start; gap: 0.35rem; background: transparent; padding: 0; }
+		#quicklinks .quicklink-combo.align-right .quicklink-combo-menu { left: auto; right: 0; }
+		#quicklinks .quicklink-combo.open .quicklink-combo-menu { display: flex; }
+		#quicklinks .quicklink-combo-menu a::after { display: none; }
+		/* Admin > Quick Links rows. */
+		.ql-list { display: flex; flex-direction: column; gap: 0.7rem; }
+		.ql-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.4rem 0.5rem; padding: 0.6rem; border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 8px; background: var(--bg); }
+		.ql-field { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+		.ql-field span { font-size: 0.7rem; color: var(--muted); }
+		.ql-link { flex: 2 1 14rem; }
+		.ql-nick, .ql-group { flex: 1 1 7rem; }
+		.ql-style { flex: 0 0 auto; }
+		.ql-row .task-input { width: 100%; min-width: 0; box-sizing: border-box; }
+		.ql-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 0.8rem; }
+		.ql-errors { color: var(--ir-text); font-size: 0.85rem; margin: 0.5rem 0 0; padding-left: 1.1rem; }
+		.ql-note { color: var(--muted); font-size: 0.8rem; margin: 0.6rem 0 0; }
+		/* Tasks card: the same look as myffl.html's, under its own names. */
+		.task-add-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0.6rem 0 0.8rem; }
+		.task-add-row .task-input:first-child { flex: 2 1 12rem; }
+		.task-add-row .suggest-wrap { flex: 1 1 8rem; }
+		.suggest-wrap { position: relative; min-width: 0; }
+		.suggest-wrap .task-input { width: 100%; }
+		.suggest-list {
+			position: absolute; top: 100%; left: 0; right: 0; z-index: 5; margin-top: 2px;
+			max-height: 9rem; overflow-y: auto;
+			background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px;
+			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+		}
+		.suggest-item { padding: 0.3rem 0.55rem; font-size: 0.85rem; cursor: pointer; }
+		.suggest-item:hover { background: var(--chip-bg); }
+		.task-save-btn { color: var(--accent); background: var(--chip-bg); }
+		.task-counter { font-size: 0.75rem; color: var(--muted); flex-shrink: 0; }
+		.task-counter.limit { color: var(--ir-text); }
+		.task-sync-status { color: var(--ir-text); background: var(--ir-bg); border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.85rem; margin: 0.4rem 0 0; }
+		.task-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0; }
+		.task-row.editing { flex-wrap: wrap; }
+		.task-row.editing .task-input:first-of-type { flex: 2 1 12rem; }
+		.task-text { flex: 1; cursor: pointer; overflow-wrap: anywhere; }
+		.task-done .task-text { color: var(--muted); text-decoration: line-through; }
+		.task-grip { color: var(--muted); cursor: grab; line-height: 1; flex-shrink: 0; }
+		.task-row:active .task-grip { cursor: grabbing; }
+		@media (hover: none) { .task-grip { display: none; } }
+		.task-move { display: flex; gap: 0.2rem; flex-shrink: 0; }
+		.task-move-btn {
+			font: inherit; font-size: 0.8rem; line-height: 1; color: var(--accent); background: var(--chip-bg);
+			border: 1px solid var(--border); border-radius: 4px; padding: 0.2rem 0.35rem; cursor: pointer; flex-shrink: 0;
+		}
+		.task-move-btn:disabled { opacity: 0.35; cursor: default; }
+		.task-row.dragging { opacity: 0.4; }
+		.task-row.drop-before { box-shadow: inset 0 3px 0 0 var(--accent); }
+		.task-row.drop-after { box-shadow: inset 0 -3px 0 0 var(--accent); }
+		.task-section { margin-top: 0.7rem; }
+		.task-section summary { cursor: pointer; color: var(--muted); font-size: 0.85rem; }
+
 		@media (min-width: 48.01rem) {
 			main { padding: 1.5rem 1rem; }
 			.card { padding: 1.2rem 1.4rem; }
@@ -310,6 +391,7 @@
 	</style>
 </head>
 <body>
+	<div id="quicklinks" aria-label="Quick links"></div>
 	<main>
 		<header>
 			<h1 id="title" class="site-title">
@@ -329,7 +411,13 @@
 		// put up, the winner picked out in gold) are read-only text for
 		// everyone; Admin exists only when logged in (the same password and
 		// token as myFFL and myVST, same localStorage key) and holds the Years
-		// card: add a year, add nominees to it, tick the winner.
+		// card: add a year, add nominees to it, tick the winner. Above it sit the
+		// same Tasks and Quick Links cards as vikings.html's Admin tab; the Quick
+		// Links card fills the toolbar at the top of the page for everyone.
+		//
+		// Those two live in the Upstash store behind api/bangers.js
+		// (`?resource=tasks` / `?resource=quicklinks`), not in the repo: the
+		// toolbar is public to read, tasks are login-only both ways.
 		//
 		// The list is data/bangers.json, a committed file served by Pages like
 		// the rest of the site. Admin's Save POSTs the whole list to
@@ -438,6 +526,8 @@
 		function doLogout() {
 			authToken = null;
 			draft = null;
+			tasks = {};
+			tasksState = 'idle';
 			try { localStorage.removeItem(AUTH_TOKEN_KEY); } catch (e) { /* ignore */ }
 			setStatus('');
 			renderAll();
@@ -446,6 +536,8 @@
 		function expireSession() {
 			authToken = null;
 			draft = null;
+			tasks = {};
+			tasksState = 'idle';
 			try { localStorage.removeItem(AUTH_TOKEN_KEY); } catch (e) { /* ignore */ }
 			renderAll();
 			setStatus('Your session expired — log in again to save.', 'error');
@@ -541,7 +633,7 @@
 		// state of each year is kept in openYears across those rebuilds.
 		let draft = null;
 		let adminErrors = [];
-		let saving = false;
+		let yearsSaving = false;
 		let cardEl = null;
 		let focusId = null;       // the field to focus after the next rebuild
 		let updateDirty = () => {};
@@ -572,7 +664,7 @@
 				y.nominees.forEach((n, j) => { if (!n.title) adminErrors.push(`${y.label || `Year ${i + 1}`}, nominee ${j + 1}: a song title is required.`); });
 			});
 			if (adminErrors.length) { refreshAdmin(); return; }
-			saving = true;
+			yearsSaving = true;
 			refreshAdmin();
 			setStatus('Saving…');
 			try {
@@ -582,7 +674,7 @@
 					body: JSON.stringify({ years: clean, baseSha }),
 				});
 				const body = await res.json().catch(() => ({}));
-				if (res.status === 401) { saving = false; expireSession(); return; }
+				if (res.status === 401) { yearsSaving = false; expireSession(); return; }
 				if (!res.ok) throw new Error((body.details && body.details.join(' ')) || body.error || `HTTP ${res.status}`);
 				bangers = copyYears(body.years);
 				baseSha = body.sha || null;
@@ -592,7 +684,7 @@
 				adminErrors = [`Not saved: ${err.message}`];
 				setStatus('');
 			}
-			saving = false;
+			yearsSaving = false;
 			refreshAdmin();
 		}
 
@@ -706,15 +798,15 @@
 			draft.forEach((y, i) => card.appendChild(buildYear(y, i)));
 			if (!draft.length) card.appendChild(el('div', { class: 'task-empty', text: 'No years yet. Add one above.' }));
 
-			const save = el('button', { type: 'button', class: 'task-add-btn primary', text: saving ? 'Saving…' : 'Save' });
-			save.disabled = saving;
+			const save = el('button', { type: 'button', class: 'task-add-btn primary', text: yearsSaving ? 'Saving…' : 'Save' });
+			save.disabled = yearsSaving;
 			save.addEventListener('click', saveBangers);
 			const discard = el('button', { type: 'button', class: 'task-add-btn', text: 'Discard changes' });
 			const flag = el('span', { class: 'dirty-flag hidden', text: 'Unsaved changes' });
 			updateDirty = () => {
 				const d = normalizedKey(draft) !== normalizedKey(bangers);
 				flag.classList.toggle('hidden', !d);
-				discard.disabled = saving || !d;
+				discard.disabled = yearsSaving || !d;
 			};
 			discard.addEventListener('click', () => { draft = copyYears(bangers); adminErrors = []; refreshAdmin(); });
 			updateDirty();
@@ -724,18 +816,567 @@
 			return card;
 		}
 
+		// ---- Remembered view state ------------------------------------------------
+		// Which Tasks sections (a category, or Completed) are open, kept on this
+		// device so a rebuilt card reopens as it was left.
+		const VIEW_KEY = 'bangersView';
+		const taskOpen = {};
+		function trackTaskSection(details, key, openByDefault) {
+			details.open = key in taskOpen ? !!taskOpen[key] : openByDefault;
+			details.addEventListener('toggle', () => {
+				if (details.open === (key in taskOpen ? !!taskOpen[key] : openByDefault)) return;
+				taskOpen[key] = details.open;
+				saveView();
+			});
+		}
+		function saveView() {
+			try { localStorage.setItem(VIEW_KEY, JSON.stringify({ taskOpen })); } catch (e) { /* works for this visit */ }
+		}
+		(function restoreView() {
+			let saved = null;
+			try { saved = JSON.parse(localStorage.getItem(VIEW_KEY)); } catch (e) { /* none */ }
+			const open = saved && saved.taskOpen;
+			if (open && typeof open === 'object' && !Array.isArray(open)) Object.assign(taskOpen, open);
+		})();
+
+		// ---- Quick links ----------------------------------------------------------
+		// The header toolbar, same behaviour as myffl.html's: plain, gold or
+		// purple entries, and links sharing a Group fold into one dropdown. The
+		// list is public (the GET needs no login) and edited from the Admin tab's
+		// Quick Links card. With no links the bar is empty and CSS hides it.
+		let quickLinks = [];
+
+		function closeQuickLinkCombos() {
+			for (const open of document.querySelectorAll('.quicklink-combo.open')) {
+				open.classList.remove('open');
+				const b = open.querySelector('.quicklink-combo-btn');
+				if (b) b.setAttribute('aria-expanded', 'false');
+			}
+		}
+		// Registered once: renderQuickLinks rebuilds the bar and must not stack these.
+		document.addEventListener('click', (e) => { if (!e.target.closest || !e.target.closest('.quicklink-combo')) closeQuickLinkCombos(); });
+		document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeQuickLinkCombos(); });
+
+		function appendQuickLink(bar, { url, label, style }) {
+			const cls = style === 'gold' ? 'quicklink-gold' : style === 'purple' ? 'quicklink-purple' : '';
+			const link = el('a', { href: url, target: '_blank', rel: 'noopener', ...(cls ? { class: cls } : {}) });
+			if (cls) link.appendChild(el('span', { class: 'quicklink-pill', text: label }));
+			else link.textContent = label;
+			bar.appendChild(link);
+		}
+
+		function renderQuickLinks() {
+			const bar = document.getElementById('quicklinks');
+			bar.textContent = '';
+			const groups = new Map();
+			for (const link of quickLinks) {
+				if (link.visibility === 'never' || (link.visibility === 'loggedin' && !authToken)) continue;
+				const opts = { url: link.url, label: link.nickname, style: link.style };
+				const name = typeof link.group === 'string' ? link.group.trim() : '';
+				if (!name) { appendQuickLink(bar, opts); continue; }
+				const key = name.toLowerCase();
+				let menu = groups.get(key);
+				if (!menu) {
+					const wrap = el('div', { class: 'quicklink-combo' });
+					const btn = el('button', {
+						type: 'button',
+						class: `quicklink-combo-btn${link.style === 'gold' ? ' quicklink-combo-gold' : link.style === 'purple' ? ' quicklink-combo-purple' : ''}`,
+						'aria-haspopup': 'true',
+						'aria-expanded': 'false',
+						text: `${name} ▾`,
+					});
+					menu = el('div', { class: 'quicklink-combo-menu' });
+					btn.addEventListener('click', () => {
+						const opening = !wrap.classList.contains('open');
+						closeQuickLinkCombos();
+						if (!opening) return;
+						wrap.classList.add('open');
+						btn.setAttribute('aria-expanded', 'true');
+						wrap.classList.remove('align-right');
+						if (btn.getBoundingClientRect().left + menu.offsetWidth > window.innerWidth - 8) wrap.classList.add('align-right');
+					});
+					wrap.append(btn, menu);
+					bar.appendChild(wrap);
+					groups.set(key, menu);
+				}
+				appendQuickLink(menu, opts);
+			}
+		}
+
+		// Admin > Quick Links. Edits go into a draft and nothing is saved until
+		// Save, like myFFL's card; the whole ordered list is replaced in one write.
+		let qlDraft = null;
+		let qlErrors = [];
+		let qlSaving = false;
+		let qlCardEl = null;
+		const qlCopy = (list) => list.map((l) => ({ url: l.url || '', nickname: l.nickname || '', style: l.style || '', visibility: l.visibility || '', group: l.group || '' }));
+		const qlDirty = () => JSON.stringify(qlCopy(qlDraft)) !== JSON.stringify(qlCopy(quickLinks));
+
+		function refreshQuickLinksCard() {
+			if (!qlCardEl) return;
+			const next = buildQuickLinksCard();
+			qlCardEl.replaceWith(next);
+			qlCardEl = next;
+		}
+
+		async function saveQuickLinks() {
+			qlErrors = [];
+			// Same rules as the server, so a mistake is named before the round trip.
+			const draft = qlCopy(qlDraft).map((l) => ({ ...l, url: l.url.trim(), nickname: l.nickname.trim(), group: l.group.trim() }));
+			draft.forEach((l, i) => {
+				if (!l.nickname) qlErrors.push(`Link ${i + 1}: nickname is required.`);
+				if (!/^https?:\/\/\S+$/i.test(l.url)) qlErrors.push(`Link ${i + 1}: link must start with http:// or https://.`);
+			});
+			if (qlErrors.length) { refreshQuickLinksCard(); return; }
+			qlSaving = true;
+			refreshQuickLinksCard();
+			setStatus('Saving…');
+			try {
+				const res = await fetch(BANGERS_URL, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+					body: JSON.stringify({ resource: 'quicklinks', links: draft }),
+				});
+				const body = await res.json().catch(() => ({}));
+				if (res.status === 401) { qlSaving = false; expireSession(); return; }
+				if (!res.ok) throw new Error((body.details && body.details.join('; ')) || body.error || `HTTP ${res.status}`);
+				quickLinks = body.links || [];
+				qlDraft = qlCopy(quickLinks);
+				renderQuickLinks();
+				setStatus('Saved', 'ok');
+			} catch (err) {
+				qlErrors = [`Not saved: ${err.message}`];
+				setStatus('');
+			}
+			qlSaving = false;
+			refreshQuickLinksCard();
+		}
+
+		function buildQuickLinksCard() {
+			if (!qlDraft) qlDraft = qlCopy(quickLinks);
+			const qlHead = el('h2', { class: 'card-heading', text: `Quick Links (${qlDraft.length})` });
+			const card = el('div', { class: 'card' }, [qlHead]);
+			makeCollapsible(card, qlHead, 'quicklinks');
+			const list = el('div', { class: 'ql-list' });
+			const field = (cls, label, input) => el('label', { class: `ql-field ${cls}` }, [el('span', { text: label }), input]);
+			const text = (link, key, placeholder, type) => {
+				const input = el('input', { type: 'text', class: 'task-input', value: link[key], placeholder, autocomplete: 'off', ...(type === 'url' ? { inputmode: 'url', maxlength: '500' } : { maxlength: '40' }) });
+				input.addEventListener('input', () => { link[key] = input.value; });
+				return input;
+			};
+			qlDraft.forEach((link, i) => {
+				const style = el('select', { class: 'task-input' }, [['', 'Plain'], ['gold', 'Gold'], ['purple', 'Purple']].map(([v, t]) => {
+					const o = el('option', { value: v, text: t });
+					if ((link.style || '') === v) o.selected = true;
+					return o;
+				}));
+				style.addEventListener('change', () => { link.style = style.value; });
+				const visibility = el('select', { class: 'task-input' }, [['', 'Always'], ['loggedin', 'Logged in'], ['never', 'Never']].map(([v, t]) => {
+					const o = el('option', { value: v, text: t });
+					if ((link.visibility || '') === v) o.selected = true;
+					return o;
+				}));
+				visibility.addEventListener('change', () => { link.visibility = visibility.value; });
+				const move = (to) => { qlDraft.splice(to, 0, qlDraft.splice(i, 1)[0]); refreshQuickLinksCard(); };
+				const up = el('button', { type: 'button', class: 'task-icon-btn task-save-btn', title: 'Move up', 'aria-label': 'Move up', text: '↑' });
+				const down = el('button', { type: 'button', class: 'task-icon-btn task-save-btn', title: 'Move down', 'aria-label': 'Move down', text: '↓' });
+				up.disabled = i === 0;
+				down.disabled = i === qlDraft.length - 1;
+				up.addEventListener('click', () => move(i - 1));
+				down.addEventListener('click', () => move(i + 1));
+				const remove = el('button', { type: 'button', class: 'task-icon-btn', title: 'Remove this link', 'aria-label': 'Remove this link', text: '✕' });
+				remove.addEventListener('click', () => { qlDraft.splice(i, 1); refreshQuickLinksCard(); });
+				list.appendChild(el('div', { class: 'ql-row' }, [
+					field('ql-link', 'Link', text(link, 'url', 'https://…', 'url')),
+					field('ql-nick', 'Nickname', text(link, 'nickname', 'e.g. Playlist')),
+					field('ql-group', 'Group', text(link, 'group', 'optional')),
+					field('ql-style', 'Style', style),
+					field('ql-style', 'Visibility', visibility),
+					up, down, remove,
+				]));
+			});
+			if (!qlDraft.length) card.appendChild(el('div', { class: 'task-empty', text: 'No links yet. With none, the toolbar stays hidden.' }));
+			card.appendChild(list);
+			const add = el('button', { type: 'button', class: 'task-add-btn', text: '+ Add a link' });
+			add.addEventListener('click', () => {
+				qlDraft.push({ url: '', nickname: '', style: '', visibility: '', group: '' });
+				refreshQuickLinksCard();
+				const rows = qlCardEl.querySelectorAll('.ql-row');
+				const last = rows[rows.length - 1];
+				if (last) last.querySelector('input').focus();
+			});
+			const save = el('button', { type: 'button', class: 'task-add-btn', text: qlSaving ? 'Saving…' : 'Save' });
+			save.disabled = qlSaving;
+			save.addEventListener('click', saveQuickLinks);
+			const discard = el('button', { type: 'button', class: 'task-add-btn', text: 'Discard changes' });
+			discard.disabled = qlSaving || !qlDirty();
+			discard.addEventListener('click', () => { qlDraft = qlCopy(quickLinks); qlErrors = []; refreshQuickLinksCard(); });
+			card.appendChild(el('div', { class: 'ql-actions' }, [add, save, discard]));
+			if (qlErrors.length) card.appendChild(el('ul', { class: 'ql-errors' }, qlErrors.map((t) => el('li', { text: t }))));
+			card.appendChild(el('div', { class: 'ql-note', text: 'Shown in the header toolbar, in this order. Links sharing a Group name fold into one dropdown with that name. Both a link and a nickname are required.' }));
+			return card;
+		}
+
+		// ---- Tasks card ---------------------------------------------------------
+		// The same list as myffl.html's Tasks card, but its own: stored under its
+		// own key by api/vikings.js (`?resource=tasks`, login-gated both ways), not
+		// in the plans document. Each change goes up as a per-task patch
+		// ({ id: task | null }), queued one at a time so two quick edits can't race
+		// each other's read-modify-write on the server. The list is fetched when the
+		// Admin tab opens and whenever the page returns to the foreground, so a task
+		// added on another device shows up without a reload.
+
+		const MAX_TASK_TEXT_LENGTH = 2000;
+		const TASK_COUNTER_THRESHOLD = MAX_TASK_TEXT_LENGTH - 400;
+		let tasks = {};
+		let tasksState = 'idle'; // idle | loading | ready | error
+		let tasksError = '';
+		let tasksSyncError = '';
+		let editingTaskId = null;
+		let tasksCardEl = null;
+		let pushChain = Promise.resolve();
+		// Changes the server hasn't confirmed yet, id -> task | null. They stay
+		// here until a save succeeds (so a failed save is retried with the next
+		// one, never silently dropped), and the list is not refetched over them.
+		const unsaved = {};
+		let saving = false;
+
+		// First load shows "Loading…"; later calls (opening the tab, coming back to
+		// the page) refetch quietly, because another device may have changed the
+		// list since this page loaded. Never over unsaved edits, an edit in
+		// progress or text typed into the add row.
+		async function loadTasks() {
+			if (tasksState === 'loading') return;
+			const quiet = tasksState === 'ready';
+			if (quiet) {
+				const typing = tasksCardEl && [...tasksCardEl.querySelectorAll('.task-input')].some((i) => i.value);
+				if (saving || Object.keys(unsaved).length || editingTaskId || typing) return;
+			} else {
+				tasksState = 'loading';
+			}
+			try {
+				const res = await fetch(`${BANGERS_URL}?resource=tasks`, { headers: { Authorization: `Bearer ${authToken}` }, cache: 'no-store' });
+				const body = await res.json().catch(() => ({}));
+				if (res.status === 401) { tasksState = 'idle'; expireSession(); return; }
+				if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+				// A save or edit may have started while this was in flight; don't clobber it.
+				if (quiet && (saving || Object.keys(unsaved).length || editingTaskId)) return;
+				tasks = body.tasks || {};
+				tasksState = 'ready';
+			} catch (err) {
+				if (quiet) return; // a failed background refresh keeps what is on screen
+				tasksState = 'error';
+				tasksError = err.message;
+			}
+			refreshTasksCard();
+		}
+
+		// Send every unconfirmed change. One at a time, so two quick edits can't
+		// race each other's read-modify-write on the server.
+		function flushTasks() {
+			pushChain = pushChain.then(async () => {
+				const sent = { ...unsaved };
+				if (!Object.keys(sent).length) return;
+				saving = true;
+				try {
+					const res = await fetch(BANGERS_URL, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+						body: JSON.stringify({ resource: 'tasks', tasks: sent }),
+					});
+					const body = await res.json().catch(() => ({}));
+					if (res.status === 401) { saving = false; expireSession(); return; }
+					if (!res.ok) throw new Error((body.details && body.details.join('; ')) || body.error || `HTTP ${res.status}`);
+					// Keep anything edited again while this was in flight.
+					for (const id of Object.keys(sent)) if (unsaved[id] === sent[id]) delete unsaved[id];
+					tasksSyncError = '';
+				} catch (err) {
+					tasksSyncError = err.message;
+				}
+				saving = false;
+				refreshTasksCard();
+			});
+		}
+
+		// Apply a { id: task | null } change locally, show it, and send it.
+		function commitTasks(changed) {
+			for (const [id, t] of Object.entries(changed)) {
+				if (t === null) delete tasks[id]; else tasks[id] = t;
+			}
+			Object.assign(unsaved, changed);
+			refreshTasksCard();
+			flushTasks();
+		}
+
+		const makeTaskId = () => `t${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+		const taskOrderValue = (t) => (typeof t.order === 'number' ? t.order : t.createdAt);
+		function openTaskIdsByCategory(category) {
+			return Object.entries(tasks)
+				.filter(([, t]) => !t.done && t.category === category)
+				.sort((a, b) => taskOrderValue(a[1]) - taskOrderValue(b[1]))
+				.map(([id]) => id);
+		}
+		// Stamps `order` on every task in the category, not just the one moved: a
+		// task nobody has reordered has no `order` and would sort back to the front.
+		function moveTaskWithinCategory(category, from, to) {
+			const ids = openTaskIdsByCategory(category);
+			if (from === to || from < 0 || from >= ids.length || to < 0 || to >= ids.length) return;
+			const [moved] = ids.splice(from, 1);
+			ids.splice(to, 0, moved);
+			const changed = {};
+			ids.forEach((id, order) => { changed[id] = { ...tasks[id], order }; });
+			commitTasks(changed);
+		}
+		function addTask(text, category) {
+			const now = Date.now();
+			commitTasks({ [makeTaskId()]: { text, category, done: false, order: now, createdAt: now, completedAt: null } });
+		}
+		const patchTask = (id, updates) => { if (tasks[id]) commitTasks({ [id]: { ...tasks[id], ...updates } }); };
+
+		// A hand-rolled stand-in for <datalist>, which iOS handles badly.
+		function attachCategorySuggestions(input, getCategories) {
+			const wrap = el('div', { class: 'suggest-wrap' });
+			wrap.appendChild(input);
+			const list = el('div', { class: 'suggest-list hidden' });
+			wrap.appendChild(list);
+			function render() {
+				const q = input.value.trim().toLowerCase();
+				const matches = getCategories().filter((c) => c.toLowerCase().includes(q) && c.toLowerCase() !== q);
+				list.textContent = '';
+				if (!matches.length) { list.classList.add('hidden'); return; }
+				for (const c of matches) {
+					const item = el('div', { class: 'suggest-item', text: c });
+					// mousedown, not click: it lands before the input's blur hides the list.
+					item.addEventListener('mousedown', (e) => {
+						e.preventDefault();
+						input.value = c;
+						list.classList.add('hidden');
+						input.focus();
+					});
+					list.appendChild(item);
+				}
+				list.classList.remove('hidden');
+			}
+			input.addEventListener('focus', render);
+			input.addEventListener('input', render);
+			input.addEventListener('blur', () => list.classList.add('hidden'));
+			return wrap;
+		}
+
+		// Only shown once text nears the limit; most tasks are a line.
+		function attachTaskCharCounter(input) {
+			const counter = el('span', { class: 'task-counter hidden' });
+			const update = () => {
+				const len = input.value.length;
+				counter.classList.toggle('hidden', len < TASK_COUNTER_THRESHOLD);
+				counter.classList.toggle('limit', len >= MAX_TASK_TEXT_LENGTH);
+				counter.textContent = `${len}/${MAX_TASK_TEXT_LENGTH}`;
+			};
+			input.addEventListener('input', update);
+			update();
+			return counter;
+		}
+
+		// Bug first, then the manager's fixed buckets, anything new alphabetically,
+		// Backlog last.
+		const categoryTier = (key) => (key === 'Bug' ? 0 : key === 'Manual Task' ? 2 : key === 'Site Enhancement' ? 3 : key === 'Backlog' ? 5 : 4);
+
+		function refreshTasksCard() {
+			if (!tasksCardEl || !tasksCardEl.isConnected) return;
+			const next = buildTasksCard();
+			tasksCardEl.replaceWith(next);
+			tasksCardEl = next;
+		}
+
+		function buildTasksCard() {
+			const card = el('div', { class: 'card' });
+			if (tasksState !== 'ready') {
+				const loadingHead = el('h2', { class: 'card-heading', text: 'Tasks' });
+				card.appendChild(loadingHead);
+				makeCollapsible(card, loadingHead, 'tasks');
+				card.appendChild(el('div', { class: `message${tasksState === 'error' ? ' error' : ''}`, text: tasksState === 'error' ? `Couldn’t load tasks (${tasksError}). Reload to try again.` : 'Loading…' }));
+				return card;
+			}
+			const entries = Object.entries(tasks);
+			const tasksHead = el('h2', { class: 'card-heading', text: `Tasks (${entries.filter(([, t]) => !t.done).length})` });
+			card.appendChild(tasksHead);
+			makeCollapsible(card, tasksHead, 'tasks');
+			// Stays up until the unsaved changes go through; Retry resends them.
+			if (tasksSyncError && Object.keys(unsaved).length) {
+				const warn = el('div', { class: 'task-sync-status' }, [document.createTextNode(`⚠ Not saved yet (${tasksSyncError}). `)]);
+				const retry = el('button', { type: 'button', class: 'task-add-btn', text: 'Retry' });
+				retry.addEventListener('click', flushTasks);
+				warn.appendChild(retry);
+				card.appendChild(warn);
+			}
+
+			const categories = [...new Set(entries.map(([, t]) => t.category).filter(Boolean))].sort();
+			const addRow = el('div', { class: 'task-add-row' });
+			const textInput = el('input', { type: 'text', class: 'task-input', placeholder: 'New task…', autocomplete: 'off', maxlength: String(MAX_TASK_TEXT_LENGTH) });
+			const categoryInput = el('input', { type: 'text', class: 'task-input', placeholder: 'Category', autocomplete: 'off' });
+			const addBtn = el('button', { type: 'button', class: 'task-add-btn', text: '+ Add' });
+			// Both fields are required, so every open task sits under a real category.
+			const submit = () => {
+				const text = textInput.value.trim();
+				const category = categoryInput.value.trim();
+				if (!text || !category) return;
+				addTask(text, category);
+			};
+			addBtn.addEventListener('click', submit);
+			textInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+			addRow.append(textInput, attachTaskCharCounter(textInput), attachCategorySuggestions(categoryInput, () => categories), addBtn);
+			card.appendChild(addRow);
+
+			if (!entries.length) {
+				card.appendChild(el('div', { class: 'task-empty', text: 'No tasks yet.' }));
+				return card;
+			}
+
+			let dragFrom = null;
+			const buildRow = (id, t, group) => {
+				if (editingTaskId === id) return buildEditRow(id, t, categories);
+				const row = el('div', { class: `task-row${t.done ? ' task-done' : ''}` });
+				const { key, index, groupEntries } = group || {};
+				if (group) {
+					row.appendChild(el('span', { class: 'task-grip', title: 'Drag to reorder', 'aria-hidden': 'true', text: '⠿' }));
+					row.draggable = true;
+				}
+				const box = el('input', { type: 'checkbox', 'aria-label': 'Done' });
+				box.checked = t.done;
+				box.addEventListener('change', () => patchTask(id, { done: box.checked, completedAt: box.checked ? Date.now() : null }));
+				row.appendChild(box);
+				// Done tasks lose their category's section, so the category rides along.
+				const label = t.done && t.category ? `${t.text} (${t.category})` : t.text;
+				const textSpan = el('span', { class: 'task-text', text: label, role: 'button', tabindex: '0', title: 'Click to edit' });
+				const edit = () => { editingTaskId = id; refreshTasksCard(); };
+				textSpan.addEventListener('click', edit);
+				textSpan.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); edit(); } });
+				row.appendChild(textSpan);
+				if (group) {
+					// Touch screens fire no drag events, so these are the only way to reorder there.
+					const up = el('button', { type: 'button', class: 'task-move-btn', title: 'Move up', 'aria-label': 'Move up', text: '↑' });
+					const down = el('button', { type: 'button', class: 'task-move-btn', title: 'Move down', 'aria-label': 'Move down', text: '↓' });
+					up.disabled = index === 0;
+					down.disabled = index === groupEntries.length - 1;
+					up.addEventListener('click', () => moveTaskWithinCategory(key, index, index - 1));
+					down.addEventListener('click', () => moveTaskWithinCategory(key, index, index + 1));
+					row.appendChild(el('div', { class: 'task-move' }, [up, down]));
+				}
+				const remove = el('button', { type: 'button', class: 'task-icon-btn', title: 'Delete task', 'aria-label': 'Delete task', text: '✕' });
+				remove.addEventListener('click', () => commitTasks({ [id]: null }));
+				row.appendChild(remove);
+
+				if (group) {
+					const after = (e) => { const r = row.getBoundingClientRect(); return e.clientY > r.top + r.height / 2; };
+					const clear = () => row.classList.remove('drop-before', 'drop-after');
+					row.addEventListener('dragstart', (e) => {
+						dragFrom = { key, index };
+						e.dataTransfer.effectAllowed = 'move';
+						e.dataTransfer.setData('text/plain', String(index));
+						setTimeout(() => row.classList.add('dragging'), 0);
+					});
+					row.addEventListener('dragend', () => { dragFrom = null; row.classList.remove('dragging'); clear(); });
+					row.addEventListener('dragover', (e) => {
+						if (!dragFrom || dragFrom.key !== key || dragFrom.index === index) return;
+						e.preventDefault();
+						e.dataTransfer.dropEffect = 'move';
+						row.classList.toggle('drop-after', after(e));
+						row.classList.toggle('drop-before', !after(e));
+					});
+					row.addEventListener('dragleave', clear);
+					row.addEventListener('drop', (e) => {
+						if (!dragFrom || dragFrom.key !== key) return;
+						e.preventDefault();
+						const from = dragFrom.index;
+						dragFrom = null;
+						clear();
+						// Insertion point in the pre-removal array, less the hole the dragged row leaves.
+						let insertAt = index + (after(e) ? 1 : 0);
+						if (from < insertAt) insertAt--;
+						moveTaskWithinCategory(key, from, insertAt);
+					});
+				}
+				return row;
+			};
+
+			const open = entries.filter(([, t]) => !t.done);
+			const done = entries.filter(([, t]) => t.done).sort((a, b) => (b[1].completedAt || 0) - (a[1].completedAt || 0));
+			const keys = [...new Set(open.map(([, t]) => t.category))].sort((a, b) => categoryTier(a) - categoryTier(b) || (categoryTier(a) === 4 ? a.localeCompare(b) : 0));
+			if (open.length) {
+				for (const key of keys) {
+					const groupEntries = openTaskIdsByCategory(key).map((id) => [id, tasks[id]]);
+					const details = el('details', { class: 'task-section' }, [el('summary', { text: `${key} (${groupEntries.length})` })]);
+					trackTaskSection(details, `cat:${key}`, true);
+					groupEntries.forEach(([id, t], index) => details.appendChild(buildRow(id, t, { key, index, groupEntries })));
+					card.appendChild(details);
+				}
+			} else {
+				card.appendChild(el('div', { class: 'task-empty', text: 'Nothing open — nice.' }));
+			}
+			if (done.length) {
+				const details = el('details', { class: 'task-section' }, [el('summary', { text: `Completed (${done.length})` })]);
+				trackTaskSection(details, 'completed', false);
+				for (const [id, t] of done) details.appendChild(buildRow(id, t));
+				card.appendChild(details);
+			}
+			return card;
+		}
+
+		// Edit a task in place: text and category are the only fields that can't
+		// change any other way. Moving category sends the task to the end of the
+		// new one, since an index from the old category means nothing there.
+		function buildEditRow(id, t, categories) {
+			const row = el('div', { class: 'task-row editing' });
+			const text = el('input', { type: 'text', class: 'task-input', value: t.text, autocomplete: 'off', maxlength: String(MAX_TASK_TEXT_LENGTH), 'aria-label': 'Task' });
+			const category = el('input', { type: 'text', class: 'task-input', value: t.category || '', placeholder: 'Category', autocomplete: 'off', 'aria-label': 'Category' });
+			const save = () => {
+				const nextText = text.value.trim();
+				const nextCategory = category.value.trim();
+				if (!nextText || !nextCategory) return;
+				editingTaskId = null;
+				const updates = { text: nextText, category: nextCategory };
+				if (nextCategory !== (t.category || '')) updates.order = Date.now();
+				patchTask(id, updates);
+			};
+			const cancel = () => { editingTaskId = null; refreshTasksCard(); };
+			const keydown = (e) => { if (e.key === 'Enter') save(); else if (e.key === 'Escape') cancel(); };
+			text.addEventListener('keydown', keydown);
+			category.addEventListener('keydown', keydown);
+			const saveBtn = el('button', { type: 'button', class: 'task-icon-btn task-save-btn', title: 'Save', 'aria-label': 'Save', text: '✓' });
+			saveBtn.addEventListener('click', save);
+			const cancelBtn = el('button', { type: 'button', class: 'task-icon-btn', title: 'Cancel', 'aria-label': 'Cancel', text: '✕' });
+			cancelBtn.addEventListener('click', cancel);
+			row.append(text, attachTaskCharCounter(text), attachCategorySuggestions(category, () => categories), saveBtn, cancelBtn);
+			setTimeout(() => { text.focus(); text.setSelectionRange(text.value.length, text.value.length); }, 0);
+			return row;
+		}
+
 		function adminView() {
-			draft = null; // a fresh copy of what is saved each time the tab opens
+			tasksCardEl = buildTasksCard();
+			loadTasks(); // first load, or a quiet refresh when the tab is reopened
+			qlDraft = null; // a fresh copy of what is saved each time the tab opens
+			qlErrors = [];
+			qlCardEl = buildQuickLinksCard();
+			draft = null;
 			adminErrors = [];
 			cardEl = buildAdminCard();
-			return [cardEl];
+			return [tasksCardEl, qlCardEl, cardEl];
 		}
+
+		// Coming back to the page (switching apps on a phone or iPad, or restoring
+		// it from the back/forward cache) refreshes the task list too.
+		function refreshTasksIfVisible() {
+			if (tab === 'admin' && isLoggedIn() && document.visibilityState === 'visible') loadTasks();
+		}
+		document.addEventListener('visibilitychange', refreshTasksIfVisible);
+		window.addEventListener('pageshow', refreshTasksIfVisible);
 
 		// ---- Shell ---------------------------------------------------------------
 		function setTab(next) {
 			tab = next;
 			try { localStorage.setItem(TAB_KEY, tab); } catch (e) { /* the tab still switches */ }
 			setStatus('');
+			editingTaskId = null;
 			renderAll();
 		}
 
@@ -755,9 +1396,12 @@
 			if (tab === 'admin' && !isLoggedIn()) tab = 'winners';
 			renderLogin();
 			renderTabs();
+			renderQuickLinks();
 			const view = document.getElementById('view');
 			view.textContent = '';
 			cardEl = null;
+			tasksCardEl = null;
+			qlCardEl = null;
 			if (loadState === 'loading') { view.appendChild(message('Loading…')); return; }
 			if (loadState === 'failed' && tab !== 'admin') { view.appendChild(message(`Couldn’t load the list (${loadError}). Reload to try again.`, 'error')); return; }
 			const cards = tab === 'nominees' ? nomineesView() : tab === 'admin' ? adminView() : winnersView();
@@ -779,6 +1423,12 @@
 		async function load() {
 			renderLogin();
 			renderTabs();
+			// Not awaited with the list: the bar fills in when it arrives, and a failure
+			// just leaves it hidden.
+			fetch(`${BANGERS_URL}?resource=quicklinks`, { cache: 'no-store' })
+				.then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+				.then((body) => { quickLinks = Array.isArray(body.links) ? body.links : []; renderQuickLinks(); })
+				.catch(() => { /* no toolbar */ });
 			try {
 				// Cache-bust: Pages' CDN will happily serve the pre-save copy otherwise.
 				const res = await fetch(`${DATA_URL}?t=${Date.now()}`, { cache: 'no-store' });

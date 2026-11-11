@@ -2,8 +2,8 @@
 // behalf of the Admin tab in bangers.html (melbostads.com/bangers), the way
 // api/save-leagues.js does for config/leagues.json. The Hoot Owl Bangers list
 // is a committed file, not a database: the page READS it from GitHub Pages
-// like any other static file (so there is no GET here, and nothing is public
-// or private about it), and this endpoint is only how an edit gets in.
+// like any other static file (so the list has no GET here, and nothing is
+// public or private about it), and this endpoint is only how an edit gets in.
 //
 //   data/bangers.json
 //   { years: [ { id, label, nominees: [ { id, title, artist, by, winner } ] } ] }
@@ -23,17 +23,37 @@
 // breaks it fails CI. The push also starts deploy-pages.yml, so the public
 // page picks the change up a minute or two after the save returns.
 //
+// TASKS and QUICK LINKS. The Admin tab's Tasks card and Quick Links card (the
+// header toolbar) are the same two features as vikings.html's, and are NOT
+// committed to the repo: they change constantly and tasks are private, so
+// they live in the Upstash store (resolveStore in plans.js) under their own
+// keys, apart from the Vikings page's and myFFL's. They go through
+// `?resource=tasks` / `?resource=quicklinks`, and the validators, per-task
+// patch and link normalisation are vikings.js's own, imported so the pages
+// can never disagree about a task or a link. Same access rules as there:
+// the quick-links GET is public (logged-out visitors see the toolbar), the
+// tasks GET needs the Bearer token, and every POST does. The bangers list
+// itself still has no GET: the page reads data/bangers.json from Pages.
+//
 // A save from a stale copy is refused: the page sends the git blob sha of the
 // exact bytes it loaded (`baseSha`, computed the way myffl.html's gitBlobSha
 // does) and a mismatch is a 409. A missing sha is never stale.
 
 import { verifyToken } from './_lib/auth.mjs';
 import { applyCors } from './_lib/cors.mjs';
+import { storeGet, storeSet } from './_lib/store.mjs';
+import { resolveStore } from './plans.js';
+import { validateTaskPatch, applyTaskPatch, validateQuickLinks, normalizeQuickLinks } from './vikings.js';
 
 const OWNER = 'shamrock84';
 const REPO = 'shamrock84.github.io';
 const PATH = 'data/bangers.json';
 const BRANCH = 'main';
+// Upstash keys. Deliberately not vikings.js's (`vikings:tasks`, `vikings:quicklinks`):
+// sharing one would show each page the other's tasks and toolbar.
+const TASKS_KEY = 'bangers:tasks';
+const QUICKLINKS_KEY = 'bangers:quicklinks';
+const MAX_TASKS = 300;
 const ID = /^[A-Za-z0-9]{1,40}$/;
 const MAX_YEARS = 100;
 const MAX_NOMINEES = 40;
@@ -42,7 +62,7 @@ const MAX_TITLE_LENGTH = 120;
 const MAX_ARTIST_LENGTH = 120;
 const MAX_BY_LENGTH = 60;
 
-export { validateBangers, normalizeBangers, serialize, isStaleBase };
+export { validateBangers, normalizeBangers, serialize, isStaleBase, TASKS_KEY, QUICKLINKS_KEY };
 
 const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const text = (v) => (typeof v === 'string' ? v.trim() : '');
@@ -142,24 +162,89 @@ function isStaleBase(baseSha, currentSha) {
   return baseSha !== currentSha;
 }
 
+function bearerOk(req) {
+  const authHeader = req.headers.authorization || '';
+  const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  return verifyToken(bearer, process.env.SESSION_SECRET);
+}
+
+// The Upstash-backed resources. Auth has already been checked by the caller.
+async function handleStoreResource(req, res, resource) {
+  const store = resolveStore(process.env);
+  if (!store) {
+    res.status(500).json({ error: 'No store is configured on this deployment (see resolveStore in api/plans.js).' });
+    return;
+  }
+  try {
+    if (resource === 'quicklinks') {
+      if (req.method === 'GET') {
+        res.status(200).json({ links: (await storeGet(store, QUICKLINKS_KEY)) || [] });
+        return;
+      }
+      const { errors } = validateQuickLinks(req.body);
+      if (errors.length) {
+        res.status(400).json({ error: 'Nothing was saved — the request was malformed:', details: errors });
+        return;
+      }
+      const links = normalizeQuickLinks(req.body.links);
+      await storeSet(store, QUICKLINKS_KEY, links);
+      res.status(200).json({ links });
+      return;
+    }
+    const storedTasks = (await storeGet(store, TASKS_KEY)) || {};
+    if (req.method === 'GET') {
+      res.status(200).json({ tasks: storedTasks });
+      return;
+    }
+    const { errors } = validateTaskPatch(req.body);
+    if (errors.length) {
+      res.status(400).json({ error: 'Nothing was saved — the request was malformed:', details: errors });
+      return;
+    }
+    const nextTasks = applyTaskPatch(storedTasks, req.body);
+    if (Object.keys(nextTasks).length > MAX_TASKS) {
+      res.status(400).json({ error: `Nothing was saved — more than ${MAX_TASKS} tasks.` });
+      return;
+    }
+    await storeSet(store, TASKS_KEY, nextTasks);
+    res.status(200).json({ tasks: nextTasks });
+  } catch (err) {
+    res.status(502).json({ error: `Store unavailable: ${err.message}` });
+  }
+}
+
 export default async function handler(req, res) {
-  if (applyCors(req, res, { methods: 'POST, OPTIONS', headers: 'Content-Type, Authorization' })) return;
-  if (req.method !== 'POST') {
+  if (applyCors(req, res, { methods: 'GET, POST, OPTIONS', headers: 'Content-Type, Authorization' })) return;
+  if (req.method !== 'GET' && req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
     return;
   }
 
-  const sessionSecret = process.env.SESSION_SECRET;
-  if (!sessionSecret) {
-    res.status(500).json({ error: 'SESSION_SECRET is not configured on this deployment.' });
+  const resource = req.method === 'GET' ? (req.query && req.query.resource) : (req.body || {}).resource;
+  const storeResource = resource === 'tasks' || resource === 'quicklinks';
+  // The bangers list has no GET (Pages serves the file), so a bare GET is a mistake.
+  if (req.method === 'GET' && !storeResource) {
+    res.status(405).json({ error: 'Method not allowed' });
     return;
   }
-  const authHeader = req.headers.authorization || '';
-  const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-  if (!verifyToken(bearer, sessionSecret)) {
-    res.status(401).json({ error: 'Log in again — your session has expired or is invalid.' });
+
+  // Everything but the public quick-links read needs a login.
+  if (req.method === 'POST' || resource === 'tasks') {
+    const sessionSecret = process.env.SESSION_SECRET;
+    if (!sessionSecret) {
+      res.status(500).json({ error: 'SESSION_SECRET is not configured on this deployment.' });
+      return;
+    }
+    if (!bearerOk(req)) {
+      res.status(401).json({ error: 'Log in again — your session has expired or is invalid.' });
+      return;
+    }
+  }
+  if (storeResource) {
+    await handleStoreResource(req, res, resource);
     return;
   }
+
   const token = process.env.GITHUB_CONTENTS_TOKEN;
   if (!token) {
     res.status(500).json({ error: 'GITHUB_CONTENTS_TOKEN is not configured on this deployment. Add a fine-grained token with Contents: Read and write in the Vercel project settings.' });
