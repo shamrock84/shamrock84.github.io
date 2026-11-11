@@ -16,7 +16,7 @@
 		/* Same palette and shell as myffl.html and vikings.html (purple = primary
 		   accent, gold = "notable"); only the tokens this page uses are copied.
 		   Keep them in step if myffl.html's palette changes. The plaques are the
-		   exception: they are always dark brass on wood, in light mode too. */
+		   exception: they are always dark brass on marble, in light mode too. */
 		:root {
 			--bg: #f5f3f9;
 			--card-bg: #ffffff;
@@ -134,7 +134,7 @@
 		.status.ok { color: var(--gain-text); }
 
 		/* ---- The trophy board --------------------------------------------------
-		   Wood panel, a black title plate with gold lettering, and one brass-and-
+		   Purple marble panel, a black title plate with gold lettering, and one brass-and-
 		   black plaque per song, as on the page this replaced, drawn in CSS so it
 		   scales to any screen. */
 		.board {
@@ -142,7 +142,7 @@
 			border-radius: 12px;
 			border: 2px solid #444;
 			border-color: #afafaf #444 #444 #afafaf;
-			background: linear-gradient(rgba(30, 12, 4, 0.38), rgba(30, 12, 4, 0.38)), #5b2a14 url(images/wood_texture.jpg);
+			background: #3a1a6e url(images/purple_marble.jpg) center top / 1024px auto;
 			box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(0, 0, 0, 0.5);
 		}
 		.board-title {
@@ -224,7 +224,7 @@
 		}
 		.year-band:first-of-type { margin-top: 0; }
 		.year-band small { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.03em; color: #a4a4a4; }
-		.board-empty { padding: 1.2rem; text-align: center; color: #e9dccb; font-family: Georgia, 'Times New Roman', serif; }
+		.board-empty { padding: 1.2rem; text-align: center; color: #efe6fb; font-family: Georgia, 'Times New Roman', serif; }
 
 		/* ---- Admin ------------------------------------------------------------ */
 		#view > * + * { margin-top: 0.8rem; }
