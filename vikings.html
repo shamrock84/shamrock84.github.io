@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Vikings Season Tickets</title>
+	<title>myVST</title>
 	<meta property="og:title" content="Vikings Season Tickets"/>
 	<meta property="og:image" content="http://www.melbostads.com/images/vikingsseasonticketsimage.jpg"/>
 	<link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -87,6 +87,37 @@
 			margin: 0;
 			font-size: 1.35rem;
 			color: var(--accent);
+		}
+		/* Centered masthead, same treatment as myffl.html's .site-logo. */
+		header {
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			text-align: center;
+		}
+		.site-title {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+		.site-logo-prefix {
+			font-family: Georgia, 'Times New Roman', serif;
+			font-weight: 400;
+			font-size: 1.85rem;
+			line-height: 1;
+			color: var(--text);
+			margin-right: 0.15rem;
+			margin-top: 0.75rem;
+		}
+		.site-logo {
+			height: 64px;
+			width: auto;
+			display: block;
+		}
+		@media (prefers-color-scheme: dark) {
+			.site-logo {
+				filter: invert(1);
+			}
 		}
 		.subtitle {
 			font-size: 0.8rem;
@@ -539,7 +570,10 @@
 	<main>
 		<header>
 			<div>
-				<h1 id="title">Vikings Season Tickets</h1>
+				<h1 id="title" class="site-title">
+					<span class="site-logo-prefix">my</span>
+					<img src="images/seasonticketlogo.png" alt="VST — Vikings Season Tickets" class="site-logo">
+				</h1>
 				<div class="subtitle" id="holder-since">Ticket holder since 2007</div>
 			</div>
 			<div class="login" id="login"></div>
