@@ -57,6 +57,8 @@
     { "id": "26222", "franchiseId": "0003", "name": "August Judgment Day", "type": "draftonly", "tags": ["Superflex", "Terminator"], "rulesUrl": "https://www45.myfantasyleague.com/2026/options?L=26222&O=09", "dues": 5, "payout1": 45, "payout2": 5, "payout3": 0 }
   ],
   "quickLinks": [
+    { "url": "https://www.melbostads.com/vikings", "nickname": "myVST", "style": "gold" },
+    { "url": "https://www.melbostads.com/", "nickname": "myBangers", "style": "gold" },
     { "type": "leagues" },
     { "url": "https://www.fantasypros.com/nfl/myplaybook/start-sit-assistant.php", "nickname": "FantasyPros", "style": "gold", "visibility": "loggedin", "group": "FFL" },
     { "url": "https://dynastyleaguefootball.com/", "nickname": "DLF", "style": "gold", "visibility": "loggedin", "group": "FFL" },
@@ -64,7 +66,6 @@
     { "url": "https://vercel.com/shamrock84/shamrock84-github-io", "nickname": "Vercel", "style": "purple", "visibility": "loggedin", "group": "Dev" },
     { "url": "https://console.cron-job.org/dashboard", "nickname": "Cron", "style": "purple", "visibility": "loggedin", "group": "Dev" },
     { "url": "https://pushover.net/", "nickname": "Pushover", "style": "purple", "visibility": "loggedin", "group": "Dev" },
-    { "url": "https://account.squarespace.com/", "nickname": "Squarespace", "style": "purple", "visibility": "loggedin", "group": "Dev" },
-    { "url": "https://www.melbostads.com/vikings", "nickname": "Vikings", "style": "gold" }
+    { "url": "https://account.squarespace.com/", "nickname": "Squarespace", "style": "purple", "visibility": "loggedin", "group": "Dev" }
   ]
 }
