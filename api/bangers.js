@@ -1,35 +1,39 @@
-// Vercel serverless function behind melbostads.com/bangers: the Hoot Owl
-// Bangers list — for each year, the songs nominated and which one won.
+// Vercel serverless function: writes data/bangers.json back to the repo on
+// behalf of the Admin tab in bangers.html (melbostads.com/bangers), the way
+// api/save-leagues.js does for config/leagues.json. The Hoot Owl Bangers list
+// is a committed file, not a database: the page READS it from GitHub Pages
+// like any other static file (so there is no GET here, and nothing is public
+// or private about it), and this endpoint is only how an edit gets in.
 //
-// One account, one document (BANGERS_KEY) in the same Upstash store as
-// plans.js and vikings.js (resolveStore), no expiry:
-//
-//   { years: [ { id, label, nominees: [ { id, title, artist, by, winner } ] } ],
-//     updatedAt }
+//   data/bangers.json
+//   { years: [ { id, label, nominees: [ { id, title, artist, by, winner } ] } ] }
 //
 // Array order is display order, newest first. `label` is free text ("2023",
-// "2020 (Spring)", "Grandfathered"), not a number, because the list has
-// years that aren't one. A year may have several winners: "Grandfathered"
-// is one group of four.
+// "2020 (Spring)", "Grandfathered"), not a number, because the list has years
+// that aren't one. A year may have several winners: "Grandfathered" is one
+// group of four.
 //
-// GET is PUBLIC and returns { bangers: null } before anything has been saved;
-// the page then shows the list it ships with (SEED_YEARS in bangers.html).
-// POST needs the same Bearer token as every other write (api/_lib/auth.mjs).
-// Like vikings.js, and unlike plans.js: logged-out visitors see the plaques,
-// and nothing here is strategy. Don't gate the GET.
+// POST needs the same Bearer token as every other write (api/_lib/auth.mjs)
+// and GITHUB_CONTENTS_TOKEN, the same fine-grained PAT save-leagues.js uses
+// (Contents: Read and write), as a Vercel environment variable.
 //
-// POST replaces the whole document, and refuses a stale one: the page sends
-// the `updatedAt` it loaded (null for "never saved") and a mismatch is a 409,
-// so a second device can't silently erase the first one's edits
-// (api/save-leagues.js does the same with a blob sha). The read-modify-write
-// isn't atomic, which is fine for a single editor.
+// The commit goes straight to main, skipping pull requests, so the validation
+// below is the only guardrail on what the page will render. scripts/
+// test-bangers.mjs also validates the committed file, so a hand edit that
+// breaks it fails CI. The push also starts deploy-pages.yml, so the public
+// page picks the change up a minute or two after the save returns.
+//
+// A save from a stale copy is refused: the page sends the git blob sha of the
+// exact bytes it loaded (`baseSha`, computed the way myffl.html's gitBlobSha
+// does) and a mismatch is a 409. A missing sha is never stale.
 
 import { verifyToken } from './_lib/auth.mjs';
 import { applyCors } from './_lib/cors.mjs';
-import { storeGet, storeSet } from './_lib/store.mjs';
-import { resolveStore } from './plans.js';
 
-const BANGERS_KEY = 'bangers:list';
+const OWNER = 'shamrock84';
+const REPO = 'shamrock84.github.io';
+const PATH = 'data/bangers.json';
+const BRANCH = 'main';
 const ID = /^[A-Za-z0-9]{1,40}$/;
 const MAX_YEARS = 100;
 const MAX_NOMINEES = 40;
@@ -38,7 +42,7 @@ const MAX_TITLE_LENGTH = 120;
 const MAX_ARTIST_LENGTH = 120;
 const MAX_BY_LENGTH = 60;
 
-export { validateBangers, normalizeBangers, isStale, BANGERS_KEY };
+export { validateBangers, normalizeBangers, serialize, isStaleBase };
 
 const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const text = (v) => (typeof v === 'string' ? v.trim() : '');
@@ -99,61 +103,111 @@ function normalizeBangers(years) {
   }));
 }
 
-// `base` is the updatedAt the page loaded. A missing or null base means "I saw
-// nothing stored" and is only stale if something has been stored since.
-function isStale(stored, base) {
-  if (!stored) return false;
-  return (base == null ? null : base) !== (stored.updatedAt == null ? null : stored.updatedAt);
+// One nominee per line, so adding a song or ticking a winner is a one-line
+// diff in the commit. Ids and field order are fixed by normalizeBangers.
+function serialize(years) {
+  const lines = ['{', '  "years": ['];
+  years.forEach((y, i) => {
+    lines.push('    {');
+    lines.push(`      "id": ${JSON.stringify(y.id)},`);
+    lines.push(`      "label": ${JSON.stringify(y.label)},`);
+    if (!y.nominees.length) {
+      lines.push('      "nominees": []');
+    } else {
+      lines.push('      "nominees": [');
+      y.nominees.forEach((n, j) => lines.push(`        ${JSON.stringify(n)}${j === y.nominees.length - 1 ? '' : ','}`));
+      lines.push('      ]');
+    }
+    lines.push(`    }${i === years.length - 1 ? '' : ','}`);
+  });
+  lines.push('  ]', '}');
+  return lines.join('\n') + '\n';
+}
+
+async function githubGet(token) {
+  const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}?ref=${BRANCH}`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' },
+    signal: AbortSignal.timeout(10000),
+  });
+  if (res.status === 404) return { sha: null }; // first save creates the file
+  if (!res.ok) throw new Error(`Couldn't read the current list (GitHub returned ${res.status}): ${(await res.text()).slice(0, 200)}`);
+  const json = await res.json();
+  return { sha: json.sha };
+}
+
+// True when the page told us which version it loaded and that is no longer the
+// current one. A missing or malformed baseSha is "not told", never stale.
+function isStaleBase(baseSha, currentSha) {
+  if (typeof baseSha !== 'string' || !/^[0-9a-f]{40}$/.test(baseSha)) return false;
+  return baseSha !== currentSha;
 }
 
 export default async function handler(req, res) {
-  if (applyCors(req, res, { methods: 'GET, POST, OPTIONS', headers: 'Content-Type, Authorization' })) return;
-  if (req.method !== 'GET' && req.method !== 'POST') {
+  if (applyCors(req, res, { methods: 'POST, OPTIONS', headers: 'Content-Type, Authorization' })) return;
+  if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
     return;
   }
 
-  if (req.method === 'POST') {
-    const sessionSecret = process.env.SESSION_SECRET;
-    if (!sessionSecret) {
-      res.status(500).json({ error: 'SESSION_SECRET is not configured on this deployment.' });
-      return;
-    }
-    const authHeader = req.headers.authorization || '';
-    const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-    if (!verifyToken(bearer, sessionSecret)) {
-      res.status(401).json({ error: 'Log in again — your session has expired or is invalid.' });
-      return;
-    }
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (!sessionSecret) {
+    res.status(500).json({ error: 'SESSION_SECRET is not configured on this deployment.' });
+    return;
+  }
+  const authHeader = req.headers.authorization || '';
+  const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (!verifyToken(bearer, sessionSecret)) {
+    res.status(401).json({ error: 'Log in again — your session has expired or is invalid.' });
+    return;
+  }
+  const token = process.env.GITHUB_CONTENTS_TOKEN;
+  if (!token) {
+    res.status(500).json({ error: 'GITHUB_CONTENTS_TOKEN is not configured on this deployment. Add a fine-grained token with Contents: Read and write in the Vercel project settings.' });
+    return;
   }
 
-  const store = resolveStore(process.env);
-  if (!store) {
-    res.status(500).json({ error: 'No store is configured on this deployment (see resolveStore in api/plans.js).' });
+  const body = req.body || {};
+  const { errors } = validateBangers(body);
+  if (errors.length) {
+    res.status(400).json({ error: 'Nothing was saved — the request was malformed:', details: errors });
     return;
   }
 
   try {
-    const stored = await storeGet(store, BANGERS_KEY);
-    if (req.method === 'GET') {
-      res.status(200).json({ bangers: stored || null });
+    // Re-read immediately before writing: the sha is both the concurrency
+    // check for the PUT and what the stale test below compares against.
+    const { sha } = await githubGet(token);
+    if (isStaleBase(body.baseSha, sha)) {
+      res.status(409).json({ error: 'The list changed since this page loaded it (another save, possibly still publishing). Nothing was saved — reload in a few minutes and make your change again.' });
       return;
     }
-
-    const body = req.body || {};
-    const { errors } = validateBangers(body);
-    if (errors.length) {
-      res.status(400).json({ error: 'Nothing was saved — the request was malformed:', details: errors });
+    const years = normalizeBangers(body.years);
+    const putRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        'Content-Type': 'application/json',
+      },
+      signal: AbortSignal.timeout(15000),
+      body: JSON.stringify({
+        message: 'Update Hoot Owl Bangers from the Admin tab',
+        content: Buffer.from(serialize(years), 'utf8').toString('base64'),
+        ...(sha ? { sha } : {}),
+        branch: BRANCH,
+      }),
+    });
+    if (putRes.status === 409 || putRes.status === 422) {
+      res.status(409).json({ error: 'The list changed while you were editing. Reload the page and make your change again.' });
       return;
     }
-    if (isStale(stored, body.baseUpdatedAt)) {
-      res.status(409).json({ error: 'Nothing was saved — the list changed on another device. Reload to pick up those changes, then redo this edit.', bangers: stored });
-      return;
-    }
-    const next = { years: normalizeBangers(body.years), updatedAt: Date.now() };
-    await storeSet(store, BANGERS_KEY, next);
-    res.status(200).json({ bangers: next });
+    if (!putRes.ok) throw new Error(`GitHub returned ${putRes.status}: ${(await putRes.text()).slice(0, 300)}`);
+    const saved = await putRes.json();
+    // The new file's blob sha, so the page can keep saving from this session
+    // without a reload tripping the stale check above.
+    res.status(200).json({ ok: true, years, sha: (saved.content && saved.content.sha) || null });
   } catch (err) {
-    res.status(502).json({ error: `Bangers store unavailable: ${err.message}` });
+    res.status(502).json({ error: `Failed to save: ${err.message}` });
   }
 }

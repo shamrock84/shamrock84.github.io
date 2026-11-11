@@ -6,7 +6,8 @@
 // Run: node scripts/test-bangers.mjs
 
 import assert from 'node:assert/strict';
-import { validateBangers, normalizeBangers, isStale } from '../api/bangers.js';
+import { readFileSync } from 'node:fs';
+import { validateBangers, normalizeBangers, serialize, isStaleBase } from '../api/bangers.js';
 
 let failures = 0;
 function check(name, fn) {
@@ -79,15 +80,31 @@ check('normalizeBangers keeps order and treats anything but true as not a winner
   assert.equal(out[1].nominees[0].winner, false);
 });
 
-check('isStale: nothing stored is never stale', () => {
-  assert.equal(isStale(null, null), false);
-  assert.equal(isStale(null, 123), false);
+check('isStaleBase: only a well-formed, different sha is stale', () => {
+  const a = 'a'.repeat(40), b = 'b'.repeat(40);
+  assert.equal(isStaleBase(a, a), false);
+  assert.equal(isStaleBase(a, b), true);
+  assert.equal(isStaleBase(undefined, b), false, 'not told is never stale');
+  assert.equal(isStaleBase('nope', b), false, 'a malformed sha is not told either');
+  assert.equal(isStaleBase(a, null), true, 'the file was deleted since the page loaded it');
 });
-check('isStale: base must match what is stored', () => {
-  assert.equal(isStale({ updatedAt: 5 }, 5), false);
-  assert.equal(isStale({ updatedAt: 5 }, 4), true);
-  assert.equal(isStale({ updatedAt: 5 }, null), true, 'a page that saw nothing, when something is stored now');
-  assert.equal(isStale({ updatedAt: 5 }, undefined), true);
+
+check('serialize: one nominee per line, ends with a newline, round-trips', () => {
+  const years = normalizeBangers([year(), year({ id: 'y2', label: 'Empty', nominees: [] }), year({ id: 'y3', label: 'Two', nominees: [nominee({ id: 'a' }), nominee({ id: 'b', title: "Lil' \"Bit\"" })] })]);
+  const text = serialize(years);
+  assert.ok(text.endsWith('}\n'));
+  assert.deepEqual(JSON.parse(text), { years });
+  assert.equal(text.split('\n').filter((l) => l.includes('"title"')).length, 3, 'a nominee is one line');
+  assert.equal(serialize([]).trim().replace(/\s+/g, ''), '{"years":[]}');
+});
+
+check('data/bangers.json (committed) is valid and already normalized', () => {
+  // Admin commits to main with no PR, but a hand edit can still land here;
+  // the page renders whatever this file says.
+  const text = readFileSync(new URL('../data/bangers.json', import.meta.url), 'utf8');
+  const doc = JSON.parse(text);
+  assert.deepEqual(validateBangers(doc).errors, []);
+  assert.equal(text, serialize(normalizeBangers(doc.years)), 'differs from what the Admin tab would write');
 });
 
 if (failures) { console.log(`\n${failures} failed`); process.exit(1); }

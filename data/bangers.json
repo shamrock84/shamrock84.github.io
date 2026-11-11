@@ -1,0 +1,63 @@
+{
+  "years": [
+    {
+      "id": "y2023",
+      "label": "2023",
+      "nominees": [
+        {"id":"n2023a","title":"If I Were the Devil","artist":"Colby Acuff","by":"Braden","winner":true}
+      ]
+    },
+    {
+      "id": "y2022",
+      "label": "2022",
+      "nominees": [
+        {"id":"n2022a","title":"Unapologetically Country as Hell","artist":"Hardy","by":"Kristin","winner":true}
+      ]
+    },
+    {
+      "id": "y2021",
+      "label": "2021",
+      "nominees": [
+        {"id":"n2021a","title":"Lil' Bit","artist":"Nelly & Florida Georgia Line","by":"Jason","winner":true}
+      ]
+    },
+    {
+      "id": "y2020",
+      "label": "2020",
+      "nominees": [
+        {"id":"n2020a","title":"Hard to Forget","artist":"Sam Hunt","by":"Jason","winner":true}
+      ]
+    },
+    {
+      "id": "y2020s",
+      "label": "2020 (Spring)",
+      "nominees": [
+        {"id":"n2020sa","title":"I Wish Grandpa's Never Died","artist":"Riley Green","by":"Braden","winner":true}
+      ]
+    },
+    {
+      "id": "y2019",
+      "label": "2019",
+      "nominees": [
+        {"id":"n2019a","title":"Beer Never Broke My Heart","artist":"Luke Combs","by":"Kevin","winner":true}
+      ]
+    },
+    {
+      "id": "y2018",
+      "label": "2018",
+      "nominees": [
+        {"id":"n2018a","title":"Sunrise, Sunburn, Sunset","artist":"Luke Bryan","by":"Kevin","winner":true}
+      ]
+    },
+    {
+      "id": "ygf",
+      "label": "Grandfathered",
+      "nominees": [
+        {"id":"ngfa","title":"Dirt Road Anthem (Remix)","artist":"Jason Aldean ft. Ludacris","by":"","winner":true},
+        {"id":"ngfb","title":"Cruise","artist":"Florida Georgia Line & Nelly","by":"","winner":true},
+        {"id":"ngfc","title":"Back Where I Come From","artist":"Kenny Chesney","by":"","winner":true},
+        {"id":"ngfd","title":"Out Last Night","artist":"Kenny Chesney","by":"","winner":true}
+      ]
+    }
+  ]
+}

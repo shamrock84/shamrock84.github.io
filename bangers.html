@@ -331,41 +331,21 @@
 		// token as myFFL and myVST, same localStorage key) and holds the Years
 		// card: add a year, add nominees to it, tick the winner.
 		//
-		// The list lives in api/bangers.js (Upstash, public GET, login-gated
-		// POST, whole-document replace with a stale-copy check). Until the first
-		// Save the store is empty and the GET says so (`bangers: null`), so the
-		// page shows SEED_YEARS, the list the old hand-written page carried. That
-		// is also what visitors see if the API can't be reached, with a note.
-		// The first Save from Admin writes the whole list, seed included.
+		// The list is data/bangers.json, a committed file served by Pages like
+		// the rest of the site. Admin's Save POSTs the whole list to
+		// api/bangers.js, which commits the file to main (as the myFFL Admin tab
+		// does for config/leagues.json); deploy-pages.yml then republishes, so
+		// the public page changes a minute or two after the save. This page
+		// keeps the saved list in memory meanwhile. Like myFFL, it sends the git
+		// blob sha of the exact bytes it loaded, and the server refuses a save
+		// made from a stale copy (another device, or a reload before Pages has
+		// finished publishing the last save).
 
 		const BANGERS_URL = 'https://shamrock84-github-io.vercel.app/api/bangers';
+		const DATA_URL = 'data/bangers.json';
 		const LOGIN_URL = 'https://shamrock84-github-io.vercel.app/api/login';
 		const AUTH_TOKEN_KEY = 'mflAuthToken';
 		const TAB_KEY = 'bangersTab';
-
-		// Newest first. `by` is who nominated the song; blank shows as "Unknown"
-		// (the four Grandfathered songs predate anyone keeping track). Ids are
-		// fixed so the first Save writes the same ones every time; they must be
-		// letters and digits only (api/bangers.js).
-		const SEED_YEARS = [
-			{ id: 'y2023', label: '2023', nominees: [{ id: 'n2023a', title: 'If I Were the Devil', artist: 'Colby Acuff', by: 'Braden', winner: true }] },
-			{ id: 'y2022', label: '2022', nominees: [{ id: 'n2022a', title: 'Unapologetically Country as Hell', artist: 'Hardy', by: 'Kristin', winner: true }] },
-			{ id: 'y2021', label: '2021', nominees: [{ id: 'n2021a', title: "Lil' Bit", artist: 'Nelly & Florida Georgia Line', by: 'Jason', winner: true }] },
-			{ id: 'y2020', label: '2020', nominees: [{ id: 'n2020a', title: 'Hard to Forget', artist: 'Sam Hunt', by: 'Jason', winner: true }] },
-			{ id: 'y2020s', label: '2020 (Spring)', nominees: [{ id: 'n2020sa', title: "I Wish Grandpa's Never Died", artist: 'Riley Green', by: 'Braden', winner: true }] },
-			{ id: 'y2019', label: '2019', nominees: [{ id: 'n2019a', title: 'Beer Never Broke My Heart', artist: 'Luke Combs', by: 'Kevin', winner: true }] },
-			{ id: 'y2018', label: '2018', nominees: [{ id: 'n2018a', title: 'Sunrise, Sunburn, Sunset', artist: 'Luke Bryan', by: 'Kevin', winner: true }] },
-			{
-				id: 'ygf',
-				label: 'Grandfathered',
-				nominees: [
-					{ id: 'ngfa', title: 'Dirt Road Anthem (Remix)', artist: 'Jason Aldean ft. Ludacris', by: '', winner: true },
-					{ id: 'ngfb', title: 'Cruise', artist: 'Florida Georgia Line & Nelly', by: '', winner: true },
-					{ id: 'ngfc', title: 'Back Where I Come From', artist: 'Kenny Chesney', by: '', winner: true },
-					{ id: 'ngfd', title: 'Out Last Night', artist: 'Kenny Chesney', by: '', winner: true },
-				],
-			},
-		];
 
 		// Deep copy, with every field present so nothing downstream has to guess.
 		const copyYears = (list) => list.map((y) => ({
@@ -429,8 +409,8 @@
 		try { authToken = localStorage.getItem(AUTH_TOKEN_KEY) || null; } catch (e) { /* storage blocked: stay logged out */ }
 		const isLoggedIn = () => !!authToken;
 
-		let bangers = copyYears(SEED_YEARS); // what visitors see: the last saved list
-		let baseUpdatedAt = null;            // the store's version of it, for the stale check
+		let bangers = [];       // what visitors see: the last saved list
+		let baseSha = null;     // git blob sha of the file it came from, for the stale check
 		let loadState = 'loading';           // loading | ready | failed
 		let loadError = '';
 		let tab = 'winners';
@@ -527,18 +507,13 @@
 			return card;
 		}
 
-		function boardNote() {
-			if (loadState !== 'failed') return null;
-			return el('div', { class: 'message error', text: `Couldn’t reach the live list (${loadError}), so this is the list the page shipped with and may be out of date.` });
-		}
-
 		function winnersView() {
 			const board = el('div', { class: 'board' }, [el('h2', { class: 'board-title', text: 'Hoot Owl Bangers' })]);
 			const grid = el('div', { class: 'plaques' });
 			for (const y of bangers) for (const n of y.nominees) if (n.winner) grid.appendChild(plaque(y.label, n, null));
 			if (grid.children.length) board.appendChild(grid);
 			else board.appendChild(el('div', { class: 'board-empty', text: 'No winners yet.' }));
-			return [board, boardNote()].filter(Boolean);
+			return [board];
 		}
 
 		// Every nominee, under its year; a winner goes first and is lit in gold.
@@ -556,7 +531,7 @@
 				board.appendChild(grid);
 			}
 			if (!any) board.appendChild(el('div', { class: 'board-empty', text: 'No nominees yet.' }));
-			return [board, boardNote()].filter(Boolean);
+			return [board];
 		}
 
 		// ---- Admin: the Years card ------------------------------------------------
@@ -604,15 +579,15 @@
 				const res = await fetch(BANGERS_URL, {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
-					body: JSON.stringify({ years: clean, baseUpdatedAt }),
+					body: JSON.stringify({ years: clean, baseSha }),
 				});
 				const body = await res.json().catch(() => ({}));
 				if (res.status === 401) { saving = false; expireSession(); return; }
 				if (!res.ok) throw new Error((body.details && body.details.join(' ')) || body.error || `HTTP ${res.status}`);
-				bangers = copyYears(body.bangers.years);
-				baseUpdatedAt = body.bangers.updatedAt;
+				bangers = copyYears(body.years);
+				baseSha = body.sha || null;
 				draft = copyYears(bangers);
-				setStatus('Saved', 'ok');
+				setStatus('Saved. The public page updates in a minute or two.', 'ok');
 			} catch (err) {
 				adminErrors = [`Not saved: ${err.message}`];
 				setStatus('');
@@ -709,7 +684,7 @@
 			const card = el('div', { class: 'card' }, [head]);
 			makeCollapsible(card, head, 'years');
 			if (loadState === 'failed') {
-				card.appendChild(el('div', { class: 'message error', text: `Couldn’t load the saved list (${loadError}), so editing is turned off. Reload to try again.` }));
+				card.appendChild(el('div', { class: 'message error', text: `Couldn’t load the list (${loadError}), so editing is turned off. Reload to try again.` }));
 				return card;
 			}
 
@@ -745,7 +720,7 @@
 			updateDirty();
 			card.appendChild(el('div', { class: 'admin-actions' }, [save, discard, flag]));
 			if (adminErrors.length) card.appendChild(el('ul', { class: 'admin-errors' }, adminErrors.map((t) => el('li', { text: t }))));
-			card.appendChild(el('div', { class: 'admin-note', text: 'Newest first, in the order shown on the Winners and Nominees tabs (use the arrows to reorder). Tick Winner on every song that won that year; a year can have more than one, or none yet. Nothing is saved until you press Save.' }));
+			card.appendChild(el('div', { class: 'admin-note', text: 'Newest first, in the order shown on the Winners and Nominees tabs (use the arrows to reorder). Tick Winner on every song that won that year; a year can have more than one, or none yet. Nothing is saved until you press Save; the public page updates a minute or two after that.' }));
 			return card;
 		}
 
@@ -784,22 +759,37 @@
 			view.textContent = '';
 			cardEl = null;
 			if (loadState === 'loading') { view.appendChild(message('Loading…')); return; }
+			if (loadState === 'failed' && tab !== 'admin') { view.appendChild(message(`Couldn’t load the list (${loadError}). Reload to try again.`, 'error')); return; }
 			const cards = tab === 'nominees' ? nomineesView() : tab === 'admin' ? adminView() : winnersView();
 			cards.forEach((c) => view.appendChild(c));
+		}
+
+		// git's object id for a file: SHA-1 over "blob <length>\0" + the bytes, the
+		// same value GitHub reports as the file's `sha`. Needs a secure context;
+		// without one it rejects and the save simply goes unchecked.
+		async function gitBlobSha(bytes) {
+			const header = new TextEncoder().encode(`blob ${bytes.length}\0`);
+			const buf = new Uint8Array(header.length + bytes.length);
+			buf.set(header);
+			buf.set(bytes, header.length);
+			const digest = await crypto.subtle.digest('SHA-1', buf);
+			return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
 		}
 
 		async function load() {
 			renderLogin();
 			renderTabs();
 			try {
-				const res = await fetch(BANGERS_URL, { cache: 'no-store', signal: AbortSignal.timeout(10000) });
-				const body = await res.json().catch(() => ({}));
-				if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
-				// null = nothing saved yet: keep showing the seed list.
-				if (body.bangers && Array.isArray(body.bangers.years)) {
-					bangers = copyYears(body.bangers.years);
-					baseUpdatedAt = body.bangers.updatedAt == null ? null : body.bangers.updatedAt;
-				}
+				// Cache-bust: Pages' CDN will happily serve the pre-save copy otherwise.
+				const res = await fetch(`${DATA_URL}?t=${Date.now()}`, { cache: 'no-store' });
+				if (!res.ok) throw new Error(`HTTP ${res.status}`);
+				// Hashed from the raw bytes, not a re-serialization, so it matches the
+				// sha GitHub holds for the file Pages served.
+				const bytes = new Uint8Array(await res.arrayBuffer());
+				const doc = JSON.parse(new TextDecoder().decode(bytes));
+				if (!doc || !Array.isArray(doc.years)) throw new Error('unexpected file contents');
+				bangers = copyYears(doc.years);
+				baseSha = await gitBlobSha(bytes).catch(() => null);
 				loadState = 'ready';
 			} catch (err) {
 				loadState = 'failed';
