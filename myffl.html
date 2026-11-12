@@ -360,6 +360,13 @@
 				filter: invert(1);
 			}
 		}
+		/* "N seasons since Y and counting", under the logo: same look as the
+		   subtitle on myVST and myBangers. Hidden until the snapshot loads. */
+		.subtitle {
+			font-size: 0.8rem;
+			color: var(--muted);
+			margin-bottom: 0.3rem;
+		}
 		.updated-row {
 			display: flex;
 			align-items: center;
@@ -4415,6 +4422,7 @@
 			<span class="site-logo-prefix">my</span>
 			<img src="images/ffl_black.gif" alt="FFL" class="site-logo">
 		</h1>
+		<div class="subtitle hidden" id="seasons-subtitle"></div>
 		<div class="updated-row">
 			<span id="season-record" class="season-record hidden"></span>
 				<span id="season-record-sep" class="season-record-sep hidden" aria-hidden="true">&middot;</span>
@@ -8890,6 +8898,31 @@
 
 		function formatRecord(w, l, t) {
 			return t ? `${w}-${l}-${t}` : `${w}-${l}`;
+		}
+
+		// Every distinct season any league has a result for (years before a
+		// league's startYear don't count, same gate as the History cards) plus
+		// the snapshot's current season. Gaps in the history aren't counted as
+		// seasons. Returns null with nothing to say.
+		function computeSeasonSpan(leagues, currentYear) {
+			const years = new Set();
+			if (Number(currentYear)) years.add(Number(currentYear));
+			for (const league of leagues || []) {
+				for (const r of league.results || []) {
+					const y = Number(r.year);
+					if (y && !isBeforeStartYear(league, y)) years.add(y);
+				}
+			}
+			if (!years.size) return null;
+			return { count: years.size, first: Math.min(...years) };
+		}
+
+		function renderSeasonsSubtitle(data) {
+			const node = document.getElementById('seasons-subtitle');
+			if (!node) return;
+			const span = data ? computeSeasonSpan(data.leagues, data.year) : null;
+			node.classList.toggle('hidden', !span);
+			if (span) node.textContent = `${span.count} ${span.count === 1 ? 'season' : 'seasons'} since ${span.first} and counting`;
 		}
 
 		function renderSeasonRecord(data) {
@@ -19386,6 +19419,7 @@
 					localStorage.setItem(VIEW_STORAGE_KEY, currentView);
 				}
 				renderSeasonRecord(data);
+				renderSeasonsSubtitle(data);
 				renderGrid();
 				// After the render, not before it: the roster is already on
 				// screen from the local copy, and this only pulls in plans made
