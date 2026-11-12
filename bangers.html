@@ -148,6 +148,7 @@
 			background:
 				radial-gradient(ellipse at 18% 0%, rgba(255, 215, 160, 0.22), transparent 55%),
 				radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.38) 100%),
+				linear-gradient(rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.42)),
 				#6b2d1a url(images/wood_texture.jpg) center top / 353px auto;
 			box-shadow: 0 12px 26px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.5), inset 0 2px 3px rgba(255, 210, 160, 0.35), inset 0 0 28px rgba(0, 0, 0, 0.5);
 			/* The plates: a brushed gold face with a diagonal sheen, a bevelled edge,
@@ -167,7 +168,7 @@
 				0 8px 12px 2px rgba(0, 0, 0, 0.55);
 		}
 		.board-title {
-			margin: 0 0 1rem;
+			margin: 0 0 1.6rem;
 			padding: 0.7rem 1rem;
 			text-align: center;
 			font-family: Georgia, 'Times New Roman', serif;
@@ -181,7 +182,7 @@
 			text-shadow: 0 1px 0 rgba(255, 248, 210, 0.85), 0 -1px 0 rgba(70, 45, 0, 0.35);
 			letter-spacing: 0.02em;
 		}
-		.plaques { display: grid; grid-template-columns: repeat(auto-fill, minmax(13.5rem, 1fr)); gap: 0.9rem; }
+		.plaques { display: grid; grid-template-columns: repeat(auto-fill, minmax(13.5rem, 1fr)); gap: 1.6rem 1.4rem; }
 		.plaque {
 			position: relative;
 			display: flex;
@@ -248,8 +249,8 @@
 			letter-spacing: 0.06em;
 			text-transform: uppercase;
 		}
-		.year-section + .year-section { margin-top: 1.1rem; }
-		.year-section .plaques { margin-top: 0.7rem; }
+		.year-section + .year-section { margin-top: 1.5rem; }
+		.year-section .plaques { margin-top: 1.2rem; }
 		.year-section.folded .plaques { display: none; }
 		/* The band is the button that folds its year. */
 		.year-band {
@@ -281,7 +282,7 @@
 		.year-band:focus-visible { outline: 2px solid #fff3c4; outline-offset: 2px; }
 		.year-chev { position: absolute; left: 1.1rem; color: #4a2c05; top: 50%; margin-top: -0.55em; font-size: 0.85rem; line-height: 1.1; transition: transform 0.12s; transform: rotate(90deg); }
 		.year-section.folded .year-chev { transform: none; }
-		.board-tools { display: flex; justify-content: flex-end; margin: -0.4rem 0 0.7rem; }
+		.board-tools { display: flex; justify-content: flex-end; margin: -0.6rem 0 1.1rem; }
 		.fold-all {
 			font: inherit; font-size: 0.78rem; font-weight: 600; color: #2a1a06; cursor: pointer;
 			background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(255, 255, 255, 0.9); border-radius: 999px; padding: 0.25rem 0.8rem;
