@@ -585,7 +585,7 @@
 	<script>
 		// melbostads.com/vikings — who is in each season-ticket seat for every
 		// Vikings home game. Four tabs: Schedule (this season) and History
-		// (an earlier one, picked from a dropdown) and Statistics (all-time cards) are read-only text for
+		// (an earlier one, picked from a dropdown) and Stats (all-time cards) are read-only text for
 		// everyone; Admin exists only when logged in (the same password and
 		// token as myFFL, same localStorage key) and holds the Tasks card and
 		// the Seasons card, where every seat and face value, 2007 on, is an
@@ -1859,7 +1859,7 @@
 			const nav = document.getElementById('tabs');
 			nav.textContent = '';
 			// The Admin tab exists only while logged in; logging out removes it.
-			const tabs = [['schedule', 'Schedule'], ['history', 'History'], ['stats', 'Statistics'], ...(isLoggedIn() ? [['admin', 'Admin']] : [])];
+			const tabs = [['schedule', 'Schedule'], ['history', 'History'], ['stats', 'Stats'], ...(isLoggedIn() ? [['admin', 'Admin']] : [])];
 			for (const [id, label] of tabs) {
 				const btn = el('button', { type: 'button', class: `tab-btn${tab === id ? ' active' : ''}`, role: 'tab', 'aria-selected': String(tab === id), text: label });
 				btn.addEventListener('click', () => setTab(id));
