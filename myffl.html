@@ -8900,29 +8900,35 @@
 			return t ? `${w}-${l}-${t}` : `${w}-${l}`;
 		}
 
-		// Every distinct season any league has a result for (years before a
-		// league's startYear don't count, same gate as the History cards) plus
-		// the snapshot's current season. Gaps in the history aren't counted as
-		// seasons. Returns null with nothing to say.
-		function computeSeasonSpan(leagues, currentYear) {
-			const years = new Set();
-			if (Number(currentYear)) years.add(Number(currentYear));
+		// Every finished season in every league: one count per league per year
+		// of results[] (years before a league's startYear don't count, same
+		// gate as the History cards). The season in progress has no result yet,
+		// so it isn't in the total, which is what "and counting" is for. A
+		// league with no counted result isn't one of the N leagues. Returns
+		// null with nothing to say.
+		function computeSeasonSpan(leagues) {
+			let seasons = 0;
+			let leagueCount = 0;
+			let first = Infinity;
 			for (const league of leagues || []) {
+				let own = 0;
 				for (const r of league.results || []) {
 					const y = Number(r.year);
-					if (y && !isBeforeStartYear(league, y)) years.add(y);
+					if (!y || isBeforeStartYear(league, y)) continue;
+					own++;
+					if (y < first) first = y;
 				}
+				if (own) { seasons += own; leagueCount++; }
 			}
-			if (!years.size) return null;
-			return { count: years.size, first: Math.min(...years) };
+			return seasons ? { seasons, leagueCount, first } : null;
 		}
 
 		function renderSeasonsSubtitle(data) {
 			const node = document.getElementById('seasons-subtitle');
 			if (!node) return;
-			const span = data ? computeSeasonSpan(data.leagues, data.year) : null;
+			const span = data ? computeSeasonSpan(data.leagues) : null;
 			node.classList.toggle('hidden', !span);
-			if (span) node.textContent = `${span.count} ${span.count === 1 ? 'season' : 'seasons'} since ${span.first} and counting`;
+			if (span) node.textContent = `${span.seasons} ${span.seasons === 1 ? 'season' : 'seasons'} across ${span.leagueCount} ${span.leagueCount === 1 ? 'league' : 'leagues'} since ${span.first} and counting`;
 		}
 
 		function renderSeasonRecord(data) {
