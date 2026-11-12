@@ -91,13 +91,12 @@
 		'  transform: translate(-50%, -50%); margin: 0; display: flex; align-items: center; justify-content: center;',
 		'  white-space: nowrap; text-decoration: none; color: inherit; }',
 		'.sw-item.sw-side { opacity: .5; transform: translate(-50%, -50%) scale(.82); }',
-		'.sw-arrow { position: absolute; top: 50%; transform: translateY(-50%); z-index: 2; width: 30px; height: 30px;',
-		'  padding: 0; display: grid; place-items: center; cursor: pointer; border-radius: 50%;',
-		'  border: 1px solid var(--border, #d9d9de); background: var(--card-bg, var(--card, var(--bg, #fff)));',
-		'  color: var(--accent, #4F2683); box-shadow: 0 1px 3px rgba(0,0,0,.15); }',
-		'.sw-arrow:hover { border-color: var(--accent, #4F2683); }',
-		'.sw-arrow.sw-l { left: 8px; } .sw-arrow.sw-r { right: 8px; }',
-		'.sw-arrow svg { width: 14px; height: 14px; }',
+		'.sw-arrow { position: absolute; top: 50%; transform: translateY(-50%); z-index: 2; width: 22px; height: 60px;',
+		'  padding: 0; display: grid; place-items: center; cursor: pointer; border: 0; background: none;',
+		'  color: var(--accent, #4F2683); opacity: .85; }',
+		'.sw-arrow:hover { opacity: 1; }',
+		'.sw-arrow.sw-l { left: 0; } .sw-arrow.sw-r { right: 0; }',
+		'.sw-arrow svg { width: 11px; height: 40px; }',
 		'@media (prefers-reduced-motion: reduce) { .sw-item { transition: none; } }',
 	].join('\n');
 	var style = document.createElement('style');
@@ -136,14 +135,14 @@
 	function arrowSvg(dir) {
 		var ns = 'http://www.w3.org/2000/svg';
 		var svg = document.createElementNS(ns, 'svg');
-		svg.setAttribute('viewBox', '0 0 24 24');
+		svg.setAttribute('viewBox', '0 0 11 40');
 		svg.setAttribute('fill', 'none');
 		svg.setAttribute('stroke', 'currentColor');
-		svg.setAttribute('stroke-width', '2.8');
+		svg.setAttribute('stroke-width', '2.4');
 		svg.setAttribute('stroke-linecap', 'round');
 		svg.setAttribute('stroke-linejoin', 'round');
 		var line = document.createElementNS(ns, 'polyline');
-		line.setAttribute('points', dir < 0 ? '15 5 8 12 15 19' : '9 5 16 12 9 19');
+		line.setAttribute('points', dir < 0 ? '9 3 2 20 9 37' : '2 3 9 20 2 37');
 		svg.appendChild(line);
 		return svg;
 	}
