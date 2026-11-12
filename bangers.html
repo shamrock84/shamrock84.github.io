@@ -134,16 +134,16 @@
 		.status.ok { color: var(--gain-text); }
 
 		/* ---- The trophy board --------------------------------------------------
-		   Purple marble panel, a black title plate with gold lettering, and one brass-and-
-		   black plaque per song, as on the page this replaced, drawn in CSS so it
-		   scales to any screen. */
+		   A wood-grain board (images/wood_texture.jpg) with a gold plate for the
+		   title, each year band and each song, like a perpetual award plaque.
+		   The plates are drawn in CSS so they scale to any screen. */
 		.board {
 			padding: 1rem;
 			border-radius: 12px;
-			border: 2px solid #444;
-			border-color: #afafaf #444 #444 #afafaf;
-			background: #bba6dc url(images/purple_marble.jpg) center top / 1024px auto;
-			box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(0, 0, 0, 0.5);
+			border: 3px solid #4a2412;
+			border-color: #8a4a2a #3a1a0b #3a1a0b #8a4a2a;
+			background: #6b2d1a url(images/wood_texture.jpg) center top / 353px auto;
+			box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(0, 0, 0, 0.5), inset 0 0 22px rgba(0, 0, 0, 0.35);
 		}
 		.board-title {
 			margin: 0 0 1rem;
@@ -151,13 +151,13 @@
 			text-align: center;
 			font-family: Georgia, 'Times New Roman', serif;
 			font-size: 1.5rem;
-			color: #2f1259;
+			color: #2a1a06;
 			position: relative;
 			border-radius: 8px;
-			border: 1px solid rgba(255, 255, 255, 0.75);
-			background: linear-gradient(165deg, #f6f7fa 0%, #d3d6dc 42%, #b4b8c1 100%);
-			box-shadow: 0 3px 7px rgba(40, 20, 70, 0.45), inset 0 1px 0 #fff, inset 0 -1px 0 rgba(0, 0, 0, 0.15);
-			text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+			border: 1px solid #8f6b1c;
+			background: linear-gradient(165deg, #f4e4a6 0%, #dcbc66 45%, #b88f35 100%);
+			box-shadow: 0 3px 6px rgba(20, 8, 0, 0.6), inset 0 1px 0 rgba(255, 250, 220, 0.9), inset 0 -1px 0 rgba(90, 60, 5, 0.4);
+			text-shadow: 0 1px 0 rgba(255, 245, 200, 0.7);
 			letter-spacing: 0.02em;
 		}
 		.plaques { display: grid; grid-template-columns: repeat(auto-fill, minmax(13.5rem, 1fr)); gap: 0.9rem; }
@@ -170,9 +170,9 @@
 			gap: 0.25rem;
 			padding: 0.8rem 1.3rem 0.9rem;
 			border-radius: 8px;
-			border: 1px solid rgba(255, 255, 255, 0.75);
-			background: linear-gradient(165deg, #f6f7fa 0%, #d3d6dc 42%, #b4b8c1 100%);
-			box-shadow: 0 3px 7px rgba(40, 20, 70, 0.45), inset 0 1px 0 #fff, inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+			border: 1px solid #8f6b1c;
+			background: linear-gradient(165deg, #f4e4a6 0%, #dcbc66 45%, #b88f35 100%);
+			box-shadow: 0 3px 6px rgba(20, 8, 0, 0.6), inset 0 1px 0 rgba(255, 250, 220, 0.9), inset 0 -1px 0 rgba(90, 60, 5, 0.4);
 			font-family: Georgia, 'Times New Roman', serif;
 		}
 		/* A screw at each end. */
@@ -184,7 +184,7 @@
 			height: 6px;
 			margin-top: -3px;
 			border-radius: 50%;
-			background: radial-gradient(circle at 35% 35%, #ffffff, #6b6f78);
+			background: radial-gradient(circle at 35% 35%, #f5e7b0, #5a3f0c);
 		}
 		.plaque::before { left: 6px; }
 		.plaque::after { right: 6px; }
@@ -197,26 +197,27 @@
 			height: 6px;
 			margin-top: -3px;
 			border-radius: 50%;
-			background: radial-gradient(circle at 35% 35%, #ffffff, #6b6f78);
+			background: radial-gradient(circle at 35% 35%, #f5e7b0, #5a3f0c);
 		}
 		.board-title::before, .year-band::before { left: 6px; }
 		.board-title::after, .year-band::after { right: 6px; }
-		.plaque-year { font-size: 0.95rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #3f1d72; }
-		.plaque-by { font-size: 0.85rem; font-weight: 700; color: #1b1425; }
-		.plaque-by.unknown { font-weight: 400; font-style: italic; color: #5d5a68; }
-		.plaque-song { font-size: 0.82rem; line-height: 1.3; color: #2e2a3b; overflow-wrap: anywhere; }
+		.plaque-year { font-size: 0.95rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #4a2c05; }
+		.plaque-by { font-size: 0.85rem; font-weight: 700; color: #1f1304; }
+		.plaque-by.unknown { font-weight: 400; font-style: italic; color: #6a5424; }
+		.plaque-song { font-size: 0.82rem; line-height: 1.3; color: #2a1c06; overflow-wrap: anywhere; }
 		.plaque-song q { quotes: '\201C' '\201D'; }
-		.song-link { color: inherit; text-decoration: underline; text-decoration-color: rgba(79, 38, 131, 0.5); text-underline-offset: 2px; }
-		.song-link:hover { color: #4F2683; text-decoration-color: currentColor; }
+		.song-link { color: inherit; text-decoration: underline; text-decoration-color: rgba(42, 28, 6, 0.5); text-underline-offset: 2px; }
+		.song-link:hover { color: #5a2d00; text-decoration-color: currentColor; }
 		/* In the Nominees view the winner stands out and the also-rans recede. */
-		.plaque.winner { border-color: #d4a017; box-shadow: 0 0 0 2px #d4a017, 0 0 14px rgba(212, 160, 23, 0.55), 0 3px 7px rgba(40, 20, 70, 0.45); }
-		.plaque.nominee { opacity: 0.88; }
+		/* On gold plates a gold ring would vanish, so the winner gets a bright cream ring and glow; the rest dim. */
+		.plaque.winner { border-color: #fff3c4; box-shadow: 0 0 0 2px #fff3c4, 0 0 16px rgba(255, 236, 160, 0.75), 0 3px 7px rgba(20, 8, 0, 0.6); }
+		.plaque.nominee { filter: brightness(0.88) saturate(0.85); }
 		.plaque-badge {
 			margin-top: 0.15rem;
 			padding: 0.05rem 0.55rem;
 			border-radius: 999px;
-			background: #d4a017;
-			color: #1a1200;
+			background: #3a1a0b;
+			color: #f4e4a6;
 			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 			font-size: 0.65rem;
 			font-weight: 800;
@@ -244,26 +245,26 @@
 			font-weight: 700;
 			text-transform: uppercase;
 			letter-spacing: 0.04em;
-			color: #2f1259;
+			color: #2a1a06;
 			border-radius: 8px;
-			border: 1px solid rgba(255, 255, 255, 0.75);
-			background: linear-gradient(165deg, #f6f7fa 0%, #d3d6dc 42%, #b4b8c1 100%);
-			box-shadow: 0 3px 7px rgba(40, 20, 70, 0.45), inset 0 1px 0 #fff, inset 0 -1px 0 rgba(0, 0, 0, 0.15);
-			text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+			border: 1px solid #8f6b1c;
+			background: linear-gradient(165deg, #f4e4a6 0%, #dcbc66 45%, #b88f35 100%);
+			box-shadow: 0 3px 6px rgba(20, 8, 0, 0.6), inset 0 1px 0 rgba(255, 250, 220, 0.9), inset 0 -1px 0 rgba(90, 60, 5, 0.4);
+			text-shadow: 0 1px 0 rgba(255, 245, 200, 0.7);
 		}
 		.year-band:hover { filter: brightness(1.05); }
-		.year-band:focus-visible { outline: 2px solid #2f1259; outline-offset: 2px; }
-		.year-chev { position: absolute; left: 1.1rem; color: #3f1d72; top: 50%; margin-top: -0.55em; font-size: 0.85rem; line-height: 1.1; transition: transform 0.12s; transform: rotate(90deg); }
+		.year-band:focus-visible { outline: 2px solid #fff3c4; outline-offset: 2px; }
+		.year-chev { position: absolute; left: 1.1rem; color: #4a2c05; top: 50%; margin-top: -0.55em; font-size: 0.85rem; line-height: 1.1; transition: transform 0.12s; transform: rotate(90deg); }
 		.year-section.folded .year-chev { transform: none; }
 		.board-tools { display: flex; justify-content: flex-end; margin: -0.4rem 0 0.7rem; }
 		.fold-all {
-			font: inherit; font-size: 0.78rem; font-weight: 600; color: #2f1259; cursor: pointer;
+			font: inherit; font-size: 0.78rem; font-weight: 600; color: #2a1a06; cursor: pointer;
 			background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(255, 255, 255, 0.9); border-radius: 999px; padding: 0.25rem 0.8rem;
 		}
 		.fold-all:hover { background: #fff; }
-		.fold-all:focus-visible { outline: 2px solid #2f1259; outline-offset: 2px; }
-		.year-band small { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.03em; color: #4a4659; text-shadow: none; }
-		.board-empty { padding: 1.2rem; text-align: center; color: #efe6fb; font-family: Georgia, 'Times New Roman', serif; }
+		.fold-all:focus-visible { outline: 2px solid #fff3c4; outline-offset: 2px; }
+		.year-band small { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.03em; color: #5a4414; text-shadow: none; }
+		.board-empty { padding: 1.2rem; text-align: center; color: #f4e4a6; font-family: Georgia, 'Times New Roman', serif; }
 
 		/* ---- Admin ------------------------------------------------------------ */
 		#view > * + * { margin-top: 0.8rem; }
