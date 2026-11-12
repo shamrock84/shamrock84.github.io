@@ -30,12 +30,13 @@
 
 // VIKINGS_TASKS=1 targets the vikings.html Admin tab's own list instead
 // (api/vikings.js ?resource=tasks); BANGERS_TASKS=1 the bangers.html one
-// (api/bangers.js, same shape). That store takes per-task patches, so
+// (api/bangers.js, same shape); FAM_TASKS=1 index.html's (api/fam.js). That store takes per-task patches, so
 // only the matched tasks are posted — no whole-document replace needed.
-const BANGERS = process.env.BANGERS_TASKS === '1';
-const VIKINGS = BANGERS || process.env.VIKINGS_TASKS === '1';
-// The two small pages keep their own task lists behind their own endpoints.
-const OWN_API = BANGERS ? 'bangers' : 'vikings';
+const FAM = process.env.FAM_TASKS === '1';
+const BANGERS = !FAM && process.env.BANGERS_TASKS === '1';
+const VIKINGS = FAM || BANGERS || process.env.VIKINGS_TASKS === '1';
+// The small pages keep their own task lists behind their own endpoints.
+const OWN_API = FAM ? 'fam' : BANGERS ? 'bangers' : 'vikings';
 
 const API_BASE = process.env.MYFFL_API_BASE || 'https://shamrock84-github-io.vercel.app';
 

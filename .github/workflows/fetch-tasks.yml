@@ -23,6 +23,10 @@ on:
         description: "Use the Bangers page's Admin tasks instead of myFFL's (wins over the Vikings box)"
         type: boolean
         default: false
+      fam:
+        description: "Use the myFAM home page's Admin tasks instead of myFFL's (wins over the Bangers and Vikings boxes)"
+        type: boolean
+        default: false
 
 jobs:
   fetch:
@@ -52,4 +56,5 @@ jobs:
           SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
           VIKINGS_TASKS: ${{ github.event.inputs.vikings == 'true' && '1' || '' }}
           BANGERS_TASKS: ${{ github.event.inputs.bangers == 'true' && '1' || '' }}
+          FAM_TASKS: ${{ github.event.inputs.fam == 'true' && '1' || '' }}
         run: node scripts/fetch-tasks.mjs "${{ github.event.inputs.category }}"

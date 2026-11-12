@@ -15,11 +15,13 @@
 //   SITE_PASSWORD=... FROM_CATEGORY=Bugs TO_CATEGORY=Bug node scripts/rename-task-category.mjs
 //   VIKINGS_TASKS=1 ...   # the vikings.html Admin tab's own list instead
 //   BANGERS_TASKS=1 ...   # the bangers.html Admin tab's own list instead
+//   FAM_TASKS=1 ...       # index.html's (myFAM) Admin tab's own list instead
 
-const BANGERS = process.env.BANGERS_TASKS === '1';
-const VIKINGS = BANGERS || process.env.VIKINGS_TASKS === '1';
-// The two small pages keep their own task lists behind their own endpoints.
-const OWN_API = BANGERS ? 'bangers' : 'vikings';
+const FAM = process.env.FAM_TASKS === '1';
+const BANGERS = !FAM && process.env.BANGERS_TASKS === '1';
+const VIKINGS = FAM || BANGERS || process.env.VIKINGS_TASKS === '1';
+// The small pages keep their own task lists behind their own endpoints.
+const OWN_API = FAM ? 'fam' : BANGERS ? 'bangers' : 'vikings';
 const API_BASE = process.env.MYFFL_API_BASE || 'https://shamrock84-github-io.vercel.app';
 
 // Pure, so the rename rule can be tested without a network: returns the
