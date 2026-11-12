@@ -377,7 +377,7 @@
 			justify-content: center;
 			gap: 0.3rem;
 		}
-		/* The all-leagues record, beside "Last synced". No breakdown of its
+		/* The all-leagues record, beside "Synced". No breakdown of its
 		   own: the quick-links toolbar already lists every league's record.
 		   Its color reuses .roster-record's up/down/even classes (set in
 		   renderSeasonRecord), so the green/red/plain meaning is the same one
@@ -19414,7 +19414,7 @@
 				pageData = data;
 
 				updatedEl.textContent = data.generatedAt
-					? `Last synced ${timeAgo(data.generatedAt)}`
+					? `Synced ${timeAgo(data.generatedAt)}`
 					: 'Not yet synced — run the "Sync Fantasy Rosters" GitHub Action.';
 
 				// myffl.html#watchlist — the link a game-day alert carries —
@@ -19472,7 +19472,7 @@
 					// write. doLogout re-renders, which hides this button again.
 					syncBtn.disabled = false;
 					syncBtn.classList.remove('spinning');
-					updatedEl.textContent = pageData?.generatedAt ? `Last synced ${timeAgo(pageData.generatedAt)}` : '';
+					updatedEl.textContent = pageData?.generatedAt ? `Synced ${timeAgo(pageData.generatedAt)}` : '';
 					doLogout();
 					return;
 				}
@@ -19518,7 +19518,7 @@
 						syncPollTimer = null;
 						syncBtn.disabled = false;
 						syncBtn.classList.remove('spinning');
-						// Deliberately not "Last synced X ago — still syncing": that
+						// Deliberately not "Synced X ago — still syncing": that
 						// combination goes stale and misleading the moment the sync
 						// actually finishes a minute after this message appears.
 						updatedEl.textContent = 'Slow — reload in a bit';
@@ -19532,7 +19532,7 @@
 				updatedEl.title = err.message;
 				setTimeout(() => {
 					updatedEl.title = '';
-					if (pageData?.generatedAt) updatedEl.textContent = `Last synced ${timeAgo(pageData.generatedAt)}`;
+					if (pageData?.generatedAt) updatedEl.textContent = `Synced ${timeAgo(pageData.generatedAt)}`;
 				}, 4000);
 			}
 		}
