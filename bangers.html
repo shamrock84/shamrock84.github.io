@@ -168,7 +168,7 @@
 				0 8px 12px 2px rgba(0, 0, 0, 0.55);
 		}
 		.board-title {
-			margin: 0 0 1.6rem;
+			margin: 0 0 2.2rem;
 			padding: 0.7rem 1rem;
 			text-align: center;
 			font-family: Georgia, 'Times New Roman', serif;
@@ -182,15 +182,15 @@
 			text-shadow: 0 1px 0 rgba(255, 248, 210, 0.85), 0 -1px 0 rgba(70, 45, 0, 0.35);
 			letter-spacing: 0.02em;
 		}
-		.plaques { display: grid; grid-template-columns: repeat(auto-fill, minmax(13.5rem, 1fr)); gap: 1.6rem 1.4rem; }
+		.plaques { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 13.5rem)); justify-content: center; gap: 2.2rem 2.4rem; }
 		.plaque {
 			position: relative;
 			display: flex;
 			flex-direction: column;
 			align-items: center;
 			text-align: center;
-			gap: 0.25rem;
-			padding: 0.8rem 1.3rem 0.9rem;
+			gap: 0.15rem;
+			padding: 0.55rem 1.1rem 0.6rem;
 			border-radius: 8px;
 			border: 1px solid #9b7420;
 			background: var(--plate-bg);
@@ -226,10 +226,10 @@
 		.board-title::before, .year-band::before { left: 6px; }
 		.board-title::after, .year-band::after { right: 6px; }
 		.plaque-year, .plaque-by, .plaque-song { text-shadow: 0 1px 0 rgba(255, 248, 210, 0.8); }
-		.plaque-year { font-size: 0.95rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #4a2c05; }
-		.plaque-by { font-size: 0.85rem; font-weight: 700; color: #1f1304; }
+		.plaque-year { font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #4a2c05; }
+		.plaque-by { font-size: 0.78rem; font-weight: 700; color: #1f1304; }
 		.plaque-by.unknown { font-weight: 400; font-style: italic; color: #6a5424; }
-		.plaque-song { font-size: 0.82rem; line-height: 1.3; color: #2a1c06; overflow-wrap: anywhere; }
+		.plaque-song { font-size: 0.74rem; line-height: 1.3; color: #2a1c06; overflow-wrap: anywhere; }
 		.plaque-song q { quotes: '\201C' '\201D'; }
 		.song-link { color: inherit; text-decoration: underline; text-decoration-color: rgba(42, 28, 6, 0.5); text-underline-offset: 2px; }
 		.song-link:hover { color: #5a2d00; text-decoration-color: currentColor; }
@@ -249,8 +249,8 @@
 			letter-spacing: 0.06em;
 			text-transform: uppercase;
 		}
-		.year-section + .year-section { margin-top: 1.5rem; }
-		.year-section .plaques { margin-top: 1.2rem; }
+		.year-section + .year-section { margin-top: 2rem; }
+		.year-section .plaques { margin-top: 1.8rem; }
 		.year-section.folded .plaques { display: none; }
 		/* The band is the button that folds its year. */
 		.year-band {
@@ -453,13 +453,13 @@
 			.admin-actions { margin: 0.8rem -1.4rem -1.2rem; padding: 0.6rem 1.4rem; }
 			.board { padding: 1.4rem; }
 			.board-title { font-size: 1.9rem; }
-			.plaques { grid-template-columns: repeat(auto-fill, minmax(14.5rem, 1fr)); gap: 1.1rem; }
+			.plaques { grid-template-columns: repeat(auto-fill, minmax(11rem, 13.5rem)); gap: 2.2rem 2.4rem; }
 		}
 		@media (max-width: 40rem) {
 			main { padding: 0.6rem; }
 			.board { padding: 0.7rem; }
 			.board-title { font-size: 1.25rem; }
-			.plaques { grid-template-columns: 1fr; gap: 0.7rem; }
+			.plaques { grid-template-columns: minmax(0, 15rem); gap: 1.6rem; }
 		}
 	</style>
 </head>
