@@ -31,6 +31,14 @@ check('accepts several winners in one year', () => {
 check('artist, by and winner may be left out', () => {
   assert.ok(ok([year({ nominees: [{ id: 'n1', title: 'Cruise' }] })]));
 });
+check('link is optional, but must be a web address when given', () => {
+  assert.ok(ok([year({ nominees: [nominee({ link: '' })] })]));
+  assert.ok(ok([year({ nominees: [nominee({ link: ' https://music.apple.com/us/song/cruise/1 ' })] })]));
+  assert.ok(ok([year({ nominees: [nominee({ link: 'http://example.com/x' })] })]));
+  for (const bad of ['javascript:alert(1)', 'data:text/html,hi', 'music.apple.com/x', 'https://a b', 5, 'https://x.com/' + 'a'.repeat(500)]) {
+    assert.ok(!ok([year({ nominees: [nominee({ link: bad })] })]), String(bad));
+  }
+});
 check('rejects a body that is not { years: [] }', () => {
   assert.ok(validateBangers(null).errors.length);
   assert.ok(validateBangers([]).errors.length);
@@ -75,6 +83,12 @@ check('errors name the year, so the Admin tab can show them as written', () => {
 check('normalizeBangers trims, fills gaps and drops unknown fields', () => {
   const out = normalizeBangers([{ id: 'y1', label: ' 2023 ', extra: 1, nominees: [{ id: 'n1', title: ' Cruise ', winner: true, extra: 1 }] }]);
   assert.deepEqual(out, [{ id: 'y1', label: '2023', nominees: [{ id: 'n1', title: 'Cruise', artist: '', by: '', winner: true }] }]);
+});
+check('normalizeBangers keeps a link, trimmed, and leaves the key out when blank', () => {
+  const out = normalizeBangers([year({ nominees: [nominee({ id: 'a', link: ' https://x.test/s ' }), nominee({ id: 'b', link: '  ' })] })]);
+  assert.equal(out[0].nominees[0].link, 'https://x.test/s');
+  assert.ok(!('link' in out[0].nominees[1]));
+  assert.deepEqual(JSON.parse(serialize(out)).years[0].nominees[0], out[0].nominees[0]);
 });
 check('normalizeBangers keeps order and treats anything but true as not a winner', () => {
   const out = normalizeBangers([year({ id: 'b' }), year({ id: 'a', nominees: [nominee({ winner: undefined })] })]);

@@ -206,6 +206,8 @@
 		.plaque-by.unknown { font-weight: 400; font-style: italic; color: #5d5a68; }
 		.plaque-song { font-size: 0.82rem; line-height: 1.3; color: #2e2a3b; overflow-wrap: anywhere; }
 		.plaque-song q { quotes: '\201C' '\201D'; }
+		.song-link { color: inherit; text-decoration: underline; text-decoration-color: rgba(79, 38, 131, 0.5); text-underline-offset: 2px; }
+		.song-link:hover { color: #4F2683; text-decoration-color: currentColor; }
 		/* In the Nominees view the winner stands out and the also-rans recede. */
 		.plaque.winner { border-color: #d4a017; box-shadow: 0 0 0 2px #d4a017, 0 0 14px rgba(212, 160, 23, 0.55), 0 3px 7px rgba(40, 20, 70, 0.45); }
 		.plaque.nominee { opacity: 0.88; }
@@ -312,6 +314,16 @@
 		.nom-song { flex: 2 1 12rem; }
 		.nom-artist { flex: 2 1 10rem; }
 		.nom-by { flex: 1 1 7rem; }
+		/* Wins chart: columns, most wins on the left. The track is a fixed height so
+		   a bar's percentage has something to be a percentage of. */
+		.wins-chart { display: flex; align-items: flex-end; gap: 0.6rem; overflow-x: auto; padding-bottom: 0.25rem; }
+		.wins-col { flex: 1 0 3.2rem; max-width: 6rem; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
+		.wins-track { width: 100%; height: 11rem; display: flex; align-items: flex-end; }
+		.wins-bar { width: 100%; min-height: 2px; border-radius: 6px 6px 0 0; background: var(--accent); }
+		.wins-count { font-weight: 700; font-size: 0.9rem; }
+		.wins-name { font-size: 0.78rem; text-align: center; overflow-wrap: anywhere; }
+		.stats-note { color: var(--muted); font-size: 0.8rem; margin: 0.6rem 0 0; }
+		.nom-link { flex: 2 1 12rem; }
 		.nom-field .task-input { width: 100%; }
 		.nom-win {
 			display: flex; align-items: center; gap: 0.35rem; align-self: center; flex: 0 0 auto;
@@ -327,7 +339,6 @@
 		}
 		.dirty-flag { font-size: 0.8rem; font-weight: 600; color: var(--gold-chip-text); background: var(--gold-chip-bg); border-radius: 999px; padding: 0.15rem 0.6rem; }
 		.admin-errors { color: var(--ir-text); font-size: 0.85rem; margin: 0.5rem 0 0; padding-left: 1.1rem; }
-		.admin-note { color: var(--muted); font-size: 0.8rem; margin: 0.6rem 0 0; }
 		.task-empty { color: var(--muted); font-size: 0.85rem; margin: 0.4rem 0; }
 
 		/* ---- Quick links toolbar and Tasks card: ported from vikings.html; keep in step. ---- */
@@ -475,14 +486,14 @@
 		const copyYears = (list) => list.map((y) => ({
 			id: y.id,
 			label: y.label || '',
-			nominees: (y.nominees || []).map((n) => ({ id: n.id, title: n.title || '', artist: n.artist || '', by: n.by || '', winner: !!n.winner })),
+			nominees: (y.nominees || []).map((n) => ({ id: n.id, title: n.title || '', artist: n.artist || '', by: n.by || '', link: n.link || '', winner: !!n.winner })),
 		}));
 		// The same list trimmed, as a string: what Save would send, and how
 		// "unsaved changes" is told apart from a field someone typed a space into.
 		const normalized = (list) => copyYears(list).map((y) => ({
 			...y,
 			label: y.label.trim(),
-			nominees: y.nominees.map((n) => ({ ...n, title: n.title.trim(), artist: n.artist.trim(), by: n.by.trim() })),
+			nominees: y.nominees.map((n) => ({ ...n, title: n.title.trim(), artist: n.artist.trim(), by: n.by.trim(), link: n.link.trim() })),
 		}));
 		const normalizedKey = (list) => JSON.stringify(normalized(list));
 		const makeId = (prefix) => `${prefix}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
@@ -552,7 +563,7 @@
 			try { localStorage.setItem(FOLD_KEY, JSON.stringify(foldState)); } catch (e) { /* works for this visit */ }
 		}
 		const isFolded = (y, index) => (y.id in foldState ? foldState[y.id] : index > 0);
-		try { const t = localStorage.getItem(TAB_KEY); if (t === 'nominees' || t === 'admin') tab = t; } catch (e) { /* default tab */ }
+		try { const t = localStorage.getItem(TAB_KEY); if (t === 'nominees' || t === 'stats' || t === 'admin') tab = t; } catch (e) { /* default tab */ }
 
 		const statusEl = document.getElementById('status');
 		function setStatus(text, kind) {
@@ -629,6 +640,51 @@
 			wrap.append(toggle, form);
 		}
 
+		// ---- Stats ---------------------------------------------------------------
+		// Wins per person: a win is a winning song, credited to whoever nominated
+		// it. Most wins on the left; ties fall back to name order. Winners with no
+		// nominator on record can't be credited, so they're counted in a note
+		// instead of becoming a bar called "Unknown".
+		function winsByPerson(list) {
+			const counts = new Map();
+			let uncredited = 0;
+			for (const y of list) for (const n of y.nominees) {
+				if (!n.winner) continue;
+				const who = n.by.trim();
+				if (!who) { uncredited++; continue; }
+				counts.set(who, (counts.get(who) || 0) + 1);
+			}
+			const rows = [...counts].map(([name, wins]) => ({ name, wins }))
+				.sort((a, b) => b.wins - a.wins || a.name.localeCompare(b.name));
+			return { rows, uncredited };
+		}
+
+		function statsView() {
+			const card = el('div', { class: 'card' });
+			const head = el('h2', { class: 'card-heading', text: 'Wins' });
+			card.appendChild(head);
+			makeCollapsible(card, head, 'stats-wins');
+			const { rows, uncredited } = winsByPerson(bangers);
+			if (!rows.length) {
+				card.appendChild(el('div', { class: 'task-empty', text: 'No winners yet.' }));
+				return [card];
+			}
+			const top = rows[0].wins;
+			const chart = el('div', { class: 'wins-chart', role: 'img', 'aria-label': `Wins per person: ${rows.map((r) => `${r.name} ${r.wins}`).join(', ')}` });
+			for (const r of rows) {
+				const bar = el('div', { class: 'wins-bar' });
+				bar.style.height = `${(r.wins / top) * 100}%`;
+				chart.appendChild(el('div', { class: 'wins-col' }, [
+					el('div', { class: 'wins-count', text: String(r.wins) }),
+					el('div', { class: 'wins-track' }, [bar]),
+					el('div', { class: 'wins-name', text: r.name }),
+				]));
+			}
+			card.appendChild(chart);
+			if (uncredited) card.appendChild(el('div', { class: 'stats-note', text: `${uncredited} ${uncredited === 1 ? 'winner has' : 'winners have'} no nominator on record and ${uncredited === 1 ? 'isn’t' : 'aren’t'} counted.` }));
+			return [card];
+		}
+
 		// ---- Winners and Nominees -----------------------------------------------
 		const message = (text, kind) => el('div', { class: 'card' }, [el('div', { class: `message${kind ? ' ' + kind : ''}`, text })]);
 
@@ -637,7 +693,11 @@
 		function plaque(label, n, mode) {
 			const by = n.by.trim();
 			const song = el('div', { class: 'plaque-song' });
-			const q = el('q', { text: n.title });
+			const q = el('q');
+			// A title with a saved link is clickable; only http(s) is ever put in an href.
+			const link = (n.link || '').trim();
+			if (/^https?:\/\//i.test(link)) q.appendChild(el('a', { class: 'song-link', href: link, target: '_blank', rel: 'noopener', text: n.title }));
+			else q.textContent = n.title;
 			song.appendChild(q);
 			if (n.artist.trim()) song.appendChild(document.createTextNode(` by ${n.artist.trim()}`));
 			const card = el('div', { class: `plaque${mode === 'winner' ? ' winner' : mode === 'nominee' ? ' nominee' : ''}` }, [
@@ -794,6 +854,7 @@
 				field('nom-song', 'Song', text('title', 'Song title', 120)),
 				field('nom-artist', 'Artist', text('artist', 'optional', 120)),
 				field('nom-by', 'Nominated by', text('by', 'optional', 60)),
+				field('nom-link', 'Link', text('link', 'optional, e.g. Apple Music URL', 500)),
 				remove,
 			);
 			return row;
@@ -839,7 +900,7 @@
 			const add = el('button', { type: 'button', class: 'task-add-btn', text: '+ Add nominee' });
 			add.style.alignSelf = 'flex-start';
 			add.addEventListener('click', () => {
-				const n = { id: makeId('n'), title: '', artist: '', by: '', winner: false };
+				const n = { id: makeId('n'), title: '', artist: '', by: '', link: '', winner: false };
 				y.nominees.push(n);
 				openYears.add(y.id);
 				focusId = n.id;
@@ -893,7 +954,6 @@
 			updateDirty();
 			card.appendChild(el('div', { class: 'admin-actions' }, [save, discard, flag]));
 			if (adminErrors.length) card.appendChild(el('ul', { class: 'admin-errors' }, adminErrors.map((t) => el('li', { text: t }))));
-			card.appendChild(el('div', { class: 'admin-note', text: 'Newest first, in the order shown on the Winners and Nominees tabs (use the arrows to reorder). Tick Winner on every song that won that year; a year can have more than one, or none yet. Nothing is saved until you press Save; the public page updates a minute or two after that.' }));
 			return card;
 		}
 
@@ -1465,7 +1525,7 @@
 			const nav = document.getElementById('tabs');
 			nav.textContent = '';
 			// The Admin tab exists only while logged in; logging out removes it.
-			const tabs = [['winners', 'Winners'], ['nominees', 'Nominees'], ...(isLoggedIn() ? [['admin', 'Admin']] : [])];
+			const tabs = [['winners', 'Winners'], ['nominees', 'Nominees'], ['stats', 'Stats'], ...(isLoggedIn() ? [['admin', 'Admin']] : [])];
 			for (const [id, label] of tabs) {
 				const btn = el('button', { type: 'button', class: `tab-btn${tab === id ? ' active' : ''}`, role: 'tab', 'aria-selected': String(tab === id), text: label });
 				btn.addEventListener('click', () => setTab(id));
@@ -1485,7 +1545,7 @@
 			qlCardEl = null;
 			if (loadState === 'loading') { view.appendChild(message('Loading…')); return; }
 			if (loadState === 'failed' && tab !== 'admin') { view.appendChild(message(`Couldn’t load the list (${loadError}). Reload to try again.`, 'error')); return; }
-			const cards = tab === 'nominees' ? nomineesView() : tab === 'admin' ? adminView() : winnersView();
+			const cards = tab === 'nominees' ? nomineesView() : tab === 'stats' ? statsView() : tab === 'admin' ? adminView() : winnersView();
 			cards.forEach((c) => view.appendChild(c));
 		}
 
