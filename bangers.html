@@ -89,6 +89,9 @@
 		@media (prefers-color-scheme: dark) { .site-logo { filter: invert(1); } }
 
 		/* Login control: same look as vikings.html's. */
+		/* "X bangers over Y years and counting", under the logo (same look as
+		   vikings.html's .subtitle). Hidden until the list has loaded. */
+		.subtitle { font-size: 0.8rem; color: var(--muted); }
 		.login { font-size: 0.8rem; }
 		.login-toggle { background: none; border: none; color: var(--accent); font-size: 0.8rem; font-weight: 600; cursor: pointer; padding: 0; }
 		.login-toggle:hover { text-decoration: underline; }
@@ -472,6 +475,7 @@
 				<span class="site-logo-prefix">my</span>
 				<img src="images/bangerslogo.png" alt="Certified Banger" class="site-logo">
 			</h1>
+			<div class="subtitle hidden" id="banger-count"></div>
 			<div class="login" id="login"></div>
 		</header>
 		<nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav>
@@ -1558,8 +1562,21 @@
 			}
 		}
 
+		// X = every nominee across every group; Y = the dated years only, so the
+		// undated "Grandfathered" group adds songs but not a year.
+		function renderBangerCount() {
+			const node = document.getElementById('banger-count');
+			if (!node) return;
+			const groups = loadState === 'ready' && Array.isArray(bangers) ? bangers : [];
+			const songs = groups.reduce((n, y) => n + y.nominees.length, 0);
+			const years = groups.filter((y) => /^\d{4}/.test(String(y.label).trim())).length;
+			node.classList.toggle('hidden', !songs || !years);
+			node.textContent = `${songs} banger${songs === 1 ? '' : 's'} over ${years} year${years === 1 ? '' : 's'} and counting`;
+		}
+
 		function renderAll() {
 			if (tab === 'admin' && !isLoggedIn()) tab = 'winners';
+			renderBangerCount();
 			renderLogin();
 			renderTabs();
 			renderQuickLinks();
