@@ -6,7 +6,10 @@
 // public or private about it), and this endpoint is only how an edit gets in.
 //
 //   data/bangers.json
-//   { years: [ { id, label, nominees: [ { id, title, artist, by, winner } ] } ] }
+//   { years: [ { id, label, nominees: [ { id, title, artist, by, link?, winner } ] } ] }
+//
+// `link` is optional (usually an Apple Music URL for the song): http(s) only,
+// because the page renders it as an href, and left out of the file when blank.
 //
 // Array order is display order, newest first. `label` is free text ("2023",
 // "2020 (Spring)", "Grandfathered"), not a number, because the list has years
@@ -61,6 +64,14 @@ const MAX_LABEL_LENGTH = 40;
 const MAX_TITLE_LENGTH = 120;
 const MAX_ARTIST_LENGTH = 120;
 const MAX_BY_LENGTH = 60;
+const MAX_LINK_LENGTH = 500;
+
+// An absolute http(s) URL. Anything else (javascript:, data:, a bare word) is
+// refused, since the page puts it in an href.
+function isWebUrl(s) {
+  if (/\s/.test(s)) return false;
+  try { return ['http:', 'https:'].includes(new URL(s).protocol); } catch { return false; }
+}
 
 export { validateBangers, normalizeBangers, serialize, isStaleBase, TASKS_KEY, QUICKLINKS_KEY };
 
@@ -101,6 +112,11 @@ function validateBangers(body) {
       for (const [field, max] of [['artist', MAX_ARTIST_LENGTH], ['by', MAX_BY_LENGTH]]) {
         if (n[field] != null && (typeof n[field] !== 'string' || n[field].trim().length > max)) errors.push(`${nw}: ${field} must be text up to ${max} characters.`);
       }
+      if (n.link != null) {
+        const link = typeof n.link === 'string' ? n.link.trim() : null;
+        if (link === null || link.length > MAX_LINK_LENGTH) errors.push(`${nw}: link must be text up to ${MAX_LINK_LENGTH} characters.`);
+        else if (link && !isWebUrl(link)) errors.push(`${nw}: link must be a web address starting with http:// or https://.`);
+      }
       if (n.winner != null && typeof n.winner !== 'boolean') errors.push(`${nw}: winner must be true or false.`);
     });
   });
@@ -118,6 +134,7 @@ function normalizeBangers(years) {
       title: text(n.title),
       artist: text(n.artist),
       by: text(n.by),
+      ...(text(n.link) ? { link: text(n.link) } : {}),
       winner: n.winner === true,
     })),
   }));
