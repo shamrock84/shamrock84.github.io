@@ -322,7 +322,6 @@
 		.wins-bar { width: 100%; min-height: 2px; border-radius: 6px 6px 0 0; background: var(--accent); }
 		.wins-count { font-weight: 700; font-size: 0.9rem; }
 		.wins-name { font-size: 0.78rem; text-align: center; overflow-wrap: anywhere; }
-		.stats-note { color: var(--muted); font-size: 0.8rem; margin: 0.6rem 0 0; }
 		.nom-link { flex: 2 1 12rem; }
 		.nom-field .task-input { width: 100%; }
 		.nom-win {
@@ -643,20 +642,19 @@
 		// ---- Stats ---------------------------------------------------------------
 		// Wins per person: a win is a winning song, credited to whoever nominated
 		// it. Most wins on the left; ties fall back to name order. Winners with no
-		// nominator on record can't be credited, so they're counted in a note
-		// instead of becoming a bar called "Unknown".
+		// nominator on record can't be credited, so they get no bar (not an
+		// "Unknown" one).
 		function winsByPerson(list) {
 			const counts = new Map();
-			let uncredited = 0;
 			for (const y of list) for (const n of y.nominees) {
 				if (!n.winner) continue;
 				const who = n.by.trim();
-				if (!who) { uncredited++; continue; }
+				if (!who) continue;
 				counts.set(who, (counts.get(who) || 0) + 1);
 			}
 			const rows = [...counts].map(([name, wins]) => ({ name, wins }))
 				.sort((a, b) => b.wins - a.wins || a.name.localeCompare(b.name));
-			return { rows, uncredited };
+			return { rows };
 		}
 
 		function statsView() {
@@ -664,7 +662,7 @@
 			const head = el('h2', { class: 'card-heading', text: 'Wins' });
 			card.appendChild(head);
 			makeCollapsible(card, head, 'stats-wins');
-			const { rows, uncredited } = winsByPerson(bangers);
+			const { rows } = winsByPerson(bangers);
 			if (!rows.length) {
 				card.appendChild(el('div', { class: 'task-empty', text: 'No winners yet.' }));
 				return [card];
@@ -681,7 +679,6 @@
 				]));
 			}
 			card.appendChild(chart);
-			if (uncredited) card.appendChild(el('div', { class: 'stats-note', text: `${uncredited} ${uncredited === 1 ? 'winner has' : 'winners have'} no nominator on record and ${uncredited === 1 ? 'isn’t' : 'aren’t'} counted.` }));
 			return [card];
 		}
 
