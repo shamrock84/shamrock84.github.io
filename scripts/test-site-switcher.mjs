@@ -1,6 +1,6 @@
-// Pins the header site switcher (site-switcher.js), shared by myFFL, myVST and
-// myBangers. What can drift silently:
-//  - the cycle: three sites wrap, so the first's "prev" is the last;
+// Pins the header site switcher (site-switcher.js), shared by myFFL, myVST,
+// myBangers and myFAM. What can drift silently:
+//  - the cycle: four sites wrap, so the first's "prev" is the last;
 //  - a page's data-site not matching a SITES key (the strip then never builds
 //    and nobody notices, because the page's own h1 stays);
 //  - a page's own logo differing from the SITES entry, so the neighbour's
@@ -24,11 +24,12 @@ const { SITES, neighbours } = context.SiteSwitcher;
 
 // The cycle.
 const keys = [...SITES].map((s) => s.key);
-assert.deepEqual(keys, ['ffl', 'vst', 'bangers']);
+assert.deepEqual(keys, ['ffl', 'vst', 'bangers', 'fam']);
 const at = (k) => { const n = neighbours(SITES, k); return [n.prev.key, n.current.key, n.next.key]; };
-assert.deepEqual(at('ffl'), ['bangers', 'ffl', 'vst']);
+assert.deepEqual(at('ffl'), ['fam', 'ffl', 'vst']);
 assert.deepEqual(at('vst'), ['ffl', 'vst', 'bangers']);
-assert.deepEqual(at('bangers'), ['vst', 'bangers', 'ffl']);
+assert.deepEqual(at('bangers'), ['vst', 'bangers', 'fam']);
+assert.deepEqual(at('fam'), ['bangers', 'fam', 'ffl']);
 assert.equal(neighbours(SITES, 'nope'), null);
 // Two sites still work (prev and next are the same page).
 const two = SITES.slice(0, 2);
@@ -37,7 +38,7 @@ assert.equal(neighbours(two, 'ffl').next.key, 'vst');
 
 // Every page loads the script and declares itself, and its own logo is the one
 // the switcher draws for it elsewhere.
-const pages = { ffl: 'myffl.html', vst: 'vikings.html', bangers: 'bangers.html' };
+const pages = { ffl: 'myffl.html', vst: 'vikings.html', bangers: 'bangers.html', fam: 'index.html' };
 for (const site of SITES) {
 	const html = fs.readFileSync(path.join(root, pages[site.key]), 'utf8');
 	assert.ok(
@@ -49,7 +50,8 @@ for (const site of SITES) {
 	assert.ok(logo, `${pages[site.key]} has a site-title h1 with a logo`);
 	assert.equal('/' + logo[1], site.img, `${pages[site.key]}'s own logo matches SITES`);
 	// (images/ isn't checked out in CI's sparse checkout, so file existence can't be asserted for logos.)
-	assert.ok(fs.existsSync(path.join(root, site.href.slice(1))), `${site.href} exists`);
+	// The home page's href is '/', which is index.html.
+	assert.ok(fs.existsSync(path.join(root, site.href === '/' ? 'index.html' : site.href.slice(1))), `${site.href} exists`);
 }
 
 console.log('site switcher ok');

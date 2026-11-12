@@ -4,21 +4,30 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>myFAM</title>
+	<script src="/site-switcher.js" data-site="fam"></script>
 	<meta property="og:title" content="The Melbostads"/>
-	<meta property="og:image" content="https://melbostads.com/images/famlogo.svg"/>
+	<meta property="og:image" content="https://melbostads.com/images/famlogo_large.png"/>
+	<link rel="apple-touch-icon" href="/famicons/apple-touch-icon.png?v=1">
+	<link rel="icon" type="image/png" sizes="32x32" href="/famicons/favicon-32x32.png?v=1">
+	<link rel="icon" type="image/png" sizes="16x16" href="/famicons/favicon-16x16.png?v=1">
+	<link rel="shortcut icon" href="/famicons/favicon.ico?v=1">
+	<meta name="theme-color" media="(prefers-color-scheme: light)" content="#4F2683">
+	<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#140f1e">
 	<style>
-		/* Same masthead as myffl.html, vikings.html and bangers.html: Georgia "my"
+		/* Same masthead and palette tokens as myffl.html, vikings.html and bangers.html: Georgia "my"
 		   beside a 64px black-on-transparent logo that inverts in dark mode.
 		   famlogo.svg is black line art on a transparent background for exactly
 		   that reason: keep it black, or the invert filter stops working. */
 		:root {
-			--bg: #ffffff;
+			--bg: #f5f3f9;
 			--text: #1b1425;
+			--accent: #4F2683; /* the switcher's arrows */
 		}
 		@media (prefers-color-scheme: dark) {
 			:root {
-				--bg: #111111;
-				--text: #eeeeee;
+				--bg: #140f1e;
+				--text: #ede9f5;
+				--accent: #b48ee0;
 			}
 			.site-logo { filter: invert(1); }
 		}
