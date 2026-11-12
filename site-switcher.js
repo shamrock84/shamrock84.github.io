@@ -27,6 +27,10 @@
 //    scrolling tables, and `touch-action: pan-y` hands vertical scrolling back
 //    to the browser while keeping horizontal drags for us.
 //
+// The strip is capped at a large phone's width (430px) and centred, so on a
+// desktop it looks exactly as it does on a phone instead of stretching the
+// neighbours and arrows across the whole header.
+//
 // Not done on purpose: no prefetch of the neighbours (myffl.html is ~1MB and
 // a visit to myVST would pay for it every time), and no ← → keyboard shortcut
 // (it fights text fields and the tables' own scrolling).
@@ -83,7 +87,7 @@
 		'html[data-sw-dir="prev"]::view-transition-old(root) { animation: .26s ease-in both sw-out-prev; }',
 		'html[data-sw-dir="prev"]::view-transition-new(root) { animation: .26s ease-out both sw-in-prev; }',
 		'.sw-host { align-self: stretch; width: 100%; }',
-		'.site-switcher { position: relative; width: 100%; height: 88px; overflow: hidden; touch-action: pan-y; user-select: none; -webkit-user-select: none; }',
+		'.site-switcher { position: relative; width: 100%; max-width: 430px; margin: 0 auto; height: 88px; overflow: hidden; touch-action: pan-y; user-select: none; -webkit-user-select: none; }',
 		'.sw-track { position: absolute; inset: 0;',
 		'  -webkit-mask-image: linear-gradient(to right, transparent 7%, #000 34%, #000 66%, transparent 93%);',
 		'  mask-image: linear-gradient(to right, transparent 7%, #000 34%, #000 66%, transparent 93%); }',
