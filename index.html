@@ -1,9 +1,75 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>myFAM</title>
+	<script src="/site-switcher.js" data-site="fam"></script>
+	<meta property="og:title" content="The Melbostads"/>
+	<meta property="og:image" content="https://melbostads.com/images/famlogo_large.png"/>
+	<link rel="apple-touch-icon" href="/famicons/apple-touch-icon.png?v=1">
+	<link rel="icon" type="image/png" sizes="32x32" href="/famicons/favicon-32x32.png?v=1">
+	<link rel="icon" type="image/png" sizes="16x16" href="/famicons/favicon-16x16.png?v=1">
+	<link rel="shortcut icon" href="/famicons/favicon.ico?v=1">
+	<meta name="theme-color" media="(prefers-color-scheme: light)" content="#4F2683">
+	<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#140f1e">
+	<style>
+		/* Same masthead and palette tokens as myffl.html, vikings.html and bangers.html: Georgia "my"
+		   beside a 64px black-on-transparent logo that inverts in dark mode.
+		   famlogo.svg is black line art on a transparent background for exactly
+		   that reason: keep it black, or the invert filter stops working. */
+		:root {
+			--bg: #f5f3f9;
+			--text: #1b1425;
+			--accent: #4F2683; /* the switcher's arrows */
+		}
+		@media (prefers-color-scheme: dark) {
+			:root {
+				--bg: #140f1e;
+				--text: #ede9f5;
+				--accent: #b48ee0;
+			}
+			.site-logo { filter: invert(1); }
+		}
+		body {
+			margin: 0;
+			background: var(--bg);
+			color: var(--text);
+			font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+		}
+		header {
+			padding: 1.5rem 1rem 1rem;
+			text-align: center;
+		}
+		h1 { margin: 0; }
+		.site-title {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+		.site-logo-prefix {
+			font-family: Georgia, 'Times New Roman', serif;
+			font-weight: 400;
+			font-size: 1.85rem;
+			line-height: 1;
+			color: var(--text);
+			margin-right: 0.15rem;
+			margin-top: 0.75rem;
+		}
+		.site-logo {
+			height: 64px;
+			width: auto;
+			display: block;
+		}
+	</style>
+</head>
 <body>
-  <div style="text-align:center;">
-    <h1>Melbostads.com</h1>
-    <p>This page is fancy.</p>
-  </div>
+	<header>
+		<h1 class="site-title">
+			<span class="site-logo-prefix">my</span>
+			<img src="images/famlogo.svg" alt="FAM — Melbostads" class="site-logo">
+		</h1>
+		<p>This page is fancy.</p>
+	</header>
 </body>
 </html>
