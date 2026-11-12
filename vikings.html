@@ -574,7 +574,7 @@
 					<span class="site-logo-prefix">my</span>
 					<img src="images/seasonticketlogo.png" alt="VST — Vikings Season Tickets" class="site-logo">
 				</h1>
-				<div class="subtitle" id="holder-since">Ticket holder since 2007</div>
+				<div class="subtitle" id="holder-since">Since 2007 and counting</div>
 			</div>
 			<div class="login" id="login"></div>
 		</header>
@@ -1868,14 +1868,15 @@
 			}
 		}
 
-		// "Ticket holder since 2007 (20 seasons)": every season in the history file
-		// plus the current one. Left as the plain 2007 line until the data loads.
+		// "14 seasons since 2007 and counting": every season in the history file
+		// plus the current one (seasons skipped in SKIPPED_SEASONS don't count).
+		// Left as the plain 2007 line until the data loads.
 		function renderHolderSince() {
 			const node = document.getElementById('holder-since');
 			const years = historyYears();
 			if (!node || !snapshotSeason || !years.length) return;
 			const count = years.length + 1;
-			node.textContent = `Ticket holder since ${years[years.length - 1]} (${count} ${count === 1 ? 'season' : 'seasons'})`;
+			node.textContent = `${count} ${count === 1 ? 'season' : 'seasons'} since ${years[years.length - 1]} and counting`;
 		}
 
 		function renderAll() {
