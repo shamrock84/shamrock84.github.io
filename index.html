@@ -26,6 +26,7 @@
 			--muted: #6b6478;
 			--border: #e3daf0;
 			--accent: #4F2683;
+			--on-accent: #ffffff; /* text on a solid --accent fill: --accent turns light in dark mode */
 			--chip-bg: #ede3f8;
 			--ir-text: #991b1b;
 			--ir-bg: #fef2f2;
@@ -42,6 +43,7 @@
 				--muted: #a79bc2;
 				--border: #362a4a;
 				--accent: #b48ee0;
+				--on-accent: #140f1e;
 				--chip-bg: #2c2145;
 				--ir-text: #fca5a5;
 				--ir-bg: #341313;
@@ -178,11 +180,11 @@
 		.cal-cell { display: flex; flex-direction: column; gap: 2px; min-width: 0; min-height: 5.2rem; padding: 0.2rem; border: 0; background: var(--card-bg); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
 		.cal-cell.cal-blank { opacity: 0.45; cursor: default; }
 		.cal-num { align-self: flex-start; min-width: 1.4rem; padding: 0 0.3rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600; text-align: center; }
-		.cal-cell.cal-today .cal-num { background: var(--accent); color: #fff; }
+		.cal-cell.cal-today .cal-num { background: var(--accent); color: var(--on-accent); }
 		.cal-cell.cal-selected { outline: 2px solid var(--accent); outline-offset: -2px; }
 		.cal-chips { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 		.cal-chip { overflow: hidden; padding: 0 0.25rem; border-radius: 3px; background: color-mix(in srgb, var(--accent) 16%, transparent); font-size: 0.7rem; line-height: 1.25; white-space: nowrap; text-overflow: ellipsis; }
-		.cal-chip.cal-chip-allday { background: var(--accent); color: #fff; }
+		.cal-chip.cal-chip-allday { background: var(--accent); color: var(--on-accent); }
 		.cal-chip.cal-chip-holiday { background: color-mix(in srgb, var(--muted) 16%, transparent); color: var(--muted); }
 		.cal-more { color: var(--muted); font-size: 0.7rem; }
 		.cal-list-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; margin: 0.9rem 0 0.4rem; }
