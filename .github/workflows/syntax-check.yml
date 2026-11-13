@@ -22,6 +22,7 @@ on:
       - 'package.json'
       - 'myffl.html'
       - 'CLAUDE.md'
+      - '.claude/rules/**'
       - '.github/workflows/syntax-check.yml'
   push:
     branches: [main]
@@ -32,6 +33,7 @@ on:
       - 'package.json'
       - 'myffl.html'
       - 'CLAUDE.md'
+      - '.claude/rules/**'
       - '.github/workflows/syntax-check.yml'
 
 permissions:
@@ -42,8 +44,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # Blobless + sparse checkout: skips mfl/PSD and images/, which no
-      # workflow here reads. Same five directories everywhere on purpose;
-      # see sync-fantasy-rosters.yml for the reasoning and the numbers.
+      # workflow here reads. The same five directories as everywhere else
+      # (see sync-fantasy-rosters.yml for the reasoning and the numbers),
+      # plus .claude here only, for the rules size check below.
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -54,6 +57,7 @@ jobs:
             config
             data
             .github
+            .claude
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -79,20 +83,39 @@ jobs:
           exit $fail
 
       # CLAUDE.md is loaded in full at the start of every Claude Code session,
-      # so its length is a cost paid on every task. It is meant to be an index
-      # of rules pointing at the code comments that explain them, and twice it
-      # drifted past 90KB by accumulating those explanations instead. This is
-      # the backstop for that: compress an existing entry rather than raise
-      # the number.
-      - name: Check CLAUDE.md stays an index
+      # so its length is a cost paid on every task. It holds only what every
+      # task needs; the per-subsystem invariants live in .claude/rules/*.md,
+      # which Claude Code loads only when a file matching their `paths:`
+      # frontmatter is read. Both are meant to be an index of rules pointing
+      # at the code comments that explain them, and the single-file version
+      # twice drifted past 90KB by accumulating those explanations instead.
+      # This is the backstop for that: compress an existing entry rather than
+      # raise a number. The rules total is the old single-file limit, since a
+      # myffl.html session can still load nearly all of them.
+      - name: Check CLAUDE.md and .claude/rules stay an index
         run: |
-          limit=45000
+          fail=0
           size=$(wc -c < CLAUDE.md)
-          echo "CLAUDE.md is $size bytes (limit $limit)"
-          if [ "$size" -gt "$limit" ]; then
-            echo "CLAUDE.md is over $limit bytes. Move reasoning into the code comment it describes and keep the entry to the rule, a pointer, and how it fails."
-            exit 1
+          echo "CLAUDE.md is $size bytes (limit 16000)"
+          if [ "$size" -gt 16000 ]; then
+            echo "CLAUDE.md is over 16000 bytes. Subsystem rules belong in .claude/rules/; reasoning belongs in the code comment it describes."
+            fail=1
           fi
+          total=$(cat .claude/rules/*.md | wc -c)
+          echo ".claude/rules/*.md total $total bytes (limit 45000)"
+          if [ "$total" -gt 45000 ]; then
+            echo ".claude/rules is over 45000 bytes. Move reasoning into the code comment it describes and keep the entry to the rule, a pointer, and how it fails."
+            fail=1
+          fi
+          # A rules file without paths: frontmatter loads in every session,
+          # which silently undoes the split.
+          for f in .claude/rules/*.md; do
+            if [ "$(head -n 2 "$f" | tr -d '\n')" != "---paths:" ]; then
+              echo "$f does not start with paths: frontmatter"
+              fail=1
+            fi
+          done
+          exit $fail
 
       # Runs every scripts/test-*.mjs, so a new test is picked up without
       # anyone editing this file. What each test pins, and how it fails
