@@ -276,9 +276,18 @@ function textOf(ev, name) {
   return p ? unescapeText(p.value).trim() : '';
 }
 
+// The calendar holds U.S. holidays imported from Google's public holiday feed,
+// whose events carry DESCRIPTION "Public holiday" or "Observance" (the latter
+// followed by a note on hiding observances). That is the only marker they have,
+// so it is what the page uses to keep them on the month grid but out of the
+// "Events this month" list. A family event is unlikely to start with either phrase.
+function isHoliday(ev) {
+  return /^(public holiday|observance)\b/i.test(textOf(ev, 'DESCRIPTION'));
+}
+
 // One occurrence as the page's event shape.
 function shape(ev, startW, startMs, durationMs, extra = {}) {
-  const base = { id: `${textOf(ev, 'UID')}@${keyOf(startW)}`, title: textOf(ev, 'SUMMARY') || '(No title)', location: textOf(ev, 'LOCATION').split('\n')[0].trim() };
+  const base = { id: `${textOf(ev, 'UID')}@${keyOf(startW)}`, title: textOf(ev, 'SUMMARY') || '(No title)', location: textOf(ev, 'LOCATION').split('\n')[0].trim(), ...(isHoliday(ev) ? { holiday: true } : {}) };
   if (startW.allDay) {
     const days = Math.max(1, Math.round(durationMs / MS_DAY));
     return { ...base, allDay: true, start: dateStr(startW.y, startW.m, startW.d), end: dateStrOfMs(startMs + days * MS_DAY), ...extra };

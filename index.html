@@ -1083,6 +1083,7 @@
 		// Events by local day of month (y, m). `grid` has an event on every day an
 		// all-day span covers; `list` has it once, on its first day in the month
 		// (a span that began last month lists on the 1st). All-day first, then by time.
+		// Holidays (flagged by the server) stay on the grid and are left out of `list`.
 		function monthDayMaps(events, y, m) {
 			const first = localDayKey(new Date(y, m, 1)), last = localDayKey(new Date(y, m + 1, 0));
 			const grid = new Map(), list = new Map();
@@ -1092,10 +1093,10 @@
 					const lastDay = addDaysToKey(e.end, -1); // the end date is exclusive
 					const from = e.start < first ? first : e.start, to = lastDay > last ? last : lastDay;
 					for (let k = from; k <= to; k = addDaysToKey(k, 1)) put(grid, k, e);
-					put(list, from, e);
+					if (!e.holiday) put(list, from, e);
 				} else {
 					const k = localDayKey(new Date(e.start));
-					put(grid, k, e); put(list, k, e);
+					put(grid, k, e); if (!e.holiday) put(list, k, e);
 				}
 			}
 			const order = (a, b) => (a.allDay === b.allDay ? (a.start < b.start ? -1 : a.start > b.start ? 1 : 0) : a.allDay ? -1 : 1);

@@ -97,6 +97,12 @@ await check('events outside the window are left out; one in progress yesterday e
   const far = ev(['DTSTART;TZID=America/Chicago:20270601T100000', 'DTEND;TZID=America/Chicago:20270601T110000', 'SUMMARY:Far', 'UID:far']);
   assert.deepEqual(run(old, far), []);
 });
+await check('imported holidays are flagged (Public holiday / Observance); an ordinary description is not', () => {
+  const day = (n, desc) => ev(['DTSTART;VALUE=DATE:2026112' + n, 'DTEND;VALUE=DATE:2026112' + (n + 1), 'SUMMARY:S' + n, 'UID:h' + n, 'DESCRIPTION:' + desc]);
+  const out = run(day(4, 'Public holiday'), day(5, 'Observance\\nTo hide observances\\, go to Google Calendar Settings'), day(6, 'Bring snacks, public holiday party'), day(7, 'observance'));
+  assert.deepEqual(out.map((e) => [e.title, !!e.holiday]), [['S4', true], ['S5', true], ['S6', false], ['S7', true]]);
+  assert.equal('holiday' in out[2], false, 'the flag is left off ordinary events rather than sent as false');
+});
 await check('output is sorted by start', () => {
   assert.equal(run(practice, dinner)[0].title, 'Dinner, drinks');
 });
