@@ -20,6 +20,10 @@
 // the album token from the FAM_PHOTOS_ALBUM Vercel variable, so the token stays
 // out of the repo and the page source.
 //
+// `?resource=calendar` is the Calendar card's public iCloud calendar feed
+// (api/_lib/calendarfeed.mjs), same shape: no store, no login, link in the
+// FAM_CALENDAR_ICS Vercel variable (webcal:// or https://), one `?month=` at a time.
+//
 // Why its own file and not a third `resource` on bangers.js: that file's other
 // job is committing data/bangers.json, and a Hobby deployment may hold 12
 // functions. This is the 12th, so the cap is now spent. A next endpoint means
@@ -30,6 +34,7 @@ import { applyCors } from './_lib/cors.mjs';
 import { storeGet, storeSet } from './_lib/store.mjs';
 import { resolveStore } from './plans.js';
 import { fetchSharedAlbum } from './_lib/sharedalbum.mjs';
+import { fetchCalendar, monthWindow } from './_lib/calendarfeed.mjs';
 import { validateTaskPatch, applyTaskPatch, validateQuickLinks, normalizeQuickLinks } from './vikings.js';
 
 // Upstash keys. Deliberately not vikings.js's or bangers.js's: sharing one
@@ -40,31 +45,42 @@ const MAX_TASKS = 300;
 
 export { TASKS_KEY, QUICKLINKS_KEY };
 
-// Apple's image URLs expire after ~20 minutes, so the cache must stay well
+// Two public, store-less feeds share one cached path: Photos and Calendar.
+// Apple's photo URLs expire after ~20 minutes, so the cache must stay well
 // inside that. Module-level: resets on a cold start, which is fine.
-const PHOTOS_CACHE_MS = 5 * 60 * 1000;
-let photosCache = null;
-export function resetPhotosCache() { photosCache = null; }
+const FEED_CACHE_MS = 5 * 60 * 1000;
+const feedCache = {};
+export function resetPhotosCache() { for (const k of Object.keys(feedCache)) delete feedCache[k]; }
 
-async function handlePhotos(req, res, fetchFn) {
-  const token = process.env.FAM_PHOTOS_ALBUM;
-  if (!token) {
-    res.status(503).json({ error: 'FAM_PHOTOS_ALBUM is not configured on this deployment.' });
+// The secret may be a bare token (Photos) or a link (Calendar, stored as
+// webcal:// but fetched as https://), so the token part is scrubbed on its own.
+function scrubSecret(message, secret) {
+  const token = secret.includes('/') ? secret.replace(/\/+$/, '').split('/').pop() : secret;
+  let out = message;
+  for (const s of [secret, token]) if (s) out = out.split(s).join('…');
+  return out;
+}
+
+async function handleFeed(res, { name, envVar, what, load }) {
+  const secret = process.env[envVar];
+  if (!secret) {
+    res.status(503).json({ error: `${envVar} is not configured on this deployment.` });
     return;
   }
   const now = Date.now();
-  if (!photosCache || photosCache.token !== token || now - photosCache.at > PHOTOS_CACHE_MS) {
+  const hit = feedCache[name];
+  if (!hit || hit.secret !== secret || now - hit.at > FEED_CACHE_MS) {
     try {
-      photosCache = { token, at: now, album: await fetchSharedAlbum(token, fetchFn) };
+      feedCache[name] = { secret, at: now, body: await load(secret) };
     } catch (err) {
-      // Never "no photos": a failed read is an error the card shows as one. The
-      // message can't contain the token (it is only ever in the URL).
-      res.status(502).json({ error: `Couldn't read the album: ${String(err.message).replace(token, '…')}` });
+      // Never "nothing there": a failed read is an error the card shows as one.
+      // The secret is only ever in a URL, so scrub it from the message.
+      res.status(502).json({ error: `Couldn't read the ${what}: ${scrubSecret(String(err.message), secret)}` });
       return;
     }
   }
   res.setHeader('Cache-Control', 'public, max-age=60');
-  res.status(200).json(photosCache.album);
+  res.status(200).json(feedCache[name].body);
 }
 
 function bearerOk(req) {
@@ -127,12 +143,23 @@ export default async function handler(req, res, fetchFn = fetch) {
 
   const resource = req.method === 'GET' ? (req.query && req.query.resource) : (req.body || {}).resource;
   if (req.method === 'GET' && resource === 'photos') {
-    await handlePhotos(req, res, fetchFn);
+    await handleFeed(res, { name: 'photos', envVar: 'FAM_PHOTOS_ALBUM', what: 'album', load: (token) => fetchSharedAlbum(token, fetchFn) });
+    return;
+  }
+  if (req.method === 'GET' && resource === 'calendar') {
+    // One month at a time (`?month=YYYY-MM`, default this month); each month is
+    // cached on its own for the same five minutes.
+    const win = monthWindow(req.query && req.query.month);
+    if (!win) {
+      res.status(400).json({ error: 'Use ?month=YYYY-MM, between 2020 and 2035.' });
+      return;
+    }
+    await handleFeed(res, { name: `calendar:${win.month}`, envVar: 'FAM_CALENDAR_ICS', what: 'calendar', load: (url) => fetchCalendar(url, fetchFn, win).then((cal) => ({ ...cal, month: win.month })) });
     return;
   }
   // Only the two store resources exist here; anything else is a mistake.
   if (resource !== 'tasks' && resource !== 'quicklinks') {
-    res.status(req.method === 'GET' ? 405 : 400).json({ error: 'Unknown resource: use "tasks", "quicklinks" or (GET) "photos".' });
+    res.status(req.method === 'GET' ? 405 : 400).json({ error: 'Unknown resource: use "tasks", "quicklinks" or (GET) "photos" / "calendar".' });
     return;
   }
 
