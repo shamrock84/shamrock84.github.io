@@ -14,6 +14,12 @@
 // Access: the quick-links GET is public (logged-out visitors see the toolbar),
 // the tasks GET needs the Bearer token, and every POST does.
 //
+// A third resource, `?resource=photos`, is the Photos card's public iCloud
+// Shared Album (api/_lib/sharedalbum.mjs). It touches no store, needs no login
+// (the Family tab is public, and the album link is already shareable) and reads
+// the album token from the FAM_PHOTOS_ALBUM Vercel variable, so the token stays
+// out of the repo and the page source.
+//
 // Why its own file and not a third `resource` on bangers.js: that file's other
 // job is committing data/bangers.json, and a Hobby deployment may hold 12
 // functions. This is the 12th, so the cap is now spent. A next endpoint means
@@ -23,6 +29,7 @@ import { verifyToken } from './_lib/auth.mjs';
 import { applyCors } from './_lib/cors.mjs';
 import { storeGet, storeSet } from './_lib/store.mjs';
 import { resolveStore } from './plans.js';
+import { fetchSharedAlbum } from './_lib/sharedalbum.mjs';
 import { validateTaskPatch, applyTaskPatch, validateQuickLinks, normalizeQuickLinks } from './vikings.js';
 
 // Upstash keys. Deliberately not vikings.js's or bangers.js's: sharing one
@@ -32,6 +39,33 @@ const QUICKLINKS_KEY = 'fam:quicklinks';
 const MAX_TASKS = 300;
 
 export { TASKS_KEY, QUICKLINKS_KEY };
+
+// Apple's image URLs expire after ~20 minutes, so the cache must stay well
+// inside that. Module-level: resets on a cold start, which is fine.
+const PHOTOS_CACHE_MS = 5 * 60 * 1000;
+let photosCache = null;
+export function resetPhotosCache() { photosCache = null; }
+
+async function handlePhotos(req, res, fetchFn) {
+  const token = process.env.FAM_PHOTOS_ALBUM;
+  if (!token) {
+    res.status(503).json({ error: 'FAM_PHOTOS_ALBUM is not configured on this deployment.' });
+    return;
+  }
+  const now = Date.now();
+  if (!photosCache || photosCache.token !== token || now - photosCache.at > PHOTOS_CACHE_MS) {
+    try {
+      photosCache = { token, at: now, album: await fetchSharedAlbum(token, fetchFn) };
+    } catch (err) {
+      // Never "no photos": a failed read is an error the card shows as one. The
+      // message can't contain the token (it is only ever in the URL).
+      res.status(502).json({ error: `Couldn't read the album: ${String(err.message).replace(token, '…')}` });
+      return;
+    }
+  }
+  res.setHeader('Cache-Control', 'public, max-age=60');
+  res.status(200).json(photosCache.album);
+}
 
 function bearerOk(req) {
   const authHeader = req.headers.authorization || '';
@@ -84,7 +118,7 @@ async function handleStoreResource(req, res, resource) {
   }
 }
 
-export default async function handler(req, res) {
+export default async function handler(req, res, fetchFn = fetch) {
   if (applyCors(req, res, { methods: 'GET, POST, OPTIONS', headers: 'Content-Type, Authorization' })) return;
   if (req.method !== 'GET' && req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
@@ -92,9 +126,13 @@ export default async function handler(req, res) {
   }
 
   const resource = req.method === 'GET' ? (req.query && req.query.resource) : (req.body || {}).resource;
+  if (req.method === 'GET' && resource === 'photos') {
+    await handlePhotos(req, res, fetchFn);
+    return;
+  }
   // Only the two store resources exist here; anything else is a mistake.
   if (resource !== 'tasks' && resource !== 'quicklinks') {
-    res.status(req.method === 'GET' ? 405 : 400).json({ error: 'Unknown resource: use "tasks" or "quicklinks".' });
+    res.status(req.method === 'GET' ? 405 : 400).json({ error: 'Unknown resource: use "tasks", "quicklinks" or (GET) "photos".' });
     return;
   }
 
