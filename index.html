@@ -186,6 +186,10 @@
 		.cal-more { color: var(--muted); font-size: 0.7rem; }
 		.cal-list-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; margin: 0.9rem 0 0.4rem; }
 		.cal-list-title { margin: 0; font-size: 0.95rem; color: var(--accent); }
+		.cal-list-toggle { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+		.cal-list-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+		.cal-list-caret { color: var(--muted); font-size: 0.9em; transition: transform 0.15s ease; }
+		.cal-list-toggle.cal-list-collapsed .cal-list-caret { transform: rotate(-90deg); }
 		.cal-link-btn { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; font-size: 0.8rem; text-decoration: underline; cursor: pointer; }
 		.cal-day { margin: 0 0 0.7rem; }
 		.cal-day:last-child { margin-bottom: 0; }
@@ -1083,6 +1087,7 @@
 		// Events by local day of month (y, m). `grid` has an event on every day an
 		// all-day span covers; `list` has it once, on its first day in the month
 		// (a span that began last month lists on the 1st). All-day first, then by time.
+		// Holidays (flagged by the server) stay on the grid and are left out of `list`.
 		function monthDayMaps(events, y, m) {
 			const first = localDayKey(new Date(y, m, 1)), last = localDayKey(new Date(y, m + 1, 0));
 			const grid = new Map(), list = new Map();
@@ -1092,10 +1097,10 @@
 					const lastDay = addDaysToKey(e.end, -1); // the end date is exclusive
 					const from = e.start < first ? first : e.start, to = lastDay > last ? last : lastDay;
 					for (let k = from; k <= to; k = addDaysToKey(k, 1)) put(grid, k, e);
-					put(list, from, e);
+					if (!e.holiday) put(list, from, e);
 				} else {
 					const k = localDayKey(new Date(e.start));
-					put(grid, k, e); put(list, k, e);
+					put(grid, k, e); if (!e.holiday) put(list, k, e);
 				}
 			}
 			const order = (a, b) => (a.allDay === b.allDay ? (a.start < b.start ? -1 : a.start > b.start ? 1 : 0) : a.allDay ? -1 : 1);
@@ -1108,7 +1113,7 @@
 			const card = el('div', { class: 'card' }, [head, body]);
 			makeCollapsible(card, head, 'calendar');
 			const now = new Date();
-			const state = { y: now.getFullYear(), m: now.getMonth(), selected: null, months: new Map(), errors: new Map() };
+			const state = { y: now.getFullYear(), m: now.getMonth(), selected: null, months: new Map(), errors: new Map(), listCollapsed: isCardCollapsed('calendarEvents') };
 
 			function buildEventRow(e) {
 				const subBits = [];
@@ -1158,20 +1163,27 @@
 						if (dayEvents.length > 3) chips.appendChild(el('span', { class: 'cal-more', text: `+${dayEvents.length - 3}` }));
 						cell.appendChild(chips);
 					}
-					cell.addEventListener('click', () => { state.selected = state.selected === dayKey ? null : dayKey; render(); });
+					cell.addEventListener('click', () => { state.selected = state.selected === dayKey ? null : dayKey; if (state.selected) state.listCollapsed = false; render(); }); // tapping a day asks to see it: open the list (the saved preference is left alone)
 					grid.appendChild(cell);
 				}
 				for (let i = (lead + daysInMonth) % 7; i !== 0 && i < 7; i++) grid.appendChild(el('div', { class: 'cal-cell cal-blank' }));
 				body.appendChild(grid);
 
-				// "Events this month" (or one tapped day)
-				const listHead = el('div', { class: 'cal-list-head' }, [el('h3', { class: 'cal-list-title', text: state.selected ? `Events · ${dayLabel(state.selected, todayKey)}` : 'Events this month' })]);
-				if (state.selected) {
+				// "Events this month" (or one tapped day); the title is a toggle, and the
+				// open/closed choice is remembered per device like the other cards.
+				const toggle = el('button', { type: 'button', class: `cal-list-toggle${state.listCollapsed ? ' cal-list-collapsed' : ''}`, 'aria-expanded': String(!state.listCollapsed) }, [
+					document.createTextNode(state.selected ? `Events · ${dayLabel(state.selected, todayKey)}` : 'Events this month'),
+					el('span', { class: 'cal-list-caret', 'aria-hidden': 'true', text: '▾' }),
+				]);
+				toggle.addEventListener('click', () => { state.listCollapsed = !state.listCollapsed; setCardCollapsed('calendarEvents', state.listCollapsed); render(); });
+				const listHead = el('div', { class: 'cal-list-head' }, [el('h3', { class: 'cal-list-title' }, [toggle])]);
+				if (state.selected && !state.listCollapsed) {
 					const all = el('button', { type: 'button', class: 'cal-link-btn', text: 'Show whole month' });
 					all.addEventListener('click', () => { state.selected = null; render(); });
 					listHead.appendChild(all);
 				}
 				body.appendChild(listHead);
+				if (state.listCollapsed) return;
 				if (error) {
 					body.appendChild(el('p', { class: 'task-empty', text: `Couldn't load the calendar. ${error}` }));
 					const retry = el('button', { type: 'button', class: 'cal-link-btn', text: 'Try again' });
