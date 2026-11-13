@@ -266,8 +266,8 @@
 
 	<script>
 		// melbostads.com — myFAM, the Melbostad family's home page. Two tabs:
-		// Family, which is deliberately blank until there is something to put
-		// on it, and Admin, which exists only when logged in (the same password
+		// Family, which holds blank placeholder cards (Photos, Calendar, Lists)
+		// until it is decided how each is built, and Admin, which exists only when logged in (the same password
 		// and token as myFFL, myVST and myBangers, same localStorage key) and
 		// holds the same Tasks and Quick Links cards as bangers.html's and
 		// vikings.html's Admin tabs. The Quick Links card fills the toolbar at
@@ -954,9 +954,21 @@
 			return [tasksCardEl, qlCardEl];
 		}
 
-		// Family is blank for now: nothing has been decided for it yet.
+		// Family holds placeholder cards (Photos, Calendar, Lists) until it is
+		// decided how each is implemented. Each is collapsible like the Admin
+		// cards, with a one-line body so there is something for the toggle to hide.
+		function buildPlaceholderCard(key, title) {
+			const head = el('h2', { class: 'card-heading', text: title });
+			const card = el('div', { class: 'card' }, [head, el('p', { class: 'task-empty', text: 'Nothing here yet.' })]);
+			makeCollapsible(card, head, key);
+			return card;
+		}
 		function familyView() {
-			return [];
+			return [
+				buildPlaceholderCard('photos', 'Photos'),
+				buildPlaceholderCard('calendar', 'Calendar'),
+				buildPlaceholderCard('lists', 'Lists'),
+			];
 		}
 
 		// Coming back to the page (switching apps on a phone or iPad, or restoring
