@@ -14,7 +14,7 @@
 // Run: node scripts/test-calendar-feed.mjs
 
 import assert from 'node:assert/strict';
-import { parseEvents, expandEvents, buildCalendar, normalizeCalendarUrl, fetchCalendar, unescapeText } from '../api/_lib/calendarfeed.mjs';
+import { parseEvents, expandEvents, buildCalendar, normalizeCalendarUrl, fetchCalendar, unescapeText, monthWindow } from '../api/_lib/calendarfeed.mjs';
 import handler, { resetPhotosCache } from '../api/fam.js';
 
 let failures = 0;
@@ -101,8 +101,25 @@ await check('output is sorted by start', () => {
   assert.equal(run(practice, dinner)[0].title, 'Dinner, drinks');
 });
 await check('buildCalendar names the calendar and tolerates an empty feed (real, not an error)', () => {
-  assert.equal(buildCalendar(feed(dinner), NOW).name, 'Test cal');
-  assert.deepEqual(buildCalendar(feed(), NOW).events, []);
+  assert.equal(buildCalendar(feed(dinner), { from: FROM, to: TO }).name, 'Test cal');
+  assert.deepEqual(buildCalendar(feed(), { from: FROM, to: TO }).events, []);
+});
+await check('monthWindow: a month plus a day either side; default is the current month; bad or out-of-range input is refused', () => {
+  const w = monthWindow('2026-11');
+  assert.equal(w.month, '2026-11');
+  assert.equal(w.from, Date.UTC(2026, 9, 31));
+  assert.equal(w.to, Date.UTC(2026, 11, 2));
+  assert.equal(monthWindow(undefined, NOW).month, '2026-11');
+  assert.equal(monthWindow('2026-12').to, Date.UTC(2027, 0, 2), 'December rolls into the next year');
+  for (const bad of ['2026-13', '2026-00', '2026-1', 'nov', '2019-12', '2036-01', '2026-11-01']) assert.equal(monthWindow(bad), null, bad);
+});
+await check('browsing another month expands repeats there (the birthday and the weekly practice)', () => {
+  const bday = ev(['DTSTART;VALUE=DATE:20151225', 'DTEND;VALUE=DATE:20151226', 'RRULE:FREQ=YEARLY', 'SUMMARY:Birthday', 'UID:bday']);
+  const w = monthWindow('2027-12');
+  const out = expandEvents(parseEvents(feed(bday, practice)), w.from, w.to);
+  assert.deepEqual(out.map((e) => [e.title, e.start]), [['Birthday', '2027-12-25']], 'a COUNT=4 series that ended in 2026 is not repeated into 2027');
+  const past = monthWindow('2026-11');
+  assert.equal(expandEvents(parseEvents(feed(practice)), past.from, past.to).length, 3, 'November 2026 holds the 14th, 21st and 28th');
 });
 await check('unescapeText handles \\n \\, \; \\\\', () => assert.equal(unescapeText('a\\nb\\,c\;d\\\\e'), 'a\nb,c;d\\e'));
 
@@ -116,16 +133,16 @@ const fakeFeed = (text, status = 200) => { const f = async (url) => { f.urls.pus
 
 await check('fetchCalendar asks for the https URL and rejects a non-calendar answer', async () => {
   const f = fakeFeed(feed(dinner));
-  await fetchCalendar(URL_OK, f, NOW);
+  await fetchCalendar(URL_OK, f, { from: FROM, to: TO });
   assert.equal(f.urls[0], 'https://p119-caldav.icloud.com/published/2/FAKEFAKEFAKEFAKE');
   await assert.rejects(fetchCalendar(URL_OK, fakeFeed('<html>nope</html>'), NOW), /did not return a calendar/);
   await assert.rejects(fetchCalendar(URL_OK, fakeFeed('', 404), NOW), /HTTP 404/);
 });
 
-async function call(fetchFn) {
+async function call(fetchFn, month) {
   const res = { code: null, headers: {}, setHeader(k, v) { this.headers[k] = v; }, status(c) { this.code = c; return this; }, end() { return this; } };
   res.json = function (b) { this.body = b; return this; };
-  await handler({ method: 'GET', query: { resource: 'calendar' }, body: {}, headers: {} }, res, fetchFn);
+  await handler({ method: 'GET', query: month === undefined ? { resource: 'calendar' } : { resource: 'calendar', month }, body: {}, headers: {} }, res, fetchFn);
   return res;
 }
 const saved = process.env.FAM_CALENDAR_ICS;
@@ -140,6 +157,18 @@ await check('the calendar route serves events and caches them', async () => {
   assert.equal(r1.code, 200); assert.equal(r2.code, 200);
   assert.equal(f.urls.length, 1, 'second request should come from the cache');
   assert.ok(Array.isArray(r1.body.events));
+});
+await check('each month is fetched and cached on its own; a bad month is a 400 before Apple is asked', async () => {
+  process.env.FAM_CALENDAR_ICS = URL_OK; resetPhotosCache();
+  const f = fakeFeed(feed(dinner));
+  const nov = await call(f, '2026-11'); await call(f, '2026-11');
+  assert.equal(f.urls.length, 1);
+  const dec = await call(f, '2026-12');
+  assert.equal(f.urls.length, 2);
+  assert.equal(nov.body.month, '2026-11'); assert.equal(dec.body.month, '2026-12');
+  assert.equal(nov.body.events.length, 1); assert.equal(dec.body.events.length, 0);
+  const bad = await call(f, '2026-13');
+  assert.equal(bad.code, 400); assert.equal(f.urls.length, 2);
 });
 await check('a failed read is a 502 that never contains the feed link', async () => {
   process.env.FAM_CALENDAR_ICS = URL_OK; resetPhotosCache();

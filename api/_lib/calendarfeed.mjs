@@ -37,14 +37,34 @@ export function normalizeCalendarUrl(raw) {
   return u.toString();
 }
 
-export async function fetchCalendar(rawUrl, fetchFn = fetch, now = Date.now()) {
+export async function fetchCalendar(rawUrl, fetchFn = fetch, window) {
   const url = normalizeCalendarUrl(rawUrl);
   if (!url) throw new Error('Calendar link is not configured or is not an iCloud public calendar link');
   const res = await fetchFn(url, { redirect: 'error' });
   if (!res.ok) throw new Error(`Apple answered HTTP ${res.status}`);
   const text = await res.text();
   if (!/^BEGIN:VCALENDAR/m.test(text)) throw new Error('Apple did not return a calendar');
-  return buildCalendar(text, now);
+  return buildCalendar(text, window);
+}
+
+// The page browses one month at a time. The window is the month plus a day
+// either side, so the browser's own time zone (up to +/-14h from UTC) can still
+// place an event on the right local day; the page filters to the month itself.
+// Years outside the range are refused, which also bounds the route's cache.
+export const MONTH_MIN_YEAR = 2020;
+export const MONTH_MAX_YEAR = 2035;
+export function monthWindow(monthParam, now = Date.now()) {
+  let y, m;
+  if (monthParam == null || monthParam === '') {
+    const t = new Date(now);
+    y = t.getUTCFullYear(); m = t.getUTCMonth() + 1;
+  } else {
+    const match = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(String(monthParam));
+    if (!match) return null;
+    y = +match[1]; m = +match[2];
+  }
+  if (y < MONTH_MIN_YEAR || y > MONTH_MAX_YEAR) return null;
+  return { month: `${y}-${String(m).padStart(2, '0')}`, from: Date.UTC(y, m - 1, 1) - MS_DAY, to: Date.UTC(y, m, 1) + MS_DAY };
 }
 
 // ---- parsing -----------------------------------------------------------------
@@ -321,10 +341,9 @@ export function expandEvents(rawEvents, fromMs, toMs) {
   return out;
 }
 
-// Text of a whole feed -> { name, events } for the next 90 days (and yesterday,
-// so today's finished events can still show).
-export function buildCalendar(text, now = Date.now()) {
+// Text of a whole feed -> { name, events } inside { from, to } (ms).
+export function buildCalendar(text, { from, to }) {
   const name = (/^X-WR-CALNAME:(.*)$/m.exec(text) || [])[1] || '';
-  const events = expandEvents(parseEvents(text), now - MS_DAY, now + 90 * MS_DAY);
+  const events = expandEvents(parseEvents(text), from, to);
   return { name: unescapeText(name).trim(), events: events.slice(0, MAX_EVENTS) };
 }

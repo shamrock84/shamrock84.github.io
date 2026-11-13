@@ -22,7 +22,7 @@
 //
 // `?resource=calendar` is the Calendar card's public iCloud calendar feed
 // (api/_lib/calendarfeed.mjs), same shape: no store, no login, link in the
-// FAM_CALENDAR_ICS Vercel variable (the https:// form of the webcal:// link).
+// FAM_CALENDAR_ICS Vercel variable (webcal:// or https://), one `?month=` at a time.
 //
 // Why its own file and not a third `resource` on bangers.js: that file's other
 // job is committing data/bangers.json, and a Hobby deployment may hold 12
@@ -34,7 +34,7 @@ import { applyCors } from './_lib/cors.mjs';
 import { storeGet, storeSet } from './_lib/store.mjs';
 import { resolveStore } from './plans.js';
 import { fetchSharedAlbum } from './_lib/sharedalbum.mjs';
-import { fetchCalendar } from './_lib/calendarfeed.mjs';
+import { fetchCalendar, monthWindow } from './_lib/calendarfeed.mjs';
 import { validateTaskPatch, applyTaskPatch, validateQuickLinks, normalizeQuickLinks } from './vikings.js';
 
 // Upstash keys. Deliberately not vikings.js's or bangers.js's: sharing one
@@ -147,7 +147,14 @@ export default async function handler(req, res, fetchFn = fetch) {
     return;
   }
   if (req.method === 'GET' && resource === 'calendar') {
-    await handleFeed(res, { name: 'calendar', envVar: 'FAM_CALENDAR_ICS', what: 'calendar', load: (url) => fetchCalendar(url, fetchFn) });
+    // One month at a time (`?month=YYYY-MM`, default this month); each month is
+    // cached on its own for the same five minutes.
+    const win = monthWindow(req.query && req.query.month);
+    if (!win) {
+      res.status(400).json({ error: 'Use ?month=YYYY-MM, between 2020 and 2035.' });
+      return;
+    }
+    await handleFeed(res, { name: `calendar:${win.month}`, envVar: 'FAM_CALENDAR_ICS', what: 'calendar', load: (url) => fetchCalendar(url, fetchFn, win).then((cal) => ({ ...cal, month: win.month })) });
     return;
   }
   // Only the two store resources exist here; anything else is a mistake.

@@ -167,17 +167,45 @@
 		.photo-viewer img { max-width: 100%; max-height: calc(100vh - 6rem); object-fit: contain; }
 		.photo-viewer-caption { color: #fff; font-size: 0.85rem; text-align: center; }
 		.photo-viewer-close { position: absolute; top: 0.6rem; right: 0.8rem; background: none; border: 0; color: #fff; font-size: 1.8rem; line-height: 1; cursor: pointer; }
-		/* Calendar card: an agenda grouped by day. */
+		/* Calendar card: a month grid, then an "Events this month" list grouped by day. */
+		.cal-nav { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.5rem; }
+		.cal-title { flex: 1; text-align: center; font-weight: 700; }
+		.cal-nav-btn { padding: 0.25rem 0.65rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text); font: inherit; cursor: pointer; }
+		.cal-nav-btn:disabled { opacity: 0.4; cursor: default; }
+		.cal-nav-btn:focus-visible, .cal-cell:focus-visible, .cal-link-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+		.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+		.cal-dow { background: var(--card-bg); padding: 0.2rem; text-align: center; font-size: 0.7rem; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+		.cal-cell { display: flex; flex-direction: column; gap: 2px; min-width: 0; min-height: 5.2rem; padding: 0.2rem; border: 0; background: var(--card-bg); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+		.cal-cell.cal-blank { opacity: 0.45; cursor: default; }
+		.cal-num { align-self: flex-start; min-width: 1.4rem; padding: 0 0.3rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600; text-align: center; }
+		.cal-cell.cal-today .cal-num { background: var(--accent); color: #fff; }
+		.cal-cell.cal-selected { outline: 2px solid var(--accent); outline-offset: -2px; }
+		.cal-chips { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+		.cal-chip { overflow: hidden; padding: 0 0.25rem; border-radius: 3px; background: color-mix(in srgb, var(--accent) 16%, transparent); font-size: 0.7rem; line-height: 1.25; white-space: nowrap; text-overflow: ellipsis; }
+		.cal-chip.cal-chip-allday { background: var(--accent); color: #fff; }
+		.cal-more { color: var(--muted); font-size: 0.7rem; }
+		.cal-list-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; margin: 0.9rem 0 0.4rem; }
+		.cal-list-title { margin: 0; font-size: 0.95rem; color: var(--accent); }
+		.cal-link-btn { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; font-size: 0.8rem; text-decoration: underline; cursor: pointer; }
 		.cal-day { margin: 0 0 0.7rem; }
 		.cal-day:last-child { margin-bottom: 0; }
+		.cal-day.cal-past { opacity: 0.6; }
 		.cal-day-head { margin: 0 0 0.25rem; font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
 		.cal-day.cal-today .cal-day-head { color: var(--accent); }
-		.cal-event { display: grid; grid-template-columns: 6.5rem 1fr; gap: 0.6rem; padding: 0.3rem 0; border-top: 1px solid var(--border); font-size: 0.9rem; }
+		.cal-event { display: grid; grid-template-columns: 9.2rem 1fr; gap: 0.6rem; padding: 0.3rem 0; border-top: 1px solid var(--border); font-size: 0.9rem; }
 		.cal-event:first-of-type { border-top: 0; }
 		.cal-time { color: var(--muted); font-variant-numeric: tabular-nums; }
-		.cal-title { font-weight: 600; overflow-wrap: anywhere; }
+		.cal-title-text { font-weight: 600; overflow-wrap: anywhere; }
 		.cal-sub { color: var(--muted); font-size: 0.8rem; font-weight: 400; }
-		@media (max-width: 600px) { .cal-event { grid-template-columns: 5.2rem 1fr; } }
+		@media (max-width: 600px) {
+			.cal-event { grid-template-columns: 5.2rem 1fr; }
+			.cal-cell { align-items: center; min-height: 3.1rem; }
+			.cal-num { align-self: center; }
+			.cal-chips { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+			.cal-chip { width: 6px; height: 6px; padding: 0; border-radius: 50%; background: var(--accent); font-size: 0; }
+			.cal-chip.cal-chip-allday { background: var(--gold-chip-text, var(--accent)); }
+			.cal-more { font-size: 0.65rem; }
+		}
 		.task-empty { color: var(--muted); font-size: 0.85rem; margin: 0.4rem 0; }
 
 		/* ---- Quick links toolbar and Tasks card: ported from vikings.html; keep in step. ---- */
@@ -1030,11 +1058,15 @@
 			return card;
 		}
 		// Calendar: a public iCloud calendar read through api/fam.js
-		// (`?resource=calendar`), shown as an agenda for the next few weeks.
-		// Times are formatted here, in the browser's own zone (Vercel is UTC).
+		// (`?resource=calendar&month=YYYY-MM`), shown as a month grid with an
+		// "Events this month" list below. One month is fetched at a time and kept
+		// for the life of the card. Days and times are the browser's own zone
+		// (Vercel is UTC); the route sends a day either side of the month for that.
+		const CAL_MIN_YEAR = 2020, CAL_MAX_YEAR = 2035; // the route's own limits
 		const localDayKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 		const keyToDate = (key) => { const [y, m, d] = key.split('-').map(Number); return new Date(y, m - 1, d); };
 		const addDaysToKey = (key, n) => { const d = keyToDate(key); d.setDate(d.getDate() + n); return localDayKey(d); };
+		const calMonthKey = (y, m) => `${y}-${String(m + 1).padStart(2, '0')}`; // m is 0-based
 		function dayLabel(key, todayKey) {
 			const text = keyToDate(key).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
 			if (key === todayKey) return `Today · ${text}`;
@@ -1042,62 +1074,139 @@
 			return text;
 		}
 		const clockText = (d) => d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-		// Groups the feed's events by the viewer's local day. Events that already
-		// ended before today are left out; an all-day span shows on its first day.
-		function groupCalendarDays(events, now = new Date()) {
-			const todayKey = localDayKey(now);
-			const days = new Map();
-			const add = (key, item) => { if (!days.has(key)) days.set(key, []); days.get(key).push(item); };
-			for (const e of events) {
-				if (e.allDay) {
-					if (e.end <= todayKey) continue;
-					add(e.start < todayKey ? todayKey : e.start, { e, sort: '' });
-				} else {
-					const start = new Date(e.start), end = new Date(e.end);
-					if (localDayKey(end) < todayKey) continue;
-					add(localDayKey(start) < todayKey ? todayKey : localDayKey(start), { e, sort: e.start });
-				}
-			}
-			return [...days.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1)).map(([key, items]) => ({ key, items: items.sort((a, b) => (a.sort < b.sort ? -1 : a.sort > b.sort ? 1 : 0)) }));
-		}
 		function calendarTimeText(e) {
 			if (e.allDay) return 'All day';
 			const start = new Date(e.start), end = new Date(e.end);
 			if (e.end === e.start) return clockText(start);
 			return localDayKey(end) === localDayKey(start) ? `${clockText(start)} – ${clockText(end)}` : clockText(start);
 		}
-		function renderCalendar(body, events) {
-			body.textContent = '';
-			const days = groupCalendarDays(events);
-			if (!days.length) { body.appendChild(el('p', { class: 'task-empty', text: 'Nothing coming up.' })); return; }
-			const todayKey = localDayKey(new Date());
-			for (const { key, items } of days) {
-				const day = el('div', { class: `cal-day${key === todayKey ? ' cal-today' : ''}` }, [el('h3', { class: 'cal-day-head', text: dayLabel(key, todayKey) })]);
-				for (const { e } of items) {
-					const subBits = [];
-					if (e.location) subBits.push(e.location);
-					if (e.allDay && e.end > addDaysToKey(e.start, 1)) subBits.push(`through ${keyToDate(addDaysToKey(e.end, -1)).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}`);
-					if (e.partialRepeat) subBits.push('repeats (only the first is shown)');
-					day.appendChild(el('div', { class: 'cal-event' }, [
-						el('div', { class: 'cal-time', text: calendarTimeText(e) }),
-						el('div', { class: 'cal-title' }, [document.createTextNode(e.title), ...(subBits.length ? [el('div', { class: 'cal-sub', text: subBits.join(' · ') })] : [])]),
-					]));
+		// Events by local day of month (y, m). `grid` has an event on every day an
+		// all-day span covers; `list` has it once, on its first day in the month
+		// (a span that began last month lists on the 1st). All-day first, then by time.
+		function monthDayMaps(events, y, m) {
+			const first = localDayKey(new Date(y, m, 1)), last = localDayKey(new Date(y, m + 1, 0));
+			const grid = new Map(), list = new Map();
+			const put = (map, key, e) => { if (key < first || key > last) return; if (!map.has(key)) map.set(key, []); map.get(key).push(e); };
+			for (const e of events) {
+				if (e.allDay) {
+					const lastDay = addDaysToKey(e.end, -1); // the end date is exclusive
+					const from = e.start < first ? first : e.start, to = lastDay > last ? last : lastDay;
+					for (let k = from; k <= to; k = addDaysToKey(k, 1)) put(grid, k, e);
+					put(list, from, e);
+				} else {
+					const k = localDayKey(new Date(e.start));
+					put(grid, k, e); put(list, k, e);
 				}
-				body.appendChild(day);
 			}
-		}
-		function loadCalendar(body) {
-			fetch(`${FAM_URL}?resource=calendar`, { cache: 'no-store' })
-				.then((r) => (r.ok ? r.json() : r.json().catch(() => ({})).then((b) => Promise.reject(new Error(b.error || `HTTP ${r.status}`)))))
-				.then((cal) => { if (body.isConnected) renderCalendar(body, Array.isArray(cal.events) ? cal.events : []); })
-				.catch((err) => { if (body.isConnected) { body.textContent = ''; body.appendChild(el('p', { class: 'task-empty', text: `Couldn't load the calendar. ${err.message}` })); } });
+			const order = (a, b) => (a.allDay === b.allDay ? (a.start < b.start ? -1 : a.start > b.start ? 1 : 0) : a.allDay ? -1 : 1);
+			for (const map of [grid, list]) for (const arr of map.values()) arr.sort(order);
+			return { grid, list };
 		}
 		function buildCalendarCard() {
 			const head = el('h2', { class: 'card-heading', text: 'Calendar' });
-			const body = el('div', {}, [el('p', { class: 'task-empty', text: 'Loading…' })]);
+			const body = el('div', {});
 			const card = el('div', { class: 'card' }, [head, body]);
 			makeCollapsible(card, head, 'calendar');
-			loadCalendar(body);
+			const now = new Date();
+			const state = { y: now.getFullYear(), m: now.getMonth(), selected: null, months: new Map(), errors: new Map() };
+
+			function buildEventRow(e) {
+				const subBits = [];
+				if (e.location) subBits.push(e.location);
+				if (e.allDay && e.end > addDaysToKey(e.start, 1)) subBits.push(`through ${keyToDate(addDaysToKey(e.end, -1)).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}`);
+				if (e.partialRepeat) subBits.push('repeats (only the first is shown)');
+				return el('div', { class: 'cal-event' }, [
+					el('div', { class: 'cal-time', text: calendarTimeText(e) }),
+					el('div', { class: 'cal-title-text' }, [document.createTextNode(e.title), ...(subBits.length ? [el('div', { class: 'cal-sub', text: subBits.join(' · ') })] : [])]),
+				]);
+			}
+
+			function render() {
+				body.textContent = '';
+				const key = calMonthKey(state.y, state.m);
+				const events = state.months.get(key);
+				const error = state.errors.get(key);
+				const todayKey = localDayKey(new Date());
+				const maps = events ? monthDayMaps(events, state.y, state.m) : { grid: new Map(), list: new Map() };
+
+				// Navigation
+				const prev = el('button', { type: 'button', class: 'cal-nav-btn', 'aria-label': 'Previous month', text: '‹' });
+				const next = el('button', { type: 'button', class: 'cal-nav-btn', 'aria-label': 'Next month', text: '›' });
+				const todayBtn = el('button', { type: 'button', class: 'cal-nav-btn', text: 'Today' });
+				prev.disabled = state.y === CAL_MIN_YEAR && state.m === 0;
+				next.disabled = state.y === CAL_MAX_YEAR && state.m === 11;
+				todayBtn.hidden = state.y === now.getFullYear() && state.m === now.getMonth();
+				prev.addEventListener('click', () => go(-1));
+				next.addEventListener('click', () => go(1));
+				todayBtn.addEventListener('click', () => { state.y = now.getFullYear(); state.m = now.getMonth(); state.selected = null; render(); load(); });
+				body.appendChild(el('div', { class: 'cal-nav' }, [prev, el('div', { class: 'cal-title', text: new Date(state.y, state.m, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' }) }), todayBtn, next]));
+
+				// Month grid, Sunday first
+				const grid = el('div', { class: 'cal-grid' });
+				for (let i = 0; i < 7; i++) grid.appendChild(el('div', { class: 'cal-dow', text: new Date(2023, 0, 1 + i).toLocaleDateString(undefined, { weekday: 'short' }) }));
+				const lead = new Date(state.y, state.m, 1).getDay();
+				const daysInMonth = new Date(state.y, state.m + 1, 0).getDate();
+				for (let i = 0; i < lead; i++) grid.appendChild(el('div', { class: 'cal-cell cal-blank' }));
+				for (let d = 1; d <= daysInMonth; d++) {
+					const dayKey = localDayKey(new Date(state.y, state.m, d));
+					const dayEvents = maps.grid.get(dayKey) || [];
+					const cls = ['cal-cell', dayKey === todayKey ? 'cal-today' : '', dayKey === state.selected ? 'cal-selected' : ''].filter(Boolean).join(' ');
+					const cell = el('button', { type: 'button', class: cls, 'aria-pressed': String(dayKey === state.selected), 'aria-label': `${keyToDate(dayKey).toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}, ${dayEvents.length} ${dayEvents.length === 1 ? 'event' : 'events'}` }, [el('span', { class: 'cal-num', text: String(d) })]);
+					if (dayEvents.length) {
+						const chips = el('span', { class: 'cal-chips' });
+						for (const e of dayEvents.slice(0, 3)) chips.appendChild(el('span', { class: `cal-chip${e.allDay ? ' cal-chip-allday' : ''}`, text: e.title }));
+						if (dayEvents.length > 3) chips.appendChild(el('span', { class: 'cal-more', text: `+${dayEvents.length - 3}` }));
+						cell.appendChild(chips);
+					}
+					cell.addEventListener('click', () => { state.selected = state.selected === dayKey ? null : dayKey; render(); });
+					grid.appendChild(cell);
+				}
+				for (let i = (lead + daysInMonth) % 7; i !== 0 && i < 7; i++) grid.appendChild(el('div', { class: 'cal-cell cal-blank' }));
+				body.appendChild(grid);
+
+				// "Events this month" (or one tapped day)
+				const listHead = el('div', { class: 'cal-list-head' }, [el('h3', { class: 'cal-list-title', text: state.selected ? `Events · ${dayLabel(state.selected, todayKey)}` : 'Events this month' })]);
+				if (state.selected) {
+					const all = el('button', { type: 'button', class: 'cal-link-btn', text: 'Show whole month' });
+					all.addEventListener('click', () => { state.selected = null; render(); });
+					listHead.appendChild(all);
+				}
+				body.appendChild(listHead);
+				if (error) {
+					body.appendChild(el('p', { class: 'task-empty', text: `Couldn't load the calendar. ${error}` }));
+					const retry = el('button', { type: 'button', class: 'cal-link-btn', text: 'Try again' });
+					retry.addEventListener('click', () => { state.errors.delete(key); render(); load(); });
+					body.appendChild(retry);
+					return;
+				}
+				if (!events) { body.appendChild(el('p', { class: 'task-empty', text: 'Loading…' })); return; }
+				const keys = [...maps.list.keys()].filter((k) => !state.selected || k === state.selected).sort();
+				if (!keys.length) { body.appendChild(el('p', { class: 'task-empty', text: state.selected ? 'Nothing on this day.' : 'Nothing this month.' })); return; }
+				for (const k of keys) {
+					const day = el('div', { class: `cal-day${k === todayKey ? ' cal-today' : ''}${k < todayKey ? ' cal-past' : ''}` }, [el('h4', { class: 'cal-day-head', text: dayLabel(k, todayKey) })]);
+					for (const e of maps.list.get(k)) day.appendChild(buildEventRow(e));
+					body.appendChild(day);
+				}
+			}
+
+			function load() {
+				const y = state.y, m = state.m, key = calMonthKey(y, m);
+				if (state.months.has(key)) return;
+				fetch(`${FAM_URL}?resource=calendar&month=${key}`, { cache: 'no-store' })
+					.then((r) => (r.ok ? r.json() : r.json().catch(() => ({})).then((b) => Promise.reject(new Error(b.error || `HTTP ${r.status}`)))))
+					.then((cal) => { state.months.set(key, Array.isArray(cal.events) ? cal.events : []); state.errors.delete(key); })
+					.catch((err) => { state.errors.set(key, err.message); })
+					.finally(() => { if (body.isConnected && state.y === y && state.m === m) render(); });
+			}
+			function go(delta) {
+				const d = new Date(state.y, state.m + delta, 1);
+				if (d.getFullYear() < CAL_MIN_YEAR || d.getFullYear() > CAL_MAX_YEAR) return;
+				state.y = d.getFullYear(); state.m = d.getMonth(); state.selected = null;
+				render(); load();
+			}
+
+			render();
+			load();
 			return card;
 		}
 		function familyView() {
