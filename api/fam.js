@@ -24,6 +24,11 @@
 // (api/_lib/calendarfeed.mjs), same shape: no store, no login, link in the
 // FAM_CALENDAR_ICS Vercel variable (webcal:// or https://), one `?month=` at a time.
 //
+// Changing FAM_PHOTOS_ALBUM or FAM_CALENDAR_ICS only reaches a NEW deployment,
+// and vercel.json's ignoreCommand cancels a dashboard "Redeploy" of a commit that
+// already shipped (nothing under api/ changed). Ship the change with any commit
+// that touches api/, such as an edit to this comment.
+//
 // Why its own file and not a third `resource` on bangers.js: that file's other
 // job is committing data/bangers.json, and a Hobby deployment may hold 12
 // functions. This is the 12th, so the cap is now spent. A next endpoint means
