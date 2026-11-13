@@ -167,6 +167,17 @@
 		.photo-viewer img { max-width: 100%; max-height: calc(100vh - 6rem); object-fit: contain; }
 		.photo-viewer-caption { color: #fff; font-size: 0.85rem; text-align: center; }
 		.photo-viewer-close { position: absolute; top: 0.6rem; right: 0.8rem; background: none; border: 0; color: #fff; font-size: 1.8rem; line-height: 1; cursor: pointer; }
+		/* Calendar card: an agenda grouped by day. */
+		.cal-day { margin: 0 0 0.7rem; }
+		.cal-day:last-child { margin-bottom: 0; }
+		.cal-day-head { margin: 0 0 0.25rem; font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+		.cal-day.cal-today .cal-day-head { color: var(--accent); }
+		.cal-event { display: grid; grid-template-columns: 6.5rem 1fr; gap: 0.6rem; padding: 0.3rem 0; border-top: 1px solid var(--border); font-size: 0.9rem; }
+		.cal-event:first-of-type { border-top: 0; }
+		.cal-time { color: var(--muted); font-variant-numeric: tabular-nums; }
+		.cal-title { font-weight: 600; overflow-wrap: anywhere; }
+		.cal-sub { color: var(--muted); font-size: 0.8rem; font-weight: 400; }
+		@media (max-width: 600px) { .cal-event { grid-template-columns: 5.2rem 1fr; } }
 		.task-empty { color: var(--muted); font-size: 0.85rem; margin: 0.4rem 0; }
 
 		/* ---- Quick links toolbar and Tasks card: ported from vikings.html; keep in step. ---- */
@@ -963,8 +974,8 @@
 			return [tasksCardEl, qlCardEl];
 		}
 
-		// Family holds the Photos card plus placeholders (Calendar, Lists) until it
-		// is decided how each is implemented. Each is collapsible like the Admin
+		// Family holds the Photos and Calendar cards plus a placeholder (Lists) until
+		// it is decided how that is implemented. Each is collapsible like the Admin
 		// cards, with a one-line body so there is something for the toggle to hide.
 		function buildPlaceholderCard(key, title) {
 			const head = el('h2', { class: 'card-heading', text: title });
@@ -1018,10 +1029,81 @@
 			loadPhotos(photosBodyEl);
 			return card;
 		}
+		// Calendar: a public iCloud calendar read through api/fam.js
+		// (`?resource=calendar`), shown as an agenda for the next few weeks.
+		// Times are formatted here, in the browser's own zone (Vercel is UTC).
+		const localDayKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+		const keyToDate = (key) => { const [y, m, d] = key.split('-').map(Number); return new Date(y, m - 1, d); };
+		const addDaysToKey = (key, n) => { const d = keyToDate(key); d.setDate(d.getDate() + n); return localDayKey(d); };
+		function dayLabel(key, todayKey) {
+			const text = keyToDate(key).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+			if (key === todayKey) return `Today · ${text}`;
+			if (key === addDaysToKey(todayKey, 1)) return `Tomorrow · ${text}`;
+			return text;
+		}
+		const clockText = (d) => d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+		// Groups the feed's events by the viewer's local day. Events that already
+		// ended before today are left out; an all-day span shows on its first day.
+		function groupCalendarDays(events, now = new Date()) {
+			const todayKey = localDayKey(now);
+			const days = new Map();
+			const add = (key, item) => { if (!days.has(key)) days.set(key, []); days.get(key).push(item); };
+			for (const e of events) {
+				if (e.allDay) {
+					if (e.end <= todayKey) continue;
+					add(e.start < todayKey ? todayKey : e.start, { e, sort: '' });
+				} else {
+					const start = new Date(e.start), end = new Date(e.end);
+					if (localDayKey(end) < todayKey) continue;
+					add(localDayKey(start) < todayKey ? todayKey : localDayKey(start), { e, sort: e.start });
+				}
+			}
+			return [...days.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1)).map(([key, items]) => ({ key, items: items.sort((a, b) => (a.sort < b.sort ? -1 : a.sort > b.sort ? 1 : 0)) }));
+		}
+		function calendarTimeText(e) {
+			if (e.allDay) return 'All day';
+			const start = new Date(e.start), end = new Date(e.end);
+			if (e.end === e.start) return clockText(start);
+			return localDayKey(end) === localDayKey(start) ? `${clockText(start)} – ${clockText(end)}` : clockText(start);
+		}
+		function renderCalendar(body, events) {
+			body.textContent = '';
+			const days = groupCalendarDays(events);
+			if (!days.length) { body.appendChild(el('p', { class: 'task-empty', text: 'Nothing coming up.' })); return; }
+			const todayKey = localDayKey(new Date());
+			for (const { key, items } of days) {
+				const day = el('div', { class: `cal-day${key === todayKey ? ' cal-today' : ''}` }, [el('h3', { class: 'cal-day-head', text: dayLabel(key, todayKey) })]);
+				for (const { e } of items) {
+					const subBits = [];
+					if (e.location) subBits.push(e.location);
+					if (e.allDay && e.end > addDaysToKey(e.start, 1)) subBits.push(`through ${keyToDate(addDaysToKey(e.end, -1)).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}`);
+					if (e.partialRepeat) subBits.push('repeats (only the first is shown)');
+					day.appendChild(el('div', { class: 'cal-event' }, [
+						el('div', { class: 'cal-time', text: calendarTimeText(e) }),
+						el('div', { class: 'cal-title' }, [document.createTextNode(e.title), ...(subBits.length ? [el('div', { class: 'cal-sub', text: subBits.join(' · ') })] : [])]),
+					]));
+				}
+				body.appendChild(day);
+			}
+		}
+		function loadCalendar(body) {
+			fetch(`${FAM_URL}?resource=calendar`, { cache: 'no-store' })
+				.then((r) => (r.ok ? r.json() : r.json().catch(() => ({})).then((b) => Promise.reject(new Error(b.error || `HTTP ${r.status}`)))))
+				.then((cal) => { if (body.isConnected) renderCalendar(body, Array.isArray(cal.events) ? cal.events : []); })
+				.catch((err) => { if (body.isConnected) { body.textContent = ''; body.appendChild(el('p', { class: 'task-empty', text: `Couldn't load the calendar. ${err.message}` })); } });
+		}
+		function buildCalendarCard() {
+			const head = el('h2', { class: 'card-heading', text: 'Calendar' });
+			const body = el('div', {}, [el('p', { class: 'task-empty', text: 'Loading…' })]);
+			const card = el('div', { class: 'card' }, [head, body]);
+			makeCollapsible(card, head, 'calendar');
+			loadCalendar(body);
+			return card;
+		}
 		function familyView() {
 			return [
 				buildPhotosCard(),
-				buildPlaceholderCard('calendar', 'Calendar'),
+				buildCalendarCard(),
 				buildPlaceholderCard('lists', 'Lists'),
 			];
 		}
