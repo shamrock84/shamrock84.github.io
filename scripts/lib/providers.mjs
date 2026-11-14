@@ -2747,7 +2747,21 @@ export function espnStartingLineupRequirement(rosterSettings) {
   return formatStartingLineupRequirement({ league: { starters: { position } } });
 }
 
-export async function fetchEspnLeagueRoster(league) {
+// Bye week for a standard-abbreviation team (ESPN's spelling) out of MFL's
+// nflByeWeeks map. Tries MFL's odd codes first (GB -> GBP), then the team as
+// given, then the Washington/Arizona spelling variants; null when unknown
+// (a free agent, or a map that failed to load).
+export function byeWeekForTeam(byeWeeks, team) {
+  if (!byeWeeks || !team || team === 'FA') return null;
+  const keys = [SLEEPER_TEAM_TO_MFL_BYE_KEY[team], team, ...nflTeamKeys(team)];
+  for (const k of keys) {
+    const v = k ? byeWeeks.get(k) : undefined;
+    if (v != null && v !== '') return v;
+  }
+  return null;
+}
+
+export async function fetchEspnLeagueRoster(league, byeWeeks) {
   // mRoster alone returns team objects with an empty roster.entries unless
   // scoped to a specific team/period — rosterForTeamId + scoringPeriodId
   // populate it. This used to pin scoringPeriodId=1 on the theory that team
@@ -2783,6 +2797,14 @@ export async function fetchEspnLeagueRoster(league) {
   const byeByProTeamId = new Map(
     (data.settings?.proTeams || []).map((t) => [t.id, t.byeWeek ?? null])
   );
+  // ESPN's own byeWeek came back empty for every player on the first real
+  // rosters, so fall back to MFL's nflByeWeeks map (the same global lookup
+  // MFL and Sleeper use). A real ESPN value still wins when it is positive.
+  const byeFor = (proTeamId, team) => {
+    const own = Number(byeByProTeamId.get(proTeamId));
+    if (own > 0) return byeByProTeamId.get(proTeamId);
+    return byeWeekForTeam(byeWeeks, team);
+  };
 
   const rawEntries = team.roster?.entries || [];
   const players = rawEntries
@@ -2794,7 +2816,7 @@ export async function fetchEspnLeagueRoster(league) {
         name: p.fullName || `Unknown Player (${e.playerId})`,
         position: ESPN_POSITION_MAP[p.defaultPositionId] || '',
         team: ESPN_PRO_TEAM_MAP[p.proTeamId] ?? 'FA',
-        bye: byeByProTeamId.get(p.proTeamId) ?? null,
+        bye: byeFor(p.proTeamId, ESPN_PRO_TEAM_MAP[p.proTeamId]),
         pts: seasonStat?.appliedTotal ?? null,
         status: e.lineupSlotId === ESPN_IR_SLOT_ID ? 'INJURED_RESERVE' : 'ROSTER',
         injuryStatus: normalizeInjuryStatus(p.injuryStatus),
