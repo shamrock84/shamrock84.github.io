@@ -102,6 +102,7 @@ export function buildAlbum(stream, assets) {
       id: p.photoGuid,
       caption: p.caption || '',
       date: p.dateCreated || null,
+      added: p.batchDateCreated || null, // when it went into the album, for the page's "Recently added" sort
       by: p.contributorFirstName || '',
       width: Number(p.width) || (full && full.width) || null,
       height: Number(p.height) || (full && full.height) || null,
