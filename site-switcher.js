@@ -41,11 +41,11 @@
 
 	// href and img are root-relative; see base() for the Vercel copy.
 	var SITES = [
-		{ key: 'ffl', name: 'myFFL', href: '/myffl.html', img: '/images/ffl_black.gif', alt: 'FFL' },
-		{ key: 'vst', name: 'myVST', href: '/vikings.html', img: '/images/seasonticketlogo.png', alt: 'VST — Vikings Season Tickets' },
-		{ key: 'bangers', name: 'myBangers', href: '/bangers.html', img: '/images/bangerslogo.png', alt: 'Certified Banger' },
 		// The home page. Its logo is a black-on-transparent SVG, so the pages' dark-mode invert filter works on it like the PNGs.
 		{ key: 'fam', name: 'myFAM', href: '/', img: '/images/famlogo.svg', alt: 'FAM — Melbostads' },
+		{ key: 'vst', name: 'myVST', href: '/vikings.html', img: '/images/seasonticketlogo.png', alt: 'VST — Vikings Season Tickets' },
+		{ key: 'ffl', name: 'myFFL', href: '/myffl.html', img: '/images/ffl_black.gif', alt: 'FFL' },
+		{ key: 'bangers', name: 'myBangers', href: '/bangers.html', img: '/images/bangerslogo.png', alt: 'Certified Banger' },
 	];
 
 	// The sites either side of `key`, wrapping. Pure, so the test can run it.

@@ -24,17 +24,17 @@ const { SITES, neighbours } = context.SiteSwitcher;
 
 // The cycle.
 const keys = [...SITES].map((s) => s.key);
-assert.deepEqual(keys, ['ffl', 'vst', 'bangers', 'fam']);
+assert.deepEqual(keys, ['fam', 'vst', 'ffl', 'bangers']);
 const at = (k) => { const n = neighbours(SITES, k); return [n.prev.key, n.current.key, n.next.key]; };
-assert.deepEqual(at('ffl'), ['fam', 'ffl', 'vst']);
-assert.deepEqual(at('vst'), ['ffl', 'vst', 'bangers']);
-assert.deepEqual(at('bangers'), ['vst', 'bangers', 'fam']);
-assert.deepEqual(at('fam'), ['bangers', 'fam', 'ffl']);
+assert.deepEqual(at('fam'), ['bangers', 'fam', 'vst']);
+assert.deepEqual(at('vst'), ['fam', 'vst', 'ffl']);
+assert.deepEqual(at('ffl'), ['vst', 'ffl', 'bangers']);
+assert.deepEqual(at('bangers'), ['ffl', 'bangers', 'fam']);
 assert.equal(neighbours(SITES, 'nope'), null);
 // Two sites still work (prev and next are the same page).
 const two = SITES.slice(0, 2);
-assert.equal(neighbours(two, 'ffl').prev.key, 'vst');
-assert.equal(neighbours(two, 'ffl').next.key, 'vst');
+assert.equal(neighbours(two, 'fam').prev.key, 'vst');
+assert.equal(neighbours(two, 'fam').next.key, 'vst');
 
 // Every page loads the script and declares itself, and its own logo is the one
 // the switcher draws for it elsewhere.
