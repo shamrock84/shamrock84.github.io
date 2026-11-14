@@ -165,6 +165,11 @@
 		.photo-thumb { padding: 0; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: var(--card-bg); cursor: pointer; aspect-ratio: 1; }
 		.photo-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
 		.photo-thumb:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+		.photo-meta { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.6rem; color: var(--muted); font-size: 0.8rem; }
+		.photo-meta-msg { color: var(--ir-text); }
+		.photo-refresh-btn { margin-left: auto; padding: 0.2rem 0.65rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text); font: inherit; font-size: 0.8rem; cursor: pointer; }
+		.photo-refresh-btn:disabled { opacity: 0.5; cursor: default; }
+		.photo-refresh-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 		.photo-viewer { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.6rem; padding: 1rem; background: rgba(0, 0, 0, 0.88); }
 		.photo-viewer img { max-width: 100%; max-height: calc(100vh - 6rem); object-fit: contain; }
 		.photo-viewer-caption { color: #fff; font-size: 0.85rem; text-align: center; }
@@ -1029,24 +1034,57 @@
 			document.body.appendChild(overlay);
 			closeBtn.focus();
 		}
+		// One read of the album. `refresh` forces the server past its 12-hour photo-list
+		// cache and is login-only (the Refresh button below exists only when logged in).
+		function fetchPhotos(refresh) {
+			const init = { cache: 'no-store' };
+			if (refresh) init.headers = { Authorization: `Bearer ${authToken}` };
+			return fetch(`${FAM_URL}?resource=photos${refresh ? '&refresh=1' : ''}`, init)
+				.then((r) => (r.ok ? r.json() : r.json().catch(() => ({})).then((b) => Promise.reject(new Error(b.error || `HTTP ${r.status}`)))))
+				.then((album) => ({ photos: Array.isArray(album.photos) ? album.photos : [], updated: album.updated || null }));
+		}
+		// "Updated <when the album's photo list was last read>", plus Refresh when logged in.
+		function appendPhotosFooter(body, updated) {
+			const footer = el('div', { class: 'photo-meta' });
+			if (updated) footer.appendChild(el('span', { text: `Updated ${new Date(updated).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` }));
+			if (isLoggedIn()) {
+				const msg = el('span', { class: 'photo-meta-msg', role: 'status' });
+				const btn = el('button', { type: 'button', class: 'photo-refresh-btn', text: 'Refresh' });
+				btn.addEventListener('click', () => {
+					btn.disabled = true; btn.textContent = 'Refreshing…'; msg.textContent = '';
+					fetchPhotos(true)
+						.then((album) => { if (body.isConnected) renderPhotos(body, album); })
+						.catch((err) => { btn.disabled = false; btn.textContent = 'Refresh'; msg.textContent = `Couldn't refresh. ${err.message}`; });
+				});
+				footer.append(msg, btn);
+			}
+			if (footer.childNodes.length) body.appendChild(footer);
+		}
 		function renderPhotos(body, album) {
 			body.textContent = '';
-			if (!album.photos.length) { body.appendChild(el('p', { class: 'task-empty', text: 'No photos yet.' })); return; }
-			const grid = el('div', { class: 'photo-grid' });
-			for (const photo of album.photos) {
-				const btn = el('button', { type: 'button', class: 'photo-thumb', title: photo.caption || '', 'aria-label': photo.caption || 'Open photo' }, [
-					el('img', { src: photo.thumb, alt: '', loading: 'lazy' }),
-				]);
-				btn.addEventListener('click', () => openPhotoViewer(photo));
-				grid.appendChild(btn);
+			if (!album.photos.length) body.appendChild(el('p', { class: 'task-empty', text: 'No photos yet.' }));
+			else {
+				const grid = el('div', { class: 'photo-grid' });
+				for (const photo of album.photos) {
+					const btn = el('button', { type: 'button', class: 'photo-thumb', title: photo.caption || '', 'aria-label': photo.caption || 'Open photo' }, [
+						el('img', { src: photo.thumb, alt: '', loading: 'lazy' }),
+					]);
+					btn.addEventListener('click', () => openPhotoViewer(photo));
+					grid.appendChild(btn);
+				}
+				body.appendChild(grid);
 			}
-			body.appendChild(grid);
+			appendPhotosFooter(body, album.updated);
 		}
 		function loadPhotos(body) {
-			fetch(`${FAM_URL}?resource=photos`, { cache: 'no-store' })
-				.then((r) => (r.ok ? r.json() : r.json().catch(() => ({})).then((b) => Promise.reject(new Error(b.error || `HTTP ${r.status}`)))))
-				.then((album) => { if (body.isConnected) renderPhotos(body, { photos: Array.isArray(album.photos) ? album.photos : [] }); })
-				.catch((err) => { if (body.isConnected) { body.textContent = ''; body.appendChild(el('p', { class: 'task-empty', text: `Couldn't load photos. ${err.message}` })); } });
+			fetchPhotos(false)
+				.then((album) => { if (body.isConnected) renderPhotos(body, album); })
+				.catch((err) => {
+					if (!body.isConnected) return;
+					body.textContent = '';
+					body.appendChild(el('p', { class: 'task-empty', text: `Couldn't load photos. ${err.message}` }));
+					appendPhotosFooter(body, null); // logged in, Refresh doubles as "try again"
+				});
 		}
 		function buildPhotosCard() {
 			const head = el('h2', { class: 'card-heading', text: 'Photos' });

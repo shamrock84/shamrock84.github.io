@@ -106,11 +106,24 @@ export function buildAlbum(stream, assets) {
   return { name: stream.streamName || '', photos };
 }
 
-export async function fetchSharedAlbum(token, fetchFn = fetch) {
+// Two steps so a caller can cache them on different clocks: the photo LIST
+// changes only when someone adds or removes a photo, but the image URLs inside
+// the second response expire in ~20 minutes, so they must be renewed far more often.
+export async function fetchAlbumStream(token, fetchFn = fetch) {
   if (!isValidAlbumToken(token)) throw new Error('Album token is not configured or is malformed');
   const { json: stream, host } = await callAlbum(fetchFn, token, 'webstream', { streamCtag: null });
+  return { stream, host };
+}
+
+// Fresh signed URLs for the photos in a stream fetched earlier. A photo deleted
+// since then has no URL and drops out of the result (buildAlbum skips it).
+export async function fetchAlbumAssets(token, { stream, host }, fetchFn = fetch) {
   const guids = (stream.photos || []).map((p) => p.photoGuid).filter(Boolean);
   if (!guids.length) return { name: stream.streamName || '', photos: [] };
   const { json: assets } = await callAlbum(fetchFn, token, 'webasseturls', { photoGuids: guids }, host);
   return buildAlbum(stream, assets);
+}
+
+export async function fetchSharedAlbum(token, fetchFn = fetch) {
+  return fetchAlbumAssets(token, await fetchAlbumStream(token, fetchFn), fetchFn);
 }
