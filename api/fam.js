@@ -18,7 +18,9 @@
 // Shared Album (api/_lib/sharedalbum.mjs). It touches no store, needs no login
 // (the Family tab is public, and the album link is already shareable) and reads
 // the album token from the FAM_PHOTOS_ALBUM Vercel variable, so the token stays
-// out of the repo and the page source.
+// out of the repo and the page source. Its cache is tied to when Apple's signed
+// image links expire (see photoCacheMs), and `&refresh=1` skips it and needs the
+// Bearer token.
 //
 // `?resource=calendar` is the Calendar card's public iCloud calendar feed
 // (api/_lib/calendarfeed.mjs), same shape: no store, no login, link in the
@@ -50,12 +52,31 @@ const MAX_TASKS = 300;
 
 export { TASKS_KEY, QUICKLINKS_KEY };
 
-// Two public, store-less feeds share one cached path: Photos and Calendar.
-// Apple's photo URLs expire after ~20 minutes, so the cache must stay well
-// inside that. Module-level: resets on a cold start, which is fine.
+// Public, store-less feeds share one cached path (Calendar), and Photos has its
+// own below. Module-level: resets on a cold start, which is fine.
 const FEED_CACHE_MS = 5 * 60 * 1000;
 const feedCache = {};
-export function resetPhotosCache() { for (const k of Object.keys(feedCache)) delete feedCache[k]; }
+// Photos: Apple's image links are signed and die at their `url_expiry` (~20 minutes
+// after they are issued), so the response may only be reused while the links still
+// have a healthy margin left. How long that is comes from the links themselves, so
+// it follows Apple if the expiry ever changes: served until PHOTO_URL_MARGIN_MS
+// before the earliest expiry, but at least PHOTO_CACHE_MIN_MS, and never longer
+// than PHOTO_CACHE_MAX_MS. With no expiry in the response, PHOTO_CACHE_FALLBACK_MS.
+// Never cache this response for hours on a fixed timer: the links would be dead.
+const PHOTO_URL_MARGIN_MS = 10 * 60 * 1000;
+const PHOTO_CACHE_MIN_MS = 60 * 1000;
+const PHOTO_CACHE_MAX_MS = 12 * 60 * 60 * 1000;
+const PHOTO_CACHE_FALLBACK_MS = 5 * 60 * 1000;
+export function photoCacheMs(expires, now) {
+  const exp = Date.parse(expires);
+  if (!Number.isFinite(exp)) return PHOTO_CACHE_FALLBACK_MS;
+  return Math.min(PHOTO_CACHE_MAX_MS, Math.max(PHOTO_CACHE_MIN_MS, exp - PHOTO_URL_MARGIN_MS - now));
+}
+let photoCache = null; // { token, until, body }
+export function resetPhotosCache() {
+  for (const k of Object.keys(feedCache)) delete feedCache[k];
+  photoCache = null;
+}
 
 // The secret may be a bare token (Photos) or a link (Calendar, stored as
 // webcal:// but fetched as https://), so the token part is scrubbed on its own.
@@ -86,6 +107,41 @@ async function handleFeed(res, { name, envVar, what, load }) {
   }
   res.setHeader('Cache-Control', 'public, max-age=60');
   res.status(200).json(feedCache[name].body);
+}
+
+async function handlePhotos(req, res, fetchFn) {
+  const token = process.env.FAM_PHOTOS_ALBUM;
+  if (!token) {
+    res.status(503).json({ error: 'FAM_PHOTOS_ALBUM is not configured on this deployment.' });
+    return;
+  }
+  // A forced refresh is the one login-gated read here (the page shows its button
+  // only when logged in); checked before any call to Apple.
+  const force = req.query && (req.query.refresh === '1' || req.query.refresh === 'true');
+  if (force) {
+    if (!process.env.SESSION_SECRET) {
+      res.status(500).json({ error: 'SESSION_SECRET is not configured on this deployment.' });
+      return;
+    }
+    if (!bearerOk(req)) {
+      res.status(401).json({ error: 'Log in again to refresh the album.' });
+      return;
+    }
+  }
+  const now = Date.now();
+  if (force || !photoCache || photoCache.token !== token || now >= photoCache.until) {
+    try {
+      const body = await fetchSharedAlbum(token, fetchFn);
+      photoCache = { token, until: now + photoCacheMs(body.expires, now), body };
+    } catch (err) {
+      // Never "no photos": a failed read is an error the card shows as one, and a
+      // failed refresh leaves the earlier cache alone.
+      res.status(502).json({ error: `Couldn't read the album: ${scrubSecret(String(err.message), token)}` });
+      return;
+    }
+  }
+  res.setHeader('Cache-Control', force ? 'no-store' : 'public, max-age=60');
+  res.status(200).json(photoCache.body);
 }
 
 function bearerOk(req) {
@@ -148,7 +204,7 @@ export default async function handler(req, res, fetchFn = fetch) {
 
   const resource = req.method === 'GET' ? (req.query && req.query.resource) : (req.body || {}).resource;
   if (req.method === 'GET' && resource === 'photos') {
-    await handleFeed(res, { name: 'photos', envVar: 'FAM_PHOTOS_ALBUM', what: 'album', load: (token) => fetchSharedAlbum(token, fetchFn) });
+    await handlePhotos(req, res, fetchFn);
     return;
   }
   if (req.method === 'GET' && resource === 'calendar') {

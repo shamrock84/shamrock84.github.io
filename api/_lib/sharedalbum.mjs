@@ -77,11 +77,17 @@ function pickDerivative(derivatives, want) {
 }
 
 // Pure: joins the two responses. Exported for the test.
+// `expires` is the earliest `url_expiry` among the URLs actually returned (ISO,
+// or null if Apple gave none): the signed links die then, so a caller must not
+// hand them out for long after it. The route caches against it.
 export function buildAlbum(stream, assets) {
   const items = (assets && assets.items) || {};
+  let earliest = Infinity;
   const urlFor = (checksum) => {
     const it = items[checksum];
     if (!it || !it.url_location || !it.url_path) return null;
+    const exp = Date.parse(it.url_expiry);
+    if (Number.isFinite(exp) && exp < earliest) earliest = exp;
     return `https://${it.url_location}${it.url_path}`;
   };
   const photos = [];
@@ -103,14 +109,14 @@ export function buildAlbum(stream, assets) {
       full: fullUrl || thumbUrl,
     });
   }
-  return { name: stream.streamName || '', photos };
+  return { name: stream.streamName || '', photos, expires: Number.isFinite(earliest) ? new Date(earliest).toISOString() : null };
 }
 
 export async function fetchSharedAlbum(token, fetchFn = fetch) {
   if (!isValidAlbumToken(token)) throw new Error('Album token is not configured or is malformed');
   const { json: stream, host } = await callAlbum(fetchFn, token, 'webstream', { streamCtag: null });
   const guids = (stream.photos || []).map((p) => p.photoGuid).filter(Boolean);
-  if (!guids.length) return { name: stream.streamName || '', photos: [] };
+  if (!guids.length) return { name: stream.streamName || '', photos: [], expires: null };
   const { json: assets } = await callAlbum(fetchFn, token, 'webasseturls', { photoGuids: guids }, host);
   return buildAlbum(stream, assets);
 }
