@@ -516,6 +516,13 @@
 		// (`?resource=tasks` / `?resource=quicklinks`), not in the repo: the
 		// toolbar is public to read, tasks are login-only both ways.
 		//
+		// A Vote tab appears for everyone while any year is open for voting: a
+		// name, the shared password and one nominee. api/bangers.js allows one
+		// vote per name per year and refuses a song whose "Nominated by" matches
+		// the voter. Admin's Voting card opens years, shows who voted for what and
+		// can change, add or delete a ballot. Open years and votes live in the
+		// store, not in the file below.
+		//
 		// The list is data/bangers.json, a committed file served by Pages like
 		// the rest of the site. Admin's Save POSTs the whole list to
 		// api/bangers.js, which commits the file to main (as the myFFL Admin tab
