@@ -31,8 +31,8 @@ const TOKEN = 'D2Qv3FAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE_fake';
 const stream = {
   streamName: 'Family',
   photos: [
-    { photoGuid: 'old', dateCreated: '2026-01-01T00:00:00Z', contributorFirstName: 'A', width: '100', height: '100', derivatives: { 342: { checksum: 'o1', width: '342', height: '257' }, 2048: { checksum: 'o2', width: '2048', height: '1536' } } },
-    { photoGuid: 'new', caption: 'Hi', dateCreated: '2026-07-17T00:00:00Z', contributorFirstName: 'B', derivatives: { 342: { checksum: 'n1', width: '342', height: '257' }, 2048: { checksum: 'n2', width: '2048', height: '1536' } } },
+    { photoGuid: 'old', dateCreated: '2026-01-01T00:00:00Z', batchDateCreated: '2026-11-01T00:00:00Z', contributorFirstName: 'A', width: '100', height: '100', derivatives: { 342: { checksum: 'o1', width: '342', height: '257' }, 2048: { checksum: 'o2', width: '2048', height: '1536' } } },
+    { photoGuid: 'new', caption: 'Hi', dateCreated: '2026-07-17T00:00:00Z', batchDateCreated: '2026-07-18T00:00:00Z', contributorFirstName: 'B', derivatives: { 342: { checksum: 'n1', width: '342', height: '257' }, 2048: { checksum: 'n2', width: '2048', height: '1536' } } },
     { photoGuid: 'nourl', dateCreated: '2026-08-01T00:00:00Z', derivatives: { 342: { checksum: 'x1', width: '342', height: '257' } } },
   ],
 };
@@ -59,6 +59,8 @@ await check('buildAlbum joins by checksum, sorts newest first, drops photos with
   assert.equal(a.photos[0].thumb, 'https://cvws.icloud-content.com/n1');
   assert.equal(a.photos[0].full, 'https://cvws.icloud-content.com/n2');
   assert.equal(a.photos[0].caption, 'Hi');
+  assert.equal(a.photos[0].added, '2026-07-18T00:00:00Z', 'the album-added date rides along for the page to sort by');
+  assert.equal(a.photos[1].added, '2026-11-01T00:00:00Z');
   assert.equal(a.name, 'Family');
   assert.equal(a.expires, '2026-11-14T12:20:00.000Z', 'the earliest expiry of the links returned');
 });
