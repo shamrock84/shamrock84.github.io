@@ -2268,11 +2268,6 @@
 			color: var(--muted);
 			cursor: pointer;
 		}
-		.watchlist-footnote {
-			padding: 0.3rem 0.5rem 0;
-			font-size: 0.75em;
-			color: var(--muted);
-		}
 		.watchlist-leagues {
 			font-size: 0.8em;
 		}
@@ -10404,7 +10399,6 @@
 			if (rest) summary.appendChild(document.createTextNode(rest));
 			card.appendChild(summary);
 
-			let suggestionShown = false;
 			const slotsWrap = el('div', { class: 'watchlist-slots' });
 			// One row builder shared by both sub-groups below, same idiom as
 			// Now Playing's own appendRow — a starter and a benched player
@@ -10495,7 +10489,6 @@
 						if (suggested && c.id === suggested.id) continue;
 						select.appendChild(el('option', { value: String(c.id), text: optionLabel(c, false) }));
 					}
-					if (suggested) suggestionShown = true;
 					const saved = getBackupPlan(en.league.id, en.playerId);
 					const applies = watchlistBackupFor(en.league, en.playerId, p);
 					// A saved pick that no longer applies (left the roster)
@@ -10579,9 +10572,6 @@
 				slotsWrap.appendChild(slotEl);
 			}
 			card.appendChild(slotsWrap);
-			if (suggestionShown) {
-				card.appendChild(el('div', { class: 'watchlist-footnote', text: '* suggested: best-ranked healthy bench player at his position' }));
-			}
 			return card;
 		}
 

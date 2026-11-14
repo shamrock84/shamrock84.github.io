@@ -459,7 +459,7 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	assert.ok(!sel.classList.contains('watchlist-backup-unset'), 'a suggestion settles it: purple chip, not gold');
 	assert.match(fullText(card), /A\. Runner\*(?! \()/, 'first initial, asterisk on the suggestion, no prefix and no position');
 	assert.doesNotMatch(fullText(card), /Suggest:/);
-	assert.match(fullText(card), /\* suggested: best-ranked healthy bench player/, 'the asterisk is explained once, in a footnote');
+	assert.doesNotMatch(fullText(card), /suggested: best-ranked/, 'no footnote explains the asterisk');
 	assert.match(fullText(card), /Z\. Runner \(Q\)/, 'only a designation rides in the parentheses');
 	assert.doesNotMatch(fullText(card), /\((RB|WR|TE|QB)[,)]/, 'positions are not shown in the picker');
 	assert.equal(ctx.getBackupPlan('L', 'a'), '', 'a suggestion is shown, not saved');
