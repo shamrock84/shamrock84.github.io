@@ -167,6 +167,10 @@
 		.photo-thumb:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 		.photo-meta { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.6rem; color: var(--muted); font-size: 0.8rem; }
 		.photo-meta-msg { color: var(--ir-text); }
+		.photo-pager { display: inline-flex; align-items: center; gap: 0.5rem; }
+		.photo-pager-btn { padding: 0.2rem 0.65rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text); font: inherit; font-size: 0.8rem; cursor: pointer; }
+		.photo-pager-btn:disabled { opacity: 0.4; cursor: default; }
+		.photo-pager-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 		.photo-refresh-btn { margin-left: auto; padding: 0.2rem 0.65rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text); font: inherit; font-size: 0.8rem; cursor: pointer; }
 		.photo-refresh-btn:disabled { opacity: 0.5; cursor: default; }
 		.photo-refresh-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -1036,17 +1040,52 @@
 		}
 		// One read of the album. `refresh` makes the server skip its cache (which lasts
 		// until Apple's image links are near expiry) and is login-only: the Refresh
-		// button below exists only when logged in.
+		// button below exists only when logged in. `expires` is when the earliest of
+		// the signed image links in the response dies.
 		function fetchPhotos(refresh) {
 			const init = { cache: 'no-store' };
 			if (refresh) init.headers = { Authorization: `Bearer ${authToken}` };
 			return fetch(`${FAM_URL}?resource=photos${refresh ? '&refresh=1' : ''}`, init)
 				.then((r) => (r.ok ? r.json() : r.json().catch(() => ({})).then((b) => Promise.reject(new Error(b.error || `HTTP ${r.status}`)))))
-				.then((album) => ({ photos: Array.isArray(album.photos) ? album.photos : [] }));
+				.then((album) => ({ photos: Array.isArray(album.photos) ? album.photos : [], expires: album.expires || null }));
 		}
-		// A Refresh button under the photos, only when logged in.
-		function appendPhotosFooter(body) {
+		// The grid shows PHOTO_ROWS_PER_PAGE rows, however many columns fit: 6 across on
+		// a desktop is 18 a page, 2 across on a phone is 6. The column count is read
+		// back from the grid itself (CSS decides it), so the two can't disagree.
+		const PHOTO_ROWS_PER_PAGE = 3;
+		let photosView = null; // { body, album, start, cols } for the card on screen; cols is null when it was only estimated
+		function photoColumns(grid) {
+			const tracks = getComputedStyle(grid).gridTemplateColumns.trim().split(/\s+/);
+			// Only resolved pixel tracks count: a collapsed card is display:none and reports the unresolved rule.
+			return tracks.length && tracks.every((t) => /^[\d.]+px$/.test(t)) ? tracks.length : null;
+		}
+		// Apple's image links expire ~20 minutes after they are issued, and a page of
+		// thumbnails (or a full-size photo) is only requested when it is shown. So in a
+		// card left open a while, paging could hit dead links: when the links are within
+		// a minute of expiring, read the album again first (the server has fresh ones by
+		// then). If that read fails, carry on with what is held.
+		function currentPhotos() {
+			const view = photosView;
+			if (!view) return Promise.resolve(null);
+			const exp = Date.parse(view.album.expires);
+			if (!Number.isFinite(exp) || Date.now() < exp - 60 * 1000) return Promise.resolve(view.album);
+			return fetchPhotos(false).then((album) => { if (photosView === view) view.album = album; return album; }).catch(() => view.album);
+		}
+		// Prev/Next under the grid when there is more than one page, and a Refresh
+		// button when logged in.
+		function appendPhotosFooter(body, pager) {
 			const footer = el('div', { class: 'photo-meta' });
+			if (pager) {
+				const { start, size, total } = pager;
+				const go = (to) => currentPhotos().then((album) => { if (album && body.isConnected) renderPhotos(body, album, to); });
+				const prev = el('button', { type: 'button', class: 'photo-pager-btn', 'aria-label': 'Previous photos', text: '‹' });
+				const next = el('button', { type: 'button', class: 'photo-pager-btn', 'aria-label': 'Next photos', text: '›' });
+				prev.disabled = start === 0;
+				next.disabled = start + size >= total;
+				prev.addEventListener('click', () => go(start - size));
+				next.addEventListener('click', () => go(start + size));
+				footer.appendChild(el('span', { class: 'photo-pager' }, [prev, el('span', { text: `${start + 1}–${Math.min(start + size, total)} of ${total}` }), next]));
+			}
 			if (isLoggedIn()) {
 				const msg = el('span', { class: 'photo-meta-msg', role: 'status' });
 				const btn = el('button', { type: 'button', class: 'photo-refresh-btn', text: 'Refresh' });
@@ -1060,21 +1099,42 @@
 			}
 			if (footer.childNodes.length) body.appendChild(footer);
 		}
-		function renderPhotos(body, album) {
+		function renderPhotos(body, album, start = 0) {
 			body.textContent = '';
-			if (!album.photos.length) body.appendChild(el('p', { class: 'task-empty', text: 'No photos yet.' }));
-			else {
-				const grid = el('div', { class: 'photo-grid' });
-				for (const photo of album.photos) {
-					const btn = el('button', { type: 'button', class: 'photo-thumb', title: photo.caption || '', 'aria-label': photo.caption || 'Open photo' }, [
-						el('img', { src: photo.thumb, alt: '', loading: 'lazy' }),
-					]);
-					btn.addEventListener('click', () => openPhotoViewer(photo));
-					grid.appendChild(btn);
-				}
-				body.appendChild(grid);
+			const photos = album.photos;
+			if (!photos.length) {
+				photosView = null;
+				body.appendChild(el('p', { class: 'task-empty', text: 'No photos yet.' }));
+				appendPhotosFooter(body, null);
+				return;
 			}
-			appendPhotosFooter(body);
+			const grid = el('div', { class: 'photo-grid' });
+			body.appendChild(grid); // in the DOM first, so the column count the CSS resolves can be read
+			// A collapsed card can't be measured; estimate from the window and let the
+			// observer in buildPhotosCard redo it with the real count once it opens.
+			const measured = photoColumns(grid);
+			const cols = measured || Math.max(1, Math.floor((Math.min(window.innerWidth, 900) - 64 + 6.4) / (120 + 6.4)));
+			const size = cols * PHOTO_ROWS_PER_PAGE;
+			start = Math.min(Math.floor(start / size) * size, Math.floor((photos.length - 1) / size) * size);
+			photosView = { body, album, start, cols: measured };
+			for (const photo of photos.slice(start, start + size)) {
+				const btn = el('button', { type: 'button', class: 'photo-thumb', title: photo.caption || '', 'aria-label': photo.caption || 'Open photo' }, [
+					el('img', { src: photo.thumb, alt: '', loading: 'lazy' }),
+				]);
+				btn.addEventListener('click', () => currentPhotos().then((fresh) => openPhotoViewer(((fresh || album).photos.find((p) => p.id === photo.id)) || photo)));
+				grid.appendChild(btn);
+			}
+			appendPhotosFooter(body, photos.length > size ? { start, size, total: photos.length } : null);
+		}
+		// The column count changes when the window resizes or the card is expanded;
+		// either way the page size changes with it, so redraw the page that holds the
+		// first photo now showing.
+		function onPhotosBodyResize(body) {
+			const view = photosView;
+			if (!view || view.body !== body || !body.isConnected) return;
+			const grid = body.querySelector('.photo-grid');
+			const cols = grid && photoColumns(grid);
+			if (cols && cols !== view.cols) renderPhotos(body, view.album, view.start);
 		}
 		function loadPhotos(body) {
 			fetchPhotos(false)
@@ -1092,6 +1152,14 @@
 			const card = el('div', { class: 'card' }, [head, photosBodyEl]);
 			makeCollapsible(card, head, 'photos');
 			loadPhotos(photosBodyEl);
+			if (typeof ResizeObserver === 'function') {
+				const body = photosBodyEl;
+				const observer = new ResizeObserver(() => {
+					if (!body.isConnected) { observer.disconnect(); return; }
+					requestAnimationFrame(() => onPhotosBodyResize(body));
+				});
+				observer.observe(body);
+			}
 			return card;
 		}
 		// Calendar: a public iCloud calendar read through api/fam.js
