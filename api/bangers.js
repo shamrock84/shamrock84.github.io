@@ -49,6 +49,12 @@
 //   GET  ?resource=votes&years=a,b    login-gated: every ballot for those years
 //   POST resource=vote                public, but needs BANGERS_VOTE_PASSWORD
 //        {name, password, yearId, nomineeId}
+//   POST resource=ballot              login-gated: Admin edits a ballot
+//        {yearId, name, nomineeId, action: 'set'|'delete'}
+// Nobody may vote for their own nomination (isOwnNomination): the voter's name
+// is matched against the nominee's `by`. Best effort by nature, since names are
+// typed freely. Admin's ballot edit is an override and skips that check, and
+// skips "is the year open", but still needs a real year and nominee.
 // The vote checks the year and nominee against data/bangers.json on main (read
 // with GITHUB_CONTENTS_TOKEN), not against what the caller claims. Wrong
 // passwords are counted per IP like login.js, and that check fails open.
@@ -61,7 +67,7 @@
 import { verifyToken } from './_lib/auth.mjs';
 import { applyCors } from './_lib/cors.mjs';
 import { createHash, timingSafeEqual } from 'node:crypto';
-import { storeGet, storeSet, storeCounts, storeBump, storeRelease, storeHashSetNew, storeHashGetAll } from './_lib/store.mjs';
+import { storeGet, storeSet, storeCounts, storeBump, storeRelease, storeHashSetNew, storeHashGetAll, storeHashSet, storeHashDelete } from './_lib/store.mjs';
 import { resolveStore } from './plans.js';
 import { validateTaskPatch, applyTaskPatch, validateQuickLinks, normalizeQuickLinks } from './vikings.js';
 
@@ -96,7 +102,7 @@ function isWebUrl(s) {
   try { return ['http:', 'https:'].includes(new URL(s).protocol); } catch { return false; }
 }
 
-export { validateBangers, normalizeBangers, serialize, isStaleBase, TASKS_KEY, QUICKLINKS_KEY, validateVotingOpen, voterKey, cleanVoterName, validateVote, VOTING_KEY, votesKey };
+export { validateBangers, normalizeBangers, serialize, isStaleBase, TASKS_KEY, QUICKLINKS_KEY, validateVotingOpen, voterKey, cleanVoterName, validateVote, isOwnNomination, validateBallotEdit, VOTING_KEY, votesKey };
 
 const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const text = (v) => (typeof v === 'string' ? v.trim() : '');
@@ -217,6 +223,36 @@ function validateVote(body) {
   return { errors };
 }
 
+// Best-effort self-vote block. Compares the voter's typed name with the
+// nominee's "Nominated by" text, ignoring case, punctuation and spacing, and
+// counts a match on the first word, so "Jeff" and "Jeff Smith" are both caught
+// against by = "Jeff". A nickname slips through, and a different person with
+// the same first name is blocked: the cost of matching this loosely. No `by`
+// means nothing to match.
+function isOwnNomination(voterName, by) {
+  const norm = (v) => cleanVoterName(v).toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+  const n = norm(voterName);
+  const b = norm(by);
+  if (!n || !b) return false;
+  return n === b || n.split(' ')[0] === b.split(' ')[0];
+}
+
+// Admin's edit of one ballot.
+function validateBallotEdit(body) {
+  if (!isObject(body)) return { errors: ['body must be an object'] };
+  const errors = [];
+  if (body.action !== 'set' && body.action !== 'delete') errors.push('action must be set or delete.');
+  const name = cleanVoterName(body.name);
+  if (!name) errors.push('A voter name is required.');
+  else if (name.length > MAX_VOTER_NAME) errors.push(`The name can be at most ${MAX_VOTER_NAME} characters.`);
+  if (typeof body.yearId !== 'string' || !ID.test(body.yearId)) errors.push('A year is required.');
+  if (body.action === 'set' && (typeof body.nomineeId !== 'string' || !ID.test(body.nomineeId))) errors.push('A nominee is required.');
+  return { errors };
+}
+
+// One year's ballots, oldest first, the shape the page reads.
+const ballotList = (hash) => Object.values(hash || {}).map((v) => ({ name: v.name, nomineeId: v.nomineeId, at: v.at })).sort((a, b) => String(a.at).localeCompare(String(b.at)));
+
 // Hashed first so timingSafeEqual gets equal-length inputs and the wrong-guess
 // time reveals nothing about the real password's length (same as login.js).
 function votePasswordMatches(given, expected) {
@@ -270,10 +306,31 @@ async function handleVoting(req, res, resource) {
       if (years.length > MAX_YEARS || years.some((id) => !ID.test(id))) { res.status(400).json({ error: 'years must be a comma-separated list of year ids.' }); return; }
       const hashes = years.length ? await storeHashGetAll(store, years.map(votesKey)) : [];
       const votes = {};
-      years.forEach((id, i) => {
-        votes[id] = Object.values(hashes[i]).map((v) => ({ name: v.name, nomineeId: v.nomineeId, at: v.at })).sort((a, b) => String(a.at).localeCompare(String(b.at)));
-      });
+      years.forEach((id, i) => { votes[id] = ballotList(hashes[i]); });
       res.status(200).json({ votes });
+      return;
+    }
+    if (resource === 'ballot') {
+      const { errors } = validateBallotEdit(req.body);
+      if (errors.length) { res.status(400).json({ error: errors.join(' ') }); return; }
+      const { yearId, action } = req.body;
+      const name = cleanVoterName(req.body.name);
+      if (action === 'set') {
+        const token = process.env.GITHUB_CONTENTS_TOKEN;
+        if (!token) { res.status(500).json({ error: 'GITHUB_CONTENTS_TOKEN is not configured on this deployment.' }); return; }
+        let years;
+        try { years = await readBangersFile(token); } catch (err) { res.status(502).json({ error: `Couldn't read the nominee list: ${err.message}` }); return; }
+        const year = years.find((y) => y && y.id === yearId);
+        if (!year || !Array.isArray(year.nominees) || !year.nominees.some((n) => n && n.id === req.body.nomineeId)) {
+          res.status(400).json({ error: 'That nominee is not in that year.' });
+          return;
+        }
+        await storeHashSet(store, votesKey(yearId), voterKey(name), { name, nomineeId: req.body.nomineeId, at: new Date().toISOString() });
+      } else {
+        await storeHashDelete(store, votesKey(yearId), voterKey(name));
+      }
+      const [hash] = await storeHashGetAll(store, [votesKey(yearId)]);
+      res.status(200).json({ yearId, votes: ballotList(hash) });
       return;
     }
 
@@ -306,8 +363,13 @@ async function handleVoting(req, res, resource) {
     let years;
     try { years = await readBangersFile(token); } catch (err) { res.status(502).json({ error: `Couldn't read the nominee list: ${err.message}` }); return; }
     const year = years.find((y) => y && y.id === body.yearId);
-    if (!year || !Array.isArray(year.nominees) || !year.nominees.some((n) => n && n.id === body.nomineeId)) {
+    const nominee = year && Array.isArray(year.nominees) ? year.nominees.find((n) => n && n.id === body.nomineeId) : null;
+    if (!nominee) {
       res.status(400).json({ error: 'That nominee is not in that year.' });
+      return;
+    }
+    if (isOwnNomination(body.name, nominee.by)) {
+      res.status(403).json({ error: 'You can’t vote for your own nomination. Pick another song.' });
       return;
     }
 
@@ -398,9 +460,9 @@ export default async function handler(req, res) {
 
   const resource = req.method === 'GET' ? (req.query && req.query.resource) : (req.body || {}).resource;
   const storeResource = resource === 'tasks' || resource === 'quicklinks';
-  const votingResource = resource === 'voting' || resource === 'votes' || resource === 'vote';
-  // vote is POST only, votes (the ballots) GET only, voting (open years) either.
-  if ((resource === 'vote' && req.method !== 'POST') || (resource === 'votes' && req.method !== 'GET')) {
+  const votingResource = resource === 'voting' || resource === 'votes' || resource === 'vote' || resource === 'ballot';
+  // vote and ballot are POST only, votes (the ballots) GET only, voting (open years) either.
+  if (((resource === 'vote' || resource === 'ballot') && req.method !== 'POST') || (resource === 'votes' && req.method !== 'GET')) {
     res.status(405).json({ error: 'Method not allowed' });
     return;
   }
@@ -412,7 +474,7 @@ export default async function handler(req, res) {
 
   // Everything but the public quick-links read, the public open-years read and
   // casting a vote (password-gated instead) needs a login.
-  const needsLogin = resource === 'vote' ? false : resource === 'voting' ? req.method === 'POST' : (req.method === 'POST' || resource === 'tasks' || resource === 'votes');
+  const needsLogin = resource === 'vote' ? false : resource === 'voting' ? req.method === 'POST' : (req.method === 'POST' || resource === 'tasks' || resource === 'votes');  // ballot is a POST, so login-gated
   if (needsLogin) {
     const sessionSecret = process.env.SESSION_SECRET;
     if (!sessionSecret) {

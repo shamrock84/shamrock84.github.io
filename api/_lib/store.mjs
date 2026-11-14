@@ -100,3 +100,14 @@ export async function storeHashGetAll(store, keys) {
     return out;
   });
 }
+
+// Sets (or overwrites) one hash field. api/bangers.js's Admin edit of a ballot.
+export async function storeHashSet(store, key, field, value) {
+  await storePipeline(store, [['HSET', key, field, JSON.stringify(value)]]);
+}
+
+// Removes one hash field; true if it existed.
+export async function storeHashDelete(store, key, field) {
+  const [removed] = await storePipeline(store, [['HDEL', key, field]]);
+  return Number(removed) === 1;
+}
