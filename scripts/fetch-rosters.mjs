@@ -1439,7 +1439,7 @@ async function main() {
         // didn't happen.
         ? { ...prevEntry }
         : league.provider === 'espn'
-        ? await fetchEspnLeagueRoster(league)
+        ? await fetchEspnLeagueRoster(league, byeWeeks)
         : league.provider === 'sleeper'
         ? await fetchSleeperLeagueRoster(league, sleeperPlayerMap, byeWeeks)
         : await fetchLeagueRoster(league, cookie, playerMap, byeWeeks, injuries, mflLeagueData);
