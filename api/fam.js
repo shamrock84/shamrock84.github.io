@@ -18,8 +18,9 @@
 // Shared Album (api/_lib/sharedalbum.mjs). It touches no store, needs no login
 // (the Family tab is public, and the album link is already shareable) and reads
 // the album token from the FAM_PHOTOS_ALBUM Vercel variable, so the token stays
-// out of the repo and the page source. It keeps two caches on different clocks
-// (see handlePhotos), and `&refresh=1` forces both and needs the Bearer token.
+// out of the repo and the page source. Its cache is tied to when Apple's signed
+// image links expire (see photoCacheMs), and `&refresh=1` skips it and needs the
+// Bearer token.
 //
 // `?resource=calendar` is the Calendar card's public iCloud calendar feed
 // (api/_lib/calendarfeed.mjs), same shape: no store, no login, link in the
@@ -39,7 +40,7 @@ import { verifyToken } from './_lib/auth.mjs';
 import { applyCors } from './_lib/cors.mjs';
 import { storeGet, storeSet } from './_lib/store.mjs';
 import { resolveStore } from './plans.js';
-import { fetchAlbumStream, fetchAlbumAssets } from './_lib/sharedalbum.mjs';
+import { fetchSharedAlbum } from './_lib/sharedalbum.mjs';
 import { fetchCalendar, monthWindow } from './_lib/calendarfeed.mjs';
 import { validateTaskPatch, applyTaskPatch, validateQuickLinks, normalizeQuickLinks } from './vikings.js';
 
@@ -52,18 +53,29 @@ const MAX_TASKS = 300;
 export { TASKS_KEY, QUICKLINKS_KEY };
 
 // Public, store-less feeds share one cached path (Calendar), and Photos has its
-// own two-clock version below. Module-level: resets on a cold start, which is fine.
+// own below. Module-level: resets on a cold start, which is fine.
 const FEED_CACHE_MS = 5 * 60 * 1000;
 const feedCache = {};
-// Photos: the album's photo LIST is cached for 12 hours, but Apple's signed image
-// URLs expire after ~20 minutes, so they are renewed every 5 minutes. Caching the
-// whole response for 12 hours would serve dead image links most of the time.
-const PHOTO_LIST_CACHE_MS = 12 * 60 * 60 * 1000;
-let photoList = null;   // { token, at, stream, host }
-let photoUrls = null;   // { list, at, body }
+// Photos: Apple's image links are signed and die at their `url_expiry` (~20 minutes
+// after they are issued), so the response may only be reused while the links still
+// have a healthy margin left. How long that is comes from the links themselves, so
+// it follows Apple if the expiry ever changes: served until PHOTO_URL_MARGIN_MS
+// before the earliest expiry, but at least PHOTO_CACHE_MIN_MS, and never longer
+// than PHOTO_CACHE_MAX_MS. With no expiry in the response, PHOTO_CACHE_FALLBACK_MS.
+// Never cache this response for hours on a fixed timer: the links would be dead.
+const PHOTO_URL_MARGIN_MS = 10 * 60 * 1000;
+const PHOTO_CACHE_MIN_MS = 60 * 1000;
+const PHOTO_CACHE_MAX_MS = 12 * 60 * 60 * 1000;
+const PHOTO_CACHE_FALLBACK_MS = 5 * 60 * 1000;
+export function photoCacheMs(expires, now) {
+  const exp = Date.parse(expires);
+  if (!Number.isFinite(exp)) return PHOTO_CACHE_FALLBACK_MS;
+  return Math.min(PHOTO_CACHE_MAX_MS, Math.max(PHOTO_CACHE_MIN_MS, exp - PHOTO_URL_MARGIN_MS - now));
+}
+let photoCache = null; // { token, until, body }
 export function resetPhotosCache() {
   for (const k of Object.keys(feedCache)) delete feedCache[k];
-  photoList = null; photoUrls = null;
+  photoCache = null;
 }
 
 // The secret may be a bare token (Photos) or a link (Calendar, stored as
@@ -117,21 +129,19 @@ async function handlePhotos(req, res, fetchFn) {
     }
   }
   const now = Date.now();
-  try {
-    if (force || !photoList || photoList.token !== token || now - photoList.at > PHOTO_LIST_CACHE_MS) {
-      photoList = { token, at: now, ...(await fetchAlbumStream(token, fetchFn)) };
-      photoUrls = null;
+  if (force || !photoCache || photoCache.token !== token || now >= photoCache.until) {
+    try {
+      const body = await fetchSharedAlbum(token, fetchFn);
+      photoCache = { token, until: now + photoCacheMs(body.expires, now), body };
+    } catch (err) {
+      // Never "no photos": a failed read is an error the card shows as one, and a
+      // failed refresh leaves the earlier cache alone.
+      res.status(502).json({ error: `Couldn't read the album: ${scrubSecret(String(err.message), token)}` });
+      return;
     }
-    if (!photoUrls || photoUrls.list !== photoList || now - photoUrls.at > FEED_CACHE_MS) {
-      photoUrls = { list: photoList, at: now, body: { ...(await fetchAlbumAssets(token, photoList, fetchFn)), updated: new Date(photoList.at).toISOString() } };
-    }
-  } catch (err) {
-    // Never "no photos": a failed read is an error the card shows as one.
-    res.status(502).json({ error: `Couldn't read the album: ${scrubSecret(String(err.message), token)}` });
-    return;
   }
   res.setHeader('Cache-Control', force ? 'no-store' : 'public, max-age=60');
-  res.status(200).json(photoUrls.body);
+  res.status(200).json(photoCache.body);
 }
 
 function bearerOk(req) {

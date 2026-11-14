@@ -1034,19 +1034,19 @@
 			document.body.appendChild(overlay);
 			closeBtn.focus();
 		}
-		// One read of the album. `refresh` forces the server past its 12-hour photo-list
-		// cache and is login-only (the Refresh button below exists only when logged in).
+		// One read of the album. `refresh` makes the server skip its cache (which lasts
+		// until Apple's image links are near expiry) and is login-only: the Refresh
+		// button below exists only when logged in.
 		function fetchPhotos(refresh) {
 			const init = { cache: 'no-store' };
 			if (refresh) init.headers = { Authorization: `Bearer ${authToken}` };
 			return fetch(`${FAM_URL}?resource=photos${refresh ? '&refresh=1' : ''}`, init)
 				.then((r) => (r.ok ? r.json() : r.json().catch(() => ({})).then((b) => Promise.reject(new Error(b.error || `HTTP ${r.status}`)))))
-				.then((album) => ({ photos: Array.isArray(album.photos) ? album.photos : [], updated: album.updated || null }));
+				.then((album) => ({ photos: Array.isArray(album.photos) ? album.photos : [] }));
 		}
-		// "Updated <when the album's photo list was last read>", plus Refresh when logged in.
-		function appendPhotosFooter(body, updated) {
+		// A Refresh button under the photos, only when logged in.
+		function appendPhotosFooter(body) {
 			const footer = el('div', { class: 'photo-meta' });
-			if (updated) footer.appendChild(el('span', { text: `Updated ${new Date(updated).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` }));
 			if (isLoggedIn()) {
 				const msg = el('span', { class: 'photo-meta-msg', role: 'status' });
 				const btn = el('button', { type: 'button', class: 'photo-refresh-btn', text: 'Refresh' });
@@ -1074,7 +1074,7 @@
 				}
 				body.appendChild(grid);
 			}
-			appendPhotosFooter(body, album.updated);
+			appendPhotosFooter(body);
 		}
 		function loadPhotos(body) {
 			fetchPhotos(false)
@@ -1083,7 +1083,7 @@
 					if (!body.isConnected) return;
 					body.textContent = '';
 					body.appendChild(el('p', { class: 'task-empty', text: `Couldn't load photos. ${err.message}` }));
-					appendPhotosFooter(body, null); // logged in, Refresh doubles as "try again"
+					appendPhotosFooter(body); // logged in, Refresh doubles as "try again"
 				});
 		}
 		function buildPhotosCard() {
