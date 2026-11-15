@@ -376,9 +376,6 @@
 		.accept-nominations { display: flex; gap: 0.5rem; align-items: center; font-size: 0.9rem; margin: 0.2rem 0 0.4rem; }
 		.accept-nominations small { color: var(--muted); }
 		.phase-select { width: auto; flex: 0 1 14rem; }
-		.voting-year { display: flex; gap: 0.5rem; align-items: center; padding: 0.3rem 0; }
-		.ballots { margin: 0 0 0.6rem 1.6rem; }
-		.ballots summary { cursor: pointer; font-size: 0.85rem; color: var(--muted); }
 		.ballot-row { display: flex; gap: 0.5rem; align-items: center; margin: 0.3rem 0; flex-wrap: wrap; }
 		.ballot-name { flex: 0 1 9rem; font-weight: 600; }
 		.ballot-row .task-input { flex: 1 1 12rem; min-width: 0; }
@@ -1067,10 +1064,17 @@
 
 		function buildBallotEditor(y) {
 			const votes = ballots[y.id] || [];
-			const det = el('details', { class: 'ballots' });
+			// The same expandable row as a year in the Years card: name and a one-line
+			// summary up top, the editing underneath.
+			const det = el('details', { class: 'year-mini' });
 			if (openBallotYears.has(y.id)) det.open = true;
 			det.addEventListener('toggle', () => { if (det.open) openBallotYears.add(y.id); else openBallotYears.delete(y.id); });
-			det.appendChild(el('summary', { text: `Votes (${votes.length})` }));
+			det.appendChild(el('summary', {}, [
+				el('span', { text: y.label.trim() || '(unnamed)' }),
+				el('span', { class: 'year-sub', text: `${votes.length} ${votes.length === 1 ? 'vote' : 'votes'} · ${PHASE_LABELS[phaseOf(y)]}` }),
+			]));
+			const body = el('div', { class: 'year-body' });
+			det.appendChild(body);
 			const busy = votingMsg === 'Saving…';
 			const songSelect = (value) => {
 				const sel = el('select', { class: 'task-input', 'aria-label': 'Song' }, y.nominees.map((n) => el('option', { value: n.id, text: n.artist ? `${n.title} — ${n.artist}` : n.title })));
@@ -1083,8 +1087,8 @@
 					.map((n) => ({ n, c: votes.filter((v) => v.nomineeId === n.id).length }))
 					.filter((r) => r.c).sort((a, b) => b.c - a.c)
 					.map((r) => `${r.n.title}: ${r.c}`);
-				det.appendChild(el('div', { class: 'tally', text: tally.join(' · ') }));
-			} else det.appendChild(el('div', { class: 'task-empty', text: 'No votes yet.' }));
+				body.appendChild(el('div', { class: 'tally', text: tally.join(' · ') }));
+			} else body.appendChild(el('div', { class: 'task-empty', text: 'No votes yet.' }));
 			for (const v of votes) {
 				const sel = songSelect(v.nomineeId);
 				// A ballot for a song since removed from the list has no option to show.
@@ -1093,7 +1097,7 @@
 				const del = el('button', { type: 'button', class: 'task-icon-btn', title: `Delete ${v.name}’s vote`, 'aria-label': `Delete ${v.name}’s vote`, text: '✕' });
 				del.disabled = busy;
 				del.addEventListener('click', () => { if (window.confirm(`Delete ${v.name}’s vote? They will be able to vote again.`)) editBallot(y.id, { action: 'delete', name: v.name }); });
-				det.appendChild(el('div', { class: 'ballot-row' }, [el('span', { class: 'ballot-name', text: v.name }), sel, del]));
+				body.appendChild(el('div', { class: 'ballot-row' }, [el('span', { class: 'ballot-name', text: v.name }), sel, del]));
 			}
 			if (y.nominees.length) {
 				const name = el('input', { type: 'text', class: 'task-input', placeholder: 'Add a vote: voter name', 'aria-label': 'Voter name', maxlength: '40', autocomplete: 'off' });
@@ -1101,7 +1105,7 @@
 				const add = el('button', { type: 'button', class: 'task-add-btn', text: 'Add' });
 				add.disabled = busy;
 				add.addEventListener('click', () => { if (!name.value.trim()) { name.focus(); return; } editBallot(y.id, { action: 'set', name: name.value, nomineeId: sel.value }); });
-				det.appendChild(el('div', { class: 'ballot-row ballot-add' }, [name, sel, add]));
+				body.appendChild(el('div', { class: 'ballot-row ballot-add' }, [name, sel, add]));
 			}
 			return det;
 		}
@@ -1110,13 +1114,9 @@
 			const head = el('h2', { class: 'card-heading', text: 'Voting' });
 			const card = el('div', { class: 'card' }, [head]);
 			makeCollapsible(card, head, 'voting');
-			card.appendChild(el('div', { class: 'message', text: 'Voting opens when a year is set to Voting In Progress in the Years card (the password is the BANGERS_VOTE_PASSWORD variable in Vercel). Open “Votes” to see who voted for what, change a vote, add one or delete one; a deleted voter can vote again.' }));
 			// Years being voted on, plus any other year that has votes on record.
 			const years = bangers.filter((y) => y.nominees.length && (phaseOf(y) === 'voting' || (ballots[y.id] || []).length));
-			for (const y of years) {
-				card.appendChild(el('div', { class: 'voting-year' }, [el('span', { text: `${y.label} ` }), el('small', { text: PHASE_LABELS[phaseOf(y)] })]));
-				card.appendChild(buildBallotEditor(y));
-			}
+			for (const y of years) card.appendChild(buildBallotEditor(y));
 			if (!years.length) card.appendChild(el('div', { class: 'task-empty', text: 'No year is being voted on and there are no votes on record.' }));
 			if (votingMsg) card.appendChild(el('div', { class: `vote-msg${votingMsg.startsWith('Not') || votingMsg.startsWith('Couldn') ? ' error' : ''}`, text: votingMsg }));
 			return card;
@@ -1286,7 +1286,7 @@
 				renderTabs();
 				refreshVotingCard(); // the Voting card lists the years being voted on
 			});
-			body.appendChild(el('label', { class: 'accept-nominations' }, [el('span', { text: 'Status' }), phaseSel, el('small', { text: saved ? ' (saves immediately)' : ' (Save the year first)' })]));
+			body.appendChild(el('label', { class: 'accept-nominations' }, [el('span', { text: 'Status' }), phaseSel, saved ? null : el('small', { text: ' (Save the year first)' })]));
 			if (focusId === y.id) name.setAttribute('data-focus', '');
 			if (!y.nominees.length) body.appendChild(el('div', { class: 'task-empty', text: 'No nominees yet.' }));
 			y.nominees.forEach((n, j) => body.appendChild(buildNomineeRow(y, n, j)));
