@@ -762,7 +762,8 @@
 				el('div', { class: `plaque-by${by ? '' : ' unknown'}`, text: by || 'Unknown' }),
 				song,
 			]);
-			if (votes > 0) card.appendChild(el('div', { class: 'plaque-votes', text: `${votes} ${votes === 1 ? 'Vote' : 'Votes'}` }));
+			// Nominees tab only: the Winners tab passes no mode and shows no count.
+			if (votes > 0 && mode) card.appendChild(el('div', { class: 'plaque-votes', text: `${votes} ${votes === 1 ? 'Vote' : 'Votes'}` }));
 			if (mode === 'winner') card.appendChild(el('div', { class: 'plaque-badge', text: '★ Winner' }));
 			return card;
 		}
