@@ -318,6 +318,15 @@ for (const [name, run] of [
     assert.equal((await vote({ name: 'Mom', nomineeId: 'nd' })).code, 200, 'a deleted voter may vote again');
     assert.equal((await callFull('GET', { query: { resource: 'ballot' } })).code, 405);
   }],
+  ['the tally is public, counts only, no names', async () => {
+    const r = await callFull('GET', { query: { resource: 'tally', years: 'y1,y2' } });
+    assert.equal(r.code, 200);
+    assert.ok(r.body.counts.na >= 1 && r.body.counts.nb >= 1 && r.body.counts.nc === 1, JSON.stringify(r.body));
+    assert.ok(!JSON.stringify(r.body).match(/Kevin|Jeff|Mom|name/), 'no voter names');
+    assert.equal((await callFull('GET', { query: { resource: 'tally', years: 'a b' } })).code, 400);
+    assert.equal((await callFull('GET', { query: { resource: 'tally' } })).body.counts && Object.keys((await callFull('GET', { query: { resource: 'tally' } })).body.counts).length, 0);
+    assert.equal((await callFull('POST', { body: { resource: 'tally' } })).code, 405);
+  }],
   ['a vote with no BANGERS_VOTE_PASSWORD configured is a 500, never open', async () => {
     delete process.env.BANGERS_VOTE_PASSWORD;
     assert.equal((await vote({ password: '' })).code, 500);
