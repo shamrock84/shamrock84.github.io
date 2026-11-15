@@ -627,7 +627,10 @@
 			try { localStorage.setItem(FOLD_KEY, JSON.stringify(foldState)); } catch (e) { /* works for this visit */ }
 		}
 		const isFolded = (y, index) => (y.id in foldState ? foldState[y.id] : index > 0);
-		try { const t = localStorage.getItem(TAB_KEY); if (t === 'nominees' || t === 'stats' || t === 'vote' || t === 'nominate' || t === 'admin') tab = t; } catch (e) { /* default tab */ }
+		// A page load lands on the default tab (see defaultTab), not on the last tab
+		// used, or a visitor who last looked at Winners would never see Vote open up.
+		// The exception is Admin, restored so a reload while editing keeps its place.
+		try { if (localStorage.getItem(TAB_KEY) === 'admin') tab = 'admin'; } catch (e) { /* default tab */ }
 
 		const statusEl = document.getElementById('status');
 		function setStatus(text, kind) {
@@ -1916,6 +1919,10 @@
 			renderAll();
 		}
 
+		// Where a page load lands: Vote while any year is up for voting, else
+		// Nominate while any year takes nominations, else Winners.
+		const defaultTab = () => (openVotingYears().length ? 'vote' : nominatingYears().length ? 'nominate' : 'winners');
+
 		function renderTabs() {
 			const nav = document.getElementById('tabs');
 			nav.textContent = '';
@@ -1999,6 +2006,7 @@
 				loadError = err.message;
 			}
 			await Promise.all([votingLoaded, loadTally()]); // so the Vote tab is right on first paint
+			if (tab !== 'admin' || !isLoggedIn()) tab = defaultTab();
 			renderAll();
 		}
 
