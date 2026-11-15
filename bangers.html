@@ -838,6 +838,8 @@
 		// ---- Phases, voting and nominating ----------------------------------------
 		// Every year is in one phase, set per year in the Years card and kept by
 		// api/bangers.js (`?resource=state`, public to read):
+		//   Pending            takes nothing and is shown nowhere but the Admin tab
+		//                      (same cosmetic hiding as Nominations Open, below)
 		//   Nominations Open   the Nominate tab takes nominations; this page hides the
 		//                      year's nominees (Winners, Nominees, Stats, the count in
 		//                      the header). Cosmetic only: the nominations are in the
@@ -848,17 +850,18 @@
 		// the shared password (BANGERS_VOTE_PASSWORD on Vercel), one name gets one
 		// vote per year, and votes are not shown back to voters.
 		const VOTER_KEY = 'bangersVoterName';
-		const PHASE_LABELS = { nominating: 'Nominations Open', voting: 'Voting In Progress', complete: 'Complete' };
+		const PHASE_LABELS = { pending: 'Pending', nominating: 'Nominations Open', voting: 'Voting In Progress', complete: 'Complete' };
 		let phases = {};            // yearId -> 'nominating' | 'voting'; absent = Complete
-		const phaseOf = (y) => phases[y.id] === 'nominating' || phases[y.id] === 'voting' ? phases[y.id] : 'complete';
+		const phaseOf = (y) => ['pending', 'nominating', 'voting'].includes(phases[y.id]) ? phases[y.id] : 'complete';
 		let votingYear = null;      // the year picked in the Vote card
 		let nominateYear = null;    // the year picked in the Nominate card
 		let nominateMsg = null;     // { text, kind } shown under the form
 		let voteMsg = null;         // { text, kind } shown under the form
 		const nominatingYears = () => bangers.filter((y) => phaseOf(y) === 'nominating');
 		const openVotingYears = () => bangers.filter((y) => phaseOf(y) === 'voting' && y.nominees.length);
-		// What the public views show: a year taking nominations stays hidden.
-		const shownYears = () => bangers.filter((y) => phaseOf(y) !== 'nominating');
+		// What the public views show: a Pending year, and a year taking nominations,
+		// stay hidden.
+		const shownYears = () => bangers.filter((y) => phaseOf(y) !== 'nominating' && phaseOf(y) !== 'pending');
 
 		// nomineeId -> votes, for the "X Votes" line on a plaque. Counts only (the
 		// public `?resource=tally`); who voted is Admin-only.
@@ -1257,6 +1260,7 @@
 			// open a year it finds there, so its phase waits for the first Save.
 			const saved = bangers.some((x) => x.id === y.id);
 			const phaseSel = el('select', { class: 'task-input phase-select', 'aria-label': 'Year status' }, [
+				el('option', { value: 'pending', text: PHASE_LABELS.pending }),
 				el('option', { value: 'nominating', text: PHASE_LABELS.nominating }),
 				el('option', { value: 'voting', text: PHASE_LABELS.voting }),
 				el('option', { value: 'complete', text: PHASE_LABELS.complete }),

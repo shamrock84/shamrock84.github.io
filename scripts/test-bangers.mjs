@@ -177,7 +177,7 @@ check('voterKey ignores case and spacing, so one name is one voter', () => {
   assert.equal(cleanVoterName(5), '');
 });
 check('validatePhases takes year id -> nominating | voting, nothing else', () => {
-  assert.equal(validatePhases({ phases: { y1: 'voting', y2: 'nominating' } }).errors.length, 0);
+  assert.equal(validatePhases({ phases: { y1: 'voting', y2: 'nominating', y3: 'pending' } }).errors.length, 0);
   assert.equal(validatePhases({ phases: {} }).errors.length, 0);
   const many = Object.fromEntries(Array.from({ length: 21 }, (_, i) => [`y${i}`, 'voting']));
   for (const bad of [null, {}, { phases: [] }, { phases: { y1: 'complete' } }, { phases: { y1: 'open' } }, { phases: { 'a b': 'voting' } }, { phases: { y1: 5 } }, { phases: many }]) assert.ok(validatePhases(bad).errors.length, JSON.stringify(bad));
@@ -354,6 +354,13 @@ for (const [name, run] of [
     assert.equal((await callFull('GET', { query: { resource: 'tally', years: 'a b' } })).code, 400);
     assert.equal((await callFull('GET', { query: { resource: 'tally' } })).body.counts && Object.keys((await callFull('GET', { query: { resource: 'tally' } })).body.counts).length, 0);
     assert.equal((await callFull('POST', { body: { resource: 'tally' } })).code, 405);
+  }],
+  ['a Pending year takes neither votes nor nominations, and is kept as Pending', async () => {
+    assert.equal((await callFull('POST', { token: good, body: { resource: 'state', phases: { y1: 'voting', y2: 'pending' } } })).code, 200);
+    assert.deepEqual((await callFull('GET', { query: { resource: 'state' } })).body, { phases: { y1: 'voting', y2: 'pending' } });
+    assert.equal((await vote({ name: 'Pia', yearId: 'y2', nomineeId: 'nc' })).code, 403);
+    assert.equal((await callFull('POST', { body: { resource: 'nominate', name: 'Pia', password: 'hootowl', yearId: 'y2', title: 'S', artist: 'A' } })).code, 403);
+    assert.equal(restoreFetch.gh.puts, 0);
   }],
   ['a year takes votes only in voting and nominations only in nominating', async () => {
     await callFull('POST', { token: good, body: { resource: 'state', phases: { y1: 'voting', y2: 'nominating' } } });

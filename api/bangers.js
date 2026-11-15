@@ -54,9 +54,10 @@
 //        {yearId, name, nomineeId, action: 'set'|'delete'}
 //   POST resource=nominate            public, same password as voting:
 //        {name, password, yearId, title, artist}
-// PHASES. Each year is in one of three, kept in `bangers:year-states` as
-// { phases: { yearId: 'nominating' | 'voting' } }; a year with no entry is
-// Complete (the default for every historical year):
+// PHASES. Each year is in one of four, kept in `bangers:year-states` as
+// { phases: { yearId: 'pending' | 'nominating' | 'voting' } }; a year with no
+// entry is Complete (the default for every historical year):
+//   pending     takes nothing; the page shows the year on the Admin tab only
 //   nominating  the Nominate tab takes nominations; the page hides the year's
 //               nominees from the Winners, Nominees and Stats views
 //   voting      the Vote tab takes votes; nominations are refused
@@ -105,7 +106,7 @@ const QUICKLINKS_KEY = 'bangers:quicklinks';
 // Legacy open lists, read only until the first save of STATE_KEY.
 const VOTING_KEY = 'bangers:voting';
 const STATE_KEY = 'bangers:year-states';
-const PHASES = ['nominating', 'voting'];
+const PHASES = ['pending', 'nominating', 'voting'];
 const votesKey = (yearId) => `bangers:votes:${yearId}`;
 const NOMINATING_KEY = 'bangers:nominating';
 const MAX_OPEN_YEARS = 20;
@@ -219,7 +220,7 @@ function serialize(years) {
 
 // ---- Voting --------------------------------------------------------------
 
-// { phases: { yearId: 'nominating' | 'voting' } } — errors empty when valid.
+// { phases: { yearId: 'pending' | 'nominating' | 'voting' } } — errors empty when valid.
 function validatePhases(body) {
   if (!isObject(body) || !isObject(body.phases)) return { errors: ['phases must be an object of year id to phase'] };
   const entries = Object.entries(body.phases);
@@ -227,7 +228,7 @@ function validatePhases(body) {
   const errors = [];
   for (const [id, phase] of entries) {
     if (!ID.test(id)) errors.push('every year id must be letters and digits.');
-    else if (!PHASES.includes(phase)) errors.push(`${id}: phase must be nominating or voting (a Complete year has no entry).`);
+    else if (!PHASES.includes(phase)) errors.push(`${id}: phase must be pending, nominating or voting (a Complete year has no entry).`);
   }
   return { errors };
 }
