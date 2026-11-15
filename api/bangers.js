@@ -46,6 +46,8 @@
 // even from two requests at once, and two voters never overwrite each other.
 //   GET  ?resource=voting             public: which years are open
 //   POST resource=voting {open}       login-gated: open or close years
+//   GET  ?resource=tally&years=a,b    public: vote COUNTS per nominee (no names),
+//                                     for the "X Votes" line on the plaques
 //   GET  ?resource=votes&years=a,b    login-gated: every ballot for those years
 //   POST resource=vote                public, but needs BANGERS_VOTE_PASSWORD
 //        {name, password, yearId, nomineeId}
@@ -301,6 +303,15 @@ async function handleVoting(req, res, resource) {
       res.status(200).json({ open });
       return;
     }
+    if (resource === 'tally') {
+      const years = String((req.query && req.query.years) || '').split(',').filter(Boolean);
+      if (years.length > MAX_YEARS || years.some((id) => !ID.test(id))) { res.status(400).json({ error: 'years must be a comma-separated list of year ids.' }); return; }
+      const hashes = years.length ? await storeHashGetAll(store, years.map(votesKey)) : [];
+      const counts = {};
+      for (const h of hashes) for (const v of Object.values(h)) if (v && typeof v.nomineeId === 'string') counts[v.nomineeId] = (counts[v.nomineeId] || 0) + 1;
+      res.status(200).json({ counts });
+      return;
+    }
     if (resource === 'votes') {
       const years = String((req.query && req.query.years) || '').split(',').filter(Boolean);
       if (years.length > MAX_YEARS || years.some((id) => !ID.test(id))) { res.status(400).json({ error: 'years must be a comma-separated list of year ids.' }); return; }
@@ -460,9 +471,9 @@ export default async function handler(req, res) {
 
   const resource = req.method === 'GET' ? (req.query && req.query.resource) : (req.body || {}).resource;
   const storeResource = resource === 'tasks' || resource === 'quicklinks';
-  const votingResource = resource === 'voting' || resource === 'votes' || resource === 'vote' || resource === 'ballot';
+  const votingResource = resource === 'voting' || resource === 'votes' || resource === 'vote' || resource === 'ballot' || resource === 'tally';
   // vote and ballot are POST only, votes (the ballots) GET only, voting (open years) either.
-  if (((resource === 'vote' || resource === 'ballot') && req.method !== 'POST') || (resource === 'votes' && req.method !== 'GET')) {
+  if (((resource === 'vote' || resource === 'ballot') && req.method !== 'POST') || ((resource === 'votes' || resource === 'tally') && req.method !== 'GET')) {
     res.status(405).json({ error: 'Method not allowed' });
     return;
   }

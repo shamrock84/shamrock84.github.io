@@ -234,6 +234,7 @@
 		.plaque-by { font-size: 0.78rem; font-weight: 700; color: #1f1304; }
 		.plaque-by.unknown { font-weight: 400; font-style: italic; color: #6a5424; }
 		.plaque-song { font-size: 0.74rem; line-height: 1.3; color: #2a1c06; overflow-wrap: anywhere; }
+		.plaque-votes { font-size: 0.74rem; font-weight: 700; color: #4a2c05; }
 		.plaque-song q { quotes: '\201C' '\201D'; }
 		.song-link { color: inherit; text-decoration: underline; text-decoration-color: rgba(42, 28, 6, 0.5); text-underline-offset: 2px; }
 		.song-link:hover { color: #5a2d00; text-decoration-color: currentColor; }
@@ -755,11 +756,13 @@
 			else q.textContent = n.title;
 			song.appendChild(q);
 			if (n.artist.trim()) song.appendChild(document.createTextNode(` by ${n.artist.trim()}`));
+			const votes = voteCounts[n.id] || 0;
 			const card = el('div', { class: `plaque${mode === 'winner' ? ' winner' : mode === 'nominee' ? ' nominee' : ''}` }, [
 				el('div', { class: 'plaque-year', text: label }),
 				el('div', { class: `plaque-by${by ? '' : ' unknown'}`, text: by || 'Unknown' }),
 				song,
 			]);
+			if (votes > 0) card.appendChild(el('div', { class: 'plaque-votes', text: `${votes} ${votes === 1 ? 'Vote' : 'Votes'}` }));
 			if (mode === 'winner') card.appendChild(el('div', { class: 'plaque-badge', text: '★ Winner' }));
 			return card;
 		}
@@ -833,6 +836,25 @@
 		let votingYear = null;      // the year picked in the Vote card
 		let voteMsg = null;         // { text, kind } shown under the form
 		const openVotingYears = () => bangers.filter((y) => votingOpen.includes(y.id) && y.nominees.length);
+
+		// nomineeId -> votes, for the "X Votes" line on a plaque. Counts only (the
+		// public `?resource=tally`); who voted is Admin-only.
+		let voteCounts = {};
+		async function loadTally() {
+			const ids = bangers.map((y) => y.id);
+			if (!ids.length) return;
+			try {
+				const res = await fetch(`${BANGERS_URL}?resource=tally&years=${ids.join(',')}`, { cache: 'no-store' });
+				if (!res.ok) throw new Error(`HTTP ${res.status}`);
+				const body = await res.json();
+				voteCounts = body && typeof body.counts === 'object' && body.counts ? body.counts : {};
+			} catch (e) { voteCounts = {}; } // no count line, nothing else affected
+		}
+		// An Admin ballot edit changes the counts; keep the plaques in step.
+		function applyBallotCounts(y, votes) {
+			for (const n of y.nominees) delete voteCounts[n.id];
+			for (const v of votes) voteCounts[v.nomineeId] = (voteCounts[v.nomineeId] || 0) + 1;
+		}
 
 		async function loadVoting() {
 			try {
@@ -970,6 +992,7 @@
 				if (res.status === 401) { expireSession(); return; }
 				if (!res.ok) throw new Error(out.error || `HTTP ${res.status}`);
 				ballots[yearId] = out.votes;
+				applyBallotCounts(bangers.find((y) => y.id === yearId) || { nominees: [] }, out.votes);
 				votingMsg = '';
 			} catch (err) { votingMsg = `Not saved: ${err.message}`; }
 			refreshVotingCard();
@@ -1794,7 +1817,7 @@
 			const nav = document.getElementById('tabs');
 			nav.textContent = '';
 			// The Admin tab exists only while logged in; logging out removes it.
-			const tabs = [['winners', 'Winners'], ['nominees', 'Nominees'], ['stats', 'Stats'], ...(openVotingYears().length ? [['vote', 'Vote']] : []), ...(isLoggedIn() ? [['admin', 'Admin']] : [])];
+			const tabs = [...(openVotingYears().length ? [['vote', 'Vote']] : []), ['winners', 'Winners'], ['nominees', 'Nominees'], ['stats', 'Stats'], ...(isLoggedIn() ? [['admin', 'Admin']] : [])];
 			for (const [id, label] of tabs) {
 				const btn = el('button', { type: 'button', class: `tab-btn${tab === id ? ' active' : ''}`, role: 'tab', 'aria-selected': String(tab === id), text: label });
 				btn.addEventListener('click', () => setTab(id));
@@ -1871,7 +1894,7 @@
 				loadState = 'failed';
 				loadError = err.message;
 			}
-			await votingLoaded; // so the Vote tab is right on first paint
+			await Promise.all([votingLoaded, loadTally()]); // so the Vote tab is right on first paint
 			renderAll();
 		}
 
