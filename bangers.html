@@ -1286,7 +1286,7 @@
 				renderTabs();
 				refreshVotingCard(); // the Voting card lists the years being voted on
 			});
-			body.appendChild(el('label', { class: 'accept-nominations' }, [el('span', { text: 'Status' }), phaseSel, el('small', { text: saved ? ' (saves immediately)' : ' (Save the year first)' })]));
+			body.appendChild(el('label', { class: 'accept-nominations' }, [el('span', { text: 'Status' }), phaseSel, saved ? null : el('small', { text: ' (Save the year first)' })]));
 			if (focusId === y.id) name.setAttribute('data-focus', '');
 			if (!y.nominees.length) body.appendChild(el('div', { class: 'task-empty', text: 'No nominees yet.' }));
 			y.nominees.forEach((n, j) => body.appendChild(buildNomineeRow(y, n, j)));
