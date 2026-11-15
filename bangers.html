@@ -963,9 +963,9 @@
 
 		// Nominate tab: same name + shared password as voting, but a song and an
 		// artist instead of a radio list. The server adds it to data/bangers.json as
-		// a nominee (by = the name typed), so it shows in Admin's Years card, and on
-		// the Nominees tab once Pages republishes. This page's own list is left alone
-		// on purpose: Admin's Save compares it with the file by sha.
+		// a nominee (by = the name typed), so it shows in Admin's Years card. The
+		// public views hide it until the year leaves Nominations Open. This page's own
+		// list is left alone on purpose: Admin's Save compares it with the file by sha.
 		function nominateView() {
 			const years = nominatingYears();
 			const card = el('div', { class: 'card' }, [el('h2', { class: 'card-heading', text: 'Nominate' })]);
@@ -1012,7 +1012,7 @@
 					if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
 					try { localStorage.setItem(VOTER_KEY, body.name || name.value.trim()); } catch (err) { /* fine */ }
 					password.value = ''; song.value = ''; artist.value = '';
-					nominateMsg = { text: `Thanks ${body.name}, your nomination for ${body.yearLabel} is in. It will show on the Nominees tab in a minute or two.`, kind: 'ok' };
+					nominateMsg = { text: `Thanks ${body.name}, your nomination for ${body.yearLabel} is in.`, kind: 'ok' };
 					showMsg(nominateMsg.text, 'ok');
 				} catch (err) {
 					showMsg(err.message, 'error');
