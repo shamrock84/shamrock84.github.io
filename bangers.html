@@ -1110,7 +1110,6 @@
 			const head = el('h2', { class: 'card-heading', text: 'Voting' });
 			const card = el('div', { class: 'card' }, [head]);
 			makeCollapsible(card, head, 'voting');
-			card.appendChild(el('div', { class: 'message', text: 'Voting opens when a year is set to Voting In Progress in the Years card (the password is the BANGERS_VOTE_PASSWORD variable in Vercel). Open “Votes” to see who voted for what, change a vote, add one or delete one; a deleted voter can vote again.' }));
 			// Years being voted on, plus any other year that has votes on record.
 			const years = bangers.filter((y) => y.nominees.length && (phaseOf(y) === 'voting' || (ballots[y.id] || []).length));
 			for (const y of years) {
