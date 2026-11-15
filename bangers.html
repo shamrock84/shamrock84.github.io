@@ -1794,7 +1794,7 @@
 			const nav = document.getElementById('tabs');
 			nav.textContent = '';
 			// The Admin tab exists only while logged in; logging out removes it.
-			const tabs = [['winners', 'Winners'], ['nominees', 'Nominees'], ['stats', 'Stats'], ...(openVotingYears().length ? [['vote', 'Vote']] : []), ...(isLoggedIn() ? [['admin', 'Admin']] : [])];
+			const tabs = [...(openVotingYears().length ? [['vote', 'Vote']] : []), ['winners', 'Winners'], ['nominees', 'Nominees'], ['stats', 'Stats'], ...(isLoggedIn() ? [['admin', 'Admin']] : [])];
 			for (const [id, label] of tabs) {
 				const btn = el('button', { type: 'button', class: `tab-btn${tab === id ? ' active' : ''}`, role: 'tab', 'aria-selected': String(tab === id), text: label });
 				btn.addEventListener('click', () => setTab(id));
