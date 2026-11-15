@@ -38,14 +38,13 @@
 // tasks GET needs the Bearer token, and every POST does. The bangers list
 // itself still has no GET: the page reads data/bangers.json from Pages.
 //
-// VOTING. Also in the Upstash store, under `bangers:voting` (which years are
-// open: { open: [yearId, ...] }) and one hash per year, `bangers:votes:<yearId>`,
+// VOTING. Also in the Upstash store: one hash per year, `bangers:votes:<yearId>`,
 // field = the voter's name lowercased with whitespace collapsed (voterKey),
 // value = { name, nomineeId, at }. A hash, not one JSON document, because a
 // vote is written with HSETNX: atomic, so a name can't vote twice in a year
 // even from two requests at once, and two voters never overwrite each other.
-//   GET  ?resource=voting             public: which years are open
-//   POST resource=voting {open}       login-gated: open or close years
+//   GET  ?resource=state              public: each year's phase
+//   POST resource=state {phases}      login-gated: set the phases
 //   GET  ?resource=tally&years=a,b    public: vote COUNTS per nominee (no names),
 //                                     for the "X Votes" line on the plaques
 //   GET  ?resource=votes&years=a,b    login-gated: every ballot for those years
@@ -53,18 +52,27 @@
 //        {name, password, yearId, nomineeId}
 //   POST resource=ballot              login-gated: Admin edits a ballot
 //        {yearId, name, nomineeId, action: 'set'|'delete'}
-//   POST resource=nominating {open}   login-gated: which years accept nominations
 //   POST resource=nominate            public, same password as voting:
 //        {name, password, yearId, title, artist}
-// NOMINATING. `bangers:nominating` ({ open: [yearId, ...] }, Upstash, like the
-// voting list) says which years accept nominations; the public GET
-// ?resource=voting returns it as `nominating`. A nomination is added to
-// data/bangers.json as an ordinary nominee (by = the name typed, winner false)
-// and committed to main, so it appears in Admin's Years card to edit or tick as
-// winner, and on the Nominees tab once Pages republishes. The commit is a
-// read-modify-write on the file's sha, retried when an Admin save or another
-// nomination lands first. One nomination per person per year (isOwnNomination
-// against each nominee's `by`), one per song, and MAX_NOMINEES per year.
+// PHASES. Each year is in one of three, kept in `bangers:year-states` as
+// { phases: { yearId: 'nominating' | 'voting' } }; a year with no entry is
+// Complete (the default for every historical year):
+//   nominating  the Nominate tab takes nominations; the page hides the year's
+//               nominees from the Winners, Nominees and Stats views
+//   voting      the Vote tab takes votes; nominations are refused
+//   complete    neither
+// Both public writes check the phase here, not in the page. The hiding is
+// cosmetic: nominations are committed to data/bangers.json (below), which is
+// public, so anyone reading the file can see them.
+// The doc replaced two lists (`bangers:voting`, `bangers:nominating`); until the
+// first save under the new key those are read as a fallback (readPhases).
+//
+// A nomination is added to data/bangers.json as an ordinary nominee (by = the
+// name typed, winner false) and committed to main, so it appears in Admin's Years
+// card to edit or tick as winner. The commit is a read-modify-write on the
+// file's sha, retried when an Admin save or another nomination lands first. One
+// nomination per person per year (isOwnNomination against each nominee's `by`),
+// one per song, and MAX_NOMINEES per year.
 //
 // Nobody may vote for their own nomination (isOwnNomination): the voter's name
 // is matched against the nominee's `by`. Best effort by nature, since names are
@@ -94,7 +102,10 @@ const BRANCH = 'main';
 // sharing one would show each page the other's tasks and toolbar.
 const TASKS_KEY = 'bangers:tasks';
 const QUICKLINKS_KEY = 'bangers:quicklinks';
+// Legacy open lists, read only until the first save of STATE_KEY.
 const VOTING_KEY = 'bangers:voting';
+const STATE_KEY = 'bangers:year-states';
+const PHASES = ['nominating', 'voting'];
 const votesKey = (yearId) => `bangers:votes:${yearId}`;
 const NOMINATING_KEY = 'bangers:nominating';
 const MAX_OPEN_YEARS = 20;
@@ -118,7 +129,7 @@ function isWebUrl(s) {
   try { return ['http:', 'https:'].includes(new URL(s).protocol); } catch { return false; }
 }
 
-export { validateBangers, normalizeBangers, serialize, isStaleBase, TASKS_KEY, QUICKLINKS_KEY, validateVotingOpen, voterKey, cleanVoterName, validateVote, isOwnNomination, validateBallotEdit, validateNomination, VOTING_KEY, NOMINATING_KEY, votesKey };
+export { validateBangers, normalizeBangers, serialize, isStaleBase, TASKS_KEY, QUICKLINKS_KEY, voterKey, cleanVoterName, validateVote, isOwnNomination, validateBallotEdit, validateNomination, validatePhases, readPhases, VOTING_KEY, NOMINATING_KEY, STATE_KEY, votesKey };
 
 const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const text = (v) => (typeof v === 'string' ? v.trim() : '');
@@ -208,13 +219,30 @@ function serialize(years) {
 
 // ---- Voting --------------------------------------------------------------
 
-// { open: [yearId, ...] } — errors empty when valid.
-function validateVotingOpen(body) {
-  if (!isObject(body) || !Array.isArray(body.open)) return { errors: ['open must be a list of year ids'] };
-  if (body.open.length > MAX_OPEN_YEARS) return { errors: [`more than ${MAX_OPEN_YEARS} years open`] };
+// { phases: { yearId: 'nominating' | 'voting' } } — errors empty when valid.
+function validatePhases(body) {
+  if (!isObject(body) || !isObject(body.phases)) return { errors: ['phases must be an object of year id to phase'] };
+  const entries = Object.entries(body.phases);
+  if (entries.length > MAX_OPEN_YEARS) return { errors: [`more than ${MAX_OPEN_YEARS} years in a phase`] };
   const errors = [];
-  if (body.open.some((id) => typeof id !== 'string' || !ID.test(id))) errors.push('open: every year id must be letters and digits.');
+  for (const [id, phase] of entries) {
+    if (!ID.test(id)) errors.push('every year id must be letters and digits.');
+    else if (!PHASES.includes(phase)) errors.push(`${id}: phase must be nominating or voting (a Complete year has no entry).`);
+  }
   return { errors };
+}
+
+// The phases now in force. Falls back to the two legacy open lists when the
+// state doc has never been saved, so years someone had already opened keep
+// working across the change.
+async function readPhases(store) {
+  const doc = await storeGet(store, STATE_KEY);
+  if (isObject(doc && doc.phases)) return doc.phases;
+  const [voting, nominating] = await Promise.all([storeGet(store, VOTING_KEY), storeGet(store, NOMINATING_KEY)]);
+  const phases = {};
+  for (const id of Array.isArray(nominating && nominating.open) ? nominating.open : []) phases[id] = 'nominating';
+  for (const id of Array.isArray(voting && voting.open) ? voting.open : []) phases[id] = 'voting';
+  return phases;
 }
 
 // What the voter typed, tidied: control characters out, runs of whitespace
@@ -390,25 +418,16 @@ async function handleVoting(req, res, resource) {
     return;
   }
   try {
-    if (resource === 'voting') {
+    if (resource === 'state') {
       if (req.method === 'GET') {
-        const [doc, nDoc] = await Promise.all([storeGet(store, VOTING_KEY), storeGet(store, NOMINATING_KEY)]);
-        res.status(200).json({ open: Array.isArray(doc && doc.open) ? doc.open : [], nominating: Array.isArray(nDoc && nDoc.open) ? nDoc.open : [] });
+        res.status(200).json({ phases: await readPhases(store) });
         return;
       }
-      const { errors } = validateVotingOpen(req.body);
+      const { errors } = validatePhases(req.body);
       if (errors.length) { res.status(400).json({ error: 'Nothing was saved — the request was malformed:', details: errors }); return; }
-      const open = [...new Set(req.body.open)];
-      await storeSet(store, VOTING_KEY, { open });
-      res.status(200).json({ open });
-      return;
-    }
-    if (resource === 'nominating') {
-      const { errors } = validateVotingOpen(req.body);
-      if (errors.length) { res.status(400).json({ error: 'Nothing was saved — the request was malformed:', details: errors }); return; }
-      const open = [...new Set(req.body.open)];
-      await storeSet(store, NOMINATING_KEY, { open });
-      res.status(200).json({ nominating: open });
+      const phases = { ...req.body.phases };
+      await storeSet(store, STATE_KEY, { phases });
+      res.status(200).json({ phases });
       return;
     }
     if (resource === 'nominate') {
@@ -416,8 +435,7 @@ async function handleVoting(req, res, resource) {
       if (!(await passwordGate(req, res, store, body))) return;
       const { errors } = validateNomination(body);
       if (errors.length) { res.status(400).json({ error: errors.join(' ') }); return; }
-      const nDoc = await storeGet(store, NOMINATING_KEY);
-      if (!(Array.isArray(nDoc && nDoc.open) && nDoc.open.includes(body.yearId))) { res.status(403).json({ error: 'Nominations are not open for that year.' }); return; }
+      if ((await readPhases(store))[body.yearId] !== 'nominating') { res.status(403).json({ error: 'Nominations are not open for that year.' }); return; }
       const token = process.env.GITHUB_CONTENTS_TOKEN;
       if (!token) { res.status(500).json({ error: 'GITHUB_CONTENTS_TOKEN is not configured on this deployment.' }); return; }
       let out;
@@ -476,9 +494,7 @@ async function handleVoting(req, res, resource) {
     const { errors } = validateVote(body);
     if (errors.length) { res.status(400).json({ error: errors.join(' ') }); return; }
 
-    const doc = await storeGet(store, VOTING_KEY);
-    const open = Array.isArray(doc && doc.open) ? doc.open : [];
-    if (!open.includes(body.yearId)) { res.status(403).json({ error: 'Voting is not open for that year.' }); return; }
+    if ((await readPhases(store))[body.yearId] !== 'voting') { res.status(403).json({ error: 'Voting is not open for that year.' }); return; }
 
     const token = process.env.GITHUB_CONTENTS_TOKEN;
     if (!token) { res.status(500).json({ error: 'GITHUB_CONTENTS_TOKEN is not configured on this deployment.' }); return; }
@@ -582,9 +598,9 @@ export default async function handler(req, res) {
 
   const resource = req.method === 'GET' ? (req.query && req.query.resource) : (req.body || {}).resource;
   const storeResource = resource === 'tasks' || resource === 'quicklinks';
-  const votingResource = resource === 'voting' || resource === 'votes' || resource === 'vote' || resource === 'ballot' || resource === 'tally' || resource === 'nominate' || resource === 'nominating';
+  const votingResource = resource === 'state' || resource === 'votes' || resource === 'vote' || resource === 'ballot' || resource === 'tally' || resource === 'nominate';
   // vote and ballot are POST only, votes (the ballots) GET only, voting (open years) either.
-  if (((resource === 'vote' || resource === 'ballot' || resource === 'nominate' || resource === 'nominating') && req.method !== 'POST') || ((resource === 'votes' || resource === 'tally') && req.method !== 'GET')) {
+  if (((resource === 'vote' || resource === 'ballot' || resource === 'nominate') && req.method !== 'POST') || ((resource === 'votes' || resource === 'tally') && req.method !== 'GET')) {
     res.status(405).json({ error: 'Method not allowed' });
     return;
   }
@@ -594,9 +610,9 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Everything but the public quick-links read, the public open-years read and
+  // Everything but the public quick-links read, the public phases read and
   // casting a vote (password-gated instead) needs a login.
-  const needsLogin = resource === 'vote' || resource === 'nominate' ? false : resource === 'voting' ? req.method === 'POST' : (req.method === 'POST' || resource === 'tasks' || resource === 'votes');  // ballot and nominating are POSTs, so login-gated
+  const needsLogin = resource === 'vote' || resource === 'nominate' ? false : resource === 'state' ? req.method === 'POST' : (req.method === 'POST' || resource === 'tasks' || resource === 'votes');  // ballot is a POST, so login-gated
   if (needsLogin) {
     const sessionSecret = process.env.SESSION_SECRET;
     if (!sessionSecret) {

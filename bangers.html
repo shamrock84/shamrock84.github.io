@@ -375,6 +375,7 @@
 		.vote-msg.error { color: var(--ir-text); }
 		.accept-nominations { display: flex; gap: 0.5rem; align-items: center; font-size: 0.9rem; margin: 0.2rem 0 0.4rem; }
 		.accept-nominations small { color: var(--muted); }
+		.phase-select { width: auto; flex: 0 1 14rem; }
 		.voting-year { display: flex; gap: 0.5rem; align-items: center; padding: 0.3rem 0; }
 		.ballots { margin: 0 0 0.6rem 1.6rem; }
 		.ballots summary { cursor: pointer; font-size: 0.85rem; color: var(--muted); }
@@ -519,17 +520,18 @@
 		// (`?resource=tasks` / `?resource=quicklinks`), not in the repo: the
 		// toolbar is public to read, tasks are login-only both ways.
 		//
-		// A Nominate tab (after Vote, before Winners) appears while any year accepts
-		// nominations: name, the same password, a song and an artist. The server adds
-		// it to data/bangers.json as a nominee, so Admin edits it and ticks the winner
-		// in the Years card, where each year has an "Accept nominations" checkbox.
+		// A Nominate tab (after Vote, before Winners) appears while any year is set to
+		// Nominations Open: name, the same password, a song and an artist. The server
+		// adds it to data/bangers.json as a nominee, so Admin edits it and ticks the
+		// winner in the Years card, where each year has a Status dropdown
+		// (Nominations Open / Voting In Progress / Complete).
 		//
-		// A Vote tab appears for everyone while any year is open for voting: a
-		// name, the shared password and one nominee. api/bangers.js allows one
-		// vote per name per year and refuses a song whose "Nominated by" matches
-		// the voter. Admin's Voting card opens years, shows who voted for what and
-		// can change, add or delete a ballot. Open years and votes live in the
-		// store, not in the file below.
+		// A Vote tab appears for everyone while any year is set to Voting In
+		// Progress: a name, the shared password and one nominee. api/bangers.js
+		// allows one vote per name per year and refuses a song whose "Nominated by"
+		// matches the voter. Admin's Voting card shows who voted for what and can
+		// change, add or delete a ballot. Phases and votes live in the store, not in
+		// the file below.
 		//
 		// The list is data/bangers.json, a committed file served by Pages like
 		// the rest of the site. Admin's Save POSTs the whole list to
@@ -728,7 +730,7 @@
 			const head = el('h2', { class: 'card-heading', text: 'Wins' });
 			card.appendChild(head);
 			makeCollapsible(card, head, 'stats-wins');
-			const { rows } = winsByPerson(bangers);
+			const { rows } = winsByPerson(shownYears());
 			if (!rows.length) {
 				card.appendChild(el('div', { class: 'task-empty', text: 'No winners yet.' }));
 				return [card];
@@ -778,7 +780,7 @@
 		function winnersView() {
 			const board = el('div', { class: 'board' }, [el('h2', { class: 'board-title', text: 'Hoot Owl Bangers' })]);
 			const grid = el('div', { class: 'plaques' });
-			for (const y of bangers) for (const n of y.nominees) if (n.winner) grid.appendChild(plaque(y.label, n, null));
+			for (const y of shownYears()) for (const n of y.nominees) if (n.winner) grid.appendChild(plaque(y.label, n, null));
 			if (grid.children.length) board.appendChild(grid);
 			else board.appendChild(el('div', { class: 'board-empty', text: 'No winners yet.' }));
 			return [board];
@@ -787,7 +789,7 @@
 		// Every nominee, under its year; a winner goes first and is lit in gold.
 		function nomineesView() {
 			const board = el('div', { class: 'board' }, [el('h2', { class: 'board-title', text: 'Hoot Owl Bangers' })]);
-			const years = bangers.filter((y) => y.nominees.length);
+			const years = shownYears().filter((y) => y.nominees.length);
 			if (!years.length) {
 				board.appendChild(el('div', { class: 'board-empty', text: 'No nominees yet.' }));
 				return [board];
@@ -833,21 +835,30 @@
 			return [board];
 		}
 
-		// ---- Voting ---------------------------------------------------------------
-		// Which years are open comes from api/bangers.js (`?resource=voting`,
-		// public); the nominees come from the list above. Opening a year is the
-		// Admin tab's Voting card; casting a vote needs the shared voting password
-		// (BANGERS_VOTE_PASSWORD on Vercel) and one name gets one vote per year, both
-		// enforced by the server. Votes are not shown back to voters.
+		// ---- Phases, voting and nominating ----------------------------------------
+		// Every year is in one phase, set per year in the Years card and kept by
+		// api/bangers.js (`?resource=state`, public to read):
+		//   Nominations Open   the Nominate tab takes nominations; this page hides the
+		//                      year's nominees (Winners, Nominees, Stats, the count in
+		//                      the header). Cosmetic only: the nominations are in the
+		//                      public data/bangers.json, and Admin still sees them.
+		//   Voting In Progress the Vote tab takes votes
+		//   Complete           neither (no entry; what every older year is)
+		// The server enforces the phase on every nomination and vote. A vote needs
+		// the shared password (BANGERS_VOTE_PASSWORD on Vercel), one name gets one
+		// vote per year, and votes are not shown back to voters.
 		const VOTER_KEY = 'bangersVoterName';
-		let votingOpen = [];        // year ids open for voting
+		const PHASE_LABELS = { nominating: 'Nominations Open', voting: 'Voting In Progress', complete: 'Complete' };
+		let phases = {};            // yearId -> 'nominating' | 'voting'; absent = Complete
+		const phaseOf = (y) => phases[y.id] === 'nominating' || phases[y.id] === 'voting' ? phases[y.id] : 'complete';
 		let votingYear = null;      // the year picked in the Vote card
-		let nominating = [];        // year ids accepting nominations
 		let nominateYear = null;    // the year picked in the Nominate card
 		let nominateMsg = null;     // { text, kind } shown under the form
-		const nominatingYears = () => bangers.filter((y) => nominating.includes(y.id));
 		let voteMsg = null;         // { text, kind } shown under the form
-		const openVotingYears = () => bangers.filter((y) => votingOpen.includes(y.id) && y.nominees.length);
+		const nominatingYears = () => bangers.filter((y) => phaseOf(y) === 'nominating');
+		const openVotingYears = () => bangers.filter((y) => phaseOf(y) === 'voting' && y.nominees.length);
+		// What the public views show: a year taking nominations stays hidden.
+		const shownYears = () => bangers.filter((y) => phaseOf(y) !== 'nominating');
 
 		// nomineeId -> votes, for the "X Votes" line on a plaque. Counts only (the
 		// public `?resource=tally`); who voted is Admin-only.
@@ -870,12 +881,11 @@
 
 		async function loadVoting() {
 			try {
-				const res = await fetch(`${BANGERS_URL}?resource=voting`, { cache: 'no-store' });
+				const res = await fetch(`${BANGERS_URL}?resource=state`, { cache: 'no-store' });
 				if (!res.ok) throw new Error(`HTTP ${res.status}`);
 				const body = await res.json();
-				votingOpen = Array.isArray(body.open) ? body.open : [];
-				nominating = Array.isArray(body.nominating) ? body.nominating : [];
-			} catch (e) { votingOpen = []; nominating = []; }
+				phases = body && body.phases && typeof body.phases === 'object' && !Array.isArray(body.phases) ? body.phases : {};
+			} catch (e) { phases = {}; }
 		}
 
 		function voteView() {
@@ -1027,24 +1037,6 @@
 			} catch (e) { votingMsg = `Couldn’t load the votes (${e.message}).`; }
 			refreshVotingCard();
 		}
-		async function setVotingOpen(next) {
-			votingMsg = 'Saving…';
-			refreshVotingCard();
-			try {
-				const res = await fetch(BANGERS_URL, {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
-					body: JSON.stringify({ resource: 'voting', open: next }),
-				});
-				const body = await res.json().catch(() => ({}));
-				if (res.status === 401) { expireSession(); return; }
-				if (!res.ok) throw new Error((body.details && body.details.join(' ')) || body.error || `HTTP ${res.status}`);
-				votingOpen = body.open;
-				votingMsg = '';
-			} catch (err) { votingMsg = `Not saved: ${err.message}`; }
-			renderTabs();
-			refreshVotingCard();
-		}
 		function refreshVotingCard() {
 			if (!votingCardEl) return;
 			const next = buildVotingCard();
@@ -1118,16 +1110,14 @@
 			const head = el('h2', { class: 'card-heading', text: 'Voting' });
 			const card = el('div', { class: 'card' }, [head]);
 			makeCollapsible(card, head, 'voting');
-			card.appendChild(el('div', { class: 'message', text: 'Tick a year to open voting on the Vote tab (the password is the BANGERS_VOTE_PASSWORD variable in Vercel). Open “Votes” to see who voted for what, change a vote, add one or delete one; a deleted voter can vote again.' }));
-			for (const y of bangers) {
-				const box = el('input', { type: 'checkbox' });
-				box.checked = votingOpen.includes(y.id);
-				box.disabled = votingMsg === 'Saving…';
-				box.addEventListener('change', () => setVotingOpen(box.checked ? [...votingOpen, y.id] : votingOpen.filter((id) => id !== y.id)));
-				card.appendChild(el('label', { class: 'voting-year' }, [box, el('span', { text: `${y.label} ` }), el('small', { text: y.nominees.length ? '' : 'no nominees yet' })]));
-				if (y.nominees.length || (ballots[y.id] || []).length) card.appendChild(buildBallotEditor(y));
+			card.appendChild(el('div', { class: 'message', text: 'Voting opens when a year is set to Voting In Progress in the Years card (the password is the BANGERS_VOTE_PASSWORD variable in Vercel). Open “Votes” to see who voted for what, change a vote, add one or delete one; a deleted voter can vote again.' }));
+			// Years being voted on, plus any other year that has votes on record.
+			const years = bangers.filter((y) => y.nominees.length && (phaseOf(y) === 'voting' || (ballots[y.id] || []).length));
+			for (const y of years) {
+				card.appendChild(el('div', { class: 'voting-year' }, [el('span', { text: `${y.label} ` }), el('small', { text: PHASE_LABELS[phaseOf(y)] })]));
+				card.appendChild(buildBallotEditor(y));
 			}
-			if (!bangers.length) card.appendChild(el('div', { class: 'task-empty', text: 'No years yet.' }));
+			if (!years.length) card.appendChild(el('div', { class: 'task-empty', text: 'No year is being voted on and there are no votes on record.' }));
 			if (votingMsg) card.appendChild(el('div', { class: `vote-msg${votingMsg.startsWith('Not') || votingMsg.startsWith('Couldn') ? ' error' : ''}`, text: votingMsg }));
 			return card;
 		}
@@ -1149,7 +1139,7 @@
 			const n = y.nominees.length;
 			const winners = y.nominees.filter((x) => x.winner).map((x) => x.title.trim() || '(untitled)');
 			const winner = winners.length ? `Winner: ${winners.join(', ')}` : 'no winner yet';
-			return `${n} ${n === 1 ? 'nominee' : 'nominees'} · ${winner}${nominating.includes(y.id) ? ' · accepting nominations' : ''}`;
+			return `${n} ${n === 1 ? 'nominee' : 'nominees'} · ${winner}${phaseOf(y) === 'complete' ? '' : ` · ${PHASE_LABELS[phaseOf(y)]}`}`;
 		};
 
 		function refreshAdmin() {
@@ -1259,32 +1249,44 @@
 			});
 
 			const body = el('div', { class: 'year-body' }, [el('div', { class: 'year-head-row' }, [name, up, down, removeYear])]);
-			// Saved at once (Upstash, like the voting tick-boxes), not with Save below.
-			const accept = el('input', { type: 'checkbox' });
-			accept.checked = nominating.includes(y.id);
-			accept.addEventListener('change', async () => {
-				accept.disabled = true;
+			// The year's phase: saved at once (Upstash), not with Save below. A year
+			// added in this session isn't in the saved file yet, and the server can only
+			// open a year it finds there, so its phase waits for the first Save.
+			const saved = bangers.some((x) => x.id === y.id);
+			const phaseSel = el('select', { class: 'task-input phase-select', 'aria-label': 'Year status' }, [
+				el('option', { value: 'nominating', text: PHASE_LABELS.nominating }),
+				el('option', { value: 'voting', text: PHASE_LABELS.voting }),
+				el('option', { value: 'complete', text: PHASE_LABELS.complete }),
+			]);
+			phaseSel.value = phaseOf(y);
+			phaseSel.disabled = !saved;
+			phaseSel.addEventListener('change', async () => {
+				const want = phaseSel.value;
+				phaseSel.disabled = true;
 				setStatus('Saving…');
 				try {
+					const next = { ...phases };
+					if (want === 'complete') delete next[y.id]; else next[y.id] = want;
 					const res = await fetch(BANGERS_URL, {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
-						body: JSON.stringify({ resource: 'nominating', open: accept.checked ? [...nominating, y.id] : nominating.filter((id) => id !== y.id) }),
+						body: JSON.stringify({ resource: 'state', phases: next }),
 					});
 					const out = await res.json().catch(() => ({}));
 					if (res.status === 401) { expireSession(); return; }
 					if (!res.ok) throw new Error((out.details && out.details.join(' ')) || out.error || `HTTP ${res.status}`);
-					nominating = out.nominating;
-					setStatus(accept.checked ? 'Nominations are open for this year.' : 'Nominations are closed for this year.', 'ok');
+					phases = out.phases;
+					setStatus(`${y.label.trim() || 'This year'}: ${PHASE_LABELS[phaseOf(y)]}.`, 'ok');
 				} catch (err) {
 					setStatus(`Not saved: ${err.message}`, 'error');
 				}
-				accept.checked = nominating.includes(y.id);
-				accept.disabled = false;
+				phaseSel.value = phaseOf(y);
+				phaseSel.disabled = false;
 				fill();
 				renderTabs();
+				refreshVotingCard(); // the Voting card lists the years being voted on
 			});
-			body.appendChild(el('label', { class: 'accept-nominations' }, [accept, el('span', { text: 'Accept nominations on the Nominate tab' }), el('small', { text: ' (saves immediately)' })]));
+			body.appendChild(el('label', { class: 'accept-nominations' }, [el('span', { text: 'Status' }), phaseSel, el('small', { text: saved ? ' (saves immediately)' : ' (Save the year first)' })]));
 			if (focusId === y.id) name.setAttribute('data-focus', '');
 			if (!y.nominees.length) body.appendChild(el('div', { class: 'task-empty', text: 'No nominees yet.' }));
 			y.nominees.forEach((n, j) => body.appendChild(buildNomineeRow(y, n, j)));
@@ -1931,7 +1933,7 @@
 		function renderBangerCount() {
 			const node = document.getElementById('banger-count');
 			if (!node) return;
-			const groups = loadState === 'ready' && Array.isArray(bangers) ? bangers : [];
+			const groups = loadState === 'ready' && Array.isArray(bangers) ? shownYears() : [];
 			const songs = groups.reduce((n, y) => n + y.nominees.length, 0);
 			const years = groups.filter((y) => /^\d{4}/.test(String(y.label).trim())).length;
 			node.classList.toggle('hidden', !songs || !years);

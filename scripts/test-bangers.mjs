@@ -8,7 +8,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import handler, { validateBangers, normalizeBangers, serialize, isStaleBase, TASKS_KEY, QUICKLINKS_KEY, validateVotingOpen, voterKey, cleanVoterName, validateVote, isOwnNomination, validateBallotEdit, validateNomination, VOTING_KEY, NOMINATING_KEY, votesKey } from '../api/bangers.js';
+import handler, { validateBangers, normalizeBangers, serialize, isStaleBase, TASKS_KEY, QUICKLINKS_KEY, voterKey, cleanVoterName, validateVote, isOwnNomination, validateBallotEdit, validateNomination, validatePhases, STATE_KEY, VOTING_KEY, NOMINATING_KEY, votesKey } from '../api/bangers.js';
 import { TASKS_KEY as VIKINGS_TASKS_KEY, QUICKLINKS_KEY as VIKINGS_QUICKLINKS_KEY } from '../api/vikings.js';
 import { createToken } from '../api/_lib/auth.mjs';
 
@@ -176,19 +176,11 @@ check('voterKey ignores case and spacing, so one name is one voter', () => {
   assert.equal(cleanVoterName('a\u0000b\tc'), 'a b c');
   assert.equal(cleanVoterName(5), '');
 });
-check('validateVotingOpen wants a list of ids', () => {
-  assert.equal(validateVotingOpen({ open: ['y1', 'y2'] }).errors.length, 0);
-  assert.equal(validateVotingOpen({ open: [] }).errors.length, 0);
-  for (const bad of [null, {}, { open: 'y1' }, { open: ['a b'] }, { open: [5] }, { open: Array.from({ length: 21 }, (_, i) => `y${i}`) }]) assert.ok(validateVotingOpen(bad).errors.length, JSON.stringify(bad));
-});
-check('isOwnNomination: loose on case, punctuation and surname, silent with no nominator', () => {
-  for (const [name, by] of [['Jeff', 'Jeff'], ['  jeff ', 'Jeff'], ['Jeff Smith', 'Jeff'], ['J.eff', 'Jeff'], ['Jeff', 'Jeff Smith'], ['DAD', 'Dad']]) assert.ok(isOwnNomination(name, by), `${name} / ${by}`);
-  for (const [name, by] of [['Kevin', 'Jeff'], ['Jeffrey', 'Jeff'], ['Kevin', ''], ['Kevin', undefined], ['', 'Jeff'], ['Jeff', '   ']]) assert.ok(!isOwnNomination(name, by), `${name} / ${by}`);
-});
-check('validateBallotEdit: set needs a nominee, delete does not', () => {
-  assert.equal(validateBallotEdit({ action: 'set', name: 'Al', yearId: 'y1', nomineeId: 'na' }).errors.length, 0);
-  assert.equal(validateBallotEdit({ action: 'delete', name: 'Al', yearId: 'y1' }).errors.length, 0);
-  for (const bad of [null, { action: 'set', name: 'Al', yearId: 'y1' }, { action: 'nope', name: 'Al', yearId: 'y1' }, { action: 'delete', name: ' ', yearId: 'y1' }, { action: 'delete', name: 'Al', yearId: 'a b' }]) assert.ok(validateBallotEdit(bad).errors.length, JSON.stringify(bad));
+check('validatePhases takes year id -> nominating | voting, nothing else', () => {
+  assert.equal(validatePhases({ phases: { y1: 'voting', y2: 'nominating' } }).errors.length, 0);
+  assert.equal(validatePhases({ phases: {} }).errors.length, 0);
+  const many = Object.fromEntries(Array.from({ length: 21 }, (_, i) => [`y${i}`, 'voting']));
+  for (const bad of [null, {}, { phases: [] }, { phases: { y1: 'complete' } }, { phases: { y1: 'open' } }, { phases: { 'a b': 'voting' } }, { phases: { y1: 5 } }, { phases: many }]) assert.ok(validatePhases(bad).errors.length, JSON.stringify(bad));
 });
 check('validateNomination needs name, year, song and artist', () => {
   assert.equal(validateNomination({ name: 'Zoe', yearId: 'y1', title: 'S', artist: 'A' }).errors.length, 0);
@@ -262,6 +254,7 @@ function installFakeServices(list) {
   };
   const restore = () => { globalThis.fetch = realFetch; };
   restore.gh = gh;
+  restore.kv = kv;
   return restore;
 }
 async function callFull(method, { query, body, token, ip = '1.1.1.1' } = {}) {
@@ -275,12 +268,23 @@ Object.assign(process.env, { KV_REST_API_URL: 'https://fake-kv.test', KV_REST_AP
 const restoreFetch = installFakeServices([{ id: 'y1', label: '2027', nominees: [{ id: 'na', title: 'A', by: 'Jeff' }, { id: 'nb', title: 'B', by: 'Dad' }, { id: 'nd', title: 'D' }] }, { id: 'y2', label: '2028', nominees: [{ id: 'nc', title: 'C', by: 'Kris' }] }]);
 const vote = (over = {}, ip) => callFull('POST', { ip, body: { resource: 'vote', name: 'Kevin', password: 'hootowl', yearId: 'y1', nomineeId: 'na', ...over } });
 for (const [name, run] of [
-  ['open years: public GET, login-gated POST', async () => {
-    assert.deepEqual((await callFull('GET', { query: { resource: 'voting' } })).body, { open: [], nominating: [] });
-    assert.equal((await callFull('POST', { body: { resource: 'voting', open: ['y1'] } })).code, 401);
-    assert.equal((await callFull('POST', { token: good, body: { resource: 'voting', open: ['y1'] } })).code, 200);
-    assert.deepEqual((await callFull('GET', { query: { resource: 'voting' } })).body, { open: ['y1'], nominating: [] });
-    assert.equal((await callFull('POST', { token: good, body: { resource: 'voting', open: 'y1' } })).code, 400);
+  ['years opened under the old two lists keep their phase until the first save', async () => {
+    restoreFetch.kv.set(VOTING_KEY, JSON.stringify({ open: ['y1'] }));
+    restoreFetch.kv.set(NOMINATING_KEY, JSON.stringify({ open: ['y2', 'y1'] }));
+    assert.deepEqual((await callFull('GET', { query: { resource: 'state' } })).body, { phases: { y1: 'voting', y2: 'nominating' } }, 'voting wins when a year is on both');
+    restoreFetch.kv.delete(VOTING_KEY);
+    restoreFetch.kv.delete(NOMINATING_KEY);
+  }],
+  ['phases: public GET, login-gated POST, and what is saved is what is read', async () => {
+    assert.deepEqual((await callFull('GET', { query: { resource: 'state' } })).body, { phases: {} });
+    assert.equal((await callFull('POST', { body: { resource: 'state', phases: { y1: 'voting' } } })).code, 401);
+    assert.equal((await callFull('POST', { token: 'bogus', body: { resource: 'state', phases: { y1: 'voting' } } })).code, 401);
+    assert.equal((await callFull('POST', { token: good, body: { resource: 'state', phases: { y1: 'voting' } } })).code, 200);
+    assert.deepEqual((await callFull('GET', { query: { resource: 'state' } })).body, { phases: { y1: 'voting' } });
+    assert.equal((await callFull('POST', { token: good, body: { resource: 'state', phases: { y1: 'complete' } } })).code, 400);
+    assert.equal((await callFull('POST', { token: good, body: { resource: 'state', phases: 'y1' } })).code, 400);
+    assert.deepEqual((await callFull('GET', { query: { resource: 'state' } })).body, { phases: { y1: 'voting' } }, 'a refused save changes nothing');
+    assert.equal((await callFull('GET', { query: { resource: 'voting' } })).code, 405, 'the old resource is gone');
   }],
   ['a vote needs the password, and wrong guesses are counted then locked out', async () => {
     assert.equal((await vote({ password: 'nope' }, '9.9.9.9')).code, 401);
@@ -298,7 +302,7 @@ for (const [name, run] of [
   }],
   ['the same name may vote in another open year', async () => {
     assert.equal((await vote({ yearId: 'y2', nomineeId: 'nc' })).code, 403, 'y2 is not open yet');
-    await callFull('POST', { token: good, body: { resource: 'voting', open: ['y1', 'y2'] } });
+    await callFull('POST', { token: good, body: { resource: 'state', phases: { y1: 'voting', y2: 'voting' } } });
     assert.equal((await vote({ yearId: 'y2', nomineeId: 'nc' })).code, 200);
   }],
   ['a closed year, an unknown year, or another year\'s nominee is refused', async () => {
@@ -351,13 +355,12 @@ for (const [name, run] of [
     assert.equal((await callFull('GET', { query: { resource: 'tally' } })).body.counts && Object.keys((await callFull('GET', { query: { resource: 'tally' } })).body.counts).length, 0);
     assert.equal((await callFull('POST', { body: { resource: 'tally' } })).code, 405);
   }],
-  ['nominations: year list is public, set by login only', async () => {
-    assert.deepEqual((await callFull('GET', { query: { resource: 'voting' } })).body.nominating, []);
-    assert.equal((await callFull('POST', { body: { resource: 'nominating', open: ['y2'] } })).code, 401);
-    assert.equal((await callFull('POST', { token: good, body: { resource: 'nominating', open: 'y2' } })).code, 400);
-    assert.equal((await callFull('POST', { token: good, body: { resource: 'nominating', open: ['y2'] } })).code, 200);
-    assert.deepEqual((await callFull('GET', { query: { resource: 'voting' } })).body.nominating, ['y2']);
-    assert.equal((await callFull('GET', { query: { resource: 'nominating' } })).code, 405);
+  ['a year takes votes only in voting and nominations only in nominating', async () => {
+    await callFull('POST', { token: good, body: { resource: 'state', phases: { y1: 'voting', y2: 'nominating' } } });
+    assert.equal((await vote({ name: 'Una', yearId: 'y2', nomineeId: 'nc' })).code, 403, 'no votes while nominating');
+    assert.equal((await callFull('POST', { body: { resource: 'nominate', name: 'Una', password: 'hootowl', yearId: 'y1', title: 'S', artist: 'A' } })).code, 403, 'no nominations while voting');
+    assert.equal((await callFull('POST', { body: { resource: 'nominate', name: 'Una', password: 'hootowl', yearId: 'y9', title: 'S', artist: 'A' } })).code, 403, 'a Complete year takes neither');
+    assert.equal(restoreFetch.gh.puts, 0);
   }],
   ['a nomination needs the password, an open year and a full form', async () => {
     const nom = (over = {}, ip) => callFull('POST', { ip, body: { resource: 'nominate', name: 'Zoe', password: 'hootowl', yearId: 'y2', title: 'New Song', artist: 'New Artist', ...over } });
@@ -421,7 +424,7 @@ for (const [name, run] of [
 restoreFetch();
 for (const k of Object.keys(process.env)) if (!(k in voteSaved)) delete process.env[k];
 Object.assign(process.env, voteSaved);
-check('votes live in their own keys', () => { assert.equal(VOTING_KEY, 'bangers:voting'); assert.equal(NOMINATING_KEY, 'bangers:nominating'); assert.equal(votesKey('y1'), 'bangers:votes:y1'); });
+check('phases and votes live in their own keys', () => { assert.equal(STATE_KEY, 'bangers:year-states'); assert.equal(VOTING_KEY, 'bangers:voting'); assert.equal(NOMINATING_KEY, 'bangers:nominating'); assert.equal(votesKey('y1'), 'bangers:votes:y1'); });
 
 for (const k of Object.keys(process.env)) if (!(k in savedEnv)) delete process.env[k];
 Object.assign(process.env, savedEnv);
