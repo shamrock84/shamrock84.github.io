@@ -38,14 +38,13 @@
 // tasks GET needs the Bearer token, and every POST does. The bangers list
 // itself still has no GET: the page reads data/bangers.json from Pages.
 //
-// VOTING. Also in the Upstash store, under `bangers:voting` (which years are
-// open: { open: [yearId, ...] }) and one hash per year, `bangers:votes:<yearId>`,
+// VOTING. Also in the Upstash store: one hash per year, `bangers:votes:<yearId>`,
 // field = the voter's name lowercased with whitespace collapsed (voterKey),
 // value = { name, nomineeId, at }. A hash, not one JSON document, because a
 // vote is written with HSETNX: atomic, so a name can't vote twice in a year
 // even from two requests at once, and two voters never overwrite each other.
-//   GET  ?resource=voting             public: which years are open
-//   POST resource=voting {open}       login-gated: open or close years
+//   GET  ?resource=state              public: each year's phase
+//   POST resource=state {phases}      login-gated: set the phases
 //   GET  ?resource=tally&years=a,b    public: vote COUNTS per nominee (no names),
 //                                     for the "X Votes" line on the plaques
 //   GET  ?resource=votes&years=a,b    login-gated: every ballot for those years
@@ -53,6 +52,28 @@
 //        {name, password, yearId, nomineeId}
 //   POST resource=ballot              login-gated: Admin edits a ballot
 //        {yearId, name, nomineeId, action: 'set'|'delete'}
+//   POST resource=nominate            public, same password as voting:
+//        {name, password, yearId, title, artist}
+// PHASES. Each year is in one of three, kept in `bangers:year-states` as
+// { phases: { yearId: 'nominating' | 'voting' } }; a year with no entry is
+// Complete (the default for every historical year):
+//   nominating  the Nominate tab takes nominations; the page hides the year's
+//               nominees from the Winners, Nominees and Stats views
+//   voting      the Vote tab takes votes; nominations are refused
+//   complete    neither
+// Both public writes check the phase here, not in the page. The hiding is
+// cosmetic: nominations are committed to data/bangers.json (below), which is
+// public, so anyone reading the file can see them.
+// The doc replaced two lists (`bangers:voting`, `bangers:nominating`); until the
+// first save under the new key those are read as a fallback (readPhases).
+//
+// A nomination is added to data/bangers.json as an ordinary nominee (by = the
+// name typed, winner false) and committed to main, so it appears in Admin's Years
+// card to edit or tick as winner. The commit is a read-modify-write on the
+// file's sha, retried when an Admin save or another nomination lands first. One
+// nomination per person per year (isOwnNomination against each nominee's `by`),
+// one per song, and MAX_NOMINEES per year.
+//
 // Nobody may vote for their own nomination (isOwnNomination): the voter's name
 // is matched against the nominee's `by`. Best effort by nature, since names are
 // typed freely. Admin's ballot edit is an override and skips that check, and
@@ -81,8 +102,12 @@ const BRANCH = 'main';
 // sharing one would show each page the other's tasks and toolbar.
 const TASKS_KEY = 'bangers:tasks';
 const QUICKLINKS_KEY = 'bangers:quicklinks';
+// Legacy open lists, read only until the first save of STATE_KEY.
 const VOTING_KEY = 'bangers:voting';
+const STATE_KEY = 'bangers:year-states';
+const PHASES = ['nominating', 'voting'];
 const votesKey = (yearId) => `bangers:votes:${yearId}`;
+const NOMINATING_KEY = 'bangers:nominating';
 const MAX_OPEN_YEARS = 20;
 const MAX_VOTER_NAME = 40;
 const VOTE_IP_MAX_FAILURES = 10;
@@ -104,7 +129,7 @@ function isWebUrl(s) {
   try { return ['http:', 'https:'].includes(new URL(s).protocol); } catch { return false; }
 }
 
-export { validateBangers, normalizeBangers, serialize, isStaleBase, TASKS_KEY, QUICKLINKS_KEY, validateVotingOpen, voterKey, cleanVoterName, validateVote, isOwnNomination, validateBallotEdit, VOTING_KEY, votesKey };
+export { validateBangers, normalizeBangers, serialize, isStaleBase, TASKS_KEY, QUICKLINKS_KEY, voterKey, cleanVoterName, validateVote, isOwnNomination, validateBallotEdit, validateNomination, validatePhases, readPhases, VOTING_KEY, NOMINATING_KEY, STATE_KEY, votesKey };
 
 const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const text = (v) => (typeof v === 'string' ? v.trim() : '');
@@ -194,13 +219,30 @@ function serialize(years) {
 
 // ---- Voting --------------------------------------------------------------
 
-// { open: [yearId, ...] } — errors empty when valid.
-function validateVotingOpen(body) {
-  if (!isObject(body) || !Array.isArray(body.open)) return { errors: ['open must be a list of year ids'] };
-  if (body.open.length > MAX_OPEN_YEARS) return { errors: [`more than ${MAX_OPEN_YEARS} years open`] };
+// { phases: { yearId: 'nominating' | 'voting' } } — errors empty when valid.
+function validatePhases(body) {
+  if (!isObject(body) || !isObject(body.phases)) return { errors: ['phases must be an object of year id to phase'] };
+  const entries = Object.entries(body.phases);
+  if (entries.length > MAX_OPEN_YEARS) return { errors: [`more than ${MAX_OPEN_YEARS} years in a phase`] };
   const errors = [];
-  if (body.open.some((id) => typeof id !== 'string' || !ID.test(id))) errors.push('open: every year id must be letters and digits.');
+  for (const [id, phase] of entries) {
+    if (!ID.test(id)) errors.push('every year id must be letters and digits.');
+    else if (!PHASES.includes(phase)) errors.push(`${id}: phase must be nominating or voting (a Complete year has no entry).`);
+  }
   return { errors };
+}
+
+// The phases now in force. Falls back to the two legacy open lists when the
+// state doc has never been saved, so years someone had already opened keep
+// working across the change.
+async function readPhases(store) {
+  const doc = await storeGet(store, STATE_KEY);
+  if (isObject(doc && doc.phases)) return doc.phases;
+  const [voting, nominating] = await Promise.all([storeGet(store, VOTING_KEY), storeGet(store, NOMINATING_KEY)]);
+  const phases = {};
+  for (const id of Array.isArray(nominating && nominating.open) ? nominating.open : []) phases[id] = 'nominating';
+  for (const id of Array.isArray(voting && voting.open) ? voting.open : []) phases[id] = 'voting';
+  return phases;
 }
 
 // What the voter typed, tidied: control characters out, runs of whitespace
@@ -237,6 +279,24 @@ function isOwnNomination(voterName, by) {
   const b = norm(by);
   if (!n || !b) return false;
   return n === b || n.split(' ')[0] === b.split(' ')[0];
+}
+
+// { name, yearId, title, artist }: shape only. The password is checked first and
+// the year/duplicates against the real file afterwards.
+function validateNomination(body) {
+  if (!isObject(body)) return { errors: ['body must be an object'] };
+  const errors = [];
+  const name = cleanVoterName(body.name);
+  if (!name) errors.push('Enter your name.');
+  else if (name.length > MAX_VOTER_NAME) errors.push(`Your name can be at most ${MAX_VOTER_NAME} characters.`);
+  if (typeof body.yearId !== 'string' || !ID.test(body.yearId)) errors.push('Pick a year.');
+  const title = cleanVoterName(body.title);
+  if (!title) errors.push('Enter the song.');
+  else if (title.length > MAX_TITLE_LENGTH) errors.push(`The song can be at most ${MAX_TITLE_LENGTH} characters.`);
+  const artist = cleanVoterName(body.artist);
+  if (!artist) errors.push('Enter the artist.');
+  else if (artist.length > MAX_ARTIST_LENGTH) errors.push(`The artist can be at most ${MAX_ARTIST_LENGTH} characters.`);
+  return { errors };
 }
 
 // Admin's edit of one ballot.
@@ -283,6 +343,74 @@ async function readBangersFile(token) {
   return Array.isArray(doc.years) ? doc.years : [];
 }
 
+// The shared-password check for the public writes (vote, nominate), with the
+// per-IP wrong-guess limit. Sends the refusal itself and returns false.
+async function passwordGate(req, res, store, body) {
+  const expected = process.env.BANGERS_VOTE_PASSWORD;
+  if (!expected) { res.status(500).json({ error: 'BANGERS_VOTE_PASSWORD is not configured on this deployment.' }); return false; }
+  const ipKey = `bangers:votefail:${clientIp(req)}`;
+  try {
+    const [failures] = await storeCounts(store, [ipKey]);
+    if (failures >= VOTE_IP_MAX_FAILURES) { res.status(429).json({ error: 'Too many wrong passwords. Please wait a while and try again.' }); return false; }
+  } catch (err) {
+    console.error(`bangers: rate-limit check skipped, store unavailable: ${err.message}`);
+  }
+  if (!votePasswordMatches(body.password, expected)) {
+    await storeBump(store, [{ key: ipKey, ttlSeconds: VOTE_IP_WINDOW_SECONDS }]).catch((err) => console.error(`bangers: failed attempt not counted: ${err.message}`));
+    res.status(401).json({ error: 'Incorrect password.' });
+    return false;
+  }
+  await storeRelease(store, ipKey).catch(() => {});
+  return true;
+}
+
+const GH_HEADERS = (token) => ({ Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' });
+
+// The list and its sha, as on main right now.
+async function readListWithSha(token) {
+  const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}?ref=${BRANCH}`, { headers: GH_HEADERS(token), signal: AbortSignal.timeout(10000) });
+  if (!res.ok) throw new Error(`GitHub returned ${res.status}`);
+  const json = await res.json();
+  const doc = JSON.parse(Buffer.from(json.content || '', 'base64').toString('utf8'));
+  return { sha: json.sha, years: Array.isArray(doc.years) ? doc.years : [] };
+}
+
+// Adds one nominee to a year and commits it. The PUT carries the sha it read,
+// so if an Admin save or another nomination got in first GitHub refuses it and
+// we read again and redo the checks on the fresh list. Returns { nominee,
+// yearLabel } or { status, error }.
+async function addNomination(token, { yearId, name, title, artist }) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const { sha, years } = await readListWithSha(token);
+    const year = years.find((y) => y && y.id === yearId);
+    if (!year) return { status: 400, error: 'That year is not on the list.' };
+    const nominees = Array.isArray(year.nominees) ? year.nominees : [];
+    if (nominees.some((n) => n && isOwnNomination(name, n.by))) return { status: 409, error: `You have already nominated a song for ${year.label}.` };
+    const same = (a, b) => cleanVoterName(a).toLowerCase() === cleanVoterName(b).toLowerCase();
+    if (nominees.some((n) => n && same(n.title, title) && same(n.artist, artist))) return { status: 409, error: `That song is already nominated for ${year.label}.` };
+    if (nominees.length >= MAX_NOMINEES) return { status: 409, error: `${year.label} already has the maximum of ${MAX_NOMINEES} nominees.` };
+    const nominee = { id: `n${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`, title, artist, by: name, winner: false };
+    year.nominees = [...nominees, nominee];
+    const { errors } = validateBangers({ years });
+    if (errors.length) return { status: 500, error: `The list would not be valid with this nomination: ${errors[0]}` };
+    const putRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`, {
+      method: 'PUT',
+      headers: { ...GH_HEADERS(token), 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(15000),
+      body: JSON.stringify({
+        message: `Add a nomination to ${year.label} from the Nominate tab`,
+        content: Buffer.from(serialize(normalizeBangers(years)), 'utf8').toString('base64'),
+        sha,
+        branch: BRANCH,
+      }),
+    });
+    if (putRes.status === 409 || putRes.status === 422) continue;
+    if (!putRes.ok) throw new Error(`GitHub returned ${putRes.status}: ${(await putRes.text()).slice(0, 200)}`);
+    return { nominee, yearLabel: year.label };
+  }
+  return { status: 409, error: 'The list is being changed right now. Please try again in a moment.' };
+}
+
 async function handleVoting(req, res, resource) {
   const store = resolveStore(process.env);
   if (!store) {
@@ -290,17 +418,32 @@ async function handleVoting(req, res, resource) {
     return;
   }
   try {
-    if (resource === 'voting') {
+    if (resource === 'state') {
       if (req.method === 'GET') {
-        const doc = await storeGet(store, VOTING_KEY);
-        res.status(200).json({ open: Array.isArray(doc && doc.open) ? doc.open : [] });
+        res.status(200).json({ phases: await readPhases(store) });
         return;
       }
-      const { errors } = validateVotingOpen(req.body);
+      const { errors } = validatePhases(req.body);
       if (errors.length) { res.status(400).json({ error: 'Nothing was saved — the request was malformed:', details: errors }); return; }
-      const open = [...new Set(req.body.open)];
-      await storeSet(store, VOTING_KEY, { open });
-      res.status(200).json({ open });
+      const phases = { ...req.body.phases };
+      await storeSet(store, STATE_KEY, { phases });
+      res.status(200).json({ phases });
+      return;
+    }
+    if (resource === 'nominate') {
+      const body = req.body || {};
+      if (!(await passwordGate(req, res, store, body))) return;
+      const { errors } = validateNomination(body);
+      if (errors.length) { res.status(400).json({ error: errors.join(' ') }); return; }
+      if ((await readPhases(store))[body.yearId] !== 'nominating') { res.status(403).json({ error: 'Nominations are not open for that year.' }); return; }
+      const token = process.env.GITHUB_CONTENTS_TOKEN;
+      if (!token) { res.status(500).json({ error: 'GITHUB_CONTENTS_TOKEN is not configured on this deployment.' }); return; }
+      let out;
+      try {
+        out = await addNomination(token, { yearId: body.yearId, name: cleanVoterName(body.name), title: cleanVoterName(body.title), artist: cleanVoterName(body.artist) });
+      } catch (err) { res.status(502).json({ error: `Couldn't save the nomination: ${err.message}` }); return; }
+      if (out.error) { res.status(out.status).json({ error: out.error }); return; }
+      res.status(200).json({ ok: true, name: cleanVoterName(body.name), yearLabel: out.yearLabel });
       return;
     }
     if (resource === 'tally') {
@@ -346,28 +489,12 @@ async function handleVoting(req, res, resource) {
     }
 
     // resource === 'vote'
-    const expected = process.env.BANGERS_VOTE_PASSWORD;
-    if (!expected) { res.status(500).json({ error: 'BANGERS_VOTE_PASSWORD is not configured on this deployment.' }); return; }
     const body = req.body || {};
-    const ipKey = `bangers:votefail:${clientIp(req)}`;
-    try {
-      const [failures] = await storeCounts(store, [ipKey]);
-      if (failures >= VOTE_IP_MAX_FAILURES) { res.status(429).json({ error: 'Too many wrong passwords. Please wait a while and try again.' }); return; }
-    } catch (err) {
-      console.error(`bangers vote: rate-limit check skipped, store unavailable: ${err.message}`);
-    }
-    if (!votePasswordMatches(body.password, expected)) {
-      await storeBump(store, [{ key: ipKey, ttlSeconds: VOTE_IP_WINDOW_SECONDS }]).catch((err) => console.error(`bangers vote: failed attempt not counted: ${err.message}`));
-      res.status(401).json({ error: 'Incorrect password.' });
-      return;
-    }
-    await storeRelease(store, ipKey).catch(() => {});
+    if (!(await passwordGate(req, res, store, body))) return;
     const { errors } = validateVote(body);
     if (errors.length) { res.status(400).json({ error: errors.join(' ') }); return; }
 
-    const doc = await storeGet(store, VOTING_KEY);
-    const open = Array.isArray(doc && doc.open) ? doc.open : [];
-    if (!open.includes(body.yearId)) { res.status(403).json({ error: 'Voting is not open for that year.' }); return; }
+    if ((await readPhases(store))[body.yearId] !== 'voting') { res.status(403).json({ error: 'Voting is not open for that year.' }); return; }
 
     const token = process.env.GITHUB_CONTENTS_TOKEN;
     if (!token) { res.status(500).json({ error: 'GITHUB_CONTENTS_TOKEN is not configured on this deployment.' }); return; }
@@ -471,9 +598,9 @@ export default async function handler(req, res) {
 
   const resource = req.method === 'GET' ? (req.query && req.query.resource) : (req.body || {}).resource;
   const storeResource = resource === 'tasks' || resource === 'quicklinks';
-  const votingResource = resource === 'voting' || resource === 'votes' || resource === 'vote' || resource === 'ballot' || resource === 'tally';
+  const votingResource = resource === 'state' || resource === 'votes' || resource === 'vote' || resource === 'ballot' || resource === 'tally' || resource === 'nominate';
   // vote and ballot are POST only, votes (the ballots) GET only, voting (open years) either.
-  if (((resource === 'vote' || resource === 'ballot') && req.method !== 'POST') || ((resource === 'votes' || resource === 'tally') && req.method !== 'GET')) {
+  if (((resource === 'vote' || resource === 'ballot' || resource === 'nominate') && req.method !== 'POST') || ((resource === 'votes' || resource === 'tally') && req.method !== 'GET')) {
     res.status(405).json({ error: 'Method not allowed' });
     return;
   }
@@ -483,9 +610,9 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Everything but the public quick-links read, the public open-years read and
+  // Everything but the public quick-links read, the public phases read and
   // casting a vote (password-gated instead) needs a login.
-  const needsLogin = resource === 'vote' ? false : resource === 'voting' ? req.method === 'POST' : (req.method === 'POST' || resource === 'tasks' || resource === 'votes');  // ballot is a POST, so login-gated
+  const needsLogin = resource === 'vote' || resource === 'nominate' ? false : resource === 'state' ? req.method === 'POST' : (req.method === 'POST' || resource === 'tasks' || resource === 'votes');  // ballot is a POST, so login-gated
   if (needsLogin) {
     const sessionSecret = process.env.SESSION_SECRET;
     if (!sessionSecret) {

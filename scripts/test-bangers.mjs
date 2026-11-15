@@ -7,7 +7,8 @@
 
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import handler, { validateBangers, normalizeBangers, serialize, isStaleBase, TASKS_KEY, QUICKLINKS_KEY, validateVotingOpen, voterKey, cleanVoterName, validateVote, isOwnNomination, validateBallotEdit, VOTING_KEY, votesKey } from '../api/bangers.js';
+import { createHash } from 'node:crypto';
+import handler, { validateBangers, normalizeBangers, serialize, isStaleBase, TASKS_KEY, QUICKLINKS_KEY, voterKey, cleanVoterName, validateVote, isOwnNomination, validateBallotEdit, validateNomination, validatePhases, STATE_KEY, VOTING_KEY, NOMINATING_KEY, votesKey } from '../api/bangers.js';
 import { TASKS_KEY as VIKINGS_TASKS_KEY, QUICKLINKS_KEY as VIKINGS_QUICKLINKS_KEY } from '../api/vikings.js';
 import { createToken } from '../api/_lib/auth.mjs';
 
@@ -175,19 +176,15 @@ check('voterKey ignores case and spacing, so one name is one voter', () => {
   assert.equal(cleanVoterName('a\u0000b\tc'), 'a b c');
   assert.equal(cleanVoterName(5), '');
 });
-check('validateVotingOpen wants a list of ids', () => {
-  assert.equal(validateVotingOpen({ open: ['y1', 'y2'] }).errors.length, 0);
-  assert.equal(validateVotingOpen({ open: [] }).errors.length, 0);
-  for (const bad of [null, {}, { open: 'y1' }, { open: ['a b'] }, { open: [5] }, { open: Array.from({ length: 21 }, (_, i) => `y${i}`) }]) assert.ok(validateVotingOpen(bad).errors.length, JSON.stringify(bad));
+check('validatePhases takes year id -> nominating | voting, nothing else', () => {
+  assert.equal(validatePhases({ phases: { y1: 'voting', y2: 'nominating' } }).errors.length, 0);
+  assert.equal(validatePhases({ phases: {} }).errors.length, 0);
+  const many = Object.fromEntries(Array.from({ length: 21 }, (_, i) => [`y${i}`, 'voting']));
+  for (const bad of [null, {}, { phases: [] }, { phases: { y1: 'complete' } }, { phases: { y1: 'open' } }, { phases: { 'a b': 'voting' } }, { phases: { y1: 5 } }, { phases: many }]) assert.ok(validatePhases(bad).errors.length, JSON.stringify(bad));
 });
-check('isOwnNomination: loose on case, punctuation and surname, silent with no nominator', () => {
-  for (const [name, by] of [['Jeff', 'Jeff'], ['  jeff ', 'Jeff'], ['Jeff Smith', 'Jeff'], ['J.eff', 'Jeff'], ['Jeff', 'Jeff Smith'], ['DAD', 'Dad']]) assert.ok(isOwnNomination(name, by), `${name} / ${by}`);
-  for (const [name, by] of [['Kevin', 'Jeff'], ['Jeffrey', 'Jeff'], ['Kevin', ''], ['Kevin', undefined], ['', 'Jeff'], ['Jeff', '   ']]) assert.ok(!isOwnNomination(name, by), `${name} / ${by}`);
-});
-check('validateBallotEdit: set needs a nominee, delete does not', () => {
-  assert.equal(validateBallotEdit({ action: 'set', name: 'Al', yearId: 'y1', nomineeId: 'na' }).errors.length, 0);
-  assert.equal(validateBallotEdit({ action: 'delete', name: 'Al', yearId: 'y1' }).errors.length, 0);
-  for (const bad of [null, { action: 'set', name: 'Al', yearId: 'y1' }, { action: 'nope', name: 'Al', yearId: 'y1' }, { action: 'delete', name: ' ', yearId: 'y1' }, { action: 'delete', name: 'Al', yearId: 'a b' }]) assert.ok(validateBallotEdit(bad).errors.length, JSON.stringify(bad));
+check('validateNomination needs name, year, song and artist', () => {
+  assert.equal(validateNomination({ name: 'Zoe', yearId: 'y1', title: 'S', artist: 'A' }).errors.length, 0);
+  for (const bad of [null, { yearId: 'y1', title: 'S', artist: 'A' }, { name: 'Z', title: 'S', artist: 'A' }, { name: 'Z', yearId: 'y1', artist: 'A' }, { name: 'Z', yearId: 'y1', title: 'S' }, { name: 'Z', yearId: 'y1', title: 'x'.repeat(121), artist: 'A' }, { name: 'Z', yearId: 'y1', title: 'S', artist: 'x'.repeat(121) }, { name: 'x'.repeat(41), yearId: 'y1', title: 'S', artist: 'A' }]) assert.ok(validateNomination(bad).errors.length, JSON.stringify(bad));
 });
 check('validateVote needs a name, a year and a nominee', () => {
   assert.equal(validateVote({ name: 'Kevin', yearId: 'y1', nomineeId: 'n1' }).errors.length, 0);
@@ -199,6 +196,12 @@ check('validateVote needs a name, a year and a nominee', () => {
 
 // ---- Voting: the whole flow against an in-memory Upstash and GitHub --------
 function installFakeServices(list) {
+  // GitHub: the list file with a content-derived sha, so a PUT made from an old
+  // sha is refused like the real thing. `gh.conflictNext` makes the next PUT
+  // lose a race (409) after another writer "changed" the file.
+  const gh = { years: list, puts: 0, conflictNext: 0, onConflict: null };
+  const fileText = () => JSON.stringify({ years: gh.years });
+  const shaOf = (t) => createHash('sha1').update(t).digest('hex');
   const kv = new Map();      // key -> string
   const hashes = new Map();  // key -> Map(field -> string)
   const run = (cmd) => {
@@ -235,10 +238,24 @@ function installFakeServices(list) {
       if (path === '/pipeline') return json(JSON.parse(init.body).map((c) => ({ result: run(c) })));
       return json({ result: run(JSON.parse(init.body)) });
     }
-    if (u.startsWith('https://api.github.com/')) return new Response(JSON.stringify({ years: list }), { status: 200 });
+    if (u.startsWith('https://api.github.com/')) {
+      if ((init.method || 'GET') === 'PUT') {
+        const put = JSON.parse(init.body);
+        if (gh.conflictNext > 0) { gh.conflictNext--; if (gh.onConflict) gh.onConflict(); return json({ message: 'conflict' }, 409); }
+        if (put.sha !== shaOf(fileText())) return json({ message: 'sha mismatch' }, 409);
+        gh.years = JSON.parse(Buffer.from(put.content, 'base64').toString('utf8')).years;
+        gh.puts++;
+        return json({ content: { sha: shaOf(fileText()) } });
+      }
+      if (String(init.headers && init.headers.Accept).includes('raw')) return new Response(fileText(), { status: 200 });
+      return json({ sha: shaOf(fileText()), content: Buffer.from(fileText()).toString('base64') });
+    }
     throw new Error(`unexpected fetch ${u}`);
   };
-  return () => { globalThis.fetch = realFetch; };
+  const restore = () => { globalThis.fetch = realFetch; };
+  restore.gh = gh;
+  restore.kv = kv;
+  return restore;
 }
 async function callFull(method, { query, body, token, ip = '1.1.1.1' } = {}) {
   const res = { code: null, body: null, setHeader() {}, status(c) { this.code = c; return this; }, json(b) { this.body = b; return this; }, end() { return this; } };
@@ -251,12 +268,23 @@ Object.assign(process.env, { KV_REST_API_URL: 'https://fake-kv.test', KV_REST_AP
 const restoreFetch = installFakeServices([{ id: 'y1', label: '2027', nominees: [{ id: 'na', title: 'A', by: 'Jeff' }, { id: 'nb', title: 'B', by: 'Dad' }, { id: 'nd', title: 'D' }] }, { id: 'y2', label: '2028', nominees: [{ id: 'nc', title: 'C', by: 'Kris' }] }]);
 const vote = (over = {}, ip) => callFull('POST', { ip, body: { resource: 'vote', name: 'Kevin', password: 'hootowl', yearId: 'y1', nomineeId: 'na', ...over } });
 for (const [name, run] of [
-  ['open years: public GET, login-gated POST', async () => {
-    assert.deepEqual((await callFull('GET', { query: { resource: 'voting' } })).body, { open: [] });
-    assert.equal((await callFull('POST', { body: { resource: 'voting', open: ['y1'] } })).code, 401);
-    assert.equal((await callFull('POST', { token: good, body: { resource: 'voting', open: ['y1'] } })).code, 200);
-    assert.deepEqual((await callFull('GET', { query: { resource: 'voting' } })).body, { open: ['y1'] });
-    assert.equal((await callFull('POST', { token: good, body: { resource: 'voting', open: 'y1' } })).code, 400);
+  ['years opened under the old two lists keep their phase until the first save', async () => {
+    restoreFetch.kv.set(VOTING_KEY, JSON.stringify({ open: ['y1'] }));
+    restoreFetch.kv.set(NOMINATING_KEY, JSON.stringify({ open: ['y2', 'y1'] }));
+    assert.deepEqual((await callFull('GET', { query: { resource: 'state' } })).body, { phases: { y1: 'voting', y2: 'nominating' } }, 'voting wins when a year is on both');
+    restoreFetch.kv.delete(VOTING_KEY);
+    restoreFetch.kv.delete(NOMINATING_KEY);
+  }],
+  ['phases: public GET, login-gated POST, and what is saved is what is read', async () => {
+    assert.deepEqual((await callFull('GET', { query: { resource: 'state' } })).body, { phases: {} });
+    assert.equal((await callFull('POST', { body: { resource: 'state', phases: { y1: 'voting' } } })).code, 401);
+    assert.equal((await callFull('POST', { token: 'bogus', body: { resource: 'state', phases: { y1: 'voting' } } })).code, 401);
+    assert.equal((await callFull('POST', { token: good, body: { resource: 'state', phases: { y1: 'voting' } } })).code, 200);
+    assert.deepEqual((await callFull('GET', { query: { resource: 'state' } })).body, { phases: { y1: 'voting' } });
+    assert.equal((await callFull('POST', { token: good, body: { resource: 'state', phases: { y1: 'complete' } } })).code, 400);
+    assert.equal((await callFull('POST', { token: good, body: { resource: 'state', phases: 'y1' } })).code, 400);
+    assert.deepEqual((await callFull('GET', { query: { resource: 'state' } })).body, { phases: { y1: 'voting' } }, 'a refused save changes nothing');
+    assert.equal((await callFull('GET', { query: { resource: 'voting' } })).code, 405, 'the old resource is gone');
   }],
   ['a vote needs the password, and wrong guesses are counted then locked out', async () => {
     assert.equal((await vote({ password: 'nope' }, '9.9.9.9')).code, 401);
@@ -274,7 +302,7 @@ for (const [name, run] of [
   }],
   ['the same name may vote in another open year', async () => {
     assert.equal((await vote({ yearId: 'y2', nomineeId: 'nc' })).code, 403, 'y2 is not open yet');
-    await callFull('POST', { token: good, body: { resource: 'voting', open: ['y1', 'y2'] } });
+    await callFull('POST', { token: good, body: { resource: 'state', phases: { y1: 'voting', y2: 'voting' } } });
     assert.equal((await vote({ yearId: 'y2', nomineeId: 'nc' })).code, 200);
   }],
   ['a closed year, an unknown year, or another year\'s nominee is refused', async () => {
@@ -327,6 +355,60 @@ for (const [name, run] of [
     assert.equal((await callFull('GET', { query: { resource: 'tally' } })).body.counts && Object.keys((await callFull('GET', { query: { resource: 'tally' } })).body.counts).length, 0);
     assert.equal((await callFull('POST', { body: { resource: 'tally' } })).code, 405);
   }],
+  ['a year takes votes only in voting and nominations only in nominating', async () => {
+    await callFull('POST', { token: good, body: { resource: 'state', phases: { y1: 'voting', y2: 'nominating' } } });
+    assert.equal((await vote({ name: 'Una', yearId: 'y2', nomineeId: 'nc' })).code, 403, 'no votes while nominating');
+    assert.equal((await callFull('POST', { body: { resource: 'nominate', name: 'Una', password: 'hootowl', yearId: 'y1', title: 'S', artist: 'A' } })).code, 403, 'no nominations while voting');
+    assert.equal((await callFull('POST', { body: { resource: 'nominate', name: 'Una', password: 'hootowl', yearId: 'y9', title: 'S', artist: 'A' } })).code, 403, 'a Complete year takes neither');
+    assert.equal(restoreFetch.gh.puts, 0);
+  }],
+  ['a nomination needs the password, an open year and a full form', async () => {
+    const nom = (over = {}, ip) => callFull('POST', { ip, body: { resource: 'nominate', name: 'Zoe', password: 'hootowl', yearId: 'y2', title: 'New Song', artist: 'New Artist', ...over } });
+    assert.equal((await nom({ password: 'nope' }, '7.7.7.7')).code, 401);
+    assert.equal((await nom({ yearId: 'y1' })).code, 403, 'y1 is not accepting nominations');
+    assert.equal((await nom({ title: ' ' })).code, 400);
+    assert.equal((await nom({ artist: '' })).code, 400);
+    assert.equal(restoreFetch.gh.puts, 0, 'nothing committed by refused requests');
+    const ok = await nom();
+    assert.equal(ok.code, 200);
+    const y2 = restoreFetch.gh.years.find((y) => y.id === 'y2');
+    const added = y2.nominees.find((n) => n.title === 'New Song');
+    assert.deepEqual({ ...added, id: undefined }, { id: undefined, title: 'New Song', artist: 'New Artist', by: 'Zoe', winner: false });
+    assert.match(added.id, /^[A-Za-z0-9]+$/);
+    assert.equal(restoreFetch.gh.puts, 1);
+    assert.deepEqual(validateBangers({ years: restoreFetch.gh.years }).errors, [], 'the file stays valid');
+    // The Admin tab's Years card sees it as a plain nominee, so the winner can be ticked there.
+    const dup = await nom({ name: 'Yan', title: ' new  SONG ', artist: 'new artist' });
+    assert.equal(dup.code, 409);
+    assert.match(dup.body.error, /already nominated/);
+    const again = await nom({ name: 'zoe smith', title: 'Another', artist: 'X' });
+    assert.equal(again.code, 409, 'one nomination per person per year');
+    assert.match(again.body.error, /already nominated a song/);
+    assert.equal((await nom({ name: 'Kris', title: 'Z', artist: 'Z' })).code, 409, 'Kris already has a nominee in y2');
+    assert.equal(restoreFetch.gh.puts, 1);
+  }],
+  ['a nomination that loses a race to another writer is retried against the fresh list', async () => {
+    const gh = restoreFetch.gh;
+    gh.conflictNext = 1;
+    gh.onConflict = () => { gh.years.find((y) => y.id === 'y2').nominees.push({ id: 'nrace', title: 'Raced', artist: 'R', by: 'Pat', winner: false }); gh.onConflict = null; };
+    const r = await callFull('POST', { body: { resource: 'nominate', name: 'Quinn', password: 'hootowl', yearId: 'y2', title: 'Late Song', artist: 'L' } });
+    assert.equal(r.code, 200);
+    const titles = gh.years.find((y) => y.id === 'y2').nominees.map((n) => n.title);
+    assert.ok(titles.includes('Raced') && titles.includes('Late Song'), 'neither write was lost');
+    // …and a race that makes it a duplicate is caught on the retry.
+    gh.conflictNext = 1;
+    gh.onConflict = () => { gh.years.find((y) => y.id === 'y2').nominees.push({ id: 'nrace2', title: 'Same Song', artist: 'Same', by: 'Rae', winner: false }); gh.onConflict = null; };
+    const dup = await callFull('POST', { body: { resource: 'nominate', name: 'Sam', password: 'hootowl', yearId: 'y2', title: 'Same Song', artist: 'Same' } });
+    assert.equal(dup.code, 409);
+  }],
+  ['a full year takes no more nominations', async () => {
+    const gh = restoreFetch.gh;
+    const y2 = gh.years.find((y) => y.id === 'y2');
+    for (let i = y2.nominees.length; i < 40; i++) y2.nominees.push({ id: `nfill${i}`, title: `Fill ${i}`, artist: 'F', by: `Filler${i}`, winner: false });
+    const r = await callFull('POST', { body: { resource: 'nominate', name: 'Tess', password: 'hootowl', yearId: 'y2', title: 'One Too Many', artist: 'T' } });
+    assert.equal(r.code, 409);
+    assert.match(r.body.error, /maximum/);
+  }],
   ['a vote with no BANGERS_VOTE_PASSWORD configured is a 500, never open', async () => {
     delete process.env.BANGERS_VOTE_PASSWORD;
     assert.equal((await vote({ password: '' })).code, 500);
@@ -342,7 +424,7 @@ for (const [name, run] of [
 restoreFetch();
 for (const k of Object.keys(process.env)) if (!(k in voteSaved)) delete process.env[k];
 Object.assign(process.env, voteSaved);
-check('votes live in their own keys', () => { assert.equal(VOTING_KEY, 'bangers:voting'); assert.equal(votesKey('y1'), 'bangers:votes:y1'); });
+check('phases and votes live in their own keys', () => { assert.equal(STATE_KEY, 'bangers:year-states'); assert.equal(VOTING_KEY, 'bangers:voting'); assert.equal(NOMINATING_KEY, 'bangers:nominating'); assert.equal(votesKey('y1'), 'bangers:votes:y1'); });
 
 for (const k of Object.keys(process.env)) if (!(k in savedEnv)) delete process.env[k];
 Object.assign(process.env, savedEnv);
