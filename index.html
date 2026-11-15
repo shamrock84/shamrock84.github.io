@@ -1343,7 +1343,7 @@
 				const events = state.months.get(key);
 				const error = state.errors.get(key);
 				const todayKey = localDayKey(new Date());
-				const maps = events ? monthDayMaps(events, state.y, state.m) : { grid: new Map(), list: new Map() };
+				let maps = events ? monthDayMaps(events, state.y, state.m) : { grid: new Map(), list: new Map() };
 
 				// Navigation
 				const prev = el('button', { type: 'button', class: 'cal-nav-btn', 'aria-label': 'Previous month', text: '‹' });
@@ -1403,6 +1403,12 @@
 					return;
 				}
 				if (!events) { body.appendChild(el('p', { class: 'task-empty', text: 'Loading…' })); return; }
+				// A tapped day lists everything covering it, so a multi-day span shows on
+				// each of its days; the month view lists a span once, on its first day.
+				if (state.selected) {
+					const covering = (maps.grid.get(state.selected) || []).filter((e) => !e.holiday);
+					maps.list = new Map(covering.length ? [[state.selected, covering]] : []);
+				}
 				const keys = [...maps.list.keys()].filter((k) => !state.selected || k === state.selected).sort();
 				if (!keys.length) { body.appendChild(el('p', { class: 'task-empty', text: state.selected ? 'Nothing on this day.' : 'Nothing this month.' })); return; }
 				for (const k of keys) {
