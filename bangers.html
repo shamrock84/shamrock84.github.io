@@ -1181,7 +1181,13 @@
 				bangers = copyYears(body.years);
 				baseSha = body.sha || null;
 				draft = copyYears(bangers);
-				setStatus('Saved. The public page updates in a minute or two.', 'ok');
+				// A year this save added is set Pending by the server, so it stays off the
+				// public views until its status is changed in the Years card.
+				if (body.phases && typeof body.phases === 'object') phases = body.phases;
+				const added = Array.isArray(body.newYears) ? body.newYears.length : 0;
+				if (body.warning) setStatus(`Saved. ${body.warning}`, 'error');
+				else if (added) setStatus(`Saved. ${added === 1 ? 'The new year is' : `${added} new years are`} Pending: set the status in the Years card when ${added === 1 ? 'it is' : 'they are'} ready. The public page updates in a minute or two.`, 'ok');
+				else setStatus('Saved. The public page updates in a minute or two.', 'ok');
 			} catch (err) {
 				adminErrors = [`Not saved: ${err.message}`];
 				setStatus('');

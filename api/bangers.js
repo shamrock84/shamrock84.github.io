@@ -57,7 +57,10 @@
 // PHASES. Each year is in one of four, kept in `bangers:year-states` as
 // { phases: { yearId: 'pending' | 'nominating' | 'voting' } }; a year with no
 // entry is Complete (the default for every historical year):
-//   pending     takes nothing; the page shows the year on the Admin tab only
+//   pending     takes nothing; the page shows the year on the Admin tab only. A
+//               year the Admin save adds to the file (an id not in the file
+//               being replaced) is set Pending in that same request, before the
+//               commit, so it is never public even for a moment
 //   nominating  the Nominate tab takes nominations; the page hides the year's
 //               nominees from the Winners, Nominees and Stats views
 //   voting      the Vote tab takes votes; nominations are refused
@@ -526,10 +529,33 @@ async function githubGet(token) {
     headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' },
     signal: AbortSignal.timeout(10000),
   });
-  if (res.status === 404) return { sha: null }; // first save creates the file
+  if (res.status === 404) return { sha: null, ids: new Set() }; // first save creates the file
   if (!res.ok) throw new Error(`Couldn't read the current list (GitHub returned ${res.status}): ${(await res.text()).slice(0, 200)}`);
   const json = await res.json();
-  return { sha: json.sha };
+  // The year ids already in the file, to tell a year this save adds from one it keeps.
+  let ids = new Set();
+  try {
+    const doc = JSON.parse(Buffer.from(json.content || '', 'base64').toString('utf8'));
+    ids = new Set((Array.isArray(doc.years) ? doc.years : []).map((y) => y && y.id));
+  } catch { /* unreadable: nothing is treated as new, so nothing is hidden by mistake */ }
+  return { sha: json.sha, ids };
+}
+
+// Marks the given years Pending, leaving every phase already set alone. Returns
+// { phases } when it wrote, or { warning } when it could not (no store, or the
+// store failed): the save still goes ahead, and the page says what to do.
+async function markPending(ids) {
+  const store = resolveStore(process.env);
+  if (!store) return { warning: 'No store is configured, so the new year was not marked Pending. Set its status in the Years card.' };
+  try {
+    const phases = await readPhases(store);
+    const next = { ...phases };
+    for (const id of ids) if (!(id in next)) next[id] = 'pending';
+    await storeSet(store, STATE_KEY, { phases: next });
+    return { phases: next };
+  } catch (err) {
+    return { warning: `The new year was not marked Pending (${err.message}). Set its status in the Years card.` };
+  }
 }
 
 // True when the page told us which version it loaded and that is no longer the
@@ -650,12 +676,17 @@ export default async function handler(req, res) {
   try {
     // Re-read immediately before writing: the sha is both the concurrency
     // check for the PUT and what the stale test below compares against.
-    const { sha } = await githubGet(token);
+    const { sha, ids: existingIds } = await githubGet(token);
     if (isStaleBase(body.baseSha, sha)) {
       res.status(409).json({ error: 'The list changed since this page loaded it (another save, possibly still publishing). Nothing was saved — reload in a few minutes and make your change again.' });
       return;
     }
     const years = normalizeBangers(body.years);
+    // A year this save adds starts Pending. Done BEFORE the commit so the year is
+    // never public; if the commit then fails, the entry is for an id that was never
+    // saved, which nothing reads.
+    const newIds = existingIds.size ? years.map((y) => y.id).filter((id) => !existingIds.has(id)) : [];
+    const pending = newIds.length ? await markPending(newIds) : {};
     const putRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`, {
       method: 'PUT',
       headers: {
@@ -680,7 +711,11 @@ export default async function handler(req, res) {
     const saved = await putRes.json();
     // The new file's blob sha, so the page can keep saving from this session
     // without a reload tripping the stale check above.
-    res.status(200).json({ ok: true, years, sha: (saved.content && saved.content.sha) || null });
+    res.status(200).json({
+      ok: true, years, sha: (saved.content && saved.content.sha) || null,
+      ...(pending.phases ? { phases: pending.phases, newYears: newIds } : {}),
+      ...(pending.warning ? { warning: pending.warning, newYears: newIds } : {}),
+    });
   } catch (err) {
     res.status(502).json({ error: `Failed to save: ${err.message}` });
   }

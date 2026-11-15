@@ -416,6 +416,49 @@ for (const [name, run] of [
     assert.equal(r.code, 409);
     assert.match(r.body.error, /maximum/);
   }],
+  ['a year the Admin save adds starts Pending; existing phases and a re-save are left alone', async () => {
+    const gh = restoreFetch.gh;
+    await callFull('POST', { token: good, body: { resource: 'state', phases: { y1: 'voting', y2: 'nominating' } } });
+    const list = () => JSON.parse(JSON.stringify(gh.years));
+    const save = (years) => callFull('POST', { token: good, body: { years } });
+    const phasesNow = async () => (await callFull('GET', { query: { resource: 'state' } })).body.phases;
+    let years = list();
+    years.unshift({ id: 'ynew1', label: '2029', nominees: [] });
+    let r = await save(years);
+    assert.equal(r.code, 200);
+    assert.deepEqual(r.body.newYears, ['ynew1']);
+    assert.deepEqual(r.body.phases, { y1: 'voting', y2: 'nominating', ynew1: 'pending' });
+    assert.deepEqual(await phasesNow(), { y1: 'voting', y2: 'nominating', ynew1: 'pending' });
+    assert.ok(gh.years.some((y) => y.id === 'ynew1'), 'the year is in the file');
+    // Saving again with nothing new changes no phase and reports no new year.
+    r = await save(list());
+    assert.equal(r.code, 200);
+    assert.ok(!('newYears' in r.body) && !('phases' in r.body));
+    // A year the Admin sets to Complete (no entry) is not made Pending again by a later save.
+    await callFull('POST', { token: good, body: { resource: 'state', phases: { y1: 'voting', y2: 'nominating' } } });
+    assert.equal((await save(list())).code, 200);
+    assert.deepEqual(await phasesNow(), { y1: 'voting', y2: 'nominating' });
+    // Two at once, and one that already has a phase keeps it.
+    await callFull('POST', { token: good, body: { resource: 'state', phases: { y1: 'voting', y2: 'nominating', ynew3: 'voting' } } });
+    years = list();
+    years.unshift({ id: 'ynew2', label: '2030', nominees: [] }, { id: 'ynew3', label: '2031', nominees: [] });
+    r = await save(years);
+    assert.deepEqual(r.body.newYears.sort(), ['ynew2', 'ynew3']);
+    assert.deepEqual(await phasesNow(), { y1: 'voting', y2: 'nominating', ynew2: 'pending', ynew3: 'voting' });
+  }],
+  ['with no store the save still goes through but warns that the new year is not Pending', async () => {
+    const gh = restoreFetch.gh;
+    const url = process.env.KV_REST_API_URL;
+    delete process.env.KV_REST_API_URL;
+    const years = JSON.parse(JSON.stringify(gh.years));
+    years.unshift({ id: 'ynew4', label: '2032', nominees: [] });
+    const r = await callFull('POST', { token: good, body: { years } });
+    process.env.KV_REST_API_URL = url;
+    assert.equal(r.code, 200);
+    assert.match(r.body.warning, /not marked Pending/);
+    assert.deepEqual(r.body.newYears, ['ynew4']);
+    assert.ok(gh.years.some((y) => y.id === 'ynew4'));
+  }],
   ['a vote with no BANGERS_VOTE_PASSWORD configured is a 500, never open', async () => {
     delete process.env.BANGERS_VOTE_PASSWORD;
     assert.equal((await vote({ password: '' })).code, 500);
