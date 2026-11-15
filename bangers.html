@@ -362,6 +362,24 @@
 		}
 		.nom-win input { width: 1.1rem; height: 1.1rem; margin: 0; accent-color: var(--accent); cursor: pointer; }
 		.nom-win:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+		.vote-form { display: flex; flex-direction: column; gap: 0.7rem; max-width: 34rem; }
+		.vote-form label.vote-field { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.85rem; color: var(--muted); }
+		.vote-options { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+		.vote-options legend { font-size: 0.85rem; color: var(--muted); padding: 0; margin-bottom: 0.3rem; }
+		.vote-option { display: flex; gap: 0.5rem; align-items: baseline; padding: 0.45rem 0.6rem; border: 1px solid var(--border, rgba(128,128,128,0.35)); border-radius: 8px; cursor: pointer; }
+		.vote-option:has(input:checked) { border-color: var(--accent); }
+		.vote-option small { color: var(--muted); }
+		.vote-msg { font-size: 0.9rem; }
+		.vote-msg.ok { color: var(--accent); }
+		.vote-msg.error { color: var(--ir-text); }
+		.voting-year { display: flex; gap: 0.5rem; align-items: center; padding: 0.3rem 0; }
+		.ballots { margin: 0 0 0.6rem 1.6rem; }
+		.ballots summary { cursor: pointer; font-size: 0.85rem; color: var(--muted); }
+		.ballot-row { display: flex; gap: 0.5rem; align-items: center; margin: 0.3rem 0; flex-wrap: wrap; }
+		.ballot-name { flex: 0 1 9rem; font-weight: 600; }
+		.ballot-row .task-input { flex: 1 1 12rem; min-width: 0; }
+		.tally { margin: 0.2rem 0 0.6rem 0; font-size: 0.85rem; color: var(--muted); }
+		.tally b { color: inherit; }
 		.admin-actions {
 			position: sticky; bottom: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;
 			margin: 0.8rem -0.8rem -0.8rem; padding: 0.6rem 0.8rem; background: var(--card-bg);
@@ -498,6 +516,13 @@
 		// (`?resource=tasks` / `?resource=quicklinks`), not in the repo: the
 		// toolbar is public to read, tasks are login-only both ways.
 		//
+		// A Vote tab appears for everyone while any year is open for voting: a
+		// name, the shared password and one nominee. api/bangers.js allows one
+		// vote per name per year and refuses a song whose "Nominated by" matches
+		// the voter. Admin's Voting card opens years, shows who voted for what and
+		// can change, add or delete a ballot. Open years and votes live in the
+		// store, not in the file below.
+		//
 		// The list is data/bangers.json, a committed file served by Pages like
 		// the rest of the site. Admin's Save POSTs the whole list to
 		// api/bangers.js, which commits the file to main (as the myFFL Admin tab
@@ -595,7 +620,7 @@
 			try { localStorage.setItem(FOLD_KEY, JSON.stringify(foldState)); } catch (e) { /* works for this visit */ }
 		}
 		const isFolded = (y, index) => (y.id in foldState ? foldState[y.id] : index > 0);
-		try { const t = localStorage.getItem(TAB_KEY); if (t === 'nominees' || t === 'stats' || t === 'admin') tab = t; } catch (e) { /* default tab */ }
+		try { const t = localStorage.getItem(TAB_KEY); if (t === 'nominees' || t === 'stats' || t === 'vote' || t === 'admin') tab = t; } catch (e) { /* default tab */ }
 
 		const statusEl = document.getElementById('status');
 		function setStatus(text, kind) {
@@ -795,6 +820,218 @@
 			});
 			refreshAll();
 			return [board];
+		}
+
+		// ---- Voting ---------------------------------------------------------------
+		// Which years are open comes from api/bangers.js (`?resource=voting`,
+		// public); the nominees come from the list above. Opening a year is the
+		// Admin tab's Voting card; casting a vote needs the shared voting password
+		// (BANGERS_VOTE_PASSWORD on Vercel) and one name gets one vote per year, both
+		// enforced by the server. Votes are not shown back to voters.
+		const VOTER_KEY = 'bangersVoterName';
+		let votingOpen = [];        // year ids open for voting
+		let votingYear = null;      // the year picked in the Vote card
+		let voteMsg = null;         // { text, kind } shown under the form
+		const openVotingYears = () => bangers.filter((y) => votingOpen.includes(y.id) && y.nominees.length);
+
+		async function loadVoting() {
+			try {
+				const res = await fetch(`${BANGERS_URL}?resource=voting`, { cache: 'no-store' });
+				if (!res.ok) throw new Error(`HTTP ${res.status}`);
+				const body = await res.json();
+				votingOpen = Array.isArray(body.open) ? body.open : [];
+			} catch (e) { votingOpen = []; }
+		}
+
+		function voteView() {
+			const years = openVotingYears();
+			const card = el('div', { class: 'card' }, [el('h2', { class: 'card-heading', text: 'Vote' })]);
+			if (!years.length) {
+				card.appendChild(el('div', { class: 'message', text: 'Voting is not open right now.' }));
+				return [card];
+			}
+			if (!years.some((y) => y.id === votingYear)) votingYear = years[0].id;
+			const form = el('form', { class: 'vote-form', autocomplete: 'off' });
+			let savedName = '';
+			try { savedName = localStorage.getItem(VOTER_KEY) || ''; } catch (e) { /* no remembered name */ }
+			const name = el('input', { type: 'text', class: 'task-input', maxlength: '40', value: savedName, autocomplete: 'name', required: '' });
+			const password = el('input', { type: 'password', class: 'task-input', autocomplete: 'off', required: '' });
+			form.append(
+				el('label', { class: 'vote-field' }, [el('span', { text: 'Your name' }), name]),
+				el('label', { class: 'vote-field' }, [el('span', { text: 'Voting password' }), password]),
+			);
+			const options = el('div');
+			const renderOptions = () => {
+				options.textContent = '';
+				const y = years.find((x) => x.id === votingYear);
+				const set = el('fieldset', { class: 'vote-options' }, [el('legend', { text: `${y.label}: pick one` })]);
+				for (const n of y.nominees) {
+					const radio = el('input', { type: 'radio', name: 'nominee', value: n.id });
+					set.appendChild(el('label', { class: 'vote-option' }, [radio, el('span', {}, [el('span', { text: n.title }), n.artist ? el('small', { text: ` — ${n.artist}` }) : null])]));
+				}
+				options.appendChild(set);
+			};
+			if (years.length > 1) {
+				const pick = el('select', { class: 'task-input', 'aria-label': 'Year' }, years.map((y) => el('option', { value: y.id, text: y.label })));
+				pick.value = votingYear;
+				pick.addEventListener('change', () => { votingYear = pick.value; voteMsg = null; msg.textContent = ''; renderOptions(); });
+				form.appendChild(el('label', { class: 'vote-field' }, [el('span', { text: 'Year' }), pick]));
+			}
+			form.appendChild(options);
+			const submit = el('button', { type: 'submit', class: 'task-add-btn primary', text: 'Cast vote' });
+			submit.style.alignSelf = 'flex-start';
+			const msg = el('div', { class: 'vote-msg', role: 'status' });
+			const showMsg = (text, kind) => { msg.textContent = text || ''; msg.className = `vote-msg${kind ? ' ' + kind : ''}`; };
+			if (voteMsg) showMsg(voteMsg.text, voteMsg.kind);
+			form.append(submit, msg);
+			renderOptions();
+			form.addEventListener('submit', async (e) => {
+				e.preventDefault();
+				const chosen = form.querySelector('input[name="nominee"]:checked');
+				if (!chosen) { showMsg('Pick a song first.', 'error'); return; }
+				submit.disabled = true;
+				showMsg('Sending…');
+				try {
+					const res = await fetch(BANGERS_URL, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ resource: 'vote', name: name.value, password: password.value, yearId: votingYear, nomineeId: chosen.value }),
+					});
+					const body = await res.json().catch(() => ({}));
+					if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+					try { localStorage.setItem(VOTER_KEY, body.name || name.value.trim()); } catch (err) { /* fine */ }
+					password.value = '';
+					chosen.checked = false;
+					voteMsg = { text: `Thanks ${body.name}, your vote is in.`, kind: 'ok' };
+					showMsg(voteMsg.text, 'ok');
+				} catch (err) {
+					showMsg(err.message, 'error');
+				}
+				submit.disabled = false;
+			});
+			card.appendChild(form);
+			return [card];
+		}
+
+		// Admin: open or close voting per year, and see the ballots. Each tick
+		// saves at once (it's a switch, not an edit of the list), and the saved
+		// set is what the server enforces.
+		let votingCardEl = null;
+		let ballots = {};           // yearId -> [{ name, nomineeId, at }]
+		let votingMsg = '';
+		async function loadBallots() {
+			const ids = bangers.map((y) => y.id);
+			if (!ids.length) return;
+			try {
+				const res = await fetch(`${BANGERS_URL}?resource=votes&years=${ids.join(',')}`, { headers: { Authorization: `Bearer ${authToken}` }, cache: 'no-store' });
+				if (res.status === 401) { expireSession(); return; }
+				if (!res.ok) throw new Error(`HTTP ${res.status}`);
+				ballots = (await res.json()).votes || {};
+			} catch (e) { votingMsg = `Couldn’t load the votes (${e.message}).`; }
+			refreshVotingCard();
+		}
+		async function setVotingOpen(next) {
+			votingMsg = 'Saving…';
+			refreshVotingCard();
+			try {
+				const res = await fetch(BANGERS_URL, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+					body: JSON.stringify({ resource: 'voting', open: next }),
+				});
+				const body = await res.json().catch(() => ({}));
+				if (res.status === 401) { expireSession(); return; }
+				if (!res.ok) throw new Error((body.details && body.details.join(' ')) || body.error || `HTTP ${res.status}`);
+				votingOpen = body.open;
+				votingMsg = '';
+			} catch (err) { votingMsg = `Not saved: ${err.message}`; }
+			renderTabs();
+			refreshVotingCard();
+		}
+		function refreshVotingCard() {
+			if (!votingCardEl) return;
+			const next = buildVotingCard();
+			votingCardEl.replaceWith(next);
+			votingCardEl = next;
+		}
+		// One ballot edit (change a voter's song, add a voter, delete one). The
+		// server answers with that year's whole list, which replaces ours.
+		const openBallotYears = new Set();
+		async function editBallot(yearId, body) {
+			votingMsg = 'Saving…';
+			refreshVotingCard();
+			try {
+				const res = await fetch(BANGERS_URL, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+					body: JSON.stringify({ resource: 'ballot', yearId, ...body }),
+				});
+				const out = await res.json().catch(() => ({}));
+				if (res.status === 401) { expireSession(); return; }
+				if (!res.ok) throw new Error(out.error || `HTTP ${res.status}`);
+				ballots[yearId] = out.votes;
+				votingMsg = '';
+			} catch (err) { votingMsg = `Not saved: ${err.message}`; }
+			refreshVotingCard();
+		}
+
+		function buildBallotEditor(y) {
+			const votes = ballots[y.id] || [];
+			const det = el('details', { class: 'ballots' });
+			if (openBallotYears.has(y.id)) det.open = true;
+			det.addEventListener('toggle', () => { if (det.open) openBallotYears.add(y.id); else openBallotYears.delete(y.id); });
+			det.appendChild(el('summary', { text: `Votes (${votes.length})` }));
+			const busy = votingMsg === 'Saving…';
+			const songSelect = (value) => {
+				const sel = el('select', { class: 'task-input', 'aria-label': 'Song' }, y.nominees.map((n) => el('option', { value: n.id, text: n.artist ? `${n.title} — ${n.artist}` : n.title })));
+				if (value) sel.value = value;
+				sel.disabled = busy;
+				return sel;
+			};
+			if (votes.length) {
+				const tally = y.nominees
+					.map((n) => ({ n, c: votes.filter((v) => v.nomineeId === n.id).length }))
+					.filter((r) => r.c).sort((a, b) => b.c - a.c)
+					.map((r) => `${r.n.title}: ${r.c}`);
+				det.appendChild(el('div', { class: 'tally', text: tally.join(' · ') }));
+			} else det.appendChild(el('div', { class: 'task-empty', text: 'No votes yet.' }));
+			for (const v of votes) {
+				const sel = songSelect(v.nomineeId);
+				// A ballot for a song since removed from the list has no option to show.
+				if (!y.nominees.some((n) => n.id === v.nomineeId)) sel.prepend(el('option', { value: '', text: '(song no longer listed)' })), sel.value = '';
+				sel.addEventListener('change', () => { if (sel.value) editBallot(y.id, { action: 'set', name: v.name, nomineeId: sel.value }); });
+				const del = el('button', { type: 'button', class: 'task-icon-btn', title: `Delete ${v.name}’s vote`, 'aria-label': `Delete ${v.name}’s vote`, text: '✕' });
+				del.disabled = busy;
+				del.addEventListener('click', () => { if (window.confirm(`Delete ${v.name}’s vote? They will be able to vote again.`)) editBallot(y.id, { action: 'delete', name: v.name }); });
+				det.appendChild(el('div', { class: 'ballot-row' }, [el('span', { class: 'ballot-name', text: v.name }), sel, del]));
+			}
+			if (y.nominees.length) {
+				const name = el('input', { type: 'text', class: 'task-input', placeholder: 'Add a vote: voter name', 'aria-label': 'Voter name', maxlength: '40', autocomplete: 'off' });
+				const sel = songSelect();
+				const add = el('button', { type: 'button', class: 'task-add-btn', text: 'Add' });
+				add.disabled = busy;
+				add.addEventListener('click', () => { if (!name.value.trim()) { name.focus(); return; } editBallot(y.id, { action: 'set', name: name.value, nomineeId: sel.value }); });
+				det.appendChild(el('div', { class: 'ballot-row ballot-add' }, [name, sel, add]));
+			}
+			return det;
+		}
+
+		function buildVotingCard() {
+			const head = el('h2', { class: 'card-heading', text: 'Voting' });
+			const card = el('div', { class: 'card' }, [head]);
+			makeCollapsible(card, head, 'voting');
+			card.appendChild(el('div', { class: 'message', text: 'Tick a year to open voting on the Vote tab (the password is the BANGERS_VOTE_PASSWORD variable in Vercel). Open “Votes” to see who voted for what, change a vote, add one or delete one; a deleted voter can vote again.' }));
+			for (const y of bangers) {
+				const box = el('input', { type: 'checkbox' });
+				box.checked = votingOpen.includes(y.id);
+				box.disabled = votingMsg === 'Saving…';
+				box.addEventListener('change', () => setVotingOpen(box.checked ? [...votingOpen, y.id] : votingOpen.filter((id) => id !== y.id)));
+				card.appendChild(el('label', { class: 'voting-year' }, [box, el('span', { text: `${y.label} ` }), el('small', { text: y.nominees.length ? '' : 'no nominees yet' })]));
+				if (y.nominees.length || (ballots[y.id] || []).length) card.appendChild(buildBallotEditor(y));
+			}
+			if (!bangers.length) card.appendChild(el('div', { class: 'task-empty', text: 'No years yet.' }));
+			if (votingMsg) card.appendChild(el('div', { class: `vote-msg${votingMsg.startsWith('Not') || votingMsg.startsWith('Couldn') ? ' error' : ''}`, text: votingMsg }));
+			return card;
 		}
 
 		// ---- Admin: the Years card ------------------------------------------------
@@ -1531,7 +1768,9 @@
 			draft = null;
 			adminErrors = [];
 			cardEl = buildAdminCard();
-			return [tasksCardEl, qlCardEl, cardEl];
+			votingCardEl = buildVotingCard();
+			loadBallots();
+			return [tasksCardEl, qlCardEl, votingCardEl, cardEl];
 		}
 
 		// Coming back to the page (switching apps on a phone or iPad, or restoring
@@ -1555,7 +1794,7 @@
 			const nav = document.getElementById('tabs');
 			nav.textContent = '';
 			// The Admin tab exists only while logged in; logging out removes it.
-			const tabs = [['winners', 'Winners'], ['nominees', 'Nominees'], ['stats', 'Stats'], ...(isLoggedIn() ? [['admin', 'Admin']] : [])];
+			const tabs = [['winners', 'Winners'], ['nominees', 'Nominees'], ['stats', 'Stats'], ...(openVotingYears().length ? [['vote', 'Vote']] : []), ...(isLoggedIn() ? [['admin', 'Admin']] : [])];
 			for (const [id, label] of tabs) {
 				const btn = el('button', { type: 'button', class: `tab-btn${tab === id ? ' active' : ''}`, role: 'tab', 'aria-selected': String(tab === id), text: label });
 				btn.addEventListener('click', () => setTab(id));
@@ -1577,6 +1816,7 @@
 
 		function renderAll() {
 			if (tab === 'admin' && !isLoggedIn()) tab = 'winners';
+			if (tab === 'vote' && loadState === 'ready' && !openVotingYears().length) tab = 'winners';
 			renderBangerCount();
 			renderLogin();
 			renderTabs();
@@ -1584,11 +1824,12 @@
 			const view = document.getElementById('view');
 			view.textContent = '';
 			cardEl = null;
+			votingCardEl = null;
 			tasksCardEl = null;
 			qlCardEl = null;
 			if (loadState === 'loading') { view.appendChild(message('Loading…')); return; }
 			if (loadState === 'failed' && tab !== 'admin') { view.appendChild(message(`Couldn’t load the list (${loadError}). Reload to try again.`, 'error')); return; }
-			const cards = tab === 'nominees' ? nomineesView() : tab === 'stats' ? statsView() : tab === 'admin' ? adminView() : winnersView();
+			const cards = tab === 'nominees' ? nomineesView() : tab === 'vote' ? voteView() : tab === 'stats' ? statsView() : tab === 'admin' ? adminView() : winnersView();
 			cards.forEach((c) => view.appendChild(c));
 		}
 
@@ -1613,6 +1854,7 @@
 				.then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
 				.then((body) => { quickLinks = Array.isArray(body.links) ? body.links : []; renderQuickLinks(); })
 				.catch(() => { /* no toolbar */ });
+			const votingLoaded = loadVoting();
 			try {
 				// Cache-bust: Pages' CDN will happily serve the pre-save copy otherwise.
 				const res = await fetch(`${DATA_URL}?t=${Date.now()}`, { cache: 'no-store' });
@@ -1629,6 +1871,7 @@
 				loadState = 'failed';
 				loadError = err.message;
 			}
+			await votingLoaded; // so the Vote tab is right on first paint
 			renderAll();
 		}
 

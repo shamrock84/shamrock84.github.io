@@ -38,13 +38,36 @@
 // tasks GET needs the Bearer token, and every POST does. The bangers list
 // itself still has no GET: the page reads data/bangers.json from Pages.
 //
+// VOTING. Also in the Upstash store, under `bangers:voting` (which years are
+// open: { open: [yearId, ...] }) and one hash per year, `bangers:votes:<yearId>`,
+// field = the voter's name lowercased with whitespace collapsed (voterKey),
+// value = { name, nomineeId, at }. A hash, not one JSON document, because a
+// vote is written with HSETNX: atomic, so a name can't vote twice in a year
+// even from two requests at once, and two voters never overwrite each other.
+//   GET  ?resource=voting             public: which years are open
+//   POST resource=voting {open}       login-gated: open or close years
+//   GET  ?resource=votes&years=a,b    login-gated: every ballot for those years
+//   POST resource=vote                public, but needs BANGERS_VOTE_PASSWORD
+//        {name, password, yearId, nomineeId}
+//   POST resource=ballot              login-gated: Admin edits a ballot
+//        {yearId, name, nomineeId, action: 'set'|'delete'}
+// Nobody may vote for their own nomination (isOwnNomination): the voter's name
+// is matched against the nominee's `by`. Best effort by nature, since names are
+// typed freely. Admin's ballot edit is an override and skips that check, and
+// skips "is the year open", but still needs a real year and nominee.
+// The vote checks the year and nominee against data/bangers.json on main (read
+// with GITHUB_CONTENTS_TOKEN), not against what the caller claims. Wrong
+// passwords are counted per IP like login.js, and that check fails open.
+// Names are honour-system: "Bob" and "Robert" are two voters.
+//
 // A save from a stale copy is refused: the page sends the git blob sha of the
 // exact bytes it loaded (`baseSha`, computed the way myffl.html's gitBlobSha
 // does) and a mismatch is a 409. A missing sha is never stale.
 
 import { verifyToken } from './_lib/auth.mjs';
 import { applyCors } from './_lib/cors.mjs';
-import { storeGet, storeSet } from './_lib/store.mjs';
+import { createHash, timingSafeEqual } from 'node:crypto';
+import { storeGet, storeSet, storeCounts, storeBump, storeRelease, storeHashSetNew, storeHashGetAll, storeHashSet, storeHashDelete } from './_lib/store.mjs';
 import { resolveStore } from './plans.js';
 import { validateTaskPatch, applyTaskPatch, validateQuickLinks, normalizeQuickLinks } from './vikings.js';
 
@@ -56,6 +79,12 @@ const BRANCH = 'main';
 // sharing one would show each page the other's tasks and toolbar.
 const TASKS_KEY = 'bangers:tasks';
 const QUICKLINKS_KEY = 'bangers:quicklinks';
+const VOTING_KEY = 'bangers:voting';
+const votesKey = (yearId) => `bangers:votes:${yearId}`;
+const MAX_OPEN_YEARS = 20;
+const MAX_VOTER_NAME = 40;
+const VOTE_IP_MAX_FAILURES = 10;
+const VOTE_IP_WINDOW_SECONDS = 15 * 60;
 const MAX_TASKS = 300;
 const ID = /^[A-Za-z0-9]{1,40}$/;
 const MAX_YEARS = 100;
@@ -73,7 +102,7 @@ function isWebUrl(s) {
   try { return ['http:', 'https:'].includes(new URL(s).protocol); } catch { return false; }
 }
 
-export { validateBangers, normalizeBangers, serialize, isStaleBase, TASKS_KEY, QUICKLINKS_KEY };
+export { validateBangers, normalizeBangers, serialize, isStaleBase, TASKS_KEY, QUICKLINKS_KEY, validateVotingOpen, voterKey, cleanVoterName, validateVote, isOwnNomination, validateBallotEdit, VOTING_KEY, votesKey };
 
 const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const text = (v) => (typeof v === 'string' ? v.trim() : '');
@@ -161,6 +190,198 @@ function serialize(years) {
   return lines.join('\n') + '\n';
 }
 
+// ---- Voting --------------------------------------------------------------
+
+// { open: [yearId, ...] } — errors empty when valid.
+function validateVotingOpen(body) {
+  if (!isObject(body) || !Array.isArray(body.open)) return { errors: ['open must be a list of year ids'] };
+  if (body.open.length > MAX_OPEN_YEARS) return { errors: [`more than ${MAX_OPEN_YEARS} years open`] };
+  const errors = [];
+  if (body.open.some((id) => typeof id !== 'string' || !ID.test(id))) errors.push('open: every year id must be letters and digits.');
+  return { errors };
+}
+
+// What the voter typed, tidied: control characters out, runs of whitespace
+// collapsed, trimmed. Empty means no usable name.
+function cleanVoterName(v) {
+  if (typeof v !== 'string') return '';
+  return v.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+// The identity a vote is unique on: case and spacing don't make a new voter.
+const voterKey = (name) => cleanVoterName(name).toLowerCase();
+
+// { name, password, yearId, nomineeId } shape only; the password is compared
+// separately and the ids are checked against the real list afterwards.
+function validateVote(body) {
+  if (!isObject(body)) return { errors: ['body must be an object'] };
+  const errors = [];
+  const name = cleanVoterName(body.name);
+  if (!name) errors.push('Enter your name.');
+  else if (name.length > MAX_VOTER_NAME) errors.push(`Your name can be at most ${MAX_VOTER_NAME} characters.`);
+  if (typeof body.yearId !== 'string' || !ID.test(body.yearId)) errors.push('Pick a year.');
+  if (typeof body.nomineeId !== 'string' || !ID.test(body.nomineeId)) errors.push('Pick a nominee.');
+  return { errors };
+}
+
+// Best-effort self-vote block. Compares the voter's typed name with the
+// nominee's "Nominated by" text, ignoring case, punctuation and spacing, and
+// counts a match on the first word, so "Jeff" and "Jeff Smith" are both caught
+// against by = "Jeff". A nickname slips through, and a different person with
+// the same first name is blocked: the cost of matching this loosely. No `by`
+// means nothing to match.
+function isOwnNomination(voterName, by) {
+  const norm = (v) => cleanVoterName(v).toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+  const n = norm(voterName);
+  const b = norm(by);
+  if (!n || !b) return false;
+  return n === b || n.split(' ')[0] === b.split(' ')[0];
+}
+
+// Admin's edit of one ballot.
+function validateBallotEdit(body) {
+  if (!isObject(body)) return { errors: ['body must be an object'] };
+  const errors = [];
+  if (body.action !== 'set' && body.action !== 'delete') errors.push('action must be set or delete.');
+  const name = cleanVoterName(body.name);
+  if (!name) errors.push('A voter name is required.');
+  else if (name.length > MAX_VOTER_NAME) errors.push(`The name can be at most ${MAX_VOTER_NAME} characters.`);
+  if (typeof body.yearId !== 'string' || !ID.test(body.yearId)) errors.push('A year is required.');
+  if (body.action === 'set' && (typeof body.nomineeId !== 'string' || !ID.test(body.nomineeId))) errors.push('A nominee is required.');
+  return { errors };
+}
+
+// One year's ballots, oldest first, the shape the page reads.
+const ballotList = (hash) => Object.values(hash || {}).map((v) => ({ name: v.name, nomineeId: v.nomineeId, at: v.at })).sort((a, b) => String(a.at).localeCompare(String(b.at)));
+
+// Hashed first so timingSafeEqual gets equal-length inputs and the wrong-guess
+// time reveals nothing about the real password's length (same as login.js).
+function votePasswordMatches(given, expected) {
+  if (typeof given !== 'string' || !given || !expected) return false;
+  const a = createHash('sha256').update(given, 'utf8').digest();
+  const b = createHash('sha256').update(expected, 'utf8').digest();
+  return timingSafeEqual(a, b);
+}
+
+function clientIp(req) {
+  const real = req.headers['x-real-ip'];
+  if (real) return String(real).trim();
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded) return String(forwarded).split(',')[0].trim();
+  return 'unknown';
+}
+
+// The committed list as it is on main right now (Pages can lag a few minutes).
+async function readBangersFile(token) {
+  const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}?ref=${BRANCH}`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github.raw+json', 'X-GitHub-Api-Version': '2022-11-28' },
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!res.ok) throw new Error(`GitHub returned ${res.status}`);
+  const doc = JSON.parse(await res.text());
+  return Array.isArray(doc.years) ? doc.years : [];
+}
+
+async function handleVoting(req, res, resource) {
+  const store = resolveStore(process.env);
+  if (!store) {
+    res.status(500).json({ error: 'No store is configured on this deployment (see resolveStore in api/plans.js).' });
+    return;
+  }
+  try {
+    if (resource === 'voting') {
+      if (req.method === 'GET') {
+        const doc = await storeGet(store, VOTING_KEY);
+        res.status(200).json({ open: Array.isArray(doc && doc.open) ? doc.open : [] });
+        return;
+      }
+      const { errors } = validateVotingOpen(req.body);
+      if (errors.length) { res.status(400).json({ error: 'Nothing was saved — the request was malformed:', details: errors }); return; }
+      const open = [...new Set(req.body.open)];
+      await storeSet(store, VOTING_KEY, { open });
+      res.status(200).json({ open });
+      return;
+    }
+    if (resource === 'votes') {
+      const years = String((req.query && req.query.years) || '').split(',').filter(Boolean);
+      if (years.length > MAX_YEARS || years.some((id) => !ID.test(id))) { res.status(400).json({ error: 'years must be a comma-separated list of year ids.' }); return; }
+      const hashes = years.length ? await storeHashGetAll(store, years.map(votesKey)) : [];
+      const votes = {};
+      years.forEach((id, i) => { votes[id] = ballotList(hashes[i]); });
+      res.status(200).json({ votes });
+      return;
+    }
+    if (resource === 'ballot') {
+      const { errors } = validateBallotEdit(req.body);
+      if (errors.length) { res.status(400).json({ error: errors.join(' ') }); return; }
+      const { yearId, action } = req.body;
+      const name = cleanVoterName(req.body.name);
+      if (action === 'set') {
+        const token = process.env.GITHUB_CONTENTS_TOKEN;
+        if (!token) { res.status(500).json({ error: 'GITHUB_CONTENTS_TOKEN is not configured on this deployment.' }); return; }
+        let years;
+        try { years = await readBangersFile(token); } catch (err) { res.status(502).json({ error: `Couldn't read the nominee list: ${err.message}` }); return; }
+        const year = years.find((y) => y && y.id === yearId);
+        if (!year || !Array.isArray(year.nominees) || !year.nominees.some((n) => n && n.id === req.body.nomineeId)) {
+          res.status(400).json({ error: 'That nominee is not in that year.' });
+          return;
+        }
+        await storeHashSet(store, votesKey(yearId), voterKey(name), { name, nomineeId: req.body.nomineeId, at: new Date().toISOString() });
+      } else {
+        await storeHashDelete(store, votesKey(yearId), voterKey(name));
+      }
+      const [hash] = await storeHashGetAll(store, [votesKey(yearId)]);
+      res.status(200).json({ yearId, votes: ballotList(hash) });
+      return;
+    }
+
+    // resource === 'vote'
+    const expected = process.env.BANGERS_VOTE_PASSWORD;
+    if (!expected) { res.status(500).json({ error: 'BANGERS_VOTE_PASSWORD is not configured on this deployment.' }); return; }
+    const body = req.body || {};
+    const ipKey = `bangers:votefail:${clientIp(req)}`;
+    try {
+      const [failures] = await storeCounts(store, [ipKey]);
+      if (failures >= VOTE_IP_MAX_FAILURES) { res.status(429).json({ error: 'Too many wrong passwords. Please wait a while and try again.' }); return; }
+    } catch (err) {
+      console.error(`bangers vote: rate-limit check skipped, store unavailable: ${err.message}`);
+    }
+    if (!votePasswordMatches(body.password, expected)) {
+      await storeBump(store, [{ key: ipKey, ttlSeconds: VOTE_IP_WINDOW_SECONDS }]).catch((err) => console.error(`bangers vote: failed attempt not counted: ${err.message}`));
+      res.status(401).json({ error: 'Incorrect password.' });
+      return;
+    }
+    await storeRelease(store, ipKey).catch(() => {});
+    const { errors } = validateVote(body);
+    if (errors.length) { res.status(400).json({ error: errors.join(' ') }); return; }
+
+    const doc = await storeGet(store, VOTING_KEY);
+    const open = Array.isArray(doc && doc.open) ? doc.open : [];
+    if (!open.includes(body.yearId)) { res.status(403).json({ error: 'Voting is not open for that year.' }); return; }
+
+    const token = process.env.GITHUB_CONTENTS_TOKEN;
+    if (!token) { res.status(500).json({ error: 'GITHUB_CONTENTS_TOKEN is not configured on this deployment.' }); return; }
+    let years;
+    try { years = await readBangersFile(token); } catch (err) { res.status(502).json({ error: `Couldn't read the nominee list: ${err.message}` }); return; }
+    const year = years.find((y) => y && y.id === body.yearId);
+    const nominee = year && Array.isArray(year.nominees) ? year.nominees.find((n) => n && n.id === body.nomineeId) : null;
+    if (!nominee) {
+      res.status(400).json({ error: 'That nominee is not in that year.' });
+      return;
+    }
+    if (isOwnNomination(body.name, nominee.by)) {
+      res.status(403).json({ error: 'You can’t vote for your own nomination. Pick another song.' });
+      return;
+    }
+
+    const name = cleanVoterName(body.name);
+    const added = await storeHashSetNew(store, votesKey(body.yearId), voterKey(name), { name, nomineeId: body.nomineeId, at: new Date().toISOString() });
+    if (!added) { res.status(409).json({ error: `${name} has already voted for ${year.label}.` }); return; }
+    res.status(200).json({ ok: true, name, yearId: body.yearId });
+  } catch (err) {
+    res.status(502).json({ error: `Store unavailable: ${err.message}` });
+  }
+}
+
 async function githubGet(token) {
   const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}?ref=${BRANCH}`, {
     headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' },
@@ -239,14 +460,22 @@ export default async function handler(req, res) {
 
   const resource = req.method === 'GET' ? (req.query && req.query.resource) : (req.body || {}).resource;
   const storeResource = resource === 'tasks' || resource === 'quicklinks';
+  const votingResource = resource === 'voting' || resource === 'votes' || resource === 'vote' || resource === 'ballot';
+  // vote and ballot are POST only, votes (the ballots) GET only, voting (open years) either.
+  if (((resource === 'vote' || resource === 'ballot') && req.method !== 'POST') || (resource === 'votes' && req.method !== 'GET')) {
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
+  }
   // The bangers list has no GET (Pages serves the file), so a bare GET is a mistake.
-  if (req.method === 'GET' && !storeResource) {
+  if (req.method === 'GET' && !storeResource && !votingResource) {
     res.status(405).json({ error: 'Method not allowed' });
     return;
   }
 
-  // Everything but the public quick-links read needs a login.
-  if (req.method === 'POST' || resource === 'tasks') {
+  // Everything but the public quick-links read, the public open-years read and
+  // casting a vote (password-gated instead) needs a login.
+  const needsLogin = resource === 'vote' ? false : resource === 'voting' ? req.method === 'POST' : (req.method === 'POST' || resource === 'tasks' || resource === 'votes');  // ballot is a POST, so login-gated
+  if (needsLogin) {
     const sessionSecret = process.env.SESSION_SECRET;
     if (!sessionSecret) {
       res.status(500).json({ error: 'SESSION_SECRET is not configured on this deployment.' });
@@ -259,6 +488,10 @@ export default async function handler(req, res) {
   }
   if (storeResource) {
     await handleStoreResource(req, res, resource);
+    return;
+  }
+  if (votingResource) {
+    await handleVoting(req, res, resource);
     return;
   }
 

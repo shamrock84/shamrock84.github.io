@@ -77,3 +77,37 @@ export async function storeBump(store, entries) {
   }
   await storePipeline(store, commands);
 }
+
+// Sets a hash field only if it doesn't exist yet (HSETNX) and says whether it
+// did. Atomic, so two requests racing to write the same field can't both win:
+// api/bangers.js uses it so one name can't cast two votes in a year even when
+// the requests land together. `value` is stored as JSON.
+export async function storeHashSetNew(store, key, field, value) {
+  const [added] = await storePipeline(store, [['HSETNX', key, field, JSON.stringify(value)]]);
+  return Number(added) === 1;
+}
+
+// Reads whole hashes in one round trip: [{ field: value, ... }, ...] in the
+// order of `keys`, an empty object for a key that doesn't exist. Upstash's REST
+// API answers HGETALL as a flat [field, value, field, value, ...] list.
+export async function storeHashGetAll(store, keys) {
+  const results = await storePipeline(store, keys.map((k) => ['HGETALL', k]));
+  return results.map((flat) => {
+    const out = {};
+    for (let i = 0; Array.isArray(flat) && i + 1 < flat.length; i += 2) {
+      try { out[flat[i]] = JSON.parse(flat[i + 1]); } catch { /* skip an unreadable entry */ }
+    }
+    return out;
+  });
+}
+
+// Sets (or overwrites) one hash field. api/bangers.js's Admin edit of a ballot.
+export async function storeHashSet(store, key, field, value) {
+  await storePipeline(store, [['HSET', key, field, JSON.stringify(value)]]);
+}
+
+// Removes one hash field; true if it existed.
+export async function storeHashDelete(store, key, field) {
+  const [removed] = await storePipeline(store, [['HDEL', key, field]]);
+  return Number(removed) === 1;
+}
