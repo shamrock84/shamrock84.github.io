@@ -373,6 +373,8 @@
 		.vote-msg { font-size: 0.9rem; }
 		.vote-msg.ok { color: var(--accent); }
 		.vote-msg.error { color: var(--ir-text); }
+		.accept-nominations { display: flex; gap: 0.5rem; align-items: center; font-size: 0.9rem; margin: 0.2rem 0 0.4rem; }
+		.accept-nominations small { color: var(--muted); }
 		.voting-year { display: flex; gap: 0.5rem; align-items: center; padding: 0.3rem 0; }
 		.ballots { margin: 0 0 0.6rem 1.6rem; }
 		.ballots summary { cursor: pointer; font-size: 0.85rem; color: var(--muted); }
@@ -517,6 +519,11 @@
 		// (`?resource=tasks` / `?resource=quicklinks`), not in the repo: the
 		// toolbar is public to read, tasks are login-only both ways.
 		//
+		// A Nominate tab (after Vote, before Winners) appears while any year accepts
+		// nominations: name, the same password, a song and an artist. The server adds
+		// it to data/bangers.json as a nominee, so Admin edits it and ticks the winner
+		// in the Years card, where each year has an "Accept nominations" checkbox.
+		//
 		// A Vote tab appears for everyone while any year is open for voting: a
 		// name, the shared password and one nominee. api/bangers.js allows one
 		// vote per name per year and refuses a song whose "Nominated by" matches
@@ -621,7 +628,7 @@
 			try { localStorage.setItem(FOLD_KEY, JSON.stringify(foldState)); } catch (e) { /* works for this visit */ }
 		}
 		const isFolded = (y, index) => (y.id in foldState ? foldState[y.id] : index > 0);
-		try { const t = localStorage.getItem(TAB_KEY); if (t === 'nominees' || t === 'stats' || t === 'vote' || t === 'admin') tab = t; } catch (e) { /* default tab */ }
+		try { const t = localStorage.getItem(TAB_KEY); if (t === 'nominees' || t === 'stats' || t === 'vote' || t === 'nominate' || t === 'admin') tab = t; } catch (e) { /* default tab */ }
 
 		const statusEl = document.getElementById('status');
 		function setStatus(text, kind) {
@@ -835,6 +842,10 @@
 		const VOTER_KEY = 'bangersVoterName';
 		let votingOpen = [];        // year ids open for voting
 		let votingYear = null;      // the year picked in the Vote card
+		let nominating = [];        // year ids accepting nominations
+		let nominateYear = null;    // the year picked in the Nominate card
+		let nominateMsg = null;     // { text, kind } shown under the form
+		const nominatingYears = () => bangers.filter((y) => nominating.includes(y.id));
 		let voteMsg = null;         // { text, kind } shown under the form
 		const openVotingYears = () => bangers.filter((y) => votingOpen.includes(y.id) && y.nominees.length);
 
@@ -863,7 +874,8 @@
 				if (!res.ok) throw new Error(`HTTP ${res.status}`);
 				const body = await res.json();
 				votingOpen = Array.isArray(body.open) ? body.open : [];
-			} catch (e) { votingOpen = []; }
+				nominating = Array.isArray(body.nominating) ? body.nominating : [];
+			} catch (e) { votingOpen = []; nominating = []; }
 		}
 
 		function voteView() {
@@ -927,6 +939,68 @@
 					chosen.checked = false;
 					voteMsg = { text: `Thanks ${body.name}, your vote is in.`, kind: 'ok' };
 					showMsg(voteMsg.text, 'ok');
+				} catch (err) {
+					showMsg(err.message, 'error');
+				}
+				submit.disabled = false;
+			});
+			card.appendChild(form);
+			return [card];
+		}
+
+		// Nominate tab: same name + shared password as voting, but a song and an
+		// artist instead of a radio list. The server adds it to data/bangers.json as
+		// a nominee (by = the name typed), so it shows in Admin's Years card, and on
+		// the Nominees tab once Pages republishes. This page's own list is left alone
+		// on purpose: Admin's Save compares it with the file by sha.
+		function nominateView() {
+			const years = nominatingYears();
+			const card = el('div', { class: 'card' }, [el('h2', { class: 'card-heading', text: 'Nominate' })]);
+			if (!years.length) {
+				card.appendChild(el('div', { class: 'message', text: 'Nominations are not open right now.' }));
+				return [card];
+			}
+			if (!years.some((y) => y.id === nominateYear)) nominateYear = years[0].id;
+			const form = el('form', { class: 'vote-form', autocomplete: 'off' });
+			let savedName = '';
+			try { savedName = localStorage.getItem(VOTER_KEY) || ''; } catch (e) { /* no remembered name */ }
+			const name = el('input', { type: 'text', class: 'task-input', maxlength: '40', value: savedName, autocomplete: 'name', required: '' });
+			const password = el('input', { type: 'password', class: 'task-input', autocomplete: 'off', required: '' });
+			const song = el('input', { type: 'text', class: 'task-input', maxlength: '120', required: '' });
+			const artist = el('input', { type: 'text', class: 'task-input', maxlength: '120', required: '' });
+			const field = (label, input) => el('label', { class: 'vote-field' }, [el('span', { text: label }), input]);
+			const msg = el('div', { class: 'vote-msg', role: 'status' });
+			const showMsg = (text, kind) => { msg.textContent = text || ''; msg.className = `vote-msg${kind ? ' ' + kind : ''}`; };
+			form.append(field('Your name', name), field('Voting password', password));
+			if (years.length > 1) {
+				const pick = el('select', { class: 'task-input', 'aria-label': 'Year' }, years.map((y) => el('option', { value: y.id, text: y.label })));
+				pick.value = nominateYear;
+				pick.addEventListener('change', () => { nominateYear = pick.value; nominateMsg = null; showMsg(''); });
+				form.appendChild(field('Year', pick));
+			} else {
+				form.appendChild(el('div', { class: 'vote-field' }, [el('span', { text: `Nominating for ${years[0].label}` })]));
+			}
+			form.append(field('Song', song), field('Artist', artist));
+			const submit = el('button', { type: 'submit', class: 'task-add-btn primary', text: 'Submit nomination' });
+			submit.style.alignSelf = 'flex-start';
+			if (nominateMsg) showMsg(nominateMsg.text, nominateMsg.kind);
+			form.append(submit, msg);
+			form.addEventListener('submit', async (e) => {
+				e.preventDefault();
+				submit.disabled = true;
+				showMsg('Sending…');
+				try {
+					const res = await fetch(BANGERS_URL, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ resource: 'nominate', name: name.value, password: password.value, yearId: nominateYear, title: song.value, artist: artist.value }),
+					});
+					const body = await res.json().catch(() => ({}));
+					if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+					try { localStorage.setItem(VOTER_KEY, body.name || name.value.trim()); } catch (err) { /* fine */ }
+					password.value = ''; song.value = ''; artist.value = '';
+					nominateMsg = { text: `Thanks ${body.name}, your nomination for ${body.yearLabel} is in. It will show on the Nominees tab in a minute or two.`, kind: 'ok' };
+					showMsg(nominateMsg.text, 'ok');
 				} catch (err) {
 					showMsg(err.message, 'error');
 				}
@@ -1075,7 +1149,7 @@
 			const n = y.nominees.length;
 			const winners = y.nominees.filter((x) => x.winner).map((x) => x.title.trim() || '(untitled)');
 			const winner = winners.length ? `Winner: ${winners.join(', ')}` : 'no winner yet';
-			return `${n} ${n === 1 ? 'nominee' : 'nominees'} · ${winner}`;
+			return `${n} ${n === 1 ? 'nominee' : 'nominees'} · ${winner}${nominating.includes(y.id) ? ' · accepting nominations' : ''}`;
 		};
 
 		function refreshAdmin() {
@@ -1185,6 +1259,32 @@
 			});
 
 			const body = el('div', { class: 'year-body' }, [el('div', { class: 'year-head-row' }, [name, up, down, removeYear])]);
+			// Saved at once (Upstash, like the voting tick-boxes), not with Save below.
+			const accept = el('input', { type: 'checkbox' });
+			accept.checked = nominating.includes(y.id);
+			accept.addEventListener('change', async () => {
+				accept.disabled = true;
+				setStatus('Saving…');
+				try {
+					const res = await fetch(BANGERS_URL, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+						body: JSON.stringify({ resource: 'nominating', open: accept.checked ? [...nominating, y.id] : nominating.filter((id) => id !== y.id) }),
+					});
+					const out = await res.json().catch(() => ({}));
+					if (res.status === 401) { expireSession(); return; }
+					if (!res.ok) throw new Error((out.details && out.details.join(' ')) || out.error || `HTTP ${res.status}`);
+					nominating = out.nominating;
+					setStatus(accept.checked ? 'Nominations are open for this year.' : 'Nominations are closed for this year.', 'ok');
+				} catch (err) {
+					setStatus(`Not saved: ${err.message}`, 'error');
+				}
+				accept.checked = nominating.includes(y.id);
+				accept.disabled = false;
+				fill();
+				renderTabs();
+			});
+			body.appendChild(el('label', { class: 'accept-nominations' }, [accept, el('span', { text: 'Accept nominations on the Nominate tab' }), el('small', { text: ' (saves immediately)' })]));
 			if (focusId === y.id) name.setAttribute('data-focus', '');
 			if (!y.nominees.length) body.appendChild(el('div', { class: 'task-empty', text: 'No nominees yet.' }));
 			y.nominees.forEach((n, j) => body.appendChild(buildNomineeRow(y, n, j)));
@@ -1818,7 +1918,7 @@
 			const nav = document.getElementById('tabs');
 			nav.textContent = '';
 			// The Admin tab exists only while logged in; logging out removes it.
-			const tabs = [...(openVotingYears().length ? [['vote', 'Vote']] : []), ['winners', 'Winners'], ['nominees', 'Nominees'], ['stats', 'Stats'], ...(isLoggedIn() ? [['admin', 'Admin']] : [])];
+			const tabs = [...(openVotingYears().length ? [['vote', 'Vote']] : []), ...(nominatingYears().length ? [['nominate', 'Nominate']] : []), ['winners', 'Winners'], ['nominees', 'Nominees'], ['stats', 'Stats'], ...(isLoggedIn() ? [['admin', 'Admin']] : [])];
 			for (const [id, label] of tabs) {
 				const btn = el('button', { type: 'button', class: `tab-btn${tab === id ? ' active' : ''}`, role: 'tab', 'aria-selected': String(tab === id), text: label });
 				btn.addEventListener('click', () => setTab(id));
@@ -1841,6 +1941,7 @@
 		function renderAll() {
 			if (tab === 'admin' && !isLoggedIn()) tab = 'winners';
 			if (tab === 'vote' && loadState === 'ready' && !openVotingYears().length) tab = 'winners';
+			if (tab === 'nominate' && loadState === 'ready' && !nominatingYears().length) tab = 'winners';
 			renderBangerCount();
 			renderLogin();
 			renderTabs();
@@ -1853,7 +1954,7 @@
 			qlCardEl = null;
 			if (loadState === 'loading') { view.appendChild(message('Loading…')); return; }
 			if (loadState === 'failed' && tab !== 'admin') { view.appendChild(message(`Couldn’t load the list (${loadError}). Reload to try again.`, 'error')); return; }
-			const cards = tab === 'nominees' ? nomineesView() : tab === 'vote' ? voteView() : tab === 'stats' ? statsView() : tab === 'admin' ? adminView() : winnersView();
+			const cards = tab === 'nominees' ? nomineesView() : tab === 'vote' ? voteView() : tab === 'nominate' ? nominateView() : tab === 'stats' ? statsView() : tab === 'admin' ? adminView() : winnersView();
 			cards.forEach((c) => view.appendChild(c));
 		}
 
