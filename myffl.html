@@ -10594,10 +10594,11 @@
 		// the scoreboard (a bye) or final has nothing left to give.
 		//
 		// Decided is read off the win probability the Scoring cards already
-		// show (winProb): 100 is already won, 0 already lost. The estimate is
-		// clamped to 1-99 while anyone on either side still has game time left
-		// (estimateWinProbability), so those two values only occur once
-		// nothing is left to play. A matchup with no winProb (the provider or
+		// show (winProb): 99 or more is already won, 1 or less already lost.
+		// The estimate is clamped to 1-99 while anyone on either side still has
+		// game time left (estimateWinProbability), so 99/1 is the most certain
+		// it gets mid-game and is deliberately counted as decided; 100/0 occur
+		// once nothing is left to play. A matchup with no winProb (the provider or
 		// the estimate did not answer) falls back to the same conclusion
 		// drawn from the scores and who has yet to play. Otherwise a matchup
 		// stays in play unless no one is left on either side (a tie there is
@@ -10809,8 +10810,11 @@
 				const oppLeft = mondayRemainingPlayers(opp, games, bestBall, designations);
 				const margin = Math.round((myScore - oppScore) * 100) / 100;
 				const winProb = mine.winProb == null ? null : Number(mine.winProb);
-				if (winProb === 100 || (winProb == null && margin > 0 && oppLeft.length === 0)) { won.push(league); continue; }
-				if (winProb === 0 || (winProb == null && margin < 0 && myLeft.length === 0)) { lost.push(league); continue; }
+				// 99 and 1 are the estimate's clamp while game time remains
+				// (estimateWinProbability), i.e. as sure as it ever gets: treated
+				// as won and lost.
+				if ((winProb != null && winProb >= 99) || (winProb == null && margin > 0 && oppLeft.length === 0)) { won.push(league); continue; }
+				if ((winProb != null && winProb <= 1) || (winProb == null && margin < 0 && myLeft.length === 0)) { lost.push(league); continue; }
 				// Nobody left on either side: nothing can move, so a tie here is
 				// only a tiebreaker. Anything else short of 0/100 stays in play
 				// even when one side has no one left — then the only way the

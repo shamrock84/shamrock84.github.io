@@ -320,23 +320,18 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 {
 	const ctx = makeContext(LOGGED_IN);
 	setState(ctx, games);
-	// 1% and nobody left for me: alive only through the opponent's
-	// remaining player scoring negative points, and said so.
+	// 1% counts as lost and 99% as won (the estimate's clamp while game
+	// time remains), however the remaining players could in theory swing it.
 	const down = lg('1', '90.00', '100.00', [pl('b', 'Done Guy', 'KC', 20)], [pl('c', 'Opp Guy', 'NYJ', 5)]);
 	down.scoring.teams[0].winProb = 1;
 	const r = ctx.computeMondayNightMania([down], games);
-	assert.equal(r.lost.length, 0);
-	assert.equal(r.live.length, 1);
-	assert.equal(r.live[0].needed, null);
-	assert.equal(r.live[0].oppMustLose, 10.01);
-	assert.match(fullText(ctx.renderMondayNightManiaCard([down], MONDAY)), /Down 10\.00 — opponent's O\. Guy \(MNF\) must score −10\.01 or lower to win/);
-	// 99% with the opponent done: lost only if my own player goes negative.
+	assert.deepEqual(plain(r.lost.map((l) => l.id)), ['1']);
+	assert.equal(r.live.length, 0);
 	const up = lg('2', '100.00', '90.00', [pl('a', 'Tyreek Hill', 'MIA', null)], [pl('c', 'Opp Guy', 'KC', 5)]);
 	up.scoring.teams[0].winProb = 99;
 	const r2 = ctx.computeMondayNightMania([up], games);
-	assert.equal(r2.won.length, 0);
-	assert.equal(r2.live[0].myRisk, 10.01);
-	assert.match(fullText(ctx.renderMondayNightManiaCard([up], MONDAY)), /Up 10\.00 — T\. Hill \(MNF\) must score −10\.01 or lower to lose/);
+	assert.deepEqual(plain(r2.won.map((l) => l.id)), ['2']);
+	assert.equal(r2.live.length, 0);
 	// A tie with nobody left on either side is neither in play nor decided.
 	const dead = lg('3', '100.00', '100.00', [pl('b', 'Done Guy', 'KC', 20)], [pl('c', 'Opp Guy', 'KC', 5)]);
 	dead.scoring.teams[0].winProb = 50;
