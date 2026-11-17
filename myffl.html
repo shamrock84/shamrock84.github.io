@@ -10924,7 +10924,14 @@
 			// this is then the only thing worth reading). Won is green and
 			// lost is red, like a finished matchup on the Scoring tab.
 			const appendDecided = () => {
-				const names = (list) => list.map(quickLinkLabelForLeague).join(', ');
+				// An asterisk marks a call made on the threshold alone (win
+				// probability short of a true 100/0); a decided-by-scores or
+				// fully final matchup carries none.
+				const unsure = (league) => {
+					const wp = (league.scoring?.teams || []).find((t) => t.isMe)?.winProb;
+					return wp != null && Number(wp) !== 100 && Number(wp) !== 0;
+				};
+				const names = (list) => list.map((l) => quickLinkLabelForLeague(l) + (unsure(l) ? '*' : '')).join(', ');
 				if (won.length === 0 && lost.length === 0) return;
 				const box = el('div', { class: 'monday-decided card-collapse-visible' });
 				if (won.length > 0) {
