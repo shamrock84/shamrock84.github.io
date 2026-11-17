@@ -284,6 +284,15 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	assert.match(text, /Already won: L1/);
 	assert.match(text, /Already lost: L2/);
 	assert.doesNotMatch(text, /L3/);
+	// A call made on the 99/1 threshold alone carries an asterisk; a true
+	// 100/0 (or one decided by scores with no win probability) does not.
+	const nearWon = lg('5', '120.00', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], [pl('c', 'Opp Guy', 'KC', 5)]);
+	const nearLost = lg('6', '90.00', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], [pl('c', 'Opp Guy', 'KC', 5)]);
+	nearWon.scoring.teams[0].winProb = 99;
+	nearLost.scoring.teams[0].winProb = 1;
+	const starText = fullText(ctx.renderMondayNightManiaCard([won, nearWon, lost, nearLost], MONDAY));
+	assert.match(starText, /Already won: L1, L5\*/);
+	assert.match(starText, /Already lost: L2, L6\*/);
 	// With live matchups too, the summary sits above them, won before lost.
 	const live = lg('4', '98.40', '110.00', [pl('a', 'Tyreek Hill', 'MIA', null)], []);
 	const card = ctx.renderMondayNightManiaCard([live, won, lost], MONDAY);
