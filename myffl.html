@@ -10673,11 +10673,11 @@
 		// only a matchup the reader opened is remembered (as '0').
 		const MONDAY_MATCHUP_NS = 'myfflMondayMatchupCollapsed';
 
-		// A win probability at or above this counts as already won, and one at or
+		// Shared by the Sunday and Monday night cards: a win probability at or above this counts as already won, and one at or
 		// below 100 minus it as already lost (computeMondayNightMania). 99 is the
 		// estimate's own clamp while game time remains; lower it to call
 		// matchups earlier. Symmetric by design, so one number moves both.
-		const MONDAY_DECIDED_WIN_PROB = 99;
+		const NIGHT_CARD_DECIDED_WIN_PROB = 99;
 
 		function mondayIsBestBall(league) {
 			return Array.isArray(league.tags) && league.tags.includes('BestBall');
@@ -10819,8 +10819,8 @@
 				// 99 and 1 are the estimate's clamp while game time remains
 				// (estimateWinProbability), i.e. as sure as it ever gets: treated
 				// as won and lost.
-				if ((winProb != null && winProb >= MONDAY_DECIDED_WIN_PROB) || (winProb == null && margin > 0 && oppLeft.length === 0)) { won.push(league); continue; }
-				if ((winProb != null && winProb <= 100 - MONDAY_DECIDED_WIN_PROB) || (winProb == null && margin < 0 && myLeft.length === 0)) { lost.push(league); continue; }
+				if ((winProb != null && winProb >= NIGHT_CARD_DECIDED_WIN_PROB) || (winProb == null && margin > 0 && oppLeft.length === 0)) { won.push(league); continue; }
+				if ((winProb != null && winProb <= 100 - NIGHT_CARD_DECIDED_WIN_PROB) || (winProb == null && margin < 0 && myLeft.length === 0)) { lost.push(league); continue; }
 				// Nobody left on either side: nothing can move, so a tie here is
 				// only a tiebreaker. Anything else short of 0/100 stays in play
 				// even when one side has no one left — then the only way the
