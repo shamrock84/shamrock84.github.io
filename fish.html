@@ -1041,7 +1041,35 @@
 		// trip without them is shown but never counted in those.
 		const hasCounts = (t) => { const tot = tripTotals(t); return tot.caught != null || tot.kept != null; };
 		const hasDayFacts = (t) => t.days.some((d) => d.first || d.biggest || d.biggestInches != null || (d.species || []).some((x) => x.count != null));
-		const isUpcoming = (t) => !hasCounts(t) && !hasDayFacts(t);
+		// Played or upcoming. A trip with a date is Upcoming while that date is ahead
+		// and played from the day it arrives, whether or not stats were kept (some
+		// old trips were never recorded). Without a date, the year decides: a past
+		// year was played, a future year is upcoming, and this year's trip is
+		// upcoming until something is filled in. `today` is injectable for testing.
+		const localToday = () => {
+			const d = new Date();
+			return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+		};
+		function tripStatus(t, today = localToday()) {
+			if (t.date) return t.date > today ? 'upcoming' : 'played';
+			const thisYear = Number(today.slice(0, 4));
+			if (t.year < thisYear) return 'played';
+			if (t.year > thisYear) return 'upcoming';
+			return hasCounts(t) || hasDayFacts(t) ? 'played' : 'upcoming';
+		}
+		const isUpcoming = (t) => tripStatus(t) === 'upcoming';
+
+		// "Feb 14" for a one-day trip, "Feb 14–15" or "Feb 28 – Mar 1" for longer
+		// ones (the days are consecutive from the start date). UTC throughout, so
+		// the viewer's timezone can't shift the day.
+		function formatTripDates(date, days) {
+			const [y, m, d] = date.split('-').map(Number);
+			const start = new Date(Date.UTC(y, m - 1, d));
+			const end = new Date(Date.UTC(y, m - 1, d + Math.max(1, days) - 1));
+			const f = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+			if (days <= 1) return f.format(start);
+			return start.getUTCMonth() === end.getUTCMonth() ? `${f.format(start)}–${end.getUTCDate()}` : `${f.format(start)} – ${f.format(end)}`;
+		}
 
 		function allTimeStats(list) {
 			const done = list.filter((t) => !isUpcoming(t));
@@ -1238,7 +1266,7 @@
 			const upcoming = isUpcoming(t);
 			const head = el('h2', { class: 'card-heading' }, [
 				document.createTextNode(String(t.year)),
-				t.location ? el('span', { class: 'fish-where', text: ` · ${t.location}` }) : null,
+				t.location || t.date ? el('span', { class: 'fish-where', text: ` · ${[t.location, t.date ? formatTripDates(t.date, t.days.length) : ''].filter(Boolean).join(' · ')}` }) : null,
 				upcoming ? el('span', { class: 'fish-chip', text: 'Upcoming' }) : null,
 			]);
 			const card = el('div', { class: 'card' }, [head]);
@@ -1263,6 +1291,8 @@
 				if (bits.length) facts.appendChild(el('li', {}, [el('b', { text: `Day ${j + 1} ` }), document.createTextNode(bits.join(' · '))]));
 			});
 			if (facts.children.length) card.appendChild(facts);
+			// Played, but nothing was kept for it: say so rather than show an empty card.
+			if (!hasCounts(t) && !facts.children.length) card.appendChild(el('div', { class: 'task-empty', text: 'No stats were recorded for this trip.' }));
 			return card;
 		}
 
@@ -1375,7 +1405,15 @@
 			details.open = !!tripOpen[t.id];
 			details.addEventListener('toggle', () => { tripOpen[t.id] = details.open; });
 
-			details.appendChild(el('div', { class: 'trip-fields' }, [labelled('Year', countInput(t, 'year', { label: 'Year' })), labelled('Location', textField(t, 'location', 'e.g. River Bend', 'Location'))]));
+			// The date is the first day. Setting it also sets the year (the server
+			// refuses a date whose year differs from the trip's).
+			const yearInput = countInput(t, 'year', { label: 'Year' });
+			const dateInput = el('input', { type: 'date', class: 'task-input', value: t.date || '', 'aria-label': 'Date of the first day' });
+			dateInput.addEventListener('input', () => {
+				t.date = dateInput.value || null;
+				if (t.date) { t.year = Number(t.date.slice(0, 4)); yearInput.value = String(t.year); }
+			});
+			details.appendChild(el('div', { class: 'trip-fields' }, [labelled('Year', yearInput), labelled('Date (first day)', dateInput), labelled('Location', textField(t, 'location', 'e.g. River Bend', 'Location'))]));
 
 			details.appendChild(el('div', { class: 'trip-sub', text: 'Fish caught and kept' }));
 			const grid = el('table', { class: 'trip-grid' });
@@ -1462,6 +1500,7 @@
 				tripOpen[id] = true;
 				tripsDraft.unshift({
 					id,
+					date: null,
 					year: Math.max(new Date().getFullYear(), ...(tripsDraft.map((x) => x.year || 0))) + (tripsDraft.some((x) => x.year === new Date().getFullYear()) ? 1 : 0),
 					location: last ? last.location : '',
 					days,
@@ -1477,7 +1516,7 @@
 			discard.addEventListener('click', () => { tripsDraft = copyTrips(trips); tripsErrors = []; refreshTripsCard(); });
 			card.appendChild(el('div', { class: 'ql-actions' }, [add, save, discard]));
 			if (tripsErrors.length) card.appendChild(el('ul', { class: 'ql-errors' }, tripsErrors.map((t) => el('li', { text: t }))));
-			card.appendChild(el('div', { class: 'ql-note', text: 'Newest first, as shown on the Ice Fishing tab. Leave a count blank if it was not recorded (a blank is not a zero); a trip with nothing filled in shows as Upcoming, and one with only a biggest fish (say) shows just that. Species counts are fish kept.' }));
+			card.appendChild(el('div', { class: 'ql-note', text: 'Newest first, as shown on the Ice Fishing tab. Leave a count blank if it was not recorded (a blank is not a zero). Species counts are fish kept. A trip with a date is Upcoming until that day and played from then on, even with no stats. Without a date, a past year counts as played, a future year as upcoming, and this year as upcoming until something is filled in. A played trip shows whatever was captured for it.' }));
 			return card;
 		}
 

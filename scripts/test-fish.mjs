@@ -15,7 +15,7 @@ import fs from 'node:fs';
 import handler, { TASKS_KEY, QUICKLINKS_KEY, FISH_TASKS_KEY, FISH_QUICKLINKS_KEY, FISH_TRIPS_KEY } from '../api/fam.js';
 import { TASKS_KEY as VIKINGS_TASKS_KEY, QUICKLINKS_KEY as VIKINGS_QUICKLINKS_KEY } from '../api/vikings.js';
 import { TASKS_KEY as BANGERS_TASKS_KEY, QUICKLINKS_KEY as BANGERS_QUICKLINKS_KEY } from '../api/bangers.js';
-import { validateTrips, normalizeTrips, SEED_TRIPS } from '../api/_lib/fishtrips.mjs';
+import { validateTrips, normalizeTrips, isRealDate, SEED_TRIPS } from '../api/_lib/fishtrips.mjs';
 import { createToken } from '../api/_lib/auth.mjs';
 
 let failures = 0;
@@ -68,6 +68,22 @@ check('blank counts stay null, and a name listed twice or an empty name is refus
   assert.deepEqual(normalizeTrips([t])[0].anglers[0].days[0], { caught: null, kept: null });
   assert.equal(errorsFor((x) => { x.anglers[1].name = ' braden '; }).length, 1);
   assert.equal(errorsFor((x) => { x.anglers[1].name = '  '; }).length, 1);
+});
+
+check('a trip date must be a real YYYY-MM-DD in the trip\'s year; blank or absent is fine', () => {
+  assert.ok(isRealDate('2025-02-28') && isRealDate('2024-02-29'));
+  for (const bad of ['2025-02-30', '2025-13-01', '2025-2-8', 'banana', '', null, 20250228]) assert.ok(!isRealDate(bad), String(bad));
+  assert.deepEqual(errorsFor((t) => { t.date = '2025-02-28'; }), []);
+  assert.deepEqual(errorsFor((t) => { t.date = ''; }), []);
+  assert.deepEqual(errorsFor((t) => { t.date = null; }), []);
+  assert.deepEqual(errorsFor((t) => { delete t.date; }), [], 'trips stored before dates existed still validate');
+  assert.equal(errorsFor((t) => { t.date = '2025-02-30'; }).length, 1);
+  assert.equal(errorsFor((t) => { t.date = '2026-02-28'; }).length, 1, 'a date in another year than the trip');
+  assert.equal(normalizeTrips([Object.assign(one(), { date: '' })])[0].date, null);
+  assert.equal(normalizeTrips([Object.assign(one(), { date: '2025-02-28' })])[0].date, '2025-02-28');
+  const old = one(); delete old.date;
+  assert.equal(normalizeTrips([old])[0].date, null, 'a stored trip without the field normalises to null');
+  assert.ok(SEED_TRIPS.every((t) => t.date === null), 'the seed invents no dates');
 });
 
 check('duplicate or malformed ids and a non-array body are refused', () => {
