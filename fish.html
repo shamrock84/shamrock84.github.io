@@ -267,6 +267,9 @@
 		.fish-days { margin: 0.7rem 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.88rem; }
 		.fish-days li { padding-left: 0.6rem; border-left: 3px solid var(--accent); }
 		.fish-days b { color: var(--accent); }
+		.fish-badge { display: inline-block; margin-right: 0.4rem; padding: 0 0.4rem; border-radius: 999px; font-size: 0.7rem; font-weight: 700; line-height: 1.5; vertical-align: 1px; }
+		.fish-first { background: var(--chip-bg); color: var(--accent); }
+		.fish-big { background: var(--gold-chip-bg); color: var(--gold-chip-text); }
 		.fish-chip { display: inline-block; margin-left: 0.4rem; padding: 0.1rem 0.5rem; border-radius: 999px; background: var(--gold-chip-bg); color: var(--gold-chip-text); font-size: 0.7rem; font-weight: 700; vertical-align: middle; }
 		.fish-where { color: var(--muted); font-weight: 400; }
 		.fish-note { color: var(--muted); font-size: 0.8rem; margin: 0.6rem 0 0; }
@@ -306,12 +309,13 @@
 	</main>
 
 	<script>
-		// melbostads.com/fish — myFish, the Melbostad ice-fishing page. Three tabs:
-		// Ice Fishing (everyone: all-time stats and one card per trip), and, only
+		// melbostads.com/fish — myFish, the Melbostad ice-fishing page. Two tabs:
+		// Ice Fishing (everyone: all-time stats and one card per trip) and, only
 		// while logged in (same password and token as myFFL, myVST, myBangers and
-		// myFAM, same localStorage key), Admin (the same Tasks and Quick Links cards
-		// as the other small sites) and Trips, which edits what the Ice Fishing tab
-		// shows. The Quick Links card fills the toolbar at the top for everyone.
+		// myFAM, same localStorage key), Admin: the same Tasks and Quick Links cards
+		// as the other small sites, plus a Trips card that edits what the Ice
+		// Fishing tab shows. The Quick Links card fills the toolbar at the top for
+		// everyone.
 		//
 		// Everything is stored in the Upstash store behind api/fam.js, not in the
 		// repo: `?resource=fishtrips` (public GET, login-gated POST, answers with the
@@ -372,7 +376,7 @@
 		try { authToken = localStorage.getItem(AUTH_TOKEN_KEY) || null; } catch (e) { /* storage blocked: stay logged out */ }
 		const isLoggedIn = () => !!authToken;
 
-		const TABS = [['fishing', 'Ice Fishing', false], ['admin', 'Admin', true], ['trips', 'Trips', true]];
+		const TABS = [['fishing', 'Ice Fishing', false], ['admin', 'Admin', true]];
 		let tab = 'fishing';
 		try { const saved = localStorage.getItem(TAB_KEY); if (TABS.some(([id]) => id === saved)) tab = saved; } catch (e) { /* default tab */ }
 
@@ -1007,6 +1011,7 @@
 		const sumOf = (list) => (list.every((v) => v == null) ? null : list.reduce((a, v) => a + (v ?? 0), 0));
 		const fmt = (v) => (v == null ? '–' : String(v));
 		const inchesText = (n) => `${n}"`;
+		const sameName = (a, b) => !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase();
 
 		function tripTotals(t) {
 			const anglers = t.anglers.map((a) => ({
@@ -1120,9 +1125,18 @@
 			if (t.days.length > 1) pair(true);
 			table.appendChild(el('thead', {}, [top, sub]));
 			const body = el('tbody');
+			let anyBadge = false;
 			for (const a of tot.anglers) {
 				const row = el('tr', {}, [el('td', { text: a.name })]);
-				a.days.forEach((d) => { row.appendChild(el('td', { class: 'fish-split', text: fmt(d.caught) })); row.appendChild(el('td', { text: fmt(d.kept) })); });
+				a.days.forEach((d, j) => {
+					// First and biggest fish of the day sit on the row of whoever landed them.
+					const day = t.days[j];
+					const badges = [];
+					if (sameName(day.first, a.name)) { badges.push(el('span', { class: 'fish-badge fish-first', title: 'First fish of the day', text: '1st' })); anyBadge = true; }
+					if (sameName(day.biggest, a.name)) { badges.push(el('span', { class: 'fish-badge fish-big', title: 'Biggest fish of the day', text: day.biggestInches != null ? `★ ${inchesText(day.biggestInches)}` : '★' })); anyBadge = true; }
+					row.appendChild(el('td', { class: 'fish-split' }, [...badges, document.createTextNode(fmt(d.caught))]));
+					row.appendChild(el('td', { text: fmt(d.kept) }));
+				});
 				if (t.days.length > 1) { row.appendChild(el('td', { class: 'fish-split fish-total', text: fmt(a.caught) })); row.appendChild(el('td', { class: 'fish-total', text: fmt(a.kept) })); }
 				body.appendChild(row);
 			}
@@ -1132,12 +1146,16 @@
 			if (t.days.length > 1) { foot.appendChild(el('td', { class: 'fish-split', text: fmt(tot.caught) })); foot.appendChild(el('td', { text: fmt(tot.kept) })); }
 			table.appendChild(el('tfoot', {}, [foot]));
 			card.appendChild(el('div', { class: 'fish-scroll' }, [table]));
+			if (anyBadge) card.appendChild(el('div', { class: 'fish-note', text: '1st = first fish of the day · ★ = biggest fish of the day (length)' }));
 
+			// Anything the table can't show: a first or biggest fish credited to
+			// someone who isn't a row on this trip, and the species kept.
+			const listed = (name) => t.anglers.some((a) => sameName(a.name, name));
 			const facts = el('ul', { class: 'fish-days' });
 			t.days.forEach((d, j) => {
 				const bits = [];
-				if (d.first) bits.push(`First fish: ${d.first}`);
-				if (d.biggest || d.biggestInches != null) bits.push(`Biggest fish: ${[d.biggest, d.biggestInches != null ? `(${inchesText(d.biggestInches)})` : ''].filter(Boolean).join(' ')}`);
+				if (d.first && !listed(d.first)) bits.push(`First fish: ${d.first}`);
+				if ((d.biggest || d.biggestInches != null) && !(d.biggest && listed(d.biggest))) bits.push(`Biggest fish: ${[d.biggest, d.biggestInches != null ? `(${inchesText(d.biggestInches)})` : ''].filter(Boolean).join(' ')}`);
 				const kept = (d.species || []).filter((s) => s.count != null).map((s) => `${s.name} ${s.count}`);
 				if (kept.length) bits.push(`Kept: ${kept.join(', ')}`);
 				if (bits.length) facts.appendChild(el('li', {}, [el('b', { text: `Day ${j + 1} ` }), document.createTextNode(bits.join(' · '))]));
@@ -1172,9 +1190,16 @@
 				tripsError = err.message;
 			}
 			if (tab === 'fishing') renderAll();
+			else if (tab === 'admin' && tripsCardEl && tripsCardEl.isConnected && !tripsDraft) {
+				// The Admin tab opened before the read finished: swap the placeholder
+				// card only, so Tasks and Quick Links edits in progress are left alone.
+				const old = tripsCardEl;
+				tripsAdminCard();
+				old.replaceWith(tripsCardEl);
+			}
 		}
 
-		// ---- Trips tab (login only) ---------------------------------------------
+		// ---- Trips card on the Admin tab (login only) ---------------------------------------------
 		// Edits go into a draft and nothing is saved until Save; the whole list is
 		// replaced in one write, like Quick Links. Typing updates the draft in place
 		// (no re-render, which would steal focus); only structural changes (add or
@@ -1354,15 +1379,26 @@
 			return card;
 		}
 
-		function tripsView() {
+		// The Trips card, or a placeholder until the trip read comes back. It is
+		// rebuilt from the saved list each time the Admin tab opens.
+		function tripsAdminCard() {
 			if (tripsState !== 'ready') {
-				if (tripsState === 'error') loadTrips();
-				return [el('div', { class: 'card' }, [el('div', { class: 'message', text: 'Loading…' })])];
+				const head = el('h2', { class: 'card-heading', text: 'Trips' });
+				const card = el('div', { class: 'card' }, [head]);
+				if (tripsState === 'error') {
+					const retry = el('button', { type: 'button', class: 'task-add-btn', text: 'Try again' });
+					retry.addEventListener('click', loadTrips);
+					card.append(el('div', { class: 'message error', text: `Couldn’t load the trips (${tripsError}).` }), retry);
+				} else {
+					card.appendChild(el('div', { class: 'message', text: 'Loading…' }));
+				}
+				tripsCardEl = card;
+				return card;
 			}
-			tripsDraft = null; // a fresh copy of what is saved each time the tab opens
+			tripsDraft = null;
 			tripsErrors = [];
 			tripsCardEl = buildTripsCard();
-			return [tripsCardEl];
+			return tripsCardEl;
 		}
 
 		// Coming back to the page (switching apps on a phone or iPad, or restoring
@@ -1385,7 +1421,7 @@
 		function renderTabs() {
 			const nav = document.getElementById('tabs');
 			nav.textContent = '';
-			// Admin and Trips exist only while logged in; logging out removes them.
+			// Admin exists only while logged in; logging out removes it.
 			for (const [id, label, loginOnly] of TABS) {
 				if (loginOnly && !isLoggedIn()) continue;
 				const btn = el('button', { type: 'button', class: `tab-btn${tab === id ? ' active' : ''}`, role: 'tab', 'aria-selected': String(tab === id), text: label });
@@ -1404,7 +1440,7 @@
 			tasksCardEl = null;
 			qlCardEl = null;
 			tripsCardEl = null;
-			const cards = tab === 'admin' ? adminView() : tab === 'trips' ? tripsView() : fishingView();
+			const cards = tab === 'admin' ? [...adminView(), tripsAdminCard()] : fishingView();
 			cards.forEach((c) => view.appendChild(c));
 		}
 
