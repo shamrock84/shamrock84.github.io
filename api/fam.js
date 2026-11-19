@@ -43,13 +43,13 @@
 
 import { verifyToken } from './_lib/auth.mjs';
 import { applyCors } from './_lib/cors.mjs';
-import { storeGet, storeSet } from './_lib/store.mjs';
+import { storeGet, storeSet, storeRelease } from './_lib/store.mjs';
 import { resolveStore } from './plans.js';
 import { fetchSharedAlbum } from './_lib/sharedalbum.mjs';
 import { fetchCalendar, monthWindow } from './_lib/calendarfeed.mjs';
 import { validateTaskPatch, applyTaskPatch, validateQuickLinks, normalizeQuickLinks } from './vikings.js';
 import { validateTrips, normalizeTrips, SEED_TRIPS } from './_lib/fishtrips.mjs';
-import { validateLures, normalizeLures } from './_lib/fishlures.mjs';
+import { validateLures, normalizeLures, decodeLurePhoto, isLureId } from './_lib/fishlures.mjs';
 
 // Upstash keys. Deliberately not vikings.js's or bangers.js's: sharing one
 // would show each page the other's tasks and toolbar.
@@ -67,6 +67,8 @@ const FISH_TRIPS_KEY = 'fish:trips';
 // The Equipment tab's favourite lures (api/_lib/fishlures.mjs): public GET, login-gated
 // POST, an empty list until the first Save.
 const FISH_LURES_KEY = 'fish:lures';
+// One key per lure picture (a JPEG data URL), so the lures list stays small.
+const lurePhotoKey = (id) => `fish:lurephoto:${id}`;
 
 export { TASKS_KEY, QUICKLINKS_KEY, FISH_TASKS_KEY, FISH_QUICKLINKS_KEY, FISH_TRIPS_KEY, FISH_LURES_KEY };
 
@@ -196,6 +198,29 @@ async function handleStoreResource(req, res, resource) {
       res.status(200).json({ trips, seeded: false });
       return;
     }
+    if (resource === 'fishlurephoto') {
+      if (req.method === 'GET') {
+        const id = req.query && req.query.id;
+        const stored = isLureId(id) ? await storeGet(store, lurePhotoKey(id)) : null;
+        const bytes = decodeLurePhoto(stored);
+        if (!bytes) { res.status(404).json({ error: 'No photo.' }); return; }
+        // The page's URL carries the version token, so a changed photo is a new URL.
+        res.setHeader('Content-Type', 'image/jpeg');
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        res.status(200);
+        res.end(bytes);
+        return;
+      }
+      const body = req.body || {};
+      const bytes = decodeLurePhoto(body.image);
+      if (!isLureId(body.id) || !bytes) {
+        res.status(400).json({ error: 'Nothing was saved — send a lure id and a small JPEG data URL.' });
+        return;
+      }
+      await storeSet(store, lurePhotoKey(body.id), body.image);
+      res.status(200).json({ id: body.id, photo: Date.now().toString(36) });
+      return;
+    }
     if (resource === 'fishlures') {
       if (req.method === 'GET') {
         const stored = await storeGet(store, FISH_LURES_KEY);
@@ -208,7 +233,15 @@ async function handleStoreResource(req, res, resource) {
         return;
       }
       const lures = normalizeLures(req.body.lures);
+      const before = await storeGet(store, FISH_LURES_KEY);
       await storeSet(store, FISH_LURES_KEY, lures);
+      // A lure that was removed, or whose photo was cleared, loses its stored picture.
+      // Only now, after the list is saved, so Remove in an unsaved draft never
+      // breaks what is live. Best effort: a leftover picture is harmless.
+      const keep = new Set(lures.filter((l) => l.photo).map((l) => l.id));
+      for (const old of Array.isArray(before) ? before : []) {
+        if (old.photo && !keep.has(old.id) && isLureId(old.id)) await storeRelease(store, lurePhotoKey(old.id)).catch(() => {});
+      }
       res.status(200).json({ lures });
       return;
     }
@@ -280,12 +313,12 @@ export default async function handler(req, res, fetchFn = fetch) {
     return;
   }
   // Only the store resources exist here; anything else is a mistake.
-  if (!['tasks', 'quicklinks', 'fishtasks', 'fishquicklinks', 'fishtrips', 'fishlures'].includes(resource)) {
-    res.status(req.method === 'GET' ? 405 : 400).json({ error: 'Unknown resource: use "tasks", "quicklinks", "fishtasks", "fishquicklinks", "fishtrips", "fishlures" or (GET) "photos" / "fishphotos" / "calendar".' });
+  if (!['tasks', 'quicklinks', 'fishtasks', 'fishquicklinks', 'fishtrips', 'fishlures', 'fishlurephoto'].includes(resource)) {
+    res.status(req.method === 'GET' ? 405 : 400).json({ error: 'Unknown resource: use "tasks", "quicklinks", "fishtasks", "fishquicklinks", "fishtrips", "fishlures", "fishlurephoto" or (GET) "photos" / "fishphotos" / "calendar".' });
     return;
   }
 
-  // Everything but the public quick-links and trip-log reads needs a login.
+  // Everything but the public quick-links, trip-log, lures and lure-picture reads needs a login.
   if (req.method === 'POST' || resource === 'tasks' || resource === 'fishtasks') {
     const sessionSecret = process.env.SESSION_SECRET;
     if (!sessionSecret) {

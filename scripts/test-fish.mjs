@@ -16,7 +16,7 @@ import handler, { TASKS_KEY, QUICKLINKS_KEY, FISH_TASKS_KEY, FISH_QUICKLINKS_KEY
 import { TASKS_KEY as VIKINGS_TASKS_KEY, QUICKLINKS_KEY as VIKINGS_QUICKLINKS_KEY } from '../api/vikings.js';
 import { TASKS_KEY as BANGERS_TASKS_KEY, QUICKLINKS_KEY as BANGERS_QUICKLINKS_KEY } from '../api/bangers.js';
 import { validateTrips, normalizeTrips, isRealDate, SEED_TRIPS } from '../api/_lib/fishtrips.mjs';
-import { validateLures, normalizeLures, FISHING_TYPES } from '../api/_lib/fishlures.mjs';
+import { validateLures, normalizeLures, decodeLurePhoto, PHOTO_MAX_BYTES, FISHING_TYPES } from '../api/_lib/fishlures.mjs';
 import { createToken } from '../api/_lib/auth.mjs';
 
 let failures = 0;
@@ -106,7 +106,7 @@ check('normalizeTrips trims text and drops an empty species list', () => {
 check('fish.html carries the shared pieces (switcher tag, own endpoints, no other page\'s)', () => {
   const html = fs.readFileSync(new URL('../fish.html', import.meta.url), 'utf8');
   assert.ok(html.includes('<script src="/site-switcher.js" data-site="fish"></script>'));
-  for (const r of ['fishtrips', 'fishtasks', 'fishquicklinks', 'fishlures', 'fishphotos']) assert.ok(html.includes(`resource=${r}`) || html.includes(`resource: '${r}'`), r);
+  for (const r of ['fishtrips', 'fishtasks', 'fishquicklinks', 'fishlures', 'fishlurephoto', 'fishphotos']) assert.ok(html.includes(`resource=${r}`) || html.includes(`resource: '${r}'`), r);
   assert.ok(!/resource=(tasks|quicklinks)\b/.test(html) && !/resource: '(tasks|quicklinks)'/.test(html), 'must not touch myFAM\'s resources');
 });
 
@@ -117,7 +117,7 @@ check('lures: a good one passes and normalises; only name and type of fishing ar
   assert.deepEqual(lureErrors(), []);
   const bare = { id: 'l2', name: '  Swedish   Pimple ', fishingType: 'Open water' };
   assert.deepEqual(validateLures({ lures: [bare] }).errors, []);
-  assert.deepEqual(normalizeLures([bare])[0], { id: 'l2', name: 'Swedish Pimple', fishingType: 'Open water', lureType: '', waterBody: '', location: '', notes: '' });
+  assert.deepEqual(normalizeLures([bare])[0], { id: 'l2', name: 'Swedish Pimple', fishingType: 'Open water', lureType: '', waterBody: '', location: '', notes: '', photo: '' });
   assert.deepEqual(validateLures({ lures: [] }).errors, []);
 });
 
@@ -131,6 +131,21 @@ check('lures: a missing name, an unknown type of fishing, long text, a duplicate
   assert.equal(validateLures({ lures: [lure(), lure()] }).errors.length, 1);
   assert.ok(validateLures({}).errors.length);
   assert.ok(FISHING_TYPES.includes('Ice') && FISHING_TYPES.includes('Open water'));
+});
+
+check('lure photos: only a small real JPEG data URL is accepted; the token is validated and kept', () => {
+  const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4]);
+  const ok = `data:image/jpeg;base64,${jpeg.toString('base64')}`;
+  assert.equal(decodeLurePhoto(ok).length, 8);
+  assert.equal(decodeLurePhoto(`data:image/png;base64,${jpeg.toString('base64')}`), null, 'not a JPEG data URL');
+  assert.equal(decodeLurePhoto(`data:image/jpeg;base64,${Buffer.from('<script>alert(1)</script>').toString('base64')}`), null, 'JPEG label but not JPEG bytes');
+  assert.equal(decodeLurePhoto(`data:image/jpeg;base64,${Buffer.concat([jpeg, Buffer.alloc(PHOTO_MAX_BYTES)]).toString('base64')}`), null, 'too big');
+  assert.equal(decodeLurePhoto(null), null);
+  assert.deepEqual(lureErrors({ photo: 'k3x9a' }), []);
+  assert.deepEqual(lureErrors({ photo: '' }), []);
+  assert.equal(lureErrors({ photo: '../etc' }).length, 1);
+  assert.equal(normalizeLures([lure({ photo: 'k3x9a' })])[0].photo, 'k3x9a');
+  assert.equal(normalizeLures([lure()])[0].photo, '');
 });
 
 // A tiny req/res pair. No store credentials are set, so a request that gets past
@@ -153,6 +168,7 @@ for (const [name, run] of [
     assert.equal(await call('GET', { query: { resource: 'fishtrips' } }), 500);
     assert.equal(await call('GET', { query: { resource: 'fishquicklinks' } }), 500);
     assert.equal(await call('GET', { query: { resource: 'fishlures' } }), 500);
+    assert.equal(await call('GET', { query: { resource: 'fishlurephoto', id: 'a' } }), 500);
   }],
   ['the tasks GET needs a login', async () => {
     assert.equal(await call('GET', { query: { resource: 'fishtasks' } }), 401);
@@ -164,6 +180,7 @@ for (const [name, run] of [
     assert.equal(await call('POST', { body: { resource: 'fishquicklinks', links: [] } }), 401);
     assert.equal(await call('POST', { body: { resource: 'fishtasks', tasks: {} } }), 401);
     assert.equal(await call('POST', { body: { resource: 'fishlures', lures: [] } }), 401);
+    assert.equal(await call('POST', { body: { resource: 'fishlurephoto', id: 'a', image: 'x' } }), 401);
   }],
   ['the fish album is its own variable and cache: 503 without FISH_PHOTOS_ALBUM, even with myFAM\'s set', async () => {
     delete process.env.FISH_PHOTOS_ALBUM;

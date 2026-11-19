@@ -346,6 +346,10 @@
 		.lure-table th, .lure-table td { text-align: left; white-space: normal; }
 		.lure-table th:first-child, .lure-table td:first-child { white-space: nowrap; }
 		.lure-name { font-weight: 700; }
+		.lure-name-cell { display: flex; align-items: center; gap: 0.5rem; }
+		.lure-thumb { flex: none; width: 2.6rem; height: 2.6rem; border-radius: 6px; border: 1px solid var(--border); object-fit: cover; background: var(--card-bg); }
+		.lure-photo-edit { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin: 0.5rem 0; }
+		.lure-photo-edit input[type=file] { max-width: 100%; font-size: 0.8rem; }
 		.lure-notes { min-width: 10rem; color: var(--muted); }
 	</style>
 </head>
@@ -1866,6 +1870,36 @@
 			return [...set].sort((a, b) => a.localeCompare(b));
 		}
 
+		// The picture is a separate request per lure (never part of the lures list);
+		// the URL carries the version token, so a changed photo is a new URL.
+		const lurePhotoUrl = (l) => `${API_URL}?resource=fishlurephoto&id=${encodeURIComponent(l.id)}&v=${encodeURIComponent(l.photo)}`;
+		function lurePhotoImg(l, extra = {}) {
+			if (!l.photo) return null;
+			return el('img', { class: 'lure-thumb', src: l.dataUrl || lurePhotoUrl(l), alt: `${l.name || 'Lure'} photo`, loading: 'lazy', ...extra });
+		}
+		// Shrinks a chosen picture in the browser to a small JPEG (longest side 240px,
+		// about 10-20KB), so nothing large is ever uploaded or stored.
+		function shrinkToJpeg(file) {
+			return new Promise((resolve, reject) => {
+				const url = URL.createObjectURL(file);
+				const img = new Image();
+				img.onload = () => {
+					const scale = Math.min(1, 240 / Math.max(img.naturalWidth, img.naturalHeight));
+					const canvas = document.createElement('canvas');
+					canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+					canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+					const ctx = canvas.getContext('2d');
+					ctx.fillStyle = '#fff'; // a transparent PNG would otherwise go black as a JPEG
+					ctx.fillRect(0, 0, canvas.width, canvas.height);
+					ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+					URL.revokeObjectURL(url);
+					resolve(canvas.toDataURL('image/jpeg', 0.8));
+				};
+				img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('That file could not be read as a picture.')); };
+				img.src = url;
+			});
+		}
+
 		function buildLuresCard() {
 			const head = el('h2', { class: 'card-heading', text: `Lures${lures && lures.length ? ` (${lures.length})` : ''}` });
 			const card = el('div', { class: 'card' }, [head]);
@@ -1905,7 +1939,7 @@
 				const tbody = el('tbody');
 				for (const l of shown) {
 					tbody.appendChild(el('tr', {}, [
-						el('td', { class: 'lure-name', text: l.name }), el('td', { text: l.fishingType }), el('td', { text: l.lureType || '' }),
+						el('td', { class: 'lure-name' }, [el('div', { class: 'lure-name-cell' }, [lurePhotoImg(l), document.createTextNode(l.name)])]), el('td', { text: l.fishingType }), el('td', { text: l.lureType || '' }),
 						el('td', { text: l.waterBody || '' }), el('td', { text: l.location || '' }), el('td', { class: 'lure-notes', text: l.notes || '' }),
 					]));
 				}
@@ -1950,7 +1984,7 @@
 		let luresCardEl = null;
 		const lureOpen = {};
 		const copyLures = (list) => JSON.parse(JSON.stringify(list));
-		const luresDirty = () => JSON.stringify(luresDraft) !== JSON.stringify(lures);
+		const luresDirty = () => JSON.stringify(luresDraft.map(({ dataUrl, ...rest }) => rest)) !== JSON.stringify(lures.map((l) => ({ ...l, photo: l.photo || '' })));
 		const newLureId = () => `l${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
 
 		function refreshLuresCard() {
@@ -1969,7 +2003,7 @@
 				const res = await fetch(API_URL, {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
-					body: JSON.stringify({ resource: 'fishlures', lures: luresDraft }),
+					body: JSON.stringify({ resource: 'fishlures', lures: luresDraft.map(({ dataUrl, ...rest }) => rest) }),
 				});
 				const body = await res.json().catch(() => ({}));
 				if (res.status === 401) { luresSaving = false; expireSession(); return; }
@@ -2010,6 +2044,40 @@
 				labelled('Location', withList(textField(l, 'location', 'e.g. Baudette, MN', 'Location'), 'lure-locations')),
 			]));
 			details.appendChild(labelled('Notes', textField(l, 'notes', 'Depth, colour, how to work it…', 'Notes', '300')));
+			// Photo: uploads the moment a file is chosen (login required, like every write
+			// here), but the lure only points at it once the list is saved. Remove is
+			// part of the draft too: the stored picture goes when the list is saved.
+			const photoRow = el('div', { class: 'lure-photo-edit' });
+			const msg = el('span', { class: 'fish-dim', role: 'status' });
+			const file = el('input', { type: 'file', accept: 'image/*', 'aria-label': 'Lure photo' });
+			file.addEventListener('change', async () => {
+				const chosen = file.files && file.files[0];
+				if (!chosen) return;
+				msg.textContent = 'Uploading…';
+				try {
+					const image = await shrinkToJpeg(chosen);
+					const res = await fetch(API_URL, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+						body: JSON.stringify({ resource: 'fishlurephoto', id: l.id, image }),
+					});
+					const body = await res.json().catch(() => ({}));
+					if (res.status === 401) { expireSession(); return; }
+					if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+					l.photo = body.photo;
+					l.dataUrl = image; // preview only; stripped before Save
+					lureOpen[l.id] = true;
+					refreshLuresCard();
+				} catch (err) {
+					msg.textContent = `Not uploaded: ${err.message}`;
+				}
+			});
+			const preview = lurePhotoImg(l);
+			if (preview) photoRow.appendChild(preview);
+			photoRow.append(file);
+			if (l.photo) photoRow.appendChild(smallBtn('Remove photo', 'Remove this lure\u2019s photo', () => { l.photo = ''; delete l.dataUrl; lureOpen[l.id] = true; refreshLuresCard(); }, 'task-add-btn'));
+			photoRow.appendChild(msg);
+			details.appendChild(photoRow);
 			details.append(suggest('lureType', 'lure-types'), suggest('waterBody', 'lure-waters'), suggest('location', 'lure-locations'));
 			const up = smallBtn('↑', 'Move up', () => { luresDraft.splice(i - 1, 0, luresDraft.splice(i, 1)[0]); refreshLuresCard(); });
 			const down = smallBtn('↓', 'Move down', () => { luresDraft.splice(i + 1, 0, luresDraft.splice(i, 1)[0]); refreshLuresCard(); });
@@ -2036,7 +2104,7 @@
 				const last = luresDraft[0];
 				const id = newLureId();
 				lureOpen[id] = true;
-				luresDraft.unshift({ id, name: '', fishingType: last ? last.fishingType : 'Ice', lureType: '', waterBody: last ? last.waterBody : '', location: last ? last.location : '', notes: '' });
+				luresDraft.unshift({ id, name: '', fishingType: last ? last.fishingType : 'Ice', lureType: '', waterBody: last ? last.waterBody : '', location: last ? last.location : '', notes: '', photo: '' });
 				refreshLuresCard();
 			});
 			const save = el('button', { type: 'button', class: 'task-add-btn', text: luresSaving ? 'Saving…' : 'Save' });
@@ -2047,7 +2115,7 @@
 			discard.addEventListener('click', () => { luresDraft = copyLures(lures); luresErrors = []; refreshLuresCard(); });
 			card.appendChild(el('div', { class: 'ql-actions' }, [add, save, discard]));
 			if (luresErrors.length) card.appendChild(el('ul', { class: 'ql-errors' }, luresErrors.map((t) => el('li', { text: t }))));
-			card.appendChild(el('div', { class: 'ql-note', text: 'Shown on the Equipment tab, which filters by type of fishing, body of water, location and lure type. Only the name and type of fishing are required.' }));
+			card.appendChild(el('div', { class: 'ql-note', text: 'Shown on the Equipment tab, which filters by type of fishing, body of water, location and lure type. Only the name and type of fishing are required. A photo is shrunk in your browser and uploads as soon as you choose it, but it shows on the Equipment tab only after you Save.' }));
 			return card;
 		}
 
