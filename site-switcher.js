@@ -46,8 +46,8 @@
 		{ key: 'vst', name: 'myVST', href: '/vikings.html', img: '/images/seasonticketlogo.png', alt: 'VST — Vikings Season Tickets' },
 		{ key: 'ffl', name: 'myFFL', href: '/myffl.html', img: '/images/ffl_black.gif', alt: 'FFL' },
 		{ key: 'bangers', name: 'myBangers', href: '/bangers.html', img: '/images/bangerslogo.png', alt: 'Certified Banger' },
-		// Black-on-transparent SVG like the home page's, so the dark-mode invert filter works on it.
-		{ key: 'fish', name: 'myFish', href: '/fish.html', img: '/images/fishlogo.svg', alt: 'Fish — Ice Fishing' },
+		// Black on transparent, like the others, so the dark-mode invert filter works on it.
+		{ key: 'fish', name: 'myFish', href: '/fish.html', img: '/images/fishlogo.png', alt: 'Fish — Ice Fishing' },
 	];
 
 	// The sites either side of `key`, wrapping. Pure, so the test can run it.
