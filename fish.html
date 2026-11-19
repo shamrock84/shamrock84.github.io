@@ -306,12 +306,13 @@
 	</main>
 
 	<script>
-		// melbostads.com/fish — myFish, the Melbostad ice-fishing page. Three tabs:
-		// Ice Fishing (everyone: all-time stats and one card per trip), and, only
+		// melbostads.com/fish — myFish, the Melbostad ice-fishing page. Two tabs:
+		// Ice Fishing (everyone: all-time stats and one card per trip) and, only
 		// while logged in (same password and token as myFFL, myVST, myBangers and
-		// myFAM, same localStorage key), Admin (the same Tasks and Quick Links cards
-		// as the other small sites) and Trips, which edits what the Ice Fishing tab
-		// shows. The Quick Links card fills the toolbar at the top for everyone.
+		// myFAM, same localStorage key), Admin: the same Tasks and Quick Links cards
+		// as the other small sites, plus a Trips card that edits what the Ice
+		// Fishing tab shows. The Quick Links card fills the toolbar at the top for
+		// everyone.
 		//
 		// Everything is stored in the Upstash store behind api/fam.js, not in the
 		// repo: `?resource=fishtrips` (public GET, login-gated POST, answers with the
@@ -372,7 +373,7 @@
 		try { authToken = localStorage.getItem(AUTH_TOKEN_KEY) || null; } catch (e) { /* storage blocked: stay logged out */ }
 		const isLoggedIn = () => !!authToken;
 
-		const TABS = [['fishing', 'Ice Fishing', false], ['admin', 'Admin', true], ['trips', 'Trips', true]];
+		const TABS = [['fishing', 'Ice Fishing', false], ['admin', 'Admin', true]];
 		let tab = 'fishing';
 		try { const saved = localStorage.getItem(TAB_KEY); if (TABS.some(([id]) => id === saved)) tab = saved; } catch (e) { /* default tab */ }
 
@@ -1172,9 +1173,16 @@
 				tripsError = err.message;
 			}
 			if (tab === 'fishing') renderAll();
+			else if (tab === 'admin' && tripsCardEl && tripsCardEl.isConnected && !tripsDraft) {
+				// The Admin tab opened before the read finished: swap the placeholder
+				// card only, so Tasks and Quick Links edits in progress are left alone.
+				const old = tripsCardEl;
+				tripsAdminCard();
+				old.replaceWith(tripsCardEl);
+			}
 		}
 
-		// ---- Trips tab (login only) ---------------------------------------------
+		// ---- Trips card on the Admin tab (login only) ---------------------------------------------
 		// Edits go into a draft and nothing is saved until Save; the whole list is
 		// replaced in one write, like Quick Links. Typing updates the draft in place
 		// (no re-render, which would steal focus); only structural changes (add or
@@ -1354,15 +1362,26 @@
 			return card;
 		}
 
-		function tripsView() {
+		// The Trips card, or a placeholder until the trip read comes back. It is
+		// rebuilt from the saved list each time the Admin tab opens.
+		function tripsAdminCard() {
 			if (tripsState !== 'ready') {
-				if (tripsState === 'error') loadTrips();
-				return [el('div', { class: 'card' }, [el('div', { class: 'message', text: 'Loading…' })])];
+				const head = el('h2', { class: 'card-heading', text: 'Trips' });
+				const card = el('div', { class: 'card' }, [head]);
+				if (tripsState === 'error') {
+					const retry = el('button', { type: 'button', class: 'task-add-btn', text: 'Try again' });
+					retry.addEventListener('click', loadTrips);
+					card.append(el('div', { class: 'message error', text: `Couldn’t load the trips (${tripsError}).` }), retry);
+				} else {
+					card.appendChild(el('div', { class: 'message', text: 'Loading…' }));
+				}
+				tripsCardEl = card;
+				return card;
 			}
-			tripsDraft = null; // a fresh copy of what is saved each time the tab opens
+			tripsDraft = null;
 			tripsErrors = [];
 			tripsCardEl = buildTripsCard();
-			return [tripsCardEl];
+			return tripsCardEl;
 		}
 
 		// Coming back to the page (switching apps on a phone or iPad, or restoring
@@ -1385,7 +1404,7 @@
 		function renderTabs() {
 			const nav = document.getElementById('tabs');
 			nav.textContent = '';
-			// Admin and Trips exist only while logged in; logging out removes them.
+			// Admin exists only while logged in; logging out removes it.
 			for (const [id, label, loginOnly] of TABS) {
 				if (loginOnly && !isLoggedIn()) continue;
 				const btn = el('button', { type: 'button', class: `tab-btn${tab === id ? ' active' : ''}`, role: 'tab', 'aria-selected': String(tab === id), text: label });
@@ -1404,7 +1423,7 @@
 			tasksCardEl = null;
 			qlCardEl = null;
 			tripsCardEl = null;
-			const cards = tab === 'admin' ? adminView() : tab === 'trips' ? tripsView() : fishingView();
+			const cards = tab === 'admin' ? [...adminView(), tripsAdminCard()] : fishingView();
 			cards.forEach((c) => view.appendChild(c));
 		}
 
