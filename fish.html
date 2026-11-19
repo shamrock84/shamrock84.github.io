@@ -261,8 +261,13 @@
 		.fish-table th, .fish-table td { padding: 0.3rem 0.5rem; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
 		.fish-table th:first-child, .fish-table td:first-child { text-align: left; }
 		.fish-table thead th { color: var(--muted); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
-		.fish-table thead tr:first-child th { text-align: center; border-bottom: 0; color: var(--text); }
+		.fish-table thead tr:first-child th { border-bottom: 0; color: var(--text); }
+		.fish-table thead th[colspan] { text-align: center; }
 		.fish-table .fish-split { border-left: 1px solid var(--border); }
+		.fish-table th.sortable { cursor: pointer; user-select: none; -webkit-user-select: none; }
+		.fish-table th.sortable:hover, .fish-table th.sortable:focus-visible { color: var(--text); }
+		.fish-table th.sortable:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+		.sort-arrow { font-size: 0.85em; opacity: 0.85; }
 		.fish-table tbody tr:last-child td, .fish-table tfoot td { border-bottom: 0; }
 		.fish-table tfoot td { font-weight: 700; border-top: 2px solid var(--border); }
 		.fish-table .fish-total { font-weight: 700; }
@@ -1067,6 +1072,45 @@
 			return stats;
 		}
 
+		// Click-to-sort for a small table, the same behaviour as myffl.html's
+		// makeTableSort (read its comment for why): each header cycles its natural
+		// direction, the reverse, then back to the default order; ties fall back to
+		// the default order; `missingLast` keeps a null at the bottom in both
+		// directions; nothing is saved. Keep the two in step.
+		function makeTableSort(rows, SORTS, onChange) {
+			const defaultIndex = new Map(rows.map((r, i) => [r, i]));
+			let sortKey = null;
+			let sortDir = 0;
+			function sortedRows() {
+				if (!sortKey) return rows;
+				const { value, missingLast } = SORTS[sortKey];
+				const byDefault = (a, b) => defaultIndex.get(a) - defaultIndex.get(b);
+				return [...rows].sort((a, b) => {
+					const av = value(a);
+					const bv = value(b);
+					if (missingLast && (av == null || bv == null)) {
+						if (av == null && bv == null) return byDefault(a, b);
+						return av == null ? 1 : -1;
+					}
+					return (av === bv ? 0 : av < bv ? -1 : 1) * sortDir || byDefault(a, b);
+				});
+			}
+			function cycleSort(key) {
+				if (sortKey !== key) { sortKey = key; sortDir = SORTS[key].dir; }
+				else if (sortDir === SORTS[key].dir) sortDir = -sortDir;
+				else { sortKey = null; sortDir = 0; }
+				onChange();
+			}
+			function sortableHeader(label, key) {
+				const th = el('th', { class: 'sortable', tabindex: '0', title: `Sort by ${label}`, 'aria-sort': sortKey === key ? (sortDir === 1 ? 'ascending' : 'descending') : 'none', text: label });
+				if (sortKey === key) th.appendChild(el('span', { class: 'sort-arrow', text: sortDir === 1 ? ' ▲' : ' ▼' }));
+				th.addEventListener('click', () => cycleSort(key));
+				th.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); cycleSort(key); } });
+				return th;
+			}
+			return { sortedRows, cycleSort, sortableHeader };
+		}
+
 		function tile(value, label, sub) {
 			return el('div', { class: 'tile' }, [el('div', { class: 'tile-value', text: value }), el('div', { class: 'tile-label', text: label }), sub ? el('div', { class: 'tile-sub', text: sub }) : null]);
 		}
@@ -1086,21 +1130,41 @@
 				s.bestTrip ? tile(String(s.bestTrip.caught), 'Best trip', `${s.bestTrip.year}, whole group`) : null,
 				s.bestDay ? tile(String(s.bestDay.caught), 'Best day', `${s.bestDay.name} · ${s.bestDay.year} day ${s.bestDay.day}`) : null,
 			]));
+			// Click a heading to sort: its natural direction, then the reverse, then
+			// back to the default order (most caught first). Same behaviour as
+			// myffl.html's makeTableSort, whose comment explains the rules: ties keep
+			// the default order, a missing value stays last in both directions, and
+			// the choice is per visit, never saved.
+			const rows = s.people.filter((p) => p.trips);
+			const SORTS = {
+				name: { dir: 1, value: (p) => p.name.toLowerCase() },
+				trips: { dir: -1, value: (p) => p.trips },
+				caught: { dir: -1, value: (p) => p.caught },
+				kept: { dir: -1, value: (p) => p.kept },
+				perTrip: { dir: -1, value: (p) => p.caught / p.trips },
+				bestDay: { dir: -1, value: (p) => (p.bestDay ? p.bestDay.caught : null), missingLast: true },
+				first: { dir: -1, value: (p) => p.first },
+				biggest: { dir: -1, value: (p) => p.biggest },
+			};
+			const COLUMNS = [['name', 'Fisherman'], ['trips', 'Trips'], ['caught', 'Caught'], ['kept', 'Kept'], ['perTrip', 'Per trip'], ['bestDay', 'Best day'], ['first', 'First fish'], ['biggest', 'Biggest']];
 			const table = el('table', { class: 'fish-table' });
-			table.appendChild(el('thead', {}, [el('tr', {}, ['Fisherman', 'Trips', 'Caught', 'Kept', 'Per trip', 'Best day', 'First fish', 'Biggest'].map((h) => el('th', { text: h })))]));
-			const body = el('tbody');
-			for (const p of s.people) {
-				if (!p.trips) continue;
-				body.appendChild(el('tr', {}, [
-					el('td', { text: p.name }), el('td', { text: String(p.trips) }),
-					el('td', { class: 'fish-total', text: String(p.caught) }), el('td', { text: String(p.kept) }),
-					el('td', { text: (p.caught / p.trips).toFixed(1) }), el('td', { text: p.bestDay ? String(p.bestDay.caught) : '–' }),
-					el('td', { text: String(p.first) }), el('td', { text: String(p.biggest) }),
-				]));
+			const { sortedRows, sortableHeader } = makeTableSort(rows, SORTS, () => renderTable());
+			function renderTable() {
+				const headRow = el('tr', {}, COLUMNS.map(([key, label]) => sortableHeader(label, key)));
+				const body = el('tbody');
+				for (const p of sortedRows()) {
+					body.appendChild(el('tr', {}, [
+						el('td', { text: p.name }), el('td', { text: String(p.trips) }),
+						el('td', { class: 'fish-total', text: String(p.caught) }), el('td', { text: String(p.kept) }),
+						el('td', { text: (p.caught / p.trips).toFixed(1) }), el('td', { text: p.bestDay ? String(p.bestDay.caught) : '–' }),
+						el('td', { text: String(p.first) }), el('td', { text: String(p.biggest) }),
+					]));
+				}
+				table.replaceChildren(el('thead', {}, [headRow]), body);
 			}
-			table.appendChild(body);
+			renderTable();
 			card.appendChild(el('div', { class: 'fish-scroll' }, [table]));
-			card.appendChild(el('div', { class: 'fish-note', text: '"First fish" and "Biggest" count the days each person landed the first and the biggest fish. Per trip is fish caught per trip fished.' }));
+			card.appendChild(el('div', { class: 'fish-note', text: 'Click a column heading to sort. "First fish" and "Biggest" count the days each person landed the first and the biggest fish. Per trip is fish caught per trip fished.' }));
 			return card;
 		}
 
