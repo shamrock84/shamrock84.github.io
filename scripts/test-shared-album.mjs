@@ -48,6 +48,9 @@ const assets = {
 await check('partition host comes from the token (D2Q -> 2*62+26 = 150; A-prefixed uses one char)', () => {
   assert.equal(albumHost(TOKEN), 'p150-sharedstreams.icloud.com');
   assert.equal(albumHost('A5' + 'x'.repeat(30)), 'p05-sharedstreams.icloud.com');
+  assert.equal(albumHost('055-' + 'x'.repeat(20)), 'p55-sharedstreams.icloud.com', 'newer links: a three-digit partition and a dash');
+  assert.equal(albumHost('123-' + 'x'.repeat(20)), 'p123-sharedstreams.icloud.com');
+  assert.equal(albumHost('0cJ' + 'x'.repeat(30)), 'p2375-sharedstreams.icloud.com', 'an old-style token starting with a digit still uses base 62 (c=38, J=19)');
 });
 await check('malformed tokens are refused', () => {
   assert.ok(isValidAlbumToken(TOKEN));
@@ -116,6 +119,11 @@ async function withClock(startMs, fn) {
 const MIN = 60 * 1000, HOUR = 60 * MIN;
 const endpointsOf = (f) => f.calls.map((c) => c.url.split('/').pop());
 const savedAlbum = process.env.FAM_PHOTOS_ALBUM;
+
+await check('a network failure names the host tried and never the token', async () => {
+  const f = async () => { const e = new TypeError('fetch failed'); e.cause = { code: 'ENOTFOUND' }; throw e; };
+  await assert.rejects(fetchSharedAlbum('055-' + 'x'.repeat(20), f), (e) => /could not reach p55-sharedstreams\.icloud\.com \(ENOTFOUND\)/.test(e.message) && !e.message.includes('xxxxxxxx'));
+});
 
 await check('the photos route is public, 503 when the token is not configured', async () => {
   delete process.env.FAM_PHOTOS_ALBUM; resetPhotosCache();
