@@ -1,0 +1,51 @@
+name: Rename a myFish fisherman (manual)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here.
+# Runs scripts/rename-fish-name.mjs: renames one fisherman across the saved
+# myFish trips (the trip log in Upstash, which a sandbox can't reach). Leave
+# `apply` off for a report only; turn it on to save. Writes use the same
+# SITE_PASSWORD repo secret as fetch-tasks.yml.
+on:
+  workflow_dispatch:
+    inputs:
+      from:
+        description: 'Current name'
+        required: true
+      to:
+        description: 'New name'
+        required: true
+      apply:
+        description: 'Save the rename (off = report only)'
+        type: boolean
+        default: false
+
+jobs:
+  rename:
+    runs-on: ubuntu-latest
+    steps:
+      # Blobless + sparse checkout: skips mfl/PSD and images/, which no
+      # workflow here reads. Same five directories everywhere on purpose;
+      # see sync-fantasy-rosters.yml for the reasoning and the numbers.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout: |
+            api
+            scripts
+            config
+            data
+            .github
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Rename
+        env:
+          SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
+          FROM: ${{ github.event.inputs.from }}
+          TO: ${{ github.event.inputs.to }}
+          APPLY: ${{ github.event.inputs.apply == 'true' && '1' || '' }}
+        run: node scripts/rename-fish-name.mjs

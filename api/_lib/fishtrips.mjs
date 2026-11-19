@@ -3,7 +3,7 @@
 //
 // Shape of one trip (the Trips admin card edits exactly this):
 //   { id, year, date, location,
-//     days:    [{ first: 'Jeff', biggest: 'Grandpa', biggestInches: 15.5,
+//     days:    [{ first: 'Jeff', biggest: 'Gary', biggestInches: 15.5,
 //                 species: [{ name: 'Walleye', count: 6 }] }],
 //     anglers: [{ name: 'Braden', days: [{ caught: 15, kept: 8 }] }] }
 // `date` is the first day as 'YYYY-MM-DD', or null when unknown; its year must be
@@ -122,14 +122,14 @@ const blank = [null, null];
 // credited to Braden although the sheet lists only Jason and Jeff that year; it is
 // kept as the sheet has it. 2022 never recorded a biggest fish.
 export const SEED_TRIPS = [
-  trip('2026', 2026, 'River Bend', [['Braden', blank, blank], ['Jason', blank, blank], ['Jeff', blank, blank], ['Grandpa', blank, blank]],
+  trip('2026', 2026, 'River Bend', [['Braden', blank, blank], ['Jason', blank, blank], ['Jeff', blank, blank], ['Gary', blank, blank]],
     [['', '', null, [{ name: 'Walleye', count: null }, { name: 'Sauger', count: null }]], ['', '', null, [{ name: 'Walleye', count: null }, { name: 'Sauger', count: null }]]]),
-  trip('2025', 2025, 'River Bend', [['Braden', [15, 8], [16, 6]], ['Jason', [17, 3], [12, 4]], ['Jeff', [23, 5], [9, 3]], ['Grandpa', [4, 2], [4, 0]]],
-    [['Jeff', 'Grandpa', 15.5, [{ name: 'Walleye', count: 6 }, { name: 'Sauger', count: 12 }]], ['Jason', 'Braden', 16, [{ name: 'Walleye', count: 7 }, { name: 'Sauger', count: 6 }]]]),
-  trip('2024', 2024, 'River Bend', [['Braden', [14, 3], [20, 6]], ['Jason', [11, 3], [9, 4]], ['Jeff', [11, 2], [5, 1]], ['Grandpa', [15, 5], [17, 4]]],
+  trip('2025', 2025, 'River Bend', [['Braden', [15, 8], [16, 6]], ['Jason', [17, 3], [12, 4]], ['Jeff', [23, 5], [9, 3]], ['Gary', [4, 2], [4, 0]]],
+    [['Jeff', 'Gary', 15.5, [{ name: 'Walleye', count: 6 }, { name: 'Sauger', count: 12 }]], ['Jason', 'Braden', 16, [{ name: 'Walleye', count: 7 }, { name: 'Sauger', count: 6 }]]]),
+  trip('2024', 2024, 'River Bend', [['Braden', [14, 3], [20, 6]], ['Jason', [11, 3], [9, 4]], ['Jeff', [11, 2], [5, 1]], ['Gary', [15, 5], [17, 4]]],
     [['Jason', 'Jeff', 15, null], ['Jason', 'Jason', 14.25, null]]),
   trip('2023', 2023, 'Ken-Mar-Ke', [['Jason', [17, 7], [14, 8]], ['Jeff', [10, 5], [9, 4]]],
     [['Jeff', 'Jason', 16, null], ['Jason', 'Braden', 19, null]]),
-  trip('2022', 2022, 'Zippel Bay', [['Braden', [1, 1], [8, 0]], ['Jason', [2, 1], [8, 1]], ['Jeff', [14, 7], [7, 3]], ['Grandpa', [5, 1], [3, 2]]],
-    [['Grandpa', '', null, null], ['Jeff', '', null, null]]),
+  trip('2022', 2022, 'Zippel Bay', [['Braden', [1, 1], [8, 0]], ['Jason', [2, 1], [8, 1]], ['Jeff', [14, 7], [7, 3]], ['Gary', [5, 1], [3, 2]]],
+    [['Gary', '', null, null], ['Jeff', '', null, null]]),
 ];
