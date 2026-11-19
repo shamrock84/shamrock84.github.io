@@ -108,9 +108,7 @@ export function resetPhotosCache() {
 function scrubSecret(message, secret) {
   const token = secret.includes('/') ? secret.replace(/\/+$/, '').split('/').pop() : secret;
   let out = message;
-  // A dashed `055-` token is also tried without its prefix (sharedalbum.mjs tokenForms).
-  const dashed = /^\d{3}-(.{20,})$/.exec(secret);
-  for (const s of [secret, token, dashed && dashed[1]]) if (s) out = out.split(s).join('…');
+  for (const s of [secret, token]) if (s) out = out.split(s).join('…');
   return out;
 }
 

@@ -19,13 +19,6 @@
 // (0-9A-Za-z) of token[1] when token[0] is 'A', else of token[1]*62 + token[2].
 // Apple may also answer 330 with `X-Apple-MMe-Host` to say the album lives on
 // another host; that is followed once.
-//
-// Newer share links (photos.icloud.com/shared/album/055-xxxx-xxxx) lead with a
-// three-digit decimal partition and a dash instead: `055-` is p55. That reading is
-// inferred from the token's shape, not from Apple documentation, and it was the
-// fix for myFish's album failing with "fetch failed" (the base-62 rule below
-// computed a host that does not exist). If a token of this shape ever fails the
-// same way, the error now names the host that was tried.
 
 const BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 // Album tokens are url-safe base64-ish; anything else is refused before it can
@@ -38,8 +31,7 @@ export function isValidAlbumToken(token) {
 
 export function albumHost(token) {
   const idx = (c) => BASE62.indexOf(c);
-  const dec = /^(\d{3})-/.exec(token);
-  const n = dec ? Number(dec[1]) : token[0] === 'A' ? idx(token[1]) : idx(token[1]) * 62 + idx(token[2]);
+  const n = token[0] === 'A' ? idx(token[1]) : idx(token[1]) * 62 + idx(token[2]);
   if (!Number.isInteger(n) || n < 0) throw new Error('Unrecognised album token');
   return `p${String(n).padStart(2, '0')}-sharedstreams.icloud.com`;
 }
@@ -129,32 +121,9 @@ export function buildAlbum(stream, assets) {
   return { name: stream.streamName || '', photos, expires: Number.isFinite(earliest) ? new Date(earliest).toISOString() : null };
 }
 
-// The forms of a token that may be the album's id in the URL path. For a dashed
-// `055-xxxx` token, p55 is established (the server answered) but whether the id is
-// the whole token or only what follows `055-` is not documented, so both are tried,
-// the shorter first; any other token is one form.
-export function tokenForms(token) {
-  const m = /^\d{3}-(.{20,})$/.exec(token);
-  return m ? [m[1], token] : [token];
-}
-
 export async function fetchSharedAlbum(token, fetchFn = fetch) {
   if (!isValidAlbumToken(token)) throw new Error('Album token is not configured or is malformed');
-  // The partition always comes from the full token; only the path id varies.
-  const startHost = albumHost(token);
-  let found = null, lastErr = null;
-  for (const form of tokenForms(token)) {
-    try {
-      found = { form, ...(await callAlbum(fetchFn, form, 'webstream', { streamCtag: null }, startHost)) };
-      break;
-    } catch (err) {
-      lastErr = err;
-      if (!/HTTP 404\b/.test(String(err.message))) throw err; // only "no such album" moves on to the next form
-    }
-  }
-  if (!found) throw lastErr;
-  const { json: stream, host, form: pathToken } = found;
-  token = pathToken;
+  const { json: stream, host } = await callAlbum(fetchFn, token, 'webstream', { streamCtag: null });
   const guids = (stream.photos || []).map((p) => p.photoGuid).filter(Boolean);
   if (!guids.length) return { name: stream.streamName || '', photos: [], expires: null };
   const { json: assets } = await callAlbum(fetchFn, token, 'webasseturls', { photoGuids: guids }, host);
