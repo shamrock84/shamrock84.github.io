@@ -351,6 +351,19 @@
 		.lure-photo-edit { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin: 0.5rem 0; }
 		.lure-photo-edit input[type=file] { max-width: 100%; font-size: 0.8rem; }
 		.lure-notes { min-width: 10rem; color: var(--muted); }
+		/* On a phone the six columns don't fit, so each lure becomes its own block: name and
+		   photo on top, then label: value lines (empty ones left out). No sideways scroll. */
+		@media (max-width: 40rem) {
+			.lure-table, .lure-table tbody, .lure-table tr, .lure-table td { display: block; width: 100%; }
+			.lure-table thead { display: none; }
+			.lure-table tr { padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
+			.lure-table tbody tr:last-child { border-bottom: 0; }
+			.lure-table td { padding: 0.1rem 0; border: 0; white-space: normal; }
+			.lure-table td:empty { display: none; }
+			.lure-table td[data-label]::before { content: attr(data-label) ': '; color: var(--muted); font-size: 0.8rem; }
+			.lure-table td.lure-name { margin-bottom: 0.2rem; font-size: 1rem; }
+			.lure-table .lure-notes { min-width: 0; }
+		}
 	</style>
 </head>
 <body>
@@ -1939,8 +1952,8 @@
 				const tbody = el('tbody');
 				for (const l of shown) {
 					tbody.appendChild(el('tr', {}, [
-						el('td', { class: 'lure-name' }, [el('div', { class: 'lure-name-cell' }, [lurePhotoImg(l), document.createTextNode(l.name)])]), el('td', { text: l.fishingType }), el('td', { text: l.lureType || '' }),
-						el('td', { text: l.waterBody || '' }), el('td', { text: l.location || '' }), el('td', { class: 'lure-notes', text: l.notes || '' }),
+						el('td', { class: 'lure-name' }, [el('div', { class: 'lure-name-cell' }, [lurePhotoImg(l), document.createTextNode(l.name)])]), el('td', { 'data-label': 'Fishing', text: l.fishingType }), el('td', { 'data-label': 'Lure type', text: l.lureType || '' }),
+						el('td', { 'data-label': 'Body of water', text: l.waterBody || '' }), el('td', { 'data-label': 'Location', text: l.location || '' }), el('td', { class: 'lure-notes', 'data-label': 'Notes', text: l.notes || '' }),
 					]));
 				}
 				table.appendChild(tbody);
