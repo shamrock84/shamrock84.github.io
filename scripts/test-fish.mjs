@@ -12,10 +12,11 @@
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import handler, { TASKS_KEY, QUICKLINKS_KEY, FISH_TASKS_KEY, FISH_QUICKLINKS_KEY, FISH_TRIPS_KEY } from '../api/fam.js';
+import handler, { TASKS_KEY, QUICKLINKS_KEY, FISH_TASKS_KEY, FISH_QUICKLINKS_KEY, FISH_TRIPS_KEY, FISH_LURES_KEY, resetPhotosCache } from '../api/fam.js';
 import { TASKS_KEY as VIKINGS_TASKS_KEY, QUICKLINKS_KEY as VIKINGS_QUICKLINKS_KEY } from '../api/vikings.js';
 import { TASKS_KEY as BANGERS_TASKS_KEY, QUICKLINKS_KEY as BANGERS_QUICKLINKS_KEY } from '../api/bangers.js';
 import { validateTrips, normalizeTrips, isRealDate, SEED_TRIPS } from '../api/_lib/fishtrips.mjs';
+import { validateLures, normalizeLures, FISHING_TYPES } from '../api/_lib/fishlures.mjs';
 import { createToken } from '../api/_lib/auth.mjs';
 
 let failures = 0;
@@ -24,7 +25,7 @@ function check(name, fn) {
 }
 
 check('the fish keys are their own, never another page\'s', () => {
-  const fish = [FISH_TASKS_KEY, FISH_QUICKLINKS_KEY, FISH_TRIPS_KEY];
+  const fish = [FISH_TASKS_KEY, FISH_QUICKLINKS_KEY, FISH_TRIPS_KEY, FISH_LURES_KEY];
   const others = [TASKS_KEY, QUICKLINKS_KEY, VIKINGS_TASKS_KEY, VIKINGS_QUICKLINKS_KEY, BANGERS_TASKS_KEY, BANGERS_QUICKLINKS_KEY];
   for (const k of fish) assert.ok(!others.includes(k), `${k} is shared`);
   assert.equal(new Set(fish).size, fish.length);
@@ -105,8 +106,31 @@ check('normalizeTrips trims text and drops an empty species list', () => {
 check('fish.html carries the shared pieces (switcher tag, own endpoints, no other page\'s)', () => {
   const html = fs.readFileSync(new URL('../fish.html', import.meta.url), 'utf8');
   assert.ok(html.includes('<script src="/site-switcher.js" data-site="fish"></script>'));
-  for (const r of ['fishtrips', 'fishtasks', 'fishquicklinks']) assert.ok(html.includes(`resource=${r}`) || html.includes(`resource: '${r}'`), r);
+  for (const r of ['fishtrips', 'fishtasks', 'fishquicklinks', 'fishlures', 'fishphotos']) assert.ok(html.includes(`resource=${r}`) || html.includes(`resource: '${r}'`), r);
   assert.ok(!/resource=(tasks|quicklinks)\b/.test(html) && !/resource: '(tasks|quicklinks)'/.test(html), 'must not touch myFAM\'s resources');
+});
+
+const lure = (o = {}) => ({ id: 'l1', name: 'Jigging Rap', fishingType: 'Ice', lureType: 'Jigging spoon', waterBody: 'Lake of the Woods', location: 'Baudette, MN', notes: 'Tip with a minnow head', ...o });
+const lureErrors = (o) => validateLures({ lures: [lure(o)] }).errors;
+
+check('lures: a good one passes and normalises; only name and type of fishing are required', () => {
+  assert.deepEqual(lureErrors(), []);
+  const bare = { id: 'l2', name: '  Swedish   Pimple ', fishingType: 'Open water' };
+  assert.deepEqual(validateLures({ lures: [bare] }).errors, []);
+  assert.deepEqual(normalizeLures([bare])[0], { id: 'l2', name: 'Swedish Pimple', fishingType: 'Open water', lureType: '', waterBody: '', location: '', notes: '' });
+  assert.deepEqual(validateLures({ lures: [] }).errors, []);
+});
+
+check('lures: a missing name, an unknown type of fishing, long text, a duplicate or bad id and a non-array body are refused', () => {
+  assert.equal(lureErrors({ name: '  ' }).length, 1);
+  assert.equal(lureErrors({ fishingType: 'Space' }).length, 1);
+  assert.equal(lureErrors({ fishingType: undefined }).length, 1);
+  assert.equal(lureErrors({ waterBody: 'x'.repeat(61) }).length, 1);
+  assert.equal(lureErrors({ notes: 'x'.repeat(301) }).length, 1);
+  assert.equal(lureErrors({ id: 'bad id!' }).length, 1);
+  assert.equal(validateLures({ lures: [lure(), lure()] }).errors.length, 1);
+  assert.ok(validateLures({}).errors.length);
+  assert.ok(FISHING_TYPES.includes('Ice') && FISHING_TYPES.includes('Open water'));
 });
 
 // A tiny req/res pair. No store credentials are set, so a request that gets past
@@ -128,6 +152,7 @@ for (const [name, run] of [
   ['the trips and quick-links GETs are public (reach the store check, not a 401)', async () => {
     assert.equal(await call('GET', { query: { resource: 'fishtrips' } }), 500);
     assert.equal(await call('GET', { query: { resource: 'fishquicklinks' } }), 500);
+    assert.equal(await call('GET', { query: { resource: 'fishlures' } }), 500);
   }],
   ['the tasks GET needs a login', async () => {
     assert.equal(await call('GET', { query: { resource: 'fishtasks' } }), 401);
@@ -138,6 +163,13 @@ for (const [name, run] of [
     assert.equal(await call('POST', { body: { resource: 'fishtrips', trips: [] } }), 401);
     assert.equal(await call('POST', { body: { resource: 'fishquicklinks', links: [] } }), 401);
     assert.equal(await call('POST', { body: { resource: 'fishtasks', tasks: {} } }), 401);
+    assert.equal(await call('POST', { body: { resource: 'fishlures', lures: [] } }), 401);
+  }],
+  ['the fish album is its own variable and cache: 503 without FISH_PHOTOS_ALBUM, even with myFAM\'s set', async () => {
+    delete process.env.FISH_PHOTOS_ALBUM;
+    process.env.FAM_PHOTOS_ALBUM = 'ABC123';
+    resetPhotosCache();
+    assert.equal(await call('GET', { query: { resource: 'fishphotos' } }), 503);
   }],
 ]) {
   try { await run(); console.log(`  ok   ${name}`); } catch (e) { failures++; console.log(`  FAIL ${name} — ${e.message}`); }

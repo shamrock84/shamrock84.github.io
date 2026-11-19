@@ -14,6 +14,10 @@
 // Access: the quick-links GET is public (logged-out visitors see the toolbar),
 // the tasks GET needs the Bearer token, and every POST does.
 //
+// fish.html's Photos tab reads its own album through `?resource=fishphotos`: same
+// code and cache rules, but the token is the FISH_PHOTOS_ALBUM Vercel variable
+// and the cache entry is separate from myFAM's.
+//
 // A third resource, `?resource=photos`, is the Photos card's public iCloud
 // Shared Album (api/_lib/sharedalbum.mjs). It touches no store, needs no login
 // (the Family tab is public, and the album link is already shareable) and reads
@@ -44,6 +48,7 @@ import { fetchSharedAlbum } from './_lib/sharedalbum.mjs';
 import { fetchCalendar, monthWindow } from './_lib/calendarfeed.mjs';
 import { validateTaskPatch, applyTaskPatch, validateQuickLinks, normalizeQuickLinks } from './vikings.js';
 import { validateTrips, normalizeTrips, SEED_TRIPS } from './_lib/fishtrips.mjs';
+import { validateLures, normalizeLures } from './_lib/fishlures.mjs';
 
 // Upstash keys. Deliberately not vikings.js's or bangers.js's: sharing one
 // would show each page the other's tasks and toolbar.
@@ -58,8 +63,11 @@ const MAX_TASKS = 300;
 const FISH_TASKS_KEY = 'fish:tasks';
 const FISH_QUICKLINKS_KEY = 'fish:quicklinks';
 const FISH_TRIPS_KEY = 'fish:trips';
+// The Equipment tab's favourite lures (api/_lib/fishlures.mjs): public GET, login-gated
+// POST, an empty list until the first Save.
+const FISH_LURES_KEY = 'fish:lures';
 
-export { TASKS_KEY, QUICKLINKS_KEY, FISH_TASKS_KEY, FISH_QUICKLINKS_KEY, FISH_TRIPS_KEY };
+export { TASKS_KEY, QUICKLINKS_KEY, FISH_TASKS_KEY, FISH_QUICKLINKS_KEY, FISH_TRIPS_KEY, FISH_LURES_KEY };
 
 // Public, store-less feeds share one cached path (Calendar), and Photos has its
 // own below. Module-level: resets on a cold start, which is fine.
@@ -81,10 +89,13 @@ export function photoCacheMs(expires, now) {
   if (!Number.isFinite(exp)) return PHOTO_CACHE_FALLBACK_MS;
   return Math.min(PHOTO_CACHE_MAX_MS, Math.max(PHOTO_CACHE_MIN_MS, exp - PHOTO_URL_MARGIN_MS - now));
 }
-let photoCache = null; // { token, until, body }
+// One cached album per Vercel variable: myFAM's (`photos`, FAM_PHOTOS_ALBUM) and
+// myFish's (`fishphotos`, FISH_PHOTOS_ALBUM) are separate albums and must never
+// share an entry. Each is { token, until, body }.
+const photoCaches = {};
 export function resetPhotosCache() {
   for (const k of Object.keys(feedCache)) delete feedCache[k];
-  photoCache = null;
+  for (const k of Object.keys(photoCaches)) delete photoCaches[k];
 }
 
 // The secret may be a bare token (Photos) or a link (Calendar, stored as
@@ -118,10 +129,10 @@ async function handleFeed(res, { name, envVar, what, load }) {
   res.status(200).json(feedCache[name].body);
 }
 
-async function handlePhotos(req, res, fetchFn) {
-  const token = process.env.FAM_PHOTOS_ALBUM;
+async function handlePhotos(req, res, fetchFn, envVar = 'FAM_PHOTOS_ALBUM') {
+  const token = process.env[envVar];
   if (!token) {
-    res.status(503).json({ error: 'FAM_PHOTOS_ALBUM is not configured on this deployment.' });
+    res.status(503).json({ error: `${envVar} is not configured on this deployment.` });
     return;
   }
   // A forced refresh is the one login-gated read here (the page shows its button
@@ -138,10 +149,11 @@ async function handlePhotos(req, res, fetchFn) {
     }
   }
   const now = Date.now();
-  if (force || !photoCache || photoCache.token !== token || now >= photoCache.until) {
+  const cached = photoCaches[envVar];
+  if (force || !cached || cached.token !== token || now >= cached.until) {
     try {
       const body = await fetchSharedAlbum(token, fetchFn);
-      photoCache = { token, until: now + photoCacheMs(body.expires, now), body };
+      photoCaches[envVar] = { token, until: now + photoCacheMs(body.expires, now), body };
     } catch (err) {
       // Never "no photos": a failed read is an error the card shows as one, and a
       // failed refresh leaves the earlier cache alone.
@@ -150,7 +162,7 @@ async function handlePhotos(req, res, fetchFn) {
     }
   }
   res.setHeader('Cache-Control', force ? 'no-store' : 'public, max-age=60');
-  res.status(200).json(photoCache.body);
+  res.status(200).json(photoCaches[envVar].body);
 }
 
 function bearerOk(req) {
@@ -181,6 +193,22 @@ async function handleStoreResource(req, res, resource) {
       const trips = normalizeTrips(req.body.trips);
       await storeSet(store, FISH_TRIPS_KEY, trips);
       res.status(200).json({ trips, seeded: false });
+      return;
+    }
+    if (resource === 'fishlures') {
+      if (req.method === 'GET') {
+        const stored = await storeGet(store, FISH_LURES_KEY);
+        res.status(200).json({ lures: Array.isArray(stored) ? stored : [] });
+        return;
+      }
+      const { errors } = validateLures(req.body);
+      if (errors.length) {
+        res.status(400).json({ error: 'Nothing was saved — the request was malformed:', details: errors });
+        return;
+      }
+      const lures = normalizeLures(req.body.lures);
+      await storeSet(store, FISH_LURES_KEY, lures);
+      res.status(200).json({ lures });
       return;
     }
     const fish = resource === 'fishtasks' || resource === 'fishquicklinks';
@@ -235,6 +263,10 @@ export default async function handler(req, res, fetchFn = fetch) {
     await handlePhotos(req, res, fetchFn);
     return;
   }
+  if (req.method === 'GET' && resource === 'fishphotos') {
+    await handlePhotos(req, res, fetchFn, 'FISH_PHOTOS_ALBUM');
+    return;
+  }
   if (req.method === 'GET' && resource === 'calendar') {
     // One month at a time (`?month=YYYY-MM`, default this month); each month is
     // cached on its own for the same five minutes.
@@ -247,8 +279,8 @@ export default async function handler(req, res, fetchFn = fetch) {
     return;
   }
   // Only the store resources exist here; anything else is a mistake.
-  if (!['tasks', 'quicklinks', 'fishtasks', 'fishquicklinks', 'fishtrips'].includes(resource)) {
-    res.status(req.method === 'GET' ? 405 : 400).json({ error: 'Unknown resource: use "tasks", "quicklinks", "fishtasks", "fishquicklinks", "fishtrips" or (GET) "photos" / "calendar".' });
+  if (!['tasks', 'quicklinks', 'fishtasks', 'fishquicklinks', 'fishtrips', 'fishlures'].includes(resource)) {
+    res.status(req.method === 'GET' ? 405 : 400).json({ error: 'Unknown resource: use "tasks", "quicklinks", "fishtasks", "fishquicklinks", "fishtrips", "fishlures" or (GET) "photos" / "fishphotos" / "calendar".' });
     return;
   }
 
