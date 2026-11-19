@@ -17,6 +17,7 @@
 // fish.html's Photos tab reads its own album through `?resource=fishphotos`: same
 // code and cache rules, but the token is the FISH_PHOTOS_ALBUM Vercel variable
 // and the cache entry is separate from myFAM's.
+// (FISH_PHOTOS_ALBUM is set in Vercel production; a change to it needs a deploy.)
 //
 // A third resource, `?resource=photos`, is the Photos card's public iCloud
 // Shared Album (api/_lib/sharedalbum.mjs). It touches no store, needs no login
