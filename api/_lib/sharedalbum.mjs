@@ -129,9 +129,32 @@ export function buildAlbum(stream, assets) {
   return { name: stream.streamName || '', photos, expires: Number.isFinite(earliest) ? new Date(earliest).toISOString() : null };
 }
 
+// The forms of a token that may be the album's id in the URL path. For a dashed
+// `055-xxxx` token, p55 is established (the server answered) but whether the id is
+// the whole token or only what follows `055-` is not documented, so both are tried,
+// the shorter first; any other token is one form.
+export function tokenForms(token) {
+  const m = /^\d{3}-(.{20,})$/.exec(token);
+  return m ? [m[1], token] : [token];
+}
+
 export async function fetchSharedAlbum(token, fetchFn = fetch) {
   if (!isValidAlbumToken(token)) throw new Error('Album token is not configured or is malformed');
-  const { json: stream, host } = await callAlbum(fetchFn, token, 'webstream', { streamCtag: null });
+  // The partition always comes from the full token; only the path id varies.
+  const startHost = albumHost(token);
+  let found = null, lastErr = null;
+  for (const form of tokenForms(token)) {
+    try {
+      found = { form, ...(await callAlbum(fetchFn, form, 'webstream', { streamCtag: null }, startHost)) };
+      break;
+    } catch (err) {
+      lastErr = err;
+      if (!/HTTP 404\b/.test(String(err.message))) throw err; // only "no such album" moves on to the next form
+    }
+  }
+  if (!found) throw lastErr;
+  const { json: stream, host, form: pathToken } = found;
+  token = pathToken;
   const guids = (stream.photos || []).map((p) => p.photoGuid).filter(Boolean);
   if (!guids.length) return { name: stream.streamName || '', photos: [], expires: null };
   const { json: assets } = await callAlbum(fetchFn, token, 'webasseturls', { photoGuids: guids }, host);
