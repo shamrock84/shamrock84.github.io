@@ -19,6 +19,13 @@
 // (0-9A-Za-z) of token[1] when token[0] is 'A', else of token[1]*62 + token[2].
 // Apple may also answer 330 with `X-Apple-MMe-Host` to say the album lives on
 // another host; that is followed once.
+//
+// Newer share links (photos.icloud.com/shared/album/055-xxxx-xxxx) lead with a
+// three-digit decimal partition and a dash instead: `055-` is p55. That reading is
+// inferred from the token's shape, not from Apple documentation, and it was the
+// fix for myFish's album failing with "fetch failed" (the base-62 rule below
+// computed a host that does not exist). If a token of this shape ever fails the
+// same way, the error now names the host that was tried.
 
 const BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 // Album tokens are url-safe base64-ish; anything else is refused before it can
@@ -31,19 +38,28 @@ export function isValidAlbumToken(token) {
 
 export function albumHost(token) {
   const idx = (c) => BASE62.indexOf(c);
-  const n = token[0] === 'A' ? idx(token[1]) : idx(token[1]) * 62 + idx(token[2]);
+  const dec = /^(\d{3})-/.exec(token);
+  const n = dec ? Number(dec[1]) : token[0] === 'A' ? idx(token[1]) : idx(token[1]) * 62 + idx(token[2]);
   if (!Number.isInteger(n) || n < 0) throw new Error('Unrecognised album token');
   return `p${String(n).padStart(2, '0')}-sharedstreams.icloud.com`;
 }
 
 async function postJson(fetchFn, host, token, path, body) {
   const url = `https://${host}/${token}/sharedstreams/${path}`;
-  const res = await fetchFn(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    redirect: 'error',
-  });
+  let res;
+  try {
+    res = await fetchFn(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      redirect: 'error',
+    });
+  } catch (err) {
+    // Node's own message is a bare "fetch failed"; the cause says why (ENOTFOUND for a host
+    // that does not exist). The host is not secret, the token (in the path) never appears.
+    const why = (err && err.cause && (err.cause.code || err.cause.message)) || (err && err.message) || 'unknown';
+    throw new Error(`could not reach ${host} (${why})`);
+  }
   if (res.status === 330) {
     // Moved: Apple names the right host in the body or a header.
     let moved = null;
