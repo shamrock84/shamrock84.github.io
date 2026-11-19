@@ -46,10 +46,12 @@ async function main() {
 	// ?resource=tasks, login-gated on GET) instead of myFFL's plans document;
 	// BANGERS_TASKS=1 does the same for bangers.html (api/bangers.js), and
 	// FAM_TASKS=1 for index.html's Admin tab (api/fam.js).
-	const fam = process.env.FAM_TASKS === '1';
-	const bangers = !fam && process.env.BANGERS_TASKS === '1';
-	const vikings = fam || bangers || process.env.VIKINGS_TASKS === '1';
-	const plansRes = await fetch(`${API_BASE}/api/${vikings ? `${fam ? 'fam' : bangers ? 'bangers' : 'vikings'}?resource=tasks` : 'plans'}`, {
+	// FISH_TASKS=1 for fish.html's (api/fam.js `?resource=fishtasks`).
+	const fish = process.env.FISH_TASKS === '1';
+	const fam = !fish && process.env.FAM_TASKS === '1';
+	const bangers = !fish && !fam && process.env.BANGERS_TASKS === '1';
+	const vikings = fish || fam || bangers || process.env.VIKINGS_TASKS === '1';
+	const plansRes = await fetch(`${API_BASE}/api/${vikings ? (fish ? 'fam?resource=fishtasks' : `${fam ? 'fam' : bangers ? 'bangers' : 'vikings'}?resource=tasks`) : 'plans'}`, {
 		headers: { Authorization: `Bearer ${loginBody.token}` },
 	});
 	const plansBody = await plansRes.json();
