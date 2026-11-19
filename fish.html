@@ -318,6 +318,35 @@
 		.trip-grid .task-input { width: 4.2rem; }
 		.trip-grid .trip-name { width: 8rem; }
 		.trip-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.7rem; align-items: center; }
+		/* Photos tab: thumbnail grid plus a simple full-size viewer (copied from index.html). */
+		.photo-controls { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.5rem; }
+		.photo-select { max-width: 100%; padding: 0.25rem 0.5rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text); font: inherit; font-size: 0.8rem; }
+		.photo-select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+		.photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr)); gap: 0.4rem; }
+		.photo-thumb { padding: 0; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: var(--card-bg); cursor: pointer; aspect-ratio: 1; }
+		.photo-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+		.photo-thumb:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+		.photo-meta { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.6rem; color: var(--muted); font-size: 0.8rem; }
+		.photo-meta-msg { color: var(--ir-text); }
+		.photo-pager { display: inline-flex; align-items: center; gap: 0.5rem; }
+		.photo-pager-btn { padding: 0.2rem 0.65rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text); font: inherit; font-size: 0.8rem; cursor: pointer; }
+		.photo-pager-btn:disabled { opacity: 0.4; cursor: default; }
+		.photo-pager-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+		.photo-refresh-btn { margin-left: auto; padding: 0.2rem 0.65rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text); font: inherit; font-size: 0.8rem; cursor: pointer; }
+		.photo-refresh-btn:disabled { opacity: 0.5; cursor: default; }
+		.photo-refresh-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+		.photo-viewer { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.6rem; padding: 1rem; background: rgba(0, 0, 0, 0.88); }
+		.photo-viewer img { max-width: 100%; max-height: calc(100vh - 6rem); object-fit: contain; }
+		.photo-viewer-caption { color: #fff; font-size: 0.85rem; text-align: center; }
+		.photo-viewer-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 2.6rem; height: 3.4rem; border: 0; border-radius: 8px; background: rgba(255, 255, 255, 0.14); color: #fff; font-size: 2rem; line-height: 1; cursor: pointer; }
+		.photo-viewer-nav:disabled { opacity: 0.25; cursor: default; }
+		.photo-viewer-prev { left: 0.6rem; }
+		.photo-viewer-next { right: 0.6rem; }
+		.photo-viewer-close { position: absolute; top: 0.6rem; right: 0.8rem; background: none; border: 0; color: #fff; font-size: 1.8rem; line-height: 1; cursor: pointer; }
+		.lure-table th, .lure-table td { text-align: left; white-space: normal; }
+		.lure-table th:first-child, .lure-table td:first-child { white-space: nowrap; }
+		.lure-name { font-weight: 700; }
+		.lure-notes { min-width: 10rem; color: var(--muted); }
 	</style>
 </head>
 <body>
@@ -336,18 +365,19 @@
 	</main>
 
 	<script>
-		// melbostads.com/fish — myFish, the Melbostad ice-fishing page. Two tabs:
-		// Ice Fishing (everyone: all-time stats and one card per trip) and, only
+		// melbostads.com/fish — myFish, the Melbostad ice-fishing page. Tabs:
+		// Ice Fishing (everyone: all-time stats and one card per trip), Photos (its own
+		// shared iCloud album), Equipment (the favourite Lures card) and, only
 		// while logged in (same password and token as myFFL, myVST, myBangers and
 		// myFAM, same localStorage key), Admin: the same Tasks and Quick Links cards
 		// as the other small sites, plus a Trips card that edits what the Ice
-		// Fishing tab shows. The Quick Links card fills the toolbar at the top for
+		// Fishing tab shows and a Lures card that edits the Equipment tab. The Quick Links card fills the toolbar at the top for
 		// everyone.
 		//
 		// Everything is stored in the Upstash store behind api/fam.js, not in the
 		// repo: `?resource=fishtrips` (public GET, login-gated POST, answers with the
 		// seed trips from api/_lib/fishtrips.mjs until the first Save),
-		// `fishquicklinks` (public GET) and `fishtasks` (login-gated both ways).
+		// `fishlures` (same rules), `fishquicklinks` (public GET) and `fishtasks` (login-gated both ways).
 		// fam.js hosts them because the Hobby cap of 12 functions is spent. The
 		// Quick Links and Tasks code below is copied from index.html, so a fix to
 		// one belongs in both.
@@ -403,7 +433,7 @@
 		try { authToken = localStorage.getItem(AUTH_TOKEN_KEY) || null; } catch (e) { /* storage blocked: stay logged out */ }
 		const isLoggedIn = () => !!authToken;
 
-		const TABS = [['fishing', 'Ice Fishing', false], ['admin', 'Admin', true]];
+		const TABS = [['fishing', 'Ice Fishing', false], ['photos', 'Photos', false], ['equipment', 'Equipment', false], ['admin', 'Admin', true]];
 		let tab = 'fishing';
 		try { const saved = localStorage.getItem(TAB_KEY); if (TABS.some(([id]) => id === saved)) tab = saved; } catch (e) { /* default tab */ }
 
@@ -1572,6 +1602,475 @@
 		document.addEventListener('visibilitychange', refreshTasksIfVisible);
 		window.addEventListener('pageshow', refreshTasksIfVisible);
 
+		// Photos tab: myFish's own public iCloud Shared Album (the same solution as
+		// myFAM's Photos card, copied from index.html, so a fix to one belongs in both)
+		// read through api/fam.js
+		// (`?resource=fishphotos`). Apple's image URLs expire after about 20 minutes,
+		// so nothing is stored: the card refetches whenever the Photos tab renders.
+		let photosBodyEl = null;
+		// How the album is shown: a sort and two filters, applied in the browser to the
+		// photos already fetched, and remembered per device. A saved choice the album
+		// no longer offers (a contributor or year that is gone) is ignored, not applied.
+		const PHOTO_SORTS = [['newest', 'Newest first'], ['oldest', 'Oldest first'], ['added', 'Recently added']];
+		const PHOTO_PREFS_KEY = 'fishPhotosView';
+		function loadPhotoPrefs() {
+			let saved = {};
+			try { saved = JSON.parse(localStorage.getItem(PHOTO_PREFS_KEY) || '{}') || {}; } catch (e) { /* defaults */ }
+			return { sort: PHOTO_SORTS.some(([v]) => v === saved.sort) ? saved.sort : 'newest', who: typeof saved.who === 'string' ? saved.who : '', year: typeof saved.year === 'string' ? saved.year : '' };
+		}
+		function savePhotoPrefs() {
+			try { localStorage.setItem(PHOTO_PREFS_KEY, JSON.stringify(photoPrefs)); } catch (e) { /* the choice still applies for this visit */ }
+		}
+		let photoPrefs = loadPhotoPrefs();
+		// "Taken" is the photo's own date; a photo with none falls back to when it was added.
+		const photoTaken = (p) => p.date || p.added || '';
+		const photoYear = (p) => { const t = photoTaken(p); return t ? String(new Date(t).getFullYear()) : ''; };
+		function photoFacets(photos) {
+			const who = new Map(), years = new Map();
+			for (const p of photos) {
+				if (p.by) who.set(p.by, (who.get(p.by) || 0) + 1);
+				const y = photoYear(p);
+				if (y) years.set(y, (years.get(y) || 0) + 1);
+			}
+			return { who: [...who.entries()].sort((a, b) => a[0].localeCompare(b[0])), years: [...years.entries()].sort((a, b) => b[0].localeCompare(a[0])) };
+		}
+		function visiblePhotos(photos, facets) {
+			const who = facets.who.some(([n]) => n === photoPrefs.who) ? photoPrefs.who : '';
+			const year = facets.years.some(([y]) => y === photoPrefs.year) ? photoPrefs.year : '';
+			const cmp = {
+				newest: (a, b) => photoTaken(b).localeCompare(photoTaken(a)),
+				oldest: (a, b) => photoTaken(a).localeCompare(photoTaken(b)),
+				added: (a, b) => (b.added || photoTaken(b)).localeCompare(a.added || photoTaken(a)),
+			}[photoPrefs.sort];
+			// filter() copies, so the sort never reorders the fetched album itself; ties keep the server's order.
+			return { list: photos.filter((p) => (!who || p.by === who) && (!year || photoYear(p) === year)).sort(cmp), who, year };
+		}
+		// The full-size viewer over a list of photo ids (the current sort and filter),
+		// starting at `index`. The ‹ › buttons and the arrow keys step through the list.
+		// Each step goes through currentPhotos(), so a link that has expired meanwhile
+		// is renewed first.
+		function openPhotoViewer(ids, index) {
+			let current = index, latest = 0;
+			const close = () => { overlay.remove(); document.removeEventListener('keydown', onKey); };
+			const img = el('img', { alt: 'Photo' });
+			const caption = el('div', { class: 'photo-viewer-caption' });
+			const closeBtn = el('button', { type: 'button', class: 'photo-viewer-close', 'aria-label': 'Close', text: '×' });
+			const prev = el('button', { type: 'button', class: 'photo-viewer-nav photo-viewer-prev', 'aria-label': 'Previous photo', text: '‹' });
+			const next = el('button', { type: 'button', class: 'photo-viewer-nav photo-viewer-next', 'aria-label': 'Next photo', text: '›' });
+			const overlay = el('div', { class: 'photo-viewer', role: 'dialog', 'aria-label': 'Photo' }, [closeBtn, ...(ids.length > 1 ? [prev, next] : []), img, caption]);
+			const show = (to) => {
+				if (to < 0 || to >= ids.length) return;
+				current = to;
+				const ticket = ++latest; // a slow link renewal must not land after a newer click
+				prev.disabled = current === 0;
+				next.disabled = current === ids.length - 1;
+				currentPhotos().then((album) => {
+					if (ticket !== latest || !overlay.isConnected) return;
+					const photo = album && album.photos.find((p) => p.id === ids[current]);
+					if (!photo) { close(); return; }
+					img.src = photo.full;
+					img.alt = photo.caption || 'Photo';
+					caption.textContent = [ids.length > 1 ? `${current + 1} / ${ids.length}` : '', photo.caption, photo.by, photo.date ? new Date(photo.date).toLocaleDateString() : ''].filter(Boolean).join(' · ');
+				});
+			};
+			const onKey = (e) => {
+				if (e.key === 'Escape') close();
+				else if (e.key === 'ArrowLeft') { e.preventDefault(); show(current - 1); }
+				else if (e.key === 'ArrowRight') { e.preventDefault(); show(current + 1); }
+			};
+			overlay.addEventListener('click', close);
+			prev.addEventListener('click', (e) => { e.stopPropagation(); show(current - 1); });
+			next.addEventListener('click', (e) => { e.stopPropagation(); show(current + 1); });
+			document.addEventListener('keydown', onKey);
+			document.body.appendChild(overlay);
+			show(current);
+			closeBtn.focus();
+		}
+		// One read of the album. `refresh` makes the server skip its cache (which lasts
+		// until Apple's image links are near expiry) and is login-only: the Refresh
+		// button below exists only when logged in. `expires` is when the earliest of
+		// the signed image links in the response dies.
+		function fetchPhotos(refresh) {
+			const init = { cache: 'no-store' };
+			if (refresh) init.headers = { Authorization: `Bearer ${authToken}` };
+			return fetch(`${API_URL}?resource=fishphotos${refresh ? '&refresh=1' : ''}`, init)
+				.then((r) => (r.ok ? r.json() : r.json().catch(() => ({})).then((b) => Promise.reject(new Error(b.error || `HTTP ${r.status}`)))))
+				.then((album) => ({ photos: Array.isArray(album.photos) ? album.photos : [], expires: album.expires || null }));
+		}
+		// The grid shows PHOTO_ROWS_PER_PAGE rows, however many columns fit: 6 across on
+		// a desktop is 18 a page, 2 across on a phone is 6. The column count is read
+		// back from the grid itself (CSS decides it), so the two can't disagree.
+		const PHOTO_ROWS_PER_PAGE = 3;
+		let photosView = null; // { body, album, start, cols } for the card on screen; cols is null when it was only estimated
+		function photoColumns(grid) {
+			const tracks = getComputedStyle(grid).gridTemplateColumns.trim().split(/\s+/);
+			// Only resolved pixel tracks count: a collapsed card is display:none and reports the unresolved rule.
+			return tracks.length && tracks.every((t) => /^[\d.]+px$/.test(t)) ? tracks.length : null;
+		}
+		// Apple's image links expire ~20 minutes after they are issued, and a page of
+		// thumbnails (or a full-size photo) is only requested when it is shown. So in a
+		// card left open a while, paging could hit dead links: when the links are within
+		// a minute of expiring, read the album again first (the server has fresh ones by
+		// then). If that read fails, carry on with what is held.
+		function currentPhotos() {
+			const view = photosView;
+			if (!view) return Promise.resolve(null);
+			const exp = Date.parse(view.album.expires);
+			if (!Number.isFinite(exp) || Date.now() < exp - 60 * 1000) return Promise.resolve(view.album);
+			return fetchPhotos(false).then((album) => { if (photosView === view) view.album = album; return album; }).catch(() => view.album);
+		}
+		// Prev/Next under the grid when there is more than one page, and a Refresh
+		// button when logged in.
+		function appendPhotosFooter(body, pager) {
+			const footer = el('div', { class: 'photo-meta' });
+			if (pager) {
+				const { start, size, total } = pager;
+				const go = (to) => currentPhotos().then((album) => { if (album && body.isConnected) renderPhotos(body, album, to); });
+				const prev = el('button', { type: 'button', class: 'photo-pager-btn', 'aria-label': 'Previous photos', text: '‹' });
+				const next = el('button', { type: 'button', class: 'photo-pager-btn', 'aria-label': 'Next photos', text: '›' });
+				prev.disabled = start === 0;
+				next.disabled = start + size >= total;
+				prev.addEventListener('click', () => go(start - size));
+				next.addEventListener('click', () => go(start + size));
+				footer.appendChild(el('span', { class: 'photo-pager' }, [prev, el('span', { text: `${start + 1}–${Math.min(start + size, total)} of ${total}` }), next]));
+			}
+			if (isLoggedIn()) {
+				const msg = el('span', { class: 'photo-meta-msg', role: 'status' });
+				const btn = el('button', { type: 'button', class: 'photo-refresh-btn', text: 'Refresh' });
+				btn.addEventListener('click', () => {
+					btn.disabled = true; btn.textContent = 'Refreshing…'; msg.textContent = '';
+					fetchPhotos(true)
+						.then((album) => { if (body.isConnected) renderPhotos(body, album); })
+						.catch((err) => { btn.disabled = false; btn.textContent = 'Refresh'; msg.textContent = `Couldn't refresh. ${err.message}`; });
+				});
+				footer.append(msg, btn);
+			}
+			if (footer.childNodes.length) body.appendChild(footer);
+		}
+		// Sort and filter selects above the grid. A filter that could change nothing (one
+		// contributor, one year) is left out; so is the sort for a single photo.
+		function appendPhotoControls(body, total, facets, applied) {
+			const row = el('div', { class: 'photo-controls' });
+			const addSelect = (label, options, value, onChange) => {
+				const sel = el('select', { class: 'photo-select', 'aria-label': label });
+				for (const [v, text] of options) {
+					const opt = el('option', { value: v, text });
+					opt.selected = v === value;
+					sel.appendChild(opt);
+				}
+				sel.addEventListener('change', () => {
+					onChange(sel.value);
+					savePhotoPrefs();
+					const view = photosView;
+					if (view && view.body === body) {
+						renderPhotos(body, view.album, 0); // a new view starts on page 1
+						const again = body.querySelector(`.photo-select[aria-label="${label}"]`);
+						if (again) again.focus(); // the re-render replaced the select; keep keyboard focus on it
+					}
+				});
+				row.appendChild(sel);
+			};
+			if (total > 1) addSelect('Sort photos', PHOTO_SORTS, photoPrefs.sort, (v) => { photoPrefs.sort = v; });
+			if (facets.who.length > 1) addSelect('Filter by who added it', [['', `Everyone (${total})`], ...facets.who.map(([n, c]) => [n, `${n} (${c})`])], applied.who, (v) => { photoPrefs.who = v; });
+			if (facets.years.length > 1) addSelect('Filter by year', [['', 'All years'], ...facets.years.map(([y, c]) => [y, `${y} (${c})`])], applied.year, (v) => { photoPrefs.year = v; });
+			if (row.childNodes.length) body.appendChild(row);
+		}
+		function renderPhotos(body, album, start = 0) {
+			body.textContent = '';
+			if (!album.photos.length) {
+				photosView = null;
+				body.appendChild(el('p', { class: 'task-empty', text: 'No photos yet.' }));
+				appendPhotosFooter(body, null);
+				return;
+			}
+			const facets = photoFacets(album.photos);
+			const { list: photos, who, year } = visiblePhotos(album.photos, facets);
+			appendPhotoControls(body, album.photos.length, facets, { who, year });
+			if (!photos.length) {
+				// Two filters can each be valid and still match nothing together; the selects above stay to change them.
+				photosView = { body, album, start: 0, cols: null };
+				body.appendChild(el('p', { class: 'task-empty', text: 'No photos match these filters.' }));
+				appendPhotosFooter(body, null);
+				return;
+			}
+			const grid = el('div', { class: 'photo-grid' });
+			body.appendChild(grid); // in the DOM first, so the column count the CSS resolves can be read
+			// A collapsed card can't be measured; estimate from the window and let the
+			// observer in buildPhotosCard redo it with the real count once it opens.
+			const measured = photoColumns(grid);
+			const cols = measured || Math.max(1, Math.floor((Math.min(window.innerWidth, 900) - 64 + 6.4) / (120 + 6.4)));
+			const size = cols * PHOTO_ROWS_PER_PAGE;
+			start = Math.min(Math.floor(start / size) * size, Math.floor((photos.length - 1) / size) * size);
+			photosView = { body, album, start, cols: measured };
+			const ids = photos.map((p) => p.id);
+			photos.slice(start, start + size).forEach((photo, k) => {
+				const btn = el('button', { type: 'button', class: 'photo-thumb', title: photo.caption || '', 'aria-label': photo.caption || 'Open photo' }, [
+					el('img', { src: photo.thumb, alt: '', loading: 'lazy' }),
+				]);
+				btn.addEventListener('click', () => openPhotoViewer(ids, start + k));
+				grid.appendChild(btn);
+			});
+			appendPhotosFooter(body, photos.length > size ? { start, size, total: photos.length } : null);
+		}
+		// The column count changes when the window resizes or the card is expanded;
+		// either way the page size changes with it, so redraw the page that holds the
+		// first photo now showing.
+		function onPhotosBodyResize(body) {
+			const view = photosView;
+			if (!view || view.body !== body || !body.isConnected) return;
+			const grid = body.querySelector('.photo-grid');
+			const cols = grid && photoColumns(grid);
+			if (cols && cols !== view.cols) renderPhotos(body, view.album, view.start);
+		}
+		function loadPhotos(body) {
+			fetchPhotos(false)
+				.then((album) => { if (body.isConnected) renderPhotos(body, album); })
+				.catch((err) => {
+					if (!body.isConnected) return;
+					body.textContent = '';
+					body.appendChild(el('p', { class: 'task-empty', text: `Couldn't load photos. ${err.message}` }));
+					appendPhotosFooter(body); // logged in, Refresh doubles as "try again"
+				});
+		}
+		function buildPhotosCard() {
+			const head = el('h2', { class: 'card-heading', text: 'Photos' });
+			photosBodyEl = el('div', {}, [el('p', { class: 'task-empty', text: 'Loading…' })]);
+			const card = el('div', { class: 'card' }, [head, photosBodyEl]);
+			makeCollapsible(card, head, 'photos');
+			loadPhotos(photosBodyEl);
+			if (typeof ResizeObserver === 'function') {
+				const body = photosBodyEl;
+				const observer = new ResizeObserver(() => {
+					if (!body.isConnected) { observer.disconnect(); return; }
+					requestAnimationFrame(() => onPhotosBodyResize(body));
+				});
+				observer.observe(body);
+			}
+			return card;
+		}
+		// ---- Equipment tab: Lures ------------------------------------------------
+		// Favourite lures, each filed under a type of fishing, a body of water and a
+		// location (api/_lib/fishlures.mjs, `?resource=fishlures`, public GET). The
+		// card filters on whatever values the saved list holds; edits are made in the
+		// Lures card on the Admin tab.
+		const FISHING_TYPES = ['Ice', 'Open water', 'Fly', 'Other'];
+		let lures = null; // null until the first read
+		let luresState = 'loading'; // loading | ready | error
+		let luresError = '';
+		const lureFilter = { fishingType: '', waterBody: '', location: '', lureType: '' };
+		const LURE_FACETS = [['fishingType', 'Type of fishing', 'All fishing'], ['waterBody', 'Body of water', 'All waters'], ['location', 'Location', 'All locations'], ['lureType', 'Lure type', 'All lure types']];
+
+		function lureFacetValues(key) {
+			const set = new Set();
+			for (const l of lures) if (l[key]) set.add(l[key]);
+			return [...set].sort((a, b) => a.localeCompare(b));
+		}
+
+		function buildLuresCard() {
+			const head = el('h2', { class: 'card-heading', text: `Lures${lures && lures.length ? ` (${lures.length})` : ''}` });
+			const card = el('div', { class: 'card' }, [head]);
+			makeCollapsible(card, head, 'lures');
+			if (luresState === 'loading') { card.appendChild(el('div', { class: 'message', text: 'Loading…' })); return card; }
+			if (luresState === 'error') {
+				const retry = el('button', { type: 'button', class: 'task-add-btn', text: 'Try again' });
+				retry.addEventListener('click', () => { loadLures(); renderAll(); });
+				card.append(el('div', { class: 'message error', text: `Couldn’t load the lures (${luresError}).` }), retry);
+				return card;
+			}
+			if (!lures.length) {
+				card.appendChild(el('div', { class: 'task-empty', text: isLoggedIn() ? 'No lures yet. Add some from the Lures card on the Admin tab.' : 'No lures yet.' }));
+				return card;
+			}
+			const body = el('div');
+			const draw = () => {
+				body.textContent = '';
+				// A filter value that no longer exists (the list changed) is ignored.
+				for (const [key] of LURE_FACETS) if (lureFilter[key] && !lureFacetValues(key).includes(lureFilter[key])) lureFilter[key] = '';
+				const row = el('div', { class: 'photo-controls' });
+				for (const [key, label, all] of LURE_FACETS) {
+					const values = lureFacetValues(key);
+					if (values.length < 2) continue; // a filter that could change nothing is left out
+					const sel = el('select', { class: 'photo-select', 'aria-label': `Filter by ${label.toLowerCase()}` });
+					sel.appendChild(el('option', { value: '', text: all }));
+					for (const v of values) { const o = el('option', { value: v, text: `${v} (${lures.filter((l) => l[key] === v).length})` }); o.selected = lureFilter[key] === v; sel.appendChild(o); }
+					sel.addEventListener('change', () => { lureFilter[key] = sel.value; draw(); const again = body.querySelector(`select[aria-label="Filter by ${label.toLowerCase()}"]`); if (again) again.focus(); });
+					row.appendChild(sel);
+				}
+				if (row.childNodes.length) body.appendChild(row);
+				const shown = lures.filter((l) => LURE_FACETS.every(([key]) => !lureFilter[key] || l[key] === lureFilter[key]))
+					.sort((a, b) => a.fishingType.localeCompare(b.fishingType) || a.waterBody.localeCompare(b.waterBody) || a.name.localeCompare(b.name));
+				if (!shown.length) { body.appendChild(el('p', { class: 'task-empty', text: 'No lures match these filters.' })); return; }
+				const table = el('table', { class: 'fish-table lure-table' });
+				table.appendChild(el('thead', {}, [el('tr', {}, ['Lure', 'Fishing', 'Lure type', 'Body of water', 'Location', 'Notes'].map((h) => el('th', { text: h })))]));
+				const tbody = el('tbody');
+				for (const l of shown) {
+					tbody.appendChild(el('tr', {}, [
+						el('td', { class: 'lure-name', text: l.name }), el('td', { text: l.fishingType }), el('td', { text: l.lureType || '' }),
+						el('td', { text: l.waterBody || '' }), el('td', { text: l.location || '' }), el('td', { class: 'lure-notes', text: l.notes || '' }),
+					]));
+				}
+				table.appendChild(tbody);
+				body.appendChild(el('div', { class: 'fish-scroll' }, [table]));
+			};
+			draw();
+			card.appendChild(body);
+			return card;
+		}
+
+		function equipmentView() { return [buildLuresCard()]; }
+
+		async function loadLures() {
+			luresState = 'loading';
+			try {
+				const res = await fetch(`${API_URL}?resource=fishlures`, { cache: 'no-store' });
+				const body = await res.json().catch(() => ({}));
+				if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+				if (!Array.isArray(body.lures)) throw new Error('unexpected response');
+				lures = body.lures;
+				luresState = 'ready';
+			} catch (err) {
+				luresState = 'error';
+				luresError = err.message;
+			}
+			if (tab === 'equipment') renderAll();
+			else if (tab === 'admin' && luresCardEl && luresCardEl.isConnected && !luresDraft) {
+				const old = luresCardEl;
+				luresAdminCard();
+				old.replaceWith(luresCardEl);
+			}
+		}
+
+		// ---- Lures card on the Admin tab (login only) -------------------------------
+		// Same draft-then-Save pattern as the Trips card: typing updates the draft in
+		// place, only add / remove / reorder rebuilds the card, and Save replaces the
+		// whole list in one write.
+		let luresDraft = null;
+		let luresErrors = [];
+		let luresSaving = false;
+		let luresCardEl = null;
+		const lureOpen = {};
+		const copyLures = (list) => JSON.parse(JSON.stringify(list));
+		const luresDirty = () => JSON.stringify(luresDraft) !== JSON.stringify(lures);
+		const newLureId = () => `l${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
+
+		function refreshLuresCard() {
+			if (!luresCardEl) return;
+			const next = buildLuresAdminCard();
+			luresCardEl.replaceWith(next);
+			luresCardEl = next;
+		}
+
+		async function saveLures() {
+			luresErrors = [];
+			luresSaving = true;
+			refreshLuresCard();
+			setStatus('Saving…');
+			try {
+				const res = await fetch(API_URL, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+					body: JSON.stringify({ resource: 'fishlures', lures: luresDraft }),
+				});
+				const body = await res.json().catch(() => ({}));
+				if (res.status === 401) { luresSaving = false; expireSession(); return; }
+				if (!res.ok) throw new Error((body.details && body.details.join(' ')) || body.error || `HTTP ${res.status}`);
+				lures = body.lures;
+				luresDraft = copyLures(lures);
+				setStatus('Saved', 'ok');
+			} catch (err) {
+				luresErrors = [`Not saved: ${err.message}`];
+				setStatus('');
+			}
+			luresSaving = false;
+			refreshLuresCard();
+		}
+
+		function buildLureEditor(l, i) {
+			const details = el('details', { class: 'trip-edit' }, [el('summary', { text: `${l.name || 'New lure'}${l.waterBody ? ` · ${l.waterBody}` : ''}${l.fishingType ? ` · ${l.fishingType}` : ''}` })]);
+			details.open = !!lureOpen[l.id];
+			details.addEventListener('toggle', () => { lureOpen[l.id] = details.open; });
+			const typeSel = el('select', { class: 'task-input', 'aria-label': 'Type of fishing' });
+			for (const t of FISHING_TYPES) { const o = el('option', { value: t, text: t }); o.selected = l.fishingType === t; typeSel.appendChild(o); }
+			typeSel.addEventListener('change', () => { l.fishingType = typeSel.value; });
+			// Existing values are offered as suggestions so the same lake isn't spelled three ways.
+			const suggest = (key, listId) => {
+				const dl = el('datalist', { id: listId });
+				const seen = new Set();
+				for (const x of luresDraft) if (x[key] && !seen.has(x[key])) { seen.add(x[key]); dl.appendChild(el('option', { value: x[key] })); }
+				return dl;
+			};
+			const withList = (input, listId) => { input.setAttribute('list', listId); return input; };
+			details.appendChild(el('div', { class: 'trip-fields' }, [
+				labelled('Lure', textField(l, 'name', 'e.g. Jigging Rap, chartreuse', 'Lure')),
+				labelled('Type of fishing', typeSel),
+				labelled('Lure type', withList(textField(l, 'lureType', 'e.g. Jigging spoon', 'Lure type'), 'lure-types')),
+			]));
+			details.appendChild(el('div', { class: 'trip-fields' }, [
+				labelled('Body of water', withList(textField(l, 'waterBody', 'e.g. Lake of the Woods', 'Body of water'), 'lure-waters')),
+				labelled('Location', withList(textField(l, 'location', 'e.g. Baudette, MN', 'Location'), 'lure-locations')),
+			]));
+			details.appendChild(labelled('Notes', textField(l, 'notes', 'Depth, colour, how to work it…', 'Notes', '300')));
+			details.append(suggest('lureType', 'lure-types'), suggest('waterBody', 'lure-waters'), suggest('location', 'lure-locations'));
+			const up = smallBtn('↑', 'Move up', () => { luresDraft.splice(i - 1, 0, luresDraft.splice(i, 1)[0]); refreshLuresCard(); });
+			const down = smallBtn('↓', 'Move down', () => { luresDraft.splice(i + 1, 0, luresDraft.splice(i, 1)[0]); refreshLuresCard(); });
+			up.disabled = i === 0;
+			down.disabled = i === luresDraft.length - 1;
+			details.appendChild(el('div', { class: 'trip-actions' }, [up, down, smallBtn('Remove lure', 'Remove this lure', () => {
+				if (!confirm(`Remove ${l.name || 'this lure'}? It is gone for good once you Save.`)) return;
+				luresDraft.splice(i, 1);
+				refreshLuresCard();
+			}, 'task-add-btn')]));
+			return details;
+		}
+
+		function buildLuresAdminCard() {
+			if (!luresDraft) luresDraft = copyLures(lures || []);
+			const head = el('h2', { class: 'card-heading', text: `Lures (${luresDraft.length})` });
+			const card = el('div', { class: 'card' }, [head]);
+			makeCollapsible(card, head, 'luresEditor');
+			for (let i = 0; i < luresDraft.length; i++) card.appendChild(buildLureEditor(luresDraft[i], i));
+			if (!luresDraft.length) card.appendChild(el('div', { class: 'task-empty', text: 'No lures yet.' }));
+			const add = el('button', { type: 'button', class: 'task-add-btn', text: '+ Add a lure' });
+			add.addEventListener('click', () => {
+				// Starts from the newest lure's type, water and location, the usual run of entries.
+				const last = luresDraft[0];
+				const id = newLureId();
+				lureOpen[id] = true;
+				luresDraft.unshift({ id, name: '', fishingType: last ? last.fishingType : 'Ice', lureType: '', waterBody: last ? last.waterBody : '', location: last ? last.location : '', notes: '' });
+				refreshLuresCard();
+			});
+			const save = el('button', { type: 'button', class: 'task-add-btn', text: luresSaving ? 'Saving…' : 'Save' });
+			save.disabled = luresSaving;
+			save.addEventListener('click', saveLures);
+			const discard = el('button', { type: 'button', class: 'task-add-btn', text: 'Discard changes' });
+			discard.disabled = luresSaving || !luresDirty();
+			discard.addEventListener('click', () => { luresDraft = copyLures(lures); luresErrors = []; refreshLuresCard(); });
+			card.appendChild(el('div', { class: 'ql-actions' }, [add, save, discard]));
+			if (luresErrors.length) card.appendChild(el('ul', { class: 'ql-errors' }, luresErrors.map((t) => el('li', { text: t }))));
+			card.appendChild(el('div', { class: 'ql-note', text: 'Shown on the Equipment tab, which filters by type of fishing, body of water, location and lure type. Only the name and type of fishing are required.' }));
+			return card;
+		}
+
+		function luresAdminCard() {
+			if (luresState !== 'ready') {
+				const head = el('h2', { class: 'card-heading', text: 'Lures' });
+				const card = el('div', { class: 'card' }, [head]);
+				if (luresState === 'error') {
+					const retry = el('button', { type: 'button', class: 'task-add-btn', text: 'Try again' });
+					retry.addEventListener('click', loadLures);
+					card.append(el('div', { class: 'message error', text: `Couldn’t load the lures (${luresError}).` }), retry);
+				} else {
+					card.appendChild(el('div', { class: 'message', text: 'Loading…' }));
+				}
+				luresCardEl = card;
+				return card;
+			}
+			luresDraft = null;
+			luresErrors = [];
+			luresCardEl = buildLuresAdminCard();
+			return luresCardEl;
+		}
+
 		// ---- Shell ---------------------------------------------------------------
 		function setTab(next) {
 			tab = next;
@@ -1594,7 +2093,7 @@
 		}
 
 		function renderAll() {
-			if (!isLoggedIn() && tab !== 'fishing') tab = 'fishing';
+			if (!isLoggedIn() && tab === 'admin') tab = 'fishing';
 			renderLogin();
 			renderTabs();
 			renderQuickLinks();
@@ -1603,13 +2102,18 @@
 			tasksCardEl = null;
 			qlCardEl = null;
 			tripsCardEl = null;
-			const cards = tab === 'admin' ? [...adminView(), tripsAdminCard()] : fishingView();
+			luresCardEl = null;
+			const cards = tab === 'admin' ? [...adminView(), tripsAdminCard(), luresAdminCard()]
+				: tab === 'photos' ? [buildPhotosCard()]
+				: tab === 'equipment' ? equipmentView()
+				: fishingView();
 			cards.forEach((c) => view.appendChild(c));
 		}
 
 		function load() {
 			renderAll();
 			loadTrips();
+			loadLures();
 			// Not awaited: the bar fills in when it arrives, and a failure just
 			// leaves it hidden.
 			fetch(`${API_URL}?resource=fishquicklinks`, { cache: 'no-store' })
