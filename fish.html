@@ -287,6 +287,25 @@
 		.trip-fields { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.5rem 0; }
 		.trip-fields .ql-field { flex: 1 1 8rem; }
 		.trip-fields .task-input, .trip-day .task-input { width: 100%; }
+		/* iOS/iPadOS Safari draws a native date control that ignores the page's input
+		   sizing: taller than its neighbours, value centred, and wider than its flex
+		   cell, so it spills over the next field. Dropping the native appearance and
+		   pinning the width and height to a text input's puts it back in line; the
+		   picker still opens on tap. */
+		.task-input[type="date"] {
+			-webkit-appearance: none;
+			appearance: none;
+			display: block;
+			width: 100%;
+			max-width: 100%;
+			min-width: 0;
+			line-height: 1.25;
+			height: calc(1.25em + 0.7rem + 2px);
+			text-align: left;
+			color-scheme: light dark; /* the calendar icon follows the page's light/dark mode */
+		}
+		.task-input[type="date"]::-webkit-date-and-time-value { text-align: left; min-height: 1.25em; margin: 0; padding: 0; }
+		.task-input[type="date"]::-webkit-datetime-edit { padding: 0; }
 		.trip-sub { margin: 0.8rem 0 0.3rem; font-size: 0.85rem; font-weight: 700; color: var(--accent); }
 		.trip-day { padding: 0.5rem; margin-bottom: 0.4rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); }
 		.trip-day-title { font-size: 0.8rem; font-weight: 700; margin-bottom: 0.3rem; }
