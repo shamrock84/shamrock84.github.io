@@ -17,7 +17,7 @@
 // Run: node scripts/test-shared-album.mjs
 
 import assert from 'node:assert/strict';
-import { albumHost, isValidAlbumToken, buildAlbum, fetchSharedAlbum } from '../api/_lib/sharedalbum.mjs';
+import { albumHost, isValidAlbumToken, buildAlbum, fetchSharedAlbum, tokenForms } from '../api/_lib/sharedalbum.mjs';
 import handler, { resetPhotosCache, photoCacheMs } from '../api/fam.js';
 import { createToken } from '../api/_lib/auth.mjs';
 
@@ -119,6 +119,29 @@ async function withClock(startMs, fn) {
 const MIN = 60 * 1000, HOUR = 60 * MIN;
 const endpointsOf = (f) => f.calls.map((c) => c.url.split('/').pop());
 const savedAlbum = process.env.FAM_PHOTOS_ALBUM;
+
+await check('a dashed token is tried without its prefix first, then whole; any other token once', () => {
+  const dashed = '055-' + 'x'.repeat(21);
+  assert.deepEqual(tokenForms(dashed), ['x'.repeat(21), dashed]);
+  assert.deepEqual(tokenForms(TOKEN), [TOKEN]);
+});
+await check('a 404 on the short form falls back to the whole token, keeping the same host; other errors do not', async () => {
+  const dashed = '055-' + 'x'.repeat(21);
+  const seen = [];
+  const apple = fakeApple();
+  const f = async (url, init) => {
+    seen.push(url);
+    if (url.includes(`/${'x'.repeat(21)}/`) && !url.includes('055-')) return { ok: false, status: 404, headers: new Headers(), json: async () => ({}) };
+    return apple(url, init);
+  };
+  const a = await fetchSharedAlbum(dashed, f);
+  assert.ok(a.photos.length >= 1);
+  assert.ok(seen.every((u) => u.startsWith('https://p55-sharedstreams.icloud.com/')));
+  assert.ok(seen[0].includes(`/${'x'.repeat(21)}/sharedstreams/webstream`) && seen[1].includes('/055-'));
+  assert.ok(seen.slice(2).every((u) => u.includes('/055-')), 'assets call keeps the form that worked');
+  await assert.rejects(fetchSharedAlbum(dashed, async () => ({ ok: false, status: 500, headers: new Headers(), json: async () => ({}) })), /HTTP 500/);
+  assert.equal(seen.length, 3, 'short form 404, whole form webstream, then webasseturls');
+});
 
 await check('a network failure names the host tried and never the token', async () => {
   const f = async () => { const e = new TypeError('fetch failed'); e.cause = { code: 'ENOTFOUND' }; throw e; };
