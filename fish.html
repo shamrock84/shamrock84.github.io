@@ -1034,22 +1034,59 @@
 			}));
 			return { anglers, days, caught: sumOf(days.map((d) => d.caught)), kept: sumOf(days.map((d) => d.kept)) };
 		}
-		// A trip with no counts at all hasn't happened yet.
-		const isUpcoming = (t) => tripTotals(t).caught == null && tripTotals(t).kept == null;
+		// What a trip has, so a year shows whatever was captured for it. A trip with
+		// nothing filled in at all hasn't happened yet ("Upcoming"); one with only
+		// a biggest fish, say, is shown with just that. Fish counts (caught/kept)
+		// are what the table, the totals and every average are built from, so a
+		// trip without them is shown but never counted in those.
+		const hasCounts = (t) => { const tot = tripTotals(t); return tot.caught != null || tot.kept != null; };
+		const hasDayFacts = (t) => t.days.some((d) => d.first || d.biggest || d.biggestInches != null || (d.species || []).some((x) => x.count != null));
+		// Played or upcoming. A trip with a date is Upcoming while that date is ahead
+		// and played from the day it arrives, whether or not stats were kept (some
+		// old trips were never recorded). Without a date, the year decides: a past
+		// year was played, a future year is upcoming, and this year's trip is
+		// upcoming until something is filled in. `today` is injectable for testing.
+		const localToday = () => {
+			const d = new Date();
+			return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+		};
+		function tripStatus(t, today = localToday()) {
+			if (t.date) return t.date > today ? 'upcoming' : 'played';
+			const thisYear = Number(today.slice(0, 4));
+			if (t.year < thisYear) return 'played';
+			if (t.year > thisYear) return 'upcoming';
+			return hasCounts(t) || hasDayFacts(t) ? 'played' : 'upcoming';
+		}
+		const isUpcoming = (t) => tripStatus(t) === 'upcoming';
+
+		// "Feb 14" for a one-day trip, "Feb 14–15" or "Feb 28 – Mar 1" for longer
+		// ones (the days are consecutive from the start date). UTC throughout, so
+		// the viewer's timezone can't shift the day.
+		function formatTripDates(date, days) {
+			const [y, m, d] = date.split('-').map(Number);
+			const start = new Date(Date.UTC(y, m - 1, d));
+			const end = new Date(Date.UTC(y, m - 1, d + Math.max(1, days) - 1));
+			const f = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+			if (days <= 1) return f.format(start);
+			return start.getUTCMonth() === end.getUTCMonth() ? `${f.format(start)}–${end.getUTCDate()}` : `${f.format(start)} – ${f.format(end)}`;
+		}
 
 		function allTimeStats(list) {
 			const done = list.filter((t) => !isUpcoming(t));
+			const counted = done.filter(hasCounts);
 			const people = new Map();
 			const person = (name) => {
 				const key = name.toLowerCase();
 				if (!people.has(key)) people.set(key, { name, trips: 0, caught: 0, kept: 0, bestDay: null, first: 0, biggest: 0 });
 				return people.get(key);
 			};
-			const stats = { trips: done.length, caught: 0, kept: 0, bestTrip: null, bestDay: null, biggest: null };
+			const stats = { trips: done.length, countedTrips: counted.length, caught: 0, kept: 0, bestTrip: null, bestDay: null, biggest: null };
 			for (const t of done) {
 				const tot = tripTotals(t);
-				stats.caught += tot.caught ?? 0;
-				stats.kept += tot.kept ?? 0;
+				// Fish counts come only from trips that recorded some; first and
+				// biggest fish below come from every trip that has them.
+				if (hasCounts(t)) stats.caught += tot.caught ?? 0;
+				if (hasCounts(t)) stats.kept += tot.kept ?? 0;
 				if (tot.caught != null && (!stats.bestTrip || tot.caught > stats.bestTrip.caught)) stats.bestTrip = { caught: tot.caught, year: t.year };
 				for (const a of tot.anglers) {
 					if (a.caught == null && a.kept == null) continue;
@@ -1101,8 +1138,8 @@
 				else { sortKey = null; sortDir = 0; }
 				onChange();
 			}
-			function sortableHeader(label, key) {
-				const th = el('th', { class: 'sortable', tabindex: '0', title: `Sort by ${label}`, 'aria-sort': sortKey === key ? (sortDir === 1 ? 'ascending' : 'descending') : 'none', text: label });
+			function sortableHeader(label, key, extraClass = '', title = `Sort by ${label}`) {
+				const th = el('th', { class: `${extraClass} sortable`.trim(), tabindex: '0', title, 'aria-sort': sortKey === key ? (sortDir === 1 ? 'ascending' : 'descending') : 'none', text: label });
 				if (sortKey === key) th.appendChild(el('span', { class: 'sort-arrow', text: sortDir === 1 ? ' ▲' : ' ▼' }));
 				th.addEventListener('click', () => cycleSort(key));
 				th.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); cycleSort(key); } });
@@ -1124,8 +1161,8 @@
 			const keep = s.caught ? `${Math.round((s.kept / s.caught) * 100)}% kept` : '';
 			card.appendChild(el('div', { class: 'tiles' }, [
 				tile(String(s.trips), s.trips === 1 ? 'Trip' : 'Trips'),
-				tile(String(s.caught), 'Fish caught', `${(s.caught / s.trips).toFixed(1)} per trip`),
-				tile(String(s.kept), 'Fish kept', keep),
+				s.countedTrips ? tile(String(s.caught), 'Fish caught', `${(s.caught / s.countedTrips).toFixed(1)} per trip`) : null,
+				s.countedTrips ? tile(String(s.kept), 'Fish kept', keep) : null,
 				s.biggest ? tile(inchesText(s.biggest.inches), 'Biggest fish', `${s.biggest.name || 'Unknown'} · ${s.biggest.year}`) : null,
 				s.bestTrip ? tile(String(s.bestTrip.caught), 'Best trip', `${s.bestTrip.year}, whole group`) : null,
 				s.bestDay ? tile(String(s.bestDay.caught), 'Best day', `${s.bestDay.name} · ${s.bestDay.year} day ${s.bestDay.day}`) : null,
@@ -1163,16 +1200,73 @@
 				table.replaceChildren(el('thead', {}, [headRow]), body);
 			}
 			renderTable();
-			card.appendChild(el('div', { class: 'fish-scroll' }, [table]));
-			card.appendChild(el('div', { class: 'fish-note', text: 'Click a column heading to sort. "First fish" and "Biggest" count the days each person landed the first and the biggest fish. Per trip is fish caught per trip fished.' }));
+			if (rows.length) card.appendChild(el('div', { class: 'fish-scroll' }, [table]));
 			return card;
+		}
+
+		// The caught/kept table with its Total row, badges and sort hint, for a trip
+		// that recorded fish counts. Added to `card`.
+		function appendCountsTable(card, t) {
+			const tot = tripTotals(t);
+			// Whether any day's first or biggest fish belongs to someone in the table
+			// (decides the legend), worked out up front so a sort can't change it.
+			const anyBadge = t.days.some((d) => t.anglers.some((a) => sameName(d.first, a.name) || sameName(d.biggest, a.name)));
+
+			// Click a heading in the second row to sort the fishermen (the Total row
+			// stays put underneath). Same rules as the stats table and myffl.html's
+			// makeTableSort: natural direction, reverse, then the order they were
+			// entered; ties keep that order; a blank count stays last either way.
+			const multi = t.days.length > 1;
+			const SORTS = { name: { dir: 1, value: (a) => a.name.toLowerCase() } };
+			t.days.forEach((_, j) => {
+				SORTS[`c${j}`] = { dir: -1, value: (a) => a.days[j].caught, missingLast: true };
+				SORTS[`k${j}`] = { dir: -1, value: (a) => a.days[j].kept, missingLast: true };
+			});
+			SORTS.cT = { dir: -1, value: (a) => a.caught, missingLast: true };
+			SORTS.kT = { dir: -1, value: (a) => a.kept, missingLast: true };
+
+			const table = el('table', { class: 'fish-table' });
+			const { sortedRows, sortableHeader } = makeTableSort(tot.anglers, SORTS, () => renderTable());
+			const top = el('tr', {}, [el('th', { text: '' })]);
+			t.days.forEach((_, j) => top.appendChild(el('th', { colspan: '2', class: 'fish-split', text: `Day ${j + 1}` })));
+			if (multi) top.appendChild(el('th', { colspan: '2', class: 'fish-split', text: 'Total' }));
+			const foot = el('tr', {}, [el('td', { text: 'Total' })]);
+			tot.days.forEach((d) => { foot.appendChild(el('td', { class: 'fish-split', text: fmt(d.caught) })); foot.appendChild(el('td', { text: fmt(d.kept) })); });
+			if (multi) { foot.appendChild(el('td', { class: 'fish-split', text: fmt(tot.caught) })); foot.appendChild(el('td', { text: fmt(tot.kept) })); }
+			const tfoot = el('tfoot', {}, [foot]);
+
+			function renderTable() {
+				const sub = el('tr', {}, [sortableHeader('Fisherman', 'name')]);
+				const pair = (ck, kk, which) => { sub.appendChild(sortableHeader('Caught', ck, 'fish-split', `Sort by ${which} caught`)); sub.appendChild(sortableHeader('Kept', kk, '', `Sort by ${which} kept`)); };
+				t.days.forEach((_, j) => pair(`c${j}`, `k${j}`, `day ${j + 1}`));
+				if (multi) pair('cT', 'kT', 'total');
+				const body = el('tbody');
+				for (const a of sortedRows()) {
+					const row = el('tr', {}, [el('td', { text: a.name })]);
+					a.days.forEach((d, j) => {
+						// First and biggest fish of the day sit on the row of whoever landed them.
+						const day = t.days[j];
+						const badges = [];
+						if (sameName(day.first, a.name)) badges.push(el('span', { class: 'fish-badge fish-first', title: 'First fish of the day', text: '1st' }));
+						if (sameName(day.biggest, a.name)) badges.push(el('span', { class: 'fish-badge fish-big', title: 'Biggest fish of the day', text: day.biggestInches != null ? `★ ${inchesText(day.biggestInches)}` : '★' }));
+						row.appendChild(el('td', { class: 'fish-split' }, [...badges, document.createTextNode(fmt(d.caught))]));
+						row.appendChild(el('td', { text: fmt(d.kept) }));
+					});
+					if (multi) { row.appendChild(el('td', { class: 'fish-split fish-total', text: fmt(a.caught) })); row.appendChild(el('td', { class: 'fish-total', text: fmt(a.kept) })); }
+					body.appendChild(row);
+				}
+				table.replaceChildren(el('thead', {}, [top, sub]), body, tfoot);
+			}
+			renderTable();
+			card.appendChild(el('div', { class: 'fish-scroll' }, [table]));
+			card.appendChild(el('div', { class: 'fish-note', text: `${anyBadge ? '1st = first fish of the day · ★ = biggest fish of the day (length) · ' : ''}Click a heading to sort.` }));
 		}
 
 		function buildTripCard(t) {
 			const upcoming = isUpcoming(t);
 			const head = el('h2', { class: 'card-heading' }, [
 				document.createTextNode(String(t.year)),
-				t.location ? el('span', { class: 'fish-where', text: ` · ${t.location}` }) : null,
+				t.location || t.date ? el('span', { class: 'fish-where', text: ` · ${[t.location, t.date ? formatTripDates(t.date, t.days.length) : ''].filter(Boolean).join(' · ')}` }) : null,
 				upcoming ? el('span', { class: 'fish-chip', text: 'Upcoming' }) : null,
 			]);
 			const card = el('div', { class: 'card' }, [head]);
@@ -1181,43 +1275,12 @@
 				card.appendChild(el('div', { class: 'task-empty', text: t.anglers.length ? `Fishing: ${t.anglers.map((a) => a.name).join(', ')}. Counts will show up here after the trip.` : 'Counts will show up here after the trip.' }));
 				return card;
 			}
-			const tot = tripTotals(t);
-			const table = el('table', { class: 'fish-table' });
-			const top = el('tr', {}, [el('th', { text: '' })]);
-			t.days.forEach((_, j) => top.appendChild(el('th', { colspan: '2', class: 'fish-split', text: `Day ${j + 1}` })));
-			if (t.days.length > 1) top.appendChild(el('th', { colspan: '2', class: 'fish-split', text: 'Total' }));
-			const sub = el('tr', {}, [el('th', { text: 'Fisherman' })]);
-			const pair = (split) => { sub.appendChild(el('th', { class: split ? 'fish-split' : '', text: 'Caught' })); sub.appendChild(el('th', { text: 'Kept' })); };
-			t.days.forEach(() => pair(true));
-			if (t.days.length > 1) pair(true);
-			table.appendChild(el('thead', {}, [top, sub]));
-			const body = el('tbody');
-			let anyBadge = false;
-			for (const a of tot.anglers) {
-				const row = el('tr', {}, [el('td', { text: a.name })]);
-				a.days.forEach((d, j) => {
-					// First and biggest fish of the day sit on the row of whoever landed them.
-					const day = t.days[j];
-					const badges = [];
-					if (sameName(day.first, a.name)) { badges.push(el('span', { class: 'fish-badge fish-first', title: 'First fish of the day', text: '1st' })); anyBadge = true; }
-					if (sameName(day.biggest, a.name)) { badges.push(el('span', { class: 'fish-badge fish-big', title: 'Biggest fish of the day', text: day.biggestInches != null ? `★ ${inchesText(day.biggestInches)}` : '★' })); anyBadge = true; }
-					row.appendChild(el('td', { class: 'fish-split' }, [...badges, document.createTextNode(fmt(d.caught))]));
-					row.appendChild(el('td', { text: fmt(d.kept) }));
-				});
-				if (t.days.length > 1) { row.appendChild(el('td', { class: 'fish-split fish-total', text: fmt(a.caught) })); row.appendChild(el('td', { class: 'fish-total', text: fmt(a.kept) })); }
-				body.appendChild(row);
-			}
-			table.appendChild(body);
-			const foot = el('tr', {}, [el('td', { text: 'Total' })]);
-			tot.days.forEach((d) => { foot.appendChild(el('td', { class: 'fish-split', text: fmt(d.caught) })); foot.appendChild(el('td', { text: fmt(d.kept) })); });
-			if (t.days.length > 1) { foot.appendChild(el('td', { class: 'fish-split', text: fmt(tot.caught) })); foot.appendChild(el('td', { text: fmt(tot.kept) })); }
-			table.appendChild(el('tfoot', {}, [foot]));
-			card.appendChild(el('div', { class: 'fish-scroll' }, [table]));
-			if (anyBadge) card.appendChild(el('div', { class: 'fish-note', text: '1st = first fish of the day · ★ = biggest fish of the day (length)' }));
+			if (hasCounts(t)) appendCountsTable(card, t);
 
-			// Anything the table can't show: a first or biggest fish credited to
-			// someone who isn't a row on this trip, and the species kept.
-			const listed = (name) => t.anglers.some((a) => sameName(a.name, name));
+			// Anything the table doesn't show: a first or biggest fish credited to
+			// someone who isn't a row on this trip, and the species kept. A trip with
+			// no fish counts has no table, so everything it has is listed here.
+			const listed = (name) => hasCounts(t) && t.anglers.some((a) => sameName(a.name, name));
 			const facts = el('ul', { class: 'fish-days' });
 			t.days.forEach((d, j) => {
 				const bits = [];
@@ -1228,6 +1291,8 @@
 				if (bits.length) facts.appendChild(el('li', {}, [el('b', { text: `Day ${j + 1} ` }), document.createTextNode(bits.join(' · '))]));
 			});
 			if (facts.children.length) card.appendChild(facts);
+			// Played, but nothing was kept for it: say so rather than show an empty card.
+			if (!hasCounts(t) && !facts.children.length) card.appendChild(el('div', { class: 'task-empty', text: 'No stats were recorded for this trip.' }));
 			return card;
 		}
 
@@ -1340,7 +1405,15 @@
 			details.open = !!tripOpen[t.id];
 			details.addEventListener('toggle', () => { tripOpen[t.id] = details.open; });
 
-			details.appendChild(el('div', { class: 'trip-fields' }, [labelled('Year', countInput(t, 'year', { label: 'Year' })), labelled('Location', textField(t, 'location', 'e.g. River Bend', 'Location'))]));
+			// The date is the first day. Setting it also sets the year (the server
+			// refuses a date whose year differs from the trip's).
+			const yearInput = countInput(t, 'year', { label: 'Year' });
+			const dateInput = el('input', { type: 'date', class: 'task-input', value: t.date || '', 'aria-label': 'Date of the first day' });
+			dateInput.addEventListener('input', () => {
+				t.date = dateInput.value || null;
+				if (t.date) { t.year = Number(t.date.slice(0, 4)); yearInput.value = String(t.year); }
+			});
+			details.appendChild(el('div', { class: 'trip-fields' }, [labelled('Year', yearInput), labelled('Date (first day)', dateInput), labelled('Location', textField(t, 'location', 'e.g. River Bend', 'Location'))]));
 
 			details.appendChild(el('div', { class: 'trip-sub', text: 'Fish caught and kept' }));
 			const grid = el('table', { class: 'trip-grid' });
@@ -1427,6 +1500,7 @@
 				tripOpen[id] = true;
 				tripsDraft.unshift({
 					id,
+					date: null,
 					year: Math.max(new Date().getFullYear(), ...(tripsDraft.map((x) => x.year || 0))) + (tripsDraft.some((x) => x.year === new Date().getFullYear()) ? 1 : 0),
 					location: last ? last.location : '',
 					days,
@@ -1442,7 +1516,7 @@
 			discard.addEventListener('click', () => { tripsDraft = copyTrips(trips); tripsErrors = []; refreshTripsCard(); });
 			card.appendChild(el('div', { class: 'ql-actions' }, [add, save, discard]));
 			if (tripsErrors.length) card.appendChild(el('ul', { class: 'ql-errors' }, tripsErrors.map((t) => el('li', { text: t }))));
-			card.appendChild(el('div', { class: 'ql-note', text: 'Newest first, as shown on the Ice Fishing tab. Leave a count blank if it was not recorded (a blank is not a zero); a trip with no counts shows as Upcoming. Species counts are fish kept.' }));
+			card.appendChild(el('div', { class: 'ql-note', text: 'Newest first, as shown on the Ice Fishing tab. Leave a count blank if it was not recorded (a blank is not a zero). Species counts are fish kept. A trip with a date is Upcoming until that day and played from then on, even with no stats. Without a date, a past year counts as played, a future year as upcoming, and this year as upcoming until something is filled in. A played trip shows whatever was captured for it.' }));
 			return card;
 		}
 
