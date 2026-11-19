@@ -6,7 +6,7 @@
 	<title>myFish</title>
 	<script src="/site-switcher.js" data-site="fish"></script>
 	<meta property="og:title" content="Ice Fishing Stats"/>
-	<meta property="og:image" content="https://melbostads.com/images/icefishingimage.jpeg"/>
+	<meta property="og:image" content="https://melbostads.com/images/fishlogo_large.png"/>
 	<link rel="apple-touch-icon" href="/fishicons/apple-touch-icon.png?v=1">
 	<link rel="icon" type="image/png" sizes="32x32" href="/fishicons/favicon-32x32.png?v=1">
 	<link rel="icon" type="image/png" sizes="16x16" href="/fishicons/favicon-16x16.png?v=1">
@@ -1096,7 +1096,7 @@
 			const people = new Map();
 			const person = (name) => {
 				const key = name.toLowerCase();
-				if (!people.has(key)) people.set(key, { name, trips: 0, caught: 0, kept: 0, bestDay: null, first: 0, biggest: 0 });
+				if (!people.has(key)) people.set(key, { name, trips: 0, countedTrips: 0, caught: 0, kept: 0, bestDay: null, first: 0, biggest: 0 });
 				return people.get(key);
 			};
 			const stats = { trips: done.length, countedTrips: counted.length, caught: 0, kept: 0, bestTrip: null, bestDay: null, biggest: null };
@@ -1108,9 +1108,12 @@
 				if (hasCounts(t)) stats.kept += tot.kept ?? 0;
 				if (tot.caught != null && (!stats.bestTrip || tot.caught > stats.bestTrip.caught)) stats.bestTrip = { caught: tot.caught, year: t.year };
 				for (const a of tot.anglers) {
-					if (a.caught == null && a.kept == null) continue;
+					// Every angler on a played trip counts it, stats or not; only
+					// trips where they have counts feed their per-trip average.
 					const p = person(a.name);
 					p.trips++;
+					if (a.caught == null && a.kept == null) continue;
+					p.countedTrips++;
 					p.caught += a.caught ?? 0;
 					p.kept += a.kept ?? 0;
 					a.days.forEach((d, j) => {
@@ -1197,7 +1200,7 @@
 				trips: { dir: -1, value: (p) => p.trips },
 				caught: { dir: -1, value: (p) => p.caught },
 				kept: { dir: -1, value: (p) => p.kept },
-				perTrip: { dir: -1, value: (p) => p.caught / p.trips },
+				perTrip: { dir: -1, value: (p) => (p.countedTrips ? p.caught / p.countedTrips : null), missingLast: true },
 				bestDay: { dir: -1, value: (p) => (p.bestDay ? p.bestDay.caught : null), missingLast: true },
 				first: { dir: -1, value: (p) => p.first },
 				biggest: { dir: -1, value: (p) => p.biggest },
@@ -1212,7 +1215,7 @@
 					body.appendChild(el('tr', {}, [
 						el('td', { text: p.name }), el('td', { text: String(p.trips) }),
 						el('td', { class: 'fish-total', text: String(p.caught) }), el('td', { text: String(p.kept) }),
-						el('td', { text: (p.caught / p.trips).toFixed(1) }), el('td', { text: p.bestDay ? String(p.bestDay.caught) : '–' }),
+						el('td', { text: p.countedTrips ? (p.caught / p.countedTrips).toFixed(1) : '–' }), el('td', { text: p.bestDay ? String(p.bestDay.caught) : '–' }),
 						el('td', { text: String(p.first) }), el('td', { text: String(p.biggest) }),
 					]));
 				}
