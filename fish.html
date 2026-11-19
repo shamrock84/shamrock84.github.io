@@ -1101,8 +1101,8 @@
 				else { sortKey = null; sortDir = 0; }
 				onChange();
 			}
-			function sortableHeader(label, key) {
-				const th = el('th', { class: 'sortable', tabindex: '0', title: `Sort by ${label}`, 'aria-sort': sortKey === key ? (sortDir === 1 ? 'ascending' : 'descending') : 'none', text: label });
+			function sortableHeader(label, key, extraClass = '', title = `Sort by ${label}`) {
+				const th = el('th', { class: `${extraClass} sortable`.trim(), tabindex: '0', title, 'aria-sort': sortKey === key ? (sortDir === 1 ? 'ascending' : 'descending') : 'none', text: label });
 				if (sortKey === key) th.appendChild(el('span', { class: 'sort-arrow', text: sortDir === 1 ? ' ▲' : ' ▼' }));
 				th.addEventListener('click', () => cycleSort(key));
 				th.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); cycleSort(key); } });
@@ -1182,38 +1182,58 @@
 				return card;
 			}
 			const tot = tripTotals(t);
+			// Whether any day's first or biggest fish belongs to someone in the table
+			// (decides the legend), worked out up front so a sort can't change it.
+			const anyBadge = t.days.some((d) => t.anglers.some((a) => sameName(d.first, a.name) || sameName(d.biggest, a.name)));
+
+			// Click a heading in the second row to sort the fishermen (the Total row
+			// stays put underneath). Same rules as the stats table and myffl.html's
+			// makeTableSort: natural direction, reverse, then the order they were
+			// entered; ties keep that order; a blank count stays last either way.
+			const multi = t.days.length > 1;
+			const SORTS = { name: { dir: 1, value: (a) => a.name.toLowerCase() } };
+			t.days.forEach((_, j) => {
+				SORTS[`c${j}`] = { dir: -1, value: (a) => a.days[j].caught, missingLast: true };
+				SORTS[`k${j}`] = { dir: -1, value: (a) => a.days[j].kept, missingLast: true };
+			});
+			SORTS.cT = { dir: -1, value: (a) => a.caught, missingLast: true };
+			SORTS.kT = { dir: -1, value: (a) => a.kept, missingLast: true };
+
 			const table = el('table', { class: 'fish-table' });
+			const { sortedRows, sortableHeader } = makeTableSort(tot.anglers, SORTS, () => renderTable());
 			const top = el('tr', {}, [el('th', { text: '' })]);
 			t.days.forEach((_, j) => top.appendChild(el('th', { colspan: '2', class: 'fish-split', text: `Day ${j + 1}` })));
-			if (t.days.length > 1) top.appendChild(el('th', { colspan: '2', class: 'fish-split', text: 'Total' }));
-			const sub = el('tr', {}, [el('th', { text: 'Fisherman' })]);
-			const pair = (split) => { sub.appendChild(el('th', { class: split ? 'fish-split' : '', text: 'Caught' })); sub.appendChild(el('th', { text: 'Kept' })); };
-			t.days.forEach(() => pair(true));
-			if (t.days.length > 1) pair(true);
-			table.appendChild(el('thead', {}, [top, sub]));
-			const body = el('tbody');
-			let anyBadge = false;
-			for (const a of tot.anglers) {
-				const row = el('tr', {}, [el('td', { text: a.name })]);
-				a.days.forEach((d, j) => {
-					// First and biggest fish of the day sit on the row of whoever landed them.
-					const day = t.days[j];
-					const badges = [];
-					if (sameName(day.first, a.name)) { badges.push(el('span', { class: 'fish-badge fish-first', title: 'First fish of the day', text: '1st' })); anyBadge = true; }
-					if (sameName(day.biggest, a.name)) { badges.push(el('span', { class: 'fish-badge fish-big', title: 'Biggest fish of the day', text: day.biggestInches != null ? `★ ${inchesText(day.biggestInches)}` : '★' })); anyBadge = true; }
-					row.appendChild(el('td', { class: 'fish-split' }, [...badges, document.createTextNode(fmt(d.caught))]));
-					row.appendChild(el('td', { text: fmt(d.kept) }));
-				});
-				if (t.days.length > 1) { row.appendChild(el('td', { class: 'fish-split fish-total', text: fmt(a.caught) })); row.appendChild(el('td', { class: 'fish-total', text: fmt(a.kept) })); }
-				body.appendChild(row);
-			}
-			table.appendChild(body);
+			if (multi) top.appendChild(el('th', { colspan: '2', class: 'fish-split', text: 'Total' }));
 			const foot = el('tr', {}, [el('td', { text: 'Total' })]);
 			tot.days.forEach((d) => { foot.appendChild(el('td', { class: 'fish-split', text: fmt(d.caught) })); foot.appendChild(el('td', { text: fmt(d.kept) })); });
-			if (t.days.length > 1) { foot.appendChild(el('td', { class: 'fish-split', text: fmt(tot.caught) })); foot.appendChild(el('td', { text: fmt(tot.kept) })); }
-			table.appendChild(el('tfoot', {}, [foot]));
+			if (multi) { foot.appendChild(el('td', { class: 'fish-split', text: fmt(tot.caught) })); foot.appendChild(el('td', { text: fmt(tot.kept) })); }
+			const tfoot = el('tfoot', {}, [foot]);
+
+			function renderTable() {
+				const sub = el('tr', {}, [sortableHeader('Fisherman', 'name')]);
+				const pair = (ck, kk, which) => { sub.appendChild(sortableHeader('Caught', ck, 'fish-split', `Sort by ${which} caught`)); sub.appendChild(sortableHeader('Kept', kk, '', `Sort by ${which} kept`)); };
+				t.days.forEach((_, j) => pair(`c${j}`, `k${j}`, `day ${j + 1}`));
+				if (multi) pair('cT', 'kT', 'total');
+				const body = el('tbody');
+				for (const a of sortedRows()) {
+					const row = el('tr', {}, [el('td', { text: a.name })]);
+					a.days.forEach((d, j) => {
+						// First and biggest fish of the day sit on the row of whoever landed them.
+						const day = t.days[j];
+						const badges = [];
+						if (sameName(day.first, a.name)) badges.push(el('span', { class: 'fish-badge fish-first', title: 'First fish of the day', text: '1st' }));
+						if (sameName(day.biggest, a.name)) badges.push(el('span', { class: 'fish-badge fish-big', title: 'Biggest fish of the day', text: day.biggestInches != null ? `★ ${inchesText(day.biggestInches)}` : '★' }));
+						row.appendChild(el('td', { class: 'fish-split' }, [...badges, document.createTextNode(fmt(d.caught))]));
+						row.appendChild(el('td', { text: fmt(d.kept) }));
+					});
+					if (multi) { row.appendChild(el('td', { class: 'fish-split fish-total', text: fmt(a.caught) })); row.appendChild(el('td', { class: 'fish-total', text: fmt(a.kept) })); }
+					body.appendChild(row);
+				}
+				table.replaceChildren(el('thead', {}, [top, sub]), body, tfoot);
+			}
+			renderTable();
 			card.appendChild(el('div', { class: 'fish-scroll' }, [table]));
-			if (anyBadge) card.appendChild(el('div', { class: 'fish-note', text: '1st = first fish of the day · ★ = biggest fish of the day (length)' }));
+			card.appendChild(el('div', { class: 'fish-note', text: `${anyBadge ? '1st = first fish of the day · ★ = biggest fish of the day (length) · ' : ''}Click a heading to sort.` }));
 
 			// Anything the table can't show: a first or biggest fish credited to
 			// someone who isn't a row on this trip, and the species kept.
