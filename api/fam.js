@@ -43,14 +43,23 @@ import { resolveStore } from './plans.js';
 import { fetchSharedAlbum } from './_lib/sharedalbum.mjs';
 import { fetchCalendar, monthWindow } from './_lib/calendarfeed.mjs';
 import { validateTaskPatch, applyTaskPatch, validateQuickLinks, normalizeQuickLinks } from './vikings.js';
+import { validateTrips, normalizeTrips, SEED_TRIPS } from './_lib/fishtrips.mjs';
 
 // Upstash keys. Deliberately not vikings.js's or bangers.js's: sharing one
 // would show each page the other's tasks and toolbar.
 const TASKS_KEY = 'fam:tasks';
 const QUICKLINKS_KEY = 'fam:quicklinks';
 const MAX_TASKS = 300;
+// fish.html (myFish) rides this same endpoint, because the Hobby cap of 12
+// functions is spent: its own Tasks, Quick Links and trip log, under their own
+// keys (`fishtasks` / `fishquicklinks` / `fishtrips`). Never share keys with
+// myFAM's. `fishtrips` GET is public (the Ice Fishing tab is for everyone) and
+// answers with the seed trips until the first Save (api/_lib/fishtrips.mjs).
+const FISH_TASKS_KEY = 'fish:tasks';
+const FISH_QUICKLINKS_KEY = 'fish:quicklinks';
+const FISH_TRIPS_KEY = 'fish:trips';
 
-export { TASKS_KEY, QUICKLINKS_KEY };
+export { TASKS_KEY, QUICKLINKS_KEY, FISH_TASKS_KEY, FISH_QUICKLINKS_KEY, FISH_TRIPS_KEY };
 
 // Public, store-less feeds share one cached path (Calendar), and Photos has its
 // own below. Module-level: resets on a cold start, which is fine.
@@ -158,9 +167,28 @@ async function handleStoreResource(req, res, resource) {
     return;
   }
   try {
-    if (resource === 'quicklinks') {
+    if (resource === 'fishtrips') {
       if (req.method === 'GET') {
-        res.status(200).json({ links: (await storeGet(store, QUICKLINKS_KEY)) || [] });
+        const stored = await storeGet(store, FISH_TRIPS_KEY);
+        res.status(200).json(Array.isArray(stored) ? { trips: stored, seeded: false } : { trips: SEED_TRIPS, seeded: true });
+        return;
+      }
+      const { errors } = validateTrips(req.body);
+      if (errors.length) {
+        res.status(400).json({ error: 'Nothing was saved — the request was malformed:', details: errors });
+        return;
+      }
+      const trips = normalizeTrips(req.body.trips);
+      await storeSet(store, FISH_TRIPS_KEY, trips);
+      res.status(200).json({ trips, seeded: false });
+      return;
+    }
+    const fish = resource === 'fishtasks' || resource === 'fishquicklinks';
+    const quickKey = fish ? FISH_QUICKLINKS_KEY : QUICKLINKS_KEY;
+    const tasksKey = fish ? FISH_TASKS_KEY : TASKS_KEY;
+    if (resource === 'quicklinks' || resource === 'fishquicklinks') {
+      if (req.method === 'GET') {
+        res.status(200).json({ links: (await storeGet(store, quickKey)) || [] });
         return;
       }
       const { errors } = validateQuickLinks(req.body);
@@ -169,11 +197,11 @@ async function handleStoreResource(req, res, resource) {
         return;
       }
       const links = normalizeQuickLinks(req.body.links);
-      await storeSet(store, QUICKLINKS_KEY, links);
+      await storeSet(store, quickKey, links);
       res.status(200).json({ links });
       return;
     }
-    const storedTasks = (await storeGet(store, TASKS_KEY)) || {};
+    const storedTasks = (await storeGet(store, tasksKey)) || {};
     if (req.method === 'GET') {
       res.status(200).json({ tasks: storedTasks });
       return;
@@ -188,7 +216,7 @@ async function handleStoreResource(req, res, resource) {
       res.status(400).json({ error: `Nothing was saved — more than ${MAX_TASKS} tasks.` });
       return;
     }
-    await storeSet(store, TASKS_KEY, nextTasks);
+    await storeSet(store, tasksKey, nextTasks);
     res.status(200).json({ tasks: nextTasks });
   } catch (err) {
     res.status(502).json({ error: `Store unavailable: ${err.message}` });
@@ -218,14 +246,14 @@ export default async function handler(req, res, fetchFn = fetch) {
     await handleFeed(res, { name: `calendar:${win.month}`, envVar: 'FAM_CALENDAR_ICS', what: 'calendar', load: (url) => fetchCalendar(url, fetchFn, win).then((cal) => ({ ...cal, month: win.month })) });
     return;
   }
-  // Only the two store resources exist here; anything else is a mistake.
-  if (resource !== 'tasks' && resource !== 'quicklinks') {
-    res.status(req.method === 'GET' ? 405 : 400).json({ error: 'Unknown resource: use "tasks", "quicklinks" or (GET) "photos" / "calendar".' });
+  // Only the store resources exist here; anything else is a mistake.
+  if (!['tasks', 'quicklinks', 'fishtasks', 'fishquicklinks', 'fishtrips'].includes(resource)) {
+    res.status(req.method === 'GET' ? 405 : 400).json({ error: 'Unknown resource: use "tasks", "quicklinks", "fishtasks", "fishquicklinks", "fishtrips" or (GET) "photos" / "calendar".' });
     return;
   }
 
-  // Everything but the public quick-links read needs a login.
-  if (req.method === 'POST' || resource === 'tasks') {
+  // Everything but the public quick-links and trip-log reads needs a login.
+  if (req.method === 'POST' || resource === 'tasks' || resource === 'fishtasks') {
     const sessionSecret = process.env.SESSION_SECRET;
     if (!sessionSecret) {
       res.status(500).json({ error: 'SESSION_SECRET is not configured on this deployment.' });

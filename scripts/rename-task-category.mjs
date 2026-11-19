@@ -17,11 +17,14 @@
 //   BANGERS_TASKS=1 ...   # the bangers.html Admin tab's own list instead
 //   FAM_TASKS=1 ...       # index.html's (myFAM) Admin tab's own list instead
 
-const FAM = process.env.FAM_TASKS === '1';
-const BANGERS = !FAM && process.env.BANGERS_TASKS === '1';
-const VIKINGS = FAM || BANGERS || process.env.VIKINGS_TASKS === '1';
+// FISH_TASKS=1 is fish.html's (api/fam.js `?resource=fishtasks`).
+const FISH = process.env.FISH_TASKS === '1';
+const FAM = !FISH && process.env.FAM_TASKS === '1';
+const BANGERS = !FISH && !FAM && process.env.BANGERS_TASKS === '1';
+const VIKINGS = FISH || FAM || BANGERS || process.env.VIKINGS_TASKS === '1';
 // The small pages keep their own task lists behind their own endpoints.
-const OWN_API = FAM ? 'fam' : BANGERS ? 'bangers' : 'vikings';
+const OWN_API = FISH || FAM ? 'fam' : BANGERS ? 'bangers' : 'vikings';
+const TASKS_RESOURCE = FISH ? 'fishtasks' : 'tasks';
 const API_BASE = process.env.MYFFL_API_BASE || 'https://shamrock84-github-io.vercel.app';
 
 // Pure, so the rename rule can be tested without a network: returns the
@@ -62,7 +65,7 @@ async function main() {
 	}
 	const token = loginBody.token;
 
-	const getRes = await fetch(`${API_BASE}/api/${VIKINGS ? `${OWN_API}?resource=tasks` : 'plans'}`, { headers: { Authorization: `Bearer ${token}` } });
+	const getRes = await fetch(`${API_BASE}/api/${VIKINGS ? `${OWN_API}?resource=${TASKS_RESOURCE}` : 'plans'}`, { headers: { Authorization: `Bearer ${token}` } });
 	const getBody = await getRes.json();
 	if (!getRes.ok) {
 		console.error(`Fetching tasks failed (${getRes.status}): ${getBody.error || 'unknown error'}`);
@@ -84,7 +87,7 @@ async function main() {
 	const postRes = await fetch(`${API_BASE}/api/${VIKINGS ? OWN_API : 'plans'}`, {
 		method: 'POST',
 		headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-		body: JSON.stringify(VIKINGS ? { resource: 'tasks', tasks: changed } : { plans, mode: 'replace' }),
+		body: JSON.stringify(VIKINGS ? { resource: TASKS_RESOURCE, tasks: changed } : { plans, mode: 'replace' }),
 	});
 	const postBody = await postRes.json();
 	if (!postRes.ok) {

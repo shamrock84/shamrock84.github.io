@@ -24,12 +24,13 @@ const { SITES, neighbours } = context.SiteSwitcher;
 
 // The cycle.
 const keys = [...SITES].map((s) => s.key);
-assert.deepEqual(keys, ['fam', 'vst', 'ffl', 'bangers']);
+assert.deepEqual(keys, ['fam', 'vst', 'ffl', 'bangers', 'fish']);
 const at = (k) => { const n = neighbours(SITES, k); return [n.prev.key, n.current.key, n.next.key]; };
-assert.deepEqual(at('fam'), ['bangers', 'fam', 'vst']);
+assert.deepEqual(at('fam'), ['fish', 'fam', 'vst']);
 assert.deepEqual(at('vst'), ['fam', 'vst', 'ffl']);
 assert.deepEqual(at('ffl'), ['vst', 'ffl', 'bangers']);
-assert.deepEqual(at('bangers'), ['ffl', 'bangers', 'fam']);
+assert.deepEqual(at('bangers'), ['ffl', 'bangers', 'fish']);
+assert.deepEqual(at('fish'), ['bangers', 'fish', 'fam']);
 assert.equal(neighbours(SITES, 'nope'), null);
 // Two sites still work (prev and next are the same page).
 const two = SITES.slice(0, 2);
@@ -38,7 +39,7 @@ assert.equal(neighbours(two, 'fam').next.key, 'vst');
 
 // Every page loads the script and declares itself, and its own logo is the one
 // the switcher draws for it elsewhere.
-const pages = { ffl: 'myffl.html', vst: 'vikings.html', bangers: 'bangers.html', fam: 'index.html' };
+const pages = { ffl: 'myffl.html', vst: 'vikings.html', bangers: 'bangers.html', fam: 'index.html', fish: 'fish.html' };
 for (const site of SITES) {
 	const html = fs.readFileSync(path.join(root, pages[site.key]), 'utf8');
 	assert.ok(

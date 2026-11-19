@@ -1,5 +1,5 @@
-// The header site switcher shared by myFFL, myVST, myBangers and myFAM (the
-// melbostads.com home page, index.html).
+// The header site switcher shared by myFFL, myVST, myBangers, myFAM (the
+// melbostads.com home page, index.html) and myFish.
 //
 // Each page loads this from <head> with a plain (non-deferred) script tag and
 // says which site it is: <script src="/site-switcher.js" data-site="ffl">.
@@ -7,7 +7,7 @@
 // "my" + logo markup, so the existing .site-logo dark-mode rules still apply)
 // into a strip, flanked by the previous and next site's logo, faded, each with
 // an arrow. A click on an arrow or neighbour, or a horizontal swipe on the
-// strip, navigates there. Four sites cycle: the last one's "next" is the
+// strip, navigates there. Five sites cycle: the last one's "next" is the
 // first. It behaves the same logged in or out; it only links to public pages.
 //
 // Why it is a plain script in <head> and not deferred: the slide transition
@@ -46,6 +46,8 @@
 		{ key: 'vst', name: 'myVST', href: '/vikings.html', img: '/images/seasonticketlogo.png', alt: 'VST — Vikings Season Tickets' },
 		{ key: 'ffl', name: 'myFFL', href: '/myffl.html', img: '/images/ffl_black.gif', alt: 'FFL' },
 		{ key: 'bangers', name: 'myBangers', href: '/bangers.html', img: '/images/bangerslogo.png', alt: 'Certified Banger' },
+		// Black-on-transparent SVG like the home page's, so the dark-mode invert filter works on it.
+		{ key: 'fish', name: 'myFish', href: '/fish.html', img: '/images/fishlogo.svg', alt: 'Fish — Ice Fishing' },
 	];
 
 	// The sites either side of `key`, wrapping. Pure, so the test can run it.
