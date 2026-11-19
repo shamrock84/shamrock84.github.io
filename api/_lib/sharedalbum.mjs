@@ -27,6 +27,8 @@
 // computed a host that does not exist). If a token of this shape ever fails the
 // same way, the error now names the host that was tried.
 
+import { diagnoseNewLink } from './albumdiag.mjs';
+
 const BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 // Album tokens are url-safe base64-ish; anything else is refused before it can
 // reach a URL.
@@ -152,7 +154,15 @@ export async function fetchSharedAlbum(token, fetchFn = fetch) {
       if (!/HTTP 404\b/.test(String(err.message))) throw err; // only "no such album" moves on to the next form
     }
   }
-  if (!found) throw lastErr;
+  if (!found) {
+    // TEMPORARY (see albumdiag.mjs): for a dashed token, say how Apple's own page loads it.
+    if (tokenForms(token).length > 1) {
+      let extra = '';
+      try { extra = await diagnoseNewLink(token, fetchFn); } catch (e) { /* the original error stands */ }
+      if (extra) lastErr.message = `${lastErr.message} [diagnostic: ${extra}]`;
+    }
+    throw lastErr;
+  }
   const { json: stream, host, form: pathToken } = found;
   token = pathToken;
   const guids = (stream.photos || []).map((p) => p.photoGuid).filter(Boolean);
