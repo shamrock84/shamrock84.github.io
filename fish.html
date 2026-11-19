@@ -1034,22 +1034,31 @@
 			}));
 			return { anglers, days, caught: sumOf(days.map((d) => d.caught)), kept: sumOf(days.map((d) => d.kept)) };
 		}
-		// A trip with no counts at all hasn't happened yet.
-		const isUpcoming = (t) => tripTotals(t).caught == null && tripTotals(t).kept == null;
+		// What a trip has, so a year shows whatever was captured for it. A trip with
+		// nothing filled in at all hasn't happened yet ("Upcoming"); one with only
+		// a biggest fish, say, is shown with just that. Fish counts (caught/kept)
+		// are what the table, the totals and every average are built from, so a
+		// trip without them is shown but never counted in those.
+		const hasCounts = (t) => { const tot = tripTotals(t); return tot.caught != null || tot.kept != null; };
+		const hasDayFacts = (t) => t.days.some((d) => d.first || d.biggest || d.biggestInches != null || (d.species || []).some((x) => x.count != null));
+		const isUpcoming = (t) => !hasCounts(t) && !hasDayFacts(t);
 
 		function allTimeStats(list) {
 			const done = list.filter((t) => !isUpcoming(t));
+			const counted = done.filter(hasCounts);
 			const people = new Map();
 			const person = (name) => {
 				const key = name.toLowerCase();
 				if (!people.has(key)) people.set(key, { name, trips: 0, caught: 0, kept: 0, bestDay: null, first: 0, biggest: 0 });
 				return people.get(key);
 			};
-			const stats = { trips: done.length, caught: 0, kept: 0, bestTrip: null, bestDay: null, biggest: null };
+			const stats = { trips: done.length, countedTrips: counted.length, caught: 0, kept: 0, bestTrip: null, bestDay: null, biggest: null };
 			for (const t of done) {
 				const tot = tripTotals(t);
-				stats.caught += tot.caught ?? 0;
-				stats.kept += tot.kept ?? 0;
+				// Fish counts come only from trips that recorded some; first and
+				// biggest fish below come from every trip that has them.
+				if (hasCounts(t)) stats.caught += tot.caught ?? 0;
+				if (hasCounts(t)) stats.kept += tot.kept ?? 0;
 				if (tot.caught != null && (!stats.bestTrip || tot.caught > stats.bestTrip.caught)) stats.bestTrip = { caught: tot.caught, year: t.year };
 				for (const a of tot.anglers) {
 					if (a.caught == null && a.kept == null) continue;
@@ -1124,8 +1133,8 @@
 			const keep = s.caught ? `${Math.round((s.kept / s.caught) * 100)}% kept` : '';
 			card.appendChild(el('div', { class: 'tiles' }, [
 				tile(String(s.trips), s.trips === 1 ? 'Trip' : 'Trips'),
-				tile(String(s.caught), 'Fish caught', `${(s.caught / s.trips).toFixed(1)} per trip`),
-				tile(String(s.kept), 'Fish kept', keep),
+				s.countedTrips ? tile(String(s.caught), 'Fish caught', `${(s.caught / s.countedTrips).toFixed(1)} per trip`) : null,
+				s.countedTrips ? tile(String(s.kept), 'Fish kept', keep) : null,
 				s.biggest ? tile(inchesText(s.biggest.inches), 'Biggest fish', `${s.biggest.name || 'Unknown'} · ${s.biggest.year}`) : null,
 				s.bestTrip ? tile(String(s.bestTrip.caught), 'Best trip', `${s.bestTrip.year}, whole group`) : null,
 				s.bestDay ? tile(String(s.bestDay.caught), 'Best day', `${s.bestDay.name} · ${s.bestDay.year} day ${s.bestDay.day}`) : null,
@@ -1163,23 +1172,13 @@
 				table.replaceChildren(el('thead', {}, [headRow]), body);
 			}
 			renderTable();
-			card.appendChild(el('div', { class: 'fish-scroll' }, [table]));
+			if (rows.length) card.appendChild(el('div', { class: 'fish-scroll' }, [table]));
 			return card;
 		}
 
-		function buildTripCard(t) {
-			const upcoming = isUpcoming(t);
-			const head = el('h2', { class: 'card-heading' }, [
-				document.createTextNode(String(t.year)),
-				t.location ? el('span', { class: 'fish-where', text: ` · ${t.location}` }) : null,
-				upcoming ? el('span', { class: 'fish-chip', text: 'Upcoming' }) : null,
-			]);
-			const card = el('div', { class: 'card' }, [head]);
-			makeCollapsible(card, head, `trip:${t.id}`);
-			if (upcoming) {
-				card.appendChild(el('div', { class: 'task-empty', text: t.anglers.length ? `Fishing: ${t.anglers.map((a) => a.name).join(', ')}. Counts will show up here after the trip.` : 'Counts will show up here after the trip.' }));
-				return card;
-			}
+		// The caught/kept table with its Total row, badges and sort hint, for a trip
+		// that recorded fish counts. Added to `card`.
+		function appendCountsTable(card, t) {
 			const tot = tripTotals(t);
 			// Whether any day's first or biggest fish belongs to someone in the table
 			// (decides the legend), worked out up front so a sort can't change it.
@@ -1233,10 +1232,27 @@
 			renderTable();
 			card.appendChild(el('div', { class: 'fish-scroll' }, [table]));
 			card.appendChild(el('div', { class: 'fish-note', text: `${anyBadge ? '1st = first fish of the day · ★ = biggest fish of the day (length) · ' : ''}Click a heading to sort.` }));
+		}
 
-			// Anything the table can't show: a first or biggest fish credited to
-			// someone who isn't a row on this trip, and the species kept.
-			const listed = (name) => t.anglers.some((a) => sameName(a.name, name));
+		function buildTripCard(t) {
+			const upcoming = isUpcoming(t);
+			const head = el('h2', { class: 'card-heading' }, [
+				document.createTextNode(String(t.year)),
+				t.location ? el('span', { class: 'fish-where', text: ` · ${t.location}` }) : null,
+				upcoming ? el('span', { class: 'fish-chip', text: 'Upcoming' }) : null,
+			]);
+			const card = el('div', { class: 'card' }, [head]);
+			makeCollapsible(card, head, `trip:${t.id}`);
+			if (upcoming) {
+				card.appendChild(el('div', { class: 'task-empty', text: t.anglers.length ? `Fishing: ${t.anglers.map((a) => a.name).join(', ')}. Counts will show up here after the trip.` : 'Counts will show up here after the trip.' }));
+				return card;
+			}
+			if (hasCounts(t)) appendCountsTable(card, t);
+
+			// Anything the table doesn't show: a first or biggest fish credited to
+			// someone who isn't a row on this trip, and the species kept. A trip with
+			// no fish counts has no table, so everything it has is listed here.
+			const listed = (name) => hasCounts(t) && t.anglers.some((a) => sameName(a.name, name));
 			const facts = el('ul', { class: 'fish-days' });
 			t.days.forEach((d, j) => {
 				const bits = [];
@@ -1461,7 +1477,7 @@
 			discard.addEventListener('click', () => { tripsDraft = copyTrips(trips); tripsErrors = []; refreshTripsCard(); });
 			card.appendChild(el('div', { class: 'ql-actions' }, [add, save, discard]));
 			if (tripsErrors.length) card.appendChild(el('ul', { class: 'ql-errors' }, tripsErrors.map((t) => el('li', { text: t }))));
-			card.appendChild(el('div', { class: 'ql-note', text: 'Newest first, as shown on the Ice Fishing tab. Leave a count blank if it was not recorded (a blank is not a zero); a trip with no counts shows as Upcoming. Species counts are fish kept.' }));
+			card.appendChild(el('div', { class: 'ql-note', text: 'Newest first, as shown on the Ice Fishing tab. Leave a count blank if it was not recorded (a blank is not a zero); a trip with nothing filled in shows as Upcoming, and one with only a biggest fish (say) shows just that. Species counts are fish kept.' }));
 			return card;
 		}
 
