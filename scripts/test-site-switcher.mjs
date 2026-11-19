@@ -24,13 +24,13 @@ const { SITES, neighbours } = context.SiteSwitcher;
 
 // The cycle.
 const keys = [...SITES].map((s) => s.key);
-assert.deepEqual(keys, ['fam', 'vst', 'ffl', 'bangers', 'fish']);
+assert.deepEqual(keys, ['fam', 'vst', 'ffl', 'fish', 'bangers']);
 const at = (k) => { const n = neighbours(SITES, k); return [n.prev.key, n.current.key, n.next.key]; };
-assert.deepEqual(at('fam'), ['fish', 'fam', 'vst']);
+assert.deepEqual(at('fam'), ['bangers', 'fam', 'vst']);
 assert.deepEqual(at('vst'), ['fam', 'vst', 'ffl']);
-assert.deepEqual(at('ffl'), ['vst', 'ffl', 'bangers']);
-assert.deepEqual(at('bangers'), ['ffl', 'bangers', 'fish']);
-assert.deepEqual(at('fish'), ['bangers', 'fish', 'fam']);
+assert.deepEqual(at('ffl'), ['vst', 'ffl', 'fish']);
+assert.deepEqual(at('fish'), ['ffl', 'fish', 'bangers']);
+assert.deepEqual(at('bangers'), ['fish', 'bangers', 'fam']);
 assert.equal(neighbours(SITES, 'nope'), null);
 // Two sites still work (prev and next are the same page).
 const two = SITES.slice(0, 2);
