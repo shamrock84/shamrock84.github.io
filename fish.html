@@ -78,6 +78,10 @@
 			margin-bottom: 0.8rem;
 		}
 		h1 { margin: 0; }
+		/* "X fish caught over Y trips since Z and counting", under the logo (same
+		   look as vikings.html's and bangers.html's .subtitle). Hidden until the
+		   trips have loaded. */
+		.subtitle { font-size: 0.8rem; color: var(--muted); }
 		.site-title { display: flex; align-items: center; justify-content: center; }
 		.site-logo-prefix {
 			font-family: Georgia, 'Times New Roman', serif;
@@ -374,6 +378,7 @@
 				<span class="site-logo-prefix">my</span>
 				<img src="images/fishlogo.png" alt="Fish — Ice Fishing" class="site-logo">
 			</h1>
+			<div class="subtitle hidden" id="fish-count"></div>
 			<div class="login" id="login"></div>
 		</header>
 		<nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav>
@@ -1178,6 +1183,21 @@
 			return stats;
 		}
 
+		// "412 fish caught over 5 trips since 2022 and counting": the same numbers
+		// as the All-time stats tiles (X = fish caught, Y = played trips), and Z is
+		// the earliest played trip's year. Hidden until the trips have loaded, and
+		// whenever there is nothing to count.
+		function renderFishCount() {
+			const node = document.getElementById('fish-count');
+			if (!node) return;
+			const s = trips && tripsState === 'ready' ? allTimeStats(trips) : null;
+			const years = s ? trips.filter((t) => !isUpcoming(t)).map((t) => t.year).filter(Boolean) : [];
+			const ok = !!(s && s.trips && s.caught && years.length);
+			node.classList.toggle('hidden', !ok);
+			if (!ok) return;
+			node.textContent = `${s.caught} fish caught over ${s.trips} ${s.trips === 1 ? 'trip' : 'trips'} since ${Math.min(...years)} and counting`;
+		}
+
 		// Click-to-sort for a small table, the same behaviour as myffl.html's
 		// makeTableSort (read its comment for why): each header cycles its natural
 		// direction, the reverse, then back to the default order; ties fall back to
@@ -1390,6 +1410,7 @@
 				tripsState = 'error';
 				tripsError = err.message;
 			}
+			renderFishCount();
 			if (tab === 'fishing') renderAll();
 			else if (tab === 'admin' && tripsCardEl && tripsCardEl.isConnected && !tripsDraft) {
 				// The Admin tab opened before the read finished: swap the placeholder
@@ -1438,6 +1459,7 @@
 				trips = body.trips;
 				tripsSeeded = false;
 				tripsDraft = copyTrips(trips);
+				renderFishCount();
 				setStatus('Saved', 'ok');
 			} catch (err) {
 				tripsErrors = [`Not saved: ${err.message}`];
