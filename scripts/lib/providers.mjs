@@ -1989,6 +1989,45 @@ function nflTeamKeys(abbr) {
 // already words correctly. Its real shape, confirmed by
 // probe-live-scoring-players.yml against a live game: "4:35 - 1st" while in
 // progress (NOT "Q3 5:22", an earlier guess), "Final" once over.
+// The point spread and total on ESPN's scoreboard, for the NFL tab's game
+// rows. Shape confirmed by probe-espn-odds.mjs RUN 1 (2026-11-21, week 11):
+// `competitions[0].odds[0]` carries `spread`, `overUnder`, and
+// `homeTeamOdds`/`awayTeamOdds` with a boolean `favorite`. Only the first
+// entry is read, because DraftKings was the sole provider.
+//
+//   * `spread` is the HOME team's line: negative when the home team is
+//     favored (BUF home, -16.5), positive when the road team is (PIT at PHI
+//     came back 3.5). Rather than trust that sign, the favorite is read off
+//     the `favorite` flags first, and the sign is only the fallback. The
+//     result is favorite-relative so the page never has to interpret it.
+//   * A pick'em is `spread` 0: no favorite, `line` 0, shown as "PK".
+//   * A missing `spread` is NOT zero. `Number(null)` is 0, which would
+//     render every game ESPN has no line for as a pick'em, so each number is
+//     read through `finiteOrNull`.
+//   * ESPN drops `odds` once a game is final, so a finished game returns
+//     null. Past lines can't be reconstructed from this feed.
+// Returns { favorite: abbr|null, line: number|null (0 or negative),
+// total: number|null }, or null when there is neither a line nor a total.
+export function parseNflOdds(competition) {
+  const odds = competition?.odds?.[0];
+  if (!odds) return null;
+  const finiteOrNull = (v) => (v == null || v === '' || !Number.isFinite(Number(v)) ? null : Number(v));
+  const spread = finiteOrNull(odds.spread);
+  const total = finiteOrNull(odds.overUnder);
+  if (spread == null && total == null) return null;
+  const abbrOf = (side) => competition.competitors?.find((c) => c.homeAway === side)?.team?.abbreviation || null;
+  let favorite = null;
+  if (spread != null && spread !== 0) {
+    if (odds.homeTeamOdds?.favorite === true) favorite = abbrOf('home');
+    else if (odds.awayTeamOdds?.favorite === true) favorite = abbrOf('away');
+    else favorite = abbrOf(spread < 0 ? 'home' : 'away');
+  }
+  // A line with no identifiable favorite can't be shown as one; it drops to
+  // null rather than guessing a side.
+  const line = spread == null ? null : spread === 0 ? 0 : favorite ? -Math.abs(spread) : null;
+  return { favorite, line, total };
+}
+
 export async function fetchNflGames() {
   const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard');
   if (!res.ok) {
@@ -2030,6 +2069,7 @@ export async function fetchNflGames() {
       }
     }
     const broadcast = [...new Set(networks.filter(Boolean))].join('/') || null;
+    const odds = parseNflOdds(competition);
     for (const c of competitors) {
       const abbr = c.team?.abbreviation;
       if (!abbr) continue;
@@ -2065,6 +2105,8 @@ export async function fetchNflGames() {
         score: c.score != null ? Number(c.score) : null,
         // TV network label for the NFL tab's game rows. Additive.
         broadcast,
+        // Point spread and total (see parseNflOdds), or null. Additive.
+        odds,
       };
       for (const key of nflTeamKeys(abbr)) games.set(key, entry);
     }

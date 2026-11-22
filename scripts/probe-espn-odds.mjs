@@ -24,6 +24,23 @@
 // 404 on one is information, not failure. Record findings in a RUN 1 block
 // here once it has been run, as the other probes do.
 //
+// RUN 1 (2026-11-21, week 11 of the 2026 season): ESPN serves odds.
+//   * The scoreboard the app already reads carries `competitions[0].odds[]`
+//     for every game that hasn't finished (12 of 13). One entry, DraftKings
+//     (provider id 100); the core odds list also had only that one.
+//   * `spread` is the HOME team's line: BUF at home was -16.5, PIT at PHI was
+//     +3.5 (road favorite). `details` is favorite-relative ("PIT -3.5").
+//     `homeTeamOdds.favorite` / `awayTeamOdds.favorite` are booleans.
+//     `overUnder` is the total. Scoreboard moneylines are nested
+//     (`moneyline.home.close.odds`, a string like "-1640"); summary
+//     `pickcenter` and the core odds item carry flat `moneyLine`,
+//     `spreadOdds`, `overOdds`, `underOdds` plus `open`/`current` per side
+//     (BUF opened -11.5 and was -16.5 at probe time).
+//   * FINISHED games lose `odds` entirely (week 10: 0 of 14), so past lines
+//     can't be read back. `summary.odds` is `[]` (use `pickcenter`); the
+//     movement history and the team `/ats` endpoints answered 200 but empty.
+//   * Used by parseNflOdds (providers.mjs) for the NFL tab's spread chip.
+//
 // Env: SEASON (default current year), WEEK (default: ESPN's current week),
 // HEAD_CHARS (default 1800).
 
