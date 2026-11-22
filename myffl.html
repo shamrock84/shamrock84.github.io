@@ -3641,6 +3641,10 @@
 			font-size: 0.72rem;
 			margin-top: 0.6rem;
 		}
+		.nfl-bye-title {
+			color: var(--accent);
+			font-weight: 700;
+		}
 		.bye-teams {
 			color: var(--accent);
 			font-size: 0.72rem;
@@ -9895,6 +9899,8 @@
 			if (rows.length === 0) {
 				const empty = isSunday ? 'No players currently playing.' : 'No players playing today.';
 				card.appendChild(el('div', { class: 'team card-collapse-visible', text: empty }));
+				const emptyByeNote = nflByeFootnote();
+				if (emptyByeNote) card.appendChild(emptyByeNote);
 				return card;
 			}
 
@@ -14822,7 +14828,11 @@
 			if (week == null) return null;
 			const byes = Object.keys(teams).filter((t) => teams[t].some((e) => e.bye && e.wk === week)).sort();
 			if (byes.length === 0) return null;
-			return el('div', { class: 'nfl-bye-footnote', text: `Week ${week} byes: ${byes.join(', ')}` });
+			// card-collapse-visible keeps it on screen while the card is collapsed.
+			return el('div', { class: 'nfl-bye-footnote card-collapse-visible' }, [
+				el('span', { class: 'nfl-bye-title', text: `Week ${week} bye weeks:` }),
+				document.createTextNode(` ${byes.join(', ')}`),
+			]);
 		}
 
 		function isGameToday(game) {
