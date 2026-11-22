@@ -57,7 +57,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
-import { nflBoxscorePlayerLines } from './lib/providers.mjs';
+import { nflBoxscorePlayerLines, parseNflOdds } from './lib/providers.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const html = fs.readFileSync(path.join(root, 'myffl.html'), 'utf8');
@@ -750,6 +750,56 @@ function fireClick(node) {
 	assert.equal(drawer.hidden, false);
 	assert.ok(pill.cls.includes('nfl-boxscore-open'));
 	assert.equal(findAll(pill, hasClass('nfl-boxscore-team-head'))[0]._text, 'BUF', 'still renders correctly the second time open');
+}
+
+// --- Point spread and total (parseNflOdds, nflOddsLine) ------------------
+// Shapes are the real ones probe-espn-odds.mjs RUN 1 returned for week 11:
+// `spread` is the HOME team's line, so a road favorite arrives positive.
+{
+	const comp = (odds, homeAbbr = 'BUF', awayAbbr = 'MIA') => ({
+		competitors: [
+			{ homeAway: 'home', team: { abbreviation: homeAbbr } },
+			{ homeAway: 'away', team: { abbreviation: awayAbbr } },
+		],
+		odds: odds ? [odds] : undefined,
+	});
+	const homeFav = parseNflOdds(comp({ spread: -16.5, overUnder: 44.5, homeTeamOdds: { favorite: true }, awayTeamOdds: { favorite: false } }));
+	assert.deepEqual(homeFav, { favorite: 'BUF', line: -16.5, total: 44.5 }, 'a home favorite: spread already negative');
+	const roadFav = parseNflOdds(comp({ spread: 3.5, overUnder: 37.5, homeTeamOdds: { favorite: false }, awayTeamOdds: { favorite: true } }, 'PHI', 'PIT'));
+	assert.deepEqual(roadFav, { favorite: 'PIT', line: -3.5, total: 37.5 }, 'a road favorite arrives with a positive spread and still shows as the favorite minus the points');
+	const noFlags = parseNflOdds(comp({ spread: 6, overUnder: 46.5 }, 'NYG', 'JAX'));
+	assert.equal(noFlags.favorite, 'JAX', 'without favorite flags the sign decides: positive means the road team');
+	assert.equal(parseNflOdds(comp({ spread: -3, overUnder: 43.5 })).favorite, 'BUF', 'and negative means the home team');
+	assert.deepEqual(parseNflOdds(comp({ spread: 0, overUnder: 41 })), { favorite: null, line: 0, total: 41 }, "a pick'em is line 0 with no favorite");
+	// The trap: Number(null) is 0, which would turn "no line" into a pick'em.
+	assert.deepEqual(parseNflOdds(comp({ spread: null, overUnder: 41 })), { favorite: null, line: null, total: 41 }, 'a missing spread is null, not a pick\'em');
+	assert.deepEqual(parseNflOdds(comp({ overUnder: 41 })), { favorite: null, line: null, total: 41 }, 'an absent spread likewise');
+	assert.deepEqual(parseNflOdds(comp({ spread: -7 })), { favorite: 'BUF', line: -7, total: null }, 'a missing total is null');
+	assert.equal(parseNflOdds(comp({ spread: null, overUnder: null })), null, 'neither number means no odds');
+	assert.equal(parseNflOdds(comp(undefined)), null, 'a finished game: ESPN drops odds entirely');
+	assert.equal(parseNflOdds(undefined), null, 'no competition at all');
+}
+{
+	const ctx = makeContext();
+	const odds = { favorite: 'BUF', line: -16.5, total: 44.5 };
+	const base = { id: 'o1', kickoff: new Date().toISOString(), away: { team: 'MIA', score: 0 }, home: { team: 'BUF', score: 0 } };
+	const oddsOf = (pill) => findAll(pill, hasClass('nfl-game-odds'))[0];
+	const pre = ctx.renderNflGameRow({ ...base, state: 'pre', odds });
+	assert.equal(fullText(oddsOf(pre)), 'BUF -16.5O/U 44.5', 'a pre-kickoff game shows the favorite, its line and the total');
+	assert.equal(fullText(findAll(pre, hasClass('nfl-odds-chip'))[0]), 'BUF -16.5');
+	const kids = pre.children.map((c) => c.cls);
+	assert.ok(kids.indexOf('nfl-game-odds') > kids.indexOf('nfl-game-teams') && kids.indexOf('nfl-game-odds') < kids.indexOf('nfl-game-status'), 'the line sits between the teams and the kickoff status');
+	assert.ok(!oddsOf(ctx.renderNflGameRow({ ...base, state: 'in', detail: '4:35 - 1st', odds })), 'a live game hides the stale line');
+	assert.ok(!oddsOf(ctx.renderNflGameRow({ ...base, state: 'post', detail: 'Final', odds })), 'a finished game has none');
+	assert.ok(!oddsOf(ctx.renderNflGameRow({ ...base, state: 'pre', odds: null })), 'a pre game ESPN has no line for gets no placeholder');
+	assert.equal(fullText(oddsOf(ctx.renderNflGameRow({ ...base, state: 'pre', odds: { favorite: null, line: 0, total: 41 } }))), 'PKO/U 41', "a pick'em reads PK");
+	assert.equal(fullText(oddsOf(ctx.renderNflGameRow({ ...base, state: 'pre', odds: { favorite: null, line: null, total: 41 } }))), 'O/U 41', 'a total with no line shows the total alone, never a 0 spread');
+	assert.equal(fullText(oddsOf(ctx.renderNflGameRow({ ...base, state: 'pre', odds: { favorite: 'DEN', line: -3, total: null } }))), 'DEN -3', 'a line with no total shows the chip alone');
+	assert.ok(!oddsOf(ctx.renderNflGameRow({ ...base, state: 'pre', odds: { favorite: null, line: null, total: null } })), 'nothing usable renders nothing');
+	// The odds ride the game list through the alias-collapsing step.
+	const shared = { id: 'o2', state: 'pre', kickoff: '2026-11-22T18:00:00Z', isHome: true, team: 'BUF', score: 0, odds };
+	const list = ctx.buildNflGamesList({ BUF: shared, MIA: { id: 'o2', state: 'pre', kickoff: '2026-11-22T18:00:00Z', isHome: false, team: 'MIA', score: 0, odds } });
+	assert.deepEqual(JSON.parse(JSON.stringify(list[0].odds)), odds, 'buildNflGamesList carries odds onto the game');
 }
 
 console.log('test-nfl-tab.mjs OK');

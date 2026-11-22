@@ -2680,6 +2680,28 @@
 			color: var(--muted);
 			font-weight: 400;
 		}
+		/* Spread chip and total under the teams (nflOddsLine). Never wraps:
+		   the widest real line, "DEN -10.5  O/U 40.5", fits the narrowest
+		   phone pill. The chip is bold purple on --chip-bg, the total muted. */
+		.nfl-game-odds {
+			display: flex;
+			justify-content: center;
+			align-items: baseline;
+			gap: 0.45rem;
+			font-size: 0.78rem;
+			font-variant-numeric: tabular-nums;
+			white-space: nowrap;
+		}
+		.nfl-odds-chip {
+			padding: 0.02rem 0.4rem;
+			border-radius: 999px;
+			background: var(--chip-bg);
+			color: var(--accent);
+			font-weight: 700;
+		}
+		.nfl-odds-total {
+			color: var(--muted);
+		}
 		.nfl-game-status {
 			text-align: center;
 			color: var(--muted);
@@ -2757,7 +2779,10 @@
 			justify-content: center;
 			gap: 0.3rem;
 			width: calc(100% + 1.3rem);
-			margin: 0 -0.65rem -0.55rem;
+			/* margin-top auto pins the strip to the pill's bottom edge: a
+			   finished game has no odds line, so it is shorter than its
+			   neighbours and the row stretches it to match. */
+			margin: auto -0.65rem -0.55rem;
 			border: none;
 			border-top: 1px solid var(--border);
 			background: none;
@@ -14317,7 +14342,7 @@
 				if (!game.id) continue;
 				let entry = byId.get(game.id);
 				if (!entry) {
-					entry = { id: game.id, state: game.state, detail: game.detail, kickoff: game.kickoff, broadcast: game.broadcast || null, home: null, away: null };
+					entry = { id: game.id, state: game.state, detail: game.detail, kickoff: game.kickoff, broadcast: game.broadcast || null, odds: game.odds || null, home: null, away: null };
 					byId.set(game.id, entry);
 				}
 				const side = { team: game.team || abbr, score: game.score ?? null };
@@ -14569,6 +14594,25 @@
 			pill.appendChild(body);
 		}
 
+		// The spread chip and total under a game's teams, or null when there
+		// is nothing to show. The chip reads "BUF -16.5" (favorite and its
+		// line) or "PK" for a pick'em, in the same purple "notable" pairing
+		// the Yrs/Sal chips use; the total is the muted "O/U 44.5" beside it.
+		function nflOddsLine(odds) {
+			if (!odds) return null;
+			const parts = [];
+			if (odds.line === 0) {
+				parts.push(el('span', { class: 'nfl-odds-chip', text: 'PK' }));
+			} else if (odds.favorite && typeof odds.line === 'number') {
+				parts.push(el('span', { class: 'nfl-odds-chip', text: `${odds.favorite} ${odds.line}` }));
+			}
+			if (typeof odds.total === 'number') parts.push(el('span', { class: 'nfl-odds-total', text: `O/U ${odds.total}` }));
+			if (!parts.length) return null;
+			const line = el('div', { class: 'nfl-game-odds' });
+			for (const p of parts) line.appendChild(p);
+			return line;
+		}
+
 		// The collapsed-card favorites summary renders this same row, ESPN link
 		// and stat drawer included. The drawer's open state is keyed by game
 		// id, so a favorite's two copies (summary and full list) would drift
@@ -14608,6 +14652,16 @@
 			teams.appendChild(teamSpan(game.home.team));
 			if (showScore) teams.appendChild(el('span', { class: 'nfl-game-score', text: String(game.home.score) }));
 			row.appendChild(teams);
+			// Point spread and total, only before kickoff: ESPN's line is
+			// stale the moment the game starts and the live score matters
+			// more, and it drops the odds entirely once a game is final, so
+			// a finished pill has nothing to show anyway. `odds.line` is
+			// favorite-relative (see parseNflOdds): a negative number beside
+			// the favorite, 0 for a pick'em, null when ESPN has a total but
+			// no usable line. A missing line or total is simply left out,
+			// never rendered as 0.
+			const oddsLine = game.state === 'pre' ? nflOddsLine(game.odds) : null;
+			if (oddsLine) row.appendChild(oddsLine);
 			row.appendChild(el('div', { class: 'nfl-game-status', text: [formatGameWhen(game), game.broadcast].filter(Boolean).join(' · ') }));
 
 			// Still the only place for kicking/team-defense stats (see
