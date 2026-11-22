@@ -4438,6 +4438,7 @@
 			font-size: 0.85rem;
 		}
 	</style>
+	<script src="/analytics.js" async></script>
 </head>
 <body>
 	<div id="quicklinks" aria-label="League quick links"></div>
@@ -17201,6 +17202,8 @@
 		function switchToView(view) {
 			currentView = view;
 			localStorage.setItem(VIEW_STORAGE_KEY, currentView);
+			// GoatCounter event per tab (no-op when the script isn't loaded, e.g. logged in).
+			if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: 'myffl/tab/' + view, title: 'myFFL tab: ' + view, event: true });
 			document.getElementById('tabs').querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.view === view));
 			renderSubTabs();
 			updateSearchVisibility();
