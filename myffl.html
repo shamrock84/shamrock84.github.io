@@ -14862,10 +14862,14 @@
 			const nowPlayingEmpty = isSunday ? 'No games in progress right now.' : 'No games today.';
 			const todayIds = new Set(today.map((g) => g.id));
 			const rest = games.filter((g) => !todayIds.has(g.id));
-			appendNflCard(gridEl, renderNflScoreCard('nfl-now-playing', 'Now Playing', today, nowPlayingEmpty, nowPlayingLabel, true));
+			const nowPlayingCard = renderNflScoreCard('nfl-now-playing', 'Now Playing', today, nowPlayingEmpty, nowPlayingLabel, true);
 			const matchupsCard = renderNflScoreCard('nfl-matchups', 'Matchups', rest, 'No games scheduled this week.');
-			const byeNote = nflByeFootnote();
-			if (byeNote) matchupsCard.appendChild(byeNote);
+			// Both cards carry the footnote (each needs its own element).
+			for (const c of [nowPlayingCard, matchupsCard]) {
+				const byeNote = nflByeFootnote();
+				if (byeNote) c.appendChild(byeNote);
+			}
+			appendNflCard(gridEl, nowPlayingCard);
 			appendNflCard(gridEl, matchupsCard);
 		}
 
