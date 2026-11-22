@@ -79,8 +79,9 @@
 		}
 		h1 { margin: 0; }
 		/* "X fish caught over Y trips since Z and counting", under the logo (same
-		   look as vikings.html's and bangers.html's .subtitle). Hidden until the
-		   trips have loaded. */
+		   look as vikings.html's and bangers.html's .subtitle, including the
+		   wide-screen bump in the min-width block below). Hidden until the trips
+		   have loaded. */
 		.subtitle { font-size: 0.8rem; color: var(--muted); }
 		.site-title { display: flex; align-items: center; justify-content: center; }
 		.site-logo-prefix {
@@ -248,6 +249,7 @@
 
 		@media (min-width: 48.01rem) {
 			main { padding: 1.5rem 1rem; }
+			.subtitle { font-size: 0.95rem; }
 			.card { padding: 1.2rem 1.4rem; }
 		}
 		@media (max-width: 40rem) {
