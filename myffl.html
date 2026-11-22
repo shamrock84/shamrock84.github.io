@@ -14830,7 +14830,7 @@
 			if (byes.length === 0) return null;
 			// card-collapse-visible keeps it on screen while the card is collapsed.
 			return el('div', { class: 'nfl-bye-footnote card-collapse-visible' }, [
-				el('span', { class: 'nfl-bye-title', text: `Week ${week} bye weeks:` }),
+				el('span', { class: 'nfl-bye-title', text: `Week ${week} byes:` }),
 				document.createTextNode(` ${byes.join(', ')}`),
 			]);
 		}
