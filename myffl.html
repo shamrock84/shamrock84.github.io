@@ -3636,6 +3636,11 @@
 		/* Bye Weeks' team list, same position and size as injury-detail above —
 		   purple (--accent, the site's own purple) rather than red, since a
 		   bye is a schedule fact rather than a warning. */
+		.nfl-bye-footnote {
+			color: var(--muted);
+			font-size: 0.72rem;
+			margin-top: 0.6rem;
+		}
 		.bye-teams {
 			color: var(--accent);
 			font-size: 0.72rem;
@@ -10084,6 +10089,8 @@
 			}
 
 			renderBody();
+			const byeNote = nflByeFootnote();
+			if (byeNote) card.appendChild(byeNote);
 			return card;
 		}
 
@@ -14792,6 +14799,32 @@
 			else gridEl.appendChild(card);
 		}
 
+		// Footnote naming the NFL teams on bye this week, shared by the NFL tab's
+		// Matchups card and the Scoring tab's Now Playing card. The week isn't
+		// carried by the live scoreboard, so it is recovered by matching a live
+		// game to the snapshot's `nflSchedules` (same opponent, kickoff within
+		// 3.5 days, so a flexed game or a schedule up to a sync stale still
+		// matches); the bye teams are then those with a `bye` entry that week.
+		// Returns null, and so renders nothing, when the schedules or the
+		// match are missing: a wrong week would be worse than no footnote.
+		let nflSchedulesData = null;
+		function nflByeFootnote() {
+			const teams = nflSchedulesData?.teams;
+			if (!teams) return null;
+			const window = 3.5 * 24 * 60 * 60 * 1000;
+			let week = null;
+			for (const g of buildNflGamesList(liveGames)) {
+				if (!g.kickoff) continue;
+				const kick = new Date(g.kickoff).getTime();
+				const entry = (teams[g.home.team] || []).find((e) => !e.bye && e.opp === g.away.team && e.at && Math.abs(new Date(e.at).getTime() - kick) < window);
+				if (entry) { week = entry.wk; break; }
+			}
+			if (week == null) return null;
+			const byes = Object.keys(teams).filter((t) => teams[t].some((e) => e.bye && e.wk === week)).sort();
+			if (byes.length === 0) return null;
+			return el('div', { class: 'nfl-bye-footnote', text: `Week ${week} byes: ${byes.join(', ')}` });
+		}
+
 		function isGameToday(game) {
 			if (!game.kickoff) return false;
 			const at = new Date(game.kickoff);
@@ -14820,7 +14853,10 @@
 			const todayIds = new Set(today.map((g) => g.id));
 			const rest = games.filter((g) => !todayIds.has(g.id));
 			appendNflCard(gridEl, renderNflScoreCard('nfl-now-playing', 'Now Playing', today, nowPlayingEmpty, nowPlayingLabel, true));
-			appendNflCard(gridEl, renderNflScoreCard('nfl-matchups', 'Matchups', rest, 'No games scheduled this week.'));
+			const matchupsCard = renderNflScoreCard('nfl-matchups', 'Matchups', rest, 'No games scheduled this week.');
+			const byeNote = nflByeFootnote();
+			if (byeNote) matchupsCard.appendChild(byeNote);
+			appendNflCard(gridEl, matchupsCard);
 		}
 
 		// NFL Standings: one card off the snapshot's `nflStandings`
@@ -19329,6 +19365,7 @@
 			// Playing/Matchups cards ahead of the Depth Charts wrapper card on
 			// the NFL tab — the same auto-fill-grid-follows-DOM-order idiom
 			// .now-playing-card's own comment already relies on.
+			nflSchedulesData = data.nflSchedules || null;
 			renderNflCards(gridEl);
 			const nflStandingsCard = renderNflStandingsCard(data.nflStandings);
 			if (nflStandingsCard) gridEl.appendChild(nflStandingsCard);
