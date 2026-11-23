@@ -341,6 +341,13 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	const r2 = ctx.computeMondayNightMania([up], games);
 	assert.deepEqual(plain(r2.won.map((l) => l.id)), ['2']);
 	assert.equal(r2.live.length, 0);
+	// The threshold is 95/5: 95 is won, 5 is lost, 94 and 6 stay in play.
+	for (const [wp, bucket] of [[95, 'won'], [5, 'lost'], [94, 'live'], [6, 'live']]) {
+		const m = lg('9', '100.00', '90.00', [pl('a', 'Tyreek Hill', 'MIA', null)], [pl('c', 'Opp Guy', 'KC', 5)]);
+		m.scoring.teams[0].winProb = wp;
+		const rr = ctx.computeMondayNightMania([m], games);
+		assert.equal(rr[bucket].length, 1, `winProb ${wp} should be ${bucket}`);
+	}
 	// A tie with nobody left on either side is neither in play nor decided.
 	const dead = lg('3', '100.00', '100.00', [pl('b', 'Done Guy', 'KC', 20)], [pl('c', 'Opp Guy', 'KC', 5)]);
 	dead.scoring.teams[0].winProb = 50;

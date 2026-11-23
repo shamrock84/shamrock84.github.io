@@ -10633,10 +10633,10 @@
 		// the scoreboard (a bye) or final has nothing left to give.
 		//
 		// Decided is read off the win probability the Scoring cards already
-		// show (winProb): 99 or more is already won, 1 or less already lost.
+		// show (winProb): 95 or more is already won, 5 or less already lost (NIGHT_CARD_DECIDED_WIN_PROB).
 		// The estimate is clamped to 1-99 while anyone on either side still has
 		// game time left (estimateWinProbability), so 99/1 is the most certain
-		// it gets mid-game and is deliberately counted as decided; 100/0 occur
+		// it gets mid-game; 95/5 and beyond count as decided; 100/0 occur
 		// once nothing is left to play. A matchup with no winProb (the provider or
 		// the estimate did not answer) falls back to the same conclusion
 		// drawn from the scores and who has yet to play. Otherwise a matchup
@@ -10713,10 +10713,10 @@
 		const MONDAY_MATCHUP_NS = 'myfflMondayMatchupCollapsed';
 
 		// Shared by the Sunday and Monday night cards: a win probability at or above this counts as already won, and one at or
-		// below 100 minus it as already lost (computeMondayNightMania). 99 is the
-		// estimate's own clamp while game time remains; lower it to call
-		// matchups earlier. Symmetric by design, so one number moves both.
-		const NIGHT_CARD_DECIDED_WIN_PROB = 99;
+		// below 100 minus it as already lost (computeMondayNightMania). The
+		// estimate clamps at 99/1 while game time remains; 95/5 calls matchups
+		// earlier. Symmetric by design, so one number moves both.
+		const NIGHT_CARD_DECIDED_WIN_PROB = 95;
 
 		function mondayIsBestBall(league) {
 			return Array.isArray(league.tags) && league.tags.includes('BestBall');
