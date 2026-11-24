@@ -38,10 +38,29 @@
 // log. The probe prints counts, field names and two sample entries, so
 // those two titles are visible to anyone who opens the run.
 //
-// RUN 1: not yet run.
+// RUN 1 (2026-11-24): Goodreads skipped. GOODREADS_USER_ID was set but
+// didn't start with digits (the parser now also takes a profile URL).
+// Libby answered:
+//   - HTTP 200 with no session, application/json, 841 bytes. ETag present,
+//     no Last-Modified, `Cache-Control: max-age=0, private,
+//     must-revalidate`: served fresh per request, not a static file on a CDN.
+//     That suggests, but doesn't prove, that the link tracks new activity.
+//   - Shape: { version: 1, timeline: [entry] }, 1 entry. Entry fields:
+//     cover {contentType, url} (od-cdn.com image), title {text, url,
+//     titleId}, author, publisher, isbn, timestamp (epoch ms), activity
+//     ("Borrowed"), details (" 21 days ", padded: trim it), library {text,
+//     url, key}.
+//   - Newest entry 2026-11-22T21:52:18Z.
+//   - .csv (text/csv) and .html (text/html) siblings both answer 200.
+//   Still open: does the same link show a borrow or return made after the
+//   export without re-exporting? Re-run after one and compare entry counts.
 
 const UA = 'Mozilla/5.0 (compatible; personal-site-probe/1.0)';
-const goodreadsId = (process.env.GOODREADS_USER_ID || '').trim().match(/^\d+/)?.[0] || '';
+// Accepts the bare id, a "12345-name" slug, or a whole profile URL
+// (goodreads.com/user/show/12345-name). RUN 1 skipped Goodreads because
+// the secret held something this didn't recognise as an id.
+const goodreadsRaw = (process.env.GOODREADS_USER_ID || '').trim();
+const goodreadsId = goodreadsRaw.match(/user\/show\/(\d+)/)?.[1] || goodreadsRaw.match(/^\d+/)?.[0] || '';
 const libbyUrl = (process.env.LIBBY_TIMELINE_URL || '').trim();
 
 async function get(url) {
@@ -82,7 +101,11 @@ function rssItems(xml) {
 async function probeGoodreads() {
   console.log('\n######## Goodreads RSS ########');
   if (!goodreadsId) {
-    console.log('GOODREADS_USER_ID not set; skipped.');
+    // Say which: unset, or set to something without a numeric id (a
+    // username alone isn't enough; the feed URL needs the number).
+    console.log(goodreadsRaw
+      ? `GOODREADS_USER_ID is set (${goodreadsRaw.length} chars, ${/^https?:/.test(goodreadsRaw) ? 'a URL' : 'not a URL'}) but holds no numeric id; skipped. Use the number from goodreads.com/user/show/<number>-name.`
+      : 'GOODREADS_USER_ID not set; skipped.');
     return;
   }
   const base = `https://www.goodreads.com/review/list_rss/${goodreadsId}`;
