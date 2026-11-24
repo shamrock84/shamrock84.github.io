@@ -1,0 +1,56 @@
+name: Probe Goodreads RSS + Libby timeline (manual, read-only)
+
+# Deliberately workflow_dispatch ONLY — never add a schedule trigger here, the
+# same rule the other manual workflows follow.
+#
+# Shows what a future myBooks page could read: Goodreads' undocumented shelf
+# RSS feed and Libby's Timeline export share link. Neither host is reachable
+# from the sandbox this repo is edited from. See scripts/probe-books.mjs's
+# header for the questions it answers.
+#
+# Inputs:
+#   - goodreads_user_id (dispatch input, or the GOODREADS_USER_ID secret):
+#     the number in your Goodreads profile URL. It's public on the profile
+#     anyway, so a plain input is fine.
+#   - LIBBY_TIMELINE_URL (repository secret only): the share link from
+#     Libby's Timeline → Export → Data (json). Anyone with that link can read
+#     the loan history, so it isn't a dispatch input (inputs are shown on the run).
+# Either half is skipped when its input is missing.
+#
+# Read-only: about seven GETs to Goodreads, up to three to Libby.
+on:
+  workflow_dispatch:
+    inputs:
+      goodreads_user_id:
+        description: 'Goodreads user id (number in your profile URL); blank = GOODREADS_USER_ID secret'
+        required: false
+        default: ''
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      # Blobless + sparse checkout: skips mfl/PSD and images/, which no
+      # workflow here reads. Same five directories everywhere on purpose;
+      # see sync-fantasy-rosters.yml for the reasoning and the numbers.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout: |
+            api
+            scripts
+            config
+            data
+            .github
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Probe Goodreads RSS and the Libby timeline link
+        env:
+          GOODREADS_USER_ID: ${{ inputs.goodreads_user_id || secrets.GOODREADS_USER_ID }}
+          LIBBY_TIMELINE_URL: ${{ secrets.LIBBY_TIMELINE_URL }}
+        run: node scripts/probe-books.mjs
