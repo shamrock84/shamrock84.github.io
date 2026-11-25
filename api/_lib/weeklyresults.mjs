@@ -193,11 +193,28 @@ export function storableResultWeek(now, kickoffMs) {
 // with `median` ({ result }) only for a weekly-median league that has one.
 // null when myResult has nothing to report (a bye, or a week not scored yet),
 // which the caller treats as "ask again next sync", never as a result.
+//
+// Points are rounded to the hundredth: MFL's are a sum of each starter's
+// score (mflWeekMatchups), and summing decimals in floating point leaves
+// tails like 97.80000000000001. The W/L/T call is made on the unrounded
+// numbers before this, so rounding can't change it.
 export function weekResultEntry(season, week, result, median) {
   if (!result) return null;
-  const out = { season: String(season), week, result: result.result, points: result.points, oppPoints: result.oppPoints };
+  const out = { season: String(season), week, result: result.result, points: roundPoints(result.points), oppPoints: roundPoints(result.oppPoints) };
   if (median) out.median = { result: median.result };
   return out;
+}
+
+export function roundPoints(n) {
+  return typeof n === 'number' && Number.isFinite(n) ? Math.round(n * 100) / 100 : n;
+}
+
+// A stored entry as the sync carries it forward, with its points rounded, so
+// an entry written before the rounding existed is tidied on the next sync
+// rather than kept as-is for the rest of the week.
+export function carriedWeekResult(previous) {
+  if (!previous) return null;
+  return { ...previous, points: roundPoints(previous.points), oppPoints: roundPoints(previous.oppPoints) };
 }
 
 // Whether a league still needs asking this sync: nothing stored yet for this

@@ -27,6 +27,7 @@ import {
   storableResultWeek,
   weekResultEntry,
   needsWeekResult,
+  carriedWeekResult,
 } from '../api/_lib/weeklyresults.mjs';
 import { nflKickoffUtc } from '../scripts/lib/fantasypros.mjs';
 import handler from '../api/weekly-results.js';
@@ -163,6 +164,18 @@ assert.equal((await call({ week: '99' }, { authorization: 'Bearer s' })).body.se
 	assert.equal(weekResultEntry(2026, 11, null), null, 'no result (bye, unscored): nothing stored');
 	assert.deepEqual(weekResultEntry(2026, 11, { result: 'W', points: 120.5, oppPoints: 99 }), { season: '2026', week: 11, result: 'W', points: 120.5, oppPoints: 99 });
 	assert.deepEqual(weekResultEntry('2026', 11, { result: 'L', points: 1, oppPoints: 2 }, { result: 'W', points: 1, avg: 0.5 }).median, { result: 'W' });
+
+	// Points rounded to the hundredth, on the way in and when carried.
+	const summed = mflWeekMatchups({ weeklyResults: { matchup: { franchise: [
+		{ id: '1', player: [{ status: 'starter', score: '60.7' }, { status: 'starter', score: '37.1' }] },
+		{ id: '2', player: [{ status: 'starter', score: '50.1' }, { status: 'starter', score: '40.2' }] },
+	] } } });
+	const r = myResult(summed, '1');
+	assert.notEqual(r.points, 97.8, '(the float tail this guards against)');
+	assert.equal(weekResultEntry(2026, 11, r).points, 97.8);
+	assert.equal(weekResultEntry(2026, 11, r).oppPoints, 90.3);
+	assert.deepEqual(carriedWeekResult({ season: '2026', week: 11, result: 'L', points: 90, oppPoints: 97.80000000000001 }), { season: '2026', week: 11, result: 'L', points: 90, oppPoints: 97.8 });
+	assert.equal(carriedWeekResult(null), null);
 
 	assert.equal(needsWeekResult(null, 2026, 11), true);
 	assert.equal(needsWeekResult({ season: '2026', week: 10 }, 2026, 11), true, 'last week stored: ask');
