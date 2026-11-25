@@ -88,6 +88,7 @@ import {
   storableResultWeek,
   weekResultEntry,
   needsWeekResult,
+  carriedWeekResult,
 } from '../api/_lib/weeklyresults.mjs';
 import { resolveMflLeagueInfo, parseLeagueMeta, serializeLeagueMeta } from './lib/league-meta.mjs';
 import { fetchAllDepthCharts, DEPTH_CHART_POSITIONS } from './lib/espn-depth-chart.mjs';
@@ -1645,7 +1646,7 @@ async function main() {
     const target = leagues.find((l) => l.id === league.id);
     if (!target) continue;
     const previous = previousById.get(league.id)?.weekResult ?? null;
-    target.weekResult = league.type === 'draftonly' ? null : previous;
+    target.weekResult = league.type === 'draftonly' ? null : carriedWeekResult(previous);
     if (league.type === 'draftonly' || !league.franchiseId || resultWeek == null) continue;
     if (!needsWeekResult(previous, resultSeason, resultWeek) || unreachable.has(league.id)) continue;
     try {
