@@ -340,6 +340,33 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 	assert.match(fullText(ctx.renderNowPlayingCard([snap], TUESDAY_NOW)), /Loading live scores/, 'game time left somewhere: wait for the poll');
 }
 
+// The bye footnote on this card names the week the Scoring cards show,
+// read off the snapshot, so it is there before the first live poll (no
+// scoreboard needed) — and the NFL tab's scoreboard-matched path is
+// untouched when no week is passed.
+{
+	const ctx = makeContext(LOGGED_IN);
+	setLiveScoringAttempted(ctx, false);
+	setLiveGames(ctx, {});
+	vm.runInContext(`nflSchedulesData = { teams: {
+		MIN: [{ wk: 11, opp: 'SF', at: '2026-11-23T01:20Z' }, { wk: 12, bye: true }],
+		SF: [{ wk: 11, opp: 'MIN', at: '2026-11-23T01:20Z' }, { wk: 12, opp: 'KC', at: '2026-11-29T18:00Z' }],
+		KC: [{ wk: 11, bye: true }, { wk: 12, opp: 'SF', at: '2026-11-29T18:00Z' }],
+	} };`, ctx);
+	const mk = (id, wk) => {
+		const l = league(id, '0001', []);
+		l.scoring.week = wk;
+		for (const t of l.scoring.teams) { delete t.players; t.minutesRemaining = 0; }
+		return l;
+	};
+	assert.equal(ctx.fantasyScoringWeek([mk('a', 11), mk('b', 11), mk('c', 12)]), 11, 'the most common week wins');
+	assert.equal(ctx.fantasyScoringWeek([]), null);
+	const TUESDAY_NOW = new Date(2026, 10, 24, 18, 0, 0);
+	const text = fullText(ctx.renderNowPlayingCard([mk('a', 11), mk('b', 11)], TUESDAY_NOW));
+	assert.match(text, /Week 11 byes: KC/, 'footnote on page load, from the snapshot week');
+	assert.equal(ctx.nflByeFootnote(), null, 'no week passed and no scoreboard: still nothing (NFL tab path)');
+}
+
 // Kickers and defenses appear here like any other live starter of mine.
 {
 	const ctx = makeContext();
