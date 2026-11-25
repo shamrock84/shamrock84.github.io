@@ -25,8 +25,7 @@
 //     same gates as the Problems Digest.
 //   * nothing at all is listed from Tuesday until the weekly rollover
 //     cutoff (Wednesday 7 PM Central), same hold as the Problems Digest,
-//     and the card says the week isn't open yet rather than "no injured
-//     players".
+//     and the card is absent then (the Weekly Summary has the slot).
 //   * each league a player STARTS in gets a replacement picker, listing
 //     that league's non-starting Active Roster players (same position
 //     first, healthy before designated, best ECR first); a benched copy
@@ -264,8 +263,8 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	assert.deepEqual(plain(ctx.computeGameTimeWatchlist(leagues, YEAR, games)), []);
 }
 
-// Held before the weekly rollover cutoff: nothing listed, and the card says
-// the week isn't open rather than claiming nobody is injured.
+// Held before the weekly rollover cutoff: nothing listed, and no card at all
+// (never "no injured players", which would be a false all-clear).
 {
 	const ctx = makeContext(LOGGED_IN);
 	const games = { PHI: game('LAR', true, EARLY) };
@@ -276,16 +275,9 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 	ctx.pastWeeklyRolloverCutoff = () => false;
 	setGames(ctx, games);
 	vm.runInContext("pageData = { weeklyRolloverCutoff: { weekday: 'Wed', hourCT: 19 } };", ctx);
-	const held = ctx.renderGameTimeWatchlistCard([l], YEAR);
-	assert.ok(held.classList.contains('card-collapsed'));
-	assert.match(fullText(held), /Next week opens Wednesday at 7 PM Central/);
-
-	// The message names whatever time the snapshot carries, not a fixed one.
-	vm.runInContext("pageData = { weeklyRolloverCutoff: { weekday: 'Thu', hourCT: 12 } };", ctx);
-	assert.match(fullText(ctx.renderGameTimeWatchlistCard([l], YEAR)), /Next week opens Thursday at noon Central/);
-	vm.runInContext("pageData = { weeklyRolloverCutoff: { weekday: 'Wed', hourCT: 9 } };", ctx);
-	assert.match(fullText(ctx.renderGameTimeWatchlistCard([l], YEAR)), /Next week opens Wednesday at 9 AM Central/);
-	assert.doesNotMatch(fullText(held), /No injured players/);
+	assert.equal(ctx.renderGameTimeWatchlistCard([l], YEAR), null);
+	ctx.pastWeeklyRolloverCutoff = () => true;
+	assert.ok(ctx.renderGameTimeWatchlistCard([l], YEAR), 'back once past the cutoff');
 }
 
 // The card: login-gated, loading until asked, collapsed when empty, rows when not.
