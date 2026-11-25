@@ -56,6 +56,10 @@ import {
   isPastWeeklyRolloverCutoff,
   WEEKLY_ROLLOVER_CUTOFF,
   currentNflWeek,
+  mflGet,
+  espnGet,
+  seasonOf,
+  fetchSleeperWeekMatchups,
 } from './lib/providers.mjs';
 import {
   attachRankings,
@@ -73,7 +77,18 @@ import {
   createRankingsProvider,
   automaticRankingType,
   lookupPlayer,
+  nflKickoffUtc,
 } from './lib/fantasypros.mjs';
+import {
+  mflWeekMatchups,
+  espnWeekMatchups,
+  sleeperWeekMatchups,
+  myResult,
+  medianResult,
+  storableResultWeek,
+  weekResultEntry,
+  needsWeekResult,
+} from '../api/_lib/weeklyresults.mjs';
 import { resolveMflLeagueInfo, parseLeagueMeta, serializeLeagueMeta } from './lib/league-meta.mjs';
 import { fetchAllDepthCharts, DEPTH_CHART_POSITIONS } from './lib/espn-depth-chart.mjs';
 import { fetchNflStandings } from './lib/espn-standings.mjs';
@@ -1613,6 +1628,46 @@ async function main() {
   if (draftonlyScoringSkipped) {
     console.log(`Scoring: skipped ${draftonlyScoringSkipped} draft-only league(s), which have no live scoring`);
   }
+
+  // The finished week's result per league (`weekResult`), for the page's
+  // Weekly Summary card. Asked BY NUMBER, with the push's own parsers
+  // (api/_lib/weeklyresults.mjs, where the reasoning lives), because each
+  // provider's "current week" moves on at its own hour and MFL's takes the
+  // old week's scores with it. Only inside storableResultWeek's window
+  // (Tuesday 08:00 UTC to Thursday 08:00 UTC), and only once per league per
+  // week: one extra request per league, once a week. Every other sync, and
+  // any league that fails or has nothing to report yet, carries the
+  // previous entry, so a stored result outlives the provider's rollover.
+  const resultSeason = nflSeasonPhase(new Date()).season;
+  const resultWeek = storableResultWeek(new Date(), nflKickoffUtc(resultSeason));
+  let weekResultsStored = 0;
+  for (const league of LEAGUES) {
+    const target = leagues.find((l) => l.id === league.id);
+    if (!target) continue;
+    const previous = previousById.get(league.id)?.weekResult ?? null;
+    target.weekResult = league.type === 'draftonly' ? null : previous;
+    if (league.type === 'draftonly' || !league.franchiseId || resultWeek == null) continue;
+    if (!needsWeekResult(previous, resultSeason, resultWeek) || unreachable.has(league.id)) continue;
+    try {
+      let matchups;
+      if (league.provider === 'espn') {
+        matchups = espnWeekMatchups(await espnGet(league, `view=mScoreboard&view=mTeam&scoringPeriodId=${resultWeek}`), resultWeek);
+      } else if (league.provider === 'sleeper') {
+        matchups = sleeperWeekMatchups(await fetchSleeperWeekMatchups(league, resultWeek));
+      } else {
+        matchups = mflWeekMatchups(await mflGet(`/export?TYPE=weeklyResults&L=${league.id}&W=${resultWeek}&JSON=1`, cookie, seasonOf(league)));
+      }
+      const median = league.weeklyMedianGame ? medianResult(matchups, league.franchiseId) : null;
+      const entry = weekResultEntry(resultSeason, resultWeek, myResult(matchups, league.franchiseId), median);
+      if (entry) {
+        target.weekResult = entry;
+        weekResultsStored++;
+      }
+    } catch (err) {
+      console.error(`Failed to read week ${resultWeek} result for ${league.name}: ${err.message}`);
+    }
+  }
+  if (resultWeek != null) console.log(`Week ${resultWeek} results: stored ${weekResultsStored} new`);
 
   // fetchMflLineup needs the actual current NFL week (see its own comment) —
   // resolved once here, off Sleeper's public unauthenticated /state/nfl, the

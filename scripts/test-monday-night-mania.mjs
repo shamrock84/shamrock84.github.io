@@ -23,11 +23,14 @@
 //     stay): auto when win % is above 80 or below 20, and a hand toggle wins.
 //   * "remaining" means the game is pre or in progress.
 //   * once Monday ends (local midnight) the card becomes Weekly Summary
-//     (W-L) until the rollover cutoff: Won / Lost / Tied leagues on the
-//     final scores, a weekly-median league's second game counted and
-//     marked, a 0-0 matchup (a league already on next week) left out.
-//     It renders off the snapshot before any live poll when every team's
-//     minutesRemaining is 0, and waits for the poll otherwise.
+//     (W-L) until the rollover cutoff: Won / Lost / Tied leagues, each from
+//     its scoring when that week is over (every team at 0 minutes left) or
+//     from the sync's stored `weekResult` for the same week, the newest week
+//     either names winning; a league already on next week (full minutes,
+//     zeros) is never a 0-0 tie but falls back to its stored result, or is
+//     named under "Not available yet". A weekly-median league's second game
+//     is counted and marked. It renders before any live poll when every
+//     league is accounted for, and waits for the poll otherwise.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -634,18 +637,50 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	// Weekly Summary: Tuesday before the cutoff, logged in, in season.
 	const ctx = makeContext(LOGGED_IN);
 	setState(ctx, games);
-	const w = lg('1', '120.00', '110.00', [], []);
-	const l = lg('2', '98.40', '110.00', [], []);
-	const t = lg('3', '100.00', '100.00', [], []);
-	const zero = lg('4', '0', '0', [], []);
-	const m = lg('5', '120.00', '110.00', [], [], { weeklyMedianGame: true });
-	m.scoring.teams.push({ franchiseId: '9', teamName: 'Third', score: '200.00', isMe: false });
-	const draft = lg('6', '120.00', '110.00', [], [], { type: 'draftonly' });
-	const r = ctx.computeWeeklySummary([w, l, t, zero, m, draft]);
+	const fin = (x, wk = 6) => { x.scoring.week = wk; for (const team of x.scoring.teams) team.minutesRemaining = 0; return x; };
+	const w = fin(lg('1', '120.00', '110.00', [], []));
+	const l = fin(lg('2', '98.40', '110.00', [], []));
+	const t = fin(lg('3', '100.00', '100.00', [], []));
+	const m = fin(lg('5', '120.00', '110.00', [], [], { weeklyMedianGame: true }));
+	m.scoring.teams.push({ franchiseId: '9', teamName: 'Third', score: '200.00', isMe: false, minutesRemaining: 0 });
+	const draft = fin(lg('6', '120.00', '110.00', [], [], { type: 'draftonly' }));
+	const r = ctx.computeWeeklySummary([w, l, t, m, draft]);
 	assert.equal(r.record, '2-2-1');
+	assert.equal(r.week, 6);
 	assert.deepEqual(plain(r.won.map((e) => [e.league.id, e.median])), [['1', false], ['5', false]]);
 	assert.deepEqual(plain(r.lost.map((e) => [e.league.id, e.median])), [['2', false], ['5', true]]);
 	assert.deepEqual(plain(r.tied.map((e) => e.league.id)), ['3']);
+	assert.deepEqual(plain(r.missing), []);
+
+	// A league already on next week (MFL, Tuesday afternoon): full minutes and
+	// zeros are not a 0-0 tie. With a stored result for the week it counts;
+	// with only an older stored result it is named as missing.
+	const rolled = lg('7', '0.00', '0.00', [], []);
+	rolled.scoring.week = 7;
+	for (const team of rolled.scoring.teams) team.minutesRemaining = 540;
+	rolled.weekResult = { season: '2026', week: 6, result: 'W', points: 130, oppPoints: 90 };
+	let s2 = ctx.computeWeeklySummary([w, rolled]);
+	assert.equal(s2.record, '2-0', 'stored week-6 result counts for the rolled-over league');
+	rolled.weekResult = { season: '2026', week: 5, result: 'L', points: 80, oppPoints: 90 };
+	s2 = ctx.computeWeeklySummary([w, rolled]);
+	assert.equal(s2.record, '1-0', 'last week\'s stored result is not this week\'s');
+	assert.deepEqual(plain(s2.missing.map((x) => x.id)), ['7']);
+	// Stored results alone (every provider moved on): the newest stored week.
+	const a = lg('8', '0', '0', [], []);
+	a.weekResult = { season: '2026', week: 6, result: 'L', points: 1, oppPoints: 2, median: { result: 'W' } };
+	rolled.weekResult = { season: '2026', week: 6, result: 'T', points: 3, oppPoints: 3 };
+	s2 = ctx.computeWeeklySummary([a, rolled]);
+	assert.equal(s2.record, '1-1-1');
+	assert.deepEqual(plain(s2.won.map((e) => [e.league.id, e.median])), [['8', true]]);
+	// A live final for a NEWER week than the stored ones wins (Tuesday
+	// before the sync's window opens: stored results are still last week's).
+	const s3 = ctx.computeWeeklySummary([fin(lg('9', '50', '40', [], []), 7), rolled]);
+	assert.equal(s3.week, 7);
+	assert.deepEqual(plain(s3.missing.map((x) => x.id)), ['7']);
+	// Another season's stored result is ignored.
+	vm.runInContext("pageData = { year: 2027 };", ctx);
+	assert.deepEqual(plain(ctx.computeWeeklySummary([rolled]).missing.map((x) => x.id)), ['7']);
+	vm.runInContext("pageData = null;", ctx);
 
 	// The window: Tuesday through the cutoff, never Monday or past it.
 	ctx.pastWeeklyRolloverCutoff = () => false;
@@ -664,17 +699,17 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	assert.match(text, /Won: L1/);
 	assert.match(text, /Lost: L2/);
 	assert.match(text, /Tied: L3/);
-	assert.doesNotMatch(text, /Mayhem|predict/);
+	assert.doesNotMatch(text, /Mayhem|predict|Not available/);
 	assert.match(fullText(ctx.renderMondayNightManiaCard([m], TUESDAY)), /Lost: L5 \(median\)/);
+	rolled.weekResult = { season: '2026', week: 5, result: 'L', points: 80, oppPoints: 90 };
+	assert.match(fullText(ctx.renderMondayNightManiaCard([w, rolled], TUESDAY)), /Weekly Summary \(1-0\).*Not available yet: L7/s);
 
-	// Before any live poll: the snapshot's scores serve once they are final.
+	// Before any live poll: draws when every league is accounted for, waits otherwise.
 	setState(ctx, games, false);
-	for (const x of [w, l, t]) for (const team of x.scoring.teams) team.minutesRemaining = 0;
 	assert.match(fullText(ctx.renderMondayNightManiaCard([w, l, t], TUESDAY)), /^Weekly Summary \(1-1-1\)/);
-	l.scoring.teams[1].minutesRemaining = 12; // synced mid-Monday night
-	assert.match(fullText(ctx.renderMondayNightManiaCard([w, l, t], TUESDAY)), /Loading live scores/);
-	delete l.scoring.teams[1].minutesRemaining;
-	assert.match(fullText(ctx.renderMondayNightManiaCard([w, l, t], TUESDAY)), /Loading live scores/);
+	assert.match(fullText(ctx.renderMondayNightManiaCard([w, rolled], TUESDAY)), /Loading live scores/);
+	rolled.weekResult = { season: '2026', week: 6, result: 'W', points: 130, oppPoints: 90 };
+	assert.match(fullText(ctx.renderMondayNightManiaCard([w, rolled], TUESDAY)), /^Weekly Summary \(2-0\)/, 'stored result: no wait');
 	setState(ctx, games);
 
 	// Logged out: nothing.

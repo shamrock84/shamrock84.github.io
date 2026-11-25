@@ -166,3 +166,44 @@ export function buildMessages(week, entries) {
     body,
   }));
 }
+
+// ---- Stored results for the page (scripts/fetch-rosters.mjs) --------------
+//
+// The 4-hourly sync also asks every league for the finished week BY NUMBER,
+// with the same parsers as the push above, and writes the answer onto the
+// league's snapshot entry as `weekResult`, which myffl.html's Weekly Summary
+// card reads. Reading it off each league's live "current week" scoring
+// instead broke the first week it shipped: MFL moved its leagues to the new
+// week on Tuesday afternoon (Nov 24, 2026), which zeroed every MFL score
+// while the card was still meant to be summing the old week.
+
+// The week the sync may store, or null. finishedWeek counts whole UTC days
+// from a 00:00 UTC Thursday, so its "Tuesday" starts at 00:00 UTC, which is
+// Monday evening in the US with Monday night's game still being played. The
+// push gets away with that because it is scheduled for mid-morning; a sync
+// runs every four hours and would store a half-played week. Asking about the
+// moment eight hours earlier starts the window at 08:00 UTC Tuesday (2-3 AM
+// Central, past any Monday game's end) and ends it at 08:00 UTC Thursday.
+export const STORE_RESULT_DELAY_MS = 8 * 60 * 60 * 1000;
+export function storableResultWeek(now, kickoffMs) {
+  return finishedWeek(new Date(now.getTime() - STORE_RESULT_DELAY_MS), kickoffMs);
+}
+
+// The stored shape: { season, week, result, points, oppPoints, median? },
+// with `median` ({ result }) only for a weekly-median league that has one.
+// null when myResult has nothing to report (a bye, or a week not scored yet),
+// which the caller treats as "ask again next sync", never as a result.
+export function weekResultEntry(season, week, result, median) {
+  if (!result) return null;
+  const out = { season: String(season), week, result: result.result, points: result.points, oppPoints: result.oppPoints };
+  if (median) out.median = { result: median.result };
+  return out;
+}
+
+// Whether a league still needs asking this sync: nothing stored yet for this
+// season and week. Once stored the answer stands (stat corrections come later
+// in the week and are not worth a request a sync), and outside the window the
+// previous entry is simply carried.
+export function needsWeekResult(previous, season, week) {
+  return !(previous && previous.season === String(season) && previous.week === week);
+}

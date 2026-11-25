@@ -24,6 +24,9 @@ import {
   summarize,
   buildMessages,
   PUSHOVER_BODY_LIMIT,
+  storableResultWeek,
+  weekResultEntry,
+  needsWeekResult,
 } from '../api/_lib/weeklyresults.mjs';
 import { nflKickoffUtc } from '../scripts/lib/fantasypros.mjs';
 import handler from '../api/weekly-results.js';
@@ -143,5 +146,28 @@ process.env.PUSHOVER_USER_KEY = 'u';
 assert.equal((await call({}, { authorization: 'Bearer wrong' })).code, 401);
 assert.equal((await call({ key: 's' })).code, 401, 'the secret in ?key= is refused');
 assert.equal((await call({ week: '99' }, { authorization: 'Bearer s' })).body.sent, false);
+
+// ---- Stored results (the sync's `weekResult`, read by the Weekly Summary).
+{
+	const k = nflKickoffUtc(2026); // Thu 2026-09-10 00:00 UTC
+	// Week 11 ends Monday night Nov 23; the window opens Tue 08:00 UTC, past
+	// any Monday game, and closes Thu 08:00 UTC.
+	assert.equal(storableResultWeek(new Date('2026-11-24T02:00:00Z'), k), null, 'Monday 8 PM Central: MNF still on, finishedWeek alone would say 11');
+	assert.equal(finishedWeek(new Date('2026-11-24T02:00:00Z'), k), 11, '(the push\'s own window does open then)');
+	assert.equal(storableResultWeek(new Date('2026-11-24T07:59:00Z'), k), null);
+	assert.equal(storableResultWeek(new Date('2026-11-24T08:00:00Z'), k), 11, 'Tuesday 08:00 UTC: open');
+	assert.equal(storableResultWeek(new Date('2026-11-25T04:17:00Z'), k), 11, 'Tuesday night Central sync');
+	assert.equal(storableResultWeek(new Date('2026-11-26T07:59:00Z'), k), 11, 'still open into Wednesday night');
+	assert.equal(storableResultWeek(new Date('2026-11-26T08:00:00Z'), k), null, 'Thursday 08:00 UTC: closed');
+
+	assert.equal(weekResultEntry(2026, 11, null), null, 'no result (bye, unscored): nothing stored');
+	assert.deepEqual(weekResultEntry(2026, 11, { result: 'W', points: 120.5, oppPoints: 99 }), { season: '2026', week: 11, result: 'W', points: 120.5, oppPoints: 99 });
+	assert.deepEqual(weekResultEntry('2026', 11, { result: 'L', points: 1, oppPoints: 2 }, { result: 'W', points: 1, avg: 0.5 }).median, { result: 'W' });
+
+	assert.equal(needsWeekResult(null, 2026, 11), true);
+	assert.equal(needsWeekResult({ season: '2026', week: 10 }, 2026, 11), true, 'last week stored: ask');
+	assert.equal(needsWeekResult({ season: '2026', week: 11 }, 2026, 11), false, 'this week stored: never asked again');
+	assert.equal(needsWeekResult({ season: '2025', week: 11 }, 2026, 11), true, 'last season\'s week 11: ask');
+}
 
 console.log('weekly results: ok');
