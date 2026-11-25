@@ -9874,11 +9874,17 @@
 			const heading = el('h2', { class: 'card-heading', text: 'Now Playing' });
 			card.appendChild(heading);
 
-			if (!liveScoringAttempted) {
-				// Loading, not empty — force-collapsing here would read as
-				// "nothing playing" before the first poll even answered, same
-				// false-all-clear this card's loading state already guards
-				// against everywhere else.
+			// Loading, not empty — force-collapsing here would read as
+			// "nothing playing" before the first poll even answered, same
+			// false-all-clear this card's loading state already guards
+			// against everywhere else. The one exception: the snapshot shows
+			// the week over (weekScoringIsFinal: no game time left on any team)
+			// and it isn't Monday, so nobody of mine can be playing today and
+			// the empty state is the truth, not a guess. Monday is excluded
+			// because after Monday night the week is final yet today's players
+			// still belong on the card, and only the live poll carries them
+			// (the snapshot strips players[]/bench[]).
+			if (!liveScoringAttempted && !(weekScoringIsFinal(leagues) && now.getDay() !== 1)) {
 				makeCollapsible(card, heading, 'now-playing');
 				card.appendChild(el('div', { class: 'loading-box', text: 'Loading live scores…' }));
 				return card;

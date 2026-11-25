@@ -323,6 +323,23 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 	assert.ok(fullText(sundayLiveCard).includes('1 player live right now'), 'Sunday subtitle reads "live right now" once someone actually is');
 }
 
+// Before the first live poll: "Loading" by default, but straight to the
+// empty state when the snapshot shows the week over (every team at 0
+// minutes left) and it isn't Monday — nobody of mine can be playing.
+{
+	const ctx = makeContext(LOGGED_IN);
+	setLiveScoringAttempted(ctx, false);
+	setLiveGames(ctx, {});
+	const snap = league('L60', '0001', []);
+	for (const t of snap.scoring.teams) { delete t.players; t.minutesRemaining = 0; }
+	const TUESDAY_NOW = new Date(2026, 10, 24, 18, 0, 0);
+	const MONDAY_NOW = new Date(2026, 10, 23, 18, 0, 0);
+	assert.ok(fullText(ctx.renderNowPlayingCard([snap], TUESDAY_NOW)).includes('No players playing today.'), 'week final, Tuesday: empty state, no loading');
+	assert.match(fullText(ctx.renderNowPlayingCard([snap], MONDAY_NOW)), /Loading live scores/, 'Monday: today\'s players only come from the live poll');
+	snap.scoring.teams[1].minutesRemaining = 60;
+	assert.match(fullText(ctx.renderNowPlayingCard([snap], TUESDAY_NOW)), /Loading live scores/, 'game time left somewhere: wait for the poll');
+}
+
 // Kickers and defenses appear here like any other live starter of mine.
 {
 	const ctx = makeContext();
