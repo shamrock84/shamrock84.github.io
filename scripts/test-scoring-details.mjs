@@ -1032,10 +1032,48 @@ function leagueWithMatchup() {
 	assert.equal(ctx.nextLiveScoringDelayMs(), idleMs, 'no games at all: the slow fallback');
 
 	setLiveGames(ctx, { CIN: { state: 'pre' }, ATL: { state: 'post' } });
-	assert.equal(ctx.nextLiveScoringDelayMs(), idleMs, 'scheduled and final are not "live" — still the fallback');
+	assert.equal(ctx.nextLiveScoringDelayMs(), idleMs, 'scheduled with no kickoff time, and final, are not "live" — still the fallback');
 
 	setLiveGames(ctx, { CIN: { state: 'pre' }, SEA: { state: 'in' } });
 	assert.equal(ctx.nextLiveScoringDelayMs(), fastMs, 'one genuinely live game anywhere is enough to stay fast');
+}
+
+// --- With nothing live, polling waits for the next kickoff, or for the
+// rollover cutoff while the week is held, instead of checking every 30 min.
+{
+	const ctx = makeContext();
+	const fastMs = vm.runInContext('LIVE_SCORING_POLL_MS', ctx);
+	const idleMs = vm.runInContext('LIVE_SCORING_IDLE_POLL_MS', ctx);
+	const now = Date.parse('2026-11-26T12:00:00Z'); // Thu 6 AM Central
+	const HOUR = 3600000;
+	ctx.pastWeeklyRolloverCutoff = () => true;
+	setLiveGames(ctx, {
+		DAL: { state: 'pre', kickoff: new Date(now + 9 * HOUR).toISOString() },
+		DET: { state: 'pre', kickoff: new Date(now + 6 * HOUR).toISOString() },
+		ATL: { state: 'post', kickoff: new Date(now - 72 * HOUR).toISOString() },
+	});
+	assert.equal(ctx.nextLiveScoringDelayMs(now), 6 * HOUR, 'sleeps until the earliest kickoff');
+	assert.equal(ctx.nextLiveScoringDelayMs(now + 6 * HOUR + 60000), fastMs, 'a kickoff passed but not yet "in": poll fast');
+	setLiveGames(ctx, { DAL: { state: 'pre', kickoff: new Date(now + 72 * HOUR).toISOString() } });
+	assert.equal(ctx.nextLiveScoringDelayMs(now), 24 * HOUR, 'capped at a day');
+
+	// Every game final: wait for the cutoff while held, the fallback once past it.
+	setLiveGames(ctx, { ATL: { state: 'post' } });
+	assert.equal(ctx.nextLiveScoringDelayMs(now), idleMs, 'past the cutoff, nothing scheduled: the slow fallback');
+	const cutoff = now + 20 * HOUR;
+	ctx.pastWeeklyRolloverCutoff = (d) => d.getTime() >= cutoff;
+	assert.equal(ctx.nextLiveScoringDelayMs(now - 30 * 60000), 20 * HOUR + 30 * 60000, 'held: sleeps until the cutoff hour');
+
+	// Freshness: a cached poll stays fresh until the wake time, however old.
+	ctx.pastWeeklyRolloverCutoff = () => true;
+	const kickoff = Date.now() + 5 * HOUR;
+	setLiveGames(ctx, { DAL: { state: 'pre', kickoff: new Date(kickoff).toISOString() } });
+	vm.runInContext('lastLivePollFailed = false; lastLiveGeneratedAt = new Date(Date.now() - 2 * 3600000).toISOString();', ctx);
+	assert.equal(ctx.liveScoringDataIsFresh(), true, 'two hours old, kickoff still ahead: fresh');
+	assert.equal(ctx.liveScoringDataIsFresh(kickoff + 1000), false, 'once the kickoff passes: stale');
+	assert.ok(Math.abs(ctx.resumeLiveScoringDelayMs() - 5 * HOUR) < 5000, 'resume waits for the kickoff');
+	vm.runInContext('lastLivePollFailed = true;', ctx);
+	assert.equal(ctx.liveScoringDataIsFresh(), false, 'a failed poll is never fresh');
 }
 
 // --- Pausing the live-scoring poll while the browser tab is backgrounded ---
