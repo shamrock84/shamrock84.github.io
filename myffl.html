@@ -5697,10 +5697,12 @@
 		// deployed; polling is a no-op while this is empty.
 		const LIVE_SCORING_URL = 'https://shamrock84-github-io.vercel.app/api/live-scoring';
 		const LIVE_SCORING_POLL_MS = 30000;
-		// The fallback cadence for the rest of the week, when the last poll's
-		// own `games` map said nothing was actually live (see
-		// nextLiveScoringDelayMs) — nearly all of a Scoring tab's open time,
-		// since games are live only a handful of hours a week. Polling MFL
+		// The fallback cadence when nothing is live AND the last poll's
+		// scoreboard names no upcoming kickoff or held-week cutoff to wait for
+		// (nextQuietWakeAt) — mostly the hours between the cutoff and the
+		// scoreboard flipping to the new week — and the retry cap after a
+		// failed poll. Otherwise a quiet tab waits for the next kickoff and
+		// polls nothing in between. Polling MFL
 		// every 30s Tuesday afternoon for scores that cannot have changed was
 		// pure waste on top of the drawer-gating fix. Raised from an initial
 		// 2 minutes to 30 on the manager's own request — a starting point,
@@ -10712,6 +10714,16 @@
 		function tickLiveStatus() {
 			renderLiveStatusFreshness();
 			syncNightCard();
+			syncScoringDay();
+		}
+		// Now Playing reads "today" off the local clock, and with nothing live
+		// the next poll can be days away (nextLiveScoringDelayMs), so the
+		// date rolling over repaints the Scoring cards from what is known —
+		// no network call.
+		let renderedScoringDay = null;
+		function syncScoringDay() {
+			if (!pageData || renderedScoringDay === null || new Date().toDateString() === renderedScoringDay) return;
+			rerenderScoringCards();
 		}
 		function syncNightCard() {
 			if (!pageData || nightCardVariant() === renderedNightCardVariant) return;
@@ -17071,6 +17083,7 @@
 			const watchlist = renderGameTimeWatchlistCard(pageData.leagues, pageData.year);
 			if (watchlist) gridEl.appendChild(watchlist);
 			renderedNightCardVariant = nightCardVariant();
+			renderedScoringDay = new Date().toDateString();
 			const mondayNight = renderMondayNightManiaCard(pageData.leagues);
 			if (mondayNight) gridEl.appendChild(mondayNight);
 			const nowPlaying = renderNowPlayingCard(pageData.leagues);
@@ -17134,12 +17147,55 @@
 			return Object.values(liveGames).some((g) => g.state === 'in');
 		}
 
+		// With nothing live, the moment the next poll could find something
+		// new, from the last poll's own scoreboard: the earliest kickoff still
+		// to come (`pre`), or — when the scoreboard lists no game left to play
+		// and the week is still held (Tuesday to the rollover cutoff) — the
+		// cutoff itself, when the new week's matchups open. Until then no
+		// score can move, so polling just stops. null means it can't be known
+		// (every game final with the cutoff already past: the scoreboard has
+		// yet to flip to the new week), and the slow fallback keeps checking.
+		// A kickoff already past but not yet `in` is returned as is; the
+		// caller polls fast until the game shows as started.
+		function nextQuietWakeAt(now = Date.now()) {
+			let earliest = Infinity;
+			for (const g of Object.values(liveGames)) {
+				if (g.state !== 'pre' || !g.kickoff) continue;
+				const t = new Date(g.kickoff).getTime();
+				if (Number.isFinite(t) && t < earliest) earliest = t;
+			}
+			if (earliest !== Infinity) return earliest;
+			if (!pastWeeklyRolloverCutoff(new Date(now))) return nextRolloverCutoffAt(now);
+			return null;
+		}
+
+		// The first whole hour at or after `now` that is past the weekly
+		// rollover cutoff, walking forward an hour at a time (Central's offset
+		// is a whole number of hours, so the cutoff falls on a UTC hour too).
+		// Only called while held, so it is at most two days out.
+		function nextRolloverCutoffAt(now = Date.now()) {
+			const HOUR = 3600000;
+			let t = Math.ceil(now / HOUR) * HOUR;
+			for (let i = 0; i < 8 * 24; i++, t += HOUR) {
+				if (pastWeeklyRolloverCutoff(new Date(t))) return t;
+			}
+			return null;
+		}
+
+		// setTimeout's own limit is ~24.8 days; a day is far inside it and
+		// costs one poll a day at worst.
+		const LIVE_SCORING_MAX_WAIT_MS = 24 * 3600000;
+
 		// How long until the NEXT poll, decided from what the LAST one found
 		// (see anyGameLive). Fast (LIVE_SCORING_POLL_MS) the moment anything
-		// is genuinely live; the slow fallback otherwise, which is most of a
-		// week.
-		function nextLiveScoringDelayMs() {
-			return anyGameLive() ? LIVE_SCORING_POLL_MS : LIVE_SCORING_IDLE_POLL_MS;
+		// is genuinely live; otherwise not until the next kickoff or the
+		// weekly cutoff (nextQuietWakeAt), and the slow fallback only when
+		// neither is known.
+		function nextLiveScoringDelayMs(now = Date.now()) {
+			if (anyGameLive()) return LIVE_SCORING_POLL_MS;
+			const wake = nextQuietWakeAt(now);
+			if (wake == null) return LIVE_SCORING_IDLE_POLL_MS;
+			return Math.min(Math.max(wake - now, LIVE_SCORING_POLL_MS), LIVE_SCORING_MAX_WAIT_MS);
 		}
 
 		// How long ago the last SUCCESSFUL poll landed — Infinity when there
@@ -17160,8 +17216,25 @@
 		// status line is still showing "Live update failed", and coming back
 		// to the tab should retry rather than silently sit on that failure
 		// for up to 30 minutes.
-		function liveScoringDataIsFresh() {
-			return !lastLivePollFailed && msSinceLastLivePoll() < nextLiveScoringDelayMs();
+		//
+		// While waiting on a known kickoff or cutoff, the cache stays fresh
+		// until that moment however long ago it landed: nothing it shows can
+		// have changed before then.
+		function liveScoringDataIsFresh(now = Date.now()) {
+			if (lastLivePollFailed) return false;
+			const since = msSinceLastLivePoll();
+			if (since === Infinity) return false;
+			const wake = anyGameLive() ? null : nextQuietWakeAt(now);
+			if (wake != null) return now < wake && since < LIVE_SCORING_MAX_WAIT_MS;
+			return since < nextLiveScoringDelayMs(now);
+		}
+
+		// The delay startLiveScoringPolling's resume path schedules: what is
+		// left of a fixed interval, or straight to the kickoff/cutoff.
+		function resumeLiveScoringDelayMs(now = Date.now()) {
+			const wake = anyGameLive() ? null : nextQuietWakeAt(now);
+			if (wake != null) return nextLiveScoringDelayMs(now);
+			return Math.max(nextLiveScoringDelayMs(now) - msSinceLastLivePoll(), 0);
 		}
 
 		// Replaces any pending poll rather than stacking a second one — the
@@ -17197,7 +17270,13 @@
 			if (anyGameLive()) {
 				setLiveStatus(`Live updates on — last refreshed ${timeAgo(lastLiveGeneratedAt)}`, false, 'No need to manually refresh');
 			} else {
-				setLiveStatus(`Last refreshed ${timeAgo(lastLiveGeneratedAt)}`, false);
+				// Says when polling resumes, so a long quiet stretch reads as
+				// deliberate rather than stuck.
+				const wake = nextQuietWakeAt();
+				const next = wake != null && wake > Date.now()
+					? ` — next check ${new Date(wake).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' })}`
+					: '';
+				setLiveStatus(`Last refreshed ${timeAgo(lastLiveGeneratedAt)}${next}`, false);
 			}
 		}
 
@@ -17273,7 +17352,9 @@
 				// so a poll that was already in flight when the reader left
 				// the Scoring tab or backgrounded the browser tab doesn't
 				// restart the chain once it resolves.
-				if (liveScoringPollingEnabled) scheduleLiveScoringPoll();
+				// A failure retries on the slow fallback at most, never waits out
+				// a kickoff days away on a scoreboard it couldn't refresh.
+				if (liveScoringPollingEnabled) scheduleLiveScoringPoll(lastLivePollFailed ? Math.min(nextLiveScoringDelayMs(), LIVE_SCORING_IDLE_POLL_MS) : undefined);
 			}
 		}
 
@@ -17292,7 +17373,7 @@
 				// switch). See liveScoringDataIsFresh's own comment.
 				renderLiveStatusFreshness();
 				if (!liveStatusTickTimer) liveStatusTickTimer = setInterval(tickLiveStatus, LIVE_STATUS_TICK_MS);
-				scheduleLiveScoringPoll(Math.max(nextLiveScoringDelayMs() - msSinceLastLivePoll(), 0));
+				scheduleLiveScoringPoll(resumeLiveScoringDelayMs());
 			} else {
 				refreshLiveScoring();
 			}
@@ -19434,6 +19515,7 @@
 			const watchlist = renderGameTimeWatchlistCard(data.leagues, data.year);
 			if (watchlist) gridEl.appendChild(watchlist);
 			renderedNightCardVariant = nightCardVariant();
+			renderedScoringDay = new Date().toDateString();
 			const mondayNight = renderMondayNightManiaCard(data.leagues);
 			if (mondayNight) gridEl.appendChild(mondayNight);
 			const nowPlaying = renderNowPlayingCard(data.leagues);
