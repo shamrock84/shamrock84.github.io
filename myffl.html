@@ -9907,7 +9907,7 @@
 			if (rows.length === 0) {
 				const empty = isSunday ? 'No players currently playing.' : 'No players playing today.';
 				card.appendChild(el('div', { class: 'team card-collapse-visible', text: empty }));
-				const emptyByeNote = nflByeFootnote(fantasyScoringWeek(leagues));
+				const emptyByeNote = nflByeFootnote();
 				if (emptyByeNote) card.appendChild(emptyByeNote);
 				return card;
 			}
@@ -10103,7 +10103,7 @@
 			}
 
 			renderBody();
-			const byeNote = nflByeFootnote(fantasyScoringWeek(leagues));
+			const byeNote = nflByeFootnote();
 			if (byeNote) card.appendChild(byeNote);
 			return card;
 		}
@@ -14793,14 +14793,18 @@
 			// above the toggle rather than sharing a row with it, so the
 			// toggle below can be the same unshared full-width strip the
 			// Scoring tab's own drawer uses.
-			row.appendChild(el('a', {
-				class: 'nfl-boxscore-link',
-				href: `https://www.espn.com/nfl/boxscore/_/gameid/${game.id}`,
-				target: '_blank',
-				rel: 'noopener',
-				text: 'ESPN ↗',
-			}));
-			appendNflBoxscoreToggle(row, game);
+			// A row drawn from the snapshot (snapshotNflGames) has no ESPN id
+			// until the scoreboard lands, so no link and no drawer yet.
+			if (game.id) {
+				row.appendChild(el('a', {
+					class: 'nfl-boxscore-link',
+					href: `https://www.espn.com/nfl/boxscore/_/gameid/${game.id}`,
+					target: '_blank',
+					rel: 'noopener',
+					text: 'ESPN ↗',
+				}));
+				appendNflBoxscoreToggle(row, game);
+			}
 
 			return row;
 		}
@@ -14921,25 +14925,23 @@
 		// game to the snapshot's `nflSchedules` (same opponent, kickoff within
 		// 3.5 days, so a flexed game or a schedule up to a sync stale still
 		// matches); the bye teams are then those with a `bye` entry that week.
-		// Returns null, and so renders nothing, when the schedules or the
-		// match are missing: a wrong week would be worse than no footnote.
-		//
-		// `knownWeek` skips the scoreboard: the Scoring tab passes the week its
-		// own cards show (fantasyScoringWeek), which the snapshot already
-		// carries, so its footnote is there on page load instead of after the
-		// first live poll, and names the same week as the cards beside it.
+		// Before the scoreboard has answered (page load), the week comes from
+		// the schedules alone (nflScheduleWeek), so the footnote is on screen
+		// at once. Returns null, and so renders nothing, when the schedules or
+		// the week are missing: a wrong week would be worse than no footnote.
 		let nflSchedulesData = null;
-		function nflByeFootnote(knownWeek = null) {
+		function nflByeFootnote() {
 			const teams = nflSchedulesData?.teams;
 			if (!teams) return null;
 			const window = 3.5 * 24 * 60 * 60 * 1000;
-			let week = knownWeek;
-			for (const g of week == null ? buildNflGamesList(liveGames) : []) {
+			let week = null;
+			for (const g of buildNflGamesList(liveGames)) {
 				if (!g.kickoff) continue;
 				const kick = new Date(g.kickoff).getTime();
 				const entry = (teams[g.home.team] || []).find((e) => !e.bye && e.opp === g.away.team && e.at && Math.abs(new Date(e.at).getTime() - kick) < window);
 				if (entry) { week = entry.wk; break; }
 			}
+			if (week == null && !gameStatesAttempted) week = nflScheduleWeek();
 			if (week == null) return null;
 			const byes = Object.keys(teams).filter((t) => teams[t].some((e) => e.bye && e.wk === week)).sort();
 			if (byes.length === 0) return null;
@@ -14950,21 +14952,36 @@
 			]);
 		}
 
-		// The scoring week most of my head-to-head leagues are on (the
-		// "Week N" their Scoring cards show), or null. From the snapshot
-		// until the first live poll replaces each league's scoring; both hold
-		// the finished week through the rollover cutoff. Most common, not
-		// first, so one league a week off can't move the answer.
-		function fantasyScoringWeek(leagues) {
-			const counts = new Map();
-			for (const league of leagues || []) {
-				if (league.type === 'draftonly') continue;
-				const wk = Number(league.scoring?.week);
-				if (Number.isInteger(wk) && wk > 0) counts.set(wk, (counts.get(wk) || 0) + 1);
+		// The NFL week "now", from the snapshot's schedules alone: the week of
+		// the earliest game with no result yet, i.e. the one in progress or up
+		// next. Once Monday night is final that is next week, which (as far as
+		// is known; ESPN can't be reached from the dev sandbox to confirm) is
+		// also when ESPN's scoreboard moves on, early Tuesday. A game with no
+		// result is only counted while its kickoff is under 36 hours old: the
+		// schedules can be four hours stale, so a game just finished may still
+		// lack one, but a game days old without one (postponed, or a gap in
+		// the feed) must not pin the tab to an old week. Falls back to the last
+		// week with any result (season over), or null with no schedules.
+		//
+		// Deliberately not the fantasy scoring week: MFL moves to the new week
+		// on its own clock, observed Tuesday afternoon (Nov 24, 2026) while
+		// ESPN and Sleeper leagues still held the old one, so the leagues
+		// disagree for a day or more.
+		function nflScheduleWeek(now = Date.now()) {
+			const teams = nflSchedulesData?.teams;
+			if (!teams) return null;
+			let next = Infinity;
+			let lastPlayed = null;
+			for (const entries of Object.values(teams)) {
+				for (const e of entries) {
+					if (e.bye || !Number.isInteger(e.wk)) continue;
+					if (e.r != null) { if (lastPlayed == null || e.wk > lastPlayed) lastPlayed = e.wk; continue; }
+					const kick = e.at ? new Date(e.at).getTime() : NaN;
+					if (Number.isNaN(kick) || kick < now - 36 * 3600000) continue;
+					if (e.wk < next) next = e.wk;
+				}
 			}
-			let best = null;
-			for (const [wk, n] of counts) if (best == null || n > counts.get(best)) best = wk;
-			return best;
+			return next !== Infinity ? next : lastPlayed;
 		}
 
 		function isGameToday(game) {
@@ -14979,23 +14996,56 @@
 		// pattern as nflInSeason/duringWeeks1Through17/duringIrClearingWindow
 		// — the only way to pin the Sunday branch below to a specific day of
 		// the week in a test without waiting for a real Sunday.
+		// The NFL tab's games for one week, rebuilt from the snapshot's
+		// schedules (nflSchedules) in the same shape buildNflGamesList makes
+		// from the live scoreboard, so the cards can draw on page load and the
+		// scoreboard simply replaces them when it lands. One game per home
+		// team's entry. A result (`r`) makes it final with the home team's own
+		// pf/pa; a kickoff still ahead is `pre`; a kickoff passed with no
+		// result is neither — live, or final since the last sync (up to four
+		// hours stale) — so it says "Updating…" and shows no score. No `id`
+		// (the schedules carry no ESPN event id), which renderNflGameRow reads
+		// as "no ESPN link or box score drawer"; no odds or broadcast either.
+		function snapshotNflGames(week, now = Date.now()) {
+			const teams = nflSchedulesData?.teams;
+			if (!teams || week == null) return [];
+			const games = [];
+			for (const [team, entries] of Object.entries(teams)) {
+				const e = entries.find((x) => x.wk === week && !x.bye && x.home);
+				if (!e || !e.opp || !e.at) continue;
+				const kick = new Date(e.at).getTime();
+				if (Number.isNaN(kick)) continue;
+				const final = e.r != null && e.pf != null && e.pa != null;
+				const state = final ? 'post' : kick > now ? 'pre' : 'unknown';
+				games.push({
+					id: null, state, detail: final ? 'Final' : state === 'unknown' ? 'Updating…' : null,
+					kickoff: e.at, broadcast: null, odds: null,
+					home: { team, score: final ? e.pf : null },
+					away: { team: e.opp, score: final ? e.pa : null },
+				});
+			}
+			return games.sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
+		}
+
 		function renderNflCards(gridEl, now = new Date()) {
-			if (!gameStatesAttempted) {
+			// Before the scoreboard lands, draw the snapshot's week instead
+			// (snapshotNflGames); only with no schedules to draw from does the
+			// tab fall back to a loading card. The week is nflScheduleWeek's,
+			// which should be the scoreboard's own (see that function).
+			const snapshotWeek = gameStatesAttempted ? null : nflScheduleWeek(now.getTime());
+			const snapshotGames = gameStatesAttempted ? [] : snapshotNflGames(snapshotWeek, now.getTime());
+			if (!gameStatesAttempted && snapshotGames.length === 0) {
 				const card = el('div', { class: 'card nfl-card', 'data-view': 'nfl' });
 				card.appendChild(el('h2', { class: 'card-heading', text: 'NFL' }));
 				card.appendChild(el('div', { class: 'loading-box', text: 'Loading games…' }));
-				// The byes need no scoreboard once the week is known, and the
-				// snapshot carries it (fantasyScoringWeek, the week the Scoring
-				// cards show), so they are on screen while the games load.
-				// The scoreboard's own match takes over once it lands; the two
-				// can only differ Tuesday-Wednesday, if the scoreboard moves to
-				// the new week before the rollover cutoff.
-				const byeNote = nflByeFootnote(fantasyScoringWeek(pageData?.leagues));
+				// The byes are on screen while the games load (nflByeFootnote
+				// falls back to the schedules' own week before the scoreboard).
+				const byeNote = nflByeFootnote();
 				if (byeNote) card.appendChild(byeNote);
 				appendNflCard(gridEl, card);
 				return;
 			}
-			const games = buildNflGamesList(liveGames);
+			const games = gameStatesAttempted ? buildNflGamesList(liveGames) : snapshotGames;
 			const isSunday = now.getDay() === 0;
 			const today = games.filter(isGameToday).filter((g) => !isSunday || g.state === 'in');
 			const nowPlayingLabel = isSunday ? 'Games live right now' : 'Games taking place today';
