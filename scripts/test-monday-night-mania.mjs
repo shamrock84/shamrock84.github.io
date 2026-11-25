@@ -22,6 +22,10 @@
 //   * each matchup collapses (player rows only; summary, min left and win %
 //     stay): auto when win % is above 80 or below 20, and a hand toggle wins.
 //   * "remaining" means the game is pre or in progress.
+//   * once Monday ends (local midnight) the card becomes Weekly Summary
+//     (W-L) until the rollover cutoff: Won / Lost / Tied leagues on the
+//     final scores, a weekly-median league's second game counted and
+//     marked, a 0-0 matchup (a league already on next week) left out.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -622,6 +626,50 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	assert.equal(ctx.predictedWeekRecord([m]), '1-1');
 	m.scoring.teams[2].score = '50.00'; // avg 93.33; mine is above: W + W.
 	assert.equal(ctx.predictedWeekRecord([m]), '2-0');
+}
+
+{
+	// Weekly Summary: Tuesday before the cutoff, logged in, in season.
+	const ctx = makeContext(LOGGED_IN);
+	setState(ctx, games);
+	const w = lg('1', '120.00', '110.00', [], []);
+	const l = lg('2', '98.40', '110.00', [], []);
+	const t = lg('3', '100.00', '100.00', [], []);
+	const zero = lg('4', '0', '0', [], []);
+	const m = lg('5', '120.00', '110.00', [], [], { weeklyMedianGame: true });
+	m.scoring.teams.push({ franchiseId: '9', teamName: 'Third', score: '200.00', isMe: false });
+	const draft = lg('6', '120.00', '110.00', [], [], { type: 'draftonly' });
+	const r = ctx.computeWeeklySummary([w, l, t, zero, m, draft]);
+	assert.equal(r.record, '2-2-1');
+	assert.deepEqual(plain(r.won.map((e) => [e.league.id, e.median])), [['1', false], ['5', false]]);
+	assert.deepEqual(plain(r.lost.map((e) => [e.league.id, e.median])), [['2', false], ['5', true]]);
+	assert.deepEqual(plain(r.tied.map((e) => e.league.id)), ['3']);
+
+	// The window: Tuesday through the cutoff, never Monday or past it.
+	ctx.pastWeeklyRolloverCutoff = () => false;
+	assert.equal(ctx.weeklySummaryCardIsActive(TUESDAY), true);
+	assert.equal(ctx.weeklySummaryCardIsActive(MONDAY), false);
+	assert.equal(ctx.weeklySummaryCardIsActive(new Date(2026, 6, 14, 12, 0, 0)), false, 'offseason');
+	ctx.pastWeeklyRolloverCutoff = () => true;
+	assert.equal(ctx.weeklySummaryCardIsActive(TUESDAY), false);
+	assert.equal(ctx.renderMondayNightManiaCard([w], TUESDAY), null);
+
+	ctx.pastWeeklyRolloverCutoff = () => false;
+	const card = ctx.renderMondayNightManiaCard([w, l, t], TUESDAY);
+	assert.equal(card.attrs.id, 'weekly-summary');
+	const text = fullText(card);
+	assert.match(text, /^Weekly Summary \(1-1-1\)/);
+	assert.match(text, /Won: L1/);
+	assert.match(text, /Lost: L2/);
+	assert.match(text, /Tied: L3/);
+	assert.doesNotMatch(text, /Mayhem|predict/);
+	assert.match(fullText(ctx.renderMondayNightManiaCard([m], TUESDAY)), /Lost: L5 \(median\)/);
+
+	// Logged out: nothing.
+	const out = makeContext();
+	out.pastWeeklyRolloverCutoff = () => false;
+	setState(out, games);
+	assert.equal(out.renderMondayNightManiaCard([w], TUESDAY), null);
 }
 
 console.log('test-monday-night-mania: ok');

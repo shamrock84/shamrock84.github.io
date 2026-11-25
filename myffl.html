@@ -10690,7 +10690,21 @@
 		// poll, and the idle poll is 30 minutes apart. syncNightCard, run on a
 		// short timer while Scoring polling is on, closes that gap.
 		function nightCardVariant(now = new Date()) {
-			return sundayCardIsActive(now) ? 'sunday' : mondayCardIsActive(now) ? 'monday' : null;
+			return sundayCardIsActive(now) ? 'sunday' : mondayCardIsActive(now) ? 'monday' : weeklySummaryCardIsActive(now) ? 'summary' : null;
+		}
+
+		// Weekly Summary: the night card's third variant, the week's final
+		// record, from the moment Monday Night Mayhem ends (midnight local)
+		// until the weekly rollover cutoff (pastWeeklyRolloverCutoff, Wed 7 PM
+		// Central), which is exactly the span live scoring keeps answering for
+		// the week just played. Central Monday after local midnight is an
+		// Eastern reader's first hour of Tuesday, which the cutoff's own
+		// Tuesday-anchored week would otherwise count as "past".
+		function weeklySummaryCardIsActive(now = new Date()) {
+			if (!nflInSeason(now) || mondayCardIsActive(now) || sundayCardIsActive(now)) return false;
+			const centralDay = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', weekday: 'short' }).format(now);
+			if (centralDay === 'Mon') return now.getDay() === 2;
+			return !pastWeeklyRolloverCutoff(now);
 		}
 		let renderedNightCardVariant = null;
 		// The status line's own ticker (15s) carries the check, so it runs
@@ -10938,8 +10952,77 @@
 			return t > 0 ? `${w}-${l}-${t}` : `${w}-${l}`;
 		}
 
+		// { won, lost, tied, record }: every head-to-head matchup of mine
+		// called on the final scores (no win probability: the week is over).
+		// Each entry is { league, median }, median marking a weekly-median
+		// league's second game (my score against the league average), which
+		// counts in the record like predictedWeekRecord's. A matchup where
+		// both sides are still at zero is left out: that is a league already
+		// showing next week (MFL's own rollover time is unknown), not a 0-0 tie.
+		function computeWeeklySummary(leagues) {
+			const won = [];
+			const lost = [];
+			const tied = [];
+			const put = (diff, entry) => (diff > 0 ? won : diff < 0 ? lost : tied).push(entry);
+			for (const league of leagues || []) {
+				if (league.type === 'draftonly') continue;
+				const teams = league.scoring?.teams || [];
+				const mine = teams.find((t) => t.isMe);
+				if (!mine) continue;
+				const matchup = (league.scoring?.matchups || []).find((m) => m.teamIds.length === 2 && m.teamIds.includes(mine.franchiseId));
+				if (!matchup) continue;
+				const opp = teams.find((t) => t.franchiseId === matchup.teamIds.find((id) => id !== mine.franchiseId));
+				const myScore = Number(mine.score);
+				const oppScore = Number(opp?.score);
+				if (!Number.isFinite(myScore) || !Number.isFinite(oppScore)) continue;
+				if (myScore === 0 && oppScore === 0) continue;
+				put(Math.round((myScore - oppScore) * 100), { league, median: false });
+				if (league.weeklyMedianGame) {
+					const scores = teams.map((t) => Number(t.score));
+					if (scores.length > 0 && scores.every(Number.isFinite)) {
+						const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+						put(Math.round((myScore - avg) * 100), { league, median: true });
+					}
+				}
+			}
+			const record = tied.length > 0 ? `${won.length}-${lost.length}-${tied.length}` : `${won.length}-${lost.length}`;
+			return { won, lost, tied, record };
+		}
+
+		function renderWeeklySummaryCard(leagues) {
+			const cardId = 'weekly-summary';
+			const card = el('div', { class: 'card monday-card', id: cardId, 'data-view': 'scoring', 'data-league-type': '' });
+			if (!liveScoringAttempted) {
+				const heading = el('h2', { class: 'card-heading', text: 'Weekly Summary' });
+				card.appendChild(heading);
+				makeCollapsible(card, heading, cardId);
+				card.appendChild(el('div', { class: 'loading-box', text: 'Loading live scores…' }));
+				return card;
+			}
+			const { won, lost, tied, record } = computeWeeklySummary(leagues);
+			const heading = el('h2', { class: 'card-heading', text: `Weekly Summary (${record})` });
+			card.appendChild(heading);
+			makeCollapsible(card, heading, cardId);
+			if (won.length + lost.length + tied.length === 0) {
+				card.appendChild(el('div', { class: 'team', text: 'No results this week.' }));
+				return card;
+			}
+			const box = el('div', { class: 'monday-decided' });
+			const names = (list) => list.map((e) => quickLinkLabelForLeague(e.league) + (e.median ? ' (median)' : '')).join(', ');
+			for (const [list, cls, label] of [[won, 'monday-leading', 'Won: '], [lost, 'monday-trailing', 'Lost: '], [tied, '', 'Tied: ']]) {
+				if (list.length === 0) continue;
+				const line = el('div');
+				line.appendChild(el('strong', cls ? { class: cls, text: label } : { text: label }));
+				line.appendChild(document.createTextNode(names(list)));
+				box.appendChild(line);
+			}
+			card.appendChild(box);
+			return card;
+		}
+
 		function renderMondayNightManiaCard(leagues, now = new Date()) {
 			if (!isLoggedIn()) return null;
+			if (weeklySummaryCardIsActive(now)) return renderWeeklySummaryCard(leagues);
 			const sunday = sundayCardIsActive(now);
 			if (!sunday && !mondayCardIsActive(now)) return null;
 			// Its own id and collapse key: collapsing Sunday's card must not
