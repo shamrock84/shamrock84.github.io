@@ -9907,7 +9907,7 @@
 			if (rows.length === 0) {
 				const empty = isSunday ? 'No players currently playing.' : 'No players playing today.';
 				card.appendChild(el('div', { class: 'team card-collapse-visible', text: empty }));
-				const emptyByeNote = nflByeFootnote();
+				const emptyByeNote = nflByeFootnote(fantasyScoringWeek(leagues));
 				if (emptyByeNote) card.appendChild(emptyByeNote);
 				return card;
 			}
@@ -10103,7 +10103,7 @@
 			}
 
 			renderBody();
-			const byeNote = nflByeFootnote();
+			const byeNote = nflByeFootnote(fantasyScoringWeek(leagues));
 			if (byeNote) card.appendChild(byeNote);
 			return card;
 		}
@@ -14923,13 +14923,18 @@
 		// matches); the bye teams are then those with a `bye` entry that week.
 		// Returns null, and so renders nothing, when the schedules or the
 		// match are missing: a wrong week would be worse than no footnote.
+		//
+		// `knownWeek` skips the scoreboard: the Scoring tab passes the week its
+		// own cards show (fantasyScoringWeek), which the snapshot already
+		// carries, so its footnote is there on page load instead of after the
+		// first live poll, and names the same week as the cards beside it.
 		let nflSchedulesData = null;
-		function nflByeFootnote() {
+		function nflByeFootnote(knownWeek = null) {
 			const teams = nflSchedulesData?.teams;
 			if (!teams) return null;
 			const window = 3.5 * 24 * 60 * 60 * 1000;
-			let week = null;
-			for (const g of buildNflGamesList(liveGames)) {
+			let week = knownWeek;
+			for (const g of week == null ? buildNflGamesList(liveGames) : []) {
 				if (!g.kickoff) continue;
 				const kick = new Date(g.kickoff).getTime();
 				const entry = (teams[g.home.team] || []).find((e) => !e.bye && e.opp === g.away.team && e.at && Math.abs(new Date(e.at).getTime() - kick) < window);
@@ -14943,6 +14948,23 @@
 				el('span', { class: 'nfl-bye-title', text: `Week ${week} byes:` }),
 				document.createTextNode(` ${byes.join(', ')}`),
 			]);
+		}
+
+		// The scoring week most of my head-to-head leagues are on (the
+		// "Week N" their Scoring cards show), or null. From the snapshot
+		// until the first live poll replaces each league's scoring; both hold
+		// the finished week through the rollover cutoff. Most common, not
+		// first, so one league a week off can't move the answer.
+		function fantasyScoringWeek(leagues) {
+			const counts = new Map();
+			for (const league of leagues || []) {
+				if (league.type === 'draftonly') continue;
+				const wk = Number(league.scoring?.week);
+				if (Number.isInteger(wk) && wk > 0) counts.set(wk, (counts.get(wk) || 0) + 1);
+			}
+			let best = null;
+			for (const [wk, n] of counts) if (best == null || n > counts.get(best)) best = wk;
+			return best;
 		}
 
 		function isGameToday(game) {
@@ -19524,6 +19546,9 @@
 				return;
 			}
 
+			// Before any card that reads it: the Scoring tab's Now Playing bye
+			// footnote as well as the NFL tab's cards further down.
+			nflSchedulesData = data.nflSchedules || null;
 			// First, and outside the per-league loop below — see
 			// .now-playing-card's own comment for why DOM order is what
 			// actually puts it first among data-view="scoring" cards.
@@ -19568,7 +19593,6 @@
 			// Playing/Matchups cards ahead of the Depth Charts wrapper card on
 			// the NFL tab — the same auto-fill-grid-follows-DOM-order idiom
 			// .now-playing-card's own comment already relies on.
-			nflSchedulesData = data.nflSchedules || null;
 			renderNflCards(gridEl);
 			const nflStandingsCard = renderNflStandingsCard(data.nflStandings);
 			if (nflStandingsCard) gridEl.appendChild(nflStandingsCard);
