@@ -802,4 +802,29 @@ function fireClick(node) {
 	assert.deepEqual(JSON.parse(JSON.stringify(list[0].odds)), odds, 'buildNflGamesList carries odds onto the game');
 }
 
+// --- nextNflPollDelayMs: the Scoring tab's kickoff/cutoff rule, plus a
+// failure retry cap and a local-midnight cap.
+{
+	const ctx = makeContext();
+	const fastMs = vm.runInContext('LIVE_SCORING_POLL_MS', ctx);
+	const idleMs = vm.runInContext('LIVE_SCORING_IDLE_POLL_MS', ctx);
+	const HOUR = 3600000;
+	ctx.pastWeeklyRolloverCutoff = () => true;
+	const now = new Date(2026, 10, 26, 6, 0, 0).getTime(); // local Thu 6 AM
+	const toMidnight = new Date(2026, 10, 27, 0, 0, 30).getTime() - now;
+
+	setLiveGames(ctx, { SEA: { state: 'in' } });
+	assert.equal(ctx.nextNflPollDelayMs(now), fastMs, 'a game in progress: fast');
+
+	setLiveGames(ctx, { DET: { state: 'pre', kickoff: new Date(now + 6 * HOUR).toISOString() } });
+	assert.equal(ctx.nextNflPollDelayMs(now), 6 * HOUR, 'sleeps until the kickoff');
+	assert.equal(ctx.nextNflPollDelayMs(now, true), idleMs, 'after a failed fetch: the slow fallback at most');
+
+	setLiveGames(ctx, { DET: { state: 'pre', kickoff: new Date(now + 60 * HOUR).toISOString() } });
+	assert.equal(ctx.nextNflPollDelayMs(now), toMidnight, 'a kickoff days off: wakes at local midnight to redraw the day');
+
+	setLiveGames(ctx, { ATL: { state: 'post' } });
+	assert.equal(ctx.nextNflPollDelayMs(now), idleMs, 'nothing scheduled, cutoff past: the slow fallback');
+}
+
 console.log('test-nfl-tab.mjs OK');
