@@ -10989,10 +10989,31 @@
 			return { won, lost, tied, record };
 		}
 
+		// True when every head-to-head league's scoring, as it stands, has no
+		// game time left on any team: the week is over and the scores are
+		// final. The snapshot (data/rosters.json) carries the same `scoring`
+		// the live poll returns, minutesRemaining included, and the sync holds
+		// the finished week through the rollover cutoff just as the live poll
+		// does — so once this is true the Weekly Summary needs no live call
+		// and renders on page load. It is false when the last sync ran while
+		// Monday night was still being played (or a team carries no
+		// minutesRemaining at all), and the card then waits for the live poll.
+		function weekScoringIsFinal(leagues) {
+			let any = false;
+			for (const league of leagues || []) {
+				if (league.type === 'draftonly' || !league.scoring) continue;
+				for (const t of league.scoring.teams || []) {
+					any = true;
+					if (Number(t.minutesRemaining) !== 0 || t.minutesRemaining == null) return false;
+				}
+			}
+			return any;
+		}
+
 		function renderWeeklySummaryCard(leagues) {
 			const cardId = 'weekly-summary';
 			const card = el('div', { class: 'card monday-card', id: cardId, 'data-view': 'scoring', 'data-league-type': '' });
-			if (!liveScoringAttempted) {
+			if (!liveScoringAttempted && !weekScoringIsFinal(leagues)) {
 				const heading = el('h2', { class: 'card-heading', text: 'Weekly Summary' });
 				card.appendChild(heading);
 				makeCollapsible(card, heading, cardId);

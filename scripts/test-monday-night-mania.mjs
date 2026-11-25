@@ -26,6 +26,8 @@
 //     (W-L) until the rollover cutoff: Won / Lost / Tied leagues on the
 //     final scores, a weekly-median league's second game counted and
 //     marked, a 0-0 matchup (a league already on next week) left out.
+//     It renders off the snapshot before any live poll when every team's
+//     minutesRemaining is 0, and waits for the poll otherwise.
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -664,6 +666,16 @@ const games = { MIA: st('pre'), NYJ: st('in'), KC: st('post') };
 	assert.match(text, /Tied: L3/);
 	assert.doesNotMatch(text, /Mayhem|predict/);
 	assert.match(fullText(ctx.renderMondayNightManiaCard([m], TUESDAY)), /Lost: L5 \(median\)/);
+
+	// Before any live poll: the snapshot's scores serve once they are final.
+	setState(ctx, games, false);
+	for (const x of [w, l, t]) for (const team of x.scoring.teams) team.minutesRemaining = 0;
+	assert.match(fullText(ctx.renderMondayNightManiaCard([w, l, t], TUESDAY)), /^Weekly Summary \(1-1-1\)/);
+	l.scoring.teams[1].minutesRemaining = 12; // synced mid-Monday night
+	assert.match(fullText(ctx.renderMondayNightManiaCard([w, l, t], TUESDAY)), /Loading live scores/);
+	delete l.scoring.teams[1].minutesRemaining;
+	assert.match(fullText(ctx.renderMondayNightManiaCard([w, l, t], TUESDAY)), /Loading live scores/);
+	setState(ctx, games);
 
 	// Logged out: nothing.
 	const out = makeContext();
