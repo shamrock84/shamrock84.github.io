@@ -15498,22 +15498,30 @@
 		let nflPollTimer = null;
 		let nflPollingEnabled = false;
 
-		// Same fast/idle split as nextLiveScoringDelayMs above, and for the
-		// same reason: nearly all of a week has nothing live, so there is no
-		// reason to poll the scoreboard every 30s on a Tuesday afternoon just
-		// because the tab happens to be open.
-		function nextNflPollDelayMs() {
-			const anyLive = Object.values(liveGames).some((g) => g.state === 'in');
-			return anyLive ? LIVE_SCORING_POLL_MS : LIVE_SCORING_IDLE_POLL_MS;
+		// The Scoring tab's rule (nextLiveScoringDelayMs): fast while a game
+		// is in progress, otherwise nothing until the next kickoff or the
+		// weekly cutoff, the slow fallback only when neither is known. Two
+		// NFL-tab additions. A failed fetch retries within the slow fallback
+		// rather than sleeping until a kickoff on a scoreboard it couldn't
+		// refresh. And the wait ends at local midnight at the latest: this tab
+		// has no repaint ticker of its own, and its cards read "today" off the
+		// clock, so the new day is drawn by one cheap poll (gamesOnly, no MFL).
+		function nextNflPollDelayMs(now = Date.now(), failed = false) {
+			let delay = nextLiveScoringDelayMs(now);
+			if (failed) delay = Math.min(delay, LIVE_SCORING_IDLE_POLL_MS);
+			const midnight = new Date(now);
+			midnight.setHours(24, 0, 30, 0);
+			return Math.min(delay, Math.max(midnight.getTime() - now, LIVE_SCORING_POLL_MS));
 		}
 
-		function scheduleNflPoll() {
+		function scheduleNflPoll(failed = false) {
 			if (nflPollTimer) clearTimeout(nflPollTimer);
-			nflPollTimer = setTimeout(refreshNflScoreboard, nextNflPollDelayMs());
+			nflPollTimer = setTimeout(refreshNflScoreboard, nextNflPollDelayMs(Date.now(), failed));
 		}
 
 		async function refreshNflScoreboard() {
 			if (!LIVE_SCORING_URL) return;
+			let failed = true;
 			try {
 				// Omitted entirely when nobody has a stat drawer open — the
 				// common case is one shorter URL, not a query string with
@@ -15528,6 +15536,7 @@
 					liveGames = data.games || {};
 					nflBoxscores = data.boxscores || {};
 					gameStatesAttempted = true;
+					failed = false;
 					rerenderNflCards();
 				}
 			} catch {
@@ -15535,7 +15544,7 @@
 				// leave liveGames/nflBoxscores exactly as they were and let
 				// the next poll retry.
 			} finally {
-				if (nflPollingEnabled) scheduleNflPoll();
+				if (nflPollingEnabled) scheduleNflPoll(failed);
 			}
 		}
 
