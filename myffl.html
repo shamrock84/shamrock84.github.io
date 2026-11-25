@@ -10388,12 +10388,16 @@
 		// kickoff it's the more actionable of the two, and once every game has
 		// started it empties itself and collapses out of the way. Always
 		// rendered once logged in (loading/empty states rather than null), for
-		// the same position-stability reason Now Playing gives.
+		// the same position-stability reason Now Playing gives — except while
+		// held before the weekly rollover cutoff (Tuesday to Wednesday 7 PM
+		// Central), when it could only say the week isn't open yet: then it is
+		// absent, and the Weekly Summary card takes the top of the tab.
 		//
 		// Reachable directly at myffl.html#watchlist (see init), which is the
 		// link a game-day alert will carry.
 		function renderGameTimeWatchlistCard(leagues, year) {
 			if (!isLoggedIn()) return null;
+			if (!pastWeeklyRolloverCutoff()) return null;
 			const card = el('div', { class: 'card watchlist-card', id: 'watchlist', 'data-view': 'scoring', 'data-league-type': '' });
 			const heading = el('h2', { class: 'card-heading', text: 'Game-Time Watchlist' });
 			card.appendChild(heading);
@@ -10404,14 +10408,10 @@
 				return card;
 			}
 
-			const pastCutoff = pastWeeklyRolloverCutoff();
-			const slots = computeGameTimeWatchlist(leagues, year, liveGames, pastCutoff);
+			const slots = computeGameTimeWatchlist(leagues, year, liveGames, true);
 			makeCollapsible(card, heading, 'watchlist', slots.length === 0);
 			if (slots.length === 0) {
-				const text = pastCutoff
-					? 'No injured players in games yet to kick off.'
-					: `Next week opens ${watchlistCutoffLabel(pageData?.weeklyRolloverCutoff)}.`;
-				card.appendChild(el('div', { class: 'team card-collapse-visible', text }));
+				card.appendChild(el('div', { class: 'team card-collapse-visible', text: 'No injured players in games yet to kick off.' }));
 				return card;
 			}
 
@@ -11837,18 +11837,6 @@
 			if (dayIndex < cutoffIndex) return false;
 			if (dayIndex > cutoffIndex) return true;
 			return hour >= cutoff.hourCT;
-		}
-
-		// "Wednesday at 7 PM Central" for the Game-Time Watchlist's held
-		// message, off the same snapshot field, so moving the cutoff doesn't
-		// leave the card naming the old time. Only reached while held, which
-		// requires a valid cutoff.
-		function watchlistCutoffLabel(cutoff) {
-			if (!cutoff) return 'later this week';
-			const days = { Sun: 'Sunday', Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday' };
-			const h = cutoff.hourCT;
-			const time = h === 0 ? 'midnight' : h === 12 ? 'noon' : `${h % 12} ${h < 12 ? 'AM' : 'PM'}`;
-			return `${days[cutoff.weekday]} at ${time} Central`;
 		}
 
 		// One league's problems, as { kind, player, label } rows — player is
