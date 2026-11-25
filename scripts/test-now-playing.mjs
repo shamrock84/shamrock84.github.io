@@ -340,31 +340,43 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 	assert.match(fullText(ctx.renderNowPlayingCard([snap], TUESDAY_NOW)), /Loading live scores/, 'game time left somewhere: wait for the poll');
 }
 
-// The bye footnote on this card names the week the Scoring cards show,
-// read off the snapshot, so it is there before the first live poll (no
-// scoreboard needed) — and the NFL tab's scoreboard-matched path is
-// untouched when no week is passed.
+// The bye footnote is on this card before the first live poll: with no
+// scoreboard yet, the week comes from the snapshot's schedules alone
+// (nflScheduleWeek: the earliest game without a result), not from the
+// fantasy leagues, which disagree once MFL moves on early.
 {
 	const ctx = makeContext(LOGGED_IN);
 	setLiveScoringAttempted(ctx, false);
 	setLiveGames(ctx, {});
-	vm.runInContext(`nflSchedulesData = { teams: {
-		MIN: [{ wk: 11, opp: 'SF', at: '2026-11-23T01:20Z' }, { wk: 12, bye: true }],
-		SF: [{ wk: 11, opp: 'MIN', at: '2026-11-23T01:20Z' }, { wk: 12, opp: 'KC', at: '2026-11-29T18:00Z' }],
-		KC: [{ wk: 11, bye: true }, { wk: 12, opp: 'SF', at: '2026-11-29T18:00Z' }],
-	} };`, ctx);
+	const DAY = 86400000;
+	const iso = (ms) => new Date(ms).toISOString();
+	const t = Date.now();
+	ctx.__sched = { teams: {
+		MIN: [{ wk: 11, opp: 'SF', home: false, at: iso(t - 2 * DAY), r: 'L', pf: 10, pa: 35 }, { wk: 12, bye: true }],
+		SF: [{ wk: 11, opp: 'MIN', home: true, at: iso(t - 2 * DAY), r: 'W', pf: 35, pa: 10 }, { wk: 12, opp: 'KC', home: true, at: iso(t + 2 * DAY) }],
+		KC: [{ wk: 11, bye: true }, { wk: 12, opp: 'SF', home: false, at: iso(t + 2 * DAY) }],
+		OLD: [{ wk: 9, opp: 'X', home: true, at: iso(t - 20 * DAY) }],
+	} };
+	vm.runInContext('nflSchedulesData = __sched;', ctx);
+	assert.equal(ctx.nflScheduleWeek(), 12, 'week 11 final: the next unplayed week; a days-old game with no result is ignored');
+	ctx.__sched2 = { teams: { SF: [{ wk: 11, opp: 'MIN', home: true, at: iso(t + DAY) }, { wk: 12, opp: 'KC', home: true, at: iso(t + 8 * DAY) }] } };
+	vm.runInContext('nflSchedulesData = __sched2;', ctx);
+	assert.equal(ctx.nflScheduleWeek(), 11, 'week 11 still to play: week 11');
+	ctx.__sched2.teams.SF[0].at = iso(t - 3 * 3600000);
+	assert.equal(ctx.nflScheduleWeek(), 11, 'kicked off hours ago, no result yet (in progress, or a stale sync): still week 11');
+	vm.runInContext('nflSchedulesData = __sched;', ctx);
+	// Mixed fantasy weeks (MFL on 12, ESPN on 11) don't matter.
 	const mk = (id, wk) => {
 		const l = league(id, '0001', []);
 		l.scoring.week = wk;
-		for (const t of l.scoring.teams) { delete t.players; t.minutesRemaining = 0; }
+		for (const tm of l.scoring.teams) { delete tm.players; tm.minutesRemaining = 0; }
 		return l;
 	};
-	assert.equal(ctx.fantasyScoringWeek([mk('a', 11), mk('b', 11), mk('c', 12)]), 11, 'the most common week wins');
-	assert.equal(ctx.fantasyScoringWeek([]), null);
 	const TUESDAY_NOW = new Date(2026, 10, 24, 18, 0, 0);
-	const text = fullText(ctx.renderNowPlayingCard([mk('a', 11), mk('b', 11)], TUESDAY_NOW));
-	assert.match(text, /Week 11 byes: KC/, 'footnote on page load, from the snapshot week');
-	assert.equal(ctx.nflByeFootnote(), null, 'no week passed and no scoreboard: still nothing (NFL tab path)');
+	const text = fullText(ctx.renderNowPlayingCard([mk('a', 11), mk('b', 11), mk('c', 12)], TUESDAY_NOW));
+	assert.match(text, /Week 12 byes: MIN/, 'footnote on page load, from the schedules');
+	vm.runInContext('gameStatesAttempted = true;', ctx);
+	assert.equal(ctx.nflByeFootnote(), null, 'once the scoreboard answered with no match: nothing, as before');
 }
 
 // Kickers and defenses appear here like any other live starter of mine.

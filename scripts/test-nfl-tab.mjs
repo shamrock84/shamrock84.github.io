@@ -220,12 +220,13 @@ function fullText(node) {
 
 	// The bye footnote is there during loading, off the snapshot's week.
 	assert.equal(findAll(grid, hasClass('nfl-bye-footnote')).length, 0, 'no schedules: no footnote');
-	vm.runInContext(`nflSchedulesData = { teams: { KC: [{ wk: 11, bye: true }], SF: [{ wk: 11, opp: 'MIN', at: '2026-11-23T01:20Z' }] } };
-		pageData = { leagues: [{ type: 'dynasty', scoring: { week: 11 } }] };`, ctx);
+	// Week 11 is the only week with a game; SF has no home entry, so there
+	// is no game to draw and the tab stays a loading card.
+	vm.runInContext(`nflSchedulesData = { teams: { KC: [{ wk: 11, bye: true }], SF: [{ wk: 11, opp: 'MIN', home: false, at: new Date(Date.now() + 86400000).toISOString() }] } };`, ctx);
 	const withByes = domNode();
 	ctx.renderNflCards(withByes);
 	assert.equal(findAll(withByes, hasClass('loading-box')).length, 1, 'still loading the games');
-	assert.match(fullText(withByes), /Week 11 byes: KC/, 'byes on screen before the scoreboard lands');
+	assert.match(fullText(withByes), /Week 11 byes: KC/, 'byes on screen before the scoreboard lands, from the schedules week');
 }
 
 // No games at all once the fetch has resolved: both cards render their own
@@ -834,6 +835,43 @@ function fireClick(node) {
 
 	setLiveGames(ctx, { ATL: { state: 'post' } });
 	assert.equal(ctx.nextNflPollDelayMs(now), idleMs, 'nothing scheduled, cutoff past: the slow fallback');
+}
+
+// --- snapshotNflGames / renderNflCards before the scoreboard: the week is
+// drawn from the snapshot's schedules, then replaced by the scoreboard.
+{
+	const ctx = makeContext();
+	setGameStatesAttempted(ctx, false);
+	setLiveGames(ctx, {});
+	const now = Date.parse('2026-11-24T12:00:00Z');
+	vm.runInContext(`nflSchedulesData = { teams: {
+		SF: [{ wk: 11, opp: 'MIN', home: true, at: '2026-11-23T01:20Z', r: 'W', pf: 35, pa: 10 }],
+		MIN: [{ wk: 11, opp: 'SF', home: false, at: '2026-11-23T01:20Z', r: 'L', pf: 10, pa: 35 }],
+		KC: [{ wk: 11, opp: 'DEN', home: true, at: '2026-11-24T01:15Z' }],
+		DEN: [{ wk: 11, opp: 'KC', home: false, at: '2026-11-24T01:15Z' }],
+		DAL: [{ wk: 11, opp: 'NYG', home: true, at: '2026-11-27T01:15Z' }],
+		NYG: [{ wk: 11, opp: 'DAL', home: false, at: '2026-11-27T01:15Z' }],
+		GB: [{ wk: 11, bye: true }],
+	} };`, ctx);
+	const games = JSON.parse(JSON.stringify(ctx.snapshotNflGames(11, now)));
+	assert.equal(games.length, 3, 'one game per home entry, byes skipped');
+	assert.deepEqual(games.map((g) => [g.away.team, g.home.team, g.state, g.away.score, g.home.score]), [
+		['MIN', 'SF', 'post', 10, 35],
+		['DEN', 'KC', 'unknown', null, null],
+		['NYG', 'DAL', 'pre', null, null],
+	]);
+	assert.equal(games[1].detail, 'Updating…', 'kicked off with no stored result: neither live nor final claimed');
+	assert.deepEqual(JSON.parse(JSON.stringify(ctx.snapshotNflGames(12, now))), [], 'a week with no entries: nothing');
+
+	const grid = domNode();
+	ctx.renderNflCards(grid, new Date(now));
+	assert.equal(findAll(grid, hasClass('loading-box')).length, 0, 'no loading card: the snapshot week is drawn');
+	assert.equal(findAll(grid, hasClass('nfl-game-row')).length, 3);
+	assert.equal(findAll(grid, hasClass('nfl-boxscore-link')).length, 0, 'no ESPN id yet: no link or drawer');
+	const text = fullText(grid);
+	assert.match(text, /MIN.*10.*@.*SF.*35/s);
+	assert.match(text, /Updating…/);
+	assert.match(text, /Week 11 byes: GB/);
 }
 
 console.log('test-nfl-tab.mjs OK');
