@@ -14984,6 +14984,14 @@
 				const card = el('div', { class: 'card nfl-card', 'data-view': 'nfl' });
 				card.appendChild(el('h2', { class: 'card-heading', text: 'NFL' }));
 				card.appendChild(el('div', { class: 'loading-box', text: 'Loading games…' }));
+				// The byes need no scoreboard once the week is known, and the
+				// snapshot carries it (fantasyScoringWeek, the week the Scoring
+				// cards show), so they are on screen while the games load.
+				// The scoreboard's own match takes over once it lands; the two
+				// can only differ Tuesday-Wednesday, if the scoreboard moves to
+				// the new week before the rollover cutoff.
+				const byeNote = nflByeFootnote(fantasyScoringWeek(pageData?.leagues));
+				if (byeNote) card.appendChild(byeNote);
 				appendNflCard(gridEl, card);
 				return;
 			}

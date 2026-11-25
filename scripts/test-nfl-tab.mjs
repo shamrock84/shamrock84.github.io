@@ -217,6 +217,15 @@ function fullText(node) {
 	const loading = findAll(grid, hasClass('loading-box'));
 	assert.equal(loading.length, 1, 'shows a loading placeholder before the first fetch resolves');
 	assert.equal(findAll(grid, hasClass('nfl-game-row')).length, 0);
+
+	// The bye footnote is there during loading, off the snapshot's week.
+	assert.equal(findAll(grid, hasClass('nfl-bye-footnote')).length, 0, 'no schedules: no footnote');
+	vm.runInContext(`nflSchedulesData = { teams: { KC: [{ wk: 11, bye: true }], SF: [{ wk: 11, opp: 'MIN', at: '2026-11-23T01:20Z' }] } };
+		pageData = { leagues: [{ type: 'dynasty', scoring: { week: 11 } }] };`, ctx);
+	const withByes = domNode();
+	ctx.renderNflCards(withByes);
+	assert.equal(findAll(withByes, hasClass('loading-box')).length, 1, 'still loading the games');
+	assert.match(fullText(withByes), /Week 11 byes: KC/, 'byes on screen before the scoreboard lands');
 }
 
 // No games at all once the fetch has resolved: both cards render their own
