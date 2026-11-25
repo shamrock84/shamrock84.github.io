@@ -324,20 +324,27 @@ function league(id, franchiseId, myPlayers, opponentPlayers = [], type = 'dynast
 }
 
 // Before the first live poll: "Loading" by default, but straight to the
-// empty state when the snapshot shows the week over (every team at 0
-// minutes left) and it isn't Monday — nobody of mine can be playing.
+// empty state when the snapshot's NFL schedule has no game today
+// (nflNoGameToday) — nobody of mine can be playing, whatever week each
+// fantasy provider is showing.
 {
 	const ctx = makeContext(LOGGED_IN);
 	setLiveScoringAttempted(ctx, false);
 	setLiveGames(ctx, {});
 	const snap = league('L60', '0001', []);
-	for (const t of snap.scoring.teams) { delete t.players; t.minutesRemaining = 0; }
+	for (const t of snap.scoring.teams) { delete t.players; t.minutesRemaining = 540; } // MFL already on next week
 	const TUESDAY_NOW = new Date(2026, 10, 24, 18, 0, 0);
 	const MONDAY_NOW = new Date(2026, 10, 23, 18, 0, 0);
-	assert.ok(fullText(ctx.renderNowPlayingCard([snap], TUESDAY_NOW)).includes('No players playing today.'), 'week final, Tuesday: empty state, no loading');
-	assert.match(fullText(ctx.renderNowPlayingCard([snap], MONDAY_NOW)), /Loading live scores/, 'Monday: today\'s players only come from the live poll');
-	snap.scoring.teams[1].minutesRemaining = 60;
-	assert.match(fullText(ctx.renderNowPlayingCard([snap], TUESDAY_NOW)), /Loading live scores/, 'game time left somewhere: wait for the poll');
+	assert.match(fullText(ctx.renderNowPlayingCard([snap], TUESDAY_NOW)), /Loading live scores/, 'no schedules: unknown, so wait');
+	ctx.__s = { teams: {
+		SF: [{ wk: 11, opp: 'MIN', home: true, at: new Date(2026, 10, 23, 19, 15).toISOString(), r: 'W', pf: 1, pa: 0 }, { wk: 12, opp: 'KC', home: true, at: new Date(2026, 10, 26, 12, 0).toISOString() }],
+		GB: [{ wk: 11, bye: true }],
+	} };
+	vm.runInContext('nflSchedulesData = __s;', ctx);
+	assert.equal(ctx.nflNoGameToday(TUESDAY_NOW), true);
+	assert.equal(ctx.nflNoGameToday(MONDAY_NOW), false);
+	assert.ok(fullText(ctx.renderNowPlayingCard([snap], TUESDAY_NOW)).includes('No players playing today.'), 'no game today: empty state, no loading');
+	assert.match(fullText(ctx.renderNowPlayingCard([snap], MONDAY_NOW)), /Loading live scores/, 'a game today: players only come from the live poll');
 }
 
 // The bye footnote is on this card before the first live poll: with no
